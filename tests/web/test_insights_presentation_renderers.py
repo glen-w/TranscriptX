@@ -1,4 +1,4 @@
-"""Renderer-focused tests for Insights Summary / Analysis / Highlights UX."""
+"""Renderer-focused tests for Insights Summary / Speakers / Highlights UX."""
 
 from __future__ import annotations
 
@@ -215,40 +215,51 @@ def test_insights_summary_generation_details_collapsed(monkeypatch) -> None:
 
 
 @pytest.mark.unit
-def test_analysis_section_skips_executive_and_caps_guided(monkeypatch) -> None:
+def test_stale_analysis_section_remaps_to_summary(monkeypatch) -> None:
     import transcriptx.web.page_modules.insights as page
 
-    DummyHomeStreamlit.session_state = {"insights_detail_mode": "guided"}
+    DummyHomeStreamlit.session_state = {"insights_section": "analysis"}
     monkeypatch.setattr(page, "st", DummyHomeStreamlit)
-    monkeypatch.setattr(page, "is_insights_guided", lambda: True)
-    monkeypatch.setattr(page, "clear_analysis_payload_cache", lambda: None)
-
-    rendered: list[str] = []
-
-    def fake_render(block_id, *_a, **_k):
-        rendered.append(block_id)
-
-    monkeypatch.setattr(page, "render_block", fake_render)
     monkeypatch.setattr(
-        page,
-        "_placement_has_analysis_content",
-        lambda _ctx, p: True,
+        DummyHomeStreamlit,
+        "segmented_control",
+        classmethod(
+            lambda cls, _label, options, *, key=None, default=None, **k: default
+            or options[0]
+        ),
+    )
+    assert "Analysis" not in [label for _, label in page.INSIGHTS_SECTIONS]
+    assert page._render_section_nav() == "summary"
+    assert DummyHomeStreamlit.session_state["insights_section"] == "summary"
+
+
+@pytest.mark.unit
+def test_insights_focus_splits_content_and_style(monkeypatch) -> None:
+    import transcriptx.web.blocks.implementations.insights as ib
+
+    DummyHomeStreamlit.session_state = {}
+    writes: list[str] = []
+    monkeypatch.setattr(ib, "st", DummyHomeStreamlit)
+    monkeypatch.setattr(
+        DummyHomeStreamlit, "write", lambda text, *a, **k: writes.append(str(text))
     )
     monkeypatch.setattr(
-        "transcriptx.web.blocks.implementations.insights._render_view_raw_file_link",
-        lambda *_a, **_k: None,
+        "transcriptx.web.insights_presentation.is_insights_guided", lambda: True
     )
+    payload = {
+        "key_themes": [{"phrase": "roadmap", "score": {"total": 0.9}}],
+        "recurring_ideas": [],
+        "style_markers": {"formality": 0.2},
+    }
+    writes.clear()
+    ib._render_insights_payload(payload, focus="content")
+    assert any("roadmap" in w for w in writes)
+    assert not any("Formality" in w for w in writes)
 
-    placements = [
-        SimpleNamespace(block_id="executive_summary", visible=True),
-        SimpleNamespace(block_id="lexical_diversity_block", visible=True),
-        SimpleNamespace(block_id="epistemic_markers_block", visible=True),
-        SimpleNamespace(block_id="politeness_block", visible=True),
-        SimpleNamespace(block_id="insights_contract", visible=True),
-    ]
-    page._render_analysis_section(SimpleNamespace(services=SimpleNamespace(content_loader=None)), placements)
-    assert "executive_summary" not in rendered
-    assert len(rendered) <= 4
+    writes.clear()
+    ib._render_insights_payload(payload, focus="style")
+    assert any("Formality" in w for w in writes)
+    assert not any("roadmap" in w for w in writes)
 
 
 @pytest.mark.unit

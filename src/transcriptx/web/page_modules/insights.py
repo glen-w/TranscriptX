@@ -16,15 +16,6 @@ from transcriptx.web.components.run_scoped_page import (
     RunScopedPageContext,
     render_run_scoped_page,
 )
-from transcriptx.web.insights_presentation import (
-    GUIDED_ANALYSIS_SECTION_CAP,
-    analysis_group_for_block,
-    analysis_payload_has_user_content,
-    clear_analysis_payload_cache,
-    is_insights_guided,
-    load_cached_analysis_json,
-    order_analysis_placements,
-)
 
 INSIGHTS_SECTION_KEY = "insights_section"
 INSIGHTS_SECTIONS = (
@@ -32,22 +23,13 @@ INSIGHTS_SECTIONS = (
     ("speakers", "Speakers"),
     ("actions", "Actions"),
     ("highlights", "Highlights"),
-    ("analysis", "Analysis"),
 )
-
-_BLOCK_ARTIFACT = {
-    "lexical_diversity_block": ("lexical_diversity", "_lexical_diversity.json"),
-    "epistemic_markers_block": ("epistemic_markers", "_epistemic_markers.json"),
-    "politeness_block": ("politeness", "_politeness.json"),
-    "keyphrases_block": ("keyphrases", "_keyphrases.json"),
-    "insights_contract": ("insights", "_insights.json"),
-}
 
 _INSIGHTS_CONFIG = RunScopedPageConfig(
     title="Insights",
     description=(
         "Structured analysis workspace for summaries, speakers, actions, "
-        "highlights, and deeper analysis."
+        "and highlights."
     ),
     empty_headline="Select a subject and run",
     empty_detail="Use the sidebar to choose a transcript or group, then pick a run.",
@@ -91,100 +73,6 @@ def _render_chrome() -> str:
     return _render_section_nav()
 
 
-def _collect_analysis_provenance_targets(placements) -> list[tuple[str, str]]:
-    """(module, json_suffix) for consolidated Data and provenance."""
-    out: list[tuple[str, str]] = []
-    for p in placements:
-        hit = _BLOCK_ARTIFACT.get(getattr(p, "block_id", ""))
-        if hit and hit not in out:
-            out.append(hit)
-    return out
-
-
-def _placement_has_analysis_content(block_ctx, placement) -> bool:
-    """Skip empty / missing optional analysis artifacts before counting Guided slots."""
-    loader = getattr(getattr(block_ctx, "services", None), "content_loader", None)
-    hit = _BLOCK_ARTIFACT.get(getattr(placement, "block_id", ""))
-    if hit is None:
-        return True
-    module, suffix = hit
-    payload = load_cached_analysis_json(loader, module, suffix)
-    return analysis_payload_has_user_content(module, payload)
-
-
-def _render_analysis_section(block_ctx, section_blocks) -> None:
-    """Grouped analysis with Guided section cap and consolidated provenance."""
-    from transcriptx.web.blocks.implementations.insights import (
-        _render_view_raw_file_link,
-    )
-
-    clear_analysis_payload_cache()
-
-    filtered = [
-        p
-        for p in section_blocks
-        if getattr(p, "block_id", "") != "executive_summary"
-    ]
-    ordered = order_analysis_placements(filtered)
-    guided = is_insights_guided()
-
-    rendered_modules = 0
-    last_group_key: str | None = None
-    shown_placements: list = []
-
-    def _emit(placement) -> None:
-        nonlocal rendered_modules, last_group_key
-        group = analysis_group_for_block(placement.block_id)
-        group_key = group[0] if group else "other"
-        group_title = group[1] if group else "Other analysis"
-        if group_key != last_group_key:
-            if last_group_key is not None or shown_placements:
-                st.divider()
-            st.markdown(f"### {group_title}")
-            last_group_key = group_key
-        elif shown_placements:
-            st.divider()
-        st.session_state["_insights_analysis_consolidating_provenance"] = True
-        render_block(placement.block_id, block_ctx, placement)
-        st.session_state["_insights_analysis_consolidating_provenance"] = False
-        shown_placements.append(placement)
-        rendered_modules += 1
-
-    contentful = [
-        p for p in ordered if _placement_has_analysis_content(block_ctx, p)
-    ]
-    emptyish = [p for p in ordered if p not in contentful]
-
-    for placement in contentful:
-        if guided and rendered_modules >= GUIDED_ANALYSIS_SECTION_CAP:
-            break
-        _emit(placement)
-
-    if guided:
-        remaining = max(0, len(contentful) - rendered_modules)
-        if remaining:
-            st.caption(
-                f"{remaining} more analysis module"
-                f"{'s' if remaining != 1 else ''} available in Full controls."
-            )
-    else:
-        # Full controls: still show unavailable modules as quiet status (not Silent).
-        for placement in emptyish:
-            _emit(placement)
-
-    targets = _collect_analysis_provenance_targets(shown_placements)
-    if targets:
-        with st.expander("Data and provenance", expanded=False):
-            st.caption("Raw artifacts for the modules shown above.")
-            for module, suffix in targets:
-                _render_view_raw_file_link(
-                    block_ctx,
-                    module,
-                    suffix,
-                    link_key=f"insights_analysis_prov_{module}",
-                )
-
-
 @st.fragment
 def _insights_sections_fragment(block_ctx, layout) -> None:
     """Section nav + block rendering; switching sections reruns only this fragment."""
@@ -200,7 +88,7 @@ def _insights_sections_fragment(block_ctx, layout) -> None:
 
     placements = [b.to_placement() for b in page.blocks]
     section_blocks = [
-        p for p in placements if (p.section or "analysis") == section and p.visible
+        p for p in placements if (p.section or "summary") == section and p.visible
     ]
     # Layouts without section tags (v1 executive): show all on Summary only.
     if not any(p.section for p in placements):
@@ -215,10 +103,6 @@ def _insights_sections_fragment(block_ctx, layout) -> None:
         st.info("No blocks for this section in the active layout.")
         return
 
-    if section == "analysis":
-        _render_analysis_section(block_ctx, section_blocks)
-        return
-
     for index, placement in enumerate(section_blocks):
         if index > 0:
             st.divider()
@@ -228,7 +112,7 @@ def _insights_sections_fragment(block_ctx, layout) -> None:
 def _render_insights_body(ctx: RunScopedPageContext) -> None:
     render_page_shell(
         "Insights",
-        "Themes, summaries, speakers, actions, and deeper analysis.",
+        "Themes, summaries, speakers, actions, and highlights.",
         badges=None,
         actions=None,
     )

@@ -205,7 +205,10 @@ def _register_insights_blocks() -> None:
             id="insights_contract",
             title="Content vs Style",
             group="Insights",
-            description="Key themes, recurring ideas, and style markers.",
+            description=(
+                "Key themes, recurring ideas, and style markers. "
+                "Use placement params.focus=content|style to split across sections."
+            ),
             module_deps=("insights",),
             artifact_patterns=("_insights.json", "insight_rows.json"),
             prerequisites=BlockPrereq.RUN_SCOPED,

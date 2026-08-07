@@ -1,0 +1,111 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.10.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/89298/Documents/transcriptx
+configfile: pytest.ini
+testpaths: tests
+plugins: html-4.1.1, xdist-3.8.0, mock-3.15.0, timeout-2.4.0, asyncio-1.4.0, metadata-3.1.1, cov-4.1.0, clarity-1.0.1, anyio-3.7.1, hypothesis-6.136.1, typeguard-4.4.4
+timeout: 300.0s
+timeout method: thread
+timeout func_only: False
+asyncio: mode=strict, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 8002 items / 7963 deselected / 39 selected
+
+tests/analysis/test_conversation_loops.py .                              [  2%]
+tests/core/analysis/group_charts/test_interactions_charts.py .           [  5%]
+tests/core/analysis/test_topic_modeling_utils_helpers.py sss             [ 12%]
+tests/core/analysis/voice/test_voice_extract_heavy.py ...                [ 20%]
+tests/integration/core/test_cli_workflow_integration.py ....             [ 30%]
+tests/integration/core/test_group_finalize_stats_integration.py ..       [ 35%]
+tests/integration/core/test_high_leverage_integration.py ..              [ 41%]
+tests/integration/core/test_output_service_integration.py ..             [ 46%]
+tests/integration/core/test_pipeline_risk_integration.py ......          [ 61%]
+tests/integration/core/test_pipeline_state_integration.py ..             [ 66%]
+tests/integration/extended/test_cross_workflow_state.py ......           [ 82%]
+tests/web/gui_acceptance/test_default_preset.py .                        [ 84%]
+tests/web/gui_acceptance/test_export.py .                                [ 87%]
+tests/web/gui_acceptance/test_group_run.py F                             [ 89%]
+tests/web/gui_acceptance/test_insights_charts.py .                       [ 92%]
+tests/web/gui_acceptance/test_managed_import.py .                        [ 94%]
+tests/web/gui_acceptance/test_partial_failed_run.py .                    [ 97%]
+tests/web/gui_acceptance/test_speaker_profile.py .                       [100%]
+
+=================================== FAILURES ===================================
+E   AssertionError: AppTest raised: [Exception(message='Transcript path must live under the project root or transcripts dir: /private/var/folders/sy/pjg7ypqj2vz2xf0v12m1l2k9_22rhc/T/pytest-of-89298/pytest-1145/test_unidentified_present_in_t0/mini_transcript_mixed_speakers.json', stack_trace=['File "/private/var/folders/sy/pjg7ypqj2vz2xf0v12m1l2k9_22rhc/T/pytest-of-89298/pytest-1146/test_group_create_and_run_anal0/apptest_scripts/apptest_render_groups.py", line 2, in <module>\n    render_groups()', 'File "/Users/89298/Documents/transcriptx/src/transcriptx/web/page_modules/groups.py", line 302, in render_groups\n    transcript_canonical = {', 'File "/Users/89298/Documents/transcriptx/src/transcriptx/web/page_modules/groups.py", line 303, in <dictcomp>\n    p: canonical_group_member_path(p) for p in transcript_options', 'File "/Users/89298/Documents/transcriptx/src/transcriptx/core/store/group_manifest_store.py", line 80, in canonical_group_member_path\n    return _project_relative_path(ref)', 'File "/Users/89298/Documents/transcriptx/src/transcriptx/core/store/group_manifest_store.py", line 73, in _project_relative_path\n    raise ValueError('])]
+----------------------------- Captured stdout call -----------------------------
+[31m──[0m[31m────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────[0m[31m──[0m
+[31m [0m [2m/Users/89298/.pyenv/versions/3.10.13/lib/python3.10/site-packages/streamlit/[0m [31m [0m
+[31m [0m [2mruntime/scriptrunner/[0m[1mexec_code.py[0m:129 in exec_func_with_error_handling       [31m [0m
+[31m [0m                                                                              [31m [0m
+[31m [0m [2m/Users/89298/.pyenv/versions/3.10.13/lib/python3.10/site-packages/streamlit/[0m [31m [0m
+[31m [0m [2mruntime/scriptrunner/[0m[1mscript_runner.py[0m:671 in code_to_exec                    [31m [0m
+[31m [0m                                                                              [31m [0m
+[31m [0m [2m/private/var/folders/sy/pjg7ypqj2vz2xf0v12m1l2k9_22rhc/T/pytest-of-89298/pyt[0m [31m [0m
+[31m [0m [2mest-1146/test_group_create_and_run_anal0/apptest_scripts/[0m[1mapptest_render_grou[0m [31m [0m
+[31m [0m [1mps.py[0m:2 in <module>                                                          [31m [0m
+[31m [0m                                                                              [31m [0m
+[31m [0m   [2m1 [0m[94mfrom[0m[90m [0m[4;96mtranscriptx[0m[4;96m.[0m[4;96mweb[0m[4;96m.[0m[4;96mpage_modules[0m[4;96m.[0m[4;96mgroups[0m[90m [0m[94mimport[0m render_groups            [31m [0m
+[31m [0m [31m❱ [0m2 render_groups()                                                          [31m [0m
+[31m [0m   [2m3 [0m                                                                         [31m [0m
+[31m [0m                                                                              [31m [0m
+[31m [0m [2m/Users/89298/Documents/transcriptx/src/transcriptx/web/page_modules/[0m[1mgroups.p[0m [31m [0m
+[31m [0m [1my[0m:302 in render_groups                                                       [31m [0m
+[31m [0m                                                                              [31m [0m
+[31m [0m   [2m299 [0m[2m│   [0mpicker_options = get_cached_list_transcript_picker_options()       [31m [0m
+[31m [0m   [2m300 [0m[2m│   [0mtranscript_options = [opt.path [94mfor[0m opt [95min[0m picker_options]          [31m [0m
+[31m [0m   [2m301 [0m[2m│   [0mtranscript_labels = {opt.path: opt.label [94mfor[0m opt [95min[0m picker_options [31m [0m
+[31m [0m [31m❱ [0m302 [2m│   [0mtranscript_canonical = {                                           [31m [0m
+[31m [0m   [2m303 [0m[2m│   │   [0mp: canonical_group_member_path(p) [94mfor[0m p [95min[0m transcript_options  [31m [0m
+[31m [0m   [2m304 [0m[2m│   [0m}                                                                  [31m [0m
+[31m [0m   [2m305 [0m                                                                       [31m [0m
+[31m [0m                                                                              [31m [0m
+[31m [0m [2m/Users/89298/Documents/transcriptx/src/transcriptx/web/page_modules/[0m[1mgroups.p[0m [31m [0m
+[31m [0m [1my[0m:303 in <dictcomp>                                                          [31m [0m
+[31m [0m                                                                              [31m [0m
+[31m [0m   [2m300 [0m[2m│   [0mtranscript_options = [opt.path [94mfor[0m opt [95min[0m picker_options]          [31m [0m
+[31m [0m   [2m301 [0m[2m│   [0mtranscript_labels = {opt.path: opt.label [94mfor[0m opt [95min[0m picker_options [31m [0m
+[31m [0m   [2m302 [0m[2m│   [0mtranscript_canonical = {                                           [31m [0m
+[31m [0m [31m❱ [0m303 [2m│   │   [0mp: canonical_group_member_path(p) [94mfor[0m p [95min[0m transcript_options  [31m [0m
+[31m [0m   [2m304 [0m[2m│   [0m}                                                                  [31m [0m
+[31m [0m   [2m305 [0m[2m│   [0m                                                                   [31m [0m
+[31m [0m   [2m306 [0m[2m│   [0m[94mwith[0m st.expander([33m"[0m[33mCreate new group[0m[33m"[0m, expanded=[94mFalse[0m):              [31m [0m
+[31m [0m                                                                              [31m [0m
+[31m [0m [2m/Users/89298/Documents/transcriptx/src/transcriptx/core/store/[0m[1mgroup_manifest[0m [31m [0m
+[31m [0m [1m_store.py[0m:80 in canonical_group_member_path                                  [31m [0m
+[31m [0m                                                                              [31m [0m
+[31m [0m   [2m 77 [0m                                                                       [31m [0m
+[31m [0m   [2m 78 [0m[94mdef[0m[90m [0m[92mcanonical_group_member_path[0m(ref: [96mstr[0m | Path) -> [96mstr[0m:               [31m [0m
+[31m [0m   [2m 79 [0m[2;90m│   [0m[33m"""Return a single transcript ref as a stable project-relative pat[0m [31m [0m
+[31m [0m [31m❱ [0m 80 [2m│   [0m[94mreturn[0m _project_relative_path(ref)                                 [31m [0m
+[31m [0m   [2m 81 [0m                                                                       [31m [0m
+[31m [0m   [2m 82 [0m                                                                       [31m [0m
+[31m [0m   [2m 83 [0m[94mdef[0m[90m [0m[92mcanonicalize_group_member_paths[0m(refs: Iterable[[96mstr[0m | Path]) -> Lis [31m [0m
+[31m [0m                                                                              [31m [0m
+[31m [0m [2m/Users/89298/Documents/transcriptx/src/transcriptx/core/store/[0m[1mgroup_manifest[0m [31m [0m
+[31m [0m [1m_store.py[0m:73 in _project_relative_path                                       [31m [0m
+[31m [0m                                                                              [31m [0m
+[31m [0m   [2m 70 [0m[2m│   │   │   [0m[94mreturn[0m [96mstr[0m(rel)                                            [31m [0m
+[31m [0m   [2m 71 [0m[2m│   │   [0m[94mexcept[0m [96mValueError[0m:                                             [31m [0m
+[31m [0m   [2m 72 [0m[2m│   │   │   [0m[94mcontinue[0m                                                   [31m [0m
+[31m [0m [31m❱ [0m 73 [2m│   [0m[94mraise[0m [96mValueError[0m(                                                  [31m [0m
+[31m [0m   [2m 74 [0m[2m│   │   [0m[33mf[0m[33m"[0m[33mTranscript path must live under the project root or transcri[0m [31m [0m
+[31m [0m   [2m 75 [0m[2m│   [0m)                                                                  [31m [0m
+[31m [0m   [2m 76 [0m                                                                       [31m [0m
+[31m────────────────────────────────────────────────────────────────────────────────[0m
+[1;91mValueError: [0mTranscript path must live under the project root or transcripts dir:
+[35m/private/var/folders/sy/pjg7ypqj2vz2xf0v12m1l2k9_22rhc/T/pytest-of-89298/pytest-[0m
+[35m1145/test_unidentified_present_in_t0/[0m[95mmini_transcript_mixed_speakers.json[0m
+----------------------------- Captured stderr call -----------------------------
+------------------------------ Captured log call -------------------------------
+/Users/89298/Documents/transcriptx/tests/web/gui_acceptance/harness.py:375: AssertionError: AppTest raised: [Exception(message='Transcript path must live under the project root or transcripts dir: /private/var/folders/sy/pjg7ypqj2vz2xf0v12m1l2k9_22rhc/T/pytest-of-89298/pytest-1145/test_unidentified_present_in_t0/mini_transcript_mixed_speakers.json', stack_trace=['File "/private/var/folders/sy/pjg7ypqj2vz2xf0v12m1l2k9_22rhc/T/pytest-of-89298/pytest-1146/test_group_create_and_run_anal0/apptest_scripts/apptest_render_groups.py", line 2, in <module>\n    render_groups()', 'File "/Users/89298/Documents/transcriptx/src/transcriptx/web/page_modules/groups.py", line 302, in render_groups\n    transcript_canonical = {', 'File "/Users/89298/Documents/transcriptx/src/transcriptx/web/page_modules/groups.py", line 303, in <dictcomp>\n    p: canonical_group_member_path(p) for p in transcript_options', 'File "/Users/89298/Documents/transcriptx/src/transcriptx/core/store/group_manifest_store.py", line 80, in canonical_group_member_path\n    return _project_relative_path(ref)', 'File "/Users/89298/Documents/transcriptx/src/transcriptx/core/store/group_manifest_store.py", line 73, in _project_relative_path\n    raise ValueError('])]
+=============================== warnings summary ===============================
+../../.pyenv/versions/3.10.13/lib/python3.10/site-packages/_hypothesis_pytestplugin.py:461
+  /Users/89298/.pyenv/versions/3.10.13/lib/python3.10/site-packages/_hypothesis_pytestplugin.py:461: UserWarning: Skipping collection of '.hypothesis' directory - this usually means you've explicitly set the `norecursedirs` pytest config option, replacing rather than extending the default ignores.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/core/analysis/test_topic_modeling_utils_helpers.py:57: requires_models: set TRANSCRIPTX_TEST_MODELS=1 and install models
+SKIPPED [1] tests/core/analysis/test_topic_modeling_utils_helpers.py:73: requires_models: set TRANSCRIPTX_TEST_MODELS=1 and install models
+SKIPPED [1] tests/core/analysis/test_topic_modeling_utils_helpers.py:84: requires_models: set TRANSCRIPTX_TEST_MODELS=1 and install models
+FAILED tests/web/gui_acceptance/test_group_run.py::test_group_create_and_run_analysis_group_target
+===== 1 failed, 35 passed, 3 skipped, 7963 deselected, 1 warning in 20.99s =====

@@ -31,6 +31,20 @@ pages:
         block_id: insights_summary_panel
         section: summary
         visible: true
+      - placement_id: insights_keyphrases
+        block_id: keyphrases_block
+        section: summary
+        visible: true
+        params:
+          title: Keyphrases
+          empty_hint: Run the `keyphrases` module to populate this view.
+      - placement_id: insights_themes
+        block_id: insights_contract
+        section: summary
+        visible: true
+        params:
+          focus: content
+          title: Themes and ideas
       - placement_id: insights_llm_speaker_summary
         block_id: llm_speaker_summary_block
         section: speakers
@@ -38,6 +52,34 @@ pages:
         params:
           title: Per-Speaker LLM Summaries
           empty_hint: Run the `llm_speaker_summary` module (with LLM enabled and named speakers) to populate this view.
+      - placement_id: insights_lexical_diversity
+        block_id: lexical_diversity_block
+        section: speakers
+        visible: true
+        params:
+          title: Lexical Diversity
+          empty_hint: Run the `lexical_diversity` module to populate this view.
+      - placement_id: insights_epistemic_markers
+        block_id: epistemic_markers_block
+        section: speakers
+        visible: true
+        params:
+          title: Epistemic Markers
+          empty_hint: Run the `epistemic_markers` module to populate this view.
+      - placement_id: insights_politeness
+        block_id: politeness_block
+        section: speakers
+        visible: true
+        params:
+          title: Politeness Markers
+          empty_hint: Run the `politeness` module to populate this view.
+      - placement_id: insights_style_markers
+        block_id: insights_contract
+        section: speakers
+        visible: true
+        params:
+          focus: style
+          title: Style markers
       - placement_id: insights_llm_action_items
         block_id: llm_action_items_block
         section: actions
@@ -53,38 +95,6 @@ pages:
       - placement_id: insights_highlights
         block_id: highlights
         section: highlights
-        visible: true
-      - placement_id: insights_lexical_diversity
-        block_id: lexical_diversity_block
-        section: analysis
-        visible: true
-        params:
-          title: Lexical Diversity
-          empty_hint: Run the `lexical_diversity` module to populate this view.
-      - placement_id: insights_epistemic_markers
-        block_id: epistemic_markers_block
-        section: analysis
-        visible: true
-        params:
-          title: Epistemic Markers
-          empty_hint: Run the `epistemic_markers` module to populate this view.
-      - placement_id: insights_politeness
-        block_id: politeness_block
-        section: analysis
-        visible: true
-        params:
-          title: Politeness Markers
-          empty_hint: Run the `politeness` module to populate this view.
-      - placement_id: insights_keyphrases
-        block_id: keyphrases_block
-        section: analysis
-        visible: true
-        params:
-          title: Keyphrases
-          empty_hint: Run the `keyphrases` module to populate this view.
-      - placement_id: insights_contract
-        block_id: insights_contract
-        section: analysis
         visible: true
   charts:
     page_id: charts

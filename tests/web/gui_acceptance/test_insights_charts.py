@@ -44,7 +44,24 @@ def test_insights_and_charts_pages_render(gui_ws, tmp_path) -> None:
     assert "Insights" in insights_blob
     assert "Select a subject" not in insights_blob
 
-    at_analysis = run_page(
+    at_speakers = run_page(
+        "transcriptx.web.page_modules.insights",
+        "render_insights",
+        session={
+            **_run_session(ws),
+            "page": "Insights",
+            "insights_section": "speakers",
+        },
+        script_dir=scripts,
+        default_timeout=60.0,
+    )
+    assert_no_exception(at_speakers)
+    speakers_blob = markdown_blob(at_speakers)
+    # Executive Summary belongs on Summary, not Speakers.
+    assert "Executive Summary" not in speakers_blob
+
+    # Stale Analysis section key remaps to Summary.
+    at_stale = run_page(
         "transcriptx.web.page_modules.insights",
         "render_insights",
         session={
@@ -55,10 +72,8 @@ def test_insights_and_charts_pages_render(gui_ws, tmp_path) -> None:
         script_dir=scripts,
         default_timeout=60.0,
     )
-    assert_no_exception(at_analysis)
-    analysis_blob = markdown_blob(at_analysis)
-    # Executive Summary belongs on Summary, not Analysis.
-    assert "Executive Summary" not in analysis_blob
+    assert_no_exception(at_stale)
+    assert at_stale.session_state["insights_section"] == "summary"
 
     at_charts = run_page(
         "transcriptx.web.page_modules.charts",

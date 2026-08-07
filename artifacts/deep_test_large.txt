@@ -1,12 +1,13 @@
-TRANSCRIPT /mnt/transcripts/260719_Ana_checkin.json exists True
-2026-08-07 13:48:41,491 - transcriptx - INFO - Starting analysis pipeline for /mnt/transcripts/260719_Ana_checkin.json with modules: acts, conversation_loops, contagion, emotion, contextual_emotion, fine_grained_emotion, entity_sentiment, affect_tension, interactions, ner, semantic_similarity, sentiment, epistemic_markers, keyphrases, stats, topic_modeling, bertopic, transcript_output, simplified_transcript, understandability, lexical_diversity, wordclouds, tics, transcript_quality, insight_eligibility, temporal_dynamics, qa_analysis, pauses, echoes, politeness, momentum, topic_shift, moments, highlights, summary, narrative_summary, llm_summary, llm_speaker_summary, llm_action_items, llm_custom_qa, chart_descriptions, insights, voice_features, prosody_dashboard, voice_charts_core
-2026-08-07 13:48:41,802 - transcriptx - INFO - Module registry finalized and locked
+TRANSCRIPT /mnt/transcripts/260719_Ana_checkin.json
+MODULES_N_REQUESTED 48
+2026-08-07 14:37:07,873 - transcriptx - INFO - Starting analysis pipeline for /mnt/transcripts/260719_Ana_checkin.json with modules: acts, conversation_loops, contagion, emotion, contextual_emotion, fine_grained_emotion, entity_sentiment, affect_tension, interactions, ner, semantic_similarity, sentiment, epistemic_markers, keyphrases, stats, topic_modeling, bertopic, transcript_output, simplified_transcript, understandability, lexical_diversity, wordclouds, tics, transcript_quality, insight_eligibility, temporal_dynamics, qa_analysis, pauses, echoes, politeness, momentum, topic_shift, moments, highlights, summary, narrative_summary, llm_summary, llm_speaker_summary, llm_action_items, llm_custom_qa, insights, voice_features, voice_mismatch, voice_tension, voice_fingerprint, prosody_dashboard, voice_charts_core, voice_contours
+2026-08-07 14:37:08,345 - transcriptx - INFO - Module registry finalized and locked
 
 ---
 Review before run
 ---
   Transcript: 260719_Ana_checkin.json
-  Outputs:    /mnt/outputs/260719_Ana_checkin/20260807_134841_10521622
+  Outputs:    /mnt/outputs/260719_Ana_checkin/20260807_143708_13428083
   Modules that will run:
     • acts
     • affect_tension
@@ -50,708 +51,209 @@ Review before run
     • transcript_quality
     • understandability
     • voice_charts_core
+    • voice_contours
     • voice_features
+    • voice_fingerprint
+    • voice_mismatch
+    • voice_tension
     • wordclouds
 ---
 
-2026-08-07 13:48:41,848 - transcriptx - INFO - Starting DAG pipeline for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:48:41,861 - transcriptx - INFO - Execution order: acts, contextual_emotion, conversation_loops, echoes, emotion, contagion, epistemic_markers, fine_grained_emotion, interactions, lexical_diversity, llm_action_items, llm_custom_qa, llm_speaker_summary, llm_summary, ner, pauses, momentum, moments, politeness, qa_analysis, semantic_similarity, sentiment, affect_tension, entity_sentiment, simplified_transcript, stats, temporal_dynamics, tics, insight_eligibility, bertopic, highlights, keyphrases, summary, narrative_summary, topic_modeling, insights, topic_shift, transcript_output, transcript_quality, understandability, voice_features, prosody_dashboard, voice_charts_core, wordclouds
-2026-08-07 13:48:41,861 - transcriptx - INFO - Running acts analysis
+2026-08-07 14:37:08,420 - transcriptx - INFO - Starting DAG pipeline for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:08,447 - transcriptx - INFO - Execution order: acts, contextual_emotion, conversation_loops, echoes, emotion, contagion, epistemic_markers, fine_grained_emotion, interactions, lexical_diversity, llm_action_items, llm_custom_qa, llm_speaker_summary, llm_summary, ner, pauses, momentum, moments, politeness, qa_analysis, semantic_similarity, sentiment, affect_tension, entity_sentiment, simplified_transcript, stats, temporal_dynamics, tics, insight_eligibility, bertopic, highlights, keyphrases, summary, narrative_summary, topic_modeling, insights, topic_shift, transcript_output, transcript_quality, understandability, voice_features, prosody_dashboard, voice_charts_core, voice_contours, voice_fingerprint, voice_mismatch, voice_tension, wordclouds
+2026-08-07 14:37:08,447 - transcriptx - INFO - Running acts analysis
 
 ────────────────────────────────────────────────────────────
 ACTS
 ────────────────────────────────────────────────────────────
  Running Dialogue Act Classification...
-2026-08-07 13:48:41,862 - transcriptx - INFO - Starting acts analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:48:41,867 - transcriptx - INFO - Starting acts analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:48:41,868 - transcriptx.core.analysis.acts.ml_classifier - INFO - PyTorch version: 2.13.0+cpu
-2026-08-07 13:48:41,868 - transcriptx.core.analysis.acts.ml_classifier - INFO - Transformers library available
-2026-08-07 13:48:42,025 - transcriptx.core.analysis.acts.ml_classifier - INFO - Scikit-learn available
-2026-08-07 13:48:42,025 - transcriptx.core.analysis.acts.ml_classifier - INFO - Creating ML classifier instance...
-2026-08-07 13:48:42,025 - transcriptx.core.analysis.acts.ml_classifier - INFO - Acts TF-IDF/RF scaffolding initialized (untrained); using heuristic classification
-2026-08-07 13:48:42,025 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML components available: traditional_ml
-2026-08-07 13:48:42,025 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML classifier created successfully (ML available: True)
-2026-08-07 13:48:44,066 - transcriptx - INFO - Completed acts analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:08,449 - transcriptx - INFO - Starting acts analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:08,460 - transcriptx - INFO - Starting acts analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:08,462 - transcriptx.core.analysis.acts.ml_classifier - INFO - PyTorch version: 2.13.0+cpu
+2026-08-07 14:37:08,462 - transcriptx.core.analysis.acts.ml_classifier - INFO - Transformers library available
+2026-08-07 14:37:08,937 - transcriptx.core.analysis.acts.ml_classifier - INFO - Scikit-learn available
+2026-08-07 14:37:08,937 - transcriptx.core.analysis.acts.ml_classifier - INFO - Creating ML classifier instance...
+2026-08-07 14:37:08,937 - transcriptx.core.analysis.acts.ml_classifier - INFO - Acts TF-IDF/RF scaffolding initialized (untrained); using heuristic classification
+2026-08-07 14:37:08,937 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML components available: traditional_ml
+2026-08-07 14:37:08,937 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML classifier created successfully (ML available: True)
+2026-08-07 14:37:13,395 - transcriptx - INFO - Completed acts analysis for /mnt/transcripts/260719_Ana_checkin.json
  Completed Dialogue Act Classification
 
-2026-08-07 13:48:44,066 - transcriptx - INFO - Completed acts analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:48:44,066 - transcriptx - INFO - acts completed in 2.20s
-2026-08-07 13:48:44,066 - transcriptx - INFO - Running contextual_emotion analysis
+2026-08-07 14:37:13,404 - transcriptx - INFO - Completed acts analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:13,404 - transcriptx - INFO - acts completed in 4.95s
+2026-08-07 14:37:13,405 - transcriptx - INFO - Running contextual_emotion analysis
 
 ────────────────────────────────────────────────────────────
 CONTEXTUAL EMOTION
 ────────────────────────────────────────────────────────────
  Running Contextual emotion (broad classifier, experimental)...
-2026-08-07 13:48:44,067 - transcriptx - INFO - Starting contextual_emotion analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:48:44,090 - transcriptx - INFO - Starting contextual_emotion analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:48:57,059 - transcriptx - INFO - [CONTEXTUAL_EMOTION] scored=1231 failed=0 usable=True channel=experimental
-2026-08-07 13:48:58,130 - transcriptx - INFO - Completed contextual_emotion analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:13,406 - transcriptx - INFO - Starting contextual_emotion analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:13,455 - transcriptx - INFO - Starting contextual_emotion analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:18,227 - transcriptx - INFO - [CONTEXTUAL_EMOTION] scored=1231 failed=0 usable=True channel=experimental
+2026-08-07 14:37:19,642 - transcriptx - INFO - Completed contextual_emotion analysis for /mnt/transcripts/260719_Ana_checkin.json
  Completed Contextual emotion (broad classifier, experimental)
 
-2026-08-07 13:48:58,131 - transcriptx - INFO - Completed contextual_emotion analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:48:58,131 - transcriptx - INFO - contextual_emotion completed in 14.06s
-2026-08-07 13:48:58,131 - transcriptx - INFO - Running conversation_loops analysis
+2026-08-07 14:37:19,644 - transcriptx - INFO - Completed contextual_emotion analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:19,644 - transcriptx - INFO - contextual_emotion completed in 6.23s
+2026-08-07 14:37:19,644 - transcriptx - INFO - Running conversation_loops analysis
 
 ────────────────────────────────────────────────────────────
 CONVERSATION LOOPS
 ────────────────────────────────────────────────────────────
  Running Conversation Loop Detection...
-2026-08-07 13:48:58,132 - transcriptx - INFO - Starting conversation_loops analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:48:58,233 - transcriptx - INFO - Starting conversation_loops analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:48:58,455 - transcriptx - INFO - Completed conversation_loops analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:19,645 - transcriptx - INFO - Starting conversation_loops analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:19,914 - transcriptx - INFO - Starting conversation_loops analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:20,287 - transcriptx - INFO - Completed conversation_loops analysis for /mnt/transcripts/260719_Ana_checkin.json
  Completed Conversation Loop Detection
 
-2026-08-07 13:48:58,456 - transcriptx - INFO - Completed conversation_loops analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:48:58,456 - transcriptx - INFO - conversation_loops completed in 0.32s
-2026-08-07 13:48:58,457 - transcriptx - INFO - Running echoes analysis
+2026-08-07 14:37:20,292 - transcriptx - INFO - Completed conversation_loops analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:20,292 - transcriptx - INFO - conversation_loops completed in 0.64s
+2026-08-07 14:37:20,294 - transcriptx - INFO - Running echoes analysis
 
 ────────────────────────────────────────────────────────────
 ECHOES
 ────────────────────────────────────────────────────────────
  Running Quote/Echo/Paraphrase Detection...
-2026-08-07 13:48:58,457 - transcriptx - INFO - Starting echoes analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:48:58,463 - transcriptx - INFO - Starting echoes analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:01,158 - transcriptx - WARNING - TF-IDF similarity failed: After pruning, no terms remain. Try a lower min_df or a higher max_df., falling back to Jaccard
-2026-08-07 13:49:03,874 - transcriptx - INFO - Completed echoes analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:20,295 - transcriptx - INFO - Starting echoes analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:20,309 - transcriptx - INFO - Starting echoes analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:24,420 - transcriptx - WARNING - TF-IDF similarity failed: After pruning, no terms remain. Try a lower min_df or a higher max_df., falling back to Jaccard
+2026-08-07 14:37:28,658 - transcriptx - INFO - Completed echoes analysis for: /mnt/transcripts/260719_Ana_checkin.json
  Completed Quote/Echo/Paraphrase Detection
 
-2026-08-07 13:49:03,875 - transcriptx - INFO - Completed echoes analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:03,875 - transcriptx - INFO - echoes completed in 5.42s
-2026-08-07 13:49:03,875 - transcriptx - INFO - Running emotion analysis
+2026-08-07 14:37:28,661 - transcriptx - INFO - Completed echoes analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:28,661 - transcriptx - INFO - echoes completed in 8.36s
+2026-08-07 14:37:28,662 - transcriptx - INFO - Running emotion analysis
 
 ────────────────────────────────────────────────────────────
 EMOTION
 ────────────────────────────────────────────────────────────
  Running Emotion-associated vocabulary (NRC lexicon)...
-2026-08-07 13:49:03,875 - transcriptx - INFO - Starting emotion analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:03,876 - transcriptx - INFO - Starting emotion analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:05,196 - transcriptx - INFO - Completed emotion analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:28,663 - transcriptx - INFO - Starting emotion analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:28,664 - transcriptx - INFO - Starting emotion analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:31,208 - transcriptx - INFO - Completed emotion analysis for /mnt/transcripts/260719_Ana_checkin.json
  Completed Emotion-associated vocabulary (NRC lexicon)
 
-2026-08-07 13:49:05,197 - transcriptx - INFO - Completed emotion analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:05,197 - transcriptx - INFO - emotion completed in 1.32s
-2026-08-07 13:49:05,197 - transcriptx - INFO - Running contagion analysis
+2026-08-07 14:37:31,219 - transcriptx - INFO - Completed emotion analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:31,219 - transcriptx - INFO - emotion completed in 2.55s
+2026-08-07 14:37:31,220 - transcriptx - INFO - Running contagion analysis
 
 ────────────────────────────────────────────────────────────
 CONTAGION
 ────────────────────────────────────────────────────────────
  Running Emotional Contagion Detection...
-2026-08-07 13:49:05,198 - transcriptx - INFO - Starting contagion analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:05,201 - transcriptx - INFO - Starting contagion analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:05,428 - transcriptx - INFO - Completed contagion analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:31,222 - transcriptx - INFO - Starting contagion analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:31,254 - transcriptx - INFO - Starting contagion analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:31,638 - transcriptx - INFO - Completed contagion analysis for: /mnt/transcripts/260719_Ana_checkin.json
  Completed Emotional Contagion Detection
 
-2026-08-07 13:49:05,429 - transcriptx - INFO - Completed contagion analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:05,429 - transcriptx - INFO - contagion completed in 0.23s
-2026-08-07 13:49:05,430 - transcriptx - INFO - Running epistemic_markers analysis
+2026-08-07 14:37:31,639 - transcriptx - INFO - Completed contagion analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:31,639 - transcriptx - INFO - contagion completed in 0.42s
+2026-08-07 14:37:31,640 - transcriptx - INFO - Running epistemic_markers analysis
 
 ────────────────────────────────────────────────────────────
 EPISTEMIC MARKERS
 ────────────────────────────────────────────────────────────
  Running Hedging / certainty / epistemic markers...
-2026-08-07 13:49:05,431 - transcriptx - INFO - Starting epistemic_markers analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:05,433 - transcriptx - INFO - Starting epistemic_markers analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:05,733 - transcriptx - INFO - Completed epistemic_markers analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:31,642 - transcriptx - INFO - Starting epistemic_markers analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:31,650 - transcriptx - INFO - Starting epistemic_markers analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:32,107 - transcriptx - INFO - Completed epistemic_markers analysis for /mnt/transcripts/260719_Ana_checkin.json
  Completed Hedging / certainty / epistemic markers
 
-2026-08-07 13:49:05,734 - transcriptx - INFO - Completed epistemic_markers analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:05,734 - transcriptx - INFO - epistemic_markers completed in 0.30s
-2026-08-07 13:49:05,734 - transcriptx - INFO - Running fine_grained_emotion analysis
+2026-08-07 14:37:32,109 - transcriptx - INFO - Completed epistemic_markers analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:32,109 - transcriptx - INFO - epistemic_markers completed in 0.46s
+2026-08-07 14:37:32,109 - transcriptx - INFO - Running fine_grained_emotion analysis
 
 ────────────────────────────────────────────────────────────
 FINE GRAINED EMOTION
 ────────────────────────────────────────────────────────────
  Running Fine-grained multi-label emotion (experimental)...
-2026-08-07 13:49:05,735 - transcriptx - INFO - Starting fine_grained_emotion analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:05,737 - transcriptx - INFO - Starting fine_grained_emotion analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:27,327 - transcriptx - INFO - [FINE_GRAINED_EMOTION] scored=1231 failed=0 mixed=95
-2026-08-07 13:49:28,724 - transcriptx - INFO - Completed fine_grained_emotion analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:32,111 - transcriptx - INFO - Starting fine_grained_emotion analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:32,115 - transcriptx - INFO - Starting fine_grained_emotion analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:32,874 - transcriptx - INFO - [FINE_GRAINED_EMOTION] scored=1231 failed=0 mixed=95
+2026-08-07 14:37:34,848 - transcriptx - INFO - Completed fine_grained_emotion analysis for /mnt/transcripts/260719_Ana_checkin.json
  Completed Fine-grained multi-label emotion (experimental)
 
-2026-08-07 13:49:28,725 - transcriptx - INFO - Completed fine_grained_emotion analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:28,725 - transcriptx - INFO - fine_grained_emotion completed in 22.99s
-2026-08-07 13:49:28,725 - transcriptx - INFO - Running interactions analysis
+2026-08-07 14:37:34,849 - transcriptx - INFO - Completed fine_grained_emotion analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:34,849 - transcriptx - INFO - fine_grained_emotion completed in 2.74s
+2026-08-07 14:37:34,849 - transcriptx - INFO - Running interactions analysis
 
 ────────────────────────────────────────────────────────────
 INTERACTIONS
 ────────────────────────────────────────────────────────────
  Running Speaker Interaction Analysis...
-2026-08-07 13:49:28,726 - transcriptx - INFO - Starting interactions analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:28,733 - transcriptx - INFO - Starting interactions analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:34,851 - transcriptx - INFO - Starting interactions analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:34,863 - transcriptx - INFO - Starting interactions analysis for /mnt/transcripts/260719_Ana_checkin.json
  Analyzing 1231 segments for interactions...
  Found 115 interactions
-2026-08-07 13:49:30,245 - transcriptx - INFO - Completed interactions analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:37,157 - transcriptx - INFO - Completed interactions analysis for /mnt/transcripts/260719_Ana_checkin.json
  Completed Speaker Interaction Analysis
 
-2026-08-07 13:49:30,246 - transcriptx - INFO - Completed interactions analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:30,246 - transcriptx - INFO - interactions completed in 1.52s
-2026-08-07 13:49:30,247 - transcriptx - INFO - Running lexical_diversity analysis
+2026-08-07 14:37:37,160 - transcriptx - INFO - Completed interactions analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:37,160 - transcriptx - INFO - interactions completed in 2.31s
+2026-08-07 14:37:37,162 - transcriptx - INFO - Running lexical_diversity analysis
 
 ────────────────────────────────────────────────────────────
 LEXICAL DIVERSITY
 ────────────────────────────────────────────────────────────
  Running Lexical diversity metrics (TTR, MTLD, hapax rate)...
-2026-08-07 13:49:30,248 - transcriptx - INFO - Starting lexical_diversity analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:30,249 - transcriptx - INFO - Starting lexical_diversity analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:30,625 - transcriptx - INFO - Completed lexical_diversity analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:37,163 - transcriptx - INFO - Starting lexical_diversity analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:37,169 - transcriptx - INFO - Starting lexical_diversity analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:37,633 - transcriptx - INFO - Completed lexical_diversity analysis for /mnt/transcripts/260719_Ana_checkin.json
  Completed Lexical diversity metrics (TTR, MTLD, hapax rate)
 
-2026-08-07 13:49:30,626 - transcriptx - INFO - Completed lexical_diversity analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:30,626 - transcriptx - INFO - lexical_diversity completed in 0.38s
-2026-08-07 13:49:30,626 - transcriptx - INFO - Running llm_action_items analysis (model=gemma3:12b)
+2026-08-07 14:37:37,634 - transcriptx - INFO - Completed lexical_diversity analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:37,634 - transcriptx - INFO - lexical_diversity completed in 0.47s
+2026-08-07 14:37:37,635 - transcriptx - INFO - Running llm_action_items analysis (model=gemma3:12b)
 
 ────────────────────────────────────────────────────────────
 LLM ACTION ITEMS
 ────────────────────────────────────────────────────────────
  Running Extract structured action items via local LLM (model: gemma3:12b)...
-2026-08-07 13:49:30,627 - transcriptx - INFO - Starting llm_action_items analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:49:30,633 - transcriptx - INFO - Starting llm_action_items analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:50:30,631 - transcriptx - INFO - llm_action_items still running... 60.0s elapsed
-2026-08-07 13:51:30,638 - transcriptx - INFO - llm_action_items still running... 120.0s elapsed
-2026-08-07 13:52:23,908 - transcriptx - INFO - Completed llm_action_items analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Extract structured action items via local LLM
-
-2026-08-07 13:52:23,910 - transcriptx - INFO - Completed llm_action_items analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:52:23,910 - transcriptx - INFO - llm_action_items completed in 173.28s
-2026-08-07 13:52:23,911 - transcriptx - INFO - Running llm_custom_qa analysis
+2026-08-07 14:37:37,636 - transcriptx - INFO - Starting llm_action_items analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:37:37,646 - transcriptx - INFO - Starting llm_action_items analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:38:37,646 - transcriptx - INFO - llm_action_items still running... 60.0s elapsed
+2026-08-07 14:39:37,656 - transcriptx - INFO - llm_action_items still running... 120.0s elapsed
+2026-08-07 14:40:37,666 - transcriptx - INFO - llm_action_items still running... 180.0s elapsed
+2026-08-07 14:41:37,676 - transcriptx - INFO - llm_action_items still running... 240.0s elapsed
+2026-08-07 14:42:37,652 - transcriptx - INFO - llm_action_items still running... 300.0s elapsed
+2026-08-07 14:43:37,656 - transcriptx - INFO - llm_action_items still running... 360.0s elapsed
+2026-08-07 14:44:37,666 - transcriptx - INFO - llm_action_items still running... 420.1s elapsed
+2026-08-07 14:45:37,674 - transcriptx - INFO - llm_action_items still running... 480.1s elapsed
+2026-08-07 14:46:37,679 - transcriptx - INFO - llm_action_items still running... 540.1s elapsed
+2026-08-07 14:47:37,624 - transcriptx - ERROR - Module 'llm_action_items' timed out after 600s; abandoning this module and continuing the pipeline
+2026-08-07 14:47:37,665 - transcriptx - ERROR - Error in llm_action_items analysis for /mnt/transcripts/260719_Ana_checkin.json: Module 'llm_action_items' timed out after 600s; abandoning this module and continuing the pipeline
+NoneType: None
+2026-08-07 14:47:37,680 - transcriptx - INFO - Running llm_custom_qa analysis
 
 ────────────────────────────────────────────────────────────
 LLM CUSTOM QA
 ────────────────────────────────────────────────────────────
  Running Answer custom questions against the transcript via local LLM...
-2026-08-07 13:52:23,912 - transcriptx - INFO - Starting llm_custom_qa analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:52:23,912 - transcriptx - INFO - Starting llm_custom_qa analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:52:23,926 - transcriptx - INFO - Completed llm_custom_qa analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:47:37,715 - transcriptx - INFO - Starting llm_custom_qa analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:47:37,767 - transcriptx - INFO - Starting llm_custom_qa analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:47:37,860 - transcriptx - INFO - Completed llm_custom_qa analysis for /mnt/transcripts/260719_Ana_checkin.json
  Completed Answer custom questions against the transcript via local LLM
 
-2026-08-07 13:52:23,926 - transcriptx - INFO - Completed llm_custom_qa analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:52:23,927 - transcriptx - INFO - llm_custom_qa completed in 0.01s
-2026-08-07 13:52:23,927 - transcriptx - INFO - Running llm_speaker_summary analysis (model=gemma3:12b)
+2026-08-07 14:47:37,863 - transcriptx - INFO - Completed llm_custom_qa analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:47:37,863 - transcriptx - INFO - llm_custom_qa completed in 0.15s
+2026-08-07 14:47:37,866 - transcriptx - INFO - Running llm_speaker_summary analysis (model=gemma3:12b)
 
 ────────────────────────────────────────────────────────────
 LLM SPEAKER SUMMARY
 ────────────────────────────────────────────────────────────
  Running Abstractive per-speaker summaries via local LLM (model: gemma3:12b)...
-2026-08-07 13:52:23,928 - transcriptx - INFO - Starting llm_speaker_summary analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:52:23,932 - transcriptx - INFO - Starting llm_speaker_summary analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:53:22,565 - transcriptx - INFO - Completed llm_speaker_summary analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Abstractive per-speaker summaries via local LLM
-
-2026-08-07 13:53:22,566 - transcriptx - INFO - Completed llm_speaker_summary analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:53:22,567 - transcriptx - INFO - llm_speaker_summary completed in 58.64s
-2026-08-07 13:53:22,567 - transcriptx - INFO - Running llm_summary analysis (model=gemma3:12b)
-
-────────────────────────────────────────────────────────────
-LLM SUMMARY
-────────────────────────────────────────────────────────────
- Running Abstractive transcript summary via local LLM (model: gemma3:12b)...
-2026-08-07 13:53:22,568 - transcriptx - INFO - Starting llm_summary analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:53:22,569 - transcriptx - INFO - Starting llm_summary analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:22,574 - transcriptx - INFO - llm_summary still running... 60.0s elapsed
-2026-08-07 13:54:28,665 - transcriptx - INFO - Completed llm_summary analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Abstractive transcript summary via local LLM
-
-2026-08-07 13:54:28,672 - transcriptx - INFO - Completed llm_summary analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:28,672 - transcriptx - INFO - llm_summary completed in 66.10s
-2026-08-07 13:54:28,672 - transcriptx - INFO - Running ner analysis
-
-────────────────────────────────────────────────────────────
-NER
-────────────────────────────────────────────────────────────
- Running Named Entity Recognition...
-2026-08-07 13:54:28,674 - transcriptx - INFO - Starting ner analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:30,745 - transcriptx - INFO - Starting ner analysis for /mnt/transcripts/260719_Ana_checkin.json
-Processing 1231 segments for NER analysis...
-Processing batch 1/13 (100 segments)
-Processing batch 2/13 (100 segments)
-Processing batch 3/13 (100 segments)
-Processing batch 4/13 (100 segments)
-Processing batch 5/13 (100 segments)
-Processing batch 6/13 (100 segments)
-Processing batch 7/13 (100 segments)
-Processing batch 8/13 (100 segments)
-Processing batch 9/13 (100 segments)
-Processing batch 10/13 (100 segments)
-Processing batch 11/13 (100 segments)
-Processing batch 12/13 (100 segments)
-Processing batch 13/13 (31 segments)
-NER processing complete.
-2026-08-07 13:54:42,107 - transcriptx - INFO - Completed ner analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Named Entity Recognition
-
-2026-08-07 13:54:42,108 - transcriptx - INFO - Completed ner analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:42,108 - transcriptx - INFO - ner completed in 13.43s
-2026-08-07 13:54:42,108 - transcriptx - INFO - Running pauses analysis
-
-────────────────────────────────────────────────────────────
-PAUSES
-────────────────────────────────────────────────────────────
- Running Silence and Timing Analysis...
-2026-08-07 13:54:42,109 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:42,110 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:42,472 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/260719_Ana_checkin.json
- Completed Silence and Timing Analysis
-
-2026-08-07 13:54:42,472 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:42,472 - transcriptx - INFO - pauses completed in 0.36s
-2026-08-07 13:54:42,472 - transcriptx - INFO - Running momentum analysis
-
-────────────────────────────────────────────────────────────
-MOMENTUM
-────────────────────────────────────────────────────────────
- Running Stall/Flow Index Analysis...
-2026-08-07 13:54:42,473 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:42,475 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:42,673 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/260719_Ana_checkin.json
- Completed Stall/Flow Index Analysis
-
-2026-08-07 13:54:42,674 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:42,674 - transcriptx - INFO - momentum completed in 0.20s
-2026-08-07 13:54:42,674 - transcriptx - INFO - Running moments analysis
-
-────────────────────────────────────────────────────────────
-MOMENTS
-────────────────────────────────────────────────────────────
- Running Ranked Moments Worth Revisiting...
-2026-08-07 13:54:42,674 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:42,675 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:42,807 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/260719_Ana_checkin.json
- Completed Ranked Moments Worth Revisiting
-
-2026-08-07 13:54:42,808 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:42,808 - transcriptx - INFO - moments completed in 0.13s
-2026-08-07 13:54:42,808 - transcriptx - INFO - Running politeness analysis
-
-────────────────────────────────────────────────────────────
-POLITENESS
-────────────────────────────────────────────────────────────
- Running Politeness / formality / directiveness markers...
-2026-08-07 13:54:42,809 - transcriptx - INFO - Starting politeness analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:42,810 - transcriptx - INFO - Starting politeness analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:43,124 - transcriptx - INFO - Completed politeness analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Politeness / formality / directiveness markers
-
-2026-08-07 13:54:43,125 - transcriptx - INFO - Completed politeness analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:43,125 - transcriptx - INFO - politeness completed in 0.31s
-2026-08-07 13:54:43,125 - transcriptx - INFO - Running qa_analysis analysis
-
-────────────────────────────────────────────────────────────
-QA ANALYSIS
-────────────────────────────────────────────────────────────
- Running Question-Answer Pairing and Response Quality...
-2026-08-07 13:54:43,125 - transcriptx - INFO - Starting qa_analysis analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:43,128 - transcriptx - INFO - Starting qa_analysis analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:43,731 - transcriptx - INFO - Completed qa_analysis analysis for: /mnt/transcripts/260719_Ana_checkin.json
- Completed Question-Answer Pairing and Response Quality
-
-2026-08-07 13:54:43,733 - transcriptx - INFO - Completed qa_analysis analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:43,733 - transcriptx - INFO - qa_analysis completed in 0.61s
-2026-08-07 13:54:43,733 - transcriptx - INFO - Running semantic_similarity analysis
-
-────────────────────────────────────────────────────────────
-SEMANTIC SIMILARITY
-────────────────────────────────────────────────────────────
- Running Semantic similarity (batched embeddings, vectorized similarity)...
-2026-08-07 13:54:43,734 - transcriptx - INFO - Starting semantic_similarity analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:43,805 - transcriptx - INFO - Starting semantic_similarity analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:54:46,049 - transcriptx - INFO - [SEMANTIC] Loaded semantic model: sentence-transformers/all-mpnet-base-v2
-2026-08-07 13:55:35,675 - transcriptx - INFO - [SEMANTIC] Created 6 v2 visualizations
-2026-08-07 13:55:35,678 - transcriptx - INFO - Completed semantic_similarity analysis for: /mnt/transcripts/260719_Ana_checkin.json
- Completed Semantic similarity (batched embeddings, vectorized similarity)
-
-2026-08-07 13:55:35,686 - transcriptx - INFO - Completed semantic_similarity analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:55:35,687 - transcriptx - INFO - semantic_similarity completed in 51.95s
-2026-08-07 13:55:35,687 - transcriptx - INFO - Running sentiment analysis
-
-────────────────────────────────────────────────────────────
-SENTIMENT
-────────────────────────────────────────────────────────────
- Running Sentiment Analysis...
-2026-08-07 13:55:35,688 - transcriptx - INFO - Starting sentiment analysis for: /mnt/transcripts/260719_Ana_checkin.json
-Some weights of the model checkpoint at /data/.cache/huggingface/hub/models--cardiffnlp--twitter-roberta-base-sentiment-latest/snapshots/3216a57f2a0d9c45a2e6c20157c20c49fb4bf9c7 were not used when initializing RobertaForSequenceClassification: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
-- This IS expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
-- This IS NOT expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
-Device set to use cpu
-2026-08-07 13:55:36,127 - transcriptx - INFO - [SENTIMENT] Transformers sentiment model loaded successfully
-2026-08-07 13:55:36,128 - transcriptx - INFO - Starting sentiment analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:35,695 - transcriptx - INFO - sentiment still running... 60.0s elapsed
-2026-08-07 13:56:48,437 - transcriptx - INFO - Completed sentiment analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Sentiment Analysis
-
-2026-08-07 13:56:48,448 - transcriptx - INFO - Completed sentiment analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:48,448 - transcriptx - INFO - sentiment completed in 72.75s
-2026-08-07 13:56:48,449 - transcriptx - INFO - Running affect_tension analysis
-
-────────────────────────────────────────────────────────────
-AFFECT TENSION
-────────────────────────────────────────────────────────────
- Running Emotion + Sentiment mismatch and tension indices...
-2026-08-07 13:56:48,450 - transcriptx - INFO - Starting affect_tension analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:48,455 - transcriptx - INFO - Starting affect_tension analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:50,105 - transcriptx - INFO - Completed affect_tension analysis for: /mnt/transcripts/260719_Ana_checkin.json
- Completed Emotion + Sentiment mismatch and tension indices
-
-2026-08-07 13:56:50,108 - transcriptx - INFO - Completed affect_tension analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:50,108 - transcriptx - INFO - affect_tension completed in 1.66s
-2026-08-07 13:56:50,108 - transcriptx - INFO - Running entity_sentiment analysis
-
-────────────────────────────────────────────────────────────
-ENTITY SENTIMENT
-────────────────────────────────────────────────────────────
- Running Entity-based Sentiment Analysis...
-2026-08-07 13:56:50,109 - transcriptx - INFO - Starting entity_sentiment analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:50,112 - transcriptx - INFO - Starting entity_sentiment analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:53,169 - transcriptx - INFO - Completed entity_sentiment analysis for: /mnt/transcripts/260719_Ana_checkin.json
- Completed Entity-based Sentiment Analysis
-
-2026-08-07 13:56:53,170 - transcriptx - INFO - Completed entity_sentiment analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:53,170 - transcriptx - INFO - entity_sentiment completed in 3.06s
-2026-08-07 13:56:53,170 - transcriptx - INFO - Running simplified_transcript analysis
-
-────────────────────────────────────────────────────────────
-SIMPLIFIED TRANSCRIPT
-────────────────────────────────────────────────────────────
- Running Simplified transcript (tics, agreements, repetitions removed)...
-2026-08-07 13:56:53,171 - transcriptx - INFO - Starting simplified_transcript analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:53,174 - transcriptx - INFO - Starting simplified_transcript analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:53,203 - transcriptx - INFO - Completed simplified_transcript analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Simplified transcript (tics, agreements, repetitions removed)
-
-2026-08-07 13:56:53,203 - transcriptx - INFO - Completed simplified_transcript analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:53,203 - transcriptx - INFO - simplified_transcript completed in 0.03s
-2026-08-07 13:56:53,203 - transcriptx - INFO - Running stats analysis
-
-────────────────────────────────────────────────────────────
-STATS
-────────────────────────────────────────────────────────────
- Running Statistical Analysis...
-2026-08-07 13:56:53,204 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:53,211 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:53,414 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/260719_Ana_checkin.json
- Completed Statistical Analysis
-
-2026-08-07 13:56:53,415 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:53,415 - transcriptx - INFO - stats completed in 0.21s
-2026-08-07 13:56:53,415 - transcriptx - INFO - Running temporal_dynamics analysis
-
-────────────────────────────────────────────────────────────
-TEMPORAL DYNAMICS
-────────────────────────────────────────────────────────────
- Running Temporal Dynamics Analysis...
-2026-08-07 13:56:53,415 - transcriptx - INFO - Starting temporal_dynamics analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:53,418 - transcriptx - INFO - Starting temporal_dynamics analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:54,082 - transcriptx - INFO - Completed temporal_dynamics analysis for: /mnt/transcripts/260719_Ana_checkin.json
- Completed Temporal Dynamics Analysis
-
-2026-08-07 13:56:54,083 - transcriptx - INFO - Completed temporal_dynamics analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:54,083 - transcriptx - INFO - temporal_dynamics completed in 0.67s
-2026-08-07 13:56:54,083 - transcriptx - INFO - Running tics analysis
-
-────────────────────────────────────────────────────────────
-TICS
-────────────────────────────────────────────────────────────
- Running Verbal Tics Analysis...
-2026-08-07 13:56:54,083 - transcriptx - INFO - Starting tics analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:54,084 - transcriptx - INFO - Starting tics analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:54,562 - transcriptx - INFO - Completed tics analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Verbal Tics Analysis
-
-2026-08-07 13:56:54,563 - transcriptx - INFO - Completed tics analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:54,563 - transcriptx - INFO - tics completed in 0.48s
-2026-08-07 13:56:54,563 - transcriptx - INFO - Running insight_eligibility analysis
-
-────────────────────────────────────────────────────────────
-INSIGHT ELIGIBILITY
-────────────────────────────────────────────────────────────
- Running Shared content-vs-style insight eligibility pipeline...
-2026-08-07 13:56:54,564 - transcriptx - INFO - Starting insight_eligibility analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:56:54,574 - transcriptx - INFO - Starting insight_eligibility analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:01,701 - transcriptx - INFO - Completed insight_eligibility analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Shared content-vs-style insight eligibility pipeline
-
-2026-08-07 13:57:01,702 - transcriptx - INFO - Completed insight_eligibility analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:01,702 - transcriptx - INFO - insight_eligibility completed in 7.14s
-2026-08-07 13:57:01,702 - transcriptx - INFO - Running bertopic analysis
-
-────────────────────────────────────────────────────────────
-BERTOPIC
-────────────────────────────────────────────────────────────
- Running BERTopic topic modeling (optional / stack — see 
-docs/dev/bertopic_optional_module.md)...
-2026-08-07 13:57:01,703 - transcriptx - INFO - Starting bertopic analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:01,751 - transcriptx - INFO - Starting bertopic analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:25,511 - transcriptx - INFO - Completed bertopic analysis for: /mnt/transcripts/260719_Ana_checkin.json
- Completed BERTopic topic modeling (optional / stack — see 
-docs/dev/bertopic_optional_module.md)
-
-2026-08-07 13:57:25,514 - transcriptx - INFO - Completed bertopic analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:25,514 - transcriptx - INFO - bertopic completed in 23.81s
-2026-08-07 13:57:25,514 - transcriptx - INFO - Running highlights analysis
-
-────────────────────────────────────────────────────────────
-HIGHLIGHTS
-────────────────────────────────────────────────────────────
- Running Highlights and conflict moments (quote-forward)...
-2026-08-07 13:57:25,516 - transcriptx - INFO - Starting highlights analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:25,532 - transcriptx - INFO - Starting highlights analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:29,114 - transcriptx - INFO - Completed highlights analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Highlights and conflict moments (quote-forward)
-
-2026-08-07 13:57:29,115 - transcriptx - INFO - Completed highlights analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:29,115 - transcriptx - INFO - highlights completed in 3.60s
-2026-08-07 13:57:29,115 - transcriptx - INFO - Running keyphrases analysis
-
-────────────────────────────────────────────────────────────
-KEYPHRASES
-────────────────────────────────────────────────────────────
- Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
-2026-08-07 13:57:29,116 - transcriptx - INFO - Starting keyphrases analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:29,131 - transcriptx - INFO - Starting keyphrases analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:38,982 - transcriptx - INFO - Completed keyphrases analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
-
-2026-08-07 13:57:38,987 - transcriptx - INFO - Completed keyphrases analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:38,987 - transcriptx - INFO - keyphrases completed in 9.87s
-2026-08-07 13:57:38,987 - transcriptx - INFO - Running summary analysis
-
-────────────────────────────────────────────────────────────
-SUMMARY
-────────────────────────────────────────────────────────────
- Running Executive brief summary derived from highlights...
-2026-08-07 13:57:38,988 - transcriptx - INFO - Starting summary analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:38,996 - transcriptx - INFO - Starting summary analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:48,201 - transcriptx - INFO - Saved all-charts PDF to /mnt/outputs/260719_Ana_checkin/20260807_134841_10521622/summary/all_charts.pdf (21 modules, 91 charts)
-2026-08-07 13:57:48,202 - transcriptx - INFO - Completed summary analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Executive brief summary derived from highlights
-
-2026-08-07 13:57:48,207 - transcriptx - INFO - Completed summary analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:48,207 - transcriptx - INFO - summary completed in 9.22s
-2026-08-07 13:57:48,208 - transcriptx - INFO - Running narrative_summary analysis (model=gemma3:12b)
-
-────────────────────────────────────────────────────────────
-NARRATIVE SUMMARY
-────────────────────────────────────────────────────────────
- Running Grounded executive narrative from deterministic summary (LLM) (model: 
-gemma3:12b)...
-2026-08-07 13:57:48,210 - transcriptx - INFO - Starting narrative_summary analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:57:48,213 - transcriptx - INFO - Starting narrative_summary analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:58:04,804 - transcriptx - INFO - Completed narrative_summary analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Grounded executive narrative from deterministic summary (LLM)
-
-2026-08-07 13:58:04,807 - transcriptx - INFO - Completed narrative_summary analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:58:04,807 - transcriptx - INFO - narrative_summary completed in 16.59s
-2026-08-07 13:58:04,807 - transcriptx - INFO - Running topic_modeling analysis
-
-────────────────────────────────────────────────────────────
-TOPIC MODELING
-────────────────────────────────────────────────────────────
- Running Topic Modeling...
-2026-08-07 13:58:04,808 - transcriptx - INFO - Starting topic_modeling analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:58:04,809 - transcriptx - INFO - Starting topic_modeling analysis for /mnt/transcripts/260719_Ana_checkin.json
-[TOPICS] Finding optimal k for LDA...
-[TOPICS] Optimal k for LDA: 5
-[TOPICS] Diagnostic scores: Likelihood=-14254.277, Coherence=-0.426, Silhouette=0.766
-[TOPICS] Finding optimal k for NMF...
-[TOPICS] Optimal k for NMF: 15
-[TOPICS] Diagnostic scores: Likelihood=-0.001, Coherence=4.664, Silhouette=0.278
-[TOPICS] Created LDA diagnostic plots
-[TOPICS] Created NMF diagnostic plots
-[TOPICS] Created discourse analysis charts
-[DEBUG] create_topic_evolution_timeline: received 500 doc topics
-[DEBUG] DataFrame head:
-                                                text  ... confidence
-0  do recording let see recording settings is abs...  ...   0.897595
-1  is abstract concept hard other people are make...  ...   0.898780
-2  make sentences stop did get doing did should s...  ...   0.918967
-3  did get doing did should share screen be helpf...  ...   0.813919
-4  be helpful mirror be aware smaller screen may ...  ...   0.730574
-
-[5 rows x 6 columns]
-[TOPICS] Created topic evolution timeline: /mnt/outputs/260719_Ana_checkin/20260807_134841_10521622/topic_modeling/charts/global/static/timeline/topic_evolution_timeline.png
-[DEBUG] create_speaker_topic_engagement_heatmap: received 500 doc topics
-[DEBUG] DataFrame head:
-                                                text  ... confidence
-0  do recording let see recording settings is abs...  ...   0.897595
-1  is abstract concept hard other people are make...  ...   0.898780
-2  make sentences stop did get doing did should s...  ...   0.918967
-3  did get doing did should share screen be helpf...  ...   0.813919
-4  be helpful mirror be aware smaller screen may ...  ...   0.730574
-
-[5 rows x 6 columns]
-[DEBUG] speaker-topic engagement heatmap: contributors=500, matrix_sum=500.000000
-[TOPICS] Created speaker-topic engagement heatmap: /mnt/outputs/260719_Ana_checkin/20260807_134841_10521622/topic_modeling/charts/global/static/heatmap/speaker_topic_engagement_heatmap.png
-[DEBUG] create_expected_topic_proportions_bar: received 500 doc topics
-[DEBUG] DataFrame head:
-                                                text  ... confidence
-0  do recording let see recording settings is abs...  ...   0.897595
-1  is abstract concept hard other people are make...  ...   0.898780
-2  make sentences stop did get doing did should s...  ...   0.918967
-3  did get doing did should share screen be helpf...  ...   0.813919
-4  be helpful mirror be aware smaller screen may ...  ...   0.730574
-
-[5 rows x 6 columns]
-[TOPICS] Created expected topic proportions bar chart: /mnt/outputs/260719_Ana_checkin/20260807_134841_10521622/topic_modeling/charts/global/static/bar/expected_topic_proportions.png
-[TOPICS] Enhanced HTML report created: /mnt/outputs/260719_Ana_checkin/20260807_134841_10521622/topic_modeling/260719_Ana_checkin_enhanced_topic_modeling_report.html
-2026-08-07 13:58:20,449 - transcriptx - INFO - Completed topic_modeling analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Topic Modeling
-
-2026-08-07 13:58:20,450 - transcriptx - INFO - Completed topic_modeling analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:58:20,450 - transcriptx - INFO - topic_modeling completed in 15.64s
-2026-08-07 13:58:20,450 - transcriptx - INFO - Running insights analysis
-
-────────────────────────────────────────────────────────────
-INSIGHTS
-────────────────────────────────────────────────────────────
- Running Content-first insights layer separated from style markers...
-2026-08-07 13:58:20,451 - transcriptx - INFO - Starting insights analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:58:20,453 - transcriptx - INFO - Starting insights analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:58:20,461 - transcriptx - INFO - Completed insights analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Content-first insights layer separated from style markers
-
-2026-08-07 13:58:20,462 - transcriptx - INFO - Completed insights analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:58:20,462 - transcriptx - INFO - insights completed in 0.01s
-2026-08-07 13:58:20,463 - transcriptx - INFO - Running topic_shift analysis (model=gemma3:12b)
-
-────────────────────────────────────────────────────────────
-TOPIC SHIFT
-────────────────────────────────────────────────────────────
- Running Topic-shift chapter segmentation (model: gemma3:12b)...
-2026-08-07 13:58:20,464 - transcriptx - INFO - Starting topic_shift analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:58:20,493 - transcriptx - INFO - Starting topic_shift analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:08,606 - transcriptx - INFO - Completed topic_shift analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Topic-shift chapter segmentation
-
-2026-08-07 13:59:08,612 - transcriptx - INFO - Completed topic_shift analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:08,612 - transcriptx - INFO - topic_shift completed in 48.15s
-2026-08-07 13:59:08,612 - transcriptx - INFO - Running transcript_output analysis
-
-────────────────────────────────────────────────────────────
-TRANSCRIPT OUTPUT
-────────────────────────────────────────────────────────────
- Running Generate human readable transcripts...
-2026-08-07 13:59:08,613 - transcriptx - INFO - Starting transcript_output analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:08,616 - transcriptx - INFO - Starting transcript_output analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:08,622 - transcriptx - INFO - Generating human-friendly transcript for 260719_Ana_checkin
-2026-08-07 13:59:08,648 - transcriptx - INFO - Human-friendly transcript generated successfully: /mnt/outputs/260719_Ana_checkin/20260807_134841_10521622/transcripts/260719_Ana_checkin-transcript.txt
- Generated human-friendly transcript
-
-2026-08-07 13:59:08,649 - transcriptx - INFO - Completed transcript_output analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Generate human readable transcripts
-
-2026-08-07 13:59:08,649 - transcriptx - INFO - Completed transcript_output analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:08,649 - transcriptx - INFO - transcript_output completed in 0.04s
-2026-08-07 13:59:08,650 - transcriptx - INFO - Running transcript_quality analysis
-
-────────────────────────────────────────────────────────────
-TRANSCRIPT QUALITY
-────────────────────────────────────────────────────────────
- Running ASR Confidence...
-2026-08-07 13:59:08,650 - transcriptx - INFO - Starting transcript_quality analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:08,658 - transcriptx - INFO - Starting transcript_quality analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:09,146 - transcriptx - INFO - Completed transcript_quality analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed ASR Confidence
-
-2026-08-07 13:59:09,147 - transcriptx - INFO - Completed transcript_quality analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:09,147 - transcriptx - INFO - transcript_quality completed in 0.50s
-2026-08-07 13:59:09,148 - transcriptx - INFO - Running understandability analysis
-
-────────────────────────────────────────────────────────────
-UNDERSTANDABILITY
-────────────────────────────────────────────────────────────
- Running Understandability Analysis...
-2026-08-07 13:59:09,148 - transcriptx - INFO - Starting understandability analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:09,155 - transcriptx - INFO - Starting understandability analysis for /mnt/transcripts/260719_Ana_checkin.json
- Global CSV saved to 
-/mnt/outputs/260719_Ana_checkin/20260807_134841_10521622/understandability/data/
-global/260719_Ana_checkin_understandability.csv
-
-2026-08-07 13:59:10,237 - transcriptx - INFO - Completed understandability analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Understandability Analysis
-
-2026-08-07 13:59:10,238 - transcriptx - INFO - Completed understandability analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:10,238 - transcriptx - INFO - understandability completed in 1.09s
-2026-08-07 13:59:10,238 - transcriptx - INFO - Running voice_features analysis
-
-────────────────────────────────────────────────────────────
-VOICE FEATURES
-────────────────────────────────────────────────────────────
- Running Voice feature extraction and caching...
-2026-08-07 13:59:10,238 - transcriptx - INFO - Starting voice_features analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:10,241 - transcriptx - INFO - Starting voice_features analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:10,270 - transcriptx - INFO - Completed voice_features analysis for: /mnt/transcripts/260719_Ana_checkin.json
- Completed Voice feature extraction and caching
-
-2026-08-07 13:59:10,271 - transcriptx - INFO - Completed voice_features analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:10,271 - transcriptx - INFO - voice_features completed in 0.03s
-2026-08-07 13:59:10,271 - transcriptx - INFO - Running prosody_dashboard analysis
-
-────────────────────────────────────────────────────────────
-PROSODY DASHBOARD
-────────────────────────────────────────────────────────────
- Running Prosody dashboard charts from voice features...
-2026-08-07 13:59:10,272 - transcriptx - INFO - Starting prosody_dashboard analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:10,274 - transcriptx - INFO - Starting prosody_dashboard analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:12,385 - transcriptx - INFO - Completed prosody_dashboard analysis for: /mnt/transcripts/260719_Ana_checkin.json
- Completed Prosody dashboard charts from voice features
-
-2026-08-07 13:59:12,386 - transcriptx - INFO - Completed prosody_dashboard analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:12,386 - transcriptx - INFO - prosody_dashboard completed in 2.11s
-2026-08-07 13:59:12,386 - transcriptx - INFO - Running voice_charts_core analysis
-
-────────────────────────────────────────────────────────────
-VOICE CHARTS CORE
-────────────────────────────────────────────────────────────
- Running Voice charts core: pauses + rhythm indices...
-2026-08-07 13:59:12,387 - transcriptx - INFO - Starting voice_charts_core analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:12,389 - transcriptx - INFO - Starting voice_charts_core analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:13,830 - transcriptx - INFO - Completed voice_charts_core analysis for: /mnt/transcripts/260719_Ana_checkin.json
- Completed Voice charts core: pauses + rhythm indices
-
-2026-08-07 13:59:13,831 - transcriptx - INFO - Completed voice_charts_core analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:13,831 - transcriptx - INFO - voice_charts_core completed in 1.44s
-2026-08-07 13:59:13,831 - transcriptx - INFO - Running wordclouds analysis
-
-────────────────────────────────────────────────────────────
-WORDCLOUDS
-────────────────────────────────────────────────────────────
- Running Word Cloud Generation...
-2026-08-07 13:59:13,832 - transcriptx - INFO - Starting wordclouds analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:13,832 - transcriptx - INFO - Starting wordclouds analysis for /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:13,837 - transcriptx - INFO - [WORDCLOUDS] Using precomputed speaker grouping from pipeline: 3 speakers: ['Glen', 'Ana', 'SPEAKER_03']
- Word cloud saved for Glen
-
- Word cloud saved for Ana
-
- Word cloud saved for wordcloud-ALL
-
-2026-08-07 13:59:29,278 - transcriptx - INFO - [WORDCLOUDS] Completed wordcloud generation for 260719_Ana_checkin
-2026-08-07 13:59:31,021 - transcriptx - INFO - Completed wordclouds analysis for /mnt/transcripts/260719_Ana_checkin.json
- Completed Word Cloud Generation
-
-2026-08-07 13:59:31,022 - transcriptx - INFO - Completed wordclouds analysis for: /mnt/transcripts/260719_Ana_checkin.json
-2026-08-07 13:59:31,022 - transcriptx - INFO - wordclouds completed in 17.19s
-2026-08-07 13:59:31,022 - transcriptx - INFO - Pipeline completed. Ran 44 modules with 0 errors
-2026-08-07 13:59:31,202 - transcriptx - INFO - Saved run results summary to /mnt/outputs/260719_Ana_checkin/20260807_134841_10521622/run_results.json
-2026-08-07 13:59:31,786 - transcriptx - INFO - [CHART_DESCRIPTIONS] 1/182 viz_id=wordcloud.wordcloud.global.keyphrases_noun_chunks chart_key=01acee69878505a1fa72e0b153fd15f2bfe4fbf777b68fb03401ccb3f84617db timeout=120s
-2026-08-07 13:59:36,486 - transcriptx - INFO - [CHART_DESCRIPTIONS] 2/182 viz_id=fine_grained_emotion.label_share_non_neutral.speaker chart_key=02b240a4977285949a41ad5f3e910339bf1679fc6a4d85a5101b9d34821e1b25 timeout=120s
-2026-08-07 13:59:40,535 - transcriptx - INFO - [CHART_DESCRIPTIONS] 3/182 viz_id=wordclouds.wordcloud.global chart_key=02f780c72fed22a13ecfd5ac7a4d495e4db3ae9cb05ae16656d2ce9dab544a59 timeout=120s
-2026-08-07 13:59:45,801 - transcriptx - INFO - [CHART_DESCRIPTIONS] 4/182 viz_id=contextual_emotion.label_share_non_neutral.global chart_key=056146c7d53106ce3f22ab37834b9e39a59ffcd4a4536ac27c4c11170d1fe4d1 timeout=120s
-2026-08-07 13:59:53,669 - transcriptx - INFO - [CHART_DESCRIPTIONS] 5/182 viz_id=wordclouds.wordcloud-verb-ALL.view chart_key=0a581c6722a8d1874d5bc837513e5f13290e79abd3195ad2967a35865916b23a timeout=120s
-2026-08-07 13:59:59,533 - transcriptx - INFO - [CHART_DESCRIPTIONS] 6/182 viz_id=fine_grained_emotion.label_counts_excluding_neutral.speaker chart_key=0d4b5319565ec71ac07e4655258916046058e30f206c6fe8f46213b077d96d5a timeout=120s
-2026-08-07 14:00:06,011 - transcriptx - INFO - [CHART_DESCRIPTIONS] 7/182 viz_id=topic_modeling.lda_diagnostic_plots.global chart_key=0de8f2d4032a2d5203631cb8588065750a6b762eaa3828528a884092b4ee4ca3 timeout=120s
-2026-08-07 14:00:14,678 - transcriptx - INFO - [CHART_DESCRIPTIONS] 8/182 viz_id=wordclouds.wordcloud.view chart_key=0f552fc32a65b4462f62da6d0e757d64130f5d003d0afff1be50c0deac001c81 timeout=120s
-2026-08-07 14:00:20,411 - transcriptx - INFO - [CHART_DESCRIPTIONS] 9/182 viz_id=temporal_dynamics.phase_detection.global chart_key=0feeb8bd9200b51c1499b3c5796d5a68dbcbee47650d7a30acd6d1c3d18f27f9 timeout=120s
-2026-08-07 14:00:27,642 - transcriptx - INFO - [CHART_DESCRIPTIONS] 10/182 viz_id=wordclouds.tfidf-ALL.view chart_key=108d9c28a06b43db21fa12fcbee5914131d606a677636adc1b7078186b18c7a1 timeout=120s
-2026-08-07 14:00:33,586 - transcriptx - INFO - [CHART_DESCRIPTIONS] 11/182 viz_id=wordclouds.wordcloud.view.Glen chart_key=124838f2e35214ac4bd5421ccb972f8ff65454114376036bbfd0b712473c66ce timeout=120s
-2026-08-07 14:00:39,706 - transcriptx - INFO - [CHART_DESCRIPTIONS] 12/182 viz_id=topic_modeling.speaker_topic_engagement_heatmap.global chart_key=125a4e4b623c988739f68d228934b266de3eb517add791c05b0432f051573d96 timeout=120s
-2026-08-07 14:00:46,906 - transcriptx - INFO - [CHART_DESCRIPTIONS] 13/182 viz_id=contagion.contagion_matrix.global chart_key=151d42afe1bb468e9ec8d14922544fae5f7774627f69389f1c8edc28aafd9730 timeout=120s
-2026-08-07 14:00:50,514 - transcriptx - INFO - [CHART_DESCRIPTIONS] 14/182 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks-ALL.view chart_key=1574ff22443034346eabf7e9f25e2b5aff16bdca9c4f2542fa05d242b39f7f49 timeout=120s
-2026-08-07 14:00:53,682 - transcriptx - INFO - [CHART_DESCRIPTIONS] 15/182 viz_id=prosody_dashboard.profile_distribution.speaker chart_key=15996ee4faa277354ec8986c1bb09a4ebbb9432ab9631dee02c2be84c886331e timeout=120s
-2026-08-07 14:00:53,687 - transcriptx - INFO - [CHART_DESCRIPTIONS] 16/182 viz_id=prosody_dashboard.compare_speakers.global chart_key=1706b29a4c19d0cebfc0a10c51e002fc447d796345f24c3901ae085c1bfc8e36 timeout=120s
-2026-08-07 14:00:53,692 - transcriptx - INFO - [CHART_DESCRIPTIONS] 17/182 viz_id=contextual_emotion.label_counts_excluding_neutral.speaker chart_key=175629110d5059751c098f746cf7d1691f4f178add009fa16753d1b0b75b31c6 timeout=120s
-2026-08-07 14:00:57,298 - transcriptx - INFO - [CHART_DESCRIPTIONS] 18/182 viz_id=understandability.structure-bars.global chart_key=17ff9973f77e3e6c9759bb4737019e2c619ac4146523152a7690eed9946ebe57 timeout=120s
-2026-08-07 14:01:01,864 - transcriptx - INFO - [CHART_DESCRIPTIONS] 19/182 viz_id=affect_tension.avg_volatility.global chart_key=1800702e92a860edb1cf1dd63218df4421145abacf2a60e59a151a0255487d02 timeout=120s
-2026-08-07 14:01:05,574 - transcriptx - INFO - [CHART_DESCRIPTIONS] 20/182 viz_id=voice.burstiness.speaker chart_key=185cde410c0b8df524d6d03a05ef594cc35849da1aea6a958f70ce08197b1759 timeout=120s
-2026-08-07 14:01:53,305 - transcriptx - INFO - [CHART_DESCRIPTIONS] 21/182 viz_id=ner.entity_types.global chart_key=193f2baec3fc5598687e2f791e7fb89762833d05b8edaf4a6a9ef79db488c529 timeout=120s
-2026-08-07 14:03:37,720 - transcriptx - INFO - [CHART_DESCRIPTIONS] 22/182 viz_id=contextual_emotion.label_counts.speaker chart_key=1989dd9de77955cee4c1b1613cc78b3bf5934d51cee5c19af6d46a2daa488b76 timeout=120s
-2026-08-07 14:05:15,391 - transcriptx - INFO - [CHART_DESCRIPTIONS] 23/182 viz_id=pauses.pauses_timeline.global chart_key=19f93d7e1b28de3198b49ba29ce62b5fa3ab53f1d965ee6f34cfa17cc5995ef6 timeout=120s
+2026-08-07 14:47:37,870 - transcriptx - INFO - Starting llm_speaker_summary analysis for: /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:47:37,908 - transcriptx - INFO - Starting llm_speaker_summary analysis for /mnt/transcripts/260719_Ana_checkin.json
+2026-08-07 14:48:37,877 - transcriptx - INFO - llm_speaker_summary still running... 60.0s elapsed
+2026-08-07 14:49:37,889 - transcriptx - INFO - llm_speaker_summary still running... 120.0s elapsed
+2026-08-07 14:50:37,903 - transcriptx - INFO - llm_speaker_summary still running... 180.0s elapsed
+2026-08-07 14:51:37,913 - transcriptx - INFO - llm_speaker_summary still running... 240.0s elapsed
+
+=== DEEP_TEST LARGE SUMMARY ===
+TRANSCRIPT /mnt/transcripts/260719_Ana_checkin.json
+MODE full
+SUCCESS True
+ERRORS_N 0
+RUN_DIR /mnt/outputs/260719_Ana_checkin/20260807_134841_10521622
+MODULES_N 45
+NOTE chart_descriptions finalize completed; manifest present

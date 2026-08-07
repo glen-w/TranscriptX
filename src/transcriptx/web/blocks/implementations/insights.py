@@ -182,7 +182,102 @@ def _render_quiet_module_empty(
     render_module_required_hint(empty_hint, key=key, ctx=ctx)
 
 
-def _render_insights_payload(insights: Dict[str, Any]) -> None:
+def _insights_focus(placement: BlockPlacement | None) -> str:
+    raw = "all"
+    if placement is not None:
+        raw = str(placement.params.get("focus", "all")).strip().lower()
+    return raw if raw in {"all", "content", "style"} else "all"
+
+
+def _insights_contract_title(placement: BlockPlacement | None, focus: str) -> str:
+    defaults = {
+        "all": "Content vs Style",
+        "content": "Themes and ideas",
+        "style": "Style markers",
+    }
+    if placement is None:
+        return defaults[focus]
+    if placement.title_override:
+        return placement.title_override
+    return str(placement.params.get("title", defaults[focus]))
+
+
+def _render_theme_and_idea_lists(
+    *,
+    key_themes: list,
+    recurring_ideas: list,
+    theme_cap: int,
+    idea_cap: int,
+    guided: bool,
+) -> None:
+    st.markdown("**Content terms**")
+    shown = 0
+    for row in key_themes:
+        if not isinstance(row, dict):
+            continue
+        phrase = str(row.get("phrase") or "").strip()
+        if not phrase:
+            continue
+        if guided:
+            st.write(f"- {phrase}")
+        else:
+            total = float((row.get("score") or {}).get("total", 0.0))
+            st.write(f"- {phrase} ({total:.3f})")
+        shown += 1
+        if shown >= theme_cap:
+            break
+    if shown == 0:
+        st.caption("No key themes.")
+    has_ideas = any(
+        isinstance(row, dict) and str(row.get("phrase") or "").strip()
+        for row in recurring_ideas
+    )
+    if has_ideas:
+        st.markdown("**Recurring ideas**")
+        shown_i = 0
+        for row in recurring_ideas:
+            if not isinstance(row, dict):
+                continue
+            phrase = str(row.get("phrase") or "").strip()
+            if not phrase:
+                continue
+            if guided:
+                st.write(f"- {phrase}")
+            else:
+                recurrence = float((row.get("score") or {}).get("recurrence", 0.0))
+                st.write(f"- {phrase} (recurrence {recurrence:.3f})")
+            shown_i += 1
+            if shown_i >= idea_cap:
+                break
+
+
+def _render_style_indicator_list(
+    style_rows: list[tuple[str, str]], *, guided: bool
+) -> None:
+    from transcriptx.web.insights_presentation import GUIDED_RANKED_ROW_CAP
+
+    st.markdown("**Style indicators**")
+    if style_rows:
+        for label, value in style_rows[: GUIDED_RANKED_ROW_CAP if guided else 12]:
+            st.write(f"- {label}: {value}")
+    else:
+        st.caption("No style indicators.")
+
+
+def _style_detail_rows(style_markers: dict) -> list[dict[str, Any]]:
+    flat: list[dict[str, Any]] = []
+    for key, value in style_markers.items():
+        if isinstance(value, (int, float, str)):
+            flat.append({"marker": key, "value": value})
+        elif isinstance(value, dict):
+            for sk, sv in value.items():
+                flat.append({"marker": f"{key}.{sk}", "value": sv})
+    return flat
+
+
+def _render_insights_payload(
+    insights: Dict[str, Any], *, focus: str = "all"
+) -> None:
     from transcriptx.web.insights_presentation import (
         GUIDED_RANKED_ROW_CAP,
         MODULE_PLAIN_DESCRIPTIONS,
@@ -190,7 +285,16 @@ def _render_insights_payload(insights: Dict[str, Any]) -> None:
     )
 
     guided = is_insights_guided()
-    st.caption(MODULE_PLAIN_DESCRIPTIONS.get("insights", ""))
+    captions = {
+        "all": MODULE_PLAIN_DESCRIPTIONS.get("insights", ""),
+        "content": (
+            "Content themes and recurring ideas from the transcript wording."
+        ),
+        "style": (
+            "Style-of-speech markers kept separate from content themes."
+        ),
+    }
+    st.caption(captions.get(focus, captions["all"]))
     key_themes = insights.get("key_themes") or []
     recurring_ideas = insights.get("recurring_ideas") or []
     style_markers = insights.get("style_markers") or {}
@@ -203,6 +307,8 @@ def _render_insights_payload(insights: Dict[str, Any]) -> None:
 
     theme_cap = GUIDED_RANKED_ROW_CAP if guided else 8
     idea_cap = GUIDED_RANKED_ROW_CAP if guided else 8
+    show_content = focus in {"all", "content"}
+    show_style = focus in {"all", "style"}
 
     has_themes = any(
         str(row.get("phrase") or "").strip()
@@ -237,136 +343,116 @@ def _render_insights_payload(insights: Dict[str, Any]) -> None:
             if len(style_rows) >= (GUIDED_RANKED_ROW_CAP if guided else 12):
                 break
 
-    if not has_themes and not has_ideas and not style_rows:
-        st.info("No meaningful content-vs-style rows for this transcript.")
+    content_empty = show_content and not has_themes and not has_ideas
+    style_empty = show_style and not style_rows
+    if (show_content or show_style) and content_empty and style_empty:
+        if focus == "content":
+            st.info("No meaningful themes or recurring ideas for this transcript.")
+        elif focus == "style":
+            st.info("No meaningful style markers for this transcript.")
+        else:
+            st.info("No meaningful content-vs-style rows for this transcript.")
         return
 
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.markdown("**Content terms**")
-        shown = 0
-        for row in key_themes:
-            if not isinstance(row, dict):
-                continue
-            phrase = str(row.get("phrase") or "").strip()
-            if not phrase:
-                continue
-            if guided:
-                st.write(f"- {phrase}")
-            else:
-                total = float((row.get("score") or {}).get("total", 0.0))
-                st.write(f"- {phrase} ({total:.3f})")
-            shown += 1
-            if shown >= theme_cap:
-                break
-        if shown == 0:
-            st.caption("No key themes.")
-        if has_ideas:
-            st.markdown("**Recurring ideas**")
-            shown_i = 0
-            for row in recurring_ideas:
+    if show_content and show_style:
+        col_a, col_b = st.columns(2)
+        with col_a:
+            _render_theme_and_idea_lists(
+                key_themes=key_themes,
+                recurring_ideas=recurring_ideas,
+                theme_cap=theme_cap,
+                idea_cap=idea_cap,
+                guided=guided,
+            )
+        with col_b:
+            _render_style_indicator_list(style_rows, guided=guided)
+    elif show_content:
+        _render_theme_and_idea_lists(
+            key_themes=key_themes,
+            recurring_ideas=recurring_ideas,
+            theme_cap=theme_cap,
+            idea_cap=idea_cap,
+            guided=guided,
+        )
+    elif show_style:
+        _render_style_indicator_list(style_rows, guided=guided)
+
+    details_needed = False
+    if show_content and (
+        len(key_themes) > theme_cap or len(recurring_ideas) > idea_cap
+    ):
+        details_needed = True
+    if show_style and isinstance(style_markers, dict) and style_markers:
+        details_needed = True
+    if not details_needed:
+        return
+
+    with st.expander("Explore details", expanded=False):
+        if show_content and key_themes:
+            st.caption("All key themes")
+            rows = []
+            for row in key_themes[:40]:
                 if not isinstance(row, dict):
                     continue
-                phrase = str(row.get("phrase") or "").strip()
-                if not phrase:
+                rows.append(
+                    {
+                        "phrase": row.get("phrase"),
+                        "score": (row.get("score") or {}).get("total"),
+                    }
+                )
+            if rows:
+                st.dataframe(rows, width="stretch", hide_index=True)
+        if show_content and recurring_ideas:
+            st.caption("All recurring ideas")
+            rows = []
+            for row in recurring_ideas[:40]:
+                if not isinstance(row, dict):
                     continue
-                if guided:
-                    st.write(f"- {phrase}")
-                else:
-                    recurrence = float((row.get("score") or {}).get("recurrence", 0.0))
-                    st.write(f"- {phrase} (recurrence {recurrence:.3f})")
-                shown_i += 1
-                if shown_i >= idea_cap:
-                    break
-    with col_b:
-        st.markdown("**Style indicators**")
-        if style_rows:
-            for label, value in style_rows[: GUIDED_RANKED_ROW_CAP if guided else 12]:
-                st.write(f"- {label}: {value}")
-        else:
-            st.caption("No style indicators.")
-
-    if guided and (
-        len(key_themes) > theme_cap
-        or len(recurring_ideas) > idea_cap
-        or (isinstance(style_markers, dict) and style_markers)
-    ):
-        with st.expander("Explore details", expanded=False):
-            if key_themes:
-                st.caption("All key themes")
-                rows = []
-                for row in key_themes[:40]:
-                    if not isinstance(row, dict):
-                        continue
-                    rows.append(
-                        {
-                            "phrase": row.get("phrase"),
-                            "score": (row.get("score") or {}).get("total"),
-                        }
-                    )
-                if rows:
-                    st.dataframe(rows, width="stretch", hide_index=True)
-            if recurring_ideas:
-                st.caption("All recurring ideas")
-                rows = []
-                for row in recurring_ideas[:40]:
-                    if not isinstance(row, dict):
-                        continue
-                    rows.append(
-                        {
-                            "phrase": row.get("phrase"),
-                            "recurrence": (row.get("score") or {}).get("recurrence"),
-                        }
-                    )
-                if rows:
-                    st.dataframe(rows, width="stretch", hide_index=True)
-            if isinstance(style_markers, dict) and style_markers:
-                st.caption("Style markers")
-                flat = []
-                for key, value in style_markers.items():
-                    if isinstance(value, (int, float, str)):
-                        flat.append({"marker": key, "value": value})
-                    elif isinstance(value, dict):
-                        for sk, sv in value.items():
-                            flat.append({"marker": f"{key}.{sk}", "value": sv})
-                if flat:
-                    st.dataframe(flat, width="stretch", hide_index=True)
-    elif not guided and isinstance(style_markers, dict) and style_markers:
-        with st.expander("Explore details", expanded=False):
-            st.caption("Style markers (full)")
-            flat = []
-            for key, value in style_markers.items():
-                if isinstance(value, (int, float, str)):
-                    flat.append({"marker": key, "value": value})
-                elif isinstance(value, dict):
-                    for sk, sv in value.items():
-                        flat.append({"marker": f"{key}.{sk}", "value": sv})
+                rows.append(
+                    {
+                        "phrase": row.get("phrase"),
+                        "recurrence": (row.get("score") or {}).get("recurrence"),
+                    }
+                )
+            if rows:
+                st.dataframe(rows, width="stretch", hide_index=True)
+        if show_style and isinstance(style_markers, dict) and style_markers:
+            st.caption("Style markers" if guided else "Style markers (full)")
+            flat = _style_detail_rows(style_markers)
             if flat:
                 st.dataframe(flat, width="stretch", hide_index=True)
 
 
-def _render_insight_rows_rollup(rows: list[Dict[str, Any]]) -> None:
+def _render_insight_rows_rollup(
+    rows: list[Dict[str, Any]], *, focus: str = "all"
+) -> None:
+    show_content = focus in {"all", "content"}
+    show_moments = focus in {"all", "content"}
+    if focus == "style":
+        st.caption("Style markers are shown per session below.")
+        return
     themes = [r for r in rows if r.get("kind") == "key_theme"]
     ideas = [r for r in rows if r.get("kind") == "recurring_idea"]
     moments = [r for r in rows if r.get("kind") == "notable_moment"]
-    st.caption("Group rollup — key themes")
-    if not themes:
-        st.write("No key themes across sessions.")
-    for row in themes[:12]:
-        text = str(row.get("text") or "").strip()
-        score = row.get("score")
-        suffix = f" ({float(score):.3f})" if isinstance(score, (int, float)) else ""
-        session = row.get("order_index")
-        prefix = f"[s{int(session) + 1}] " if session is not None else ""
-        if text:
-            st.write(f"- {prefix}{text}{suffix}")
-    st.caption("Group rollup — recurring ideas")
-    if ideas:
-        for row in ideas[:12]:
+    if show_content:
+        st.caption("Group rollup — key themes")
+        if not themes:
+            st.write("No key themes across sessions.")
+        for row in themes[:12]:
             text = str(row.get("text") or "").strip()
+            score = row.get("score")
+            suffix = f" ({float(score):.3f})" if isinstance(score, (int, float)) else ""
+            session = row.get("order_index")
+            prefix = f"[s{int(session) + 1}] " if session is not None else ""
             if text:
-                st.write(f"- {text}")
-    if moments:
+                st.write(f"- {prefix}{text}{suffix}")
+        st.caption("Group rollup — recurring ideas")
+        if ideas:
+            for row in ideas[:12]:
+                text = str(row.get("text") or "").strip()
+                if text:
+                    st.write(f"- {text}")
+    if show_moments and moments:
         st.caption("Group rollup — notable moments")
         for row in moments[:8]:
             text = str(row.get("text") or "").strip()
@@ -374,17 +460,20 @@ def _render_insight_rows_rollup(rows: list[Dict[str, Any]]) -> None:
                 st.write(f"- {text[:200]}")
 
 
-def render_insights_contract(ctx: BlockContext, _placement: BlockPlacement) -> None:
+def render_insights_contract(ctx: BlockContext, placement: BlockPlacement) -> None:
+    focus = _insights_focus(placement)
+    title = _insights_contract_title(placement, focus)
     if st.session_state.get("_insights_analysis_consolidating_provenance"):
-        st.markdown("#### Content vs Style")
+        st.markdown(f"#### {title}")
     else:
-        st.subheader("Content vs Style")
+        st.subheader(title)
     loader = _loader(ctx)
     run_root = ctx.run_root
+    focus_key = focus.replace("-", "_")
     if loader is None and run_root is None:
         render_module_required_hint(
             "Run the `insights` module to populate this view.",
-            key="insights_no_loader",
+            key=f"insights_no_loader_{focus_key}",
             ctx=ctx,
         )
         return
@@ -395,17 +484,19 @@ def render_insights_contract(ctx: BlockContext, _placement: BlockPlacement) -> N
         bundle = load_group_row_bundle(run_root, "insights", "insight_rows")
         rows = bundle["content_rows"]
         session_rows = bundle["session_rows"]
-        if session_rows:
+        if focus != "style" and session_rows:
             st.caption("Group rollup — per-session insight counts")
             st.dataframe(session_rows, width="stretch", hide_index=True)
         if rows:
-            _render_insight_rows_rollup(rows)
-        elif not session_rows:
+            _render_insight_rows_rollup(rows, focus=focus)
+        elif focus != "style" and not session_rows:
             st.info(group_rollup_empty_hint("insights", content_name="insight_rows"))
         members = list_group_members(run_root)
         st.divider()
         st.caption("Per session")
-        member = select_group_member(members, key="insights_session_select")
+        member = select_group_member(
+            members, key=f"insights_session_select_{focus_key}"
+        )
         if member is None:
             st.caption(member_empty_hint("insights"))
             return
@@ -413,12 +504,12 @@ def render_insights_contract(ctx: BlockContext, _placement: BlockPlacement) -> N
         if not insights:
             st.info(member_empty_hint("insights"))
             return
-        _render_insights_payload(insights)
+        _render_insights_payload(insights, focus=focus)
         _render_view_raw_file_link(
             ctx,
             "insights",
             "_insights.json",
-            link_key="insights_member_raw",
+            link_key=f"insights_member_raw_{focus_key}",
             storage_root=member.storage_root,
         )
         return
@@ -426,7 +517,7 @@ def render_insights_contract(ctx: BlockContext, _placement: BlockPlacement) -> N
     if loader is None:
         render_module_required_hint(
             "Run the `insights` module to populate this view.",
-            key="insights_no_loader",
+            key=f"insights_no_loader_{focus_key}",
             ctx=ctx,
         )
         return
@@ -434,11 +525,11 @@ def render_insights_contract(ctx: BlockContext, _placement: BlockPlacement) -> N
     if not insights:
         render_module_required_hint(
             "Run the `insights` module to populate this view.",
-            key="insights_empty",
+            key=f"insights_empty_{focus_key}",
             ctx=ctx,
         )
         return
-    _render_insights_payload(insights)
+    _render_insights_payload(insights, focus=focus)
 
 
 def _highlights_theme_visible(theme: Dict[str, Any]) -> bool:

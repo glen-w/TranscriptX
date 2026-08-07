@@ -25,7 +25,8 @@ GUIDED_METADATA_CHIP_CAP = 4
 GUIDED_MIN_HIGHLIGHT_QUOTE_CHARS = 24
 GUIDED_HIGHLIGHT_OVERLAP_IOU = 0.55
 
-# Analysis module groups for Insights → Analysis (stable presentation order).
+# Stable presentation order for language / style / salience blocks
+# (used when grouping former Analysis placements).
 ANALYSIS_GROUP_ORDER: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     (
         "language_profile",

@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8.7] - 2026-08-07
+
+### Changed
+
+- Insights: **retired the "Analysis" section** from the section nav (Summary · Speakers · Actions · Highlights). Former Analysis blocks are redistributed rather than removed: keyphrases and content themes/ideas move to **Summary**; lexical diversity, epistemic markers, politeness, and style markers move to **Speakers** as speaker-comparison content. Charts and Artifacts remain unaffected sibling pages; per-block raw JSON/CSV provenance links stay reachable without a consolidated Analysis tab.
+- `insights_contract` block now supports a `focus=content|style` placement param so the same underlying module can present themes/ideas (Summary) and style markers (Speakers) as two distinct, independently keyed placements.
+- A stale `insights_section` session value of `"analysis"` (from a prior session) now remaps to `"summary"` instead of erroring.
+
+### Fixed
+
+- Web package version metadata (`transcriptx.web.__version__`) was left at `0.9.8.5` after the `0.9.8.6` release; resynced with the root package version.
+
 ## [0.9.8.6] - 2026-08-07
 
 ### Changed

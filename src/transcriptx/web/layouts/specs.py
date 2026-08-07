@@ -15,10 +15,10 @@ SUPPORTED_LAYOUT_PAGES = frozenset(
 CURRENT_LAYOUT_SCHEMA_VERSION = 1
 
 INSIGHTS_SECTIONS = frozenset(
-    {"summary", "speakers", "actions", "highlights", "analysis"}
+    {"summary", "speakers", "actions", "highlights"}
 )
 
-LayoutSection = Literal["summary", "speakers", "actions", "highlights", "analysis"]
+LayoutSection = Literal["summary", "speakers", "actions", "highlights"]
 
 
 class BlockPlacementModel(BaseModel):

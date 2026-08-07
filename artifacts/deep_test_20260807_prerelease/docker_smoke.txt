@@ -1,0 +1,26 @@
+=== Docker Web Launcher Smoke Test ===
+--- transcriptx --help ---
+ Container transcriptx-transcriptx-web-run-303367a7ebdf Creating 
+ Container transcriptx-transcriptx-web-run-303367a7ebdf Created 
+usage: transcriptx [-h] [--host HOST] [--port PORT]
+
+TranscriptX — launch the web interface
+
+options:
+  -h, --help   show this help message and exit
+  --host HOST  Host to bind to (default: 127.0.0.1)
+  --port PORT  Port to listen on (default: 8501)
+--- python -m transcriptx.web --help ---
+ Container transcriptx-transcriptx-web-run-028b83710d43 Creating 
+ Container transcriptx-transcriptx-web-run-028b83710d43 Created 
+usage: transcriptx [-h] [--host HOST] [--port PORT]
+
+TranscriptX — launch the web interface
+
+options:
+  -h, --help   show this help message and exit
+  --host HOST  Host to bind to (default: 127.0.0.1)
+  --port PORT  Port to listen on (default: 8501)
+=== Smoke test complete ===
+rm: /var/folders/sy/pjg7ypqj2vz2xf0v12m1l2k9_22rhc/T//transcriptx-smoke-recordings.13clmL/imports: Permission denied
+rm: /var/folders/sy/pjg7ypqj2vz2xf0v12m1l2k9_22rhc/T//transcriptx-smoke-recordings.13clmL: Directory not empty
