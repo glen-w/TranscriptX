@@ -10,6 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8.6] - 2026-08-07
+
+### Changed
+
+- Run Analysis / Batch: **LLM setup** is shown only when the effective modules (or enabled group LLM synthesis) need a live LLM; non-LLM presets hide the section.
+- Home: detailed statistics, sessions, and recent runs use lazy Streamlit expanders (`on_change="rerun"`) instead of toggles — sessions is its own top-level block, not nested under detailed statistics.
+- [docs/ROADMAP.md](docs/ROADMAP.md): post-1.0 work regrouped by **theme** (A–M); added 1.x candidates for optional in-app STT (NVIDIA Parakeet/Canary + Whisper, CUDA/CPU, YouTube), directory watcher, karaoke-style playback, and PWA/installable shell — 1.0 stays BYO transcription.
+- Analysis-module backlog and `.local` competitive inspiration marked **living / changeable**; STT/playback/PWA cross-linked to ROADMAP themes (not analysis-module non-goals).
+
+### Fixed
+
+- Run Analysis **Batch** target now shows the same live progress bar and recent logs as single/group runs (spinner-only was hiding per-module updates); stage starts clear a prior transcript's Completed banner mid-batch.
+- Run Analysis / Batch: **Project default** Model preset now seeds the shared-model picker from global `llm.model` when `model_selection.shared_model` is empty (matching runtime resolution), and re-applies after an empty Ollama tags list so Run stays enabled without a forced re-select.
+- LLM rating form on Transcript Summary (and other badge-row surfaces) no longer squeezes Submit/Cancel into a one-character-wide column; thumbs stay trailing, the form opens full-width below.
+- Run Analysis progress no longer flips to Completed after the DAG’s last module (`wordclouds`) while finalize-phase `chart_descriptions` is still running; the panel stays on Finalizing with matching module totals until chart descriptions finish.
+
 ## [0.9.8.5] - 2026-08-04
 
 ### Added

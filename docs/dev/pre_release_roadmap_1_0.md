@@ -25,9 +25,9 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **0.9.x — install + transcription** — Install-profile audit; Transcribe command gen; whispermlx-missing and corpus docs (**cut as 0.9.4**)
 - [x] **0.9.x — hosted docs + harden scaffolds** — Sphinx revive + CI docs build; hygiene strict subset; quality-audit registry scaffold; draft model-licence matrix (**cut as 0.9.5**)
 - [x] **0.9.x — modes + demo (trial)** — Guided/Full controls v1 + demo project + onboarding checklist (**cut as 0.9.6**; **later removed** — prefer docs + clear GUI; see §16)
-- [x] **0.9.x — harden + public surfaces (automatable)** — audit judgements draft; perf recipe; trust drafts + AI labelling + NOTICE; website + Pages; release-ops draft; Data/Explorer redirects removed (**cut as 0.9.7**). Owner sign-off, RTD slug, and measured Large-library soak may remain soft-cut residuals.
-- [x] **0.9.x — hygiene + honesty + human-pass prep** — epoch/deps cleanup; BERTopic-out-of-base; Balanced experimental-emotion honesty; known-limitations page; maintainer + unfamiliar-user kits (**cut as 0.9.8**). Templates ≠ measured ≠ signed-off for owner-gated residuals.
-- [ ] **Maintainer acceptance pass** — executable kit in [manual_acceptance_1_0.md](manual_acceptance_1_0.md); severity-justified fixes after
+- [x] **0.9.x — harden + public surfaces (automatable)** — audit judgements draft; perf recipe; trust drafts + AI labelling + NOTICE; website + Pages; release-ops draft; Data/Explorer redirects removed (**cut as 0.9.7**). RTD slug may remain owner-gated; Large-library soak measured later.
+- [x] **0.9.x — hygiene + honesty + human-pass prep** — epoch/deps cleanup; BERTopic-out-of-base; Balanced experimental-emotion honesty; known-limitations page; maintainer + unfamiliar-user kits (**cut as 0.9.8**). Templates ≠ measured ≠ signed-off for remaining owner-gated residuals (e.g. RTD slug, cohort).
+- [x] **Maintainer acceptance pass** — kit journeys closed **2026-08-07** ([manual_acceptance_1_0.md](manual_acceptance_1_0.md), incl. §3.12 Medium Balanced + Large-library); severity-justified fixes only if residual findings remain
 - [ ] **0.9.9 — Overview / results presentation polish** — organisation & presentation of Overview Actions/Highlights/Analysis (and related); list in [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md); **after** maintainer findings, **before** unfamiliar-user round
 - [ ] **Unfamiliar-user validation** — Clean-room round (2–5 people, ≥1 non-technical); kit in [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); mandatory before 1.0
 - [ ] **RC → 1.0** — Severity triage clear; gates pass; release ops/support policy published; governance evidence on exact commit
@@ -81,7 +81,7 @@ A perfect historical archive taxonomy is **not** required for 1.0. A simple, doc
 - Elaborate website effects; exhaustive RTD autodoc; a highly polished first public site — provided usable docs and a credible landing exist.
 
 **Safe to defer to 1.1+**
-- Elaborate coach-mark tours or reintroduction of Guided/Full / demo-project / Getting started checklist UX; sophisticated interactive website effects; large bundled completed analysis runs; any mode system that duplicates page logic; multilingual routing beyond a small reliable subset; B4 ConvoKit-family methods; built-in/orchestrated transcription engine; elaborate archive taxonomy refinements beyond a clear current-vs-historical split; aesthetic refactors; experimental analyses; specialist convenience and non-supported configurations; **transcript tagging** for library visibility/kind labels (meeting, voice note, lone speaker, …) — design must clarify interaction with Groups (tags ≠ analysis cohorts); tracked in [docs/ROADMAP.md](docs/ROADMAP.md) §1.1. **SQLite / DB-backed speaker analytics** — tracked in [docs/ROADMAP.md](docs/ROADMAP.md) §1.5 (not a 1.0 gate). **High-interaction workspaces (Speaker ID / Corrections Studio) via Streamlit Components v2** — Speaker ID has hit Streamlit’s widget-tree edge; keep Streamlit as shell; stop endless fragment/Session-State surgery once naming, playback, writes, and cold-clip fallback are acceptable; prototype Components v2 after 1.0 — tracked in [docs/ROADMAP.md](docs/ROADMAP.md) §1.1.
+- Elaborate coach-mark tours or reintroduction of Guided/Full / demo-project / Getting started checklist UX; sophisticated interactive website effects; large bundled completed analysis runs; any mode system that duplicates page logic; multilingual routing beyond a small reliable subset; B4 ConvoKit-family methods; **in-app / orchestrated transcription** (NVIDIA Parakeet/Canary + Whisper, CUDA/CPU, YouTube ingest, directory watcher) — tracked as 1.x theme **H** / **G2** in [docs/ROADMAP.md](docs/ROADMAP.md) (not a 1.0 gate; 1.0 stays BYO + command gen); **PWA / installable shell** — theme **I**; **karaoke-style playback** — theme **D**; elaborate archive taxonomy refinements beyond a clear current-vs-historical split; aesthetic refactors; experimental analyses; specialist convenience and non-supported configurations; **transcript tagging** for library visibility/kind labels (meeting, voice note, lone speaker, …) — theme **F**; **SQLite / DB-backed speaker analytics** — theme **J** (~1.5); **High-interaction workspaces (Speaker ID / Corrections Studio) via Streamlit Components v2** — theme **C** (stop endless fragment surgery pre-1.0; prototype Components v2 after 1.0).
 
 ---
 
@@ -453,7 +453,7 @@ After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x the
 
 **Cut as `0.9.7` (2026-07-24).** Automatable harden + public surfaces: audit judgements overlay; perf envelope recipe; trust drafts + Local AI labelling + voice privacy notice v2 + NOTICE; website + Pages; release-ops draft + issue templates; Data/Explorer redirect removal; RTD go-live prep (slug still owner-gated).
 
-**Cut as `0.9.8` (2026-07-24).** Hygiene + honesty + human-pass prep: epoch/deps cleanup; BERTopic-out-of-base; Balanced experimental-emotion honesty; known-limitations page; maintainer + unfamiliar-user kits. Owner-gated residuals (RTD slug, Hub/NOTICE sign-off, BMC URL, Large-library soak, cohort execution) remain outside the cut.
+**Cut as `0.9.8` (2026-07-24).** Hygiene + honesty + human-pass prep: epoch/deps cleanup; BERTopic-out-of-base; Balanced experimental-emotion honesty; known-limitations page; maintainer + unfamiliar-user kits. Owner-gated residuals at cut (RTD slug, Hub/NOTICE sign-off, BMC URL, Large-library soak, cohort execution) remained outside the cut — Hub-card residual **dropped** and BMC **closed** 2026-08-07; Large-library soak measured 2026-08-07.
 
 **Phase 0A — Repository hygiene and information architecture**
 
@@ -516,8 +516,8 @@ Focus: mechanical foundations for usable hosted docs and later human hardening �
 - [x] Draft model/dataset licence matrix from existing model metadata (**0.9.5**)
 - [x] Light release tests for hygiene subset, catalog/scaffold drift, Sphinx scaffold wiring (**0.9.5**)
 - [ ] RTD project go-live (owner slug / domain — §20); flip `stale_refs` denylist when URL is intentional — [rtd_go_live_checklist.md](rtd_go_live_checklist.md)
-- [x] Provisional audit recommendations / severity tags (**0.9.7** judgements overlay; owner sign-off open)
-- [x] Trust gate evidence drafts (privacy wording, telemetry statement, NOTICE, AI labelling — **0.9.7**; owner Hub-card sign-off open)
+- [x] Provisional audit recommendations / severity tags (**0.9.7** judgements overlay)
+- [x] Trust gate evidence (privacy wording, telemetry statement, NOTICE, AI labelling — **0.9.7**; Hub-card residual **dropped** 2026-08-07)
 
 ### 0.9.x — Guided mode and demo project (**0.9.6**; later removed)
 
@@ -533,10 +533,10 @@ Focus: first-run product experience (presentation + examples).
 Focus: operational tolerance, trust, docs surfaces — split across further 0.9.x cuts if needed. Sphinx scaffold + audit rows + licence draft landed in **0.9.5**; automatable harden + public landing in **0.9.7**; hygiene + honesty + human-pass kits in **0.9.8**; human testing remains after the tag.
 
 - [ ] Sustained personal/corpus testing; bug fixes; GUI friction removal
-- [x] Deterministic vs AI quality audit judgements (provisional overlay **0.9.7**; owner sign-off open)
+- [x] Deterministic vs AI quality audit judgements (provisional overlay **0.9.7**)
 - [ ] Prompt/model-output tuning; failure-state improvements (only severity-justified leftovers)
-- [x] Performance and resource envelope **recipe** + corpus sizes documented (**0.9.7**; fill measured rows on release hardware / soft-cut gaps tagged)
-- [x] Trust / privacy / model-governance gate **drafts** (**0.9.7**; owner Hub-card sign-off open)
+- [x] Performance and resource envelope **recipe** + corpus sizes documented (**0.9.7**; Medium Balanced + Large-library UI measured **2026-08-07**)
+- [x] Trust / privacy / model-governance gate (**0.9.7**; Hub-card residual **dropped** 2026-08-07)
 - [ ] First screenshot-based user guides
 - [ ] RTD navigation polish (usable docs required; polish not a hard blocker) — go-live owner-gated
 - [x] Initial `website/` + GitHub Pages — credible landing (**0.9.7**; modest)
@@ -783,7 +783,7 @@ Define representative corpus sizes (small / medium / large-for-1.0) and record e
 - [x] Model download sizes (documented via runtime/models.md)
 - [x] Docker image size (baseline doc + recipe)
 - [x] Group-analysis scaling (recipe)
-- [x] UI responsiveness with a large library (**known limitation** soft-cut — soak on human-testing hardware)
+- [x] UI responsiveness with a large library (**pass** 2026-08-07 — 200+ library transcripts; see [manual_acceptance_1_0.md](manual_acceptance_1_0.md) §3.12)
 - [x] Behaviour when disk, RAM or model capacity is insufficient (documented expectation: fail closed)
 
 These become **documented expectations and regression indicators**. Non-critical misses may ship as known limitations; capacity failures that corrupt data or hang without recovery are release blockers / must-fix per §7.
@@ -794,8 +794,8 @@ These become **documented expectations and regression indicators**. Non-critical
 
 Dedicated gate (stocktake already flags the missing aggregated third-party model/licence notice as a release gap). Deliverable: [docs/dev/trust_privacy_model_governance_1_0.md](docs/dev/trust_privacy_model_governance_1_0.md).
 
-- [x] Third-party model and dataset **licence inventory** (draft matrix in trust stub — **0.9.5**; Hub-card confirmations still open)
-- [x] Model download origins and **gated-model** requirements (**0.9.7** rows; residual `owner-verify`)
+- [x] Third-party model and dataset **licence inventory** (matrix in trust stub — **0.9.5**; Hub-card residual **dropped** 2026-08-07)
+- [x] Model download origins and **gated-model** requirements (**0.9.7** rows)
 - [x] Voice embedding and speaker-identity **privacy wording** (**0.9.7** notice v2)
 - [x] Confirmation that **no telemetry or remote processing** occurs unless explicitly configured (**0.9.7**)
 - [x] Secrets and **absolute-path** audit (secrets_check + hygiene owner-path scan; live paths cleaned **0.9.5**; archive historical hits expected)
@@ -898,12 +898,12 @@ Do **not** treat reintroduction as a 1.0 residual. Historical design notes from 
 
 ### Website (credible landing required; first version may be modest)
 
-[website/](website/): headline, product explanation, screenshots, workflows, local-first + AI, example outputs, install CTA, GitHub, docs link, platforms, release status, Buy Me a Coffee **config placeholder** (do not invent URL). GitHub Pages workflow. Plain HTML/CSS; minimal JS only for clear value (e.g. mobile nav).
+[website/](website/): headline, product explanation, screenshots, workflows, local-first + AI, example outputs, install CTA, GitHub, docs link, platforms, release status, Ko-fi / Buy Me a Coffee support link. GitHub Pages workflow. Plain HTML/CSS; minimal JS only for clear value (e.g. mobile nav).
 
 - [x] Initial `website/` content (credible public landing) (**0.9.7**)
 - [x] GitHub Pages workflow (**0.9.7**)
 - [ ] Screenshots / example outputs as capacity allows
-- [x] Ko-fi support link on website (**0.9.7** placeholder; live URL **2026-07-28**)
+- [x] Ko-fi / Buy Me a Coffee support link on website — **closed** (live URL **2026-07-28**: [ko-fi.com/C0C1XK8G](https://ko-fi.com/C0C1XK8G))
 
 **Gate:** credible public landing exists. Do **not** make website polish or elaborate RTD a hard blocker if the product itself is ready.
 
@@ -986,7 +986,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 
 ## 20. Unresolved owner judgements (non-blocking defaults set)
 
-- [x] **Buy Me a Coffee URL** — Ko-fi [ko-fi.com/C0C1XK8G](https://ko-fi.com/C0C1XK8G) (website footer **2026-07-28**)
+- [x] **Buy Me a Coffee / Ko-fi URL** — **closed** — [ko-fi.com/C0C1XK8G](https://ko-fi.com/C0C1XK8G) (website footer **2026-07-28**)
 - [x] **Demo pack / Guided UI for 0.9.6** — trialled in **0.9.6**; **removed** (prefer docs + clear GUI; see §16)
 - [ ] **Native Mac MPS:** documented supported-with-caveats for 1.0, not a hard GPU gate (default)
 - [x] **Whether cleanup result schema 2→1** proceeds in same PR as public epoch (done in **0.9.3**; journal → 1 / policy 7 kept)
@@ -995,7 +995,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 - [x] **Local scratch directory convention** — `.local/` documented in Phase 0A (`docs/dev/local_scratch.md`)
 - [x] **Exact archive subcategory names** — `docs/archive/{assessments,plans,investigations,migrations}/` from inventory
 - [ ] **Unfamiliar-user cohort** — who / when / consent and recording method
-- [ ] **Representative corpus sizes** for performance envelopes
+- [x] **Representative corpus sizes** for performance envelopes (Small/Medium/Large-for-1.0 defined; Medium Balanced + Large-library UI measured 2026-08-07)
 - [ ] **RC duration** default (e.g. minimum soak window) if not already in release governance
 - [ ] **Security-reporting contact** channel for 1.0
 
@@ -1013,9 +1013,9 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 8. [x] Execute **0.9.x install + transcription** theme (**0.9.4** / `v0.9.4`)
 9. [x] Execute **0.9.x hosted docs + harden scaffolds** theme (**0.9.5**)
 10. [x] Execute **0.9.x Guided mode + demo** theme (**0.9.6**) ← **landed**; later **removed** (docs + clear GUI preferred; §16)
-11. [x] Execute **0.9.x harden + public surfaces (automatable)** theme (**0.9.7**) ← **landed** (owner Hub-card / RTD slug / Large-library soak may soft-cut)
-12. [x] Execute **0.9.x hygiene + honesty + human-pass prep** theme (**0.9.8**) ← **landed** (owner Hub/RTD/BMC/Large-library/cohort remain soft residuals)
-13. [ ] **Maintainer acceptance pass** — [manual_acceptance_1_0.md](manual_acceptance_1_0.md); then severity-justified fixes
+11. [x] Execute **0.9.x harden + public surfaces (automatable)** theme (**0.9.7**) ← **landed** (RTD slug may remain owner-gated; Large-library soak measured 2026-08-07; Hub-card residual dropped 2026-08-07)
+12. [x] Execute **0.9.x hygiene + honesty + human-pass prep** theme (**0.9.8**) ← **landed** (BMC closed; Hub-card residual dropped; Large-library measured; RTD slug + cohort remain owner residuals)
+13. [x] **Maintainer acceptance pass** — kit journeys closed **2026-08-07** ([manual_acceptance_1_0.md](manual_acceptance_1_0.md)); severity-justified fixes only if residual findings remain
 14. [ ] **0.9.9 Overview / results presentation polish** — [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md) (after maintainer findings; before unfamiliar-user)
 15. [ ] **Unfamiliar-user round** — [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); blockers/must-fix prevent RC
 16. [ ] **Final gate review** → RC rehearsal → RC → public **1.0**

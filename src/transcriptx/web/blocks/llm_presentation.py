@@ -17,7 +17,10 @@ from transcriptx.core.llm_feedback.models import (
 )
 from transcriptx.web.blocks.context import BlockContext
 from transcriptx.web.blocks.loader import ArtifactContentLoader
-from transcriptx.web.components.llm_feedback import render_llm_feedback_controls
+from transcriptx.web.components.llm_feedback import (
+    render_llm_feedback_form,
+    render_llm_feedback_thumbs,
+)
 from transcriptx.web.services.llm_feedback_service import get_llm_feedback_service
 
 _LEADING_MD_HEADING = re.compile(r"^#[^\n]*\n+")
@@ -223,11 +226,19 @@ def render_badge_row_with_feedback(
         render_badge_row(labels)
         return
 
+    # Thumbs stay in a narrow trailing column; the expanded form must render
+    # at full width below — nesting it in fb_col squeezes Submit/Cancel.
     badge_col, fb_col = st.columns([20, 2], vertical_alignment="center")
     with badge_col:
         render_badge_row(labels)
     with fb_col:
-        render_llm_feedback_controls(
+        form_open = render_llm_feedback_thumbs(
+            target=target,
+            output_text=output_text,
+            widget_key=widget_key,
+        )
+    if form_open:
+        render_llm_feedback_form(
             store=get_llm_feedback_service(),
             target=target,
             output_text=output_text,

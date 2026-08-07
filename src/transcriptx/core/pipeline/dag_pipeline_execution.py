@@ -29,9 +29,19 @@ def run_sequential_execution_phase(
     requirements_resolver: Optional[Any],
     named_speaker_count_ref: List[Optional[int]],
     emit: Callable[[Dict[str, Any]], None],
+    progress_total: Optional[int] = None,
 ) -> Tuple[bool, int, int, int, int, str | None]:
-    """Execute modules in order. Mutates ``results`` and ``named_speaker_count_ref[0]``."""
-    total_modules = len(execution_order)
+    """Execute modules in order. Mutates ``results`` and ``named_speaker_count_ref[0]``.
+
+    ``progress_total`` may exceed ``len(execution_order)`` when finalize-phase
+    modules (e.g. chart_descriptions) are counted toward the UI total but run
+    after the DAG.
+    """
+    total_modules = (
+        int(progress_total)
+        if progress_total is not None
+        else len(execution_order)
+    )
     ev_completed = 0
     ev_skipped = 0
     ev_failed = 0

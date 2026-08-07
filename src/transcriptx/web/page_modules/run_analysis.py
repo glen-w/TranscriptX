@@ -26,7 +26,9 @@ from transcriptx.web.cache_helpers import (
     cached_get_default_modules_for_paths,
     cached_get_module_info_list,
     cached_list_groups,
-    get_cached_list_transcripts,
+    cached_transcript_summary_for_path,
+    get_cached_list_transcript_picker_options,
+    transcript_summary_signature,
 )
 from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.analysis_preset_controls import (
@@ -49,6 +51,7 @@ from transcriptx.web.navigation import make_session_path_resolver
 from transcriptx.web.page_modules.batch_ops import render_batch_analysis_panel
 from transcriptx.web.services.group_service import GroupService
 from transcriptx.web.services.subject_service import SubjectService
+from transcriptx.web.services.transcript_context_resolver import paths_match
 from transcriptx.web.state import (
     SELECTBOX_PLACEHOLDER_GROUP,
     SELECTBOX_PLACEHOLDER_TRANSCRIPT,
@@ -287,15 +290,131 @@ def _execute_pending_launch(
     st.rerun()
 
 
+def _resolve_transcript_selection(
+    transcript_options: tuple[str, ...],
+    transcript_labels: tuple[str, ...],
+) -> Path | None:
+    """Transcript selectbox + cheap context sync (fragment-local)."""
+    default_idx = SubjectService.index_in_path_options(
+        st.session_state, list(transcript_options)
+    )
+    transcript_choice = st.selectbox(
+        "Transcript",
+        range(len(transcript_options) + 1),
+        format_func=lambda i: (
+            SELECTBOX_PLACEHOLDER_TRANSCRIPT
+            if i == 0
+            else (
+                transcript_labels[i - 1]
+                if i - 1 < len(transcript_labels)
+                else ""
+            )
+        ),
+        index=default_idx,
+        key="run_analysis_transcript",
+    )
+    if transcript_choice <= 0:
+        return None
+    transcript_path = Path(transcript_options[transcript_choice - 1])
+    current = SubjectService.current_transcript_path(st.session_state)
+
+    if current is None or not paths_match(current, transcript_path):
+        SubjectService.set_transcript_context_from_path(
+            st.session_state,
+            transcript_path,
+            # Lazy resolver: indexed paths never touch rich session listing.
+            session_resolver=make_session_path_resolver(),
+        )
+    # Optional caption for the selection only (not the full library).
+    try:
+        summary = cached_transcript_summary_for_path(
+            str(transcript_path),
+            transcript_summary_signature(transcript_path),
+        )
+    except Exception:
+        summary = None
+    if summary is not None:
+        st.caption(format_transcript_option_with_speaker_status(summary))
+    return transcript_path
+
+
+def _resolve_group_selection(
+    groups: tuple[Group, ...],
+) -> tuple[Group | None, tuple[str, ...]]:
+    """Group selectbox + member path resolution (fragment-local)."""
+    group_options = {g.uuid: g for g in groups}
+    group_labels = {
+        g.uuid: f"{g.name or 'Unnamed'} • {len(g.transcript_file_uuids or [])} transcripts"
+        for g in groups
+    }
+    group_keys = list(group_options.keys())
+    default_group_idx = 0
+    current_subject = st.session_state.get("subject_id")
+    if (
+        st.session_state.get("subject_type") == "group"
+        and current_subject in group_options
+    ):
+        default_group_idx = group_keys.index(current_subject) + 1
+    selected_uuid = st.selectbox(
+        "Group",
+        [""] + group_keys,
+        format_func=lambda key: (
+            SELECTBOX_PLACEHOLDER_GROUP
+            if key == ""
+            else group_labels.get(key, key)
+        ),
+        index=default_group_idx,
+        key="run_analysis_group",
+    )
+    selected_group = group_options.get(selected_uuid) if selected_uuid else None
+    if not selected_group:
+        return None, ()
+    members = GroupService.get_members(selected_group)
+    resolved_member_paths = tuple(
+        str(Path(m.file_path))
+        for m in members
+        if getattr(m, "file_path", None) and Path(m.file_path).exists()
+    )
+    return selected_group, resolved_member_paths
+
+
 @st.fragment
 def _run_analysis_config_and_launch_fragment(
     target_type: str,
-    transcript_path: Path | None,
-    selected_group: Group | None,
-    available: tuple[str, ...],
-    transcript_targets: tuple[str, ...],
+    *,
+    transcript_options: tuple[str, ...] = (),
+    transcript_labels: tuple[str, ...] = (),
+    groups: tuple[Group, ...] = (),
 ) -> None:
-    """Config widgets + sticky footer; launch snapshots then reruns for execution."""
+    """Selection + config + sticky footer; fragment-reruns on transcript/group change.
+
+    Keeping the transcript/group selectboxes inside this fragment avoids a full-app
+    rerun (sidebar + shell) on every dropdown change after the light picker loads.
+    """
+    transcript_path: Path | None = None
+    selected_group: Group | None = None
+    transcript_targets: tuple[str, ...] = ()
+
+    if target_type == "Transcript":
+        transcript_path = _resolve_transcript_selection(
+            transcript_options, transcript_labels
+        )
+    else:
+        selected_group, transcript_targets = _resolve_group_selection(groups)
+
+    available = list(cached_get_available_modules())
+    if target_type == "Transcript" and transcript_path:
+        cached_get_default_modules(str(transcript_path))
+        transcript_targets = (str(transcript_path),)
+    elif target_type == "Group" and transcript_targets:
+        cached_get_default_modules_for_paths(transcript_targets, for_group=True)
+        group_supported = {
+            info["name"]
+            for info in cached_get_module_info_list()
+            if info.get("supports_group", True)
+        }
+        available = [module_id for module_id in available if module_id in group_supported]
+
     analysis_target = "group" if target_type == "Group" else "transcript"
 
     resolved = render_analysis_preset_selector(
@@ -540,18 +659,13 @@ def render_run_analysis_page() -> None:
             st.info("Analysis is running…")
         return
 
-    transcript_path: Path | None = None
-    selected_group = None
-    resolved_member_paths: list[str] = []
+    transcript_options: tuple[str, ...] = ()
+    transcript_labels: tuple[str, ...] = ()
+    groups: tuple[Group, ...] = ()
 
     if target_type == "Transcript":
-        transcripts = get_cached_list_transcripts()
-        transcript_options = [str(t.path) for t in transcripts]
-        transcript_labels = [
-            format_transcript_option_with_speaker_status(t) for t in transcripts
-        ]
-
-        if not transcript_options:
+        picker_options = get_cached_list_transcript_picker_options()
+        if not picker_options:
             render_empty_state(
                 "no_results_yet",
                 "No transcripts found",
@@ -559,41 +673,12 @@ def render_run_analysis_page() -> None:
                 primary_action=("Library", "Library"),
                 secondary_action=("Home", "Home"),
             )
-            transcript_path = None
-        else:
-            default_idx = SubjectService.index_in_path_options(
-                st.session_state, transcript_options
-            )
-
-            transcript_choice = st.selectbox(
-                "Transcript",
-                range(len(transcript_options) + 1),
-                format_func=lambda i: (
-                    SELECTBOX_PLACEHOLDER_TRANSCRIPT
-                    if i == 0
-                    else (
-                        transcript_labels[i - 1]
-                        if i - 1 < len(transcript_labels)
-                        else ""
-                    )
-                ),
-                index=default_idx,
-                key="run_analysis_transcript",
-            )
-            transcript_path = (
-                Path(transcript_options[transcript_choice - 1])
-                if transcript_choice > 0
-                else None
-            )
-            if transcript_path is not None:
-                SubjectService.set_transcript_context_from_path(
-                    st.session_state,
-                    transcript_path,
-                    session_resolver=make_session_path_resolver(),
-                )
+            return
+        transcript_options = tuple(opt.path for opt in picker_options)
+        transcript_labels = tuple(opt.label for opt in picker_options)
     else:
-        groups = cached_list_groups()
-        if not groups:
+        listed = cached_list_groups()
+        if not listed:
             render_empty_state(
                 "no_results_yet",
                 "No groups yet",
@@ -601,60 +686,8 @@ def render_run_analysis_page() -> None:
                 primary_action=("Groups", "Groups"),
                 secondary_action=("Library", "Library"),
             )
-        else:
-            group_options = {g.uuid: g for g in groups}
-            group_labels = {
-                g.uuid: f"{g.name or 'Unnamed'} • {len(g.transcript_file_uuids or [])} transcripts"
-                for g in groups
-            }
-            group_keys = list(group_options.keys())
-            default_group_idx = 0
-            current_subject = st.session_state.get("subject_id")
-            if (
-                st.session_state.get("subject_type") == "group"
-                and current_subject in group_options
-            ):
-                default_group_idx = group_keys.index(current_subject) + 1
-            selected_uuid = st.selectbox(
-                "Group",
-                [""] + group_keys,
-                format_func=lambda key: (
-                    SELECTBOX_PLACEHOLDER_GROUP
-                    if key == ""
-                    else group_labels.get(key, key)
-                ),
-                index=default_group_idx,
-                key="run_analysis_group",
-            )
-            selected_group = group_options.get(selected_uuid) if selected_uuid else None
-            if selected_group:
-                members = GroupService.get_members(selected_group)
-                resolved_member_paths = [
-                    str(Path(m.file_path))
-                    for m in members
-                    if getattr(m, "file_path", None) and Path(m.file_path).exists()
-                ]
-
-    available = cached_get_available_modules()
-    if target_type == "Transcript" and transcript_path:
-        # Keep cache warm; preset resolver recomputes authoritative lists.
-        cached_get_default_modules(str(transcript_path))
-        transcript_targets: tuple[str, ...] = (str(transcript_path),)
-    elif target_type == "Group" and resolved_member_paths:
-        cached_get_default_modules_for_paths(
-            tuple(resolved_member_paths), for_group=True
-        )
-        group_supported = {
-            info["name"]
-            for info in cached_get_module_info_list()
-            if info.get("supports_group", True)
-        }
-        available = [
-            module_id for module_id in available if module_id in group_supported
-        ]
-        transcript_targets = tuple(resolved_member_paths)
-    else:
-        transcript_targets = ()
+            return
+        groups = tuple(listed)
 
     last_snapshot = st.session_state.get(SNAPSHOT_KEY)
     if last_snapshot and last_snapshot.get("status") in ("completed", "failed"):
@@ -671,8 +704,7 @@ def render_run_analysis_page() -> None:
 
     _run_analysis_config_and_launch_fragment(
         target_type,
-        transcript_path,
-        selected_group,
-        tuple(available),
-        transcript_targets,
+        transcript_options=transcript_options,
+        transcript_labels=transcript_labels,
+        groups=groups,
     )

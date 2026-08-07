@@ -40,7 +40,7 @@ Configure timeout via `llm.request_timeout` / `TRANSCRIPTX_LLM_REQUEST_TIMEOUT` 
 
 ## Run Analysis model selection
 
-On **Run Analysis** (Transcript, Group, and Batch), when `llm.enabled` and `provider=ollama`, the **LLM setup** section shows the project-active Model preset and optional **Change for this run** overrides (shared model or per-module), including a **Model information** expander with installed-tag guidance.
+On **Run Analysis** (Transcript, Group, and Batch), the **LLM setup** section appears only when the effective module list includes a live-LLM consumer (registry `requires_llm` modules that still need a live call), or when group analysis has `group_llm_synthesis` enabled. When `llm.enabled` and `provider=ollama`, that section shows the project-active Model preset and optional **Change for this run** overrides (shared model or per-module), including a **Model information** expander with installed-tag guidance. Non-LLM presets hide the section entirely so model overrides are not offered for irrelevant runs.
 
 **Settings → Models** owns management actions:
 

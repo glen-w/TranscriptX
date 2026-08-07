@@ -117,6 +117,7 @@ class ProgressEvent(TypedDict, total=False):
     message: str
     duration_ms: float
     error: str
+    phase: str  # optional — overrides snapshot phase (e.g. finalizing)
 
 
 # ---------------------------------------------------------------------------
@@ -198,7 +199,7 @@ def update_snapshot_from_event(
         snapshot["latest_event"] = event.get("message", "Run started")
 
     elif ev == "module_started":
-        snapshot["phase"] = "running_pipeline"
+        snapshot["phase"] = event.get("phase") or "running_pipeline"
         snapshot["current_module"] = event.get("module_name", "")
         idx = event.get("index", "")
         tot = event.get("total", "")
@@ -211,6 +212,8 @@ def update_snapshot_from_event(
         snapshot["completed"] = event.get("completed", snapshot.get("completed", 0) + 1)
         snapshot["skipped"] = event.get("skipped", snapshot.get("skipped", 0))
         snapshot["failed"] = event.get("failed", snapshot.get("failed", 0))
+        if event.get("phase"):
+            snapshot["phase"] = event["phase"]
         _refresh_pct(snapshot)
         name = event.get("module_name", "")
         dur = event.get("duration_ms")
@@ -227,6 +230,8 @@ def update_snapshot_from_event(
         snapshot["skipped"] = event.get("skipped", snapshot.get("skipped", 0) + 1)
         snapshot["completed"] = event.get("completed", snapshot.get("completed", 0))
         snapshot["failed"] = event.get("failed", snapshot.get("failed", 0))
+        if event.get("phase"):
+            snapshot["phase"] = event["phase"]
         _refresh_pct(snapshot)
         name = event.get("module_name", "")
         reason = event.get("message", "")
@@ -243,6 +248,8 @@ def update_snapshot_from_event(
         snapshot["failed"] = event.get("failed", snapshot.get("failed", 0) + 1)
         snapshot["completed"] = event.get("completed", snapshot.get("completed", 0))
         snapshot["skipped"] = event.get("skipped", snapshot.get("skipped", 0))
+        if event.get("phase"):
+            snapshot["phase"] = event["phase"]
         _refresh_pct(snapshot)
         name = event.get("module_name", "")
         if name:
@@ -386,10 +393,20 @@ class SnapshotLogHandler(logging.Handler):
     """
 
     _LOG_LEVEL = logging.INFO  # INFO, WARNING, ERROR; DEBUG ignored
+    _REFRESH_MIN_INTERVAL_S = 2.0
 
-    def __init__(self, snapshot: MutableMapping[str, Any]) -> None:
+    def __init__(
+        self,
+        snapshot: MutableMapping[str, Any],
+        *,
+        on_emit: Optional[Any] = None,
+        refresh_min_interval_s: float = _REFRESH_MIN_INTERVAL_S,
+    ) -> None:
         super().__init__(level=self._LOG_LEVEL)
         self._snapshot = snapshot
+        self._on_emit = on_emit
+        self._refresh_min_interval_s = float(refresh_min_interval_s)
+        self._last_refresh_monotonic = 0.0
 
     def emit(self, record: logging.LogRecord) -> None:
         """Append the record's message to snapshot["recent_logs"].
@@ -400,6 +417,8 @@ class SnapshotLogHandler(logging.Handler):
         - Caps the list at 100 entries (drops oldest).
         - For WARNING or ERROR only, also updates latest_event so the caption
           line in the progress panel highlights the notable message.
+        - When ``on_emit`` is set, invokes it on a throttle so long finalize
+          phases (chart_descriptions) keep the progress panel's log tail live.
         """
         try:
             msg = record.getMessage()
@@ -413,5 +432,22 @@ class SnapshotLogHandler(logging.Handler):
 
             if record.levelno >= logging.WARNING:
                 self._snapshot["latest_event"] = msg
+
+            if self._on_emit is not None:
+                # Refresh while still running (incl. finalizing). Skip once done.
+                status = str(self._snapshot.get("status") or "running")
+                if status == "running":
+                    import time as _time
+
+                    now = _time.monotonic()
+                    if (
+                        now - self._last_refresh_monotonic
+                        >= self._refresh_min_interval_s
+                    ):
+                        self._last_refresh_monotonic = now
+                        try:
+                            self._on_emit()
+                        except Exception:
+                            pass
         except Exception:
             self.handleError(record)

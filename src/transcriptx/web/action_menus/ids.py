@@ -30,10 +30,12 @@ class ActionId(str, Enum):
 class NavStyle(str, Enum):
     """How action links commit navigation.
 
-    ``ON_CLICK``: Streamlit ``on_click`` callback (handlers force ``st.rerun()``
-    so page changes still work inside ``@st.fragment``).
+    ``ON_CLICK``: Streamlit ``on_click`` callback that mutates session state.
+    Safe only outside ``@st.fragment`` — Streamlit then full-app-reruns after
+    the callback. Do not call ``st.rerun()`` inside the callback (it is a
+    no-op and shows a client warning).
 
-    ``CLICK_RERUN``: Prefer this when the strip is painted inside a fragment —
+    ``CLICK_RERUN``: Required when the strip is painted inside a fragment —
     activate on click return value, then explicit full-app ``st.rerun()``.
     """
 

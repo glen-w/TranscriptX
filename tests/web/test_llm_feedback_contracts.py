@@ -33,6 +33,8 @@ def test_shell_defines_llm_feedback_hover_css() -> None:
     # Thumbs styling must be scoped to the wrap container — not ancestor
     # column grids (Charts gallery cards would otherwise center-align).
     assert "st-key-llm_fb_wrap_" in fb_css
+    assert "st-key-llm_fb_form_" in fb_css
+    assert "white-space: nowrap" in fb_css
     assert ":has(.tx-chart-card-meta)" in source
     assert "align-items: flex-start" in source
 
@@ -44,6 +46,26 @@ def test_feedback_widget_not_under_cache_data() -> None:
     assert "st.cache_data" not in source
     assert "@st.cache_resource" not in source
     assert 'key=f"llm_fb_wrap_{key_base}"' in source
+    assert 'key=f"llm_fb_form_{key_base}"' in source
+    assert "def render_llm_feedback_thumbs(" in source
+    assert "def render_llm_feedback_form(" in source
+
+
+def test_badge_row_keeps_form_outside_narrow_column() -> None:
+    """Regression: form nested in [20, 2] fb_col crushes Submit/Cancel labels."""
+    source = Path("src/transcriptx/web/blocks/llm_presentation.py").read_text(
+        encoding="utf-8"
+    )
+    assert "render_llm_feedback_thumbs(" in source
+    assert "render_llm_feedback_form(" in source
+    # Form must not be called inside the trailing fb_col block only.
+    assert "with fb_col:" in source
+    fb_col_block = source.split("with fb_col:")[1].split("if form_open:")[0]
+    assert "render_llm_feedback_thumbs(" in fb_col_block
+    assert "render_llm_feedback_form(" not in fb_col_block
+    assert "if form_open:" in source
+    after_open = source.split("if form_open:")[1]
+    assert "render_llm_feedback_form(" in after_open
 
 
 def test_surface_fixtures_validate(tmp_path: Path) -> None:

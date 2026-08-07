@@ -81,11 +81,7 @@ def test_batch_panel_renders_processed_runs_with_action_links(monkeypatch) -> No
         runs=[run],
     )
 
-    transcript = SimpleNamespace(path=Path("/tmp/alice.json"), base_name="alice")
-    monkeypatch.setattr(mod, "get_cached_list_transcripts", lambda: [transcript])
-    monkeypatch.setattr(
-        mod, "cached_get_transcript_summaries_for_paths", lambda *_a, **_k: []
-    )
+    monkeypatch.setattr(mod, "get_cached_list_transcript_picker_options", lambda: [SimpleNamespace(path="/tmp/alice.json", label="alice")])
     monkeypatch.setattr(mod, "cached_get_module_info_list", lambda: [])
     monkeypatch.setattr(mod, "BatchController", lambda: SimpleNamespace())
 
@@ -166,11 +162,14 @@ def _stub_batch_config_ui(monkeypatch, mod) -> None:
 def test_batch_panel_controller_exception_shows_error_and_clears_cache(
     monkeypatch,
 ) -> None:
+    import transcriptx.web.components.progress_panel as progress_panel
     import transcriptx.web.page_modules.batch_ops as mod
     from transcriptx.app.models.requests import BatchAnalysisRequest
+    from transcriptx.app.progress import make_initial_snapshot
 
     DummyHomeStreamlit.session_state = {
         "batch_transcripts": ["/tmp/alice.json"],
+        progress_panel.SNAPSHOT_KEY: make_initial_snapshot(1),
         mod._PENDING_BATCH_KEY: {
             "request": BatchAnalysisRequest(
                 transcript_paths=[Path("/tmp/alice.json")],
@@ -178,6 +177,7 @@ def test_batch_panel_controller_exception_shows_error_and_clears_cache(
                 selected_modules=["stats"],
             ),
             "execute": True,
+            "started": False,
         },
         mod._BATCH_RESULT_KEY: SimpleNamespace(success=True, runs=[], errors=[]),
     }
@@ -198,10 +198,6 @@ def test_batch_panel_controller_exception_shows_error_and_clears_cache(
             errors.append(str(msg))
 
         @staticmethod
-        def spinner(*_args, **_kwargs):
-            return DummyHomeStreamlit.expander()
-
-        @staticmethod
         def fragment(fn=None, **_kwargs):
             if fn is None:
 
@@ -216,19 +212,19 @@ def test_batch_panel_controller_exception_shows_error_and_clears_cache(
             return None
 
     class _Ctrl:
-        def run_batch_analysis(self, _request):
+        def run_batch_analysis(self, _request, progress=None):
             raise ValidationError("transcript_paths must not be empty")
 
     monkeypatch.setattr(mod, "st", _BatchStreamlit)
+    monkeypatch.setattr(progress_panel, "st", _BatchStreamlit)
+    monkeypatch.setattr(mod, "render_progress_panel", lambda *_a, **_k: None)
+    monkeypatch.setattr(progress_panel, "render_progress_panel", lambda *_a, **_k: None)
     monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
     _stub_batch_config_ui(monkeypatch, mod)
     monkeypatch.setattr(
         mod,
-        "get_cached_list_transcripts",
-        lambda: [SimpleNamespace(path=Path("/tmp/alice.json"), base_name="alice")],
-    )
-    monkeypatch.setattr(
-        mod, "cached_get_transcript_summaries_for_paths", lambda *_a, **_k: []
+        "get_cached_list_transcript_picker_options",
+        lambda: [SimpleNamespace(path="/tmp/alice.json", label="alice")],
     )
     monkeypatch.setattr(mod, "cached_get_module_info_list", lambda: [])
     monkeypatch.setattr(mod, "BatchController", _Ctrl)
@@ -245,11 +241,14 @@ def test_batch_panel_controller_exception_shows_error_and_clears_cache(
 
 @pytest.mark.unit
 def test_batch_panel_workflow_error_clears_prior_result(monkeypatch) -> None:
+    import transcriptx.web.components.progress_panel as progress_panel
     import transcriptx.web.page_modules.batch_ops as mod
     from transcriptx.app.models.requests import BatchAnalysisRequest
+    from transcriptx.app.progress import make_initial_snapshot
 
     DummyHomeStreamlit.session_state = {
         "batch_transcripts": ["/tmp/alice.json"],
+        progress_panel.SNAPSHOT_KEY: make_initial_snapshot(1),
         mod._PENDING_BATCH_KEY: {
             "request": BatchAnalysisRequest(
                 transcript_paths=[Path("/tmp/alice.json")],
@@ -257,6 +256,7 @@ def test_batch_panel_workflow_error_clears_prior_result(monkeypatch) -> None:
                 selected_modules=["stats"],
             ),
             "execute": True,
+            "started": False,
         },
         mod._BATCH_RESULT_KEY: SimpleNamespace(
             success=True, message="old", runs=[], errors=[]
@@ -274,27 +274,23 @@ def test_batch_panel_workflow_error_clears_prior_result(monkeypatch) -> None:
             errors.append(str(msg))
 
         @staticmethod
-        def spinner(*_args, **_kwargs):
-            return DummyHomeStreamlit.expander()
-
-        @staticmethod
         def rerun():
             return None
 
     class _Ctrl:
-        def run_batch_analysis(self, _request):
+        def run_batch_analysis(self, _request, progress=None):
             raise WorkflowExecutionError("pipeline blew up")
 
     monkeypatch.setattr(mod, "st", _BatchStreamlit)
+    monkeypatch.setattr(progress_panel, "st", _BatchStreamlit)
+    monkeypatch.setattr(mod, "render_progress_panel", lambda *_a, **_k: None)
+    monkeypatch.setattr(progress_panel, "render_progress_panel", lambda *_a, **_k: None)
     monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
     _stub_batch_config_ui(monkeypatch, mod)
     monkeypatch.setattr(
         mod,
-        "get_cached_list_transcripts",
-        lambda: [SimpleNamespace(path=Path("/tmp/alice.json"), base_name="alice")],
-    )
-    monkeypatch.setattr(
-        mod, "cached_get_transcript_summaries_for_paths", lambda *_a, **_k: []
+        "get_cached_list_transcript_picker_options",
+        lambda: [SimpleNamespace(path="/tmp/alice.json", label="alice")],
     )
     monkeypatch.setattr(mod, "cached_get_module_info_list", lambda: [])
     monkeypatch.setattr(mod, "BatchController", _Ctrl)
@@ -308,8 +304,10 @@ def test_batch_panel_workflow_error_clears_prior_result(monkeypatch) -> None:
 
 @pytest.mark.unit
 def test_batch_panel_success_replaces_prior_result(monkeypatch) -> None:
+    import transcriptx.web.components.progress_panel as progress_panel
     import transcriptx.web.page_modules.batch_ops as mod
     from transcriptx.app.models.requests import BatchAnalysisRequest
+    from transcriptx.app.progress import make_initial_snapshot
 
     old = SimpleNamespace(success=True, message="old", runs=[], errors=[])
     new = SimpleNamespace(
@@ -317,6 +315,7 @@ def test_batch_panel_success_replaces_prior_result(monkeypatch) -> None:
     )
     DummyHomeStreamlit.session_state = {
         "batch_transcripts": ["/tmp/alice.json"],
+        progress_panel.SNAPSHOT_KEY: make_initial_snapshot(1),
         mod._PENDING_BATCH_KEY: {
             "request": BatchAnalysisRequest(
                 transcript_paths=[Path("/tmp/alice.json")],
@@ -324,6 +323,7 @@ def test_batch_panel_success_replaces_prior_result(monkeypatch) -> None:
                 selected_modules=["stats"],
             ),
             "execute": True,
+            "started": False,
         },
         mod._BATCH_RESULT_KEY: old,
     }
@@ -338,27 +338,23 @@ def test_batch_panel_success_replaces_prior_result(monkeypatch) -> None:
             return None
 
         @staticmethod
-        def spinner(*_args, **_kwargs):
-            return DummyHomeStreamlit.expander()
-
-        @staticmethod
         def rerun():
             return None
 
     class _Ctrl:
-        def run_batch_analysis(self, _request):
+        def run_batch_analysis(self, _request, progress=None):
             return new
 
     monkeypatch.setattr(mod, "st", _BatchStreamlit)
+    monkeypatch.setattr(progress_panel, "st", _BatchStreamlit)
+    monkeypatch.setattr(mod, "render_progress_panel", lambda *_a, **_k: None)
+    monkeypatch.setattr(progress_panel, "render_progress_panel", lambda *_a, **_k: None)
     monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
     _stub_batch_config_ui(monkeypatch, mod)
     monkeypatch.setattr(
         mod,
-        "get_cached_list_transcripts",
-        lambda: [SimpleNamespace(path=Path("/tmp/alice.json"), base_name="alice")],
-    )
-    monkeypatch.setattr(
-        mod, "cached_get_transcript_summaries_for_paths", lambda *_a, **_k: []
+        "get_cached_list_transcript_picker_options",
+        lambda: [SimpleNamespace(path="/tmp/alice.json", label="alice")],
     )
     monkeypatch.setattr(mod, "cached_get_module_info_list", lambda: [])
     monkeypatch.setattr(mod, "BatchController", _Ctrl)
@@ -371,6 +367,103 @@ def test_batch_panel_success_replaces_prior_result(monkeypatch) -> None:
 
 
 @pytest.mark.unit
+def test_batch_panel_execute_binds_live_progress_not_spinner(monkeypatch) -> None:
+    """Pending batch must paint progress_slot and pass a progress callback."""
+    import transcriptx.web.components.progress_panel as progress_panel
+    import transcriptx.web.page_modules.batch_ops as mod
+    from transcriptx.app.models.requests import BatchAnalysisRequest
+    from transcriptx.app.progress import make_initial_snapshot
+
+    progress_paints: list = []
+    progress_args: list = []
+
+    DummyHomeStreamlit.session_state = {
+        "batch_transcripts": ["/tmp/alice.json"],
+        progress_panel.SNAPSHOT_KEY: make_initial_snapshot(1),
+        mod._PENDING_BATCH_KEY: {
+            "request": BatchAnalysisRequest(
+                transcript_paths=[Path("/tmp/alice.json")],
+                analysis_mode="quick",
+                selected_modules=["stats"],
+            ),
+            "execute": True,
+            "started": False,
+        },
+    }
+
+    class _BatchStreamlit(DummyHomeStreamlit):
+        @staticmethod
+        def button(*_args, **_kwargs):
+            return False
+
+        @staticmethod
+        def spinner(*_args, **_kwargs):
+            raise AssertionError("batch must not wrap the run in st.spinner")
+
+        @staticmethod
+        def rerun():
+            return None
+
+    class _Ctrl:
+        def run_batch_analysis(self, request, progress=None):
+            progress_args.append(progress)
+            if progress is not None:
+                progress.on_log("Analyzing alice.json", level="info")
+                progress.on_event(
+                    {
+                        "event": "module_started",
+                        "module_name": "stats",
+                        "index": 1,
+                        "total": 1,
+                    }
+                )
+            return SimpleNamespace(
+                success=True,
+                message="ok",
+                runs=[],
+                errors=[],
+                transcript_count=1,
+            )
+
+    def _paint(snap, **_k):
+        progress_paints.append(dict(snap))
+
+    monkeypatch.setattr(mod, "st", _BatchStreamlit)
+    monkeypatch.setattr(progress_panel, "st", _BatchStreamlit)
+    monkeypatch.setattr(mod, "render_progress_panel", _paint)
+    monkeypatch.setattr(progress_panel, "render_progress_panel", _paint)
+    monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
+    _stub_batch_config_ui(monkeypatch, mod)
+    monkeypatch.setattr(
+        mod,
+        "get_cached_list_transcript_picker_options",
+        lambda: [SimpleNamespace(path="/tmp/alice.json", label="alice")],
+    )
+    monkeypatch.setattr(mod, "cached_get_module_info_list", lambda: [])
+    monkeypatch.setattr(mod, "BatchController", _Ctrl)
+    monkeypatch.setattr(mod, "clear_run_listing_caches", lambda: None)
+    monkeypatch.setattr(mod, "_render_batch_result", lambda _r: None)
+
+    mod.render_batch_analysis_panel()
+
+    assert progress_args and progress_args[0] is not None
+    assert progress_paints, "live panel must paint during execute"
+    snap = DummyHomeStreamlit.session_state[progress_panel.SNAPSHOT_KEY]
+    assert snap["status"] == "completed"
+    assert any("Analyzing alice.json" in line for line in snap.get("recent_logs", []))
+
+
+@pytest.mark.unit
+def test_batch_ops_execute_contract_uses_live_panel() -> None:
+    import transcriptx.web.page_modules.batch_ops as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "render_slot=progress_slot" in source
+    assert "StreamlitProgressCallback" in source
+    assert 'with st.spinner("Running batch analysis...")' not in source
+
+
+@pytest.mark.unit
 def test_batch_ops_module_has_no_run_analysis_import() -> None:
     import transcriptx.web.page_modules.batch_ops as mod
 
@@ -378,3 +471,27 @@ def test_batch_ops_module_has_no_run_analysis_import() -> None:
     assert "run_analysis" not in source
     assert "render_batch_ops_page" not in source
     assert hasattr(mod, "render_batch_analysis_panel")
+
+
+@pytest.mark.unit
+def test_streamlit_progress_stage_start_clears_completed_status(monkeypatch) -> None:
+    """Batch resumes must not leave the prior transcript's Completed banner."""
+    from transcriptx.app.progress import make_initial_snapshot
+    from transcriptx.web.components import progress_panel as panel_mod
+    from transcriptx.web.components.progress_panel import (
+        SNAPSHOT_KEY,
+        StreamlitProgressCallback,
+    )
+
+    session = {SNAPSHOT_KEY: make_initial_snapshot(2)}
+    session[SNAPSHOT_KEY]["status"] = "completed"
+    session[SNAPSHOT_KEY]["phase"] = "completed"
+
+    class _St:
+        session_state = session
+
+    monkeypatch.setattr(panel_mod, "st", _St)
+    cb = StreamlitProgressCallback()
+    cb.on_stage_start("batch_analysis")
+    assert session[SNAPSHOT_KEY]["status"] == "running"
+    assert session[SNAPSHOT_KEY]["phase"] == "batch_analysis"

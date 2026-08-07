@@ -418,6 +418,26 @@ def get_module_info(module_name: str) -> Optional[ModuleInfo]:
     return _module_registry.get_module_info(module_name)
 
 
+def list_finalize_phase_modules(selected_modules: List[str]) -> List[str]:
+    """Return selected finalize-phase module ids in selection order (deduped).
+
+    These modules are excluded from the DAG execution order and run during
+    persistence (e.g. ``chart_descriptions``).
+    """
+    pending: List[str] = []
+    seen: set[str] = set()
+    for mid in selected_modules or []:
+        name = str(mid or "").strip()
+        if not name or name in seen:
+            continue
+        info = get_module_info(name)
+        if info is None or not bool(getattr(info, "finalize_phase", False)):
+            continue
+        seen.add(name)
+        pending.append(name)
+    return pending
+
+
 def canonical_module_id(module_name: str) -> str:
     """Registry-owned normalization for module ids at outcome/reporting boundaries."""
     return _module_registry.resolve_canonical_module_id(module_name)

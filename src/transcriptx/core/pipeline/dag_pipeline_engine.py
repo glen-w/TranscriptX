@@ -8,6 +8,7 @@ from transcriptx.core.pipeline.dag_pipeline_finalize import finalize_execution_r
 from transcriptx.core.pipeline.dag_pipeline_run import (
     resolve_output_dir_for_run,
 )
+from transcriptx.core.pipeline.module_registry import list_finalize_phase_modules
 from transcriptx.core.pipeline.run_options import SpeakerRunOptions
 
 
@@ -102,6 +103,9 @@ def execute_pipeline_runtime(
         pipeline.logger.info(f"Execution order: {', '.join(execution_order)}")
         results["execution_order"] = execution_order
 
+        pending_finalize = list_finalize_phase_modules(selected_modules)
+        progress_total = len(execution_order) + len(pending_finalize)
+
         named_speaker_count_ref = [named_speaker_count]
         for blocked_outcome in pipeline._executor.blocked_from_plan(plan):
             pipeline._executor.reduce_outcome(
@@ -126,6 +130,7 @@ def execute_pipeline_runtime(
             requirements_resolver=requirements_resolver,
             named_speaker_count_ref=named_speaker_count_ref,
             emit=emit,
+            progress_total=progress_total,
         )
 
         finalize_execution_results(
@@ -140,6 +145,7 @@ def execute_pipeline_runtime(
             emit=emit,
             abort_error=abort_error,
             setup_error=None,
+            pending_finalize_modules=pending_finalize,
         )
         pipeline.logger.info(
             f"Pipeline completed. Ran {len(results['modules_run'])} modules with {len(results['errors'])} errors"

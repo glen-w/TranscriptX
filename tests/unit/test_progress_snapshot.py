@@ -208,6 +208,22 @@ class TestUpdateSnapshotFromEvent:
         # error key should not be set when event has no error
         assert snap.get("error") is None
 
+    def test_module_started_honors_finalizing_phase(self):
+        snap = self._snap()
+        update_snapshot_from_event(
+            snap,
+            {
+                "event": "module_started",
+                "module_name": "chart_descriptions",
+                "index": 49,
+                "total": 49,
+                "phase": "finalizing",
+            },
+        )
+        assert snap["phase"] == "finalizing"
+        assert snap["current_module"] == "chart_descriptions"
+        assert snap["status"] == "running"
+
     # --- run_completed ---
 
     def test_run_completed_sets_status(self):

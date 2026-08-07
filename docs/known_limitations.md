@@ -19,7 +19,7 @@ See [bertopic_optional_module.md](dev/bertopic_optional_module.md) and the [inst
 
 ## Large library / performance measurements
 
-Documented corpus sizes and a measurement recipe ship in developer performance envelopes. **Large-library UI soak** may still be pending on release hardware — treat as soft-cut until measured or explicitly accepted as a known limitation in release evidence.
+Documented corpus sizes and a measurement recipe ship in developer performance envelopes. **Large-library UI soak** passed on maintainer hardware (2026-08-07): UI remained responsive with **200+** library transcripts. **Medium-corpus Balanced** batch also measured 2026-08-07 (~9.3 min wall for 6 transcripts on Docker Compose; all succeeded) — see [performance_envelopes_1_0.md](dev/performance_envelopes_1_0.md) and [manual_acceptance_1_0.md](dev/manual_acceptance_1_0.md) §3.12.
 
 ## Voice identity privacy
 
@@ -28,10 +28,6 @@ Voice fingerprint / speaker-match features are identity-sensitive. Read the in-a
 ## Stochastic Local AI output
 
 Optional Ollama / Local AI modules are stochastic. Re-runs can differ. Artifacts carry model identity fields where available; treat Local AI text as assistive, not ground truth. Principal surfaces label Local AI vs deterministic summaries.
-
-## Model / dataset / licence facts (`owner-verify`)
-
-Some third-party model and dataset licence rows remain marked **`owner-verify`** in the trust / NOTICE drafts. Those cells are **not** legal conclusions until owner Hub-card sign-off. See [NOTICE](../NOTICE) (draft) and developer trust governance notes.
 
 ## Install honesty (Mac MPS)
 

@@ -128,46 +128,23 @@ def test_get_session_stats_counts_unknown_as_pending():
 
 
 @pytest.mark.unit
-def test_list_transcript_summaries_for_studio_fallback_and_dedupe(
+def test_list_transcript_summaries_for_studio_uses_light_picker(
     monkeypatch: pytest.MonkeyPatch,
 ):
     svc = CorrectionService()
 
-    monkeypatch.setattr(
-        "transcriptx.core.utils.file_discovery.discover_managed_transcript_paths",
-        lambda _x: ["/tmp/a.json", "/tmp/a.json"],
-    )
-
-    class _Idx:
-        def summary_for_path(self, p):
-            return None
-
-        def list_transcripts(self, canonical_only=False):
-            return [
-                SimpleNamespace(
-                    path="/tmp/a.json",
-                    base_name="a",
-                    segment_count=3,
-                    speaker_map_status="present",
-                ),
-                SimpleNamespace(
-                    path="/tmp/a.json",
-                    base_name="a",
-                    segment_count=3,
-                    speaker_map_status="present",
-                ),
-                SimpleNamespace(
-                    path="/tmp/b.json",
-                    base_name="b",
-                    segment_count=4,
-                    speaker_map_status="missing",
-                ),
-            ]
+    from transcriptx.core.utils.transcript_picker import TranscriptPickerOption
 
     monkeypatch.setattr(
-        "transcriptx.services.speaker_studio.segment_index.SegmentIndexService",
-        _Idx,
+        "transcriptx.core.utils.transcript_picker.list_transcript_picker_options",
+        lambda: [
+            TranscriptPickerOption(path="/tmp/a.json", label="a"),
+            TranscriptPickerOption(path="/tmp/a.json", label="a"),
+            TranscriptPickerOption(path="/tmp/b.json", label="b"),
+        ],
     )
 
     rows = svc.list_transcript_summaries_for_studio()
     assert [r.path for r in rows] == ["/tmp/a.json", "/tmp/b.json"]
+    assert [r.base_name for r in rows] == ["a", "b"]
+    assert all(r.segment_count == 0 for r in rows)

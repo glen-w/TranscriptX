@@ -70,7 +70,7 @@ def test_home_initial_render_skips_recent_runs_and_rich_stats(monkeypatch) -> No
     rich.assert_not_called()
 
 
-def test_home_loads_recent_runs_when_toggle_on(monkeypatch) -> None:
+def test_home_loads_recent_runs_when_expander_open(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
     DummyHomeStreamlit.session_state = {mod._HOME_RECENT_RUNS_KEY: True}
@@ -135,10 +135,13 @@ def test_home_skips_slug_labels_when_no_recent_runs(monkeypatch) -> None:
     assert slug_label_calls["count"] == 0
 
 
-def test_home_renders_light_overview_and_detail_when_toggled(monkeypatch) -> None:
+def test_home_renders_light_overview_and_detail_when_expander_open(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
-    DummyHomeStreamlit.session_state = {mod._HOME_DETAIL_STATS_KEY: True}
+    DummyHomeStreamlit.session_state = {
+        mod._HOME_DETAIL_STATS_KEY: True,
+        mod._HOME_SESSIONS_KEY: True,
+    }
     monkeypatch.setattr(mod, "render_page_shell", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "_slug_display_labels_from_index", lambda: {})
     monkeypatch.setattr(
@@ -195,10 +198,10 @@ def test_home_renders_light_overview_and_detail_when_toggled(monkeypatch) -> Non
         def dataframe(df, **_kwargs):
             frames.append(df)
 
-        @staticmethod
-        def expander(label, **_kwargs):
+        @classmethod
+        def expander(cls, label, **kwargs):
             expanders.append(str(label))
-            return DummyHomeStreamlit.expander(label, **_kwargs)
+            return DummyHomeStreamlit.expander(label, **kwargs)
 
     import transcriptx.web.components.action_links as action_links
     import transcriptx.web.components.recent_run_row as recent_run_row
@@ -208,7 +211,7 @@ def test_home_renders_light_overview_and_detail_when_toggled(monkeypatch) -> Non
     monkeypatch.setattr(recent_run_row, "st", _StatsHomeStreamlit)
     mod.render_home()
 
-    assert "Sessions" in expanders
+    assert expanders == ["Detailed statistics", "Sessions", "Recent runs"]
     metric_labels = [args[0] for args, _ in metrics if args]
     assert metric_labels == [
         "Transcripts",
@@ -227,6 +230,73 @@ def test_home_renders_light_overview_and_detail_when_toggled(monkeypatch) -> Non
     assert frames
     assert list(frames[0]["Session"]) == ["session-a"]
 
+
+def test_home_sessions_expander_independent_of_detailed_statistics(monkeypatch) -> None:
+    import transcriptx.web.page_modules.home as mod
+
+    DummyHomeStreamlit.session_state = {mod._HOME_SESSIONS_KEY: True}
+    monkeypatch.setattr(mod, "render_page_shell", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(mod, "_slug_display_labels_from_index", lambda: {})
+    monkeypatch.setattr(
+        mod,
+        "get_cached_home_light_summary",
+        lambda: {
+            "library_transcript_count": 1,
+            "analysed_transcript_count": 1,
+            "session_count": 1,
+            "has_any": True,
+        },
+    )
+    monkeypatch.setattr(
+        mod,
+        "instrument_cached_call",
+        lambda name, fn, *args, **kwargs: []
+        if name == "cached_list_recent_runs"
+        else fn(*args, **kwargs),
+    )
+    monkeypatch.setattr(
+        mod,
+        "_cached_sessions_and_stats",
+        lambda: (
+            [
+                {
+                    "name": "session-b",
+                    "duration_seconds": 30,
+                    "word_count": 40,
+                    "segment_count": 4,
+                    "speaker_count": 1,
+                    "analysis_completion": 50,
+                }
+            ],
+            {
+                "total_duration_seconds": 30,
+                "total_word_count": 40,
+                "total_speakers": 1,
+                "average_completion": 50,
+                "total_artifact_bytes": 1024,
+            },
+        ),
+    )
+
+    metrics: list[str] = []
+    frames: list[object] = []
+
+    class _SessionsHomeStreamlit(DummyHomeStreamlit):
+        @staticmethod
+        def metric(*args, **kwargs):
+            if args:
+                metrics.append(str(args[0]))
+
+        @staticmethod
+        def dataframe(df, **_kwargs):
+            frames.append(df)
+
+    monkeypatch.setattr(mod, "st", _SessionsHomeStreamlit)
+    mod.render_home()
+
+    assert "Total duration" not in metrics
+    assert frames
+    assert list(frames[0]["Session"]) == ["session-b"]
 
 def test_home_export_zip_prepares_download(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod

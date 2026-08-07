@@ -277,6 +277,8 @@ class RunOrchestrator:
         prepared_transcript: PreparedTranscript,
         prepared_workspace: PreparedWorkspace,
         request: RunRequest,
+        *,
+        on_event: Optional[Any] = None,
     ) -> List[PersistenceOutcome]:
         outcomes: List[PersistenceOutcome] = []
         outcomes.append(
@@ -286,6 +288,7 @@ class RunOrchestrator:
                 transcript_key=prepared_transcript.transcript_key,
                 selected_modules=request.selected_modules,
                 results=executed.dag_results,
+                on_event=on_event,
             )
         )
         outcomes.append(
@@ -477,6 +480,7 @@ class RunOrchestrator:
                             state.prepared_transcript,
                             state.prepared_workspace,
                             request,
+                            on_event=on_event,
                         )
                     )
                     state.persisted_main = True

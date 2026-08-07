@@ -32,18 +32,10 @@ def test_render_library_default_render_skips_batch_summary_enrichment(
         TranscriptMetadata(
             path=Path("/tmp/short.json"),
             base_name="short",
-            duration_seconds=125.0,
-            speaker_count=2,
-            has_analysis_outputs=False,
-            has_speaker_map=True,
         ),
         TranscriptMetadata(
             path=Path("/tmp/long.json"),
             base_name="long",
-            duration_seconds=3720.0,
-            speaker_count=3,
-            has_analysis_outputs=True,
-            has_speaker_map=False,
         ),
     ]
 
@@ -51,7 +43,7 @@ def test_render_library_default_render_skips_batch_summary_enrichment(
     called = {"transcripts": 0, "summaries": 0}
     monkeypatch.setattr(
         mod,
-        "get_cached_list_transcripts",
+        "get_cached_light_transcript_metadata",
         lambda: called.__setitem__("transcripts", called["transcripts"] + 1)
         or transcripts,
     )
@@ -75,7 +67,8 @@ def test_render_library_default_render_skips_batch_summary_enrichment(
         "2026-03-25 10:00",
         "2026-03-25 10:00",
     ]
-    assert list(_DummyStreamlit.captured_df["Duration"]) == ["2m", "1h 2m"]
+    assert list(_DummyStreamlit.captured_df["Duration"]) == ["-", "-"]
+    assert list(_DummyStreamlit.captured_df["Speakers"]) == ["-", "-"]
     assert called["transcripts"] == 1
     assert called["summaries"] == 0
 
@@ -102,7 +95,10 @@ def test_library_detail_toggle_enriches_selected_transcript_only(monkeypatch) ->
     ]
 
     monkeypatch.setattr(mod, "st", _DummyStreamlit)
-    monkeypatch.setattr(mod, "get_cached_list_transcripts", lambda: transcripts)
+    monkeypatch.setattr(mod, "get_cached_light_transcript_metadata", lambda: transcripts)
+    monkeypatch.setattr(
+        mod, "get_cached_transcript_metadata", lambda _p: transcripts[0]
+    )
     monkeypatch.setattr(mod, "_format_path_created_at", lambda _p: "2026-03-25 10:00")
     audio_calls = {"resolve": 0, "has_resolvable": 0}
     monkeypatch.setattr(

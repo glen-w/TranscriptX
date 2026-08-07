@@ -93,15 +93,13 @@ def _button(
     icon = icon_for(action)
     help_text = help_for(action)
     if ctx.nav_style == NavStyle.ON_CLICK:
-
-        def _cb() -> None:
-            on_activate()
-            # Fragment widgets auto-rerun only the fragment after on_click.
-            # Page-changing actions must force a full-app rerun or navigation
-            # appears to do nothing. Harmless outside fragments.
-            st.rerun()
-
-        render_action_link(label, key=key, icon=icon, help=help_text, on_click=_cb)
+        # Mutate session state only. Outside fragments Streamlit already
+        # schedules a full-app rerun after on_click; calling rerun from the
+        # callback is a no-op and surfaces a client warning.
+        # Fragment-hosted strips must use NavStyle.CLICK_RERUN instead.
+        render_action_link(
+            label, key=key, icon=icon, help=help_text, on_click=on_activate
+        )
     else:
         if render_action_link(label, key=key, icon=icon, help=help_text):
             on_activate()

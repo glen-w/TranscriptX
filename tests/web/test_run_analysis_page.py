@@ -59,14 +59,14 @@ def test_run_analysis_empty_transcripts_renders_empty_state(monkeypatch) -> None
         "get_config",
         lambda: SimpleNamespace(group_analysis=SimpleNamespace(enabled=False)),
     )
-    monkeypatch.setattr(mod, "get_cached_list_transcripts", lambda: [])
+    monkeypatch.setattr(mod, "get_cached_list_transcript_picker_options", lambda: [])
     monkeypatch.setattr(mod, "cached_get_available_modules", lambda: ["stats"])
     monkeypatch.setattr(mod, "cached_get_default_modules", lambda *_a, **_k: ["stats"])
     fragment_calls: list = []
     monkeypatch.setattr(
         mod,
         "_run_analysis_config_and_launch_fragment",
-        lambda *args, **kwargs: fragment_calls.append(args),
+        lambda *args, **kwargs: fragment_calls.append((args, kwargs)),
     )
 
     mod.render_run_analysis_page()
@@ -75,9 +75,8 @@ def test_run_analysis_empty_transcripts_renders_empty_state(monkeypatch) -> None
     assert empty_calls
     assert empty_calls[0][0][0] == "no_results_yet"
     assert "No transcripts" in empty_calls[0][0][1]
-    # Fragment still invoked with no transcript selected
-    assert fragment_calls
-    assert fragment_calls[0][1] is None
+    # Empty library returns before the selection/config fragment.
+    assert fragment_calls == []
 
 
 @pytest.mark.unit
@@ -133,8 +132,8 @@ def test_run_analysis_in_progress_skips_launch_fragment(monkeypatch) -> None:
     )
     monkeypatch.setattr(
         mod,
-        "get_cached_list_transcripts",
-        lambda: [SimpleNamespace(path=Path("/tmp/t.json"))],
+        "get_cached_list_transcript_picker_options",
+        lambda: [SimpleNamespace(path="/tmp/t.json", label="t")],
     )
     monkeypatch.setattr(
         mod,
@@ -319,7 +318,7 @@ def test_run_analysis_transcript_path_invokes_post_actions(monkeypatch) -> None:
         "get_config",
         lambda: SimpleNamespace(group_analysis=SimpleNamespace(enabled=False)),
     )
-    monkeypatch.setattr(mod, "get_cached_list_transcripts", lambda: [])
+    monkeypatch.setattr(mod, "get_cached_list_transcript_picker_options", lambda: [])
     monkeypatch.setattr(mod, "cached_get_available_modules", lambda: ["stats"])
     monkeypatch.setattr(mod, "cached_get_default_modules", lambda *_a, **_k: ["stats"])
     monkeypatch.setattr(mod, "render_empty_state", lambda *_a, **_k: None)
@@ -427,7 +426,7 @@ def test_run_analysis_group_target_hidden_when_disabled(monkeypatch) -> None:
         "get_config",
         lambda: SimpleNamespace(group_analysis=SimpleNamespace(enabled=False)),
     )
-    monkeypatch.setattr(mod, "get_cached_list_transcripts", lambda: [])
+    monkeypatch.setattr(mod, "get_cached_list_transcript_picker_options", lambda: [])
     monkeypatch.setattr(mod, "cached_get_available_modules", lambda: ["stats"])
     monkeypatch.setattr(mod, "cached_get_default_modules", lambda *_a, **_k: ["stats"])
     monkeypatch.setattr(mod, "render_empty_state", lambda *_a, **_k: None)
@@ -472,7 +471,7 @@ def test_run_analysis_group_enabled_empty_groups_empty_state(monkeypatch) -> Non
     monkeypatch.setattr(
         mod,
         "_run_analysis_config_and_launch_fragment",
-        lambda *args, **kwargs: fragment_calls.append(args),
+        lambda *args, **kwargs: fragment_calls.append((args, kwargs)),
     )
 
     mod.render_run_analysis_page()
@@ -481,9 +480,7 @@ def test_run_analysis_group_enabled_empty_groups_empty_state(monkeypatch) -> Non
     assert empty_calls
     assert empty_calls[0][0][0] == "no_results_yet"
     assert "No groups yet" in empty_calls[0][0][1]
-    assert fragment_calls
-    assert fragment_calls[0][0] == "Group"
-    assert fragment_calls[0][2] is None
+    assert fragment_calls == []
 
 
 @pytest.mark.unit
@@ -523,7 +520,7 @@ def test_run_analysis_batch_target_skips_single_run_paths(monkeypatch) -> None:
     )
     monkeypatch.setattr(
         mod,
-        "get_cached_list_transcripts",
+        "get_cached_list_transcript_picker_options",
         lambda: list_calls.append(True) or [],
     )
     monkeypatch.setattr(
@@ -678,14 +675,14 @@ def test_run_analysis_group_enabled_selects_group(monkeypatch) -> None:
     monkeypatch.setattr(
         mod,
         "_run_analysis_config_and_launch_fragment",
-        lambda *args, **kwargs: fragment_calls.append(args),
+        lambda *args, **kwargs: fragment_calls.append((args, kwargs)),
     )
 
     mod.render_run_analysis_page()
 
     assert fragment_calls
-    assert fragment_calls[0][0] == "Group"
-    assert fragment_calls[0][2] is group
+    assert fragment_calls[0][0] == ("Group",)
+    assert fragment_calls[0][1]["groups"] == (group,)
 
 
 @pytest.mark.unit
@@ -729,3 +726,19 @@ def test_run_analysis_single_launch_button() -> None:
     source = Path(mod.__file__).read_text(encoding="utf-8")
     assert source.count('key="run_analysis_launch"') == 1
     assert "_PENDING_LAUNCH_KEY" in source
+
+
+@pytest.mark.unit
+def test_run_analysis_transcript_select_lives_in_fragment() -> None:
+    """Dropdown changes must fragment-rerun, not full-app rerun the sidebar."""
+    import transcriptx.web.page_modules.run_analysis as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    frag_start = source.index("def _run_analysis_config_and_launch_fragment")
+    page_start = source.index("def render_run_analysis_page")
+    # Helpers that own the selectbox sit above the fragment def; the page body
+    # after render_run_analysis_page must not instantiate the transcript widget.
+    page_body = source[page_start:]
+    assert 'key="run_analysis_transcript"' not in page_body
+    assert "_resolve_transcript_selection" in source[frag_start:page_start]
+    assert 'key="run_analysis_transcript"' in source[:page_start]

@@ -251,6 +251,11 @@ def test_clear_transcript_listing_caches_clears_session_list(monkeypatch) -> Non
     )
     monkeypatch.setattr(
         mod,
+        "cached_list_transcript_picker_options",
+        MagicMock(clear=_track_clear("picker_options")),
+    )
+    monkeypatch.setattr(
+        mod,
         "cached_transcript_summary_for_path",
         MagicMock(clear=_track_clear("per_path_summaries")),
     )
@@ -292,6 +297,7 @@ def test_clear_transcript_listing_caches_clears_session_list(monkeypatch) -> Non
         "home_summary",
         "transcripts",
         "transcript_count",
+        "picker_options",
         "per_path_summaries",
         "speaker_id_segments",
         "all_summaries",
@@ -359,10 +365,7 @@ def test_transcript_paths_for_speaker_views_scans_run_dirs(
         "transcriptx.core.utils.paths.OUTPUTS_DIR",
         outputs,
     )
-    monkeypatch.setattr(
-        "transcriptx.core.utils.file_discovery.discover_managed_transcript_paths",
-        lambda _cfg: [],
-    )
+    monkeypatch.setattr(mod, "_transcript_picker_options_impl", lambda: [])
     monkeypatch.setattr(mod, "cached_list_available_sessions", lambda: [])
 
     found = mod.transcript_paths_for_speaker_views_impl()
@@ -391,8 +394,9 @@ def test_transcript_paths_for_speaker_views_dedupes_managed_and_run_dir(
 
     monkeypatch.setattr("transcriptx.core.utils.paths.OUTPUTS_DIR", outputs)
     monkeypatch.setattr(
-        "transcriptx.core.utils.file_discovery.discover_managed_transcript_paths",
-        lambda _cfg: [transcript],
+        mod,
+        "_transcript_picker_options_impl",
+        lambda: [mod.TranscriptPickerOption(path=str(transcript), label=transcript.stem)],
     )
     monkeypatch.setattr(mod, "cached_list_available_sessions", lambda: [])
 
@@ -453,3 +457,60 @@ def test_voice_segment_payload_lazy_and_separate(tmp_path: Path) -> None:
     assert not hasattr(idx, "voice_segment_payload")
     payload = mod.load_voice_segment_payload(transcript)
     assert payload[0]["speaker"] == "SPEAKER_00"
+
+
+def test_transcript_picker_options_uses_index_and_disk_without_validation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Picker listing must not revalidate or parse segments for every path."""
+    from transcriptx.core.utils import transcript_picker as picker_mod
+
+    indexed = tmp_path / "indexed.json"
+    indexed.write_text("{}", encoding="utf-8")
+    on_disk = tmp_path / "disk-only.json"
+    on_disk.write_text("{}", encoding="utf-8")
+    missing = tmp_path / "missing.json"
+
+    monkeypatch.setattr(
+        "transcriptx.core.utils.slug_manager.list_all_transcripts",
+        lambda: [
+            {
+                "source_path": str(indexed),
+                "source_basename": "Indexed Meeting",
+            },
+            {
+                "source_path": str(missing),
+                "source_basename": "Gone",
+            },
+        ],
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.file_discovery.discover_all_transcript_paths",
+        lambda _root: [indexed, on_disk],
+    )
+
+    validate_calls: list[str] = []
+
+    def _must_not_validate(path):  # pragma: no cover - assertion path
+        validate_calls.append(str(path))
+        raise AssertionError("picker must not validate managed transcripts")
+
+    monkeypatch.setattr(
+        "transcriptx.io.canonical_transcript_validation.validate_canonical_transcript",
+        _must_not_validate,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "transcriptx.app.controllers.library_controller.LibraryController.get_transcript_metadata",
+        lambda *_a, **_k: (_ for _ in ()).throw(
+            AssertionError("picker must not load library metadata")
+        ),
+        raising=False,
+    )
+
+    options = picker_mod.list_transcript_picker_options()
+    by_label = {opt.label: opt.path for opt in options}
+    assert by_label["Indexed Meeting"] == str(indexed.resolve())
+    assert by_label["disk-only"] == str(on_disk.resolve())
+    assert "Gone" not in by_label
+    assert validate_calls == []

@@ -52,6 +52,11 @@ class DummyForm:
 
 
 class DummyExpander:
+    """st.expander stand-in; ``open`` mirrors Streamlit 1.55+ dynamic expanders."""
+
+    def __init__(self, open: bool | None = None) -> None:
+        self.open = open
+
     def __enter__(self):
         return self
 
@@ -274,9 +279,22 @@ class DummyHomeStreamlit:
     def rerun():
         return None
 
-    @staticmethod
-    def expander(*_args, **_kwargs):
-        return DummyExpander()
+    @classmethod
+    def expander(
+        cls,
+        *_args,
+        expanded: bool = False,
+        key: str | None = None,
+        on_change: str | object = "ignore",
+        **_kwargs,
+    ):
+        if on_change == "ignore" or on_change is None:
+            open_state: bool | None = None
+        elif key is not None and key in cls.session_state:
+            open_state = bool(cls.session_state[key])
+        else:
+            open_state = bool(expanded)
+        return DummyExpander(open=open_state)
 
     @staticmethod
     def container(*_args, **_kwargs):

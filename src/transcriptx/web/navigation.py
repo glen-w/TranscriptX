@@ -230,13 +230,21 @@ def build_prerequisites() -> dict[str, PagePrerequisite]:
 
 
 def make_session_path_resolver():
-    """Build an injected session resolver using cached session listing."""
-    from transcriptx.web.cache_helpers import cached_list_available_sessions
+    """Build an injected session resolver; load sessions only on first miss.
 
-    sessions = cached_list_available_sessions()
+    ``resolve_transcript_context`` only calls the resolver when the slug index
+    has no entry. Eager ``cached_list_available_sessions()`` on every picker
+    selection was paying rich session-scan cost even for indexed transcripts.
+    """
+    from transcriptx.web import cache_helpers
+
+    sessions_box: list[list] = []
 
     def _resolve(path: str) -> tuple[str, str] | None:
-        return FileService.resolve_session_for_transcript_path(path, sessions)
+        if not sessions_box:
+            # Look up via module attribute so tests can monkeypatch the helper.
+            sessions_box.append(cache_helpers.cached_list_available_sessions())
+        return FileService.resolve_session_for_transcript_path(path, sessions_box[0])
 
     return _resolve
 

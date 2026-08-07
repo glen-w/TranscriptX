@@ -192,6 +192,64 @@ def test_run_batch_analysis_aggregates_successes_and_errors(
 
 
 @pytest.mark.unit
+def test_run_batch_analysis_emits_progress_without_fractional_pct(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Batch stage progress must not pass 0–1 pct (collapses the live UI bar)."""
+    first = tmp_path / "a.json"
+    second = tmp_path / "b.json"
+    first.write_text("{}", encoding="utf-8")
+    second.write_text("{}", encoding="utf-8")
+    request = BatchAnalysisRequest(transcript_paths=[first, second])
+
+    stage_progress: list[tuple[str, float | None]] = []
+    logs: list[str] = []
+    stage_starts: list[str] = []
+
+    class _RecordingProgress:
+        def on_stage_start(self, stage_name: str) -> None:
+            stage_starts.append(stage_name)
+
+        def on_stage_progress(self, message: str, pct: float | None = None) -> None:
+            stage_progress.append((message, pct))
+
+        def on_stage_complete(self, stage_name: str) -> None:
+            return None
+
+        def on_log(self, message: str, level: str = "info") -> None:
+            logs.append(message)
+
+        def on_event(self, event) -> None:
+            return None
+
+    def _fake_run_analysis(req, _progress):
+        return AnalysisResult(
+            success=True,
+            run_dir=tmp_path / f"run-{req.transcript_path.stem}",
+            manifest_path=tmp_path
+            / f"run-{req.transcript_path.stem}"
+            / ".transcriptx"
+            / "manifest.json",
+            modules_executed=["stats"],
+            warnings=[],
+            errors=[],
+        )
+
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.batch.run_analysis", _fake_run_analysis
+    )
+    result = run_batch_analysis(request, progress=_RecordingProgress())
+    assert result.success is True
+    assert stage_starts == ["batch_analysis", "batch_analysis"]
+    assert len(stage_progress) == 2
+    assert all(pct is None for _, pct in stage_progress)
+    assert "Processing 1/2: a.json" in stage_progress[0][0]
+    assert "Processing 2/2: b.json" in stage_progress[1][0]
+    assert any("Analyzing a.json" in line for line in logs)
+    assert any("Analyzing b.json" in line for line in logs)
+
+
+@pytest.mark.unit
 def test_identify_speakers_happy_path_with_rename(monkeypatch, tmp_path: Path) -> None:
     transcript = tmp_path / "speaker.json"
     transcript.write_text('{"segments": []}', encoding="utf-8")

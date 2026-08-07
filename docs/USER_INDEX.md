@@ -12,10 +12,11 @@ Curated entry points for people using TranscriptX (not repository historians).
 | [README.md](../README.md) | Product landing and quickstart |
 | [Website](../website/index.html) | Modest public landing (GitHub Pages) |
 | [PRODUCT.md](PRODUCT.md) | Product definition |
+| [Comparison](comparison.md) | TranscriptX vs STT, meeting assistants, and CI products |
 | [Installation](runtime/installation.md) | Install profiles and configuration |
 | [Transcription](runtime/transcription.md) | External transcription workflows |
 | [Docker](runtime/docker.md) | Compose-based runtime |
-| [NOTICE](../NOTICE) | Third-party model / dataset notice (draft) |
+| [NOTICE](../NOTICE) | Third-party model / dataset notice |
 | [Known limitations](known_limitations.md) | User-facing limits (experimental, optional stacks, AI, privacy) |
 
 ## Reference

@@ -355,9 +355,10 @@ def test_apply_identity_does_not_regress_slug_to_stem(transcript_env) -> None:
 def test_action_menu_gui_sites_can_full_app_reload() -> None:
     """Every GUI action-menu strip must be able to navigate off-page.
 
-    Fragment-hosted strips must use ``NavStyle.CLICK_RERUN`` (or equivalent
-    explicit app ``st.rerun``). Non-fragment strips may use ``ON_CLICK``;
-    handlers also force ``st.rerun()`` in the on_click path as defense in depth.
+    Fragment-hosted strips must use ``NavStyle.CLICK_RERUN`` (explicit app
+    ``st.rerun`` after the button return). Non-fragment strips may use
+    ``ON_CLICK`` (Streamlit full-app-reruns after the callback; never call
+    ``st.rerun()`` inside ``on_click`` — it is a no-op warning).
     """
     from pathlib import Path
 
@@ -369,12 +370,19 @@ def test_action_menu_gui_sites_can_full_app_reload() -> None:
     import transcriptx.web.page_modules.speaker_id as speaker_mod
     import transcriptx.web.page_modules.upload_transcript as import_mod
 
-    # Defense in depth: ON_CLICK callbacks must still force full-app rerun.
+    # ON_CLICK: activate via on_click only — no st.rerun() in that branch.
     handler_src = Path(handlers_mod.__file__).read_text(encoding="utf-8")
     on_click_block = handler_src.split("if ctx.nav_style == NavStyle.ON_CLICK:", 1)[1]
     on_click_block = on_click_block.split("else:", 1)[0]
-    assert "st.rerun()" in on_click_block
-    assert "on_activate()" in on_click_block
+    assert "on_click=on_activate" in on_click_block
+    assert "st.rerun()" not in on_click_block
+    # CLICK_RERUN: button return path must still force full-app rerun.
+    click_rerun_block = handler_src.split("if ctx.nav_style == NavStyle.ON_CLICK:", 1)[
+        1
+    ].split("else:", 1)[1]
+    click_rerun_block = click_rerun_block.split("\ndef ", 1)[0]
+    assert "on_activate()" in click_rerun_block
+    assert "st.rerun()" in click_rerun_block
 
     # Library — strip lives inside ``_library_browser_fragment``.
     library_src = Path(library_mod.__file__).read_text(encoding="utf-8")

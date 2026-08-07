@@ -3,7 +3,7 @@ Authority: analysis_quality_audit.md
 
 # Analysis quality audit judgements (0.9.7 draft)
 
-**Status:** provisional agent draft for owner review — not final sign-off  
+**Status:** provisional agent draft; Hub-card residual dropped 2026-08-07 — not a blocking owner Hub pass 
 **Scaffold (machine rows):** [analysis_quality_audit_scaffold.md](analysis_quality_audit_scaffold.md)  
 **Column authority:** [analysis_quality_audit.md](analysis_quality_audit.md)  
 **Severity rules:** [release_severity_triage_1_0.md](release_severity_triage_1_0.md)
@@ -77,7 +77,7 @@ Judgements live here so `make docs-gen` can regenerate the scaffold without wipi
 | Deterministic summary looking like AI | must-fix | Overview badge `Deterministic` |
 | Voice privacy copy missing | must-fix | `VOICE_PRIVACY_USER_NOTICE` + notice v2 |
 | Experimental emotion modules in Guided defaults | known limitation | **Applied 0.9.8:** removed from Balanced heavy allowlist (`fine_grained_emotion` / `contextual_emotion` off Guided defaults); Thorough/Full still may include. No module delete. |
-| Perf envelopes incomplete on large library | known limitation | Recipe ships; fill on human-testing hardware if needed |
+| Perf envelopes incomplete on large library | closed | Large-library UI soak **pass** 2026-08-07 (200+ transcripts); Medium Balanced batch **pass** 2026-08-07 (~9.3 min / 6 transcripts) |
 | Chart LLM narratives unlabelled | must-fix | Local AI badge on Charts gallery LLM text (**0.9.7**) |
 | Custom Q&A unlabelled | must-fix | Local AI badge on Insights custom QA block (**0.9.7**) |
 | RTD hostname not live | known limitation | Flip checklist ready; owner slug gated |

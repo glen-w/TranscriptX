@@ -87,8 +87,10 @@ def run_batch_analysis(
 
     for idx, path in enumerate(transcript_paths):
         progress.on_stage_start("batch_analysis")
+        # Leave pct to nested per-transcript module events (0–100). Passing a
+        # 0–1 batch fraction here used to collapse the live bar.
         progress.on_stage_progress(
-            f"Processing {idx + 1}/{total}: {path.name}", pct=(idx + 1) / total
+            f"Processing {idx + 1}/{total}: {path.name}", pct=None
         )
         progress.on_log(f"Analyzing {path.name}", level="info")
 

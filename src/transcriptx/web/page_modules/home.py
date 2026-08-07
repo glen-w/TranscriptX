@@ -26,6 +26,7 @@ from transcriptx.web.utils import (
 )
 
 _HOME_DETAIL_STATS_KEY = "home_show_detailed_statistics"
+_HOME_SESSIONS_KEY = "home_show_sessions"
 _HOME_RECENT_RUNS_KEY = "home_show_recent_runs"
 
 
@@ -65,8 +66,8 @@ def _render_transcript_overview() -> bool:
 
 
 def _render_detailed_statistics() -> None:
-    """Rich metrics + sessions table (opt-in; parses transcripts / manifests)."""
-    sessions, stats = _cached_sessions_and_stats()
+    """Rich aggregate metrics (opt-in; parses transcripts / manifests)."""
+    _sessions, stats = _cached_sessions_and_stats()
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.metric(
@@ -91,28 +92,32 @@ def _render_detailed_statistics() -> None:
             help="Total size of produced analysis artifacts across all runs",
         )
 
+
+def _render_sessions() -> None:
+    """Per-session table (opt-in; shares cache with detailed statistics)."""
+    sessions, _stats = _cached_sessions_and_stats()
     if not sessions:
+        st.info("No sessions found.")
         return
-    with st.expander("Sessions", expanded=False):
-        rows = []
-        for s in sorted(
-            sessions,
-            key=lambda session: session.get("duration_seconds", 0),
-            reverse=True,
-        ):
-            rows.append(
-                {
-                    "Session": s.get("name", ""),
-                    "Duration": format_duration_display_from_config(
-                        s.get("duration_seconds", 0)
-                    ),
-                    "Words": s.get("word_count", 0),
-                    "Segments": s.get("segment_count", 0),
-                    "Speakers": s.get("speaker_count", 0),
-                    "Completion %": s.get("analysis_completion", 0),
-                }
-            )
-        st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+    rows = []
+    for s in sorted(
+        sessions,
+        key=lambda session: session.get("duration_seconds", 0),
+        reverse=True,
+    ):
+        rows.append(
+            {
+                "Session": s.get("name", ""),
+                "Duration": format_duration_display_from_config(
+                    s.get("duration_seconds", 0)
+                ),
+                "Words": s.get("word_count", 0),
+                "Segments": s.get("segment_count", 0),
+                "Speakers": s.get("speaker_count", 0),
+                "Completion %": s.get("analysis_completion", 0),
+            }
+        )
+    st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
 
 
 def _render_recent_runs() -> None:
@@ -125,19 +130,18 @@ def _render_recent_runs() -> None:
     )
     set_count("recent_runs_returned", len(runs))
 
-    with st.expander("Recent runs", expanded=True):
-        if not runs:
-            render_empty_state(
-                "no_results_yet",
-                "No analysis runs yet",
-                "Start from the Library or Run Analysis after adding transcripts.",
-                primary_action=("Run Analysis", "Run Analysis"),
-                secondary_action=("Library", "Library"),
-            )
-        else:
-            slug_labels = _slug_display_labels_from_index()
-            for idx, run in enumerate(runs[:5]):
-                render_recent_run_row(run, row_index=idx, slug_labels=slug_labels)
+    if not runs:
+        render_empty_state(
+            "no_results_yet",
+            "No analysis runs yet",
+            "Start from the Library or Run Analysis after adding transcripts.",
+            primary_action=("Run Analysis", "Run Analysis"),
+            secondary_action=("Library", "Library"),
+        )
+    else:
+        slug_labels = _slug_display_labels_from_index()
+        for idx, run in enumerate(runs[:5]):
+            render_recent_run_row(run, row_index=idx, slug_labels=slug_labels)
 
 
 def render_home() -> None:
@@ -147,22 +151,36 @@ def render_home() -> None:
     try:
         _render_transcript_overview()
 
-        show_detail = st.toggle(
-            "Show detailed statistics",
-            value=False,
+        # Dynamic expanders (on_change="rerun") gate expensive work via .open —
+        # collapsed bodies do not run until the user expands them.
+        details = st.expander(
+            "Detailed statistics",
+            expanded=False,
             key=_HOME_DETAIL_STATS_KEY,
-            help="Loads per-session duration, words, and artifact sizes (slower on large libraries).",
+            on_change="rerun",
         )
-        if show_detail:
-            _render_detailed_statistics()
+        if details.open:
+            with details:
+                _render_detailed_statistics()
 
-        show_recent = st.toggle(
-            "Show recent runs",
-            value=False,
-            key=_HOME_RECENT_RUNS_KEY,
-            help="Scans analysis output folders for the latest runs.",
+        sessions = st.expander(
+            "Sessions",
+            expanded=False,
+            key=_HOME_SESSIONS_KEY,
+            on_change="rerun",
         )
-        if show_recent:
-            _render_recent_runs()
+        if sessions.open:
+            with sessions:
+                _render_sessions()
+
+        recent = st.expander(
+            "Recent runs",
+            expanded=False,
+            key=_HOME_RECENT_RUNS_KEY,
+            on_change="rerun",
+        )
+        if recent.open:
+            with recent:
+                _render_recent_runs()
     except Exception as e:
         st.error(f"Could not load dashboard: {e}")

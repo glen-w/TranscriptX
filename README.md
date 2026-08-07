@@ -7,11 +7,12 @@ Authority: docs/PRODUCT.md
 
 Import and organise transcripts on your machine; explore language, themes, speakers, interactions, emotion, voice and conversational dynamics; use structured analyses and optional local AI to find useful patterns; compare over time; inspect and export machine-readable results — without sending your corpus to a cloud analysis SaaS.
 
-Product definition (authoritative): [docs/PRODUCT.md](docs/PRODUCT.md).
+Product definition (authoritative): [docs/PRODUCT.md](docs/PRODUCT.md).  
+How it compares to transcription tools, meeting assistants, and conversation intelligence: [docs/comparison.md](docs/comparison.md).
 
 ## Get started
 
-TranscriptX does **not** transcribe audio itself. Bring transcript files from external tools (WhisperX, AssemblyAI, Deepgram, Otter, manual, …). See [transcription](docs/runtime/transcription.md) and [storage](docs/runtime/STORAGE.md).
+TranscriptX does **not** transcribe audio itself. Bring transcript files from external tools (WhisperX, [Scriberr](https://scriberr.app/), AssemblyAI, Deepgram, Otter, manual, …). See [transcription](docs/runtime/transcription.md) and [storage](docs/runtime/STORAGE.md).
 
 ### Docker (no local Python)
 
@@ -67,11 +68,12 @@ More: [generated CLI / API notes](docs/generated/cli.md) · [public surfaces](do
 
 ## Direction
 
-Stabilisation toward a credible **1.0** (schema epoch; Guided/demo trialled in **0.9.6** then removed; automatable harden + public landing **0.9.7**; then unfamiliar-user validation) — not feature-count sprawl. Longer term: personal audio intelligence companion. See [ROADMAP.md](docs/ROADMAP.md) and [pre_release_roadmap_1_0.md](docs/dev/pre_release_roadmap_1_0.md).
+Stabilisation toward a credible **1.0** (schema epoch; Guided/demo trialled in **0.9.6** then removed; automatable harden + public landing **0.9.7**; then unfamiliar-user validation) — not feature-count sprawl. Longer term: personal audio intelligence companion (optional local STT, playback polish, installable shell — see 1.x themes). See [ROADMAP.md](docs/ROADMAP.md) and [pre_release_roadmap_1_0.md](docs/dev/pre_release_roadmap_1_0.md).
 
 ## Links
 
 - [Website](website/index.html) (modest public landing; GitHub Pages workflow)
+- [Comparison](docs/comparison.md) — TranscriptX vs STT, meeting assistants, and CI products
 - [User docs index](docs/USER_INDEX.md)
 - [Developer docs index](docs/DEV_INDEX.md)
 - [Contract index](docs/CONTRACT_INDEX.md)

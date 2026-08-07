@@ -331,7 +331,11 @@ def run_analysis(
         _tx_logger.handlers = [
             h for h in _tx_logger.handlers if not isinstance(h, SnapshotLogHandler)
         ]
-        _log_handler = SnapshotLogHandler(snapshot)
+        _refresh = getattr(progress, "refresh_panel", None)
+        _log_handler = SnapshotLogHandler(
+            snapshot,
+            on_emit=_refresh if callable(_refresh) else None,
+        )
         _tx_logger.addHandler(_log_handler)
 
     start = time.perf_counter()

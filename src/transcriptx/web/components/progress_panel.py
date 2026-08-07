@@ -183,6 +183,9 @@ class StreamlitProgressCallback:
     def on_stage_start(self, stage_name: str) -> None:
         snap = self._snap()
         if snap is not None:
+            # Nested batch transcripts can finish with status=completed; a new
+            # stage must clear that so the panel does not stay on a success banner.
+            snap["status"] = "running"
             snap["phase"] = stage_name
             # Prefer a pre-run phrasing; "Validating…" reads like post-analysis QA.
             stage_labels = {

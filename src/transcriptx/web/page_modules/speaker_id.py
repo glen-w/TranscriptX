@@ -45,10 +45,9 @@ from transcriptx.web.components.playback_panel import (
 )
 from transcriptx.web.components.recent_run_row import render_recent_run_actions
 from transcriptx.web.cache_helpers import (
-    cached_get_transcript_summaries_for_paths,
-    cached_list_all_transcript_summaries,
     cached_speaker_id_segments,
     cached_transcript_paths_for_speaker_views,
+    cached_transcript_summary_for_path,
     invalidate_transcript_summary_for_path,
     load_speaker_identification_index,
     load_voice_segment_payload,
@@ -303,11 +302,24 @@ def _bind_transcript_picker_index(options: list, default_idx: int) -> None:
 
 
 def _cached_transcripts_for_paths(paths_key: tuple[str, ...]) -> list:
+    """Deprecated heavy path — retained for tests; prefer path+label listing."""
+    from transcriptx.web.cache_helpers import cached_get_transcript_summaries_for_paths
+
     return cached_get_transcript_summaries_for_paths(paths_key)
 
 
 def _cached_fallback_transcripts() -> list:
+    """Deprecated heavy fallback — retained for tests."""
+    from transcriptx.web.cache_helpers import cached_list_all_transcript_summaries
+
     return cached_list_all_transcript_summaries()
+
+
+def _light_transcript_picker_rows(paths: list[Path]) -> tuple[list[Path], list[str]]:
+    """Build picker options/labels without parsing segments for every path."""
+    options = list(paths)
+    labels = [p.stem or str(p) for p in options]
+    return options, labels
 
 
 def _rerun_app() -> None:
@@ -417,6 +429,7 @@ def _set_active_speaker(
 
 
 def _speaker_id_transcript_label(t) -> str:
+    """Label helper for summary objects; light pickers use path stems instead."""
     return format_transcript_option_with_speaker_status(t)
 
 
@@ -1553,19 +1566,11 @@ def render_speaker_id_page() -> None:
 
     controller = get_shared_speaker_studio_controller()
     paths = _paths_with_current_subject(_transcript_paths_for_speaker_views())
-    if paths:
-        paths_key = tuple(str(p) for p in paths)
-        transcripts = _cached_transcripts_for_paths(paths_key)
-    else:
-        transcripts = []
-    if not transcripts:
-        transcripts = _cached_fallback_transcripts()
-    if not transcripts:
+    if not paths:
         st.info("No transcripts found. Add transcript JSON files first.")
         return
 
-    options = [t.path for t in transcripts]
-    labels = [_speaker_id_transcript_label(t) for t in transcripts]
+    options, labels = _light_transcript_picker_rows(paths)
     n = len(options)
     preferred = _preferred_transcript_path()
     default_idx = 0
@@ -1597,6 +1602,15 @@ def render_speaker_id_page() -> None:
         transcript_path,
         session_resolver=make_session_path_resolver(),
     )
+    try:
+        summary = cached_transcript_summary_for_path(
+            str(transcript_path),
+            transcript_summary_signature(transcript_path),
+        )
+    except Exception:
+        summary = None
+    if summary is not None:
+        st.caption(format_transcript_option_with_speaker_status(summary))
 
     prev_key = "speaker_id_prev_transcript"
     path_str = str(transcript_path)

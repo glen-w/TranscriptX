@@ -820,6 +820,15 @@ def inject_global_styles() -> None:
         opacity: 1;
         color: #2d3740 !important;
     }
+    /* Expanded form (full width below badge row) — keep action labels on one line. */
+    [class*="st-key-llm_fb_form_"] {
+        margin-top: 0.35rem;
+        max-width: 36rem;
+    }
+    [class*="st-key-"][class*="llm_fb_submit_"] button,
+    [class*="st-key-"][class*="llm_fb_cancel_"] button {
+        white-space: nowrap !important;
+    }
     /* Speaker chips (transcript viewer) — accent from --speaker-accent */
     span.tx-speaker-chip {
         display: inline-flex;

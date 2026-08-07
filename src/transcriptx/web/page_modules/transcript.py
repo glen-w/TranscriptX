@@ -399,10 +399,16 @@ def _render_chapters_panel(chapter_rows: list[Any]) -> None:
             label = row.title
             st.markdown(f"**{label}**")
             keywords = getattr(row, "keywords", ()) or ()
-            # Avoid repeating the same tokens when the title is already keyword-built.
-            title_as_keywords = " · ".join(keywords) if keywords else ""
-            if keywords and title_as_keywords != label:
-                st.caption(" · ".join(keywords))
+            # Title is often the first N keyword hints; skip the near-duplicate list.
+            # Still show keywords when the title is an LLM/fallback phrase.
+            if keywords:
+                title_parts = [p.strip() for p in str(label).split("·") if p.strip()]
+                kw_lower = {str(k).strip().lower() for k in keywords}
+                title_is_keyword_built = bool(title_parts) and all(
+                    p.lower() in kw_lower for p in title_parts
+                )
+                if not title_is_keyword_built:
+                    st.caption(" · ".join(keywords))
             if row.summary:
                 st.caption(row.summary[:240])
             meta = format_chapter_time_range(row.time_start, row.time_end)

@@ -170,3 +170,63 @@ def test_persist_marks_finalize_modules_pending_before_coordinator(
         isinstance(s, dict) and s.get("reason") == "pending_finalize"
         for s in final["skipped_modules"]
     )
+
+
+@pytest.mark.unit
+def test_persist_emits_finalize_progress_when_run_completed_deferred(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    events: list[dict] = []
+
+    class _Fin:
+        module_results = {
+            "chart_descriptions": {"status": "success", "duration_ms": 12.0}
+        }
+        manifest_path = tmp_path / "manifest.json"
+
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.pipeline_write_phases.persist_canonical_run_outcomes",
+        lambda **_k: tmp_path / "run_results.json",
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.chart_descriptions.coordinator.run_finalization_coordinator",
+        lambda **_k: _Fin(),
+    )
+
+    results = {
+        "modules_run": ["stats"],
+        "skipped_modules": [],
+        "errors": [],
+        "module_results": {},
+        "defer_run_completed": True,
+        "pending_finalize_modules": ["chart_descriptions"],
+        "progress_counts": {
+            "completed": 1,
+            "skipped": 0,
+            "failed": 0,
+            "total": 2,
+        },
+    }
+    persist_canonical_results_and_artifacts(
+        run_dir=tmp_path,
+        run_id="r-fin-prog",
+        transcript_key="tk",
+        modules_enabled=["stats", "chart_descriptions"],
+        results=results,
+        on_event=events.append,
+    )
+
+    kinds = [e.get("event") for e in events]
+    assert "module_started" in kinds
+    assert "module_completed" in kinds
+    assert kinds[-1] == "run_completed"
+    started = next(e for e in events if e.get("event") == "module_started")
+    assert started["module_name"] == "chart_descriptions"
+    assert started["phase"] == "finalizing"
+    assert started["total"] == 2
+    assert started["completed"] == 1
+    completed = next(e for e in events if e.get("event") == "module_completed")
+    assert completed["module_name"] == "chart_descriptions"
+    assert completed["completed"] == 2
+    assert results["defer_run_completed"] is False
+    assert events[-1]["message"].startswith("Pipeline complete:")

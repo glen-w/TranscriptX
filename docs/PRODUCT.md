@@ -19,7 +19,7 @@ Approachable to any thoughtful user with transcripts. Researchers and analysts a
 |------|---------|
 | Primary | Streamlit GUI (`transcriptx` / `python -m transcriptx.web`) |
 | Secondary | Typed Python API (`transcriptx.app.workflows`, managed import) |
-| Transcription | External to the analysis runtime, with an in-app **command-generation** handoff (not a built-in engine) |
+| Transcription | External for **1.0** (in-app **command-generation** handoff). Optional local in-app STT is a **1.x** theme — see [ROADMAP.md](ROADMAP.md) |
 | Operational | Docker Compose; modest `website/` (GitHub Pages); hosted docs pending RTD go-live |
 
 First-run experience relies on **task documentation** and a **clear, complete GUI** — not Guided/Full presentation modes, in-app checklists, or a bundled demo project (those were trialled in **0.9.6** and removed; see [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) §16). Surfaces: [public surfaces](public_surfaces.md).
@@ -32,19 +32,20 @@ First-class, optional (Ollama today). Deterministic/statistical, model-based, an
 
 Source material and analysis outputs stay on the user’s machine. There is no hosted SaaS analysis path in 1.0 scope. File-backed storage and sidecars are the default (see [STORAGE.md](runtime/STORAGE.md)).
 
-## Boundaries (1.0)
-
-**In scope for 1.0 credibility:** install → import/build a useful corpus → run appropriate analysis → understand results → recover from failures → export artifacts — validated by an unfamiliar-user clean-room round.
-
-**Not required for 1.0:** every backlog module, PyPI publication, hosted SaaS, built-in transcription engine, or a highly polished website.
-
 ## Long-term vision
 
-Evolve toward a **personal audio intelligence companion**: personal recordings, voice-note workflows, deeper conversational analytics, and stronger local AI — still local-first and modular.
+Evolve toward a **personal audio intelligence companion**: personal recordings, voice-note workflows, optional **local in-app transcription**, deeper conversational analytics, and stronger local AI — still local-first and modular. Post-1.0 themes (playback, capture/STT, installable shell, analytics DB) live in [ROADMAP.md](ROADMAP.md).
+
+## Boundaries (1.0)
+
+**In scope for 1.0 credibility:** install → import/build a useful corpus, run appropriate analysis, understand results, recover from failures, and export artifacts — validated by an unfamiliar-user clean-room round.
+
+**Not required for 1.0:** every backlog module, PyPI publication, hosted SaaS, built-in transcription engine, PWA, or a highly polished website.
 
 ## Governing docs
 
 - Programme plan: [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md)
 - Outcome roadmap: [ROADMAP.md](ROADMAP.md)
 - Support policy: [public_surfaces.md](public_surfaces.md)
+- Comparison (public): [comparison.md](comparison.md)
 - Navigation: [USER_INDEX.md](USER_INDEX.md) · [DEV_INDEX.md](DEV_INDEX.md) · [CONTRACT_INDEX.md](CONTRACT_INDEX.md)

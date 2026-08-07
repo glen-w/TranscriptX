@@ -32,11 +32,18 @@ from transcriptx.core.llm.ollama_client import (
     parse_ollama_tags_payload,
 )
 from transcriptx.web.components.llm_model_selector import (
+    _PROJECT_DEFAULT_LABEL,
     _UNSET_MODEL,
+    _apply_profile_to_session,
     _apply_selection_to_session,
     _installed_choice,
+    _load_profile_selection,
+    _project_default_selection,
+    _with_global_model_fallback,
     launch_gate_reasons,
+    render_compact_llm_setup,
     render_llm_model_selector,
+    selection_needs_live_llm,
 )
 
 
@@ -350,6 +357,64 @@ def test_batch_rejects_invalid_selection_before_runs():
     assert any("llm_model_selection" in e for e in result.errors)
 
 
+def test_selection_needs_live_llm_false_for_non_llm_modules():
+    with patch(
+        "transcriptx.core.pipeline.module_registry.get_module_info",
+        return_value=SimpleNamespace(requires_llm=False),
+    ):
+        with patch(
+            "transcriptx.web.components.llm_model_selector._include_group_consumer",
+            return_value=False,
+        ):
+            assert (
+                selection_needs_live_llm(["stats", "wordclouds"], include_group=False)
+                is False
+            )
+
+
+def test_selection_needs_live_llm_true_for_llm_module():
+    with patch(
+        "transcriptx.core.pipeline.module_registry.get_module_info",
+        return_value=SimpleNamespace(requires_llm=True),
+    ):
+        with patch(
+            "transcriptx.web.components.llm_model_selector._consumer_needs_live_llm",
+            return_value=True,
+        ):
+            assert selection_needs_live_llm(["llm_summary"], include_group=False) is True
+
+
+def test_selection_needs_live_llm_false_when_consumer_skips_live_call():
+    with patch(
+        "transcriptx.core.pipeline.module_registry.get_module_info",
+        return_value=SimpleNamespace(requires_llm=True),
+    ):
+        with patch(
+            "transcriptx.web.components.llm_model_selector._consumer_needs_live_llm",
+            return_value=False,
+        ):
+            with patch(
+                "transcriptx.web.components.llm_model_selector._include_group_consumer",
+                return_value=False,
+            ):
+                assert (
+                    selection_needs_live_llm(["llm_custom_qa"], include_group=False)
+                    is False
+                )
+
+
+def test_selection_needs_live_llm_true_for_group_synthesis_only():
+    with patch(
+        "transcriptx.core.pipeline.module_registry.get_module_info",
+        return_value=SimpleNamespace(requires_llm=False),
+    ):
+        with patch(
+            "transcriptx.web.components.llm_model_selector._include_group_consumer",
+            return_value=True,
+        ):
+            assert selection_needs_live_llm(["stats"], include_group=True) is True
+
+
 def test_launch_gate_blocks_when_llm_modules_selected_without_ollama():
     with patch(
         "transcriptx.core.pipeline.module_registry.get_module_info",
@@ -472,6 +537,184 @@ def test_apply_selection_does_not_substitute(monkeypatch):
     )
     assert session["pfx_shared_model"] == _UNSET_MODEL
     assert any("missing:9" in n for n in notes)
+
+
+def test_with_global_model_fallback_fills_empty_shared():
+    filled = _with_global_model_fallback(
+        LlmModelSelection(mode="shared", shared_model=None),
+        global_model="gemma3:12b",
+    )
+    assert filled.shared_model == "gemma3:12b"
+    kept = _with_global_model_fallback(
+        LlmModelSelection(mode="shared", shared_model="explicit:1"),
+        global_model="gemma3:12b",
+    )
+    assert kept.shared_model == "explicit:1"
+
+
+def test_project_default_selection_falls_back_to_llm_model(monkeypatch):
+    cfg = SimpleNamespace(
+        llm=SimpleNamespace(
+            model="gemma3:12b",
+            model_selection=SimpleNamespace(
+                mode="shared", shared_model=None, module_models={}
+            ),
+        )
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.components.llm_model_selector.get_config",
+        lambda: cfg,
+    )
+    sel = _project_default_selection()
+    assert sel.shared_model == "gemma3:12b"
+
+
+def test_load_project_default_uses_global_model_fallback(monkeypatch):
+    cfg = SimpleNamespace(
+        llm=SimpleNamespace(
+            model="gemma3:12b",
+            model_selection=SimpleNamespace(
+                mode="shared", shared_model=None, module_models={}
+            ),
+        )
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.components.llm_model_selector.get_config",
+        lambda: cfg,
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.components.llm_model_selector.ProfileController.is_virtual_default_profile_name",
+        staticmethod(lambda name: name == "default"),
+    )
+    loaded, warning = _load_profile_selection(_PROJECT_DEFAULT_LABEL)
+    assert warning is None
+    assert loaded is not None
+    assert loaded.shared_model == "gemma3:12b"
+
+
+def test_apply_profile_defers_lock_when_installed_empty(monkeypatch):
+    session: dict[str, Any] = {}
+    fake_st = SimpleNamespace(session_state=session, caption=lambda *_a, **_k: None)
+    monkeypatch.setattr("transcriptx.web.components.llm_model_selector.st", fake_st)
+    monkeypatch.setattr(
+        "transcriptx.web.components.llm_model_selector._load_profile_selection",
+        lambda _label: (
+            LlmModelSelection(mode="shared", shared_model="gemma3:12b"),
+            None,
+        ),
+    )
+    _apply_profile_to_session(
+        "batch_llm",
+        _PROJECT_DEFAULT_LABEL,
+        installed=(),
+        applied_key="batch_llm_applied_profile",
+    )
+    assert session.get("batch_llm_applied_profile") != _PROJECT_DEFAULT_LABEL
+    assert session["batch_llm_shared_model"] == _UNSET_MODEL
+
+    _apply_profile_to_session(
+        "batch_llm",
+        _PROJECT_DEFAULT_LABEL,
+        installed=("gemma3:12b",),
+        applied_key="batch_llm_applied_profile",
+    )
+    assert session["batch_llm_applied_profile"] == _PROJECT_DEFAULT_LABEL
+    assert session["batch_llm_shared_model"] == "gemma3:12b"
+
+
+def test_apply_profile_heals_unset_after_locked_empty_apply(monkeypatch):
+    session: dict[str, Any] = {
+        "batch_llm_applied_profile": _PROJECT_DEFAULT_LABEL,
+        "batch_llm_shared_model": _UNSET_MODEL,
+        "batch_llm_mode": "Same model for all",
+    }
+    fake_st = SimpleNamespace(session_state=session, caption=lambda *_a, **_k: None)
+    monkeypatch.setattr("transcriptx.web.components.llm_model_selector.st", fake_st)
+    monkeypatch.setattr(
+        "transcriptx.web.components.llm_model_selector._load_profile_selection",
+        lambda _label: (
+            LlmModelSelection(mode="shared", shared_model="gemma3:12b"),
+            None,
+        ),
+    )
+    _apply_profile_to_session(
+        "batch_llm",
+        _PROJECT_DEFAULT_LABEL,
+        installed=("gemma3:12b",),
+        applied_key="batch_llm_applied_profile",
+    )
+    assert session["batch_llm_shared_model"] == "gemma3:12b"
+
+
+def test_compact_llm_project_default_seeds_global_model(monkeypatch):
+    import transcriptx.web.components.llm_model_selector as mod
+
+    session: dict[str, Any] = {}
+    fake_st = MagicMock()
+    fake_st.session_state = session
+    expander = MagicMock()
+    expander.__enter__ = MagicMock(return_value=None)
+    expander.__exit__ = MagicMock(return_value=False)
+    fake_st.expander.return_value = expander
+
+    def _selectbox(_label, options=None, key=None, **_kwargs):
+        if key and key not in session:
+            session[key] = options[0] if options else None
+        return session.get(key)
+
+    def _radio(_label, options=None, key=None, **_kwargs):
+        if key and key not in session:
+            session[key] = options[0] if options else None
+        return session.get(key)
+
+    fake_st.selectbox.side_effect = _selectbox
+    fake_st.radio.side_effect = _radio
+
+    cfg = SimpleNamespace(
+        llm=SimpleNamespace(
+            enabled=True,
+            provider="ollama",
+            model="gemma3:12b",
+            base_url="http://127.0.0.1:11434",
+            model_selection=SimpleNamespace(
+                mode="shared", shared_model=None, module_models={}
+            ),
+        ),
+        analysis=SimpleNamespace(group_llm_synthesis=SimpleNamespace(enabled=False)),
+    )
+
+    class FakeProfileController:
+        @staticmethod
+        def is_virtual_default_profile_name(name: str) -> bool:
+            return name == "default"
+
+        def get_active_profile(self, _target: str) -> str:
+            return "default"
+
+        def list_profiles(self, _target: str) -> list[str]:
+            return []
+
+    monkeypatch.setattr(mod, "st", fake_st)
+    monkeypatch.setattr(mod, "get_config", lambda: cfg)
+    monkeypatch.setattr(
+        mod, "cached_list_ollama_models", lambda _url: (("gemma3:12b",), None)
+    )
+    monkeypatch.setattr(mod, "ProfileController", FakeProfileController)
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.module_registry.get_module_info",
+        lambda _mid: SimpleNamespace(requires_llm=True),
+    )
+    monkeypatch.setattr(mod, "_consumer_needs_live_llm", lambda _mid: True)
+
+    selection, gates, label = render_compact_llm_setup(
+        key_prefix="batch_llm",
+        selected_modules=["llm_summary"],
+        include_group=False,
+    )
+    assert selection is not None
+    assert selection.shared_model == "gemma3:12b"
+    assert gates == []
+    assert "gemma3:12b" in label
 
 
 def test_render_early_return_gates_when_llm_disabled():

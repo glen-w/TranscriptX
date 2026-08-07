@@ -72,13 +72,13 @@ Record each row in the evidence table (§6). Class defaults assume Docker Compos
 - [x] Folder import (multi-file) when profile supports it — **pass** 2026-07-28 (import all from folder)
 - [x] Library shows new transcript(s) with expected identity — **pass** (action menu → Speaker Identification landed on correct transcript)
 - [x] Related: **Delete all runs** (Settings / storage) — **pass** 2026-07-26 (works as expected)
-- [x] Related: **Corrections Studio** — **pass (usable)** 2026-07-27; quality/results **mixed**. Not a 1.0 blocker; dedicated strengthen wave → [ROADMAP.md](../ROADMAP.md) §1.1 (word-level propose from Transcript viewer)
+- [x] Related: **Corrections Studio** — **pass (usable)** 2026-07-27; quality/results **mixed**. Not a 1.0 blocker; dedicated strengthen wave → [ROADMAP.md](../ROADMAP.md) theme **B** (word-level propose from Transcript viewer)
 
 ### 3.3 Analysis run — **required** (adapted: Guided UI removed post-0.9.6)
 
 - [x] ~~Presentation mode Guided~~ — **N/A** (Guided/Full presentation layer removed; docs + clear GUI)
-- [x] Default **Balanced** path (experimental emotion off defaults) — **pass** 2026-07-27. Builtin `analysis.ui_presets.balanced.heavy_module_ids` = `semantic_similarity` only; `resolve_analysis_preset("balanced")` excludes `contextual_emotion` / `fine_grained_emotion` (lexical `emotion` remains). Covered by `test_balanced_llm_and_heavy_allowlists` + golden defaults. Full Balanced wall-clock GUI run not this pass (Thorough used for §3.3 runtime); Medium Balanced recipe still §3.12
-- [x] Overview, Insights, Charts, Artifacts each open for the run without crash — **Overview** / **Charts** / **Artifacts** / **Insights** all **pass** (Insights working well, 2026-07-27). Presentation organisation debt → **[0.9.9](overview_presentation_0_9_9.md)**; deeper Insights/analysis enhance → [ROADMAP.md](../ROADMAP.md) §1.1
+- [x] Default **Balanced** path (experimental emotion off defaults) — **pass** 2026-07-27. Builtin `analysis.ui_presets.balanced.heavy_module_ids` = `semantic_similarity` only; `resolve_analysis_preset("balanced")` excludes `contextual_emotion` / `fine_grained_emotion` (lexical `emotion` remains). Covered by `test_balanced_llm_and_heavy_allowlists` + golden defaults. Medium corpus Balanced wall-clock GUI batch recorded §3.12 (2026-08-07)
+- [x] Overview, Insights, Charts, Artifacts each open for the run without crash — **Overview** / **Charts** / **Artifacts** / **Insights** all **pass** (Insights working well, 2026-07-27). Presentation organisation debt → **[0.9.9](overview_presentation_0_9_9.md)**; deeper Insights/analysis enhance → [ROADMAP.md](../ROADMAP.md) theme **A**
 - [x] Related: Speaker Identification → ignore one speaker; name speakers; create profile; identify all — **pass** before Run Analysis
 - [x] Related: Thorough + custom Qs + mixed LLM models + saved profile — **complete (partial)** run `20260726_015208_30728241` · wall **~44.7 min** · 46 RUN / 2 FAIL (`llm_action_items`, `llm_custom_qa` timed out at 600s) · see `run_R20241026-121652_thorough.md`
 
@@ -132,8 +132,8 @@ Incorporate by **stable IDs** from [gui_acceptance_residual_checklist.md](gui_ac
 ### 3.12 Performance — **conditional / strongly expected**
 
 - [x] Opportunistic **Thorough** single-transcript timings recorded for `R20241026-121652` (~44.7 min wall, partial; see `run_R20241026-121652_thorough.md`)
-- [ ] **Medium** corpus Balanced recipe — still owed
-- [ ] **Large-library**: record **pass** / **fail** / **approved soft-cut** — never silently omit (Home previously showed ~168 library transcripts — soak still open)
+- [x] **Medium** corpus Balanced recipe — **pass** 2026-08-07 (Docker Compose). Batch of **6** transcripts, `analysis_preset=balanced`, started **13:04:45** → finished **13:14:05** (~**9.3 min** batch wall; sum of per-run `wall_clock_duration_ms` ≈ **560 s**). All **`final_status=succeeded`**, **0** module failures. Per-run walls: workshop_briefing 2.9 s (5 run / 25 skip), fact_sheets_comms 6.8 s (5/25), CSE_two_speaker 143.0 s (30/0), pub_rant 43.2 s (25/5), Neptune_Forum_6 90.1 s (30/0), ESEE_conference_3_presentation 273.8 s (30/0). Run ids under `HOST_OUTPUT_DIR` (`…/transcriptx outputs/…/20260807_13*`)
+- [x] **Large-library**: **pass** 2026-08-07 — UI responsive with inventory of **200+** library transcripts (Home previously ~168; soak closed)
 
 ---
 

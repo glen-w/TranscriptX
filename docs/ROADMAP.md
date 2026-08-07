@@ -41,9 +41,9 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Modes + demo (trial) | Guided / Full + demo + onboarding checklist — **trialled then removed** (docs + clear GUI) | **0.9.6** (removed later) |
 | Harden + public surfaces (automatable) | Audit judgements draft; perf recipe; trust drafts + AI labelling + NOTICE; website + Pages; release-ops; Data/Explorer redirects removed | **0.9.7** |
 | Hygiene + honesty + human-pass prep | Epoch/deps cleanup; BERTopic-out-of-base; Balanced emotion honesty; known-limitations; acceptance kits | **0.9.8** |
-| Maintainer acceptance | Manual acceptance + a11y/browser; severity-justified fixes | **in progress** |
-| Overview / results presentation | Organisation & presentation (Actions/Highlights/Analysis, etc.) — [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | **0.9.9** (after maintainer; before unfamiliar-user) |
-| Unfamiliar-user → RC | Clean-room validation; clean-env soak; owner Hub-card / RTD slug; Large-library soak | next (pre-RC) |
+| Maintainer acceptance | Manual acceptance + a11y/browser; severity-justified fixes | **done** 2026-08-07 (kit journeys closed; see [manual_acceptance_1_0.md](dev/manual_acceptance_1_0.md)) |
+| Overview / results presentation | Organisation & presentation (Actions/Highlights/Analysis, etc.) — [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | **0.9.9** (next) |
+| Unfamiliar-user → RC | Clean-room validation; clean-env soak; RTD slug (owner) | next (pre-RC) |
 
 **Module freeze:** no new analysis modules in 0.9.x unless required to complete or repair the 1.0 journey. Backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
 
@@ -65,110 +65,221 @@ Not required: every backlog feature, PyPI, hosted SaaS, built-in transcription, 
 
 ---
 
-## 1.1 – 1.x (early post-1.0)
+## 1.x themes (post-1.0)
 
-Prefer a short **corrections** wave, a **deeper performance** wave, an **Insights / analysis quality** wave, and a **high-interaction workspace (Components v2)** experiment soon after 1.0, then other 1.x themes as capacity allows.
+After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent increments. Early capacity should usually favour themes that strengthen the analysis workbench users already have; capture/transcription and shell UX themes are deliberate product bets — design before build, with explicit invest/narrow/defer forks.
 
-- **High-interaction workspaces via Streamlit Components v2 (near-term 1.x)** — Speaker ID is reaching Streamlit’s architectural edge; TranscriptX as a whole is not. Streamlit remains a strong fit for analysis pages (select files, launch modules, tables/charts, compare runs, review artefacts) where a brief rerender is fine. Speaker Identification is becoming a stateful media-annotation workstation — rapid playback, editing, navigation, background clip prep, keyboard-like interaction, persistent local state, partial UI updates — exactly where Streamlit’s rerun model fights you. Fragments shrink the rerun boundary; they do not make Streamlit continuously reactive. The warning is not mere slowness: straightforward behaviour now needs callback ordering rules, transcript-namespaced widget keys, flash-message state, stale-identity guards, multiple cache layers, careful fragment boundaries, warm queues, explicit rerun accounting, and special completion reruns. Each fix is defensible; together they show the framework abstraction no longer matches the screen.
+**Not required for 1.0** (unchanged): every backlog feature, PyPI, hosted SaaS, built-in transcription, highly polished website / PWA.
 
-  **Pre-1.0 stop line:** finish current low-risk Speaker ID fixes until naming/navigation feel acceptably immediate, playback no longer visibly disrupts the whole app, writes are robust and tested, and cold clips have a tolerable fallback. Do **not** pursue endless nested fragments, cross-fragment signalling, elaborate Session State protocols, or speculative cache layers merely to remove the last flicker. Do **not** rewrite TranscriptX or abandon Streamlit before 1.0.
+### Theme map
 
-  **1.x plan:** keep Streamlit as the application shell and the main implementation for most pages. Declare a small category of high-interaction workspaces allowed to escape ordinary Streamlit widget trees: **Speaker Identification**, **Corrections Studio**, and possibly rich transcript editing later. Prototype a **Streamlit Components v2** Speaker ID surface against the existing controller (Components v2 is the recommended component model: integrated frontend rendering, persistent state, event triggers, multiple callbacks, bidirectional communication). The component owns the persistent audio player, play/pause/seek, sample-row paging, active-speaker selection, name input, keyboard shortcuts, optimistic navigation, and loading/disabled states. Python keeps transcript/sidecar reading, mapping mutations, profile creation, voice analysis, clip extraction, validation/locking, and domain services — not a frontend rewrite; replace one troublesome page body with a specialised UI surface. Meaningful actions still cause Python reruns; routine browser-side interactions can stay local. If it works, migrate only interaction-heavy workspaces. Only if that becomes restrictive, consider a proper local frontend + Python API (later, much larger). Avoid wholesale jumps to Gradio/NiceGUI — months swapping one framework’s limits for another’s while rewriting stable pages.
+| Theme | Intent | Suggested timing |
+|-------|--------|------------------|
+| A. Insights & analysis quality | Stronger deterministic/hybrid insights; clearer result UX | Early 1.x |
+| B. Corrections & transcript editing | Word-level propose/apply in the reader; studio as batch/review | Early 1.x |
+| C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections (and later rich edit) | Near-term 1.x |
+| D. Playback & reading UX | Karaoke-style word highlight; reader polish that Components unlock | With / after C |
+| E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
+| F. Library & organisation | Transcript tagging; Groups interaction rules | Mid 1.x |
+| G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher | Mid 1.x (merge = former §1.2) |
+| H. In-app transcription | Local NVIDIA Parakeet/Canary + Whisper; CUDA/CPU; YouTube ingest | Mid–late 1.x (product decision) |
+| I. Installable / native-feeling shell | PWA (or equivalent) for local app install feel | Mid–late 1.x (depends on shell) |
+| J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 |
+| K. External STT command generation | Broader copyable host CLIs until / beside theme H | Ongoing light |
+| L. Polish & onboarding extras | Coach-marks, bundled demos, aesthetics — only if capacity | Anytime light |
+| M. Research / citeable methods | Optional B4-style methods; multilingual beyond small subset | Later 1.x+ |
+| → 2.0 | Personal audio intelligence companion | Vision |
 
-  **Trajectory to preserve:** Streamlit shell + Python domain services + specialised frontend components for workstation-like interactions. Conclusion: TranscriptX has **not** outgrown Streamlit; a few workflows should no longer be ordinary Streamlit widget trees.
+Public positioning today: [comparison.md](comparison.md). Analysis backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
 
-- **Corrections strengthen (early 1.x wave)** — Corrections Studio is usable for 1.0 but results are **mixed**; do not treat it as finished. Dedicated wave:
+---
 
-  - Free-read the transcript and propose corrections at **word level** (not only current studio flows)
-  - Prefer building word-level propose/apply into the **Transcript viewer** page (read → select word/span → propose correction) so correction is part of reading, not a separate dead-end
-  - Keep Corrections Studio as the batch / review surface or fold it into viewer workflows after design
-  - Honesty: mixed auto/assist quality must stay labelled; no silent overwrite of canonical text without clear apply/review
+### A. Insights & analysis quality
 
-- **Deeper performance features (early 1.x wave)** — beyond 1.0 resource envelopes: help users plan and choose runs on *their* machine. Examples:
+Insights and related analysis presentation work for 1.0; do not freeze quality here.
 
-  - Realistic **time estimates** for analysis runs given detected hardware (CPU/GPU/memory, install profile)
-  - **Smarter model recommendations** (which backend/size/settings fit this hardware and workload without over-promising)
-  - Keep estimates labelled as guidance; do not block runs on uncertain forecasts
+- Stronger **deterministic** outputs (clearer, more useful non-LLM / hybrid insights; less noise)
+- Reassess **GUI layout** for Insights and analysis result surfaces (hierarchy, scannability, what to show first)
+- Align with Overview presentation polish from **0.9.9** where patterns overlap; keep LLM insights honestly labelled
+- Revisit module-level insight eligibility / empty states so partial runs stay trustworthy
+- Continue ranked deepen-in-place work from the analysis-module backlog as capacity allows (no 0.9.x-style freeze after 1.0 unless re-declared)
 
-- **Insights & analysis enhance (early 1.x wave)** — Insights (and related analysis presentation) work for 1.0; do not freeze quality here. Dedicated wave:
+---
 
-  - Stronger **deterministic** outputs (clearer, more useful non-LLM / hybrid insights; less noise)
-  - Reassess **GUI layout** for Insights and analysis result surfaces (hierarchy, scannability, what to show first)
-  - Align with Overview presentation polish from **0.9.9** where patterns overlap; keep LLM insights honestly labelled
-  - Revisit module-level insight eligibility / empty states so partial runs stay trustworthy
+### B. Corrections & transcript editing
 
-- Elaborate guided coach-mark tour (if needed)
-- Large bundled completed demo runs (if risky at 1.0)
-- Archive taxonomy refinements; aesthetic polish
-- Specialist convenience and non-supported configurations
-- **Broader local transcription command generation** — Transcribe Audio already generates copyable host commands for **whispermlx** / **whispermlx-missing** (Apple **MLX**, macOS / Apple Silicon), a WhisperX Docker recipe, and **jhj0517/Whisper-WebUI** Gradio deploy (SRT/VTT → import). Extend further for other Whisper stacks/platforms (e.g. more CUDA Linux / CPU-only CLIs) as needed, still copy/run-on-host only (no in-container MLX; no built-in orchestration — that stays deferred). Keep import as the GUI admission gate.
-- **Transcript tagging** — library visibility / kind labels so users can surface certain transcripts (e.g. `meeting`, `voice note`, `lone speaker` for one-sided phone recordings). Tags are organisation metadata, not an analysis module.
+Corrections Studio is usable for 1.0 but results are **mixed**; do not treat it as finished.
 
-  **Design before build — interaction with Groups:** tags and groups must stay distinct. Tags find/filter/surface individual transcripts; Groups are analysis cohorts for cross-session runs. Tagging must not create or imply group membership. Tags may act as **filters** in the group member picker, but must not auto-materialise a Group without an explicit user action. Decide whether “more visible” means facet filters, optional pin/favourite, or both — without overlapping Groups as the named-collection surface. Kind tags like `lone speaker` may later feed soft suitability hints (e.g. interaction modules), but must remain optional metadata, not silent default changes. Prefer transcript-local / library storage; keep tags out of group run schemas unless a deliberate filter snapshot is needed.
+- Free-read the transcript and propose corrections at **word level** (not only current studio flows)
+- Prefer building word-level propose/apply into the **Transcript viewer** (read → select word/span → propose) so correction is part of reading, not a separate dead-end
+- Keep Corrections Studio as the batch / review surface or fold it into viewer workflows after design
+- Honesty: mixed auto/assist quality must stay labelled; no silent overwrite of canonical text without clear apply/review
 
-## 1.2 – audio / transcript merge (product decision)
+---
+
+### C. High-interaction workspaces (Streamlit Components v2)
+
+Speaker ID is reaching Streamlit’s architectural edge; TranscriptX as a whole is not. Streamlit remains a strong fit for analysis pages (select files, launch modules, tables/charts, compare runs, review artefacts) where a brief rerender is fine. Speaker Identification is becoming a stateful media-annotation workstation — rapid playback, editing, navigation, background clip prep, keyboard-like interaction, persistent local state, partial UI updates — exactly where Streamlit’s rerun model fights you.
+
+**Pre-1.0 stop line:** finish current low-risk Speaker ID fixes until naming/navigation feel acceptably immediate, playback no longer visibly disrupts the whole app, writes are robust and tested, and cold clips have a tolerable fallback. Do **not** pursue endless nested fragments or speculative cache layers merely to remove the last flicker. Do **not** rewrite TranscriptX or abandon Streamlit before 1.0.
+
+**1.x plan:** keep Streamlit as the application shell. Allow a small category of high-interaction workspaces to escape ordinary Streamlit widget trees: **Speaker Identification**, **Corrections Studio**, and possibly rich transcript editing later. Prototype a **Streamlit Components v2** Speaker ID surface against the existing controller. The component owns persistent audio player, play/pause/seek, sample-row paging, active-speaker selection, name input, keyboard shortcuts, optimistic navigation, and loading/disabled states. Python keeps transcript/sidecar reading, mapping mutations, profile creation, voice analysis, clip extraction, validation/locking, and domain services. Meaningful actions still cause Python reruns; routine browser-side interactions can stay local. If it works, migrate only interaction-heavy workspaces. Only if that becomes restrictive, consider a proper local frontend + Python API (later, much larger). Avoid wholesale jumps to Gradio/NiceGUI.
+
+**Trajectory:** Streamlit shell + Python domain services + specialised frontend components for workstation-like interactions.
+
+---
+
+### D. Playback & reading UX
+
+Builds on theme C (and existing playback surfaces). Inspired by polished self-hosted readers (e.g. Scriberr); keep analysis-first — do not become a notes-only app.
+
+- **Karaoke-style playback** — synchronised **word-by-word** (or tight span) highlighting during audio playback; seek-from-text ↔ seek-from-audio. Requires reliable word-level timings in imported or in-app transcripts.
+- Follow-along scrolling, clearer active-segment emphasis, and annotation/highlight affordances that do not fight Streamlit reruns (prefer Components v2 where needed)
+- Honesty: degrade gracefully when word timings are missing (segment-level only); never invent timings
+
+---
+
+### E. Performance & hardware guidance
+
+Beyond 1.0 resource envelopes: help users plan and choose runs on *their* machine.
+
+- Realistic **time estimates** for analysis runs given detected hardware (CPU/GPU/memory, install profile)
+- **Smarter model recommendations** (which backend/size/settings fit this hardware and workload without over-promising)
+- Keep estimates labelled as guidance; do not block runs on uncertain forecasts
+- Reuse the same hardware-detection honesty when theme **H** lands (STT backend / CUDA vs CPU recommendations)
+
+---
+
+### F. Library & organisation
+
+- **Transcript tagging** — library visibility / kind labels (e.g. `meeting`, `voice note`, `lone speaker`). Tags are organisation metadata, not an analysis module.
+
+  **Design before build — interaction with Groups:** tags and groups must stay distinct. Tags find/filter/surface individual transcripts; Groups are analysis cohorts. Tagging must not create or imply group membership. Tags may filter the group member picker but must not auto-materialise a Group. Decide whether “more visible” means facet filters, pin/favourite, or both. Kind tags may later feed soft suitability hints; keep them optional metadata. Prefer transcript-local / library storage; keep tags out of group run schemas unless a deliberate filter snapshot is needed.
+
+---
+
+### G. Audio & recording workflows
+
+#### G1. Audio / transcript merge (product decision; former §1.2)
 
 Recorder devices often cut long sessions into chunks. Today:
 
 - Host helper `scripts/audio_merge.py` concatenates parts → one MP3 (ffmpeg; documented in [transcription.md](runtime/transcription.md))
 - `scripts/audio_preprocess.py` remains a separate pre-transcribe helper
 - GUI merge/preprocess pages were removed (not core); Library/serial-group copy still points people at the merge script **before** transcription
-- Manual “merge audio first, then transcribe/import” is a real pain for the personal-recording workflow
 
-**Desired direction (design before build):** a simple **inline merge** in the product surface that:
+**Desired direction (design before build):** inline merge that (1) merges **audio** parts in order into one managed recording, and (2) optionally **stitches transcripts** (timestamp rebase, segment continuity, canonical + sidecars) when parts were already transcribed separately.
 
-1. Merges the **audio** parts in order into one managed recording, and
-2. Optionally / correspondingly **stitches transcripts** (timestamp rebase, segment continuity, canonical + sidecars) when parts were already transcribed separately
+**Hard parts:** ordered part selection UX; ffmpeg/path honesty under Docker vs host; backup/overwrite; partial failure; duration vs transcript times; speaker-id continuity; managed-library admission; pre- vs post-transcription merge. Do not ship a half-merge that corrupts library identity.
 
-**Why this is hard (expect a real design spike):** ordered part selection UX; ffmpeg/path honesty under Docker vs host; backup/overwrite policy; partial failure; matching audio duration to transcript times; speaker-id continuity across parts; managed-library admission for the merged artifact; whether merge happens pre-transcription only, post-transcription only, or both. Do not ship a half-merge that corrupts library identity.
+**Decision fork:** **Invest** (first-class library/import workflow) · **Defer / remove** (delete helpers; document merge-outside-TX). Until decided: helpers stay **non-core**.
 
-**1.2 decision fork:**
+#### G2. Directory watcher
 
-- **Invest** — first-class merge (audio ± transcript stitch) as a supported library/import workflow; keep or fold the scripts into that path
-- **Defer / remove** — if usage stays niche, delete the helpers and keep “merge outside TranscriptX” as the documented escape hatch
+Automatically notice new recordings (and/or transcript files) in a monitored folder and offer or run admit/transcribe pipelines.
 
-Until that decision: helpers stay **non-core** (not GUI nav / not public surfaces). Not a 1.0 gate; not a casual 1.1 polish item.
+- Today: folder import exists for **transcript** admission candidates — extend carefully toward **audio → STT → import** once theme **H** (or a host STT service) exists
+- Design: watch scope, debounce, size limits, failure surfacing, Docker bind-mount honesty, no silent library corruption
+- Prefer explicit user enablement; default-off on shared machines
 
 ---
 
-## 1.5 – DB backing (local analytics layer)
+### H. In-app transcription (product decision)
 
-1.0 stays **file-backed** (managed library + sidecars). **1.5** is the first deliberate DB wave: a **local** query/analytics layer so longitudinal and cross-session views stop paying full-scan / ad-hoc JSON costs — without abandoning local-first or turning TranscriptX into a hosted multi-tenant product.
+**1.0 stance unchanged:** transcription remains **external**, with in-app **command generation** only. Built-in STT is **not** a 1.0 gate.
 
-**Desired direction (design before build):**
+**1.x intent:** make local transcription a **supported product path** so the personal-recording journey (record/download → text → analyse) can stay inside TranscriptX when the user wants it — without abandoning BYO import or analysis-first positioning. Complementary tools ([Scriberr](https://scriberr.app/), WhisperX, …) remain valid upstreams; see [comparison.md](comparison.md).
 
-- Start with **SQLite** (or equivalent embedded) as an **optional / derived** analytics store, not a second source of truth for canonical transcripts
-- First product slice: **speaker-profile analytics views** and related B5 remainder (DB views; group gallery keyed by `profile_id`) — see [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md)
-- Keep file/sidecar layout as the durable library contract; DB is rebuildable from files (or explicitly journalled) so wipe/rebuild stays honest
-- Define sync/invalidation on import, profile edits, run finalize, and wipe paths before expanding beyond Speakers
+**Candidate capabilities (design before build):**
 
-**Out of scope for 1.5 unless redesign says otherwise:** remote Postgres/SaaS, multi-user auth, replacing the entire managed-file library with ORM rows, or making SQLite mandatory on day one of 1.0.
+| Capability | Notes |
+|------------|--------|
+| **NVIDIA Parakeet / Canary + Whisper-class models** | User-selectable backends; accuracy/speed trade-offs documented; word-level timings where the stack supports them |
+| **Hardware acceleration** | NVIDIA **CUDA** where available; optimised **CPU** path otherwise; Apple **MLX** remains a host/command path until a coherent native story exists |
+| **YouTube transcription** | Paste a URL → download audio/video → local STT → managed import. Legal/ToS, yt-dlp (or equivalent) ops, size limits, and offline-default honesty are part of the design spike |
+| **Diarization** | Prefer optional/local; align speaker labels with Speaker ID / import contracts |
+| **Job UX** | Queue, progress, cancel, retry; never block the analysis GUI on a stuck STT job |
 
-**1.5 decision fork:**
+**Architecture fork (decide early):**
 
-- **Invest** — ship Speakers (then Groups) analytics on SQLite views with clear rebuild/migration UX; document file = durable, DB = query cache/index
-- **Narrow** — only indexes needed for Speakers charts; leave broader library search/file stores as-is until a later 1.x cut
-- **Defer again** — if file-backed scale stays acceptable, keep SQLite off the default path and leave this theme parked
+1. **In-process / same-image STT** — simplest UX; heaviest Docker/image and GPU story  
+2. **Host-side STT service** (Ollama-like: GUI orchestrates via HTTP; ML stays on host) — cleaner Docker analysis vs GPU split  
+3. **Keep external-only + richer command gen** (theme **K**) — if in-app cost/risk stays too high
 
-Not a 1.0 gate; not a casual 1.1 polish item. Depends on post-1.0 capacity after corrections / performance / merge decisions.
+**Decision fork:** **Invest** (supported optional STT path + clear install profiles) · **Narrow** (Whisper-only or CUDA-Docker-only) · **Defer** (stay BYO + command gen). Do not half-ship a silent cloud STT. Prefer local models; optional remote APIs only with explicit user opt-in and labelling.
+
+**Non-goals for this theme:** meeting bots that auto-join Zoom/Meet; becoming a chat-over-audio product; replacing the analysis module DAG.
+
+---
+
+### I. Installable / native-feeling shell (PWA)
+
+**PWA support** — install TranscriptX as a native-feeling app on desktop/mobile via Progressive Web App capabilities (or an equally honest local-install story).
+
+- Streamlit’s default hosting model is a **design constraint**: spike whether a credible PWA is possible around the current shell, a thin local wrapper, or only after Components / a local frontend path  
+- Goals: home-screen install, offline *shell* honesty (analysis/STT still need the local backend), dark/light polish  
+- Not a 1.0 gate; do not fake “offline app” if the Python server must be running
+
+---
+
+### J. Local analytics layer — SQLite (~1.5)
+
+1.0 stays **file-backed**. First deliberate DB wave: a **local** query/analytics layer so longitudinal views stop paying full-scan / ad-hoc JSON costs — without hosted multi-tenant SaaS.
+
+- Start with **SQLite** (or equivalent) as an **optional / derived** store, not a second source of truth for canonical transcripts
+- First slice: **speaker-profile analytics views** and related B5 remainder (group gallery keyed by `profile_id`) — see analysis-module backlog
+- File/sidecar layout remains the durable library contract; DB rebuildable from files
+- Define sync/invalidation on import, profile edits, run finalize, and wipe before expanding beyond Speakers
+
+**Out of scope unless redesign says otherwise:** remote Postgres/SaaS, multi-user auth, replacing the managed-file library with ORM rows, mandatory SQLite on day one of 1.0.
+
+**Decision fork:** **Invest** · **Narrow** (Speakers indexes only) · **Defer again**.
+
+---
+
+### K. External STT command generation (bridge)
+
+Until/beside theme **H**, keep improving **copyable host commands** on Transcribe Audio: whispermlx / whispermlx-missing (Apple MLX), WhisperX Docker, Whisper-WebUI, plus further CUDA Linux / CPU CLIs as needed. Still copy/run-on-host only (no in-container MLX; no silent orchestration). Import remains the GUI admission gate for BYO files.
+
+---
+
+### L. Polish & onboarding extras
+
+Only if capacity remains after core themes:
+
+- Elaborate guided coach-mark tour (if still needed after docs + clear GUI)
+- Large bundled completed demo runs (if risky at 1.0, revisit later)
+- Archive taxonomy refinements; aesthetic polish
+- Specialist convenience and non-supported configurations
+
+---
+
+### M. Research / citeable methods (later)
+
+- Multilingual routing beyond a small reliable subset
+- Optional B4 ConvoKit-family / citeable research methods as **non-default** packs — see analysis-module backlog §3.2
+- Not product defaults for early 1.x
 
 ---
 
 ## 2.0 vision
 
-Personal audio intelligence companion: personal recordings, voice-note workflows, deeper conversational analytics, stronger local AI — still local-first and modular.
+**Personal audio intelligence companion:** personal recordings, voice-note workflows, optional local STT, deeper conversational analytics, stronger local AI — still local-first and modular. Themes **G–I** (recording workflows, in-app transcription, installable shell) are the main 1.x bridges toward that vision; themes **A–F** and **J** keep the analysis workbench excellent on the way.
 
 ---
 
-## Non-near-term / deferred
+## Deferred / out of near-term scope
 
-- Built-in or orchestrated transcription engine
-- Multilingual routing beyond a small reliable subset
-- B4 ConvoKit-family methods as product defaults
+Still **not** near-term product goals (unless a later roadmap rewrite says otherwise):
+
+- Meeting bots / auto-join Zoom–Meet–Teams capture
+- Hosted multi-user SaaS analysis; CRM / revenue-pipeline platforms
+- Chat-over-corpus / RAG meeting assistant as the primary product
+- Cloud STT or cloud LLM as silent defaults
 - Mode systems that duplicate page logic
-- Elaborate interactive website effects
-- Broader “everything in the DB” library migration (beyond the 1.5 analytics layer)
-- Wholesale GUI rewrite or migration to Gradio/NiceGUI (prefer Components v2 workspaces first — see §1.1)
+- Elaborate interactive marketing-website effects
+- Broader “everything in the DB” library migration (beyond theme **J**)
+- Wholesale GUI rewrite or migration to Gradio/NiceGUI (prefer Components v2 first — theme **C**)
 - Full local frontend + Python API (only after Components v2 for workstation pages proves insufficient)
 
 Historical sprint dumps: [sprint_archive.md](archive/plans/sprint_archive.md) (archived).

@@ -464,7 +464,7 @@ def render_corrections_studio() -> None:
         st.info("No transcripts found. Add transcript JSON files to get started.")
         return
 
-    options = [f"{t.base_name} ({t.segment_count} segments)" for t in transcripts]
+    options = [t.base_name for t in transcripts]
     paths = [t.path for t in transcripts]
     default_idx = SubjectService.index_in_path_options(st.session_state, paths)
     idx = st.selectbox(

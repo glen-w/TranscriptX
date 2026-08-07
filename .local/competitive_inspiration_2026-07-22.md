@@ -3,11 +3,15 @@ Authority: self
 
 # Competitive inspiration — open-source + commercial transcript tools vs TranscriptX (2026-07-22)
 
-> Evidence-based comparison of five public GitHub projects **and** six commercial / non-open-source conversation-intelligence products against TranscriptX’s analysis product.  
-> Companion to [`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md) and [`stocktake_2026-07-17.md`](stocktake_2026-07-17.md).  
+> **Living research note:** conclusions, learnings, and “do / don’t” rows are **ongoing and changeable**. Revisit when products ship, when [docs/ROADMAP.md](../docs/ROADMAP.md) themes move, or when the analysis backlog is re-ranked. The title date is the first snapshot, not a freeze.  
+> **Public comparison (user-facing):** [`docs/comparison.md`](../docs/comparison.md) — prefer that page for README / website / USER_INDEX links.  
+> This file remains **maintainer research** (deeper OSS profiles, backlog-linked learnings). Keep private under `.local/` unless intentionally promoted.  
+> Evidence-based comparison of six public GitHub projects **and** six commercial / non-open-source conversation-intelligence products against TranscriptX’s analysis product.  
+> Companion to [`analysis_module_backlog_2026-07-17.md`](../docs/dev/analysis_module_backlog_2026-07-17.md) (living) and [`stocktake_2026-07-17.md`](../docs/dev/stocktake_2026-07-17.md).  
 > **Method (OSS):** README + selective source review (no installs/runs). Marketing claims discounted unless backed by code.  
-> **Method (commercial):** Public product docs, pricing pages, and third-party comparison writeups as of **2026-07**. No paid trials / demos. Treat feature lists as **vendor-claimed** unless noted; depth and reliability are harder to verify than OSS.  
-> **Non-goals of this note:** implementing learnings; re-ranking the analysis backlog; proposing a RAG chat product; becoming a SaaS meeting bot.
+> **Method (commercial):** Public product docs, pricing pages, and third-party comparison writeups as of **2026-07** (Scriberr addendum **2026-08-07**). No paid trials / demos. Treat feature lists as **vendor-claimed** unless noted; depth and reliability are harder to verify than OSS.  
+> **Addendum (2026-08-07):** Added **Scriberr** ([repo](https://github.com/rishikanthc/Scriberr), [site](https://scriberr.app/)); public summary in `docs/comparison.md`. **Addendum (2026-08-07 b):** Aligned with ROADMAP 1.x themes **D / G / H / I** — optional local in-app STT, karaoke playback, directory watcher, PWA are **product bets**, not permanent non-goals. This note may recommend adopting patterns without re-ranking the analysis-module backlog by itself.  
+> **Still out of scope for this note alone:** implementing features; becoming a SaaS meeting bot; making RAG chat the primary product; silent cloud STT/LLM defaults.
 
 ---
 
@@ -19,7 +23,8 @@ Authority: self
 
 | Wedge | Strongest example |
 |-------|-------------------|
-| Chat / RAG over uploaded content | Retrievia-AI |
+| Self-hosted local STT + polished transcript workspace | Scriberr |
+| Chat / RAG over uploaded content | Retrievia-AI (Scriberr also: chat-with-audio) |
 | Protocol → calendar handoff | Meeting-Analysis-Service |
 | Domain outcome score (NPS) + role-split tools | Digital-Assistant-for-Call-Centers |
 | Rubric-scored evaluation + automation-bias UX | trinethra-feedback-analyzer |
@@ -36,7 +41,7 @@ Authority: self
 | Omnichannel contact-center 100% coverage analytics | CallMiner (also Observe.ai) |
 | Searchable org meeting library + Ask-AI over history | Otter, Fireflies, Gong |
 
-**North-star reminder (from stocktake / backlog):** TranscriptX is analysis-first and local-first. Chat-over-transcript, remote SaaS LLMs as product surface, hosted multi-user, realtime bots, and CRM/revenue platforms are explicit non-goals / deferred. Learnings below are filtered through that stance — commercial products are inspiration for **analysis depth, taxonomy, and presentation**, not a mandate to copy SaaS capture/CRM.
+**North-star reminder (living):** TranscriptX stays **analysis-first** and **local-first**. Chat-over-transcript as the *primary* product, remote SaaS LLMs as silent defaults, hosted multi-user, realtime meeting bots, and CRM/revenue platforms remain non-goals / deferred. **1.0** keeps BYO transcription + command generation. **1.x** may optionally add local STT / capture / playback / installable-shell capabilities (ROADMAP themes **D / G / H / I**) without diluting the module DAG — design before build; invest/narrow/defer forks live on the roadmap. Learnings below inspire **analysis depth, taxonomy, presentation, and (where ROADMAP allows) capture UX** — not a mandate to copy SaaS CRM.
 
 ```mermaid
 flowchart LR
@@ -48,28 +53,27 @@ flowchart LR
   analyze --> integrate
 ```
 
-Most OSS demos and commercial CI products optimize **ingest + present + integrate** (bots, CRM, coaching UX). TranscriptX optimizes **analyze** (module DAG, contracts, groups). Commercial tools set the **quality bar users already see** for talk ratios, trackers, scorecards, and longitudinal deal/agent views.
+Most OSS demos and commercial CI products optimize **ingest + present + integrate** (bots, CRM, coaching UX). TranscriptX optimizes **analyze** (module DAG, contracts, groups). **Scriberr** is the clearest OSS peer on the **ingest + present** wedge (local STT, diarization, playback/notes/chat) and today a natural **upstream** of TX’s BYO-transcript stance. Under ROADMAP theme **H**, TX may later offer optional local STT of its own — Scriberr remains a quality bar and competitor on that wedge, not an analysis-depth peer. Commercial tools set the **quality bar users already see** for talk ratios, trackers, scorecards, and longitudinal deal/agent views.
 
 ---
 
 ## 2. TranscriptX baseline (matrix column)
 
-Locked from package **0.6.4** module registry + backlog §4 (2026-07-17/22):
+**Snapshot** from package **0.6.4** registry + backlog §4 (2026-07-17/22), with **2026-08** product-direction notes. Baseline cells describe *today*; ROADMAP themes describe *possible 1.x*. Re-check module counts and surfaces when refreshing this note.
 
-| Area | What exists |
-|------|-------------|
-| Ingestion | BYO transcript import (transcription external); managed library |
-| Summaries | `highlights`→`summary`, `narrative_summary`, `llm_summary`, `llm_speaker_summary`, group LLM synthesis |
-| Structured extract | `llm_action_items` (`transcriptx.llm_action_items.v1`: text/owner/deadline/status/quote/confidence + ground/dedupe) |
-| Affect | `sentiment`, emotion family (`emotion`, `contextual_emotion`, `fine_grained_emotion`), contagion, affect tension |
-| Interaction | acts, interactions (+ equity pack), loops, `qa_analysis` (discourse Q&A, not RAG), echoes |
-| Voice | features, mismatch, tension, fingerprint, prosody/charts |
-| Groups | pool/compare/refit + charts + optional synthesis |
-| LLM | Ollama only; skip-when-disabled |
-| Chat / RAG | **Absent by design** |
-| Auth / multi-user / calendar / CRM | **Absent** (hosted multi-user is stocktake no-go) |
+| Area | What exists today | 1.x direction (ROADMAP) |
+|------|-------------------|-------------------------|
+| Ingestion | BYO transcript import (transcription external); managed library | Theme **H** optional local STT; **G2** directory watcher; **K** richer command gen |
+| Summaries | `highlights`→`summary`, `narrative_summary`, `llm_summary`, `llm_speaker_summary`, group LLM synthesis | Theme **A** Insights quality |
+| Structured extract | `llm_action_items` (+ meeting extracts / grounding) | Backlog **B10** deepen; L1 taxonomy |
+| Affect / interaction / voice | Emotion family, interactions (+ equity), voice stacks | Continue deepen-in-place |
+| Groups | pool/compare/refit + charts + optional synthesis | Theme **J** SQLite analytics aids |
+| LLM | Ollama only; skip-when-disabled | Keep local-first; no silent cloud default |
+| Chat / RAG | **Absent as primary product** | Remains non-primary (W1) |
+| Playback / shell | Streamlit playback; no PWA | Themes **D** karaoke · **C** Components v2 · **I** PWA |
+| Auth / multi-user / calendar / CRM | **Absent** | Stay deferred |
 
-Open backlog anchors used below: **B10** decisions/commitments taxonomy; **P2** evidence/provenance; **B18** grounded insight narratives; **P1** multilingual routing; non-goal: RAG chat product.
+Open analysis anchors: **B10**, **P2**, **B18**, **P1**. Capture/STT/playback are **not** analysis-module ranks — see ROADMAP.
 
 ---
 
@@ -148,7 +152,7 @@ Protocol upload → OpenRouter JSON extract → Task CRUD
 
 **Strengths**
 
-- End-to-end **operational handoff** (extract → calendar) — strongest integration story of the five
+- End-to-end **operational handoff** (extract → calendar) — strongest integration story among the non-STT OSS demos
 - Extraction taxonomy is broader than TX `llm_action_items` alone (risks, milestones, compliance)
 - Explicit participant→email mapping before assignment (good for invite correctness)
 - German + English protocol patterns in prompt
@@ -228,7 +232,7 @@ Transcript paste → Express → Ollama gemma:2b JSON → normalize → React re
 
 **Strengths**
 
-- Best **automation-bias / human-review** posture of the five
+- Best **automation-bias / human-review** posture among the OSS set
 - Confidence + gaps + follow-up questions when evidence is thin
 - Rubric-as-data (JSON) separates domain rules from model code
 - Fully local (Ollama); no cloud LLM
@@ -276,6 +280,44 @@ Transcript + question → Next.js route → 2× Ollama (parallel) → Moderator 
 - Free-form paragraphs — no schemas, confidence, or quote grounding
 - Not batch/group analysis; not structured extract
 - Small model; no streaming; no tests observed
+
+### 3.6 Scriberr
+
+- **Repo:** [rishikanthc/Scriberr](https://github.com/rishikanthc/Scriberr) · **Site:** [scriberr.app](https://scriberr.app/)  
+- **Job:** Self-hosted, offline-first **audio/video transcription workspace** — local STT + diarization + transcript reader + optional LLM chat/summaries for privacy-conscious self-hosters (Plaud/cloud-STT subscription alternative).  
+- **Maturity:** Comparatively strong OSS footprint (~2.9k★, MIT, Go server + managed Python STT env, Docker CPU/CUDA/Blackwell, Homebrew, public API docs). Active development **paused** as of maintainer note (layoff / job search; project “not abandoned”). README + selective public docs only (no install/run for this addendum).
+
+**Features (claimed / README-backed)**
+
+- Local transcription with **NVIDIA Parakeet / Canary** or **Whisper**-class models; **word-level timing**
+- **Speaker diarization** (smart speaker detection / labeling)
+- Transcript UI: playback follow-along, seek-from-text, highlights/notes while listening, built-in recorder, dark mode, **PWA** mobile/desktop
+- **Chat with your audio** via **Ollama** or OpenAI-compatible providers; generate summaries / Q&A inside the app
+- Automation: **folder watcher**, REST API surface (n8n-friendly), JWT auth
+- Ops: SQLite app data + separate WhisperX/model env volumes; secure-cookies production defaults
+
+**Architecture (as positioned)**
+
+```
+Audio/video upload or folder watch → local STT (+ diarization) → SQLite library
+                                              ↓
+                         Transcript reader / notes ←→ optional Ollama or OpenAI chat
+```
+
+**Strengths**
+
+- Best OSS match for TX’s **privacy / local-first** story on the **capture→transcript** half of the pipeline
+- Polished **present** wedge TX often under-emphasizes: fluid reader, notes, PWA, self-host install path
+- Explicit **automation/API** story (folder watch + HTTP) useful as a BYO-transcript feeder into TX
+- Optional OpenAI is opt-in; Ollama path keeps a full-local mode
+
+**Weaknesses / TX non-fit (today)**
+
+- Optimizes **ingest + light assist**, not modular conversational analytics (no emotion/interaction/voice science stack, no group multi-session contracts)
+- Chat/summary is assistant UX (overlaps Retrievia / commercial Ask-AI) — **watch** under TX’s no-primary-RAG stance
+- Optional cloud OpenAI softens “completely offline” marketing when configured
+- Maintainer pause → treat roadmap claims cautiously; do not depend on Scriberr as a shipped TX dependency
+- **Today:** complementary upstream for BYO transcripts. **1.x:** also a **quality bar / competitor** if TX invests in theme **H** (local Parakeet/Canary/Whisper, CUDA/CPU, folder watch, reader polish) — do not copy chat-as-product; do borrow STT/ops/UX patterns via ROADMAP forks
 
 ---
 
@@ -452,32 +494,28 @@ Transcript + question → Next.js route → 2× Ollama (parallel) → Moderator 
 
 ### 5.1 Open-source matrix
 
-Legend: **Y** = present / first-class · **P** = partial / adjacent · **—** = absent · **N** = non-goal for TX
+Legend: **Y** = present / first-class · **P** = partial / adjacent · **—** = absent · **N** = not offered *today* (may change under ROADMAP). “TX 1.x intent” is directional, not a commitment.
 
-| Capability | Retrievia | Meeting-Analysis | Call-Centers | Trinethra | Perspective | TranscriptX |
-|------------|-----------|------------------|--------------|-----------|-------------|-------------|
-| PDF/DOCX ingest | Y | Y | — | — | — | — (transcript import) |
-| Audio ingest | Y (Groq) | — | Y (WhisperX prep) | — | — | N (external STT) |
-| Transcript-only analysis | P | P (as text) | Y | Y | Y | Y |
-| Local LLM (Ollama) | Y (chat) | — | P (commented) | Y | Y | Y |
-| Cloud LLM | Y (Groq MoM) | Y (OpenRouter) | Y (GPT-4o) | — | — | N |
-| Cloud embeddings | Y (Nomic) | — | — | — | — | — (local HF/embeddings) |
-| Abstractive summary | Y | — | Y | — | — | Y |
-| MoM / multi-field minutes | Y | Y (broader) | — | — | — | P (`llm_action_items` + summaries) |
-| Decisions as typed field | Y | Y | — | — | — | backlog **B10** |
-| Action items + owner/deadline | Y | Y (+ email/priority) | — | — | — | Y (+ quote/confidence/ground) |
-| Rubric / scored evaluation | — | — | P (NPS) | Y | — | — |
-| Sentiment / emotion depth | — | — | Y (narrow) | — | — | Y (family) |
-| NPS / outcome score | — | — | Y | P (KPI map) | — | — |
-| Chat / RAG Q&A | Y | — | Y (tool chat) | — | P (Q&A lenses) | N |
-| Multi-perspective answers | — | — | — | — | Y | — |
-| Evidence quotes + confidence | — | — | P (scores) | Y | P (missing evidence) | P → **P2/B18** |
-| Human-review banner | — | — | — | Y | — | P (skip/partial UX) |
-| Auth / multi-user | Y | Y (Google) | — | — | — | N (hosted) |
-| Calendar / invite export | — | Y | — | — | — | — |
-| Groups / longitudinal | — | — | P (all-IDs NPS) | — | — | Y |
-| Interaction / voice science | — | — | — | — | — | Y |
-| Contracts / schema versions | — | — | — | P (normalize) | — | Y |
+| Capability | Retrievia | Meeting-Analysis | Call-Centers | Trinethra | Perspective | Scriberr | TranscriptX (today) | TX 1.x intent |
+|------------|-----------|------------------|--------------|-----------|-------------|----------|---------------------|---------------|
+| PDF/DOCX ingest | Y | Y | — | — | — | — | — (transcript import) | — |
+| Audio ingest | Y (Groq) | — | Y (WhisperX prep) | — | — | Y (local Parakeet/Canary/Whisper) | N (external STT) | Theme **H** optional local |
+| Diarization / speaker labels | — | — | P | — | — | Y | P (Speaker ID / BYO labels) | **H** + B19 |
+| Transcript-only analysis | P | P (as text) | Y | Y | Y | P (reader + LLM assist) | Y | Y (keep) |
+| Local LLM (Ollama) | Y (chat) | — | P (commented) | Y | Y | Y (chat/summary) | Y | Y |
+| Cloud LLM | Y (Groq MoM) | Y (OpenRouter) | Y (GPT-4o) | — | — | P (optional OpenAI-compatible) | N | Opt-in only if ever |
+| Abstractive summary | Y | — | Y | — | — | Y | Y | Theme **A** |
+| MoM / multi-field minutes | Y | Y (broader) | — | — | — | P (summaries / chat) | P (`llm_action_items` + summaries) | **B10** |
+| Action items + owner/deadline | Y | Y (+ email/priority) | — | — | — | — | Y (+ quote/confidence/ground) | deepen |
+| Rubric / scored evaluation | — | — | P (NPS) | Y | — | — | — | pack candidate |
+| Sentiment / emotion depth | — | — | Y (narrow) | — | — | — | Y (family) | keep |
+| Chat / RAG Q&A | Y | — | Y (tool chat) | — | P (Q&A lenses) | Y (chat-with-audio) | N (primary) | stay non-primary |
+| Folder watch / automation API | — | — | — | — | — | Y | P (batch/CLI / folder import) | Theme **G2** |
+| Polished transcript reader + notes | P (WaveSurfer) | — | — | — | — | Y | P (playback / Speaker ID) | Themes **D** / **C** |
+| PWA / installable shell | — | — | — | — | — | Y | — | Theme **I** |
+| Groups / longitudinal | — | — | P (all-IDs NPS) | — | — | — | Y | Theme **J** |
+| Interaction / voice science | — | — | — | — | — | — | Y | keep |
+| Contracts / schema versions | — | — | — | P (normalize) | — | — | Y | keep |
 
 ### 5.2 Commercial matrix (vendor-claimed)
 
@@ -510,26 +548,28 @@ Legend: **Y** / **P** / **—** / **N** as above. Cells reflect public positioni
 
 ### Theme clusters
 
-| Theme | Who is strong | TX implication |
-|-------|---------------|----------------|
-| Assistant / chat UX | Retrievia, Call-Centers; Otter/Fireflies Ask-AI | **Watch/defer** — conflicts with no RAG-chat product |
-| Operational handoff | Meeting-Analysis (Calendar); Fireflies/Gong CRM | **Adapt** as optional export, not core analysis |
+| Theme | Who is strong | TX implication (living) |
+|-------|---------------|-------------------------|
+| Local STT + self-host workspace | Scriberr | **Today:** complement / BYO upstream. **1.x:** ROADMAP theme **H** product decision (invest/narrow/defer) — Scriberr is quality bar |
+| Assistant / chat UX | Retrievia, Scriberr, Call-Centers; Otter/Fireflies Ask-AI | **Watch** — keep chat non-primary |
+| Operational handoff | Meeting-Analysis (Calendar); Fireflies/Gong CRM; Scriberr folder-watch/API | **Adapt** export/import automation; folder watch → theme **G2** |
 | Domain specialty packs | Call-Centers (NPS), Trinethra (rubric); Gong/Avoma/CallMiner scorecards | **Adapt** as optional domain packs / deepen-in-place |
 | Structured extract taxonomy | Meeting-Analysis, Retrievia MoM; commercial MoM/action defaults | **Adopt** for **B10** field design |
 | Uncertainty / human review | Trinethra | **Adopt** for **P2 / B18** UX + confidence |
 | Contested interpretation UI | Perspective | **Adapt** as presentation pattern for insights |
 | Tracker / moment taxonomies | Gong, Chorus, Avoma, Fireflies, CallMiner | **Adopt patterns** for moments / topic_shift / keyword UX — not their SaaS capture |
-| Outcome-linked analytics | Gong/Chorus (won-lost); CallMiner (CSAT/QA) | **Watch** — TX has groups but not CRM outcome joins; keep transcript-grounded |
-| Live / realtime assist | Avoma, CallMiner/Observe, Otter | **Defer** — realtime is stocktake deferred |
-| Privacy purity | Trinethra, Perspective, TX | Commercial = cloud SaaS; reinforce TX local stance |
-| Analysis depth (discourse/emotion/voice) | TX alone among OSS; CallMiner closest commercial peer on affect/QA | Do not dilute for chat/CRM parity; borrow scorecard + tracker UX ideas |
+| Outcome-linked analytics | Gong/Chorus (won-lost); CallMiner (CSAT/QA) | **Watch** — keep transcript-grounded |
+| Live / realtime assist | Avoma, CallMiner/Observe, Otter | **Defer** — realtime still deferred |
+| Privacy purity | Trinethra, Perspective, Scriberr (local mode), TX | Reinforce local stance; optional OpenAI only with labelling |
+| Polished transcript reader / notes / PWA | Scriberr | **Adapt** via themes **D** / **C** / **I** |
+| Analysis depth (discourse/emotion/voice) | TX alone among OSS; CallMiner closest commercial peer on affect/QA | Do not dilute analysis for chat/CRM parity; STT is additive optional path |
 
-### Shared weaknesses — OSS five
+### Shared weaknesses — OSS six
 
-- Thin maturity (few commits; limited tests; demo credentials patterns)
-- Little/no provenance spanning transcript offsets
+- Most are thin maturity (few commits; limited tests; demo credentials patterns) — **exception: Scriberr** (larger star/install surface) but maintainer development is currently paused
+- Little/no provenance spanning transcript offsets (Scriberr has word timing for playback, not TX-style analysis contracts)
 - Weak or no multi-session group analytics
-- Either cloud-coupled privacy story or very narrow local MVP
+- Either cloud-coupled privacy story, STT-first product, or very narrow local MVP — none match TX’s analysis DAG depth
 
 ### Shared weaknesses — commercial six
 
@@ -543,59 +583,70 @@ Legend: **Y** / **P** / **—** / **N** as above. Cells reflect public positioni
 
 ## 7. What TranscriptX can learn
 
-Priority = product fit under local-first + deepen-in-place + ≤2 new module IDs/wave. Each item ends with a next step. **No backlog re-rank in this note.**
+Priority = product fit under local-first + analysis-first + deepen-in-place. Each item ends with a next step. **This section is living** — may propose backlog/ROADMAP updates; does not auto-re-rank modules. Analysis capacity rule remains in the backlog until revised there.
 
 ### Adopt / adapt (fits stance)
 
-| # | Learning | Source | Backlog link | Suggested next step |
-|---|----------|--------|--------------|---------------------|
-| L1 | **MoM / extract taxonomy:** separate `overview`, `discussion_points`, `decisions`, `action_items`, `insights` (and Meeting-Analysis extras: risks, milestones, open questions) | Retrievia `document_loader.py`; Meeting-Analysis `ai/parser.py`; commercial summary defaults (Fireflies/Otter/Gong) | **B10** | Doc-only: draft B10 record-type examples against Retrievia MoM + MAS schema + commercial minutes fields; prefer deepen extraction family over new module ID |
-| L2 | **Confidence + gaps + human-review banner** on inferred LLM surfaces | Trinethra UI + `score.confidence` + `gaps` | **P2**, **B18** | Spike: reuse confidence enum + persistent “draft / human review” copy on `narrative_summary` / `insights` / action-item review |
-| L3 | **Evidence-only + abstain when silent** prompt rules; repair/normalize JSON | Trinethra `buildPrompt.js`, `parseAnalysisJson.js` | **P2**, existing `llm_action_items` parse path | Compare TX action-item parse/ground diagnostics to Trinethra normalize; adopt parseWarning surfacing in GUI if missing |
-| L4 | **Role-conditioned metrics** (e.g. customer-only NPS) | Call-Centers `nps_analysis_tool.py`; CallMiner agent/customer channel splits | Optional domain pack (not core); equity already speaker-aware | Candidate: document “role filter” pattern for group charts / sentiment rollups; do **not** add NPS as core module without genre gate |
-| L5 | **Multi-lens presentation** for contested claims (Optimist/Pessimist/Moderator tabs; “missing evidence”) | Perspective `route.ts` + UI tabs | **B18** presentation; not a new analysis module | UX spike on Insights: optional “alternate readings” panel fed by existing modules + one LLM synthesis — no RAG store |
-| L6 | **Calendar/export handoff** for action items with deadlines | Meeting-Analysis Calendar; commercial CRM/export norms | Outside analysis backlog (export/integrations) | Candidate follow-up: iCal/CSV export of `llm_action_items` (no Google OAuth / CRM required for v1) |
-| L7 | **Configurable scorecards / methodology rubrics** as data (MEDDIC/SPICED/custom bands + evidence) | Gong, Avoma, CallMiner; Trinethra `rubric.json` | Domain pack / deepen-in-place; overlaps L2 | Spec-only: optional rubric pack that scores existing module outputs + quotes — **no** new default module ID until genre fixtures exist |
-| L8 | **Smart trackers:** theme/phrase → timeline → alertable moment** with competitive/objection/pricing examples | Gong, Chorus, Avoma, Fireflies | Moments / keywords / topic_shift presentation | Map commercial tracker UX to TX moments + topic_shift charts; prefer presentation + config over new detector modules |
-| L9 | **Sequence / proximity behavior rules** (empathy after complaint; discovery before pitch) | CallMiner (claimed sequencing/proximity); Gong discovery depth | Interaction family deepen | Research note: can existing acts/interactions express “A before/after B” rules for genre packs? |
+| # | Learning | Source | Link | Suggested next step |
+|---|----------|--------|------|---------------------|
+| L1 | **MoM / extract taxonomy:** separate `overview`, `discussion_points`, `decisions`, `action_items`, `insights` (and Meeting-Analysis extras: risks, milestones, open questions) | Retrievia; Meeting-Analysis; commercial MoM defaults | **B10** | Doc-only: draft B10 record-type examples; prefer deepen extraction family |
+| L2 | **Confidence + gaps + human-review banner** on inferred LLM surfaces | Trinethra | **P2**, **B18** | Spike confidence + “draft / human review” copy on insights / action-item review |
+| L3 | **Evidence-only + abstain when silent** prompt rules; repair/normalize JSON | Trinethra | **P2**, `llm_action_items` | Compare parse/ground diagnostics; surface parse warnings in GUI |
+| L4 | **Role-conditioned metrics** (e.g. customer-only NPS) | Call-Centers; CallMiner | Domain pack | Document role-filter pattern; no NPS core module without genre gate |
+| L5 | **Multi-lens presentation** for contested claims | Perspective | **B18** / theme **A** | Optional “alternate readings” panel — no RAG store |
+| L6 | **Calendar/export handoff** for action items with deadlines | Meeting-Analysis; commercial norms | Export/integrations | iCal/CSV of `llm_action_items` candidate |
+| L7 | **Configurable scorecards / methodology rubrics** as data | Gong, Avoma, CallMiner; Trinethra | Domain pack | Spec-only until genre fixtures exist |
+| L8 | **Smart trackers:** theme/phrase → timeline → alertable moment | Gong, Chorus, Avoma, Fireflies | Moments / topic_shift | Prefer presentation + config over new detector modules |
+| L9 | **Sequence / proximity behavior rules** | CallMiner; Gong | Interaction deepen | Research acts/interactions “A before/after B” packs |
+| L10 | **Transcript reader polish:** follow-along, seek-from-text, notes, karaoke word highlight | Scriberr | ROADMAP **D** / **C** | UX inventory → Components v2 playback; needs word timings |
+| L11 | **PWA / installable shell** | Scriberr | ROADMAP **I** | Design spike vs Streamlit hosting constraints |
+| L12 | **Local STT stack:** Parakeet/Canary + Whisper, CUDA/CPU, diarization, job UX | Scriberr | ROADMAP **H** | Architecture fork (in-process vs host service vs external-only); keep BYO import |
+| L13 | **Directory / folder watcher** for new recordings | Scriberr | ROADMAP **G2** | Extend transcript folder-import honesty toward audio→STT when **H** exists |
+| L14 | **YouTube (or URL) → local STT** | Scriberr-class workflows / commercial capture | ROADMAP **H** | Legal/ToS + yt-dlp ops + size limits in design spike |
 
-### Watch / defer (interesting, conflicts with non-goals)
+### Watch / defer (interesting; still constrained)
 
-| # | Learning | Source | Why defer | Suggested next step |
-|---|----------|--------|-----------|---------------------|
-| W1 | Full RAG chat workspace + streaming ReAct / Ask-AI over meetings | Retrievia; Otter/Fireflies/Gong Ask | Explicit non-goal: chat-over-transcript product | Keep as competitive awareness only |
-| W2 | Cloud STT/embed (Groq/Nomic) for “zero GPU” | Retrievia | Breaks air-gap / local-first story | Prefer external BYO transcript + local Ollama |
-| W3 | Google OAuth multi-user + Calendar invites; CRM sync | Meeting-Analysis; Gong/Fireflies/Otter CRM | Hosted multi-user is stocktake no-go | Export-only path (L6) if anything |
-| W4 | GPT-4o tool router over HF tools | Call-Centers | Cloud orchestrator; TX already runs HF modules in-DAG without chat router | Prefer direct modules over agent wrappers |
-| W5 | Truncate-transcript Q&A as primary UX | Perspective | Loses long-form fidelity TX already solves with modules | Only as optional lens UI (L5), not primary analysis |
-| W6 | Auto-join meeting bots + live collaborative notes | Fireflies, Otter, Gong, Avoma | Capture/realtime/hosted — deferred / non-goals | Stay BYO-transcript; do not build bots |
-| W7 | Deal boards / forecast / revenue intelligence | Gong, Chorus, Avoma RI modules | Sales CRM outcome platform, not analysis toolkit | Ignore for core; optional research genre pack later |
-| W8 | Realtime in-call answer cards / agent whisper | Avoma, CallMiner/Observe | Realtime deferred; breaks local batch model | Awareness only |
+| # | Learning | Source | Why constrained | Suggested next step |
+|---|----------|--------|-----------------|---------------------|
+| W1 | Full RAG chat as primary product | Retrievia; Scriberr chat; Otter/Fireflies/Gong Ask | Non-primary by product stance | Awareness only; optional assist ≠ primary UX |
+| W2 | Cloud STT/embed (Groq/Nomic) as default | Retrievia | Breaks air-gap / local-first | Prefer local STT (**H**) or BYO; cloud only with explicit opt-in |
+| W3 | Google OAuth multi-user + Calendar invites; CRM sync | Meeting-Analysis; Gong/Fireflies/Otter | Hosted multi-user no-go | Export-only path (L6) |
+| W4 | GPT-4o tool router over HF tools | Call-Centers | Cloud orchestrator | Prefer direct modules |
+| W5 | Truncate-transcript Q&A as primary UX | Perspective | Loses long-form fidelity | Optional lens UI (L5) only |
+| W6 | Auto-join meeting bots + live collab notes | Fireflies, Otter, Gong, Avoma | Capture bots still deferred | Stay off meeting-bot path |
+| W7 | Deal boards / forecast / revenue intelligence | Gong, Chorus, Avoma | Sales CRM platform | Ignore for core |
+| W8 | Realtime in-call answer cards / agent whisper | Avoma, CallMiner/Observe | Realtime deferred | Awareness only |
 
-### Explicit non-transfers
+### Explicit non-transfers (current; revisable)
 
 - Do **not** add DuckDuckGo web search into analysis answers (Retrievia) — pollutes transcript-grounded claims.
 - Do **not** treat “100% extraction accuracy” marketing as a quality bar.
-- Do **not** create a new module ID for “NPS” or “rubric scorer” without overlap assessment + genre fixtures (backlog capacity rule).
-- Do **not** chase Gong/Chorus deal intelligence or Fireflies/Otter bot capture for parity.
-- Do **not** assume commercial emotion/sentiment depth exceeds TX’s emotion family without side-by-side eval on shared fixtures.
+- Do **not** create a new **analysis** module ID for “NPS” or “rubric scorer” without overlap assessment + genre fixtures.
+- Do **not** chase Gong/Chorus deal intelligence or Fireflies/Otter **meeting bots** for parity.
+- Do **not** assume commercial emotion/sentiment depth exceeds TX’s emotion family without side-by-side eval.
+- Do **not** let optional STT (**H**) replace analysis-first positioning or drop BYO import.
+- Do **not** ship silent cloud STT/LLM defaults.
 
 ---
 
 ## 8. Decision summary
 
-| If the question is… | Answer |
-|---------------------|--------|
-| Should TX become a RAG meeting chat app? | **No** (W1) |
+| If the question is… | Answer (living) |
+|---------------------|-----------------|
+| Should TX become a RAG meeting chat app? | **No** as primary (W1) |
 | Should TX become a Gong-like revenue CI SaaS? | **No** (W6–W7) |
+| Should TX offer optional local STT like Scriberr? | **1.x product decision** — ROADMAP theme **H** (invest/narrow/defer); not a 1.0 gate |
+| Should karaoke playback / PWA / folder watch inform TX? | **Yes as ROADMAP themes D / I / G2** (L10–L13) |
 | Should B10 look at MoM/protocol schemas? | **Yes** (L1) |
 | Should P2/B18 borrow Trinethra’s review/confidence UX? | **Yes** (L2–L3) |
 | Should Perspective’s multi-lens become a core module? | **No** — optional presentation (L5) |
-| Should Calendar/CRM sync be Wave 1 analysis work? | **No** — optional export later (L6) |
-| Should scorecards / smart trackers inform TX? | **Yes as packs/UX** (L7–L8), not as SaaS capture |
+| Should Calendar/CRM sync be near-term analysis work? | **No** — optional export later (L6) |
+| Should scorecards / smart trackers inform TX? | **Yes as packs/UX** (L7–L8) |
 | Should CallMiner-style sequence rules inform interaction deepen? | **Yes, research** (L9) |
-| Does TX already beat the five OSS projects on conversational analytics depth? | **Yes** |
-| Does TX already beat commercial CI on local contracts + discourse/emotion/voice science? | **Likely yes on science/contracts**; **no** on capture, CRM, coaching scale, and polished tracker UX |
+| Does TX beat the six OSS projects on conversational analytics depth? | **Yes** (today) |
+| Does TX beat commercial CI on local contracts + discourse/emotion/voice? | **Likely yes on science/contracts**; **no** on capture, CRM, coaching scale, polished tracker UX |
+| Does Scriberr beat TX on local STT + workspace polish *today*? | **Yes**; TX may close that gap on **H/D/I** without becoming STT-only |
+| Are this note and the analysis backlog frozen? | **No** — both are ongoing / changeable |
 
 ---
 
@@ -608,10 +659,11 @@ Priority = product fit under local-first + deepen-in-place + ≤2 new module IDs
 | Digital-Assistant-for-Call-Centers | `agent.py`, `graph.py`, `nodes/*`, `whisperx/main.py`, README |
 | trinethra-feedback-analyzer | `rubric.json`, `backend/src/services/buildPrompt.js`, `utils/parseAnalysisJson.js`, `frontend/src/App.jsx`, README |
 | perspective-studio | `app/api/analyze/route.ts`, `app/page.tsx`, README |
+| Scriberr | README (features, install, LLM disclosure, maintainer pause); [scriberr.app](https://scriberr.app/); [github.com/rishikanthc/Scriberr](https://github.com/rishikanthc/Scriberr) |
 | Gong | Product site + third-party 2026 CI comparisons (pricing/features vendor-claimed) |
 | Chorus by ZoomInfo | Product site + Gong/Chorus comparison writeups |
 | Avoma | Product blog / pricing pages (scorecards, live answer cards, modular CI) |
 | Fireflies.ai | Product site + mid-market CI reviews (CRM, languages, analytics ceiling) |
 | Otter.ai | Product site + meeting-assistant comparisons (live notes, Ask AI) |
 | CallMiner / Observe.ai | Product comparison pages (omnichannel, scorecards, sequencing, realtime) |
-| TranscriptX | `module_specs/__init__.py`, `llm_action_items.py`, `docs/dev/analysis_module_backlog_2026-07-17.md`, `docs/dev/stocktake_2026-07-17.md` |
+| TranscriptX | `module_specs/__init__.py`; [`analysis_module_backlog_2026-07-17.md`](../docs/dev/analysis_module_backlog_2026-07-17.md); [`ROADMAP.md`](../docs/ROADMAP.md) themes A–M; [`comparison.md`](../docs/comparison.md); stocktake |

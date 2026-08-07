@@ -135,7 +135,7 @@ def test_groups_empty_list_renders_empty_state(monkeypatch) -> None:
     import transcriptx.web.page_modules.groups as mod
 
     empty_calls = _patch_groups_common(monkeypatch, mod)
-    monkeypatch.setattr(mod, "get_cached_list_transcripts", lambda: [])
+    monkeypatch.setattr(mod, "get_cached_list_transcript_picker_options", lambda: [])
     monkeypatch.setattr(mod, "cached_list_groups", lambda: [])
     monkeypatch.setattr(
         mod, "_render_create_group_transcripts_fragment", lambda *_a, **_k: None
@@ -318,8 +318,8 @@ def test_groups_with_list_invokes_detail_fragment(monkeypatch) -> None:
     detail_calls: list = []
     monkeypatch.setattr(
         mod,
-        "get_cached_list_transcripts",
-        lambda: [SimpleNamespace(path="/tmp/a.json", base_name="a")],
+        "get_cached_list_transcript_picker_options",
+        lambda: [SimpleNamespace(path="/tmp/a.json", label="a")],
     )
     monkeypatch.setattr(mod, "cached_list_groups", lambda: [group])
     monkeypatch.setattr(mod, "canonical_group_member_path", lambda p: str(p))

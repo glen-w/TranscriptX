@@ -276,3 +276,76 @@ def test_chapters_panel_empty_caption(monkeypatch) -> None:
     monkeypatch.setattr(mod, "st", _DummySt)
     mod._render_chapters_panel([])
     assert captions == ["No topic-shift chapters for this run."]
+
+
+def test_chapters_panel_skips_redundant_keyword_caption(monkeypatch) -> None:
+    from transcriptx.web.transcript_viewer.chapters import ChapterRow
+
+    captions: list[str] = []
+    markdowns: list[str] = []
+
+    class _Col:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    class _DummySt:
+        session_state: dict = {}
+
+        @staticmethod
+        def caption(text):
+            captions.append(text)
+
+        @staticmethod
+        def markdown(text, **_k):
+            markdowns.append(text)
+
+        @staticmethod
+        def columns(_spec):
+            return (_Col(), _Col(), _Col(), _Col())
+
+        @staticmethod
+        def button(_label, **_k):
+            return False
+
+    # Title is first 4 hints; keywords include one extra — don't echo the list.
+    keyword_built = ChapterRow(
+        span_id="s1",
+        index=0,
+        title="Season · Club · Chronograph · Girls",
+        time_start=60.0,
+        time_end=3000.0,
+        viewer_target_source_index=None,
+        leading_boundary_id=None,
+        strength=None,
+        summary=None,
+        keywords=(
+            "Season",
+            "Club",
+            "Chronograph",
+            "Girls",
+            "Paris",
+        ),
+    )
+    # Distinct LLM title — keywords remain useful secondary detail.
+    llm_titled = ChapterRow(
+        span_id="s2",
+        index=1,
+        title="Budget discussion",
+        time_start=3000.0,
+        time_end=3600.0,
+        viewer_target_source_index=None,
+        leading_boundary_id="b1",
+        strength=0.2,
+        summary=None,
+        keywords=("Budget", "Finance", "Planning"),
+    )
+    monkeypatch.setattr(mod, "st", _DummySt)
+    mod._render_chapters_panel([keyword_built, llm_titled])
+
+    assert any("Season · Club · Chronograph · Girls" in m for m in markdowns)
+    assert not any("Paris" in c for c in captions)
+    assert any("Budget · Finance · Planning" in c for c in captions)
+    assert any("strength 0.20" in c for c in captions)

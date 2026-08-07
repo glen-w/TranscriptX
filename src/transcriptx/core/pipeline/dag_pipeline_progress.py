@@ -127,3 +127,22 @@ def run_failed_event(
         "failed": ev_failed,
         "message": message,
     }
+
+
+def run_completed_event(
+    *,
+    total_modules: int,
+    ev_completed: int,
+    ev_skipped: int,
+    ev_failed: int,
+    message: str,
+) -> Dict[str, Any]:
+    return {
+        "event": "run_completed",
+        "total": total_modules,
+        "completed": ev_completed,
+        "skipped": ev_skipped,
+        "failed": ev_failed,
+        "pct": 100.0,
+        "message": message,
+    }

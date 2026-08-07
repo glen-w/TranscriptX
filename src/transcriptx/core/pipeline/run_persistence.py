@@ -37,6 +37,7 @@ class PersistenceLayer:
         transcript_key: str,
         selected_modules: List[str],
         results: Dict[str, Any],
+        on_event: Any = None,
     ) -> PersistenceOutcome:
         try:
             persist_canonical_results_and_artifacts(
@@ -45,6 +46,7 @@ class PersistenceLayer:
                 transcript_key=transcript_key,
                 modules_enabled=selected_modules,
                 results=results,
+                on_event=on_event,
             )
             return PersistenceOutcome(
                 name="canonical_results", success=True, severity="required"

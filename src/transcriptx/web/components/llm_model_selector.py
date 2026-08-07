@@ -218,21 +218,46 @@ def _profile_display_label(storage_name: str) -> str:
     return storage_name
 
 
+def _with_global_model_fallback(
+    selection: LlmModelSelection | None,
+    *,
+    global_model: str | None,
+) -> LlmModelSelection:
+    """Fill empty ``shared_model`` from global ``llm.model`` (runtime precedence)."""
+    sel = (selection or LlmModelSelection()).normalized()
+    fallback = (global_model or "").strip() or None
+    if not fallback or sel.shared_model:
+        return sel
+    return LlmModelSelection(
+        mode=sel.mode,
+        shared_model=fallback,
+        module_models=dict(sel.module_models),
+    )
+
+
+def _project_default_selection() -> LlmModelSelection:
+    """Effective Project default pack: ``model_selection``, then ``llm.model``."""
+    cfg = get_config().llm
+    return _with_global_model_fallback(
+        selection_from_config_obj(getattr(cfg, "model_selection", None)),
+        global_model=getattr(cfg, "model", None),
+    )
+
+
 def _load_profile_selection(
     profile_label: str,
 ) -> tuple[LlmModelSelection | None, str | None]:
     """Load selection for a profile label.
 
     Returns ``(selection, warning)``. ``selection`` is ``None`` for Custom
-    (leave widgets alone) or when falling back after corruption.
+    (leave widgets alone).
     """
     if not profile_label or profile_label == _CUSTOM_PROFILE:
         return None, None
 
     storage_name = _profile_storage_name(profile_label)
     if ProfileController.is_virtual_default_profile_name(storage_name):
-        cfg = get_config().llm
-        return selection_from_config_obj(getattr(cfg, "model_selection", None)), None
+        return _project_default_selection(), None
 
     ctrl = ProfileController()
     data = ctrl.load_profile(_LLM_MODELS_TARGET, storage_name)
@@ -242,8 +267,7 @@ def _load_profile_selection(
             "using project default selection."
         )
         logger.warning(warning)
-        cfg = get_config().llm
-        return selection_from_config_obj(getattr(cfg, "model_selection", None)), warning
+        return _project_default_selection(), warning
 
     try:
         return selection_from_mapping(data["config"]), None
@@ -253,8 +277,72 @@ def _load_profile_selection(
             f"({exc}); using project default selection."
         )
         logger.warning(warning)
-        cfg = get_config().llm
-        return selection_from_config_obj(getattr(cfg, "model_selection", None)), warning
+        return _project_default_selection(), warning
+
+
+def _selection_has_wanted_models(selection: LlmModelSelection | None) -> bool:
+    if selection is None:
+        return False
+    sel = selection.normalized()
+    return bool(sel.shared_model) or bool(sel.module_models)
+
+
+def _session_missing_installable_selection(
+    prefix: str,
+    selection: LlmModelSelection | None,
+    installed: Sequence[str],
+) -> bool:
+    """True when profile widgets are unset but an installable configured tag exists."""
+    if selection is None or not installed:
+        return False
+    sel = selection.normalized()
+    if sel.mode != "per_module":
+        wanted = _installed_choice(sel.shared_model, installed)
+        if not wanted:
+            return False
+        return (
+            _session_model_value(st.session_state.get(_key(prefix, "shared_model")))
+            is None
+        )
+    for consumer_id in LLM_MODEL_CONSUMER_IDS:
+        chosen = sel.module_models.get(consumer_id) or sel.shared_model
+        kept = _installed_choice(chosen, installed)
+        if not kept:
+            continue
+        current = _session_model_value(
+            st.session_state.get(_key(prefix, f"module_{consumer_id}"))
+        )
+        if current is None:
+            return True
+    return False
+
+
+def _apply_profile_to_session(
+    prefix: str,
+    profile_label: str,
+    installed: Sequence[str],
+    *,
+    applied_key: str,
+) -> None:
+    """Apply a non-Custom profile onto widgets; defer lock while tags are still empty."""
+    if profile_label == _CUSTOM_PROFILE:
+        st.session_state[applied_key] = profile_label
+        return
+
+    loaded, load_warning = _load_profile_selection(profile_label)
+    needs_apply = st.session_state.get(applied_key) != profile_label or (
+        _session_missing_installable_selection(prefix, loaded, installed)
+    )
+    if not needs_apply:
+        return
+    if load_warning:
+        st.caption(load_warning)
+    for note in _apply_selection_to_session(prefix, loaded, installed):
+        st.caption(note)
+    # Do not lock while Ollama tags are still empty and the pack names a model —
+    # otherwise the first empty list permanently leaves "(choose a model)".
+    if installed or not _selection_has_wanted_models(loaded):
+        st.session_state[applied_key] = profile_label
 
 
 def _apply_selection_to_session(
@@ -277,7 +365,7 @@ def _apply_selection_to_session(
     )
 
     shared = _installed_choice(sel.shared_model, installed)
-    if sel.shared_model and shared is None:
+    if sel.shared_model and shared is None and installed:
         notes.append(
             f"Saved model `{sel.shared_model}` is not installed — choose an installed model."
         )
@@ -286,7 +374,7 @@ def _apply_selection_to_session(
     for consumer_id in LLM_MODEL_CONSUMER_IDS:
         chosen = sel.module_models.get(consumer_id) or sel.shared_model
         kept = _installed_choice(chosen, installed)
-        if chosen and kept is None:
+        if chosen and kept is None and installed:
             notes.append(
                 f"Saved model `{chosen}` for `{consumer_id}` is not installed — "
                 "choose an installed model."
@@ -329,6 +417,26 @@ def _consumer_needs_live_llm(module_name: str) -> bool:
         return True
 
 
+def selection_needs_live_llm(
+    selected_modules: Sequence[str],
+    *,
+    include_group: bool = False,
+) -> bool:
+    """True when this launch will invoke a live LLM consumer.
+
+    Matches launch-gate eligibility: registry ``requires_llm`` modules that
+    still need a live call, plus enabled group LLM synthesis when applicable.
+    """
+    from transcriptx.core.pipeline.module_registry import get_module_info
+
+    for mid in selected_modules:
+        info = get_module_info(mid)
+        if info is not None and getattr(info, "requires_llm", False):
+            if _consumer_needs_live_llm(mid):
+                return True
+    return _include_group_consumer(include_group)
+
+
 def launch_gate_reasons(
     *,
     selection: LlmModelSelection,
@@ -343,24 +451,9 @@ def launch_gate_reasons(
     reasons: list[str] = []
     from transcriptx.core.pipeline.module_registry import get_module_info
 
-    needs_llm = False
-    for mid in selected_modules:
-        info = get_module_info(mid)
-        if info is not None and getattr(info, "requires_llm", False):
-            try:
-                from transcriptx.core.analysis.llm_custom_qa.gating import (
-                    consumer_requires_live_llm,
-                )
-
-                if not consumer_requires_live_llm(mid):
-                    continue
-            except Exception:
-                pass
-            needs_llm = True
-            break
-    if _include_group_consumer(include_group):
-        needs_llm = True
-    if not needs_llm:
+    if not selection_needs_live_llm(
+        selected_modules, include_group=include_group
+    ):
         return reasons
 
     if not llm_enabled or (provider or "").strip().lower() != "ollama":
@@ -419,17 +512,11 @@ def launch_gate_reasons(
 
 def _active_model_summary_label() -> str:
     """Human label for the project-active / configured model."""
-    cfg = get_config().llm
-    sel = selection_from_config_obj(getattr(cfg, "model_selection", None))
-    if sel is None:
-        return (cfg.model or "not configured").strip() or "not configured"
-    norm = sel.normalized()
+    norm = _project_default_selection()
     if norm.mode == "per_module" and norm.module_models:
         n = len(norm.module_models)
         return f"{n} model assignments"
-    return (norm.shared_model or cfg.model or "not configured").strip() or (
-        "not configured"
-    )
+    return (norm.shared_model or "not configured").strip() or "not configured"
 
 
 def _footer_model_label(selection: LlmModelSelection | None) -> str:
@@ -649,8 +736,15 @@ def render_compact_llm_setup(
     """
     Per-run LLM setup only (no refresh / preset CRUD / set-active).
 
-    Returns ``(selection_or_none, gate_reasons, footer_model_label)``.
+    Hidden when the effective module list (and optional group synthesis) does
+    not need a live LLM. Returns ``(selection_or_none, gate_reasons,
+    footer_model_label)``.
     """
+    if not selection_needs_live_llm(
+        selected_modules, include_group=include_group
+    ):
+        return None, [], "no LLM modules"
+
     config = get_config()
     llm = config.llm
     provider = (llm.provider or "null").strip().lower()
@@ -688,18 +782,11 @@ def render_compact_llm_setup(
             "Settings → Models."
         )
 
-    # Seed widgets from project-active Model preset without management UI.
+    # Seed widgets from the selected Model preset (defaults to project-active).
     active = ProfileController().get_active_profile(_LLM_MODELS_TARGET)
     active_label = _profile_display_label(active)
     applied_key = _key(key_prefix, "applied_profile")
-    if st.session_state.get(applied_key) != active_label:
-        loaded, load_warning = _load_profile_selection(active_label)
-        if load_warning:
-            st.caption(load_warning)
-        for note in _apply_selection_to_session(key_prefix, loaded, installed):
-            st.caption(note)
-        st.session_state[applied_key] = active_label
-        st.session_state[_key(key_prefix, "profile")] = active_label
+    profile_key = _key(key_prefix, "profile")
 
     with st.expander("Change for this run", expanded=False):
         st.caption(
@@ -711,7 +798,6 @@ def render_compact_llm_setup(
             label = _profile_display_label(name)
             if label not in profile_options:
                 profile_options.append(label)
-        profile_key = _key(key_prefix, "profile")
         if profile_key not in st.session_state:
             st.session_state[profile_key] = (
                 active_label if active_label in profile_options else profile_options[0]
@@ -729,14 +815,9 @@ def render_compact_llm_setup(
                 f"{_CUSTOM_PROFILE} keeps this run's widgets."
             ),
         )
-        if st.session_state.get(applied_key) != selected_profile:
-            loaded, load_warning = _load_profile_selection(selected_profile)
-            if load_warning:
-                st.caption(load_warning)
-            if selected_profile != _CUSTOM_PROFILE:
-                for note in _apply_selection_to_session(key_prefix, loaded, installed):
-                    st.caption(note)
-            st.session_state[applied_key] = selected_profile
+        _apply_profile_to_session(
+            key_prefix, selected_profile, installed, applied_key=applied_key
+        )
 
         _render_assignment_widgets(
             key_prefix=key_prefix,
@@ -824,14 +905,9 @@ def render_llm_models_settings_panel() -> None:
         key=profile_key,
     )
     applied_key = _key(key_prefix, "applied_profile")
-    if st.session_state.get(applied_key) != selected_profile:
-        loaded, load_warning = _load_profile_selection(selected_profile)
-        if load_warning:
-            st.caption(load_warning)
-        if selected_profile != _CUSTOM_PROFILE:
-            for note in _apply_selection_to_session(key_prefix, loaded, installed):
-                st.caption(note)
-        st.session_state[applied_key] = selected_profile
+    _apply_profile_to_session(
+        key_prefix, selected_profile, installed, applied_key=applied_key
+    )
 
     _render_assignment_widgets(
         key_prefix=key_prefix,

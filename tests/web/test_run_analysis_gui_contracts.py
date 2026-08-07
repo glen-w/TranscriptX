@@ -309,6 +309,99 @@ def test_review_module_removal_refuses_empty_plan() -> None:
 
 
 @pytest.mark.unit
+def test_compact_llm_hidden_when_no_llm_modules(monkeypatch) -> None:
+    import transcriptx.web.components.llm_model_selector as mod
+
+    fake_st = MagicMock()
+    fake_st.session_state = {}
+    fake_st.markdown = MagicMock()
+    fake_st.caption = MagicMock()
+
+    monkeypatch.setattr(mod, "st", fake_st)
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.module_registry.get_module_info",
+        lambda _mid: SimpleNamespace(requires_llm=False),
+    )
+    monkeypatch.setattr(mod, "_include_group_consumer", lambda _include: False)
+
+    selection, gates, label = mod.render_compact_llm_setup(
+        key_prefix="run_analysis_llm",
+        selected_modules=["stats", "wordclouds"],
+        include_group=False,
+    )
+    assert selection is None
+    assert gates == []
+    assert label == "no LLM modules"
+    fake_st.markdown.assert_not_called()
+
+
+@pytest.mark.unit
+def test_compact_llm_shown_for_group_synthesis_without_module_llm(monkeypatch) -> None:
+    import transcriptx.web.components.llm_model_selector as mod
+
+    fake_st = MagicMock()
+    fake_st.session_state = {}
+    fake_st.markdown = MagicMock()
+    fake_st.caption = MagicMock()
+    fake_st.expander = MagicMock()
+    fake_st.expander.return_value.__enter__ = MagicMock(return_value=None)
+    fake_st.expander.return_value.__exit__ = MagicMock(return_value=False)
+
+    cfg = SimpleNamespace(
+        llm=SimpleNamespace(
+            enabled=True,
+            provider="ollama",
+            model="gemma3:12b",
+            base_url="http://localhost:11434",
+            model_selection=None,
+        ),
+        analysis=SimpleNamespace(group_llm_synthesis=SimpleNamespace(enabled=True)),
+    )
+    monkeypatch.setattr(mod, "st", fake_st)
+    monkeypatch.setattr(mod, "get_config", lambda: cfg)
+    monkeypatch.setattr(
+        "transcriptx.core.pipeline.module_registry.get_module_info",
+        lambda _mid: SimpleNamespace(requires_llm=False),
+    )
+    monkeypatch.setattr(mod, "_include_group_consumer", lambda include: bool(include))
+    monkeypatch.setattr(
+        mod, "cached_list_ollama_models", lambda _url: (("gemma3:12b",), None)
+    )
+    monkeypatch.setattr(
+        mod,
+        "ProfileController",
+        lambda: SimpleNamespace(
+            get_active_profile=lambda _t: "default",
+            list_profiles=lambda _t: ["default"],
+        ),
+    )
+    monkeypatch.setattr(
+        mod, "_load_profile_selection", lambda _label: (None, None)
+    )
+    monkeypatch.setattr(mod, "_apply_selection_to_session", lambda *_a, **_k: [])
+    monkeypatch.setattr(mod, "_render_assignment_widgets", lambda **_k: None)
+    monkeypatch.setattr(
+        mod,
+        "build_selection_from_session",
+        lambda *_a, **_k: __import__(
+            "transcriptx.core.analysis.llm_support.model_selection",
+            fromlist=["LlmModelSelection"],
+        ).LlmModelSelection(mode="shared", shared_model="gemma3:12b"),
+    )
+
+    selection, gates, label = mod.render_compact_llm_setup(
+        key_prefix="run_analysis_llm",
+        selected_modules=["stats"],
+        include_group=True,
+    )
+    assert selection is not None
+    assert gates == []
+    assert isinstance(label, str)
+    fake_st.markdown.assert_called()
+    assert any("LLM setup" in str(call) for call in fake_st.markdown.call_args_list)
+
+
+@pytest.mark.unit
 def test_compact_llm_degrades_without_ollama(monkeypatch) -> None:
     import transcriptx.web.components.llm_model_selector as mod
 
@@ -328,17 +421,23 @@ def test_compact_llm_degrades_without_ollama(monkeypatch) -> None:
     monkeypatch.setattr(mod, "get_config", lambda: cfg)
     monkeypatch.setattr(
         "transcriptx.core.pipeline.module_registry.get_module_info",
-        lambda _mid: SimpleNamespace(requires_llm=False),
+        lambda _mid: SimpleNamespace(requires_llm=True),
     )
+    monkeypatch.setattr(mod, "_consumer_needs_live_llm", lambda _mid: True)
 
     selection, gates, label = mod.render_compact_llm_setup(
         key_prefix="run_analysis_llm",
-        selected_modules=["stats"],
+        selected_modules=["llm_summary"],
         include_group=False,
     )
     assert selection is None
-    assert gates == []
+    assert gates
     assert isinstance(label, str)
+    fake_st.markdown.assert_called()
+    assert any(
+        "LLM setup" in str(call)
+        for call in fake_st.markdown.call_args_list
+    )
 
 
 @pytest.mark.unit

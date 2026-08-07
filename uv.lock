@@ -4973,7 +4973,7 @@ wheels = [
 
 [[package]]
 name = "transcriptx"
-version = "0.9.8.4"
+version = "0.9.8.6"
 source = { editable = "." }
 dependencies = [
     { name = "alive-progress" },

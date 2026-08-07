@@ -10,6 +10,7 @@ Local-first personal transcript analysis workbench. Start with the product defin
 :caption: Start here
 
 PRODUCT
+comparison
 USER_INDEX
 known_limitations
 runtime/installation

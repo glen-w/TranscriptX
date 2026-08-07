@@ -152,6 +152,35 @@ def test_page_hydration_gate_follows_required_context_only() -> None:
     assert page_requires_workspace_hydration("Transcript") is True
 
 
+def test_make_session_path_resolver_is_lazy(monkeypatch) -> None:
+    """Indexed slug hits must not pay for rich session listing."""
+    from transcriptx.web import navigation as nav
+
+    calls: list[int] = []
+
+    def _boom():
+        calls.append(1)
+        raise AssertionError("sessions must not load until resolver is called")
+
+    monkeypatch.setattr(
+        "transcriptx.web.cache_helpers.cached_list_available_sessions",
+        _boom,
+    )
+    resolver = nav.make_session_path_resolver()
+    assert calls == []
+    # Invoking the resolver triggers the listing once.
+    monkeypatch.setattr(
+        "transcriptx.web.cache_helpers.cached_list_available_sessions",
+        lambda: calls.append(1) or [],
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.services.file_service.FileService.resolve_session_for_transcript_path",
+        lambda _path, _sessions: None,
+    )
+    assert resolver("/tmp/x.json") is None
+    assert calls == [1]
+
+
 def test_unknown_page_spec_is_non_hydrating() -> None:
     spec = get_page_spec("Totally Unknown Page")
     assert spec.required_context == "none"

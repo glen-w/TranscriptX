@@ -3,7 +3,7 @@ Authority: self
 
 # Performance and resource envelopes (1.0)
 
-**Status:** measurement recipe + baseline notes (**0.9.7**); large-library UI soak may remain known limitation until human-testing hardware  
+**Status:** measurement recipe + baseline notes (**0.9.7**); large-library UI soak **pass** 2026-08-07 (200+ transcripts); Medium Balanced batch **pass** 2026-08-07 (~9.3 min / 6 transcripts on Docker Compose)
 **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) §12  
 **Related:** [release_severity_triage_1_0.md](release_severity_triage_1_0.md), [run_performance.md](run_performance.md), [runtime/docker-efficiency-baseline.md](../runtime/docker-efficiency-baseline.md)
 
@@ -77,12 +77,12 @@ Keep notes in `.local/perf_envelopes_<date>.md` (gitignored). Curated numbers on
 | Startup time | measured-or-tagged | Target: interactive Home under ~30s cold on supported Docker/native (known limitation if host-bound) |
 | Import time | measured-or-tagged | Small: seconds–low tens; Medium scales ~linear with file count |
 | Time to first useful result | measured-or-tagged | Small path should complete without undocumented steps |
-| Default-preset runtime | measured-or-tagged | Prefer `run_performance.json` wall; Medium should remain interactive (minutes OK for heavy modules) |
+| Default-preset runtime | measured | Medium Balanced **pass** 2026-08-07 — 6 transcripts, batch wall ~9.3 min, all succeeded (see [manual_acceptance_1_0.md](manual_acceptance_1_0.md) §3.12) |
 | Memory and disk use | measured-or-tagged | Record peak RSS + data-root delta; OOM without recovery = blocker |
 | Model download sizes | documented | See [runtime/models.md](../runtime/models.md); first-run download is expected when enabled |
 | Docker image size | documented baseline | Historical ~3.7GB class — [docker-efficiency-baseline.md](../runtime/docker-efficiency-baseline.md); re-measure on release hardware |
 | Group-analysis scaling | measured-or-tagged | Group wall ≠ sum of members; includes aggregation |
-| UI responsiveness with large library | known limitation | Large-for-1.0 library browse soak deferred to human-testing / RC hardware if not measured here |
+| UI responsiveness with large library | measured | **pass** 2026-08-07 — Home/library responsive with **200+** transcripts (exceeds Large-for-1.0 ~50); see [manual_acceptance_1_0.md](manual_acceptance_1_0.md) §3.12 |
 | Behaviour when disk/RAM/model insufficient | must document | Fail closed; no corrupt run commit; actionable GUI/docs errors |
 
 ## Recording

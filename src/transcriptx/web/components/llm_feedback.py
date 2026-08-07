@@ -66,38 +66,49 @@ def _identity_from_target(target: FeedbackTarget, output_sha256: str) -> str:
     )
 
 
-def render_llm_feedback_controls(
+def _resolve_widget_keys(
     *,
-    store: LlmFeedbackService,
     target: FeedbackTarget,
     output_text: str,
-    provenance: FeedbackProvenance | Mapping[str, Any] | None = None,
-    widget_key: str | None = None,
-) -> None:
-    """Render non-intrusive thumbs + form. ``store`` must be injected (no path resolve).
-
-    Not safe to call from cached Streamlit helpers — submit mutates disk.
-    """
+    widget_key: str | None,
+) -> tuple[str, str] | None:
+    """Return ``(instance_id, key_base)`` or None when there is nothing to rate."""
     if not output_text or not str(output_text).strip():
-        return
-
+        return None
     output_sha = compute_output_sha256(output_text)
     instance_id = _identity_from_target(target, output_sha)
     key_base = widget_key or instance_id[:16]
-    prov = (
-        provenance
-        if isinstance(provenance, FeedbackProvenance)
-        else FeedbackProvenance.from_artifact_provenance(
-            provenance if isinstance(provenance, Mapping) else None
-        )
+    return instance_id, key_base
+
+
+def _normalize_provenance(
+    provenance: FeedbackProvenance | Mapping[str, Any] | None,
+) -> FeedbackProvenance:
+    if isinstance(provenance, FeedbackProvenance):
+        return provenance
+    return FeedbackProvenance.from_artifact_provenance(
+        provenance if isinstance(provenance, Mapping) else None
     )
 
+
+def render_llm_feedback_thumbs(
+    *,
+    target: FeedbackTarget,
+    output_text: str,
+    widget_key: str | None = None,
+) -> bool:
+    """Render thumbs only. Returns True when the expanded form should be shown."""
+    resolved = _resolve_widget_keys(
+        target=target, output_text=output_text, widget_key=widget_key
+    )
+    if resolved is None:
+        return False
+
+    instance_id, key_base = resolved
     rating_key = _state_key(instance_id, "rating")
     open_key = _state_key(instance_id, "open")
     error_key = _state_key(instance_id, "error")
     last_key = _state_key(instance_id, "last_rating")
-    note_key = _state_key(instance_id, "note")
-    reason_key = _state_key(instance_id, "reason")
 
     with st.container(key=f"llm_fb_wrap_{key_base}"):
         up_col, down_col = st.columns(2)
@@ -128,6 +139,32 @@ def render_llm_feedback_controls(
     if last in (FeedbackRating.UP.value, FeedbackRating.DOWN.value):
         st.caption(f"Thanks — recorded as {last}.")
 
+    return bool(st.session_state.get(open_key))
+
+
+def render_llm_feedback_form(
+    *,
+    store: LlmFeedbackService,
+    target: FeedbackTarget,
+    output_text: str,
+    provenance: FeedbackProvenance | Mapping[str, Any] | None = None,
+    widget_key: str | None = None,
+) -> None:
+    """Render reason / note / submit when open. No-op when closed or empty."""
+    resolved = _resolve_widget_keys(
+        target=target, output_text=output_text, widget_key=widget_key
+    )
+    if resolved is None:
+        return
+
+    instance_id, key_base = resolved
+    rating_key = _state_key(instance_id, "rating")
+    open_key = _state_key(instance_id, "open")
+    error_key = _state_key(instance_id, "error")
+    last_key = _state_key(instance_id, "last_rating")
+    note_key = _state_key(instance_id, "note")
+    reason_key = _state_key(instance_id, "reason")
+
     if not st.session_state.get(open_key):
         return
 
@@ -138,57 +175,66 @@ def render_llm_feedback_controls(
         st.session_state[open_key] = False
         return
 
+    prov = _normalize_provenance(provenance)
     allowed = reasons_for_rating(rating)
     labels = [REASON_LABELS[r] for r in allowed]
     label_to_reason = {REASON_LABELS[r]: r for r in allowed}
 
-    st.caption(_PRIVACY_CAPTION)
-    err = st.session_state.get(error_key)
-    if err:
-        st.error(str(err))
+    with st.container(key=f"llm_fb_form_{key_base}"):
+        st.caption(_PRIVACY_CAPTION)
+        err = st.session_state.get(error_key)
+        if err:
+            st.error(str(err))
 
-    # Preserve prior selection across reruns when still valid
-    default_label = labels[0]
-    prior_reason = st.session_state.get(reason_key)
-    if isinstance(prior_reason, str):
-        try:
-            prior_e = FeedbackReason(prior_reason)
-            if prior_e in allowed:
-                default_label = REASON_LABELS[prior_e]
-        except ValueError:
-            pass
+        # Preserve prior selection across reruns when still valid
+        default_label = labels[0]
+        prior_reason = st.session_state.get(reason_key)
+        if isinstance(prior_reason, str):
+            try:
+                prior_e = FeedbackReason(prior_reason)
+                if prior_e in allowed:
+                    default_label = REASON_LABELS[prior_e]
+            except ValueError:
+                pass
 
-    chosen_label = st.selectbox(
-        "Reason",
-        options=labels,
-        index=labels.index(default_label),
-        key=f"llm_fb_reason_sel_{key_base}",
-    )
-    chosen_reason = label_to_reason[chosen_label]
-    st.session_state[reason_key] = chosen_reason.value
-
-    if note_key not in st.session_state:
-        st.session_state[note_key] = ""
-    note = st.text_area(
-        "Note (optional)",
-        key=note_key,
-        help=_NOTE_HELP,
-        height=80,
-        max_chars=2000,
-    )
-
-    submit_col, cancel_col = st.columns(2)
-    with submit_col:
-        submit = st.button(
-            "Submit feedback",
-            key=f"llm_fb_submit_{key_base}",
-            type="primary",
+        chosen_label = st.selectbox(
+            "Reason",
+            options=labels,
+            index=labels.index(default_label),
+            key=f"llm_fb_reason_sel_{key_base}",
         )
-    with cancel_col:
-        if st.button("Cancel", key=f"llm_fb_cancel_{key_base}", type="tertiary"):
-            st.session_state[open_key] = False
-            st.session_state.pop(error_key, None)
-            st.rerun()
+        chosen_reason = label_to_reason[chosen_label]
+        st.session_state[reason_key] = chosen_reason.value
+
+        if note_key not in st.session_state:
+            st.session_state[note_key] = ""
+        note = st.text_area(
+            "Note (optional)",
+            key=note_key,
+            help=_NOTE_HELP,
+            height=80,
+            max_chars=2000,
+        )
+
+        # Keep actions compact on the left; avoid equal half-width stretch columns.
+        submit_col, cancel_col, _ = st.columns([1.4, 1, 4])
+        with submit_col:
+            submit = st.button(
+                "Submit feedback",
+                key=f"llm_fb_submit_{key_base}",
+                type="primary",
+                width="content",
+            )
+        with cancel_col:
+            if st.button(
+                "Cancel",
+                key=f"llm_fb_cancel_{key_base}",
+                type="tertiary",
+                width="content",
+            ):
+                st.session_state[open_key] = False
+                st.session_state.pop(error_key, None)
+                st.rerun()
 
     if not submit:
         return
@@ -232,3 +278,33 @@ def render_llm_feedback_controls(
     else:
         st.toast("Feedback saved. Thank you.")
     st.rerun()
+
+
+def render_llm_feedback_controls(
+    *,
+    store: LlmFeedbackService,
+    target: FeedbackTarget,
+    output_text: str,
+    provenance: FeedbackProvenance | Mapping[str, Any] | None = None,
+    widget_key: str | None = None,
+) -> None:
+    """Render non-intrusive thumbs + form. ``store`` must be injected (no path resolve).
+
+    Not safe to call from cached Streamlit helpers — submit mutates disk.
+    For badge rows in a narrow column, prefer
+    ``render_llm_feedback_thumbs`` + ``render_llm_feedback_form`` so the form
+    can sit at full width below the row.
+    """
+    if not render_llm_feedback_thumbs(
+        target=target,
+        output_text=output_text,
+        widget_key=widget_key,
+    ):
+        return
+    render_llm_feedback_form(
+        store=store,
+        target=target,
+        output_text=output_text,
+        provenance=provenance,
+        widget_key=widget_key,
+    )

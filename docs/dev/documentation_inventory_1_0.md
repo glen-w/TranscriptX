@@ -99,6 +99,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/dev/web_blocks.md | Web blocks | live | developer | current | — | retain | — | DEV_INDEX | ARCHITECTURE.md | no |
 | docs/dev/web_fragment_pr_audit_table.md | Web fragment / rerun audit (PR review aid) | stale | historical | superseded | See inventory destination | archive | docs/archive/assessments/web_fragment_pr_audit_table.md | Update inbound links | docs/dev/web_blocks.md | archive-only |
 | docs/generated/cli.md | Web launcher and Python API | live | user | current | — | retain | — | USER_INDEX | ARCHITECTURE | yes |
+| docs/comparison.md | How TranscriptX compares (STT / meeting / CI) | live | user | current | Public comparison (**2026-08**) | retain | — | README, USER_INDEX, website | docs/PRODUCT.md | yes |
 | docs/generated/modules.md | Module Catalog | live | user | current | — | retain | — | USER_INDEX | ARCHITECTURE | yes |
 | docs/groups/group_analysis_module_outputs.md | Group analysis: what each module produces | live | contract | current | — | retain | — | CONTRACT_INDEX / groups | docs/groups/group_analysis_module_outputs.md | yes |
 | docs/groups/group_charts_acts_pooled_contract.md | Acts group charts: pooled single view (audited) | live | contract | current | — | retain | — | CONTRACT_INDEX / groups | docs/groups/group_charts_acts_pooled_contract.md | yes |
@@ -165,8 +166,8 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/dev/demo_project.md | Demo project (0.9.6 trial) | — | — | — | **removed** — trialled and decided against | deleted | — | pre_release_roadmap §16 | PRODUCT.md | no |
 | docs/dev/manual_acceptance_1_0.md | Human acceptance checklist skeleton | live | product | current | Human-testing wave | retain | — | pre_release_roadmap | release_severity_triage_1_0.md | no |
 | docs/dev/overview_presentation_0_9_9.md | 0.9.9 Overview/results presentation polish backlog | live | product | current | After maintainer; before unfamiliar-user | retain | — | pre_release_roadmap, ROADMAP | manual_acceptance_1_0.md | no |
-| website/ | Modest public landing + Pages | live | entry | current | Marketing; BMC placeholder | retain | — | README, ROADMAP | PRODUCT.md | no |
-| NOTICE | Third-party model/dataset notice draft | live | entry | current | Hub-card owner-verify open | retain | — | trust_privacy, README | trust_privacy_model_governance_1_0.md | no |
+| website/ | Modest public landing + Pages | live | entry | current | Marketing; Ko-fi live | retain | — | README, ROADMAP | PRODUCT.md | no |
+| NOTICE | Third-party model/dataset notice | live | entry | current | Hub-card residual dropped 2026-08-07 | retain | — | trust_privacy, README | trust_privacy_model_governance_1_0.md | no |
 | docs/requirements.txt | Sphinx/RTD install pins | live | developer | current | Mirrors `[docs]` extras | retain | — | .readthedocs.yml | docs_architecture_1_0.md | no |
 | .readthedocs.yml | RTD build scaffold | live | developer | current | Hostname denylist until go-live | retain | — | docs_architecture | docs_architecture_1_0.md | no |
 

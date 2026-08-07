@@ -19,7 +19,7 @@ Authority: self
 | **Hosted / multi-user product** | **No-go** until auth, tenancy, privacy, and durable concurrency are designed. | High |
 | **Immediate process focus** | Human-testing wave (manual acceptance, unfamiliar users, clean-env soak) → RC — not Wave 3 module sprawl. | High |
 
-**One-line:** Wave 0 eng gate is closed; Top-3 eng programs are Done; analysis waves through B16 shipped; programme through **0.9.7** (automatable harden + public surfaces) landed; **default next capacity is human testing → RC** (owner Hub-card / RTD slug / Large-library soak residuals) — **not** Wave 3 remainder (B5 DB / B18) as the default product track. Do not market as a hosted product.
+**One-line:** Wave 0 eng gate is closed; Top-3 eng programs are Done; analysis waves through B16 shipped; programme through **0.9.7** (automatable harden + public surfaces) landed; **default next capacity is human testing → RC** (RTD slug remains owner-gated; Hub-card residual dropped / Large-library soak measured 2026-08-07) — **not** Wave 3 remainder (B5 DB / B18) as the default product track. Do not market as a hosted product.
 
 ---
 
@@ -236,7 +236,7 @@ Use these as defaults unless you consciously override them:
 
 1. **Release type (next 1–2 months):** OSS **local-first single-user beta** — not hosted product.
 2. **run_cleanup:** Phase A + Phase B complete (policy 7 / schema 3 / result schema 2). Further behaviour changes need explicit schema/policy decisions; do not mix with Top-3 refactors.
-3. **Eng priority:** Top-3 Candidates **#1 / #2 / #3 all Done**. Optional config **1.9** structural split and export Jinja2/Artifact Protocol are residual eng backlog, not Wave 0 blockers. **Default product capacity → human-testing wave → RC** (programme through **0.9.7** automatable harden + public surfaces landed; owner Hub-card / RTD slug / Large-library soak may soft-cut) — see [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md). Analysis backlog Wave 3 remainder (B5 DB/group `profile_id`, B18/P2) is **post-1.0 / freeze-excepted repair only** ([`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md)).
+3. **Eng priority:** Top-3 Candidates **#1 / #2 / #3 all Done**. Optional config **1.9** structural split and export Jinja2/Artifact Protocol are residual eng backlog, not Wave 0 blockers. **Default product capacity → human-testing wave → RC** (programme through **0.9.7** automatable harden + public surfaces landed; RTD slug may remain owner-gated; Hub-card residual dropped / Large-library soak measured 2026-08-07) — see [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md). Analysis backlog Wave 3 remainder (B5 DB/group `profile_id`, B18/P2) is **post-1.0 / freeze-excepted repair only** ([`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md)).
 4. **Phase 1 honesty:** ROADMAP reflects 0.7.x + real CI; “no new features” retired.
 5. **Distribution:** Docker + git tags until PyPI decided; install matrix is authoritative.
 6. **Network threat model:** Localhost by default; LAN opt-in via `TRANSCRIPTX_BIND_HOST=0.0.0.0` (unauthenticated).

@@ -24,6 +24,29 @@ def test_finalize_execution_results_emits_completed_event_and_sets_duration() ->
     assert out["duration"] >= 0
     assert captured[-1]["event"] == "run_completed"
     assert captured[-1]["pct"] == 100.0
+    assert out.get("defer_run_completed") is False
+
+
+def test_finalize_execution_results_defers_when_finalize_modules_pending() -> None:
+    captured: list[dict] = []
+    results = {"start_time": 10.0, "errors": [], "modules_run": ["stats"]}
+    out = finalize_module.finalize_execution_results(
+        results=results,
+        execution_order=["stats"],
+        aborted=False,
+        setup_failed=False,
+        total_modules=2,
+        ev_completed=1,
+        ev_skipped=0,
+        ev_failed=0,
+        emit=lambda event: captured.append(event),
+        pending_finalize_modules=["chart_descriptions"],
+    )
+    assert captured == []
+    assert out["defer_run_completed"] is True
+    assert out["pending_finalize_modules"] == ["chart_descriptions"]
+    assert out["progress_counts"]["total"] == 2
+    assert out["progress_counts"]["completed"] == 1
 
 
 def test_finalize_execution_results_prefers_setup_failed_over_aborted() -> None:
@@ -104,3 +127,12 @@ def test_progress_helpers_build_consistent_progress_payloads() -> None:
     )
     assert failed["event"] == "run_failed"
     assert failed["failed"] == 1
+    completed = progress_module.run_completed_event(
+        total_modules=4,
+        ev_completed=2,
+        ev_skipped=1,
+        ev_failed=1,
+        message="Pipeline complete",
+    )
+    assert completed["event"] == "run_completed"
+    assert completed["pct"] == 100.0

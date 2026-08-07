@@ -3,18 +3,22 @@ Authority: self
 
 # Analysis module backlog (ranked) — 2026-07-17
 
-> **0.9.x freeze:** No **new** analysis module IDs in 0.9.x unless required to complete or repair the 1.0 journey. This backlog remains the ranked post-1.0 / repair-only list. **Allowed under freeze:** retire/rename versioned or legacy ids (see [schema_epoch_inventory.md](schema_epoch_inventory.md) — `semantic_similarity` → `semantic_similarity` after removing legacy siblings). See [PRODUCT.md](../PRODUCT.md) and [ROADMAP.md](../ROADMAP.md).
+> **Living document:** ranks, modes, waves, and non-adds are **ongoing and changeable**. Revisit after 1.0 and whenever [ROADMAP.md](../ROADMAP.md) themes or competitive research shift capacity. Date in the title is the original stocktake snapshot, not a freeze on content.
+
+> **0.9.x freeze:** No **new** analysis module IDs in 0.9.x unless required to complete or repair the 1.0 journey. Until 1.0 ships, this backlog is the ranked **post-1.0 / repair-only** analysis list. **Allowed under freeze:** retire/rename versioned or legacy ids (see [schema_epoch_inventory.md](schema_epoch_inventory.md)). See [PRODUCT.md](../PRODUCT.md) and [ROADMAP.md](../ROADMAP.md) (1.x themes **A–M**).
 
 > Ranked product backlog for **new or deepened** analysis modules, libraries, and approaches.  
 > Companion to [`stocktake_2026-07-17.md`](stocktake_2026-07-17.md) and the prior coverage discussion.  
-> Related research: [`local_scratch.md`](local_scratch.md) (private competitive notes belong under `.local/`).  
+> Related research: [`local_scratch.md`](local_scratch.md); private competitive notes under `.local/` (esp. `competitive_inspiration_2026-07-22.md` — also living). Public comparison: [`comparison.md`](../comparison.md).  
 > Organized against web UI groups in `src/transcriptx/web/module_ui_groups.py`.
 
-**Non-goals:** release hygiene, Top-3 eng refactors, transcription engine integration, plugin marketplace, realtime analysis.
+**Scope of this backlog:** analysis modules and shared analysis platform (P1/P2). **Not owned here** (tracked on [ROADMAP.md](../ROADMAP.md) instead): in-app STT / capture (**H**), directory watcher (**G2**), karaoke playback / PWA (**D**/**I**), Components v2 workspaces (**C**), library tags (**F**), SQLite analytics layer (**J**), corrections/Insights product waves (**A**/**B**). Cross-link when an analysis item depends on those themes (e.g. B5 remainder ↔ **J**; B19 diarization diagnostics ↔ optional STT **H**).
 
-**Default stance:** Prefer deepen-in-place over new module IDs when overlap is high. Prefer local-first libs and Ollama-structured extract over remote SaaS APIs.
+**Out of this backlog’s remit (not permanent product bans):** release hygiene, Top-3 eng refactors, plugin marketplace, realtime analysis, meeting bots / CRM SaaS. Transcription engines are a **ROADMAP theme H** product decision for 1.x — not an analysis-module ID and not a 1.0 requirement.
 
-**Capacity rule:** No more than **two new module IDs per delivery wave**. All other work must deepen, revive, or replace existing modules unless a written overlap assessment demonstrates a distinct user-facing object.
+**Default stance:** Prefer deepen-in-place over new module IDs when overlap is high. Prefer local-first libs and Ollama-structured extract over remote SaaS APIs. After 1.0, re-rank freely; the capacity rule below may be revised by written note.
+
+**Capacity rule (current):** No more than **two new module IDs per delivery wave**. All other work must deepen, revive, or replace existing modules unless a written overlap assessment demonstrates a distinct user-facing object.
 
 ---
 
@@ -68,7 +72,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 
 | Rank | ID | Item | Mode | UI group | Effort | Depends |
 |------|----|------|------|----------|--------|---------|
-| 11 | B5 | **Longitudinal speaker tracking v1** + Speakers UI charts | deepen / new surfaces (**Phase 1.5 + 1.6 + R2 voice + Locations pack shipped**: file store, Speakers UX, over-time charts, accents, analytics pack, avatars, voice match/accept/enrol, NER locations map; **file-backed voice residuals shipped** — accept query-evidence co-journal, eval harness, chunked merge transfer, Stage 9 file index; remainder: **DB analytics views**, **group gallery keyed by `profile_id`**) | Speakers & Interaction (+ Groups) | L | Phase 3 remainder; group cross-session allowlists |
+| 11 | B5 | **Longitudinal speaker tracking v1** + Speakers UI charts | deepen / new surfaces (**Phase 1.5 + 1.6 + R2 voice + Locations pack shipped**: file store, Speakers UX, over-time charts, accents, analytics pack, avatars, voice match/accept/enrol, NER locations map; **file-backed voice residuals shipped** — accept query-evidence co-journal, eval harness, chunked merge transfer, Stage 9 file index; remainder: **DB analytics views**, **group gallery keyed by `profile_id`** — ROADMAP theme **J**) | Speakers & Interaction (+ Groups) | L | Phase 3 remainder; group cross-session allowlists; SQLite theme **J** |
 | 12 | B18 | **Insight narratives grounded in module evidence** | deepen | Summary & Synthesis | M | `insights` + LLM; **P2** provenance contracts |
 | — | — | **Group LLM synthesis** (cross-session rollup of member `llm_summary` / `llm_speaker_summary`) | deepen (finalize; no new module ID) | Summary & Synthesis (+ Groups) | M | Shipped contract: [`group_llm_synthesis_contract.md`](../groups/group_llm_synthesis_contract.md) |
 | — | B4 | **Optional citeable research methods** (post-1.0) — method IDs, not “ConvoKit enabled” | post-1.0 research | Speakers & Interaction / Language & Meaning | L | **Not** Wave 4 / 1.0 capacity; see §3.2 |
@@ -77,7 +81,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 | 15 | B15 | **Emotion × prosody fusion** (“said vs sounded”) | deepen | Voice & Audio (+ Dynamics) | M | `emotion` + `voice_*` join keys |
 | 16 | B16 | **Keyphrase ranking** (KeyBERT / YAKE / noun-chunks) | new (**shipped** as `keyphrases`; optional `[keyphrases]` extra; group noun_chunk pool + `keyphrases.phrases.global`; wordclouds/Insights consumers; deep-test hardened 2026-07-24). Residuals: group YAKE/KeyBERT pool; group per-speaker rows/charts; P1 language routing | Language & Meaning (+ Visualisations) | S | optional dep; group pooled phrases; P1 for language residual |
 | 17 | B17 | **Toxicity / hostility** (optional, labeled) | new | Language & Meaning | S–M | Detoxify or similar; clear ethics/docs |
-| 18 | B19 | **Diarization / speaker-map consistency diagnostics** (per run + group) | new | Foundations / Speakers | M | voice fingerprint + speaker-map sidecars |
+| 18 | B19 | **Diarization / speaker-map consistency diagnostics** (per run + group) | new | Foundations / Speakers | M | voice fingerprint + speaker-map sidecars; richer when optional in-app STT (**ROADMAP H**) lands word/diarization provenance |
 | 18 | B19 | **Multilingual-aware NER / entity paths** | deepen | Language & Meaning | M | after P1 |
 | 19 | B20 | **Pooled wordcloud deferred variant matrix** | deepen | Visualisations | S | eng backlog already listed in ROADMAP |
 | — | B21 | **Custom questions at analysis time** (`llm_custom_qa`) — Settings library + Run/Batch picker → Insights citation cards (not viewer chat) | new (**shipped**) | Summary & Synthesis | M | Ollama; frozen envelope/row contract; empty-Q gate |
@@ -100,7 +104,7 @@ Without this taxonomy, B10 mostly duplicates `llm_action_items`, summaries, and 
 
 B4 is **deferred until after TranscriptX 1.0**. It remains a valuable optional research-method family, but dependency isolation, conversational-topology semantics, testing burden, and maintenance cost make it inappropriate for the **1.0 critical path**. Do not schedule it in Wave 4, presets, dependency bumps, or near-term capacity.
 
-**Product objective:** optional **citeable methods**, not “ConvoKit enabled.” Public module IDs describe the **method**; vendor name and version belong only in provenance and method documentation. Historical pin conflict (archived only): [`docs/archive/investigations/convokit_dependency_conflict.md`](../archive/investigations/convokit_dependency_conflict.md). Active roadmap placeholder: [`docs/ROADMAP.md`](../ROADMAP.md) (Post-1.0 — optional citeable research methods).
+**Product objective:** optional **citeable methods**, not “ConvoKit enabled.” Public module IDs describe the **method**; vendor name and version belong only in provenance and method documentation. Historical pin conflict (archived only): [`docs/archive/investigations/convokit_dependency_conflict.md`](../archive/investigations/convokit_dependency_conflict.md). Active roadmap home: [`docs/ROADMAP.md`](../ROADMAP.md) theme **M** (research / citeable methods — living; order may change).
 
 **Native defaults stay (not replaced):** B7 `politeness`, B12 interaction equity, B13 interaction graphs, `keyphrases` / topics.
 
@@ -225,28 +229,33 @@ flowchart LR
 | **4** | Opportunistic / experimental (pre-1.0) | B8, B11, B15, B17, B19, B20 | Dependency-heavy and research paths **excluding** B4 |
 | **Post-1.0** | After TranscriptX 1.0 | **B4** citeable research methods (`fighting_words` first; see §3.2) | Optional sidecar methods; not 1.0 acceptance / deps / presets |
 
-**Post-1.0 ranked open (0.9.x freeze applies):** Wave 3 remainder (B5 DB/group `profile_id`, B18 / P2); P1 infrastructure when eng capacity allows. **Default 0.9.x capacity** is the stabilisation programme, not this backlog. **Also shipped adjacent to / in Wave 3 window:** configurable analysis presets; Speakers Locations pack; **B14** motifs/drift; **B16** keyphrases (see [`wave_b16_keyphrases_2026-07-24.md`](wave_b16_keyphrases_2026-07-24.md)).
+**Post-1.0 ranked open (0.9.x freeze applies until 1.0):** Wave 3 remainder (B5 DB/group `profile_id` ↔ ROADMAP **J**, B18 / P2); P1 infrastructure when eng capacity allows; then re-rank against ROADMAP themes **A** (Insights), **B** (corrections), and remaining B-items. **Default 0.9.x capacity** is the stabilisation programme, not this backlog. **Also shipped adjacent to / in Wave 3 window:** configurable analysis presets; Speakers Locations pack; **B14** motifs/drift; **B16** keyphrases (see [`wave_b16_keyphrases_2026-07-24.md`](wave_b16_keyphrases_2026-07-24.md)).
 
-**Wave constraints:** ≤2 new module IDs per wave (capacity rule). B8 may move earlier if the transformer path is a small rewire, but it should not outrank user-visible improvements (B9, remaining Wave 2 linguistics).
+**Living after 1.0:** expect this table and §3 ranks to move. Capture/STT/playback/PWA work does **not** become analysis-module rows unless a distinct analysis object appears — keep those on [ROADMAP.md](../ROADMAP.md) themes **D / G / H / I**.
+
+**Wave constraints:** ≤2 new module IDs per wave (capacity rule; revisable). B8 may move earlier if the transformer path is a small rewire, but it should not outrank user-visible improvements (B9, remaining Wave 2 linguistics) while the freeze holds.
 
 P1 may begin alongside remaining Wave 3 work as infrastructure; do not call “multilingual routing” shipped until named consumers adopt it.
 
 ---
 
-## 6. Explicit non-adds (near-term)
+## 6. Explicit non-adds (near-term / revisable)
 
-| Temptation | Why skip |
-|------------|----------|
+These are **current** near-term skips for the **analysis** surface — not forever bans. Revisit when ROADMAP themes or research say otherwise.
+
+| Temptation | Why skip (for now) |
+|------------|--------------------|
 | Another *sentiment* module / third valence backend as a product feature | Keep as config/backends on `sentiment` only |
 | ~~Another sentiment/emotion module~~ | **Product override (2026-07-18):** `contextual_emotion` and `fine_grained_emotion` are intentional new module IDs alongside lexical `emotion`. See [`emotion_family_contracts_2026-07-18.md`](emotion_family_contracts_2026-07-18.md). Do not reintroduce “converge emotion via config only.” |
-| Chat-over-transcript product | Analysis-first north star; not beta scope |
-| Remote OpenAI-backed modules | Deferred post-beta (Ollama only) |
-| Plugin marketplace | 6-month out of scope |
-| Realtime / streaming analysis | Out of scope |
+| Chat-over-transcript as primary product | Analysis-first north star; optional assist elsewhere is a separate product decision |
+| Remote OpenAI-backed **analysis** modules as default | Local Ollama today; optional remote would need explicit opt-in + labelling |
+| Plugin marketplace | Out of near-term scope |
+| Realtime / streaming **analysis** | Out of near-term scope (ROADMAP deferred) |
 | Heavy model training in-tree | Out of scope |
-| “ConvoKit enabled” / B4 on the 1.0 path | Post-1.0 only; citeable methods; sidecar architecture (§3.2) |
+| “ConvoKit enabled” / B4 on the 1.0 path | Post-1.0 theme **M**; citeable methods; sidecar architecture (§3.2) |
 | In-process `[convokit]` extra (unless decision revisited) | Prefer isolated subprocess/sidecar (§3.2) |
-| Argument mining as Wave 3 anchor | Exploratory until genres/schema/eval/UI/abstention exist (§3.3) |
+| Argument mining as Wave 3 / 1.0 anchor | Exploratory until genres/schema/eval/UI/abstention exist (§3.3) |
+| New module IDs for STT / YouTube / PWA / karaoke | Not analysis modules — ROADMAP themes **D / G / H / I** |
 
 ---
 
@@ -286,13 +295,15 @@ Minimum bar before claiming “shipped.” Registration alone is not enough.
 |-------|------|
 | Current module order | `src/transcriptx/core/pipeline/module_specs/__init__.py` |
 | UI groups | `src/transcriptx/web/module_ui_groups.py` |
-| B4 post-1.0 citeable research methods | [`docs/ROADMAP.md`](../ROADMAP.md) (Post-1.0 section); this doc §3.2 |
+| B4 post-1.0 citeable research methods | [`docs/ROADMAP.md`](../ROADMAP.md) theme **M**; this doc §3.2 |
 | Historical ConvoKit pin conflict | [`docs/archive/investigations/convokit_dependency_conflict.md`](../archive/investigations/convokit_dependency_conflict.md) |
 | BERTopic / other deferrals | `docs/ROADMAP.md` |
 | Model upgrade matrix | `docs/runtime/models.md` |
 | Group output classes | `docs/groups/group_analysis_module_outputs.md` |
 | Stocktake sequencing | `docs/dev/stocktake_2026-07-17.md` |
-| Competitive inspiration (5 OSS tools vs TX) | [`local_scratch.md`](local_scratch.md) |
+| Competitive inspiration (6 OSS + 6 commercial; research, **living**) | `.local/competitive_inspiration_2026-07-22.md` (private) |
+| Public comparison (user-facing) | [`comparison.md`](../comparison.md) |
+| Post-1.0 product themes (STT, playback, PWA, SQLite, …) | [`ROADMAP.md`](../ROADMAP.md) themes **A–M** |
 | Wave 2 lexicon linguistics (B6/B7) | [`wave2_lexicon_linguistics_2026-07-23.md`](wave2_lexicon_linguistics_2026-07-23.md) |
 | Wave B13 interaction graphs | [`wave_b13_interaction_graphs_2026-07-23.md`](wave_b13_interaction_graphs_2026-07-23.md) |
 | Wave B16 keyphrases | [`wave_b16_keyphrases_2026-07-24.md`](wave_b16_keyphrases_2026-07-24.md) |

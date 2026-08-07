@@ -125,6 +125,11 @@ def _cached_transcript_metadata(path_str: str, signature: tuple[float, int, floa
 
 @st.cache_data(ttl=120, show_spinner=False)
 def cached_list_transcripts(_transcripts_dir: str = "") -> list:
+    """Full library metadata for every managed transcript (expensive).
+
+    Prefer :func:`get_cached_list_transcript_picker_options` /
+    :func:`get_cached_light_transcript_metadata` for pickers and first paint.
+    """
     mark_cache_miss("cached_list_transcripts")
     from transcriptx.app.models.errors import PathConfigError
     from transcriptx.core.utils.file_discovery import (
@@ -168,6 +173,73 @@ def get_cached_count_managed_transcripts() -> int:
     from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
 
     return cached_count_managed_transcripts(str(DIARISED_TRANSCRIPTS_DIR))
+
+
+@dataclass(frozen=True)
+class TranscriptPickerOption:
+    """Path + display label for Run Analysis / Batch pickers (no segment parse)."""
+
+    path: str
+    label: str
+
+
+def _transcript_picker_options_impl() -> list[TranscriptPickerOption]:
+    """Build picker rows; implementation lives outside the Streamlit layer."""
+    from transcriptx.core.utils.transcript_picker import list_transcript_picker_options
+
+    return [
+        TranscriptPickerOption(path=opt.path, label=opt.label)
+        for opt in list_transcript_picker_options()
+    ]
+
+
+@st.cache_data(ttl=120, show_spinner=False)
+def cached_list_transcript_picker_options(
+    index_mtime: float | None,
+    _transcripts_dir: str = "",
+) -> tuple[tuple[str, str], ...]:
+    """Cached light picker rows as ``(path, label)`` tuples for Streamlit hashing."""
+    mark_cache_miss("cached_list_transcript_picker_options")
+    return tuple(
+        (opt.path, opt.label) for opt in _transcript_picker_options_impl()
+    )
+
+
+def get_cached_list_transcript_picker_options() -> list[TranscriptPickerOption]:
+    """Run Analysis / Batch transcript picker without full library metadata."""
+    from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
+    from transcriptx.core.utils.slug_manager import INDEX_FILE
+
+    try:
+        index_mtime = INDEX_FILE.stat().st_mtime
+    except OSError:
+        index_mtime = None
+    raw = cached_list_transcript_picker_options(
+        index_mtime, str(DIARISED_TRANSCRIPTS_DIR)
+    )
+    return [TranscriptPickerOption(path=path, label=label) for path, label in raw]
+
+
+def get_cached_light_transcript_metadata() -> list:
+    """Library/Groups-compatible stubs: path + label only (no segment parse)."""
+    from pathlib import Path
+
+    from transcriptx.app.models.metadata import TranscriptMetadata
+
+    return [
+        TranscriptMetadata(path=Path(opt.path), base_name=opt.label)
+        for opt in get_cached_list_transcript_picker_options()
+    ]
+
+
+def get_cached_transcript_metadata(path) -> object:
+    """Full per-path library metadata (segments + sidecars); use for selection only."""
+    from pathlib import Path
+
+    path_str = str(Path(path))
+    return _cached_transcript_metadata(
+        path_str, _transcript_metadata_signature(path_str)
+    )
 
 
 def _list_transcript_summaries_for_paths(paths: list[str]) -> list:
@@ -486,10 +558,13 @@ _RUN_DIR_JSON_SKIP = frozenset(
 
 
 def transcript_paths_for_speaker_views_impl() -> list:
-    """Discover managed + session + run-dir transcript paths (Docker-friendly)."""
+    """Discover library + session + run-dir transcript paths (Docker-friendly).
+
+    Uses the light picker discovery (index + path enum, no managed revalidation
+    or segment parse) so Speaker ID first paint stays interactive on large libs.
+    """
     from pathlib import Path
 
-    from transcriptx.core.utils.file_discovery import discover_managed_transcript_paths
     from transcriptx.core.utils.paths import OUTPUTS_DIR
     from transcriptx.web.services.file_service import FileService
 
@@ -497,13 +572,16 @@ def transcript_paths_for_speaker_views_impl() -> list:
     seen: set[str] = set()
 
     def add(p: Path) -> None:
-        key = str(p.resolve())
+        try:
+            key = str(p.resolve())
+        except OSError:
+            key = str(p)
         if key not in seen and p.exists():
             seen.add(key)
             paths.append(p)
 
-    for p in discover_managed_transcript_paths(None):
-        add(Path(p))
+    for opt in _transcript_picker_options_impl():
+        add(Path(opt.path))
 
     for session in cached_list_available_sessions():
         name = session.get("name", "")
@@ -553,6 +631,7 @@ def clear_transcript_listing_caches() -> None:
     cached_home_light_summary.clear()  # type: ignore[attr-defined]
     cached_list_transcripts.clear()  # type: ignore[attr-defined]
     cached_count_managed_transcripts.clear()  # type: ignore[attr-defined]
+    cached_list_transcript_picker_options.clear()  # type: ignore[attr-defined]
     cached_transcript_summary_for_path.clear()  # type: ignore[attr-defined]
     cached_speaker_id_segments.clear()  # type: ignore[attr-defined]
     cached_speaker_identification_index.clear()  # type: ignore[attr-defined]

@@ -1,8 +1,8 @@
 NOTICE
 ======
 
-TranscriptX third-party model and dataset notice (draft for 0.9.7 → 1.0).
-Not legal advice. Verify Hub / upstream cards before public 1.0 publication.
+TranscriptX third-party model and dataset notice (0.9.7 → 1.0).
+Not legal advice. Identifiers follow documented Hub / upstream cards and in-tree profile `licence=` fields.
 See also: docs/dev/trust_privacy_model_governance_1_0.md
 
 This product may download or bundle the following categories of third-party
@@ -10,7 +10,7 @@ components when the corresponding install profile or feature is enabled:
 
 1. spaCy English models (en_core_web_sm / md / lg / trf) — spaCy model licences
 2. sentence-transformers embedding models (e.g. all-MiniLM-L6-v2, all-mpnet-base-v2)
-   — typically Apache-2.0 on Hugging Face Hub (verify card)
+   — typically Apache-2.0 on Hugging Face Hub
 3. Optional Hugging Face text-classification profiles pinned in-tree
    (emotion / sentiment) — see profile `licence=` fields and Hub cards
 4. NRCLex / NRC emotion lexicon terms (emotion lexical path)

@@ -1,9 +1,9 @@
 """
 Library page - browse transcripts and audio inputs.
 
-First paint: render_page_shell() then transcript index discovery via
-get_cached_list_transcripts(). Detailed summary enrichment stays behind the
-"Show detailed metadata" toggle.
+First paint: render_page_shell() then light path/label discovery via
+get_cached_light_transcript_metadata(). Full per-file metadata loads only for
+the selected transcript (and detailed speaker stats behind the toggle).
 
 Table toggle and selection widgets run in ``@st.fragment`` so they do not trigger
 a full-app rerun.
@@ -21,7 +21,8 @@ from transcriptx.core.analysis.voice.audio_io import resolve_audio_path
 from transcriptx.core.utils.rename.audio_association import find_original_audio_file
 from transcriptx.web.cache_helpers import (
     cached_get_transcript_summaries_for_paths,
-    get_cached_list_transcripts,
+    get_cached_light_transcript_metadata,
+    get_cached_transcript_metadata,
 )
 from transcriptx.web.action_menus.context import ActionContext, build_canonical_identity
 from transcriptx.web.action_menus.ids import NavStyle, SectionId
@@ -126,6 +127,19 @@ def _load_selected_transcript_summary(selected_path: Path) -> object | None:
     return summaries[0] if summaries else None
 
 
+def _enrich_selected_transcript(selected_light) -> object:
+    """Load full metadata for one selected path; fall back to the light stub."""
+    try:
+        return instrument_cached_call(
+            "get_cached_transcript_metadata",
+            get_cached_transcript_metadata,
+            selected_light.path,
+            bucket="segment_metadata_load",
+        )
+    except Exception:
+        return selected_light
+
+
 @st.fragment
 def _library_browser_fragment(transcripts: list) -> None:
     """Transcript table and actions without full-app rerun."""
@@ -165,7 +179,8 @@ def _library_browser_fragment(transcripts: list) -> None:
     if selected_idx == 0:
         return
 
-    selected = transcripts[selected_idx - 1]
+    selected_light = transcripts[selected_idx - 1]
+    selected = _enrich_selected_transcript(selected_light)
     SubjectService.set_transcript_context_from_path(
         st.session_state,
         selected.path,
@@ -236,8 +251,8 @@ def render_library() -> None:
 
     try:
         transcripts = instrument_cached_call(
-            "cached_list_transcripts",
-            get_cached_list_transcripts,
+            "cached_list_transcript_picker_options",
+            get_cached_light_transcript_metadata,
             bucket="transcript_discovery",
         )
 

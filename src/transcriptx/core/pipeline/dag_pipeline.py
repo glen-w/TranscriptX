@@ -318,7 +318,8 @@ class DAGPipeline:
         requirements_resolver: Optional[Any],
         named_speaker_count_ref: List[Optional[int]],
         emit: Callable[[Dict[str, Any]], None],
-    ) -> Tuple[bool, int, int, int, int]:
+        progress_total: Optional[int] = None,
+    ) -> Tuple[bool, int, int, int, int, str | None]:
         """Execute modules in order. Mutates results and named_speaker_count_ref[0]."""
         return run_sequential_execution_phase(
             self,
@@ -330,6 +331,7 @@ class DAGPipeline:
             requirements_resolver=requirements_resolver,
             named_speaker_count_ref=named_speaker_count_ref,
             emit=emit,
+            progress_total=progress_total,
         )
 
     def execute_pipeline(

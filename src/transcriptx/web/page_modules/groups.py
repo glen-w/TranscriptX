@@ -21,7 +21,7 @@ from transcriptx.core.store.group_manifest_store import (
 from transcriptx.web.cache_helpers import (
     cached_list_groups,
     clear_group_workspace_cache,
-    get_cached_list_transcripts,
+    get_cached_list_transcript_picker_options,
 )
 from transcriptx.web.services.group_service import GroupService
 from transcriptx.web.components.action_links import render_action_link
@@ -296,9 +296,9 @@ def render_groups() -> None:
         actions=None,
     )
 
-    transcripts = get_cached_list_transcripts()
-    transcript_options = [str(m.path) for m in transcripts]
-    transcript_labels = {str(m.path): m.base_name for m in transcripts}
+    picker_options = get_cached_list_transcript_picker_options()
+    transcript_options = [opt.path for opt in picker_options]
+    transcript_labels = {opt.path: opt.label for opt in picker_options}
     transcript_canonical = {
         p: canonical_group_member_path(p) for p in transcript_options
     }

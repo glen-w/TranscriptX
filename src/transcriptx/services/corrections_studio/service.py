@@ -351,49 +351,33 @@ class CorrectionService:
         )
 
     def list_transcript_summaries_for_studio(self) -> List[StudioTranscriptSummary]:
+        """Light picker rows for Corrections Studio (no per-file segment parse)."""
         try:
-            from transcriptx.core.utils.file_discovery import (
-                discover_managed_transcript_paths,
-            )
-            from transcriptx.services.speaker_studio.segment_index import (
-                SegmentIndexService,
+            from pathlib import Path
+
+            from transcriptx.core.utils.transcript_picker import (
+                list_transcript_picker_options,
             )
 
-            paths = discover_managed_transcript_paths(None)
-            idx = SegmentIndexService()
             summaries: List[StudioTranscriptSummary] = []
             seen: set[str] = set()
-            for p in paths:
-                s = idx.summary_for_path(p)
-                if s is None:
-                    continue
-                key = str(Path(s.path).resolve())
+            for opt in list_transcript_picker_options():
+                try:
+                    key = str(Path(opt.path).resolve())
+                except OSError:
+                    key = opt.path
                 if key in seen:
                     continue
                 seen.add(key)
                 summaries.append(
                     StudioTranscriptSummary(
-                        path=s.path,
-                        base_name=s.base_name,
-                        segment_count=s.segment_count,
-                        speaker_map_status=s.speaker_map_status,
+                        path=str(Path(opt.path)),
+                        base_name=opt.label,
+                        segment_count=0,
+                        speaker_map_status="",
                     )
                 )
-            if not summaries:
-                for t in idx.list_transcripts(canonical_only=False):
-                    key = str(Path(t.path).resolve())
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    summaries.append(
-                        StudioTranscriptSummary(
-                            path=t.path,
-                            base_name=t.base_name,
-                            segment_count=t.segment_count,
-                            speaker_map_status=t.speaker_map_status,
-                        )
-                    )
-            return sorted(summaries, key=lambda x: x.path)
+            return sorted(summaries, key=lambda x: str(x.path))
         except Exception as exc:
             _logger.warning("Could not list transcripts: %s", exc)
             return []
