@@ -1,0 +1,29 @@
+ Container transcriptx-transcriptx-web-run-1033523b0d1d Creating 
+ Container transcriptx-transcriptx-web-run-1033523b0d1d Created 
+
+[notice] A new release of pip is available: 23.0.1 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+/opt/venv/lib/python3.10/site-packages/spacy/cli/_util.py:23: DeprecationWarning: Importing 'parser.split_arg_string' is deprecated, it will only be available in 'shell_completion' in Click 9.0.
+  from click.parser import split_arg_string
+============================= test session starts ==============================
+platform linux -- Python 3.10.20, pytest-7.4.0, pluggy-1.6.0
+rootdir: /workspace
+configfile: pytest.ini
+plugins: cov-4.1.0, anyio-4.14.2, timeout-2.4.0, hypothesis-6.165.2
+timeout: 300.0s
+timeout method: thread
+timeout func_only: False
+collected 41 items
+
+tests/smoke/test_all_modules_smoke.py ............................       [ 68%]
+tests/smoke/test_analysis_pipeline_smoke.py ...                          [ 75%]
+tests/smoke/test_analyze_smoke.py .                                      [ 78%]
+tests/smoke/test_capabilities_snapshot.py ..                             [ 82%]
+tests/smoke/test_cli_help.py ..                                          [ 87%]
+tests/smoke/test_group_analysis_smoke.py .                               [ 90%]
+tests/smoke/test_install_run_smoke.py .                                  [ 92%]
+tests/smoke/test_module_registry_smoke.py .                              [ 95%]
+tests/smoke/test_sentiment_module_smoke.py .                             [ 97%]
+tests/smoke/test_stats_module_smoke.py .                                 [100%]
+
+======================== 41 passed in 74.32s (0:01:14) =========================

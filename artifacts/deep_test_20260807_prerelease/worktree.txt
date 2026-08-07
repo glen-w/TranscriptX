@@ -1,0 +1,85 @@
+ M .local/competitive_inspiration_2026-07-22.md
+ M CHANGELOG.md
+ M README.md
+ M docs/PRODUCT.md
+ M docs/ROADMAP.md
+ M docs/USER_INDEX.md
+ M docs/dev/analysis_module_backlog_2026-07-17.md
+ M docs/dev/analysis_quality_audit_judgements.md
+ M docs/dev/documentation_inventory_1_0.md
+ M docs/dev/manual_acceptance_1_0.md
+ M docs/dev/performance_envelopes_1_0.md
+ M docs/dev/pre_release_roadmap_1_0.md
+ M docs/dev/script_inventory_1_0.md
+ M docs/index.md
+ M docs/known_limitations.md
+ M docs/public_surfaces.md
+ M docs/runtime/llm.md
+ M docs/runtime/transcription.md
+ M src/transcriptx/app/progress.py
+ M src/transcriptx/app/workflows/analysis.py
+ M src/transcriptx/app/workflows/batch.py
+ M src/transcriptx/core/pipeline/dag_pipeline.py
+ M src/transcriptx/core/pipeline/dag_pipeline_engine.py
+ M src/transcriptx/core/pipeline/dag_pipeline_execution.py
+ M src/transcriptx/core/pipeline/dag_pipeline_finalize.py
+ M src/transcriptx/core/pipeline/dag_pipeline_progress.py
+ M src/transcriptx/core/pipeline/module_registry.py
+ M src/transcriptx/core/pipeline/pipeline_write_phases.py
+ M src/transcriptx/core/pipeline/run_orchestrator.py
+ M src/transcriptx/core/pipeline/run_persistence.py
+ M src/transcriptx/services/corrections_studio/service.py
+ M src/transcriptx/web/action_menus/handlers.py
+ M src/transcriptx/web/action_menus/ids.py
+ M src/transcriptx/web/blocks/implementations/insights_custom_qa.py
+ M src/transcriptx/web/blocks/llm_presentation.py
+ M src/transcriptx/web/cache_helpers.py
+ M src/transcriptx/web/components/llm_feedback.py
+ M src/transcriptx/web/components/llm_model_selector.py
+ M src/transcriptx/web/components/progress_panel.py
+ M src/transcriptx/web/navigation.py
+ M src/transcriptx/web/page_modules/batch_ops.py
+ M src/transcriptx/web/page_modules/corrections_studio.py
+ M src/transcriptx/web/page_modules/groups.py
+ M src/transcriptx/web/page_modules/home.py
+ M src/transcriptx/web/page_modules/library.py
+ M src/transcriptx/web/page_modules/run_analysis.py
+ M src/transcriptx/web/page_modules/speaker_id.py
+ M src/transcriptx/web/page_modules/transcript.py
+ M src/transcriptx/web/shell.py
+ M tests/app/test_gui_surface_orchestration.py
+ M tests/pipeline/test_dag_pipeline_finalize_progress.py
+ M tests/pipeline/test_pipeline_write_phases.py
+ M tests/services/test_corrections_service_additional.py
+ M tests/unit/test_llm_model_selection.py
+ M tests/unit/test_progress_snapshot.py
+ M tests/web/streamlit_doubles.py
+ M tests/web/test_action_menu_navigation.py
+ M tests/web/test_batch_ops_page.py
+ M tests/web/test_cache_helpers.py
+ M tests/web/test_groups_page.py
+ M tests/web/test_home_page.py
+ M tests/web/test_library_page.py
+ M tests/web/test_llm_feedback_contracts.py
+ M tests/web/test_navigation_contracts.py
+ M tests/web/test_run_analysis_gui_contracts.py
+ M tests/web/test_run_analysis_page.py
+ M tests/web/test_transcript_page_refactor_contracts.py
+ M uv.lock
+ M website/index.html
+?? .local/release_evidence/20260807_medium_balanced/medium_balanced_batch.md
+?? .local/release_evidence/deep_test_20260727/pre_release_hygiene.txt
+?? .local/release_evidence/deep_test_20260727/pre_release_pack_docker.txt
+?? .local/release_evidence/deep_test_20260727/pre_release_part1.txt
+?? .local/release_evidence/deep_test_20260727/pre_release_tests.txt
+?? artifacts/deep_test_20260807_prerelease/worktree.txt
+?? artifacts/deep_test_batch_docker.txt
+?? artifacts/deep_test_collect.txt
+?? artifacts/deep_test_fail_samples.txt
+?? artifacts/deep_test_group.txt
+?? artifacts/deep_test_large.txt
+?? artifacts/deep_test_mini_docker.txt
+?? artifacts/deep_test_mini_py.txt
+?? artifacts/deep_test_pytest.txt
+?? docs/comparison.md
+?? src/transcriptx/core/utils/transcript_picker.py

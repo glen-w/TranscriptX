@@ -1,0 +1,23 @@
+=== 0 BACKUP ===
+skipped (completed in deep-test §0: 260727-0226.zip)
+=== 1 WORKTREE ===
+ M docs/archive/assessments/TEST_SUITE_ASSESSMENT.md
+ M scripts/release/tracked_data_allowlist.toml
+ M tests/unit/test_topic_shift_stage5.py
+?? .local/release_evidence/deep_test_20260727/pre_release_part1.txt
+?? artifacts/deep_test_group.txt
+?? artifacts/deep_test_large.txt
+?? artifacts/deep_test_mini_docker.txt
+?? artifacts/deep_test_mini_py.txt
+?? data/_deep_test_mini_docker.py
+--- branch ---
+## main...origin/main [ahead 1]
+ M docs/archive/assessments/TEST_SUITE_ASSESSMENT.md
+ M scripts/release/tracked_data_allowlist.toml
+ M tests/unit/test_topic_shift_stage5.py
+?? .local/release_evidence/deep_test_20260727/
+=== PYTHON ===
+Python 3.10.13
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named 'tomllib'

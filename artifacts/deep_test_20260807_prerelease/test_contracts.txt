@@ -1,0 +1,106 @@
+ Container transcriptx-transcriptx-web-run-64ff2428aa1c Creating 
+ Container transcriptx-transcriptx-web-run-64ff2428aa1c Created 
+
+[notice] A new release of pip is available: 23.0.1 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+/opt/venv/lib/python3.10/site-packages/spacy/cli/_util.py:23: DeprecationWarning: Importing 'parser.split_arg_string' is deprecated, it will only be available in 'shell_completion' in Click 9.0.
+  from click.parser import split_arg_string
+============================= test session starts ==============================
+platform linux -- Python 3.10.20, pytest-7.4.0, pluggy-1.6.0
+rootdir: /workspace
+configfile: pytest.ini
+plugins: cov-4.1.0, anyio-4.14.2, timeout-2.4.0, hypothesis-6.165.2
+timeout: 300.0s
+timeout method: thread
+timeout func_only: False
+collected 448 items
+
+tests/contracts/test_artifact_contracts.py ...                           [  0%]
+tests/contracts/test_bertopic_optional_extra.py ..                       [  1%]
+tests/contracts/test_chart_output_service_wiring.py ..                   [  1%]
+tests/contracts/test_default_modules_uses_v2.py ..                       [  2%]
+tests/contracts/test_emotion_contracts.py F                              [  2%]
+tests/contracts/test_emotion_nrclex_compat_contracts.py ...              [  2%]
+tests/contracts/test_manifest_contracts.py F                             [  3%]
+tests/contracts/test_manifest_driven_run.py ..                           [  3%]
+tests/contracts/test_module_registry_legacy_flag.py ..                   [  4%]
+tests/contracts/test_ner_contracts.py .                                  [  4%]
+tests/contracts/test_ner_map_artifacts_contracts.py ......               [  5%]
+tests/contracts/test_observability_import_boundary.py .                  [  5%]
+tests/contracts/test_output_naming.py .                                  [  6%]
+tests/contracts/test_pipeline_layering_thinness.py ......                [  7%]
+tests/contracts/test_playwright_container_contracts.py ....              [  8%]
+tests/contracts/test_retired_public_ids_invariant.py ....                [  9%]
+tests/contracts/test_run_results_and_manifest_contracts.py ...           [  9%]
+tests/contracts/test_semantic_v2_explicit_legacy_selection.py ..         [ 10%]
+tests/contracts/test_semantic_v2_missing_torch.py .....                  [ 11%]
+tests/contracts/test_semantic_v2_no_duplicate_default.py .               [ 11%]
+tests/contracts/test_semantic_v2_no_legacy_v2_coexistence_default.py .   [ 11%]
+tests/contracts/test_semantic_v2_outcome_envelope.py .                   [ 12%]
+tests/contracts/test_semantic_v2_output_validation.py .                  [ 12%]
+tests/contracts/test_speaker_exclusion.py ..                             [ 12%]
+tests/contracts/test_speaker_profiles_avatars.py ...............         [ 16%]
+tests/contracts/test_speaker_profiles_backfill_from_maps.py .....        [ 17%]
+tests/contracts/test_speaker_profiles_ignored_gaps.py ..                 [ 17%]
+tests/contracts/test_speaker_profiles_longitudinal.py .................. [ 21%]
+.....                                                                    [ 22%]
+tests/contracts/test_speaker_profiles_phase15.py .............           [ 25%]
+tests/contracts/test_speaker_profiles_phase15_gaps.py ................   [ 29%]
+tests/contracts/test_speaker_profiles_recovery.py ......                 [ 30%]
+tests/contracts/test_speaker_profiles_resolver_discovery.py ........     [ 32%]
+tests/contracts/test_speaker_profiles_service_ops.py .......             [ 33%]
+tests/contracts/test_speaker_profiles_stage4_web.py ....                 [ 34%]
+tests/contracts/test_speaker_profiles_stages_5_8.py .........            [ 36%]
+tests/contracts/test_speaker_profiles_v1_contracts.py .................. [ 40%]
+.......                                                                  [ 42%]
+tests/contracts/test_speaker_profiles_voice_accept_query_evidence.py ..  [ 42%]
+tests/contracts/test_speaker_profiles_voice_audit_fixes.py .......       [ 44%]
+tests/contracts/test_speaker_profiles_voice_bootstrap.py ....            [ 45%]
+tests/contracts/test_speaker_profiles_voice_chunked_crash.py .....       [ 46%]
+tests/contracts/test_speaker_profiles_voice_completion.py ....           [ 47%]
+tests/contracts/test_speaker_profiles_voice_eval_harness.py ....         [ 48%]
+tests/contracts/test_speaker_profiles_voice_finalize.py ......           [ 49%]
+tests/contracts/test_speaker_profiles_voice_operator.py ....             [ 50%]
+tests/contracts/test_speaker_profiles_voice_persistence.py ....          [ 51%]
+tests/contracts/test_speaker_profiles_voice_stage0.py ..............     [ 54%]
+tests/contracts/test_speaker_profiles_voice_stage1.py ......             [ 55%]
+tests/contracts/test_speaker_profiles_voice_stage2.py ...s.              [ 56%]
+tests/contracts/test_speaker_profiles_voice_stage3.py ...                [ 57%]
+tests/contracts/test_speaker_profiles_voice_stage4_5.py .....            [ 58%]
+tests/contracts/test_speaker_profiles_voice_stage6.py .                  [ 58%]
+tests/contracts/test_speaker_profiles_voice_stage8.py .....              [ 60%]
+tests/contracts/test_speaker_profiles_voice_stage9_index.py ......       [ 61%]
+tests/contracts/test_stale_surface_references.py ....................... [ 66%]
+........................................................................ [ 82%]
+......................................................                   [ 94%]
+tests/contracts/test_topic_modeling_contracts.py ....                    [ 95%]
+tests/contracts/test_transcript_quality_contract.py ..                   [ 95%]
+tests/contracts/test_transcription_models_contract.py .......            [ 97%]
+tests/contracts/test_unnamed_speaker_artifact_exclusion.py ......        [ 98%]
+tests/contracts/test_weak_analysis_module_contracts.py ....              [ 99%]
+tests/contracts/test_write_authority.py .                                [100%]
+
+=================================== FAILURES ===================================
+/workspace/tests/contracts/test_emotion_contracts.py:58: AssertionError: assert 'compatibility_fingerprint' in {'_canonical_rows': [], '_pending_projections': [], 'all_scores': {}, 'artifact_generation_id': 'b9e984420769463ea448d41cc5a08a4e', ...}
+/Users/89298/Documents/transcriptx/tests/contracts/test_manifest_contracts.py:47: AssertionError: assert {'artifacts':... 1, ...}, ...} == {'artifacts':... 1, ...}, ...}
+=============================== warnings summary ===============================
+tests/contracts/test_topic_modeling_contracts.py::TestTopicModelingContracts::test_topic_modeling_empty_segments_output_contract
+  /Users/89298/Documents/transcriptx/tests/contracts/test_topic_modeling_contracts.py:76: UserWarning: Topic modeling fell back to segment-level text because insight_eligibility windows were missing or empty; canonical runs should supply eligibility.
+
+tests/contracts/test_topic_modeling_contracts.py::TestTopicModelingContracts::test_topic_modeling_insufficient_segments_output_contract
+  /Users/89298/Documents/transcriptx/tests/contracts/test_topic_modeling_contracts.py:100: UserWarning: Topic modeling fell back to segment-level text because insight_eligibility windows were missing or empty; canonical runs should supply eligibility.
+
+tests/contracts/test_topic_modeling_contracts.py::TestTopicModelingContracts::test_topic_modeling_success_output_contract
+  /Users/89298/Documents/transcriptx/tests/contracts/test_topic_modeling_contracts.py:184: UserWarning: Topic modeling fell back to segment-level text because insight_eligibility windows were missing or empty; canonical runs should supply eligibility.
+
+tests/contracts/test_topic_modeling_contracts.py::TestTopicModelingContracts::test_topic_modeling_dependency_error_contract
+  /workspace/src/transcriptx/core/analysis/base.py:183: UserWarning: Topic modeling fell back to segment-level text because insight_eligibility windows were missing or empty; canonical runs should supply eligibility.
+    results = self.analyze(segments)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/contracts/test_speaker_profiles_voice_stage2.py:62: speechbrain installed in this environment
+FAILED tests/contracts/test_emotion_contracts.py::TestEmotionLexicalContracts::test_emotion_output_contract
+FAILED tests/contracts/test_manifest_contracts.py::test_output_manifest_snapshot
+============ 2 failed, 445 passed, 1 skipped, 4 warnings in 23.22s =============
+

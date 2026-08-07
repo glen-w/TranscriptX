@@ -1,0 +1,493 @@
+ Container transcriptx-transcriptx-web-run-1e47ee435b33 Creating 
+ Container transcriptx-transcriptx-web-run-1e47ee435b33 Created 
+2026-08-07 13:37:44,439 - transcriptx - INFO - Starting group analysis pipeline for 2 transcripts with modules: stats, summary, highlights, keyphrases, moments
+2026-08-07 13:37:44,439 - transcriptx - INFO - Starting analysis pipeline for /mnt/transcripts/_deep_test_mini_probe.json with modules: stats, summary, highlights, keyphrases, moments
+2026-08-07 13:37:44,853 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: _deep_test_mini_probe.json
+  Outputs:    /mnt/outputs/_deep_test_mini_probe/20260807_133744_09864568
+  Modules that will run:
+    • highlights
+    • insight_eligibility
+    • keyphrases
+    • moments
+    • momentum
+    • pauses
+    • stats
+    • summary
+    • tics
+---
+
+2026-08-07 13:37:44,862 - transcriptx - INFO - Starting DAG pipeline for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:44,863 - transcriptx - INFO - Execution order: pauses, momentum, moments, stats, tics, insight_eligibility, highlights, keyphrases, summary
+2026-08-07 13:37:44,863 - transcriptx - INFO - Running pauses analysis
+
+────────────────────────────────────────────────────────────
+PAUSES
+────────────────────────────────────────────────────────────
+ Running Silence and Timing Analysis...
+2026-08-07 13:37:44,864 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:44,874 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:45,429 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Silence and Timing Analysis
+
+2026-08-07 13:37:45,430 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:45,430 - transcriptx - INFO - pauses completed in 0.57s
+2026-08-07 13:37:45,430 - transcriptx - INFO - Running momentum analysis
+
+────────────────────────────────────────────────────────────
+MOMENTUM
+────────────────────────────────────────────────────────────
+ Running Stall/Flow Index Analysis...
+2026-08-07 13:37:45,432 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:45,434 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:45,830 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Stall/Flow Index Analysis
+
+2026-08-07 13:37:45,832 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:45,832 - transcriptx - INFO - momentum completed in 0.40s
+2026-08-07 13:37:45,832 - transcriptx - INFO - Running moments analysis
+
+────────────────────────────────────────────────────────────
+MOMENTS
+────────────────────────────────────────────────────────────
+ Running Ranked Moments Worth Revisiting...
+2026-08-07 13:37:45,833 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:45,834 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:45,842 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Ranked Moments Worth Revisiting
+
+2026-08-07 13:37:45,843 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:45,843 - transcriptx - INFO - moments completed in 0.01s
+2026-08-07 13:37:45,843 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+STATS
+────────────────────────────────────────────────────────────
+ Running Statistical Analysis...
+2026-08-07 13:37:45,844 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:46,008 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:46,129 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Statistical Analysis
+
+2026-08-07 13:37:46,131 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:46,131 - transcriptx - INFO - stats completed in 0.29s
+2026-08-07 13:37:46,131 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+TICS
+────────────────────────────────────────────────────────────
+ Running Verbal Tics Analysis...
+2026-08-07 13:37:46,132 - transcriptx - INFO - Starting tics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:46,133 - transcriptx - INFO - Starting tics analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:46,277 - transcriptx - INFO - Completed tics analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Verbal Tics Analysis
+
+2026-08-07 13:37:46,279 - transcriptx - INFO - Completed tics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:46,279 - transcriptx - INFO - tics completed in 0.15s
+2026-08-07 13:37:46,279 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+ Running Shared content-vs-style insight eligibility pipeline...
+2026-08-07 13:37:46,280 - transcriptx - INFO - Starting insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:46,294 - transcriptx - INFO - Starting insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:50,179 - transcriptx - INFO - Completed insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-07 13:37:50,181 - transcriptx - INFO - Completed insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:50,181 - transcriptx - INFO - insight_eligibility completed in 3.90s
+2026-08-07 13:37:50,182 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+HIGHLIGHTS
+────────────────────────────────────────────────────────────
+ Running Highlights and conflict moments (quote-forward)...
+2026-08-07 13:37:50,183 - transcriptx - INFO - Starting highlights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:50,197 - transcriptx - INFO - Starting highlights analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:50,323 - transcriptx - INFO - Completed highlights analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-07 13:37:50,325 - transcriptx - INFO - Completed highlights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:50,326 - transcriptx - INFO - highlights completed in 0.14s
+2026-08-07 13:37:50,326 - transcriptx - INFO - Running keyphrases analysis
+
+────────────────────────────────────────────────────────────
+KEYPHRASES
+────────────────────────────────────────────────────────────
+ Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
+2026-08-07 13:37:50,327 - transcriptx - INFO - Starting keyphrases analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:50,356 - transcriptx - INFO - Starting keyphrases analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:52,688 - transcriptx - INFO - Completed keyphrases analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
+
+2026-08-07 13:37:52,690 - transcriptx - INFO - Completed keyphrases analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:52,691 - transcriptx - INFO - keyphrases completed in 2.36s
+2026-08-07 13:37:52,691 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+SUMMARY
+────────────────────────────────────────────────────────────
+ Running Executive brief summary derived from highlights...
+2026-08-07 13:37:52,693 - transcriptx - INFO - Starting summary analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:52,698 - transcriptx - INFO - Starting summary analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:53,148 - transcriptx - INFO - Saved all-charts PDF to /mnt/outputs/_deep_test_mini_probe/20260807_133744_09864568/summary/all_charts.pdf (3 modules, 3 charts)
+2026-08-07 13:37:53,149 - transcriptx - INFO - Completed summary analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Executive brief summary derived from highlights
+
+2026-08-07 13:37:53,151 - transcriptx - INFO - Completed summary analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:37:53,151 - transcriptx - INFO - summary completed in 0.46s
+2026-08-07 13:37:53,151 - transcriptx - INFO - Pipeline completed. Ran 9 modules with 0 errors
+2026-08-07 13:37:53,161 - transcriptx - INFO - Saved run results summary to /mnt/outputs/_deep_test_mini_probe/20260807_133744_09864568/run_results.json
+2026-08-07 13:37:53,176 - transcriptx - INFO - Saved output manifest to /mnt/outputs/_deep_test_mini_probe/20260807_133744_09864568/manifest.json
+2026-08-07 13:37:53,211 - transcriptx - INFO - Saved run manifest to /mnt/outputs/_deep_test_mini_probe/20260807_133744_09864568/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: _deep_test_mini_probe
+📂 Output Directory: /mnt/outputs/_deep_test_mini_probe/20260807_133744_09864568
+🔄 Analysis Status: 9/5 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (5):
+--------------------------------------------------
+
+✅ STATS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133744_09864568/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ SUMMARY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133744_09864568/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_summary.json (6.4 KB)
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133744_09864568/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_highlights.json (22.3 KB)
+
+✅ KEYPHRASES
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133744_09864568/keyphrases
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_keyphrases.json (39.5 KB)
+      • data/global/_deep_test_mini_probe_keyphrases_summary.json (1.2 KB)
+      • data/global/_deep_test_mini_probe_keyphrases.csv (8.4 KB)
+
+✅ MOMENTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133744_09864568/moments
+   📄 Files: 3
+   📂 Subdirectories: 4
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_moments_summary.json (0.9 KB)
+      • data/global/moments.stats.json (0.0 KB)
+      • data/global/moments.events.json (0.0 KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (5.4 KB)
+   • report.md (0.4 KB)
+   • run_results.json (1.2 KB)
+   • report.txt (0.4 KB)
+   • manifest.json (23.8 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 11
+   • Total output size: 0.3 MB
+   • Successful modules: 5
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  /mnt/outputs/_deep_test_mini_probe/20260807_133744_09864568
+  Executed:
+    • highlights
+    • insight_eligibility
+    • keyphrases
+    • moments
+    • momentum
+    • pauses
+    • stats
+    • summary
+    • tics
+  To explore results: open the web interface
+---
+
+2026-08-07 13:37:53,243 - transcriptx - INFO - Pipeline completed for /mnt/transcripts/_deep_test_mini_probe.json - Successfully ran: pauses, momentum, moments, stats, tics, insight_eligibility, highlights, keyphrases, summary
+2026-08-07 13:37:53,244 - transcriptx - INFO - Starting analysis pipeline for /mnt/transcripts/260615_Ana_phd_supervision_meeting.json with modules: stats, summary, highlights, keyphrases, moments
+2026-08-07 13:37:53,811 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: 260615_Ana_phd_supervision_meeting.json
+  Outputs:    
+/mnt/outputs/260615_Ana_phd_supervision_meeting/20260807_133753_09873378
+  Modules that will run:
+    • highlights
+    • insight_eligibility
+    • keyphrases
+    • moments
+    • momentum
+    • pauses
+    • stats
+    • summary
+    • tics
+---
+
+2026-08-07 13:37:53,851 - transcriptx - INFO - Starting DAG pipeline for /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:53,859 - transcriptx - INFO - Execution order: pauses, momentum, moments, stats, tics, insight_eligibility, highlights, keyphrases, summary
+2026-08-07 13:37:53,860 - transcriptx - INFO - Running pauses analysis
+
+────────────────────────────────────────────────────────────
+PAUSES
+────────────────────────────────────────────────────────────
+ Running Silence and Timing Analysis...
+2026-08-07 13:37:53,861 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:53,862 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:54,451 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+ Completed Silence and Timing Analysis
+
+2026-08-07 13:37:54,453 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:54,453 - transcriptx - INFO - pauses completed in 0.59s
+2026-08-07 13:37:54,453 - transcriptx - INFO - Running momentum analysis
+
+────────────────────────────────────────────────────────────
+MOMENTUM
+────────────────────────────────────────────────────────────
+ Running Stall/Flow Index Analysis...
+2026-08-07 13:37:54,456 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:54,457 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:54,827 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+ Completed Stall/Flow Index Analysis
+
+2026-08-07 13:37:54,829 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:54,829 - transcriptx - INFO - momentum completed in 0.37s
+2026-08-07 13:37:54,830 - transcriptx - INFO - Running moments analysis
+
+────────────────────────────────────────────────────────────
+MOMENTS
+────────────────────────────────────────────────────────────
+ Running Ranked Moments Worth Revisiting...
+2026-08-07 13:37:54,832 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:54,833 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:55,199 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+ Completed Ranked Moments Worth Revisiting
+
+2026-08-07 13:37:55,201 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:55,201 - transcriptx - INFO - moments completed in 0.37s
+2026-08-07 13:37:55,202 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+STATS
+────────────────────────────────────────────────────────────
+ Running Statistical Analysis...
+2026-08-07 13:37:55,203 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:55,204 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:55,345 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+ Completed Statistical Analysis
+
+2026-08-07 13:37:55,347 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:55,347 - transcriptx - INFO - stats completed in 0.14s
+2026-08-07 13:37:55,347 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+TICS
+────────────────────────────────────────────────────────────
+ Running Verbal Tics Analysis...
+2026-08-07 13:37:55,349 - transcriptx - INFO - Starting tics analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:55,350 - transcriptx - INFO - Starting tics analysis for /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:56,903 - transcriptx - INFO - Completed tics analysis for /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+ Completed Verbal Tics Analysis
+
+2026-08-07 13:37:56,904 - transcriptx - INFO - Completed tics analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:56,904 - transcriptx - INFO - tics completed in 1.55s
+2026-08-07 13:37:56,904 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+ Running Shared content-vs-style insight eligibility pipeline...
+2026-08-07 13:37:56,905 - transcriptx - INFO - Starting insight_eligibility analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:37:56,906 - transcriptx - INFO - Starting insight_eligibility analysis for /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:38:02,147 - transcriptx - INFO - Completed insight_eligibility analysis for /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-07 13:38:02,148 - transcriptx - INFO - Completed insight_eligibility analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:38:02,148 - transcriptx - INFO - insight_eligibility completed in 5.24s
+2026-08-07 13:38:02,149 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+HIGHLIGHTS
+────────────────────────────────────────────────────────────
+ Running Highlights and conflict moments (quote-forward)...
+2026-08-07 13:38:02,150 - transcriptx - INFO - Starting highlights analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:38:02,150 - transcriptx - INFO - Starting highlights analysis for /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:38:04,324 - transcriptx - INFO - Completed highlights analysis for /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-07 13:38:04,325 - transcriptx - INFO - Completed highlights analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:38:04,325 - transcriptx - INFO - highlights completed in 2.17s
+2026-08-07 13:38:04,325 - transcriptx - INFO - Running keyphrases analysis
+
+────────────────────────────────────────────────────────────
+KEYPHRASES
+────────────────────────────────────────────────────────────
+ Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
+2026-08-07 13:38:04,326 - transcriptx - INFO - Starting keyphrases analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:38:04,326 - transcriptx - INFO - Starting keyphrases analysis for /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:38:10,025 - transcriptx - INFO - Completed keyphrases analysis for /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+ Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
+
+2026-08-07 13:38:10,033 - transcriptx - INFO - Completed keyphrases analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:38:10,033 - transcriptx - INFO - keyphrases completed in 5.70s
+2026-08-07 13:38:10,033 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+SUMMARY
+────────────────────────────────────────────────────────────
+ Running Executive brief summary derived from highlights...
+2026-08-07 13:38:10,035 - transcriptx - INFO - Starting summary analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:38:10,038 - transcriptx - INFO - Starting summary analysis for /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:38:11,022 - transcriptx - INFO - Saved all-charts PDF to /mnt/outputs/260615_Ana_phd_supervision_meeting/20260807_133753_09873378/summary/all_charts.pdf (4 modules, 7 charts)
+2026-08-07 13:38:11,023 - transcriptx - INFO - Completed summary analysis for /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+ Completed Executive brief summary derived from highlights
+
+2026-08-07 13:38:11,024 - transcriptx - INFO - Completed summary analysis for: /mnt/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 13:38:11,025 - transcriptx - INFO - summary completed in 0.99s
+2026-08-07 13:38:11,025 - transcriptx - INFO - Pipeline completed. Ran 9 modules with 0 errors
+2026-08-07 13:38:11,036 - transcriptx - INFO - Saved run results summary to /mnt/outputs/260615_Ana_phd_supervision_meeting/20260807_133753_09873378/run_results.json
+2026-08-07 13:38:11,051 - transcriptx - INFO - Saved output manifest to /mnt/outputs/260615_Ana_phd_supervision_meeting/20260807_133753_09873378/manifest.json
+2026-08-07 13:38:11,110 - transcriptx - INFO - Saved run manifest to /mnt/outputs/260615_Ana_phd_supervision_meeting/20260807_133753_09873378/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: 260615_Ana_phd_supervision_meeting
+📂 Output Directory: 
+/mnt/outputs/260615_Ana_phd_supervision_meeting/20260807_133753_09873378
+🔄 Analysis Status: 9/5 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (5):
+--------------------------------------------------
+
+✅ STATS
+   📁 Directory: 
+/mnt/outputs/260615_Ana_phd_supervision_meeting/20260807_133753_09873378/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ SUMMARY
+   📁 Directory: 
+/mnt/outputs/260615_Ana_phd_supervision_meeting/20260807_133753_09873378/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_summary.json (16.8 KB)
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/mnt/outputs/260615_Ana_phd_supervision_meeting/20260807_133753_09873378/highlig
+hts
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_highlights.json (26.6 KB)
+
+✅ KEYPHRASES
+   📁 Directory: 
+/mnt/outputs/260615_Ana_phd_supervision_meeting/20260807_133753_09873378/keyphra
+ses
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_keyphrases.csv (22.2 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_keyphrases.json (156.6 
+KB)
+      • data/global/260615_Ana_phd_supervision_meeting_keyphrases_summary.json 
+(1.4 KB)
+
+✅ MOMENTS
+   📁 Directory: 
+/mnt/outputs/260615_Ana_phd_supervision_meeting/20260807_133753_09873378/moments
+   📄 Files: 8
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/timeline/moments_timeline.html (4745.5 KB)
+      • charts/global/static/timeline/moments_timeline.evidence.json (1.1 KB)
+      • charts/global/static/timeline/moments_timeline.png (82.3 KB)
+      • data/global/moments.moments.json (19.3 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_moments_summary.json (0.9
+KB)
+      • ... and 3 more files
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (6.2 KB)
+   • report.md (0.4 KB)
+   • run_results.json (1.2 KB)
+   • report.txt (0.5 KB)
+   • manifest.json (40.1 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 16
+   • Total output size: 5.9 MB
+   • Successful modules: 5
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  
+/mnt/outputs/260615_Ana_phd_supervision_meeting/20260807_133753_09873378
+  Executed:
+    • highlights
+    • insight_eligibility
+    • keyphrases
+    • moments
+    • momentum
+    • pauses
+    • stats
+    • summary
+    • tics
+  To explore results: open the web interface
+---
+
+2026-08-07 13:38:11,144 - transcriptx - INFO - Pipeline completed for /mnt/transcripts/260615_Ana_phd_supervision_meeting.json - Successfully ran: pauses, momentum, moments, stats, tics, insight_eligibility, highlights, keyphrases, summary
+2026-08-07 13:38:12,985 - transcriptx - INFO - Saved output manifest to /mnt/outputs/groups/9be0555e-d6e1-402e-afd9-207c7a135eec/20260807_133811_7b8f7339/manifest.json
+2026-08-07 13:38:12,996 - transcriptx - INFO - Saved run results summary to /mnt/outputs/groups/9be0555e-d6e1-402e-afd9-207c7a135eec/20260807_133811_7b8f7339/run_results.json
+GROUP_UUID 9be0555e-d6e1-402e-afd9-207c7a135eec
+GROUP_SUCCESS True
+GROUP_STATUS partial
+GROUP_ERRORS []
+GROUP_RUN_DIR /mnt/outputs/groups/9be0555e-d6e1-402e-afd9-207c7a135eec/20260807_133811_7b8f7339
+HAS_MANIFEST True
+HAS_RUN_RESULTS True

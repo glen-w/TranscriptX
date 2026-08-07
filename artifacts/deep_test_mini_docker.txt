@@ -1,0 +1,1233 @@
+ Container transcriptx-transcriptx-web-run-eae29d826fb3 Creating 
+ Container transcriptx-transcriptx-web-run-eae29d826fb3 Created 
+2026-08-07 13:34:01,917 - transcriptx - INFO - Starting analysis pipeline for /mnt/transcripts/_deep_test_mini_probe.json with modules: stats, summary, highlights, keyphrases, moments
+2026-08-07 13:34:02,243 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: _deep_test_mini_probe.json
+  Outputs:    /mnt/outputs/_deep_test_mini_probe/20260807_133402_09642008
+  Modules that will run:
+    • highlights
+    • insight_eligibility
+    • keyphrases
+    • moments
+    • momentum
+    • pauses
+    • stats
+    • summary
+    • tics
+---
+
+2026-08-07 13:34:02,251 - transcriptx - INFO - Starting DAG pipeline for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:02,251 - transcriptx - INFO - Execution order: pauses, momentum, moments, stats, tics, insight_eligibility, highlights, keyphrases, summary
+2026-08-07 13:34:02,251 - transcriptx - INFO - Running pauses analysis
+
+────────────────────────────────────────────────────────────
+PAUSES
+────────────────────────────────────────────────────────────
+ Running Silence and Timing Analysis...
+2026-08-07 13:34:02,253 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:02,262 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:02,772 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Silence and Timing Analysis
+
+2026-08-07 13:34:02,776 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:02,777 - transcriptx - INFO - pauses completed in 0.52s
+2026-08-07 13:34:02,777 - transcriptx - INFO - Running momentum analysis
+
+────────────────────────────────────────────────────────────
+MOMENTUM
+────────────────────────────────────────────────────────────
+ Running Stall/Flow Index Analysis...
+2026-08-07 13:34:02,780 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:02,781 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:03,112 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Stall/Flow Index Analysis
+
+2026-08-07 13:34:03,113 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:03,113 - transcriptx - INFO - momentum completed in 0.33s
+2026-08-07 13:34:03,113 - transcriptx - INFO - Running moments analysis
+
+────────────────────────────────────────────────────────────
+MOMENTS
+────────────────────────────────────────────────────────────
+ Running Ranked Moments Worth Revisiting...
+2026-08-07 13:34:03,114 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:03,115 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:03,122 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Ranked Moments Worth Revisiting
+
+2026-08-07 13:34:03,122 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:03,122 - transcriptx - INFO - moments completed in 0.01s
+2026-08-07 13:34:03,122 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+STATS
+────────────────────────────────────────────────────────────
+ Running Statistical Analysis...
+2026-08-07 13:34:03,123 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:03,288 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:03,434 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Statistical Analysis
+
+2026-08-07 13:34:03,436 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:03,436 - transcriptx - INFO - stats completed in 0.31s
+2026-08-07 13:34:03,436 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+TICS
+────────────────────────────────────────────────────────────
+ Running Verbal Tics Analysis...
+2026-08-07 13:34:03,437 - transcriptx - INFO - Starting tics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:03,438 - transcriptx - INFO - Starting tics analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:03,570 - transcriptx - INFO - Completed tics analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Verbal Tics Analysis
+
+2026-08-07 13:34:03,571 - transcriptx - INFO - Completed tics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:03,571 - transcriptx - INFO - tics completed in 0.13s
+2026-08-07 13:34:03,571 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+ Running Shared content-vs-style insight eligibility pipeline...
+2026-08-07 13:34:03,572 - transcriptx - INFO - Starting insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:03,583 - transcriptx - INFO - Starting insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:06,601 - transcriptx - INFO - Completed insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-07 13:34:06,603 - transcriptx - INFO - Completed insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:06,603 - transcriptx - INFO - insight_eligibility completed in 3.03s
+2026-08-07 13:34:06,603 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+HIGHLIGHTS
+────────────────────────────────────────────────────────────
+ Running Highlights and conflict moments (quote-forward)...
+2026-08-07 13:34:06,604 - transcriptx - INFO - Starting highlights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:06,611 - transcriptx - INFO - Starting highlights analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:06,660 - transcriptx - INFO - Completed highlights analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-07 13:34:06,661 - transcriptx - INFO - Completed highlights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:06,661 - transcriptx - INFO - highlights completed in 0.06s
+2026-08-07 13:34:06,661 - transcriptx - INFO - Running keyphrases analysis
+
+────────────────────────────────────────────────────────────
+KEYPHRASES
+────────────────────────────────────────────────────────────
+ Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
+2026-08-07 13:34:06,662 - transcriptx - INFO - Starting keyphrases analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:06,679 - transcriptx - INFO - Starting keyphrases analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:08,274 - transcriptx - INFO - Completed keyphrases analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
+
+2026-08-07 13:34:08,276 - transcriptx - INFO - Completed keyphrases analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:08,276 - transcriptx - INFO - keyphrases completed in 1.61s
+2026-08-07 13:34:08,276 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+SUMMARY
+────────────────────────────────────────────────────────────
+ Running Executive brief summary derived from highlights...
+2026-08-07 13:34:08,277 - transcriptx - INFO - Starting summary analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:08,284 - transcriptx - INFO - Starting summary analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:08,567 - transcriptx - INFO - Saved all-charts PDF to /mnt/outputs/_deep_test_mini_probe/20260807_133402_09642008/summary/all_charts.pdf (3 modules, 3 charts)
+2026-08-07 13:34:08,568 - transcriptx - INFO - Completed summary analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Executive brief summary derived from highlights
+
+2026-08-07 13:34:08,568 - transcriptx - INFO - Completed summary analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:08,568 - transcriptx - INFO - summary completed in 0.29s
+2026-08-07 13:34:08,568 - transcriptx - INFO - Pipeline completed. Ran 9 modules with 0 errors
+2026-08-07 13:34:08,575 - transcriptx - INFO - Saved run results summary to /mnt/outputs/_deep_test_mini_probe/20260807_133402_09642008/run_results.json
+2026-08-07 13:34:08,586 - transcriptx - INFO - Saved output manifest to /mnt/outputs/_deep_test_mini_probe/20260807_133402_09642008/manifest.json
+2026-08-07 13:34:08,610 - transcriptx - INFO - Saved run manifest to /mnt/outputs/_deep_test_mini_probe/20260807_133402_09642008/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: _deep_test_mini_probe
+📂 Output Directory: /mnt/outputs/_deep_test_mini_probe/20260807_133402_09642008
+🔄 Analysis Status: 9/5 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (5):
+--------------------------------------------------
+
+✅ STATS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133402_09642008/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ SUMMARY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133402_09642008/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_summary.json (6.4 KB)
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133402_09642008/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_highlights.json (22.3 KB)
+
+✅ KEYPHRASES
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133402_09642008/keyphrases
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_keyphrases.json (39.5 KB)
+      • data/global/_deep_test_mini_probe_keyphrases_summary.json (1.2 KB)
+      • data/global/_deep_test_mini_probe_keyphrases.csv (8.4 KB)
+
+✅ MOMENTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133402_09642008/moments
+   📄 Files: 3
+   📂 Subdirectories: 4
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_moments_summary.json (0.9 KB)
+      • data/global/moments.stats.json (0.0 KB)
+      • data/global/moments.events.json (0.0 KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (5.4 KB)
+   • report.md (0.4 KB)
+   • run_results.json (1.2 KB)
+   • report.txt (0.4 KB)
+   • manifest.json (23.8 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 11
+   • Total output size: 0.3 MB
+   • Successful modules: 5
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  /mnt/outputs/_deep_test_mini_probe/20260807_133402_09642008
+  Executed:
+    • highlights
+    • insight_eligibility
+    • keyphrases
+    • moments
+    • momentum
+    • pauses
+    • stats
+    • summary
+    • tics
+  To explore results: open the web interface
+---
+
+2026-08-07 13:34:08,629 - transcriptx - INFO - Pipeline completed for /mnt/transcripts/_deep_test_mini_probe.json - Successfully ran: pauses, momentum, moments, stats, tics, insight_eligibility, highlights, keyphrases, summary
+MINI_SUCCESS True
+MINI_ERRORS []
+MINI_RUN_DIR /mnt/outputs/_deep_test_mini_probe/20260807_133402_09642008
+MINI_STATUS completed
+MINI_EVENTS ['module_completed', 'module_started', 'run_completed', 'run_started'] n= 20
+2026-08-07 13:34:08,639 - transcriptx - INFO - Starting analysis pipeline for /mnt/transcripts/_deep_test_mini_probe.json with modules: stats, summary, highlights, keyphrases, moments
+2026-08-07 13:34:08,909 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: _deep_test_mini_probe.json
+  Outputs:    /mnt/outputs/_deep_test_mini_probe/20260807_133408_09648694
+  Modules that will run:
+    • highlights
+    • insight_eligibility
+    • keyphrases
+    • moments
+    • momentum
+    • pauses
+    • stats
+    • summary
+    • tics
+---
+
+2026-08-07 13:34:08,916 - transcriptx - INFO - Starting DAG pipeline for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:08,917 - transcriptx - INFO - Execution order: pauses, momentum, moments, stats, tics, insight_eligibility, highlights, keyphrases, summary
+2026-08-07 13:34:08,917 - transcriptx - INFO - Running pauses analysis
+
+────────────────────────────────────────────────────────────
+PAUSES
+────────────────────────────────────────────────────────────
+ Running Silence and Timing Analysis...
+2026-08-07 13:34:08,918 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:08,919 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,062 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Silence and Timing Analysis
+
+2026-08-07 13:34:09,063 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,063 - transcriptx - INFO - pauses completed in 0.14s
+2026-08-07 13:34:09,063 - transcriptx - INFO - Running momentum analysis
+
+────────────────────────────────────────────────────────────
+MOMENTUM
+────────────────────────────────────────────────────────────
+ Running Stall/Flow Index Analysis...
+2026-08-07 13:34:09,064 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,064 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,217 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Stall/Flow Index Analysis
+
+2026-08-07 13:34:09,218 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,218 - transcriptx - INFO - momentum completed in 0.15s
+2026-08-07 13:34:09,218 - transcriptx - INFO - Running moments analysis
+
+────────────────────────────────────────────────────────────
+MOMENTS
+────────────────────────────────────────────────────────────
+ Running Ranked Moments Worth Revisiting...
+2026-08-07 13:34:09,219 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,220 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,226 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Ranked Moments Worth Revisiting
+
+2026-08-07 13:34:09,227 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,227 - transcriptx - INFO - moments completed in 0.01s
+2026-08-07 13:34:09,227 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+STATS
+────────────────────────────────────────────────────────────
+ Running Statistical Analysis...
+2026-08-07 13:34:09,228 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,228 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,242 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Statistical Analysis
+
+2026-08-07 13:34:09,243 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,243 - transcriptx - INFO - stats completed in 0.01s
+2026-08-07 13:34:09,243 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+TICS
+────────────────────────────────────────────────────────────
+ Running Verbal Tics Analysis...
+2026-08-07 13:34:09,244 - transcriptx - INFO - Starting tics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,244 - transcriptx - INFO - Starting tics analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,367 - transcriptx - INFO - Completed tics analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Verbal Tics Analysis
+
+2026-08-07 13:34:09,368 - transcriptx - INFO - Completed tics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,368 - transcriptx - INFO - tics completed in 0.12s
+2026-08-07 13:34:09,368 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+ Running Shared content-vs-style insight eligibility pipeline...
+2026-08-07 13:34:09,369 - transcriptx - INFO - Starting insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,370 - transcriptx - INFO - Starting insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,468 - transcriptx - INFO - Completed insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-07 13:34:09,469 - transcriptx - INFO - Completed insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,470 - transcriptx - INFO - insight_eligibility completed in 0.10s
+2026-08-07 13:34:09,470 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+HIGHLIGHTS
+────────────────────────────────────────────────────────────
+ Running Highlights and conflict moments (quote-forward)...
+2026-08-07 13:34:09,471 - transcriptx - INFO - Starting highlights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,471 - transcriptx - INFO - Starting highlights analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,517 - transcriptx - INFO - Completed highlights analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-07 13:34:09,518 - transcriptx - INFO - Completed highlights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,518 - transcriptx - INFO - highlights completed in 0.05s
+2026-08-07 13:34:09,518 - transcriptx - INFO - Running keyphrases analysis
+
+────────────────────────────────────────────────────────────
+KEYPHRASES
+────────────────────────────────────────────────────────────
+ Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
+2026-08-07 13:34:09,519 - transcriptx - INFO - Starting keyphrases analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:09,519 - transcriptx - INFO - Starting keyphrases analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:10,443 - transcriptx - INFO - Completed keyphrases analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
+
+2026-08-07 13:34:10,444 - transcriptx - INFO - Completed keyphrases analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:10,444 - transcriptx - INFO - keyphrases completed in 0.92s
+2026-08-07 13:34:10,444 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+SUMMARY
+────────────────────────────────────────────────────────────
+ Running Executive brief summary derived from highlights...
+2026-08-07 13:34:10,445 - transcriptx - INFO - Starting summary analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:10,445 - transcriptx - INFO - Starting summary analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:10,730 - transcriptx - INFO - Saved all-charts PDF to /mnt/outputs/_deep_test_mini_probe/20260807_133408_09648694/summary/all_charts.pdf (3 modules, 3 charts)
+2026-08-07 13:34:10,730 - transcriptx - INFO - Completed summary analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Executive brief summary derived from highlights
+
+2026-08-07 13:34:10,732 - transcriptx - INFO - Completed summary analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:10,732 - transcriptx - INFO - summary completed in 0.29s
+2026-08-07 13:34:10,732 - transcriptx - INFO - Pipeline completed. Ran 9 modules with 0 errors
+2026-08-07 13:34:10,739 - transcriptx - INFO - Saved run results summary to /mnt/outputs/_deep_test_mini_probe/20260807_133408_09648694/run_results.json
+2026-08-07 13:34:10,748 - transcriptx - INFO - Saved output manifest to /mnt/outputs/_deep_test_mini_probe/20260807_133408_09648694/manifest.json
+2026-08-07 13:34:10,769 - transcriptx - INFO - Saved run manifest to /mnt/outputs/_deep_test_mini_probe/20260807_133408_09648694/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: _deep_test_mini_probe
+📂 Output Directory: /mnt/outputs/_deep_test_mini_probe/20260807_133408_09648694
+🔄 Analysis Status: 9/5 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (5):
+--------------------------------------------------
+
+✅ STATS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133408_09648694/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ SUMMARY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133408_09648694/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_summary.json (6.4 KB)
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133408_09648694/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_highlights.json (22.3 KB)
+
+✅ KEYPHRASES
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133408_09648694/keyphrases
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_keyphrases.json (39.5 KB)
+      • data/global/_deep_test_mini_probe_keyphrases_summary.json (1.2 KB)
+      • data/global/_deep_test_mini_probe_keyphrases.csv (8.4 KB)
+
+✅ MOMENTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133408_09648694/moments
+   📄 Files: 3
+   📂 Subdirectories: 4
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_moments_summary.json (0.9 KB)
+      • data/global/moments.stats.json (0.0 KB)
+      • data/global/moments.events.json (0.0 KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (5.4 KB)
+   • report.md (0.4 KB)
+   • run_results.json (1.2 KB)
+   • report.txt (0.4 KB)
+   • manifest.json (23.8 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 11
+   • Total output size: 0.3 MB
+   • Successful modules: 5
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  /mnt/outputs/_deep_test_mini_probe/20260807_133408_09648694
+  Executed:
+    • highlights
+    • insight_eligibility
+    • keyphrases
+    • moments
+    • momentum
+    • pauses
+    • stats
+    • summary
+    • tics
+  To explore results: open the web interface
+---
+
+2026-08-07 13:34:10,788 - transcriptx - INFO - Pipeline completed for /mnt/transcripts/_deep_test_mini_probe.json - Successfully ran: pauses, momentum, moments, stats, tics, insight_eligibility, highlights, keyphrases, summary
+2026-08-07 13:34:10,796 - transcriptx - INFO - Starting analysis pipeline for /mnt/transcripts/simple.json with modules: stats, summary, highlights, keyphrases, moments
+BATCH_SUCCESS False
+BATCH_ERRORS ['simple.json: Cannot register non-managed transcript: missing_sidecar (Missing import sidecar for transcript: simple.json)']
+BATCH_MSG Processed 2 transcript(s), 1 succeeded
+BATCH_RUNS 1
+BATCH_STAGE_PCTS [None, None]
+BATCH_LOGS ['Analyzing _deep_test_mini_probe.json', 'Running modules: stats, summary, highlights, keyphrases, moments', 'Analyzing simple.json', 'Running modules: stats, summary, highlights, keyphrases, moments']
+Traceback (most recent call last):
+  File "<stdin>", line 54, in <module>
+AssertionError: ['simple.json: Cannot register non-managed transcript: missing_sidecar (Missing import sidecar for transcript: simple.json)']
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              2026-08-07 13:34:01,240 - transcriptx - INFO - [CHART_DESCRIPTIONS] 5/129 viz_id=affect_tension.mismatch_rate.global chart_key=0fe218daf688876286930c23d086a3641651647a6136ce531608f20e2aa12713 timeout=120s
+2026-08-07 13:34:09,600 - transcriptx - INFO - [CHART_DESCRIPTIONS] 6/129 viz_id=acts.acts_pie.speaker chart_key=13ca467210c406ebbee7c93d9790d757c564c61a105d12758f4ae604e6d84618 timeout=120s
+2026-08-07 13:34:15,244 - transcriptx - INFO - [CHART_DESCRIPTIONS] 7/129 viz_id=wordclouds.wordcloud-bigrams-ALL.view chart_key=1a7d17267dafefa885ed8537cf7713a67004f1a56b8c6232089c9e1bc5413920 timeout=120s
+2026-08-07 13:34:21,508 - transcriptx - INFO - [CHART_DESCRIPTIONS] 8/129 viz_id=interactions.equity.summary.global chart_key=1b2a14d6628ad22db12a5c4126360a40cd2e6abb20dfa9cc154a503ee72bf9bf timeout=120s
+2026-08-07 13:34:31,186 - transcriptx - INFO - [CHART_DESCRIPTIONS] 9/129 viz_id=acts.acts_bar.speaker chart_key=1bfcd31fba19351aa4c55b0106ee65b725530ed69910c23745179ab725d4cc2e timeout=120s
+2026-08-07 13:34:39,031 - transcriptx - INFO - [CHART_DESCRIPTIONS] 10/129 viz_id=fine_grained_emotion.label_counts.speaker chart_key=1fdcc9baa4cf9b83cd94de480141e9f4da59ff7eeb9c300189b294e4a2a1029c timeout=120s
+2026-08-07 13:34:47,407 - transcriptx - INFO - [CHART_DESCRIPTIONS] 11/129 viz_id=wordcloud.wordcloud.global.keyphrases_keybert chart_key=20ce48d504b029163d34be6bed9a4a1fede4d70dff6f2efe2dd5b5476f0c8581 timeout=120s
+2026-08-07 13:34:55,548 - transcriptx - INFO - [CHART_DESCRIPTIONS] 12/129 viz_id=wordcloud.wordcloud.global.keyphrases_yake chart_key=2181e3104ba235872f7caa39249f2fc5263b68e5de4e92c5f46d8e48bd42dbfc timeout=120s
+2026-08-07 13:35:04,405 - transcriptx - INFO - [CHART_DESCRIPTIONS] 13/129 viz_id=lexical_diversity.ttr.speaker chart_key=23c7dd9eb3c28feefd785dcb19d4229ace3be72980fe42d7695f54d38b2ed24e timeout=120s
+2026-08-07 13:35:13,025 - transcriptx - INFO - [CHART_DESCRIPTIONS] 14/129 viz_id=acts.acts_pie.speaker chart_key=24aa6563e4ff5a1d9a16dacdfce02c8af1ee4ffaf185b0bae0ae09a6a94ed833 timeout=120s
+2026-08-07 13:35:20,191 - transcriptx - INFO - [CHART_DESCRIPTIONS] 15/129 viz_id=topic_modeling.lda_topic_word_heatmap.global chart_key=2aa1430d5252a1c711759c3d26889b1fd96d2615353b2684a865ca5e071ff5e4 timeout=120s
+2026-08-07 13:35:28,468 - transcriptx - INFO - [CHART_DESCRIPTIONS] 16/129 viz_id=understandability.structure-bars.global chart_key=2d788fe55b8b696cef8556c85e10f47add2519a7dbb0caf9a862a763b16477b5 timeout=120s
+2026-08-07 13:35:36,237 - transcriptx - INFO - [CHART_DESCRIPTIONS] 17/129 viz_id=topic_modeling.nmf_topic_word_heatmap.global chart_key=30e2e56278e2ffdbdc5819d1c1aac9dd613e2908f1a7d63d8b3e5d663c7ff786 timeout=120s
+2026-08-07 13:36:13,306 - transcriptx - INFO - [CHART_DESCRIPTIONS] 18/129 viz_id=interactions.heatmap_responses.global chart_key=319800157d1ad1ddb7846d3b6af3b7551e529c1dd3fb7baf4cffd89e1da4ecf8 timeout=120s
+2026-08-07 13:36:20,327 - transcriptx - INFO - [CHART_DESCRIPTIONS] 19/129 viz_id=wordclouds.wordcloud-adj-ALL.view chart_key=31bccc3b5506e34f6fc6874584ad9777d8585dfbeffd27f8b241aaa72df55c28 timeout=120s
+2026-08-07 13:36:27,307 - transcriptx - INFO - [CHART_DESCRIPTIONS] 20/129 viz_id=wordclouds.wordcloud.global chart_key=31e2fb15c691cd57eee597b86b0bcbfbe6c1834756004f53833bcd59dd612195 timeout=120s
+2026-08-07 13:36:34,405 - transcriptx - INFO - [CHART_DESCRIPTIONS] 21/129 viz_id=acts.acts_temporal.speaker chart_key=37102e7a9d8520f45cf00427dd71e694529c1b7d6fc6052c454d0dcd32f70cdf timeout=120s
+2026-08-07 13:36:42,094 - transcriptx - INFO - [CHART_DESCRIPTIONS] 22/129 viz_id=temporal_dynamics.temporal_dashboard.global chart_key=39b9a2760a598778563ddd6fca4772aee08a16ca94b416c1b3d6d94f52f7f2b3 timeout=120s
+2026-08-07 13:36:49,580 - transcriptx - INFO - [CHART_DESCRIPTIONS] 23/129 viz_id=interactions.dominance.global chart_key=3c529f7d70f7b07f6bd1118ee291fa694763303f73d4e33c26afabd5084c3574 timeout=120s
+2026-08-07 13:36:58,830 - transcriptx - INFO - [CHART_DESCRIPTIONS] 24/129 viz_id=acts.global_acts_bar.global chart_key=3d0268c765d96da0fd6e3381cebc072d08cf3703b6f9da99e116e727bc580168 timeout=120s
+2026-08-07 13:37:07,242 - transcriptx - INFO - [CHART_DESCRIPTIONS] 25/129 viz_id=acts.acts_bar.speaker chart_key=40f60116fb3dc51d2a9a91a4ea3b7373045a257495e8978da483c3dc91431d97 timeout=120s
+2026-08-07 13:37:13,949 - transcriptx - INFO - [CHART_DESCRIPTIONS] 26/129 viz_id=acts.acts_temporal.speaker chart_key=416f0dda580408020d95ce59884b57429502aa8e282d8b68065974e68af13a30 timeout=120s
+2026-08-07 13:37:20,976 - transcriptx - INFO - [CHART_DESCRIPTIONS] 27/129 viz_id=temporal_dynamics.engagement_timeseries.global chart_key=44299bc6b9652105b343f9dda5e52e7ca0615a40e2567bc3a72e8fc8d49896b5 timeout=120s
+2026-08-07 13:37:28,633 - transcriptx - INFO - [CHART_DESCRIPTIONS] 28/129 viz_id=understandability.readability-indices-bars.global chart_key=461a8994e9e7a1fdf5a321f2d8ac82850b9b3ddb947a7cba440aa86a944f31ea timeout=120s
+2026-08-07 13:37:38,037 - transcriptx - INFO - [CHART_DESCRIPTIONS] 29/129 viz_id=interactions.timeline.speaker chart_key=4637ad963a7ad2fa30751b22f4692a39513c803309937c5e9cb4adc47bee264f timeout=120s
+2026-08-07 13:37:46,646 - transcriptx - INFO - [CHART_DESCRIPTIONS] 30/129 viz_id=affect_tension.avg_volatility.global chart_key=49d6c49a50b1d1fcbccdf7cd77117161963f63a2632d8c49e0a1b14079298a96 timeout=120s
+2026-08-07 13:37:56,599 - transcriptx - INFO - [CHART_DESCRIPTIONS] 31/129 viz_id=wordclouds.wordcloud-keyphrases-keybert-ALL.view chart_key=4a8a6ba135f705766a5ee7ea0b0cfd64991a32c217bd32db56880747cc06b0bd timeout=120s
+2026-08-07 13:38:04,098 - transcriptx - INFO - [CHART_DESCRIPTIONS] 32/129 viz_id=qa_analysis.response_quality.global chart_key=4bc87b8e2cb6ecd7f8017440319359c65ba765d6d6fdc0dae02c48b86032db3e timeout=120s
+2026-08-07 13:38:12,168 - transcriptx - INFO - [CHART_DESCRIPTIONS] 33/129 viz_id=wordclouds.wordcloud-bigrams.view.Alice chart_key=4dcd900e31560c0269413a25cf3f71cdf3c4839fb44b342e74dcdf3ae368be60 timeout=120s
+2026-08-07 13:38:17,743 - transcriptx - INFO - [CHART_DESCRIPTIONS] 34/129 viz_id=contextual_emotion.label_counts_excluding_neutral.global chart_key=50de1d87b0a9cba8159e3ad197af9ee532400b6fa43ff97e638f130c71d9a78b timeout=120s
+2026-08-07 13:38:25,139 - transcriptx - INFO - [CHART_DESCRIPTIONS] 35/129 viz_id=sentiment.rolling_sentiment.speaker chart_key=511b4a37338100ec2e5e4d61afd0f10250b9b72568c59aa240f8e9da4f594b9a timeout=120s
+2026-08-07 13:38:32,402 - transcriptx - INFO - [CHART_DESCRIPTIONS] 36/129 viz_id=fine_grained_emotion.label_counts_excluding_neutral.speaker chart_key=53764bb8ac66f8dfd0fa2125233da7ab6da915cc4acc1f81a4846cff58766132 timeout=120s
+2026-08-07 13:38:38,358 - transcriptx - INFO - [CHART_DESCRIPTIONS] 37/129 viz_id=wordcloud.wordcloud.speaker.verb chart_key=5382d6154186aca789395609d63d25d673075448deb1dde70b81506268690582 timeout=120s
+2026-08-07 13:38:45,178 - transcriptx - INFO - [CHART_DESCRIPTIONS] 38/129 viz_id=qa_analysis.response_time_analysis.global chart_key=54145e3f31549e0376b1480a2b548b3778454d2b967c75446af79e5352ae47b5 timeout=120s
+2026-08-07 13:38:53,375 - transcriptx - INFO - [CHART_DESCRIPTIONS] 39/129 viz_id=wordclouds.wordcloud.view.Bob chart_key=54686de711560543b80f71891f6139cda4e9491aa8702ce1d992a2f81f004bf1 timeout=120s
+2026-08-07 13:39:00,130 - transcriptx - INFO - [CHART_DESCRIPTIONS] 40/129 viz_id=fine_grained_emotion.label_counts_excluding_neutral.global chart_key=5528335d7c1d542064ef38300562b482ab259235e350a26f58e9af0fc55de83d timeout=120s
+2026-08-07 13:39:09,841 - transcriptx - INFO - [CHART_DESCRIPTIONS] 41/129 viz_id=interactions.timeline.speaker chart_key=5adbebc84a34f7b7d1cb9869216cfc6abd3e508f7690090075b0115b8899e74c timeout=120s
+2026-08-07 13:39:16,615 - transcriptx - INFO - [CHART_DESCRIPTIONS] 42/129 viz_id=interactions.network_graph.global chart_key=5f07ec093534c5f2f335eae2e88239bedf26ef8d6b13db3187f1ad515d58e362 timeout=120s
+2026-08-07 13:39:22,652 - transcriptx - INFO - [CHART_DESCRIPTIONS] 43/129 viz_id=ner.entity_types.speaker chart_key=625b1442a6258e1f670830d9a2fe2fa89551571441bee96210ba122aa540e3d1 timeout=120s
+2026-08-07 13:39:28,092 - transcriptx - INFO - [CHART_DESCRIPTIONS] 44/129 viz_id=contextual_emotion.label_counts.speaker chart_key=62f359246f7ece5b1e02f4f4c168556f3290446f98de13abee028af7cb1b0afa timeout=120s
+2026-08-07 13:39:34,102 - transcriptx - INFO - [CHART_DESCRIPTIONS] 45/129 viz_id=wordcloud.wordcloud.global.tfidf chart_key=6517c32868e6bc0e1ca34567c5e92d09a0f0de8e78e2ca94504da581f38baa5f timeout=120s
+2026-08-07 13:39:43,156 - transcriptx - INFO - [CHART_DESCRIPTIONS] 46/129 viz_id=understandability.word-count-bars.global chart_key=65b1a26099be882811a8aa0d831e97c5f2f3ceb61b60719575e4127ed69dac94 timeout=120s
+2026-08-07 13:39:49,954 - transcriptx - INFO - [CHART_DESCRIPTIONS] 47/129 viz_id=interactions.equity.floor.global chart_key=696f14841a565068588307482d0672e7b84f546fa2e3dc6cd0aff9d13d2cc875 timeout=120s
+2026-08-07 13:39:56,816 - transcriptx - INFO - [CHART_DESCRIPTIONS] 48/129 viz_id=acts.global_acts_pie.global chart_key=6bf5c471d05edce55be7116c2cae9dad74c7fdca1b0c60069cf1f64e4e8de8be timeout=120s
+2026-08-07 13:40:03,245 - transcriptx - INFO - [CHART_DESCRIPTIONS] 49/129 viz_id=lexical_diversity.mtld.speaker chart_key=6db31cdba67a5794ab30c71b2629268532bd6791608643ab55f4d52d96f0c4ff timeout=120s
+2026-08-07 13:40:10,000 - transcriptx - INFO - [CHART_DESCRIPTIONS] 50/129 viz_id=lexical_diversity.hapax_rate.speaker chart_key=6f04f8ad8e639ce2f5d22621a1a71878304077ef7d3031e4519588613bba59eb timeout=120s
+2026-08-07 13:40:16,711 - transcriptx - INFO - [CHART_DESCRIPTIONS] 51/129 viz_id=wordcloud.wordcloud.speaker.noun chart_key=702aaf5824a99b8fb3b3c3e76c7f2a2fdcb3010d846186c6f41fdab17a8893cf timeout=120s
+2026-08-07 13:40:23,329 - transcriptx - INFO - [CHART_DESCRIPTIONS] 52/129 viz_id=affect_tension.derived_polite_tension.global chart_key=70586d9c257ef791d4bba0f1472b352f7f122013aa2ecff6f7201854fed63033 timeout=120s
+2026-08-07 13:40:31,181 - transcriptx - INFO - [CHART_DESCRIPTIONS] 53/129 viz_id=temporal_dynamics.temporal_dashboard_speaking_rate.global chart_key=70c1709f5751d7c08cc39c89166004e05ea778c152ea4885ceda0c971dbf9cc0 timeout=120s
+2026-08-07 13:40:37,581 - transcriptx - INFO - [CHART_DESCRIPTIONS] 54/129 viz_id=wordclouds.wordcloud-adj.view.Alice chart_key=7254a3aa025f87246d5d9bf96cfcd89f30e1c66a05b7fcdf998734fdd1627edb timeout=120s
+2026-08-07 13:40:40,317 - transcriptx - INFO - [CHART_DESCRIPTIONS] 55/129 viz_id=wordcloud.wordcloud.speaker.adj chart_key=72c143ffad6cec65165bd2775246d286fd0d6d2f147b1d72f4f41ef5d372ff79 timeout=120s
+2026-08-07 13:40:43,991 - transcriptx - INFO - [CHART_DESCRIPTIONS] 56/129 viz_id=politeness.category_rates.speaker chart_key=7362c822e2b1f7aa4452e02edd90b79906d6080ec573f222f537b8cf951253d2 timeout=120s
+2026-08-07 13:40:48,453 - transcriptx - INFO - [CHART_DESCRIPTIONS] 57/129 viz_id=wordclouds.wordcloud-noun.view.Bob chart_key=76fae0beaae00b87e6b39f3cb3b12c8e398ed8397950c4c1f5def76d257704cd timeout=120s
+2026-08-07 13:40:51,540 - transcriptx - INFO - [CHART_DESCRIPTIONS] 58/129 viz_id=contextual_emotion.label_counts.global chart_key=780f42216aab7e2a688e60b57ad7089a425001b7ca725cd890e81da3e71f8a49 timeout=120s
+2026-08-07 13:40:55,350 - transcriptx - INFO - [CHART_DESCRIPTIONS] 59/129 viz_id=sentiment.multi_speaker_sentiment.global chart_key=7bd3414c8cde5b7abfe04202cf58b4ca01529911ee3168be7c080edf1e650495 timeout=120s
+2026-08-07 13:41:00,454 - transcriptx - INFO - [CHART_DESCRIPTIONS] 60/129 viz_id=wordcloud.wordcloud.speaker.tics chart_key=7c2bcd4d4250659ee15e6c98861391ccd32a1b574160cbca4327a2e187ca8754 timeout=120s
+2026-08-07 13:41:04,277 - transcriptx - INFO - [CHART_DESCRIPTIONS] 61/129 viz_id=wordclouds.wordcloud-verb.view.Bob chart_key=7d2eae052adc08bf8f4884f77e3801b31df88fe36c1f49560c9482e1e42bc027 timeout=120s
+2026-08-07 13:41:07,103 - transcriptx - INFO - [CHART_DESCRIPTIONS] 62/129 viz_id=affect_tension.derived_suppressed_conflict.global chart_key=7ecb212fe35bbde48357668eec7a0fa1e6f8db55bd80a7d47a93d5e7b21c9de6 timeout=120s
+2026-08-07 13:41:10,993 - transcriptx - INFO - [CHART_DESCRIPTIONS] 63/129 viz_id=interactions.timeline.global chart_key=7f07f330f7ca2050666265cb6bea89abc1958675236526fc8a99d4b30612d2b7 timeout=120s
+2026-08-07 13:41:15,301 - transcriptx - INFO - [CHART_DESCRIPTIONS] 64/129 viz_id=contextual_emotion.label_counts_excluding_neutral.speaker chart_key=7f61a51246a9c9cc45338a43609c2f6233470331fbe64eadd1ebf7250d4fbac3 timeout=120s
+2026-08-07 13:41:18,195 - transcriptx - INFO - [CHART_DESCRIPTIONS] 65/129 viz_id=pauses.pauses_hist.global chart_key=7fdce8b4fcfed2c524bbb74d2cef455a90e3d30dcd546f91bc15e09bb8156b09 timeout=120s
+2026-08-07 13:41:22,782 - transcriptx - INFO - [CHART_DESCRIPTIONS] 66/129 viz_id=wordcloud.wordcloud.speaker.tfidf chart_key=80d0949ad1d9a78cf9f962b96111c274f191e868e70460360677f912ca54595d timeout=120s
+2026-08-07 13:41:28,207 - transcriptx - INFO - [CHART_DESCRIPTIONS] 67/129 viz_id=affect_tension.mismatch_heatmap.global chart_key=813e4dc8781e0a0dfa1228df70e59bd669d003c78453c129a8f811c0088dd605 timeout=120s
+2026-08-07 13:41:33,130 - transcriptx - INFO - [CHART_DESCRIPTIONS] 68/129 viz_id=affect_tension.entropy_volatility_timeseries.global chart_key=82e81448e23fb1a849e4e026aa6a4099ea81939bf4b23b442a362793fc845d4c timeout=120s
+2026-08-07 13:41:37,642 - transcriptx - INFO - [CHART_DESCRIPTIONS] 69/129 viz_id=sentiment.rolling_sentiment.speaker chart_key=84b8e9b01466ab34725440a49de3f60121723e7e238ed5551051aca50201f47a timeout=120s
+2026-08-07 13:41:42,259 - transcriptx - INFO - [CHART_DESCRIPTIONS] 70/129 viz_id=affect_tension.mismatch_timeseries.global chart_key=85410ec67bacdb6eb04863e7413f0e4b4c8cdf12f5ef9b823d0cf3b10beaf70b timeout=120s
+2026-08-07 13:41:46,662 - transcriptx - INFO - [CHART_DESCRIPTIONS] 71/129 viz_id=affect_tension.entropy_volatility_timeseries.speaker chart_key=85b30e61ab7e4423c800df8fd0b5608cd5fd2c3a068d9b6b95714a33ef7dee2e timeout=120s
+2026-08-07 13:41:51,290 - transcriptx - INFO - [CHART_DESCRIPTIONS] 72/129 viz_id=fine_grained_emotion.label_counts.global chart_key=8a944cb2027b444e5375db10aa055237aaa163379f3528c12674ccb6a849f382 timeout=120s
+2026-08-07 13:41:55,784 - transcriptx - INFO - [CHART_DESCRIPTIONS] 73/129 viz_id=wordclouds.wordcloud-noun.view.Alice chart_key=8afd15d00542a0c95e2bf3bfffceb8dbc209b8515fef63c23eddc11fa532622e timeout=120s
+2026-08-07 13:41:58,995 - transcriptx - INFO - [CHART_DESCRIPTIONS] 74/129 viz_id=fine_grained_emotion.label_counts_excluding_neutral.speaker chart_key=8ea107d22def2ab0faba92bcf5ad32361b9739b48008360feaec85b7d8714211 timeout=120s
+2026-08-07 13:42:01,914 - transcriptx - INFO - [CHART_DESCRIPTIONS] 75/129 viz_id=ner.entity_types.global chart_key=8ec8fc99d7f0753c4105478945566060566d6e603e608e18518cb6fcabb0199e timeout=120s
+2026-08-07 13:42:05,736 - transcriptx - INFO - [CHART_DESCRIPTIONS] 76/129 viz_id=qa_analysis.qa_timeline.global chart_key=9053eb56226a9bacfc9e0688515f507c342c8c4d13e90f517e1e3cd35d2d7525 timeout=120s
+2026-08-07 13:42:09,928 - transcriptx - INFO - [CHART_DESCRIPTIONS] 77/129 viz_id=wordcloud.wordcloud.speaker.bigrams chart_key=9724ef5167dcd8b75ad08a19202e57f8f2b58c2f367b7f7b95c86382ae111c03 timeout=120s
+2026-08-07 13:42:14,354 - transcriptx - INFO - [CHART_DESCRIPTIONS] 78/129 viz_id=wordcloud.wordcloud.speaker.adj chart_key=98402351388b74780641f57ff0198835a177f2ee2ba8747ec88cc2408cefabeb timeout=120s
+2026-08-07 13:42:17,898 - transcriptx - INFO - [CHART_DESCRIPTIONS] 79/129 viz_id=wordclouds.wordcloud.speaker chart_key=98e0a78eaedf11367f6f08e7c28a2875cf475f2eeebdb70711ecaa237dd7866c timeout=120s
+2026-08-07 13:42:22,546 - transcriptx - INFO - [CHART_DESCRIPTIONS] 80/129 viz_id=topic_modeling.topic_evolution_timeline.global chart_key=9a2a95a1d60cabaf48aedf8a62b6a8405b0f1ab9278ae035b4d91e07cb23eed4 timeout=120s
+2026-08-07 13:42:26,931 - transcriptx - INFO - [CHART_DESCRIPTIONS] 81/129 viz_id=wordclouds.wordcloud-adj.view.Bob chart_key=9b2079988d7e3ef7524036f3e58c8dbbafdfcd22657b0802b452738a0c6fbbf7 timeout=120s
+2026-08-07 13:42:30,091 - transcriptx - INFO - [CHART_DESCRIPTIONS] 82/129 viz_id=interactions.network.global chart_key=9c889b5236cb7dc7dbb856871155dba8a62d18d39b73f331d35a4cb818ebcf93 timeout=120s
+2026-08-07 13:42:34,085 - transcriptx - INFO - [CHART_DESCRIPTIONS] 83/129 viz_id=politeness.category_rates.speaker chart_key=9e1e890b7e954b7b6212dff73f04515c036d6e81cab6f58b6a8eefa4a21a129b timeout=120s
+2026-08-07 13:42:37,371 - transcriptx - INFO - [CHART_DESCRIPTIONS] 84/129 viz_id=interactions.heatmap_interruptions.global chart_key=9ec696b65faace515be9cc37ae9d445159e1c8e09d791f2835cde5a9c3ed98e7 timeout=120s
+2026-08-07 13:42:41,272 - transcriptx - INFO - [CHART_DESCRIPTIONS] 85/129 viz_id=wordcloud.wordcloud.speaker.tfidf_bigrams chart_key=9f72c639a9e15975b48e624725e52da8df9cf51d94c7e1c300f2099dc5526101 timeout=120s
+2026-08-07 13:42:47,308 - transcriptx - INFO - [CHART_DESCRIPTIONS] 86/129 viz_id=fine_grained_emotion.label_share_non_neutral.speaker chart_key=a06db4bb484359351ece13346edf971166514c4b9c6dd355fdc76bb104e7dbde timeout=120s
+2026-08-07 13:42:50,578 - transcriptx - INFO - [CHART_DESCRIPTIONS] 87/129 viz_id=momentum.momentum.global chart_key=a3f051460924d454703ad11f965baffea808556abf4455ecc3078b212668dbd9 timeout=120s
+2026-08-07 13:42:54,499 - transcriptx - INFO - [CHART_DESCRIPTIONS] 88/129 viz_id=wordcloud.wordcloud.speaker.noun chart_key=a71e121d5d9ba44308345013c688acf14f2ab5bc667961f2fa4ec72ca98445d4 timeout=120s
+2026-08-07 13:42:57,947 - transcriptx - INFO - [CHART_DESCRIPTIONS] 89/129 viz_id=wordclouds.wordcloud-verb-ALL.global chart_key=b3cf643635df108c0c56a778b8b44bc9bcebe4597d56d381799cb491ade4e157 timeout=120s
+2026-08-07 13:43:01,567 - transcriptx - INFO - [CHART_DESCRIPTIONS] 90/129 viz_id=wordclouds.wordcloud-noun-ALL.global chart_key=b54e8c437b2b80513cb689b5b6cc9e020f1892e063fd8bd64ed146460b5811b8 timeout=120s
+2026-08-07 13:43:05,689 - transcriptx - INFO - [CHART_DESCRIPTIONS] 91/129 viz_id=affect_tension.derived_institutional_tone.global chart_key=b827c2fc617df01055bf9396befecb37ff38461c754d4ebf5921b0fd126d6c93 timeout=120s
+2026-08-07 13:43:09,745 - transcriptx - INFO - [CHART_DESCRIPTIONS] 92/129 viz_id=wordcloud.wordcloud.speaker.verb chart_key=b9d45408ee62f29d7399c6ab258be557a731fca77af65e10e43e17753e6cf90a timeout=120s
+2026-08-07 13:43:13,205 - transcriptx - INFO - [CHART_DESCRIPTIONS] 93/129 viz_id=wordclouds.wordcloud-bigrams.view.Bob chart_key=b9f12aa07ec48cf62de929cd0469e1ca2377826da276ccf648e0bdbba85ee9a8 timeout=120s
+2026-08-07 13:43:16,355 - transcriptx - INFO - [CHART_DESCRIPTIONS] 94/129 viz_id=temporal_dynamics.sentiment_timeseries.global chart_key=bce2fad106c7ab9f37dffbcbe1c6ebf461df1ee6c8728ddca3553c7937e64d1b timeout=120s
+2026-08-07 13:43:19,823 - transcriptx - INFO - [CHART_DESCRIPTIONS] 95/129 viz_id=wordclouds.tfidf-bigrams.view.Bob chart_key=bd15d7a2632196f19e4c706fcf6a63f7557af4f78c37ecf2cd100aa02d00035c timeout=120s
+2026-08-07 13:43:23,226 - transcriptx - INFO - [CHART_DESCRIPTIONS] 96/129 viz_id=tics.tics.speaker chart_key=be13472c97b8dfd56c056331907654200311a264adab2bf51a6b7e619cf3d5f7 timeout=120s
+2026-08-07 13:43:26,164 - transcriptx - INFO - [CHART_DESCRIPTIONS] 97/129 viz_id=acts.acts_temporal_all.global chart_key=c377b579846b041784f9ffca13f0183b8bc2c590a99a04ab94e3b627f211a47b timeout=120s
+2026-08-07 13:43:30,520 - transcriptx - INFO - [CHART_DESCRIPTIONS] 98/129 viz_id=wordcloud.wordcloud.speaker.tfidf_bigrams chart_key=c4466ae18a459231b7f12c2135dcda30a3f73a6cd850e309ea913579dd03d3de timeout=120s
+2026-08-07 13:43:36,565 - transcriptx - INFO - [CHART_DESCRIPTIONS] 99/129 viz_id=wordclouds.wordcloud.view chart_key=c554e78adbb0b8a094c477f4f4d5a12abbd664fcb6d0895fa6088990012e0fc2 timeout=120s
+2026-08-07 13:43:39,513 - transcriptx - INFO - [CHART_DESCRIPTIONS] 100/129 viz_id=affect_tension.entropy_volatility_timeseries.speaker chart_key=c68c5495512aa1d58081084ffab52080da9a27195536bd394ca473bf8a229fb7 timeout=120s
+2026-08-07 13:43:43,694 - transcriptx - INFO - [CHART_DESCRIPTIONS] 101/129 viz_id=topic_shift.timeline.global chart_key=c6e3b0e4388e893b5f9fe9be5666c1961df37bb4acd76bfa22602e9878d59ca5 timeout=120s
+2026-08-07 13:43:46,740 - transcriptx - INFO - [CHART_DESCRIPTIONS] 102/129 viz_id=topic_modeling.speaker_topic_engagement_heatmap.global chart_key=c71cac8361fd18828ce6f7c09d34be738009655df345972197886f641f374597 timeout=120s
+2026-08-07 13:43:51,858 - transcriptx - INFO - [CHART_DESCRIPTIONS] 103/129 viz_id=contextual_emotion.label_share_non_neutral.global chart_key=cbb3e5c8f5e91cde25039c3b4a4b99ebfb8b331196641fa8c1eae9ae96f20d78 timeout=120s
+2026-08-07 13:43:54,816 - transcriptx - INFO - [CHART_DESCRIPTIONS] 104/129 viz_id=ner.entity_types.speaker chart_key=ccc3ec54e836ff492e22b25a02fa3d5fd9cef481ab8d912b24d286eb18e0d1d5 timeout=120s
+2026-08-07 13:43:58,435 - transcriptx - INFO - [CHART_DESCRIPTIONS] 105/129 viz_id=contagion.contagion_matrix.global chart_key=ce02f4f597caa70d76774d298d82aa8cc6b182114e1ecff057f2c5f8e0dcc5a6 timeout=120s
+2026-08-07 13:44:02,495 - transcriptx - INFO - [CHART_DESCRIPTIONS] 106/129 viz_id=contextual_emotion.label_counts.speaker chart_key=d05e8059018d82dec02dce999baf3d975fcaf388940c330bd4f9471c36679201 timeout=120s
+2026-08-07 13:44:05,620 - transcriptx - INFO - [CHART_DESCRIPTIONS] 107/129 viz_id=wordclouds.tfidf-ALL.view chart_key=d06239eb28fc13a492f631dcff3f987c6494cf29ef95948b364bee0febb41561 timeout=120s
+2026-08-07 13:44:08,489 - transcriptx - INFO - [CHART_DESCRIPTIONS] 108/129 viz_id=epistemic_markers.category_rates.speaker chart_key=d074b5e1928564a6ebb181103849acf385f03648624ef07cdfba81b9f9288beb timeout=120s
+2026-08-07 13:44:16,781 - transcriptx - INFO - [CHART_DESCRIPTIONS] 109/129 viz_id=epistemic_markers.category_rates.speaker chart_key=d0cca9ae497a20bb531221a9162a496a7fa45bc9703eb18ef22cabe777124f19 timeout=120s
+2026-08-07 13:44:20,124 - transcriptx - INFO - [CHART_DESCRIPTIONS] 110/129 viz_id=fine_grained_emotion.label_counts.speaker chart_key=d619095a861df9234b3c609c9b5f49a49e9172479e8a28b50e7fe051ceccf710 timeout=120s
+2026-08-07 13:44:23,302 - transcriptx - INFO - [CHART_DESCRIPTIONS] 111/129 viz_id=wordclouds.wordcloud-noun-ALL.view chart_key=d632b877b1d6e5aef8321e99513184312632c1ca16c61269a596fff131bed332 timeout=120s
+2026-08-07 13:44:26,230 - transcriptx - INFO - [CHART_DESCRIPTIONS] 112/129 viz_id=wordclouds.tfidf.view.Alice chart_key=d7292c53422cc94cc198f86a4377c6632200a88e6a20ef13edbe4c58e690e33a timeout=120s
+2026-08-07 13:44:28,909 - transcriptx - INFO - [CHART_DESCRIPTIONS] 113/129 viz_id=wordclouds.wordcloud-tics.view.Bob chart_key=d9ee65f3f07351986972e10113a223e9dcc7baa3e68a1b67749c7b7e95e5ff17 timeout=120s
+2026-08-07 13:44:31,839 - transcriptx - INFO - [CHART_DESCRIPTIONS] 114/129 viz_id=wordclouds.wordcloud-bigrams-ALL.global chart_key=db14facf4b880d061854c486ea4d7f8cc82747ac083f86ab01a320e7a9e75e53 timeout=120s
+2026-08-07 13:44:36,424 - transcriptx - INFO - [CHART_DESCRIPTIONS] 115/129 viz_id=wordclouds.tfidf.view.Bob chart_key=dedaf3b206ae4f64fad64a848b1107736867bc4217010cbe7e711a9d4c87d17d timeout=120s
+2026-08-07 13:44:39,454 - transcriptx - INFO - [CHART_DESCRIPTIONS] 116/129 viz_id=wordcloud.wordcloud.speaker.tfidf chart_key=dff50e2e9c3ae3a9d35cf354b7ead459dadd9f7e1b74005a118f30bc68ecccc0 timeout=120s
+2026-08-07 13:44:44,327 - transcriptx - INFO - [CHART_DESCRIPTIONS] 117/129 viz_id=qa_analysis.question_type_breakdown.global chart_key=e1b6846661bc38970f90ec8b87a4f53b385fbc29d6fa36ca76009f6e4f346c0a timeout=120s
+2026-08-07 13:44:47,574 - transcriptx - INFO - [CHART_DESCRIPTIONS] 118/129 viz_id=wordcloud.wordcloud.speaker.bigrams chart_key=e325c3155e4dfc9b63a60b9140101f0397cd29bf11ebb006894cc039c1d49cf7 timeout=120s
+2026-08-07 13:44:52,016 - transcriptx - INFO - [CHART_DESCRIPTIONS] 119/129 viz_id=wordclouds.wordcloud-verb.view.Alice chart_key=e32b5b7491ef4a6c329fca92e76338e8a74dbc1622335d0da81ec7966e006fb7 timeout=120s
+2026-08-07 13:44:54,716 - transcriptx - INFO - [CHART_DESCRIPTIONS] 120/129 viz_id=contextual_emotion.label_share_non_neutral.speaker chart_key=e87ff0b93c320229c279d27c17e26bc4c737ad19d20ab3d7355a529f0a7f10f6 timeout=120s
+2026-08-07 13:44:57,742 - transcriptx - INFO - [CHART_DESCRIPTIONS] 121/129 viz_id=fine_grained_emotion.label_share_non_neutral.speaker chart_key=e984df1e037d1659136e9048c81a94569f56354d7990a5baebd71f10dd02b633 timeout=120s
+2026-08-07 13:45:01,272 - transcriptx - INFO - [CHART_DESCRIPTIONS] 122/129 viz_id=wordclouds.wordcloud.view.Alice chart_key=eae5a8d6a6eb0207c8802bfd5a0b97bea924e32b33d08b6e38425923ae1b9d41 timeout=120s
+2026-08-07 13:45:04,388 - transcriptx - INFO - [CHART_DESCRIPTIONS] 123/129 viz_id=topic_modeling.expected_topic_proportions.global chart_key=eb30ce6178a02272bc0f5e5c113f1c423005a3d438a9a6cd6b66e8075ef65b21 timeout=120s
+2026-08-07 13:45:07,584 - transcriptx - INFO - [CHART_DESCRIPTIONS] 124/129 viz_id=wordcloud.wordcloud.global.tfidf_bigrams chart_key=ec2f28d7d68c443950e9893aaab714ed7711c7c2eccae8a5360178f96f58369d timeout=120s
+2026-08-07 13:45:14,175 - transcriptx - INFO - [CHART_DESCRIPTIONS] 125/129 viz_id=wordclouds.wordcloud-adj-ALL.global chart_key=ee35a546956c300e264d36d01e3cdba25bc29058634c251507a797fbb94af5b2 timeout=120s
+2026-08-07 13:45:17,338 - transcriptx - INFO - [CHART_DESCRIPTIONS] 126/129 viz_id=wordclouds.wordcloud.speaker chart_key=ef910daf200b4838868ae751a40e09b6eec2275a7bb0a9f4516d77ffb4bc5e2a timeout=120s
+2026-08-07 13:45:21,682 - transcriptx - INFO - [CHART_DESCRIPTIONS] 127/129 viz_id=topic_modeling.discourse_analysis.global chart_key=f7d89830d98437a7991f52542717dcf2862b6dde19a0d31c47e7e79a1008f83a timeout=120s
+2026-08-07 13:45:27,394 - transcriptx - INFO - [CHART_DESCRIPTIONS] 128/129 viz_id=fine_grained_emotion.label_share_non_neutral.global chart_key=fbfcbca7f2e9573816b1caf6eb8738db799e91c99cd693d17e2b81f5fb9ff8ac timeout=120s
+2026-08-07 13:45:31,216 - transcriptx - INFO - [CHART_DESCRIPTIONS] 129/129 viz_id=wordclouds.tfidf-bigrams-ALL.view chart_key=fd8ae0c53d78066a9af837f1c1925804162d2d84c193dd35e3b26eaed2b92e60 timeout=120s
+2026-08-07 13:45:34,403 - transcriptx - INFO - Saved output manifest to /mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/manifest.json
+2026-08-07 13:45:34,407 - transcriptx - INFO - Saved run results summary to /mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/run_results.json
+2026-08-07 13:45:34,961 - transcriptx - INFO - Saved run manifest to /mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: _deep_test_mini_probe
+📂 Output Directory: /mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351
+🔄 Analysis Status: 42/42 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (42):
+--------------------------------------------------
+
+✅ ACTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/acts
+   📄 Files: 34
+   📂 Subdirectories: 32
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/temporal/acts_temporal.html (4745.0 KB)
+      • charts/speakers/Bob/dynamic/pie/acts_pie.html (4744.9 KB)
+      • charts/speakers/Bob/dynamic/bar/acts_bar.html (4744.9 KB)
+      • charts/speakers/Bob/static/temporal/acts_temporal.evidence.json (0.7 KB)
+      • charts/speakers/Bob/static/temporal/acts_temporal.png (99.4 KB)
+      • ... and 29 more files
+
+✅ CONVERSATION_LOOPS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/conversation_loops
+   📄 Files: 5
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_conversation_loops.json (1.7 KB)
+      • data/global/_deep_test_mini_probe_conversation_loops_summary.json (0.9 
+KB)
+      • data/global/_deep_test_mini_probe_conversation_loops.csv (0.0 KB)
+      • data/global/_deep_test_mini_probe_summary.txt (0.5 KB)
+      • data/global/_deep_test_mini_probe_summary.json (0.5 KB)
+
+✅ CONTAGION
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/contagion
+   📄 Files: 7
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/matrix/contagion_matrix.html (4745.2 KB)
+      • charts/global/static/matrix/contagion_matrix.png (83.6 KB)
+      • charts/global/static/matrix/contagion_matrix.evidence.json (0.7 KB)
+      • data/global/_deep_test_mini_probe_contagion_branches.json (1.8 KB)
+      • data/global/_deep_test_mini_probe_contagion_summary.json (1.4 KB)
+      • ... and 2 more files
+
+✅ EMOTION
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/emotion
+   📄 Files: 8
+   📂 Subdirectories: 4
+   📋 Key outputs:
+      • artifact_index.json (0.6 KB)
+      • generations/922250f16c2b46089ac7e882ce3673c1/generation_manifest.json 
+(1.5 KB)
+      • generations/922250f16c2b46089ac7e882ce3673c1/canonical_rows.json (0.0 
+KB)
+      • data/global/_deep_test_mini_probe_nrc_emotion_scores.csv (0.0 KB)
+      • data/global/_deep_test_mini_probe_nrc_emotion_scores.json (0.0 KB)
+      • ... and 3 more files
+
+✅ CONTEXTUAL_EMOTION
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/contextual_emotion
+   📄 Files: 29
+   📂 Subdirectories: 21
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • charts/speakers/Bob/dynamic/bar/contextual_emotion_label_counts.html 
+(4744.9 KB)
+      • 
+charts/speakers/Bob/static/bar/contextual_emotion_label_counts.evidence.json 
+(0.5 KB)
+      • charts/speakers/Bob/static/bar/contextual_emotion_label_counts.png (50.9
+KB)
+      • 
+charts/speakers/Alice/dynamic/bar/contextual_emotion_label_counts_excluding_neut
+ral.html (4744.9 KB)
+      • ... and 24 more files
+
+✅ FINE_GRAINED_EMOTION
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/fine_grained_emotion
+   📄 Files: 35
+   📂 Subdirectories: 21
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • 
+charts/speakers/Bob/dynamic/bar/fine_grained_native_label_share_non_neutral.html
+(4744.9 KB)
+      • 
+charts/speakers/Bob/dynamic/bar/fine_grained_native_label_prevalence.html 
+(4744.9 KB)
+      • 
+charts/speakers/Bob/dynamic/bar/fine_grained_native_label_prevalence_excluding_n
+eutral.html (4744.9 KB)
+      • 
+charts/speakers/Bob/static/bar/fine_grained_native_label_share_non_neutral.png 
+(80.2 KB)
+      • ... and 30 more files
+
+✅ ENTITY_SENTIMENT
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/entity_sentiment
+   📄 Files: 5
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_entity_sentiment.json (0.5 KB)
+      • data/global/_deep_test_mini_probe_entity_sentiment.csv (0.0 KB)
+      • data/global/_deep_test_mini_probe_summary.txt (0.3 KB)
+      • data/global/_deep_test_mini_probe_summary.json (0.2 KB)
+      • data/global/_deep_test_mini_probe_entity_sentiment_summary.json (0.9 KB)
+
+✅ AFFECT_TENSION
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/affect_tension
+   📄 Files: 35
+   📂 Subdirectories: 13
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/entropy_volatility_timeseries.html (4745.2 
+KB)
+      • charts/speakers/Bob/static/entropy_volatility_timeseries.evidence.json 
+(1.1 KB)
+      • charts/speakers/Bob/static/entropy_volatility_timeseries.png (116.7 KB)
+      • charts/speakers/Alice/dynamic/entropy_volatility_timeseries.html (4745.2
+KB)
+      • charts/speakers/Alice/static/entropy_volatility_timeseries.evidence.json
+(1.0 KB)
+      • ... and 30 more files
+
+✅ INTERACTIONS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/interactions
+   📄 Files: 35
+   📂 Subdirectories: 29
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/timeline/timeline.html (4745.4 KB)
+      • charts/speakers/Bob/static/timeline/timeline.evidence.json (1.3 KB)
+      • charts/speakers/Bob/static/timeline/timeline.png (97.9 KB)
+      • charts/speakers/Alice/dynamic/timeline/timeline.html (4745.4 KB)
+      • charts/speakers/Alice/static/timeline/timeline.evidence.json (1.3 KB)
+      • ... and 29 more files
+
+✅ NER
+   📁 Directory: /mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/ner
+   📄 Files: 22
+   📂 Subdirectories: 23
+   📋 Key outputs:
+      • maps/images/_deep_test_mini_probe-locations-ALL.png (69.7 KB)
+      • maps/images/_deep_test_mini_probe-locations-Bob.png (67.9 KB)
+      • maps/images/_deep_test_mini_probe-locations-Alice.png (67.7 KB)
+      • maps/html/_deep_test_mini_probe-locations-Alice.html (3.8 KB)
+      • maps/html/_deep_test_mini_probe-locations-Bob.html (3.8 KB)
+      • ... and 17 more files
+
+⚠️ SEMANTIC_SIMILARITY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/semantic_similarity
+   📄 Files: 4
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_semantic_similarity_clusters.json (0.2
+KB)
+      • data/global/_deep_test_mini_probe_semantic_similarity_summary.json (1.1 
+KB)
+      • data/global/_deep_test_mini_probe_semantic_similarity_repetitions.json 
+(29.1 KB)
+      • data/global/_deep_test_mini_probe_semantic_similarity_diagnostics.json 
+(1.1 KB)
+   ⚠️  Validation warnings: Required directory missing: charts/global
+
+✅ SENTIMENT
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/sentiment
+   📄 Files: 17
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/rolling_sentiment.html (4745.1 KB)
+      • charts/speakers/Bob/static/rolling_sentiment.evidence.json (0.8 KB)
+      • charts/speakers/Bob/static/rolling_sentiment.png (116.3 KB)
+      • charts/speakers/Alice/dynamic/rolling_sentiment.html (4745.1 KB)
+      • charts/speakers/Alice/static/rolling_sentiment.evidence.json (0.8 KB)
+      • ... and 12 more files
+
+✅ EPISTEMIC_MARKERS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/epistemic_markers
+   📄 Files: 9
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/epistemic_markers/category_rates.html 
+(4745.0 KB)
+      • charts/speakers/Bob/static/epistemic_markers/category_rates.png (146.0 
+KB)
+      • 
+charts/speakers/Bob/static/epistemic_markers/category_rates.evidence.json (0.6 
+KB)
+      • charts/speakers/Alice/dynamic/epistemic_markers/category_rates.html 
+(4745.0 KB)
+      • charts/speakers/Alice/static/epistemic_markers/category_rates.png (145.6
+KB)
+      • ... and 4 more files
+
+✅ KEYPHRASES
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/keyphrases
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_keyphrases.json (39.5 KB)
+      • data/global/_deep_test_mini_probe_keyphrases_summary.json (1.2 KB)
+      • data/global/_deep_test_mini_probe_keyphrases.csv (8.4 KB)
+
+✅ STATS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ TOPIC_MODELING
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/topic_modeling
+   📄 Files: 27
+   📂 Subdirectories: 15
+   📋 Key outputs:
+      • _deep_test_mini_probe_enhanced_topic_modeling_report.html (3.9 KB)
+      • charts/global/dynamic/heatmap/enhanced_nmf_topic_word_heatmap.html 
+(4745.7 KB)
+      • charts/global/dynamic/heatmap/enhanced_lda_topic_word_heatmap.html 
+(4745.7 KB)
+      • charts/global/dynamic/heatmap/speaker_topic_engagement_heatmap.html 
+(4745.2 KB)
+      • charts/global/dynamic/bar/expected_topic_proportions.html (4745.0 KB)
+      • ... and 22 more files
+
+⚠️ BERTOPIC
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/bertopic
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_bertopic_error.json (0.4 KB)
+   ⚠️  Validation warnings: No files matching pattern: *_bertopic_topics.json
+
+✅ TRANSCRIPT_OUTPUT
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • _deep_test_mini_probe-transcript.txt (0.9 KB)
+      • _deep_test_mini_probe_simplified_transcript_summary.json (0.1 KB)
+      • _deep_test_mini_probe-transcript.csv (0.8 KB)
+      • _deep_test_mini_probe_simplified_transcript.json (1.1 KB)
+
+✅ SIMPLIFIED_TRANSCRIPT
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • _deep_test_mini_probe-transcript.txt (0.9 KB)
+      • _deep_test_mini_probe_simplified_transcript_summary.json (0.1 KB)
+      • _deep_test_mini_probe-transcript.csv (0.8 KB)
+      • _deep_test_mini_probe_simplified_transcript.json (1.1 KB)
+
+✅ UNDERSTANDABILITY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/understandability
+   📄 Files: 14
+   📂 Subdirectories: 11
+   📋 Key outputs:
+      • charts/global/dynamic/understandability/readability-indices-bars.html 
+(4745.2 KB)
+      • charts/global/dynamic/structure/word-count-bars.html (4744.9 KB)
+      • charts/global/dynamic/structure/structure-bars.html (4745.1 KB)
+      • 
+charts/global/static/understandability/readability-indices-bars.evidence.json 
+(1.1 KB)
+      • charts/global/static/understandability/readability-indices-bars.png 
+(91.2 KB)
+      • ... and 9 more files
+
+✅ LEXICAL_DIVERSITY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/lexical_diversity
+   📄 Files: 12
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/lexical_diversity/lexical-ttr.html (4744.9 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-mtld.html (4744.9 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-hapax-rate.html (4744.9 
+KB)
+      • charts/global/static/lexical_diversity/lexical-hapax-rate.evidence.json 
+(0.5 KB)
+      • charts/global/static/lexical_diversity/lexical-mtld.evidence.json (0.5 
+KB)
+      • ... and 7 more files
+
+✅ WORDCLOUDS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/wordclouds
+   📄 Files: 141
+   📂 Subdirectories: 63
+   📋 Key outputs:
+      • 
+charts/speakers/Bob/dynamic/views/_deep_test_mini_probe_wordcloud-adj_explorer.h
+tml (8.4 KB)
+      • 
+charts/speakers/Bob/dynamic/views/_deep_test_mini_probe_tfidf_explorer.html 
+(14.2 KB)
+      • 
+charts/speakers/Bob/dynamic/views/_deep_test_mini_probe_wordcloud_explorer.html 
+(13.3 KB)
+      • 
+charts/speakers/Bob/dynamic/views/_deep_test_mini_probe_wordcloud-noun_explorer.
+html (10.0 KB)
+      • 
+charts/speakers/Bob/dynamic/views/_deep_test_mini_probe_wordcloud-tics_explorer.
+html (8.5 KB)
+      • ... and 136 more files
+
+✅ TICS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/tics
+   📄 Files: 6
+   📂 Subdirectories: 9
+   📋 Key outputs:
+      • charts/speakers/Alice/dynamic/tics/tics.html (4744.9 KB)
+      • charts/speakers/Alice/static/tics/tics.evidence.json (0.5 KB)
+      • charts/speakers/Alice/static/tics/tics.png (65.9 KB)
+      • data/global/_deep_test_mini_probe_tics_summary.txt (0.0 KB)
+      • data/global/_deep_test_mini_probe_tics_summary.json (0.9 KB)
+      • ... and 1 more files
+
+✅ TRANSCRIPT_QUALITY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/transcript_quality
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_transcript_quality_spans.json (0.0 KB)
+      • data/global/_deep_test_mini_probe_transcript_quality.json (1.3 KB)
+
+✅ INSIGHT_ELIGIBILITY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/insight_eligibility
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_insight_eligibility.json (30.0 KB)
+      • data/global/_deep_test_mini_probe_insight_eligibility_tic_mask.json (2.5
+KB)
+      • data/global/_deep_test_mini_probe_insight_eligibility_phrase_scores.json
+(7.1 KB)
+
+✅ TEMPORAL_DYNAMICS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/temporal_dynamics
+   📄 Files: 15
+   📂 Subdirectories: 6
+   📋 Key outputs:
+      • charts/global/dynamic/temporal_dashboard.html (4745.1 KB)
+      • charts/global/dynamic/engagement_timeseries.html (4744.9 KB)
+      • charts/global/dynamic/temporal_dashboard_speaking_rate.html (4745.0 KB)
+      • charts/global/dynamic/sentiment_timeseries.html (4744.9 KB)
+      • charts/global/static/temporal_dashboard.evidence.json (0.8 KB)
+      • ... and 10 more files
+
+✅ QA_ANALYSIS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/qa_analysis
+   📄 Files: 16
+   📂 Subdirectories: 6
+   📋 Key outputs:
+      • charts/global/dynamic/response_quality.html (4745.2 KB)
+      • charts/global/dynamic/qa_timeline.html (4745.0 KB)
+      • charts/global/dynamic/response_time_analysis.html (4745.2 KB)
+      • charts/global/dynamic/question_type_breakdown.html (4744.9 KB)
+      • charts/global/static/qa_timeline.evidence.json (0.7 KB)
+      • ... and 11 more files
+
+✅ PAUSES
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/pauses
+   📄 Files: 7
+   📂 Subdirectories: 9
+   📋 Key outputs:
+      • charts/global/dynamic/hist/pauses_hist.html (4745.1 KB)
+      • charts/global/static/hist/pauses_hist.png (62.2 KB)
+      • charts/global/static/hist/pauses_hist.evidence.json (0.9 KB)
+      • data/global/pauses.per_segment.json (0.5 KB)
+      • data/global/_deep_test_mini_probe_pauses_summary.json (1.2 KB)
+      • ... and 2 more files
+
+✅ ECHOES
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/echoes
+   📄 Files: 3
+   📂 Subdirectories: 4
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_echoes_summary.json (0.9 KB)
+      • data/global/echoes.stats.json (0.1 KB)
+      • data/global/echoes.events.json (0.0 KB)
+
+✅ POLITENESS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/politeness
+   📄 Files: 9
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/politeness/category_rates.html (4745.0 KB)
+      • charts/speakers/Bob/static/politeness/category_rates.png (162.6 KB)
+      • charts/speakers/Bob/static/politeness/category_rates.evidence.json (0.7 
+KB)
+      • charts/speakers/Alice/dynamic/politeness/category_rates.html (4745.1 KB)
+      • charts/speakers/Alice/static/politeness/category_rates.png (151.0 KB)
+      • ... and 4 more files
+
+✅ MOMENTUM
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/momentum
+   📄 Files: 7
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/timeseries/momentum.html (4744.9 KB)
+      • charts/global/static/timeseries/momentum.evidence.json (0.6 KB)
+      • charts/global/static/timeseries/momentum.png (79.3 KB)
+      • data/global/_deep_test_mini_probe_momentum_summary.json (1.0 KB)
+      • data/global/momentum.stats.json (0.1 KB)
+      • ... and 2 more files
+
+✅ TOPIC_SHIFT
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/topic_shift
+   📄 Files: 15
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • .topic_shift_enrichment/ACTIVE.json (0.3 KB)
+      • .topic_shift_enrichment/generations/20260807T133311_4050e470/COMMIT.json
+(0.5 KB)
+      • 
+.topic_shift_enrichment/generations/20260807T133311_4050e470/topic_shift.enrichm
+ent.json (1.1 KB)
+      • .topic_shift_generations/artifact_index.json (0.4 KB)
+      • 
+.topic_shift_generations/generations/5b8a72735141436f97724d1b28471cc4/topic_shif
+t.spans.json (1.7 KB)
+      • ... and 10 more files
+
+✅ MOMENTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/moments
+   📄 Files: 3
+   📂 Subdirectories: 4
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_moments_summary.json (0.9 KB)
+      • data/global/moments.stats.json (0.0 KB)
+      • data/global/moments.events.json (0.0 KB)
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_highlights.json (22.0 KB)
+
+✅ SUMMARY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_summary.json (6.5 KB)
+
+✅ NARRATIVE_SUMMARY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/narrative_summary
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_narrative_summary.json (1.1 KB)
+
+✅ LLM_SUMMARY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/llm_summary
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_llm_summary.json (1.5 KB)
+
+✅ LLM_SPEAKER_SUMMARY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/llm_speaker_summary
+   📄 Files: 6
+   📂 Subdirectories: 3
+   📋 Key outputs:
+      • data/speakers/_deep_test_mini_probe_Bob_llm_speaker_summary.json (1.5 
+KB)
+      • data/speakers/_deep_test_mini_probe_Alice_llm_speaker_summary.json (1.5 
+KB)
+      • data/global/_deep_test_mini_probe_llm_speaker_summary_index.json (0.7 
+KB)
+
+✅ LLM_ACTION_ITEMS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/llm_action_items
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_llm_action_items.json (3.6 KB)
+
+✅ LLM_CUSTOM_QA
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/llm_custom_qa
+   📄 Files: 5
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • questions_metadata.json (0.2 KB)
+      • data/global/_deep_test_mini_probe_llm_custom_qa.json (1.6 KB)
+
+⚠️ CHART_DESCRIPTIONS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/chart_descriptions
+   📄 Files: 0
+   📂 Subdirectories: 0
+   ⚠️  Validation warnings: Module directory does not exist: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/chart_descriptions
+
+✅ INSIGHTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351/insights
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_insights.json (7.2 KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (5.4 KB)
+   • report.md (0.4 KB)
+   • run_results.json (7.5 KB)
+   • report.txt (0.4 KB)
+   • manifest.json (702.9 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 562
+   • Total output size: 408.7 MB
+   • Successful modules: 42
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  /mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351
+  Executed:
+    • acts
+    • affect_tension
+    • bertopic
+    • chart_descriptions
+    • contagion
+    • contextual_emotion
+    • conversation_loops
+    • echoes
+    • emotion
+    • entity_sentiment
+    • epistemic_markers
+    • fine_grained_emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • interactions
+    • keyphrases
+    • lexical_diversity
+    • llm_action_items
+    • llm_custom_qa
+    • llm_speaker_summary
+    • llm_summary
+    • moments
+    • momentum
+    • narrative_summary
+    • ner
+    • pauses
+    • politeness
+    • qa_analysis
+    • semantic_similarity
+    • sentiment
+    • simplified_transcript
+    • stats
+    • summary
+    • temporal_dynamics
+    • tics
+    • topic_modeling
+    • topic_shift
+    • transcript_output
+    • transcript_quality
+    • understandability
+    • wordclouds
+  To explore results: open the web interface
+---
+
+2026-08-07 13:45:35,164 - transcriptx - INFO - Pipeline completed for /mnt/transcripts/_deep_test_mini_probe.json - Successfully ran: acts, contextual_emotion, conversation_loops, echoes, emotion, contagion, epistemic_markers, fine_grained_emotion, interactions, lexical_diversity, llm_action_items, llm_custom_qa, llm_speaker_summary, llm_summary, ner, pauses, momentum, moments, politeness, qa_analysis, semantic_similarity, sentiment, affect_tension, entity_sentiment, simplified_transcript, stats, temporal_dynamics, tics, insight_eligibility, bertopic, highlights, keyphrases, summary, narrative_summary, topic_modeling, insights, topic_shift, transcript_output, transcript_quality, understandability, wordclouds, chart_descriptions
+SUCCESS True
+ERRORS_N 0
+RUN_DIR /mnt/outputs/_deep_test_mini_probe/20260807_133107_09467351
+MODULES_N 42

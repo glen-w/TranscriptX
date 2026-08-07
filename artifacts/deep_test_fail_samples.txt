@@ -1,0 +1,32 @@
+/opt/venv/lib/python3.10/site-packages/spacy/cli/_util.py:23: DeprecationWarning: Importing 'parser.split_arg_string' is deprecated, it will only be available in 'shell_completion' in Click 9.0.
+  from click.parser import split_arg_string
+============================= test session starts ==============================
+platform linux -- Python 3.10.20, pytest-7.4.0, pluggy-1.6.0
+rootdir: /workspace
+configfile: pytest.ini
+plugins: cov-4.1.0, anyio-4.14.2, timeout-2.4.0
+timeout: 300.0s
+timeout method: thread
+timeout func_only: False
+collected 6 items
+
+tests/analysis/test_emotion.py F                                         [ 16%]
+tests/web/test_navigation_contracts.py F                                 [ 33%]
+tests/unit/test_llm_feedback.py F                                        [ 50%]
+tests/core/utils/test_validation.py F                                    [ 66%]
+tests/release/test_wave0_release_hygiene.py F                            [ 83%]
+tests/app/test_gui_surface_orchestration.py .                            [100%]
+
+=================================== FAILURES ===================================
+/Users/89298/Documents/transcriptx/tests/analysis/test_emotion.py:57: AssertionError: assert False is True
+/workspace/tests/web/test_navigation_contracts.py:163: AssertionError: sessions must not load until resolver is called
+/workspace/tests/unit/test_llm_feedback.py:181: Failed: DID NOT RAISE <class 'transcriptx.core.llm_feedback.errors.LlmFeedbackPersistenceError'>
+/workspace/tests/core/utils/test_validation.py:324: Failed: DID NOT RAISE <class 'ValueError'>
+/usr/local/lib/python3.10/subprocess.py:1863: FileNotFoundError: [Errno 2] No such file or directory: 'git'
+=========================== short test summary info ============================
+FAILED tests/analysis/test_emotion.py::TestEmotionAnalysisModule::test_emotion_analysis_basic
+FAILED tests/web/test_navigation_contracts.py::test_make_session_path_resolver_is_lazy
+FAILED tests/unit/test_llm_feedback.py::test_unwritable_directory - Failed: D...
+FAILED tests/core/utils/test_validation.py::TestValidateOutputDirectory::test_raises_error_when_no_write_permission
+FAILED tests/release/test_wave0_release_hygiene.py::test_denylist_passes_on_current_repo
+========================= 5 failed, 1 passed in 3.42s ==========================

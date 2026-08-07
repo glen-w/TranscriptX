@@ -1,0 +1,80 @@
+=== PACKAGING ===
+adding 'transcriptx/web/ui/settings/__init__.py'
+adding 'transcriptx/web/ui/settings/analysis_presets_panel.py'
+adding 'transcriptx/web/ui/settings/configuration_panel.py'
+adding 'transcriptx/web/ui/settings/diff_view.py'
+adding 'transcriptx/web/ui/settings/forms.py'
+adding 'transcriptx/web/ui/settings/interface_panel.py'
+adding 'transcriptx/web/ui/settings/models_panel.py'
+adding 'transcriptx/web/ui/settings/questions_panel.py'
+adding 'transcriptx/web/ui/settings/speakers_panel.py'
+adding 'transcriptx/web/ui/settings/storage_panel.py'
+adding 'transcriptx/web/ui/settings/widgets.py'
+adding 'transcriptx-0.9.8.4.dist-info/licenses/LICENSE'
+adding 'transcriptx-0.9.8.4.dist-info/licenses/NOTICE'
+adding 'transcriptx-0.9.8.4.dist-info/METADATA'
+adding 'transcriptx-0.9.8.4.dist-info/WHEEL'
+adding 'transcriptx-0.9.8.4.dist-info/entry_points.txt'
+adding 'transcriptx-0.9.8.4.dist-info/top_level.txt'
+adding 'transcriptx-0.9.8.4.dist-info/RECORD'
+removing build/bdist.macosx-14.6-x86_64/wheel
+Successfully built transcriptx-0.9.8.4.tar.gz and transcriptx-0.9.8.4-py3-none-any.whl
+=== DOCKER SMOKE (existing image; no rebuild unless needed) ===
+torchvision==0.28.0+cpu
+tornado==6.5.7
+tqdm==4.67.1
+transcriptx @ file:///app/dist/transcriptx-0.9.8.2-py3-none-any.whl
+transformers==4.53.2
+trio==0.33.0
+trio-websocket==0.12.2
+typer==0.16.0
+typer-slim==0.21.2
+typing_extensions==4.16.0
+tzdata==2026.3
+ujson==5.13.0
+umap-learn==0.5.12
+urllib3==2.7.0
+uvicorn==0.51.0
+wasabi==1.1.3
+watchdog==5.0.3
+wcwidth==0.8.2
+weasel==0.4.3
+webrtcvad==2.0.10
+websockets==16.1.1
+Werkzeug==3.1.8
+wordcloud==1.9.2
+wrapt==2.2.2
+wsproto==1.3.2
+yake==0.7.3
+yarl==1.24.5
+yaspin==2.1.0
+zipp==4.1.0
+OK: image pip check passed
+Running Docker first-run smoke test...
+=== Docker Web Launcher Smoke Test ===
+--- transcriptx --help ---
+ Container transcriptx-transcriptx-web-run-a966498a1077 Creating 
+ Container transcriptx-transcriptx-web-run-a966498a1077 Created 
+usage: transcriptx [-h] [--host HOST] [--port PORT]
+
+TranscriptX — launch the web interface
+
+options:
+  -h, --help   show this help message and exit
+  --host HOST  Host to bind to (default: 127.0.0.1)
+  --port PORT  Port to listen on (default: 8501)
+--- python -m transcriptx.web --help ---
+ Container transcriptx-transcriptx-web-run-2ceee460b34a Creating 
+ Container transcriptx-transcriptx-web-run-2ceee460b34a Created 
+usage: transcriptx [-h] [--host HOST] [--port PORT]
+
+TranscriptX — launch the web interface
+
+options:
+  -h, --help   show this help message and exit
+  --host HOST  Host to bind to (default: 127.0.0.1)
+  --port PORT  Port to listen on (default: 8501)
+=== Smoke test complete ===
+rm: /var/folders/sy/pjg7ypqj2vz2xf0v12m1l2k9_22rhc/T//transcriptx-smoke-recordings.nJKAUR/imports: Permission denied
+rm: /var/folders/sy/pjg7ypqj2vz2xf0v12m1l2k9_22rhc/T//transcriptx-smoke-recordings.nJKAUR: Directory not empty
+make: *** [docker-smoke] Error 1

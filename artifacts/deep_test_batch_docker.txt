@@ -1,0 +1,316 @@
+ Container transcriptx-transcriptx-web-run-61a7cdb54331 Creating 
+ Container transcriptx-transcriptx-web-run-61a7cdb54331 Created 
+2026-08-07 13:34:24,413 - transcriptx - INFO - Starting analysis pipeline for /mnt/transcripts/_deep_test_mini_probe.json with modules: stats, summary, highlights
+2026-08-07 13:34:24,702 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: _deep_test_mini_probe.json
+  Outputs:    /mnt/outputs/_deep_test_mini_probe/20260807_133424_09664486
+  Modules that will run:
+    • highlights
+    • insight_eligibility
+    • stats
+    • summary
+    • tics
+---
+
+2026-08-07 13:34:24,708 - transcriptx - INFO - Starting DAG pipeline for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:24,709 - transcriptx - INFO - Execution order: stats, tics, insight_eligibility, highlights, summary
+2026-08-07 13:34:24,709 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+STATS
+────────────────────────────────────────────────────────────
+ Running Statistical Analysis...
+2026-08-07 13:34:24,710 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:24,976 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:24,992 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Statistical Analysis
+
+2026-08-07 13:34:24,993 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:24,993 - transcriptx - INFO - stats completed in 0.28s
+2026-08-07 13:34:24,993 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+TICS
+────────────────────────────────────────────────────────────
+ Running Verbal Tics Analysis...
+2026-08-07 13:34:24,994 - transcriptx - INFO - Starting tics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:24,994 - transcriptx - INFO - Starting tics analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:25,270 - transcriptx - INFO - Completed tics analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Verbal Tics Analysis
+
+2026-08-07 13:34:25,272 - transcriptx - INFO - Completed tics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:25,272 - transcriptx - INFO - tics completed in 0.28s
+2026-08-07 13:34:25,272 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+ Running Shared content-vs-style insight eligibility pipeline...
+2026-08-07 13:34:25,273 - transcriptx - INFO - Starting insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:25,281 - transcriptx - INFO - Starting insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:28,055 - transcriptx - INFO - Completed insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-07 13:34:28,056 - transcriptx - INFO - Completed insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:28,056 - transcriptx - INFO - insight_eligibility completed in 2.78s
+2026-08-07 13:34:28,056 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+HIGHLIGHTS
+────────────────────────────────────────────────────────────
+ Running Highlights and conflict moments (quote-forward)...
+2026-08-07 13:34:28,057 - transcriptx - INFO - Starting highlights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:28,064 - transcriptx - INFO - Starting highlights analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:28,105 - transcriptx - INFO - Completed highlights analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-07 13:34:28,106 - transcriptx - INFO - Completed highlights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:28,106 - transcriptx - INFO - highlights completed in 0.05s
+2026-08-07 13:34:28,106 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+SUMMARY
+────────────────────────────────────────────────────────────
+ Running Executive brief summary derived from highlights...
+2026-08-07 13:34:28,107 - transcriptx - INFO - Starting summary analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:28,110 - transcriptx - INFO - Starting summary analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:28,241 - transcriptx - INFO - Saved all-charts PDF to /mnt/outputs/_deep_test_mini_probe/20260807_133424_09664486/summary/all_charts.pdf (1 modules, 1 charts)
+2026-08-07 13:34:28,241 - transcriptx - INFO - Completed summary analysis for /mnt/transcripts/_deep_test_mini_probe.json
+ Completed Executive brief summary derived from highlights
+
+2026-08-07 13:34:28,242 - transcriptx - INFO - Completed summary analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 13:34:28,242 - transcriptx - INFO - summary completed in 0.13s
+2026-08-07 13:34:28,242 - transcriptx - INFO - Pipeline completed. Ran 5 modules with 0 errors
+2026-08-07 13:34:28,246 - transcriptx - INFO - Saved run results summary to /mnt/outputs/_deep_test_mini_probe/20260807_133424_09664486/run_results.json
+2026-08-07 13:34:28,252 - transcriptx - INFO - Saved output manifest to /mnt/outputs/_deep_test_mini_probe/20260807_133424_09664486/manifest.json
+2026-08-07 13:34:28,263 - transcriptx - INFO - Saved run manifest to /mnt/outputs/_deep_test_mini_probe/20260807_133424_09664486/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: _deep_test_mini_probe
+📂 Output Directory: /mnt/outputs/_deep_test_mini_probe/20260807_133424_09664486
+🔄 Analysis Status: 5/3 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (3):
+--------------------------------------------------
+
+✅ STATS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133424_09664486/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ SUMMARY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133424_09664486/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_summary.json (6.4 KB)
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_133424_09664486/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_highlights.json (22.3 KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (5.4 KB)
+   • report.md (0.4 KB)
+   • run_results.json (0.9 KB)
+   • report.txt (0.4 KB)
+   • manifest.json (11.4 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 5
+   • Total output size: 0.1 MB
+   • Successful modules: 3
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  /mnt/outputs/_deep_test_mini_probe/20260807_133424_09664486
+  Executed:
+    • highlights
+    • insight_eligibility
+    • stats
+    • summary
+    • tics
+  To explore results: open the web interface
+---
+
+2026-08-07 13:34:28,276 - transcriptx - INFO - Pipeline completed for /mnt/transcripts/_deep_test_mini_probe.json - Successfully ran: stats, tics, insight_eligibility, highlights, summary
+2026-08-07 13:34:28,285 - transcriptx - INFO - Starting analysis pipeline for /mnt/transcripts/mini_transcript.json with modules: stats, summary, highlights
+2026-08-07 13:34:28,550 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: mini_transcript.json
+  Outputs:    /mnt/outputs/mini/20260807_133428_09668344
+  Modules that will run:
+    • highlights
+    • insight_eligibility
+    • stats
+    • summary
+    • tics
+---
+
+2026-08-07 13:34:28,556 - transcriptx - INFO - Starting DAG pipeline for /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,556 - transcriptx - INFO - Execution order: stats, tics, insight_eligibility, highlights, summary
+2026-08-07 13:34:28,556 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+STATS
+────────────────────────────────────────────────────────────
+ Running Statistical Analysis...
+2026-08-07 13:34:28,557 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,557 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,570 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/mini_transcript.json
+ Completed Statistical Analysis
+
+2026-08-07 13:34:28,571 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,571 - transcriptx - INFO - stats completed in 0.01s
+2026-08-07 13:34:28,571 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+TICS
+────────────────────────────────────────────────────────────
+ Running Verbal Tics Analysis...
+2026-08-07 13:34:28,572 - transcriptx - INFO - Starting tics analysis for: /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,572 - transcriptx - INFO - Starting tics analysis for /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,705 - transcriptx - INFO - Completed tics analysis for /mnt/transcripts/mini_transcript.json
+ Completed Verbal Tics Analysis
+
+2026-08-07 13:34:28,706 - transcriptx - INFO - Completed tics analysis for: /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,706 - transcriptx - INFO - tics completed in 0.13s
+2026-08-07 13:34:28,706 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+ Running Shared content-vs-style insight eligibility pipeline...
+2026-08-07 13:34:28,707 - transcriptx - INFO - Starting insight_eligibility analysis for: /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,707 - transcriptx - INFO - Starting insight_eligibility analysis for /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,803 - transcriptx - INFO - Completed insight_eligibility analysis for /mnt/transcripts/mini_transcript.json
+ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-07 13:34:28,803 - transcriptx - INFO - Completed insight_eligibility analysis for: /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,803 - transcriptx - INFO - insight_eligibility completed in 0.10s
+2026-08-07 13:34:28,803 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+HIGHLIGHTS
+────────────────────────────────────────────────────────────
+ Running Highlights and conflict moments (quote-forward)...
+2026-08-07 13:34:28,804 - transcriptx - INFO - Starting highlights analysis for: /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,804 - transcriptx - INFO - Starting highlights analysis for /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,843 - transcriptx - INFO - Completed highlights analysis for /mnt/transcripts/mini_transcript.json
+ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-07 13:34:28,844 - transcriptx - INFO - Completed highlights analysis for: /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,844 - transcriptx - INFO - highlights completed in 0.04s
+2026-08-07 13:34:28,844 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+SUMMARY
+────────────────────────────────────────────────────────────
+ Running Executive brief summary derived from highlights...
+2026-08-07 13:34:28,845 - transcriptx - INFO - Starting summary analysis for: /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,845 - transcriptx - INFO - Starting summary analysis for /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,922 - transcriptx - INFO - Saved all-charts PDF to /mnt/outputs/mini/20260807_133428_09668344/summary/all_charts.pdf (1 modules, 1 charts)
+2026-08-07 13:34:28,923 - transcriptx - INFO - Completed summary analysis for /mnt/transcripts/mini_transcript.json
+ Completed Executive brief summary derived from highlights
+
+2026-08-07 13:34:28,923 - transcriptx - INFO - Completed summary analysis for: /mnt/transcripts/mini_transcript.json
+2026-08-07 13:34:28,923 - transcriptx - INFO - summary completed in 0.08s
+2026-08-07 13:34:28,923 - transcriptx - INFO - Pipeline completed. Ran 5 modules with 0 errors
+2026-08-07 13:34:28,927 - transcriptx - INFO - Saved run results summary to /mnt/outputs/mini/20260807_133428_09668344/run_results.json
+2026-08-07 13:34:28,932 - transcriptx - INFO - Saved output manifest to /mnt/outputs/mini/20260807_133428_09668344/manifest.json
+2026-08-07 13:34:28,941 - transcriptx - INFO - Saved run manifest to /mnt/outputs/mini/20260807_133428_09668344/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: mini_transcript
+📂 Output Directory: /mnt/outputs/mini/20260807_133428_09668344
+🔄 Analysis Status: 5/3 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (3):
+--------------------------------------------------
+
+✅ STATS
+   📁 Directory: /mnt/outputs/mini/20260807_133428_09668344/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ SUMMARY
+   📁 Directory: /mnt/outputs/mini/20260807_133428_09668344/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/mini_summary.json (6.4 KB)
+
+✅ HIGHLIGHTS
+   📁 Directory: /mnt/outputs/mini/20260807_133428_09668344/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/mini_highlights.json (22.3 KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (5.4 KB)
+   • report.md (0.3 KB)
+   • run_results.json (0.9 KB)
+   • report.txt (0.4 KB)
+   • manifest.json (11.1 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 5
+   • Total output size: 0.1 MB
+   • Successful modules: 3
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  /mnt/outputs/mini/20260807_133428_09668344
+  Executed:
+    • highlights
+    • insight_eligibility
+    • stats
+    • summary
+    • tics
+  To explore results: open the web interface
+---
+
+2026-08-07 13:34:28,954 - transcriptx - INFO - Pipeline completed for /mnt/transcripts/mini_transcript.json - Successfully ran: stats, tics, insight_eligibility, highlights, summary
+BATCH_SUCCESS True
+BATCH_ERRORS []
+BATCH_MSG Processed 2 transcript(s), 2 succeeded
+BATCH_RUNS [('_deep_test_mini_probe.json', '20260807_133424_09664486'), ('mini_transcript.json', '20260807_133428_09668344')]
+BATCH_STAGE_PCTS [None, None]
+BATCH_LOG_HEAD ['Analyzing _deep_test_mini_probe.json', 'Running modules: stats, summary, highlights', 'Analyzing mini_transcript.json', 'Running modules: stats, summary, highlights']
+BATCH_PROBE_OK
