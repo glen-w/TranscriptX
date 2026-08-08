@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8.8] - 2026-08-08
+
+### Fixed
+
+- BERTopic on macOS host Python: pin native thread env early and force UMAP/HDBSCAN single-thread backends (`n_jobs=1` / `core_dist_n_jobs=1`) to avoid OpenMP/Numba oversubscription SIGSEGVs during `fit_transform`.
+- Run BERTopic fits in a subprocess (`transcriptx.core.utils.bertopic_fit`) so a residual native crash soft-fails the module instead of killing the parent pipeline; group aggregation uses the same isolation path.
+
+### Changed
+
+- Document macOS BERTopic mitigations in `docs/dev/bertopic_optional_module.md`; deepen unit coverage for thread-safe backends and isolated-fit soft-fail behavior.
+- Record thorough `qwen2.5:7b` corpus timing notes in the 1.0 performance envelope / pre-release roadmap.
+
 ## [0.9.8.7] - 2026-08-07
 
 ### Changed

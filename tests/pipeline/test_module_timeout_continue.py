@@ -322,25 +322,34 @@ def test_pipeline_native_thread_defaults_use_setdefault(
 
 
 @pytest.mark.unit
-def test_bertopic_analyze_wraps_fit_in_limited_native_threads(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Fit path must enter the thread-pinning context (hang mitigation)."""
+def test_bertopic_analyze_uses_isolated_fit(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fit path must use subprocess isolation (macOS native-crash mitigation)."""
     from transcriptx.core.analysis.bertopic.analysis import BERTopicAnalysis
+    from transcriptx.core.utils.bertopic_fit.isolated import IsolatedFitResult
 
-    entered: list[int] = []
+    called: list[int] = []
 
-    class _Ctx:
-        def __enter__(self):
-            entered.append(1)
-            return self
-
-        def __exit__(self, *_a):
-            return False
+    def _fake_isolated(texts, _cfg, timeout_seconds=None):
+        called.append(len(texts))
+        return IsolatedFitResult(
+            ok=True,
+            topic_assignments=[0] * len(texts),
+            topic_probs=None,
+            topics=[
+                {
+                    "topic_id": 0,
+                    "words": ["alpha", "beta"],
+                    "weights": [0.5, 0.4],
+                    "label": "alpha, beta",
+                    "size": 5,
+                }
+            ],
+            duration_seconds=0.01,
+        )
 
     monkeypatch.setattr(
-        "transcriptx.core.analysis.bertopic.analysis.limited_native_threads",
-        lambda n=1: _Ctx(),
+        "transcriptx.core.utils.bertopic_fit.fit_bertopic_isolated",
+        _fake_isolated,
     )
     monkeypatch.setattr(
         "transcriptx.core.analysis.bertopic.analysis.prepare_text_data",
@@ -357,44 +366,13 @@ def test_bertopic_analyze_wraps_fit_in_limited_native_threads(
             eligible=True, documents_count=len(texts), total_chars=100, reason=None
         ),
     )
-
-    class _Model:
-        def fit_transform(self, texts):
-            assert entered, "fit_transform ran outside limited_native_threads"
-            return [0] * len(texts), None
-
-        def get_topics(self):
-            return {0: [("alpha", 0.5), ("beta", 0.4)]}
-
-        def get_topic_info(self):
-            import pandas as pd
-
-            return pd.DataFrame([{"Topic": 0, "Count": 5}])
-
-    fake_bertopic = SimpleNamespace(BERTopic=lambda **_k: _Model())
     monkeypatch.setattr(
         "transcriptx.core.analysis.bertopic.analysis.verify_bertopic_import",
-        lambda auto_install=False: (fake_bertopic, None),
+        lambda auto_install=False: (SimpleNamespace(BERTopic=object), None),
     )
     monkeypatch.setattr(
         "transcriptx.core.analysis.bertopic.analysis.embedding_model_policy_check",
         lambda _m: None,
-    )
-    monkeypatch.setattr(
-        "transcriptx.core.analysis.bertopic.analysis.build_model_kwargs",
-        lambda _cfg: {},
-    )
-    monkeypatch.setattr(
-        "transcriptx.core.analysis.bertopic.analysis.build_topic_objects",
-        lambda *_a, **_k: [
-            {
-                "topic_id": 0,
-                "words": ["alpha", "beta"],
-                "weights": [0.5, 0.4],
-                "label": "alpha, beta",
-                "size": 5,
-            }
-        ],
     )
     monkeypatch.setattr(
         "transcriptx.core.analysis.bertopic.analysis.build_doc_topic_data",
@@ -413,34 +391,26 @@ def test_bertopic_analyze_wraps_fit_in_limited_native_threads(
     result = BERTopicAnalysis().analyze(
         [{"text": "alpha beta gamma", "speaker": "A"}] * 5
     )
-    assert "error" not in result or not result.get("error")
-    assert entered == [1]
+    assert not result.get("error")
+    assert called == [5]
+    assert result.get("topics")
 
 
 @pytest.mark.unit
 def test_bertopic_soft_fails_zero_sample_fit_collapse(monkeypatch) -> None:
     """Mini corpora that collapse during auto-reduce must not raise."""
     from transcriptx.core.analysis.bertopic.analysis import BERTopicAnalysis
-
-    class _Boom:
-        def fit_transform(self, _texts):
-            raise ValueError(
-                "Found array with 0 sample(s) (shape=(0, 768)) while a minimum of 1 is required."
-            )
+    from transcriptx.core.utils.bertopic_fit.isolated import IsolatedFitResult
 
     monkeypatch.setattr(
         "transcriptx.core.analysis.bertopic.analysis.verify_bertopic_import",
-        lambda **_k: (SimpleNamespace(BERTopic=lambda **_kw: _Boom()), None),
+        lambda **_k: (SimpleNamespace(BERTopic=object), None),
     )
     monkeypatch.setattr(
         "transcriptx.core.analysis.bertopic.analysis.evaluate_bertopic_eligibility",
         lambda _texts: SimpleNamespace(
             eligible=True, documents_count=5, total_chars=100, reason=None
         ),
-    )
-    monkeypatch.setattr(
-        "transcriptx.core.analysis.bertopic.analysis.build_model_kwargs",
-        lambda _cfg: {},
     )
     monkeypatch.setattr(
         "transcriptx.core.analysis.bertopic.analysis.get_config",
@@ -455,8 +425,97 @@ def test_bertopic_soft_fails_zero_sample_fit_collapse(monkeypatch) -> None:
             list(range(5)),
         ),
     )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.bertopic_fit.fit_bertopic_isolated",
+        lambda *_a, **_k: IsolatedFitResult(
+            ok=False,
+            topic_assignments=[],
+            topic_probs=None,
+            topics=[],
+            duration_seconds=0.01,
+            error=(
+                "ValueError: Found array with 0 sample(s) (shape=(0, 768)) "
+                "while a minimum of 1 is required."
+            ),
+            exit_code=1,
+        ),
+    )
 
     result = BERTopicAnalysis().analyze([{"text": "alpha", "speaker": "A"}] * 5)
     assert result.get("error") == "insufficient_data_after_fit"
     assert result.get("topics") == []
     assert (result.get("meta") or {}).get("reason") == "insufficient_data_after_fit"
+
+
+@pytest.mark.unit
+def test_bertopic_soft_fails_native_crash_from_isolated_fit(monkeypatch) -> None:
+    """SIGSEGV in the fit worker must soft-fail the module, not raise."""
+    from transcriptx.core.analysis.bertopic.analysis import BERTopicAnalysis
+    from transcriptx.core.utils.bertopic_fit.isolated import IsolatedFitResult
+
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.bertopic.analysis.verify_bertopic_import",
+        lambda **_k: (SimpleNamespace(BERTopic=object), None),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.bertopic.analysis.evaluate_bertopic_eligibility",
+        lambda _texts: SimpleNamespace(
+            eligible=True, documents_count=5, total_chars=100, reason=None
+        ),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.bertopic.analysis.get_config",
+        lambda: TranscriptXConfig(),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.bertopic.analysis.embedding_model_policy_check",
+        lambda _m: None,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.bertopic.analysis.prepare_text_data",
+        lambda _segs, return_indices=False: (
+            ["a"] * 5,
+            ["A"] * 5,
+            [None] * 5,
+            list(range(5)),
+        ),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.bertopic_fit.fit_bertopic_isolated",
+        lambda *_a, **_k: IsolatedFitResult(
+            ok=False,
+            topic_assignments=[],
+            topic_probs=None,
+            topics=[],
+            duration_seconds=0.5,
+            error="bertopic_native_crash:exit=-11 signal=11",
+            exit_code=-11,
+        ),
+    )
+
+    result = BERTopicAnalysis().analyze([{"text": "alpha", "speaker": "A"}] * 5)
+    assert result.get("error") == "native_crash"
+    assert (result.get("meta") or {}).get("reason") == "native_crash"
+    assert (result.get("meta") or {}).get("exit_code") == -11
+
+
+@pytest.mark.unit
+def test_fit_isolated_maps_nonzero_exit_to_native_crash(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    from transcriptx.core.utils.bertopic_fit import isolated as fi
+
+    class _Completed:
+        returncode = -11
+        stdout = ""
+        stderr = "Segmentation fault"
+
+    monkeypatch.setattr(
+        fi.subprocess,
+        "run",
+        lambda *_a, **_k: _Completed(),
+    )
+    out = fi.fit_bertopic_isolated(["doc one", "doc two"] * 3, None)
+    assert out.ok is False
+    assert out.exit_code == -11
+    assert out.error and out.error.startswith("bertopic_native_crash")

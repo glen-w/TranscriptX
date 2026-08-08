@@ -10,20 +10,66 @@ from transcriptx.core.utils.native_threads import limited_native_threads
 __all__ = [
     "build_model_kwargs",
     "build_provenance",
+    "build_threadsafe_reduction_models",
     "limited_native_threads",
 ]
 
+# Match BERTopic's historical default reduction geometry, but force single-thread
+# native pools. On macOS host Python, default UMAP ``n_jobs=-1`` / HDBSCAN
+# ``core_dist_n_jobs=-1`` oversubscribe OpenMP+Numba and segfault during
+# ``fit_transform`` (exit -11) even when env thread caps are set late.
+_DEFAULT_MIN_TOPIC_SIZE = 10
 
-def build_model_kwargs(bertopic_cfg: Any) -> Dict[str, Any]:
+
+def build_threadsafe_reduction_models(
+    *, min_topic_size: int = _DEFAULT_MIN_TOPIC_SIZE
+) -> Dict[str, Any]:
+    """Construct UMAP + HDBSCAN backends pinned to one native worker.
+
+    Imports are deferred so core installs without the optional BERTopic extra
+    can still import this module for non-fit helpers.
+    """
+    from hdbscan import HDBSCAN
+    from umap import UMAP
+
+    cluster_size = max(2, int(min_topic_size))
+    return {
+        "umap_model": UMAP(
+            n_neighbors=15,
+            n_components=5,
+            min_dist=0.0,
+            metric="cosine",
+            random_state=42,
+            n_jobs=1,
+        ),
+        "hdbscan_model": HDBSCAN(
+            min_cluster_size=cluster_size,
+            metric="euclidean",
+            cluster_selection_method="eom",
+            prediction_data=True,
+            core_dist_n_jobs=1,
+        ),
+    }
+
+
+def build_model_kwargs(
+    bertopic_cfg: Any, *, threadsafe_reduction: bool = True
+) -> Dict[str, Any]:
     """Build BERTopic constructor kwargs from Pydantic-owned config.
 
     Always applies explicit config values (including ``False`` / numeric defaults)
     so env/file/UI overrides are not dropped by truthiness checks. ``label_words``
     is intentionally omitted — it is used only when shaping topic labels, not by
     the BERTopic constructor.
+
+    When ``threadsafe_reduction`` is true (default), inject UMAP/HDBSCAN models
+    with ``n_jobs`` / ``core_dist_n_jobs`` pinned to 1 so macOS OpenMP+Numba
+    oversubscription cannot segfault the process mid-fit.
     """
     model_kwargs: Dict[str, Any] = {}
     if not bertopic_cfg:
+        if threadsafe_reduction:
+            model_kwargs.update(build_threadsafe_reduction_models())
         return model_kwargs
 
     embedding_model = getattr(bertopic_cfg, "embedding_model", None)
@@ -51,6 +97,14 @@ def build_model_kwargs(bertopic_cfg: Any) -> Dict[str, Any]:
     if hasattr(bertopic_cfg, "calculate_probabilities"):
         model_kwargs["calculate_probabilities"] = bool(
             getattr(bertopic_cfg, "calculate_probabilities")
+        )
+
+    if threadsafe_reduction:
+        cluster_size = int(
+            model_kwargs.get("min_topic_size") or _DEFAULT_MIN_TOPIC_SIZE
+        )
+        model_kwargs.update(
+            build_threadsafe_reduction_models(min_topic_size=cluster_size)
         )
     return model_kwargs
 

@@ -18,10 +18,8 @@ from transcriptx.core.analysis.bertopic.eligibility import (
     evaluate_bertopic_eligibility,
 )
 from transcriptx.core.analysis.bertopic.runtime import (
-    build_model_kwargs,
     build_provenance,
 )
-from transcriptx.core.utils.native_threads import limited_native_threads
 from transcriptx.core.analysis.bertopic.schema import (
     SCHEMA_VERSION,
     attach_schema_version,
@@ -45,7 +43,7 @@ from transcriptx.core.utils.nlp_utils import (
 )
 from transcriptx.core.viz.specs import BarCategoricalSpec, HeatmapMatrixSpec
 
-from .utils import build_doc_topic_data, build_topic_objects
+from .utils import build_doc_topic_data
 
 
 class BERTopicAnalysis(AnalysisModule):
@@ -159,13 +157,24 @@ class BERTopicAnalysis(AnalysisModule):
                 ),
             }
 
-        model_kwargs = build_model_kwargs(bertopic_cfg)
+        timeout_seconds = None
+        if bertopic_cfg is not None:
+            raw_timeout = getattr(bertopic_cfg, "timeout_seconds", None)
+            if isinstance(raw_timeout, (int, float)):
+                timeout_seconds = float(raw_timeout)
+
+        from transcriptx.core.utils.bertopic_fit import (
+            fit_bertopic_isolated,
+        )
+
         started = time.perf_counter()
         try:
-            BERTopic = bertopic_module.BERTopic
-            with limited_native_threads(1):
-                model = BERTopic(**model_kwargs)
-                topic_assignments, topic_probs = model.fit_transform(texts)
+            # Prefer isolated fit so macOS native crashes cannot kill the pipeline.
+            isolated = fit_bertopic_isolated(
+                texts,
+                bertopic_cfg,
+                timeout_seconds=timeout_seconds,
+            )
         except ImportError as exc:
             return {
                 "error": f"broken_extra:{EXTRA_NAME}",
@@ -206,18 +215,58 @@ class BERTopicAnalysis(AnalysisModule):
                 }
             raise
 
-        duration = time.perf_counter() - started
+        if not isolated.ok:
+            err = isolated.error or "bertopic_fit_failed"
+            soft_native = err.startswith("bertopic_native_crash") or err.startswith(
+                "bertopic_fit_timeout"
+            )
+            soft_data = (
+                "0 sample" in err
+                or "minimum of 1 is required" in err
+                or "n_samples=0" in err
+                or "insufficient_data_after_fit" in err
+            )
+            if soft_native or soft_data:
+                return {
+                    "error": (
+                        "native_crash"
+                        if soft_native and "timeout" not in err
+                        else (
+                            "fit_timeout"
+                            if "timeout" in err
+                            else "insufficient_data_after_fit"
+                        )
+                    ),
+                    "message": err,
+                    "topics": [],
+                    "doc_topic_data": [],
+                    "meta": attach_schema_version(
+                        {
+                            "texts_count": len(texts),
+                            "reason": (
+                                "native_crash"
+                                if soft_native and "timeout" not in err
+                                else (
+                                    "fit_timeout"
+                                    if "timeout" in err
+                                    else "insufficient_data_after_fit"
+                                )
+                            ),
+                            "fit_scope": "transcript",
+                            "fit_error": err,
+                            "exit_code": isolated.exit_code,
+                        }
+                    ),
+                }
+            raise RuntimeError(err)
+
+        duration = isolated.duration_seconds or (time.perf_counter() - started)
+        topic_assignments = isolated.topic_assignments
+        topic_probs = isolated.topic_probs
+        topics = isolated.topics
         doc_extra_fields = [
             {"segment_index": int(segment_index)} for segment_index in segment_indices
         ]
-        topics = build_topic_objects(
-            model,
-            top_n_words=(
-                getattr(bertopic_cfg, "top_n_words", 10) if bertopic_cfg else 10
-            ),
-            label_words=getattr(bertopic_cfg, "label_words", 3) if bertopic_cfg else 3,
-            include_outlier=any(int(t) == -1 for t in topic_assignments),
-        )
         doc_topic_data, meta = build_doc_topic_data(
             topic_assignments=topic_assignments,
             topic_probs=topic_probs,

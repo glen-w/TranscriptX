@@ -30,6 +30,17 @@ pip install -e '.[full]'
 
 Sentence Transformers remains a **base** dependency (shared with semantic/echoes). BERTopic reuses that embedding stack once the optional packages are present.
 
+### Host macOS segfault note (OpenMP / Numba oversubscription)
+
+On Apple Silicon host Python, BERTopic’s default UMAP (`n_jobs=-1`) / HDBSCAN (`core_dist_n_jobs=-1`) can **segfault** during `fit_transform` (process exit -11) when OpenMP and Numba pools oversubscribe — especially after other modules have already loaded natives. This is **not** a Transcribe dependency conflict; Transcribe’s own deps are OCR-only.
+
+Mitigations shipped in runtime:
+
+- Early `ensure_native_thread_env_defaults()` (pipeline / web entry / bootstrap)
+- Explicit UMAP/HDBSCAN backends with `n_jobs=1` / `core_dist_n_jobs=1` via `build_model_kwargs()`
+- **Subprocess-isolated fit** (`transcriptx.core.utils.bertopic_fit`) so a residual SIGSEGV after a long in-process pipeline becomes a soft module failure instead of killing the parent run
+- `limited_native_threads(1)` inside the worker
+
 The package is **not on PyPI**; install from this repository (see [install_verification_matrix.md](../runtime/install_verification_matrix.md)).
 
 > **Public release:** runtime install markers are **`core` | `full` only**. See [installation.md](../runtime/installation.md) and [dependency_audit.md](dependency_audit.md). Host `.[bertopic]` / `.[full]` is **not** a blocking clean-env proof when `llvmlite` cannot install; Docker `image_pip_check` is the production-image proof for the fuller stack.

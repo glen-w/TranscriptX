@@ -46,7 +46,8 @@ def test_build_model_kwargs_applies_defaults_and_falsey_flags() -> None:
         label_words=3,
         calculate_probabilities=False,
     )
-    kwargs = build_model_kwargs(cfg)
+    # Config-only path (no UMAP/HDBSCAN import) for offline unit environments.
+    kwargs = build_model_kwargs(cfg, threadsafe_reduction=False)
     assert kwargs == {
         "embedding_model": "all-MiniLM-L6-v2",
         "min_topic_size": 5,
@@ -58,9 +59,55 @@ def test_build_model_kwargs_applies_defaults_and_falsey_flags() -> None:
 
     cfg.nr_topics = "12"
     cfg.calculate_probabilities = True
-    kwargs = build_model_kwargs(cfg)
+    kwargs = build_model_kwargs(cfg, threadsafe_reduction=False)
     assert kwargs["nr_topics"] == 12
     assert kwargs["calculate_probabilities"] is True
+
+
+@pytest.mark.unit
+def test_build_model_kwargs_injects_single_thread_reduction_models() -> None:
+    from transcriptx.core.analysis.bertopic.runtime import build_model_kwargs
+
+    fake_umap = object()
+    fake_hdbscan = object()
+
+    with (
+        patch(
+            "transcriptx.core.analysis.bertopic.runtime.build_threadsafe_reduction_models",
+            return_value={
+                "umap_model": fake_umap,
+                "hdbscan_model": fake_hdbscan,
+            },
+        ) as mock_models,
+    ):
+        kwargs = build_model_kwargs(
+            SimpleNamespace(
+                embedding_model="all-MiniLM-L6-v2",
+                min_topic_size=5,
+                nr_topics="auto",
+                top_n_words=10,
+                calculate_probabilities=False,
+            )
+        )
+
+    mock_models.assert_called_once_with(min_topic_size=5)
+    assert kwargs["umap_model"] is fake_umap
+    assert kwargs["hdbscan_model"] is fake_hdbscan
+
+
+@pytest.mark.unit
+def test_build_threadsafe_reduction_models_pins_native_workers() -> None:
+    """Live import when bertopic extra present; skip cleanly otherwise."""
+    pytest.importorskip("umap")
+    pytest.importorskip("hdbscan")
+    from transcriptx.core.analysis.bertopic.runtime import (
+        build_threadsafe_reduction_models,
+    )
+
+    models = build_threadsafe_reduction_models(min_topic_size=7)
+    assert models["umap_model"].n_jobs == 1
+    assert models["hdbscan_model"].core_dist_n_jobs == 1
+    assert models["hdbscan_model"].min_cluster_size == 7
 
 
 @pytest.mark.unit

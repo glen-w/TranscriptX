@@ -535,7 +535,7 @@ Focus: operational tolerance, trust, docs surfaces — split across further 0.9.
 - [ ] Sustained personal/corpus testing; bug fixes; GUI friction removal
 - [x] Deterministic vs AI quality audit judgements (provisional overlay **0.9.7**)
 - [ ] Prompt/model-output tuning; failure-state improvements (only severity-justified leftovers)
-- [x] Performance and resource envelope **recipe** + corpus sizes documented (**0.9.7**; Medium Balanced + Large-library UI measured **2026-08-07**)
+- [x] Performance and resource envelope **recipe** + corpus sizes documented (**0.9.7**; Medium Balanced + Large-library UI measured **2026-08-07**; Thorough named-speaker + `qwen2.5:7b` measured **2026-08-07**)
 - [x] Trust / privacy / model-governance gate (**0.9.7**; Hub-card residual **dropped** 2026-08-07)
 - [ ] First screenshot-based user guides
 - [ ] RTD navigation polish (usable docs required; polish not a hard blocker) — go-live owner-gated
@@ -778,7 +778,7 @@ Define representative corpus sizes (small / medium / large-for-1.0) and record e
 - [x] Startup time (recipe + expectation; measure on release hardware)
 - [x] Import time (recipe + expectation)
 - [x] Time to first useful result (recipe + expectation)
-- [x] Default-preset runtime (recipe; use run_performance.json)
+- [x] Default-preset runtime (recipe; use run_performance.json) — Medium Balanced batch **pass** 2026-08-07; thorough full-preset + `qwen2.5:7b` on speaker-complete corpus **pass** 2026-08-07 (see [performance_envelopes_1_0.md](performance_envelopes_1_0.md) § Thorough full-preset LLM timings)
 - [x] Memory and disk use (recipe)
 - [x] Model download sizes (documented via runtime/models.md)
 - [x] Docker image size (baseline doc + recipe)
@@ -787,6 +787,8 @@ Define representative corpus sizes (small / medium / large-for-1.0) and record e
 - [x] Behaviour when disk, RAM or model capacity is insufficient (documented expectation: fail closed)
 
 These become **documented expectations and regression indicators**. Non-critical misses may ship as known limitations; capacity failures that corrupt data or hang without recovery are release blockers / must-fix per §7.
+
+**2026-08-07 Thorough / ~6B-class LLM probe (speaker-complete only):** model **`qwen2.5:7b`** (~7.6B). Qualifying set = 2 managed transcripts with `speaker_map_status=complete` (`260615_Ana_phd_presentation_QA`, `260615_Ana_phd_supervision_meeting`); incomplete maps excluded. Clean supervision wall **~10.1 min** (DAG ~3.9 + `chart_descriptions` ~6.1), 42 modules / 0 errors. Presentation QA initial wall **~71.4 min** under Ollama contention (`qwen3-vl:8b` resident → 4×600 s LLM soft-timeouts → `partial`); LLM-only retry **~31.7 s** once Ollama was free → **~31.9 min** effective success estimate; **corpus effective sum ~42.0 min**. Detail + module tables: [performance_envelopes_1_0.md](performance_envelopes_1_0.md) § Thorough full-preset LLM timings · scratch `artifacts/roadmap_1_0_llm_analysis/corpus_timings.json`. Ops note: multi-model contention is a capacity risk, not an analysis correctness failure when soft-fail continues.
 
 ---
 
@@ -995,7 +997,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 - [x] **Local scratch directory convention** — `.local/` documented in Phase 0A (`docs/dev/local_scratch.md`)
 - [x] **Exact archive subcategory names** — `docs/archive/{assessments,plans,investigations,migrations}/` from inventory
 - [ ] **Unfamiliar-user cohort** — who / when / consent and recording method
-- [x] **Representative corpus sizes** for performance envelopes (Small/Medium/Large-for-1.0 defined; Medium Balanced + Large-library UI measured 2026-08-07)
+- [x] **Representative corpus sizes** for performance envelopes (Small/Medium/Large-for-1.0 defined; Medium Balanced + Large-library UI measured 2026-08-07; Thorough named-speaker `qwen2.5:7b` corpus ~42 min effective 2026-08-07)
 - [ ] **RC duration** default (e.g. minimum soak window) if not already in release governance
 - [ ] **Security-reporting contact** channel for 1.0
 

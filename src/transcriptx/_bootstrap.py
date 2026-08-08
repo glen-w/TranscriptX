@@ -26,3 +26,10 @@ def bootstrap(env_path: Path | None = None) -> None:
             load_dotenv(dotenv_path=env_path, override=True)
     except ImportError:
         pass
+    # Pin BLAS/OpenMP/Numba before analysis extras import natives (pool size is sticky).
+    try:
+        from transcriptx.core.utils.native_threads import ensure_native_thread_env_defaults
+
+        ensure_native_thread_env_defaults()
+    except Exception:
+        pass
