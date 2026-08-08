@@ -32,7 +32,7 @@ Sentence Transformers remains a **base** dependency (shared with semantic/echoes
 
 ### Host macOS segfault note (OpenMP / Numba oversubscription)
 
-On Apple Silicon host Python, BERTopic’s default UMAP (`n_jobs=-1`) / HDBSCAN (`core_dist_n_jobs=-1`) can **segfault** during `fit_transform` (process exit -11) when OpenMP and Numba pools oversubscribe — especially after other modules have already loaded natives. This is **not** a Transcribe dependency conflict; Transcribe’s own deps are OCR-only.
+On Apple Silicon host Python, BERTopic’s default UMAP (`n_jobs=-1`) / HDBSCAN (`core_dist_n_jobs=-1`) can **segfault** during `fit_transform` (process exit -11) when OpenMP and Numba pools oversubscribe — especially after other modules have already loaded natives.
 
 Mitigations shipped in runtime:
 

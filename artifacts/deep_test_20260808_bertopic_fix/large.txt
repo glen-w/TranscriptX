@@ -1,0 +1,480 @@
+TRANSCRIPT data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:17:47,577 - transcriptx - INFO - Starting analysis pipeline for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json with modules: acts, conversation_loops, contagion, emotion, contextual_emotion, fine_grained_emotion, entity_sentiment, affect_tension, interactions, ner, semantic_similarity, sentiment, epistemic_markers, keyphrases, stats, topic_modeling, bertopic, transcript_output, simplified_transcript, understandability, lexical_diversity, wordclouds, tics, transcript_quality, insight_eligibility, temporal_dynamics, qa_analysis, pauses, echoes, politeness, momentum, topic_shift, moments, highlights, summary, narrative_summary, llm_summary, llm_speaker_summary, llm_action_items, llm_custom_qa, chart_descriptions, insights
+2026-08-08 12:17:47,935 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: _deep_test_large_norm.json
+  Outputs:    
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+21747_84267665
+  Modules that will run:
+    • acts
+    • affect_tension
+    • bertopic
+    • contagion
+    • contextual_emotion
+    • conversation_loops
+    • echoes
+    • emotion
+    • entity_sentiment
+    • epistemic_markers
+    • fine_grained_emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • interactions
+    • keyphrases
+    • lexical_diversity
+    • llm_action_items
+    • llm_custom_qa
+    • llm_speaker_summary
+    • llm_summary
+    • moments
+    • momentum
+    • narrative_summary
+    • ner
+    • pauses
+    • politeness
+    • qa_analysis
+    • semantic_similarity
+    • sentiment
+    • simplified_transcript
+    • stats
+    • summary
+    • temporal_dynamics
+    • tics
+    • topic_modeling
+    • topic_shift
+    • transcript_output
+    • transcript_quality
+    • understandability
+    • wordclouds
+---
+
+2026-08-08 12:17:47,984 - transcriptx - INFO - Starting DAG pipeline for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:17:47,994 - transcriptx - INFO - Execution order: acts, contextual_emotion, conversation_loops, echoes, emotion, contagion, epistemic_markers, fine_grained_emotion, interactions, lexical_diversity, llm_action_items, llm_custom_qa, llm_speaker_summary, llm_summary, ner, pauses, momentum, moments, politeness, qa_analysis, semantic_similarity, sentiment, affect_tension, entity_sentiment, simplified_transcript, stats, temporal_dynamics, tics, insight_eligibility, bertopic, highlights, keyphrases, summary, narrative_summary, topic_modeling, insights, topic_shift, transcript_output, transcript_quality, understandability, wordclouds
+2026-08-08 12:17:47,995 - transcriptx - INFO - Running acts analysis
+
+────────────────────────────────────────────────────────────
+🗣️ ACTS
+────────────────────────────────────────────────────────────
+🔍 Running Dialogue Act Classification...
+2026-08-08 12:17:47,995 - transcriptx - INFO - Starting acts analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:17:48,000 - transcriptx - INFO - Starting acts analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:17:48,001 - transcriptx.core.analysis.acts.ml_classifier - INFO - PyTorch version: 2.2.2
+2026-08-08 12:17:48,001 - transcriptx.core.analysis.acts.ml_classifier - WARNING - PyTorch version 2.2.2 is below 2.6.0. ML models may not work properly.
+2026-08-08 12:17:48,001 - transcriptx.core.analysis.acts.ml_classifier - INFO - Transformers library available
+2026-08-08 12:17:49,152 - transcriptx.core.analysis.acts.ml_classifier - INFO - Scikit-learn available
+2026-08-08 12:17:49,153 - transcriptx.core.analysis.acts.ml_classifier - INFO - Creating ML classifier instance...
+2026-08-08 12:17:49,153 - transcriptx.core.analysis.acts.ml_classifier - INFO - Acts TF-IDF/RF scaffolding initialized (untrained); using heuristic classification
+2026-08-08 12:17:49,153 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML components available: traditional_ml
+2026-08-08 12:17:49,153 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML classifier created successfully (ML available: True)
+2026-08-08 12:17:57,571 - transcriptx - INFO - Completed acts analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Dialogue Act Classification
+
+2026-08-08 12:17:57,572 - transcriptx - INFO - Completed acts analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:17:57,572 - transcriptx - INFO - acts completed in 9.58s
+2026-08-08 12:17:57,572 - transcriptx - INFO - Running contextual_emotion analysis
+
+────────────────────────────────────────────────────────────
+⚙️ CONTEXTUAL EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Contextual emotion (broad classifier, experimental)...
+2026-08-08 12:17:57,573 - transcriptx - INFO - Starting contextual_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:17:57,588 - transcriptx - INFO - Starting contextual_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:01,018 - transcriptx - INFO - [CONTEXTUAL_EMOTION] scored=1007 failed=0 usable=True channel=experimental
+2026-08-08 12:18:06,246 - transcriptx - INFO - Completed contextual_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Contextual emotion (broad classifier, experimental)
+
+2026-08-08 12:18:06,247 - transcriptx - INFO - Completed contextual_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:06,247 - transcriptx - INFO - contextual_emotion completed in 8.67s
+2026-08-08 12:18:06,247 - transcriptx - INFO - Running conversation_loops analysis
+
+────────────────────────────────────────────────────────────
+🔄 CONVERSATION LOOPS
+────────────────────────────────────────────────────────────
+🔍 Running Conversation Loop Detection...
+2026-08-08 12:18:06,248 - transcriptx - INFO - Starting conversation_loops analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:06,547 - transcriptx - INFO - Starting conversation_loops analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:06,761 - transcriptx - INFO - Completed conversation_loops analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Conversation Loop Detection
+
+2026-08-08 12:18:06,762 - transcriptx - INFO - Completed conversation_loops analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:06,762 - transcriptx - INFO - conversation_loops completed in 0.51s
+2026-08-08 12:18:06,764 - transcriptx - INFO - Running echoes analysis
+
+────────────────────────────────────────────────────────────
+🔁 ECHOES
+────────────────────────────────────────────────────────────
+🔍 Running Quote/Echo/Paraphrase Detection...
+2026-08-08 12:18:06,764 - transcriptx - INFO - Starting echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:06,771 - transcriptx - INFO - Starting echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:17,906 - transcriptx - INFO - Completed echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Quote/Echo/Paraphrase Detection
+
+2026-08-08 12:18:17,907 - transcriptx - INFO - Completed echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:17,907 - transcriptx - INFO - echoes completed in 11.14s
+2026-08-08 12:18:17,907 - transcriptx - INFO - Running emotion analysis
+
+────────────────────────────────────────────────────────────
+😄 EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Emotion-associated vocabulary (NRC lexicon)...
+2026-08-08 12:18:17,908 - transcriptx - INFO - Starting emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:17,908 - transcriptx - INFO - Starting emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:18,202 - transcriptx - INFO - [EMOTION] lexical v2 complete: scored=1007 skipped=0 empty=0 failed=0 usable=True cache_hit=True
+2026-08-08 12:18:20,455 - transcriptx - INFO - Completed emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Emotion-associated vocabulary (NRC lexicon)
+
+2026-08-08 12:18:20,456 - transcriptx - INFO - Completed emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:20,457 - transcriptx - INFO - emotion completed in 2.55s
+2026-08-08 12:18:20,457 - transcriptx - INFO - Running contagion analysis
+
+────────────────────────────────────────────────────────────
+🌊 CONTAGION
+────────────────────────────────────────────────────────────
+🔍 Running Emotional Contagion Detection...
+2026-08-08 12:18:20,457 - transcriptx - INFO - Starting contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:20,459 - transcriptx - INFO - Starting contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:20,961 - transcriptx - INFO - Completed contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Emotional Contagion Detection
+
+2026-08-08 12:18:20,961 - transcriptx - INFO - Completed contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:20,961 - transcriptx - INFO - contagion completed in 0.50s
+2026-08-08 12:18:20,962 - transcriptx - INFO - Running epistemic_markers analysis
+
+────────────────────────────────────────────────────────────
+⚙️ EPISTEMIC MARKERS
+────────────────────────────────────────────────────────────
+🔍 Running Hedging / certainty / epistemic markers...
+2026-08-08 12:18:20,964 - transcriptx - INFO - Starting epistemic_markers analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:20,966 - transcriptx - INFO - Starting epistemic_markers analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:22,585 - transcriptx - INFO - Completed epistemic_markers analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Hedging / certainty / epistemic markers
+
+2026-08-08 12:18:22,586 - transcriptx - INFO - Completed epistemic_markers analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:22,586 - transcriptx - INFO - epistemic_markers completed in 1.62s
+2026-08-08 12:18:22,586 - transcriptx - INFO - Running fine_grained_emotion analysis
+
+────────────────────────────────────────────────────────────
+⚙️ FINE GRAINED EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Fine-grained multi-label emotion (experimental)...
+2026-08-08 12:18:22,587 - transcriptx - INFO - Starting fine_grained_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:22,588 - transcriptx - INFO - Starting fine_grained_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:23,258 - transcriptx - INFO - [FINE_GRAINED_EMOTION] scored=1007 failed=0 mixed=56
+2026-08-08 12:18:29,487 - transcriptx - INFO - Completed fine_grained_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Fine-grained multi-label emotion (experimental)
+
+2026-08-08 12:18:29,487 - transcriptx - INFO - Completed fine_grained_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:29,487 - transcriptx - INFO - fine_grained_emotion completed in 6.90s
+2026-08-08 12:18:29,488 - transcriptx - INFO - Running interactions analysis
+
+────────────────────────────────────────────────────────────
+🤝 INTERACTIONS
+────────────────────────────────────────────────────────────
+🔍 Running Speaker Interaction Analysis...
+2026-08-08 12:18:29,488 - transcriptx - INFO - Starting interactions analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:29,494 - transcriptx - INFO - Starting interactions analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+🔍 Analyzing 1007 segments for interactions...
+✅ Found 255 interactions
+2026-08-08 12:18:34,572 - transcriptx - INFO - Completed interactions analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Speaker Interaction Analysis
+
+2026-08-08 12:18:34,573 - transcriptx - INFO - Completed interactions analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:34,573 - transcriptx - INFO - interactions completed in 5.08s
+2026-08-08 12:18:34,574 - transcriptx - INFO - Running lexical_diversity analysis
+
+────────────────────────────────────────────────────────────
+⚙️ LEXICAL DIVERSITY
+────────────────────────────────────────────────────────────
+🔍 Running Lexical diversity metrics (TTR, MTLD, hapax rate)...
+2026-08-08 12:18:34,575 - transcriptx - INFO - Starting lexical_diversity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:34,576 - transcriptx - INFO - Starting lexical_diversity analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:35,252 - transcriptx - INFO - Completed lexical_diversity analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Lexical diversity metrics (TTR, MTLD, hapax rate)
+
+2026-08-08 12:18:35,253 - transcriptx - INFO - Completed lexical_diversity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:35,253 - transcriptx - INFO - lexical_diversity completed in 0.68s
+2026-08-08 12:18:35,253 - transcriptx - INFO - Running llm_action_items analysis (model=qwen2.5:7b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM ACTION ITEMS
+────────────────────────────────────────────────────────────
+🔍 Running Extract structured action items via local LLM (model: qwen2.5:7b)...
+2026-08-08 12:18:35,254 - transcriptx - INFO - Starting llm_action_items analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:18:35,258 - transcriptx - INFO - Starting llm_action_items analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:19:15,105 - transcriptx - INFO - Completed llm_action_items analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Extract structured action items via local LLM
+
+2026-08-08 12:19:15,106 - transcriptx - INFO - Completed llm_action_items analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:19:15,106 - transcriptx - INFO - llm_action_items completed in 39.85s
+2026-08-08 12:19:15,106 - transcriptx - INFO - Running llm_custom_qa analysis
+
+────────────────────────────────────────────────────────────
+⚙️ LLM CUSTOM QA
+────────────────────────────────────────────────────────────
+🔍 Running Answer custom questions against the transcript via local LLM...
+2026-08-08 12:19:15,107 - transcriptx - INFO - Starting llm_custom_qa analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:19:15,107 - transcriptx - INFO - Starting llm_custom_qa analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:19:15,111 - transcriptx - INFO - Completed llm_custom_qa analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Answer custom questions against the transcript via local LLM
+
+2026-08-08 12:19:15,111 - transcriptx - INFO - Completed llm_custom_qa analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:19:15,111 - transcriptx - INFO - llm_custom_qa completed in 0.00s
+2026-08-08 12:19:15,112 - transcriptx - INFO - Running llm_speaker_summary analysis (model=qwen2.5:7b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM SPEAKER SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Abstractive per-speaker summaries via local LLM (model: 
+qwen2.5:7b)...
+2026-08-08 12:19:15,112 - transcriptx - INFO - Starting llm_speaker_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:19:15,115 - transcriptx - INFO - Starting llm_speaker_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:19:39,122 - transcriptx - INFO - Completed llm_speaker_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Abstractive per-speaker summaries via local LLM
+
+2026-08-08 12:19:39,123 - transcriptx - INFO - Completed llm_speaker_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:19:39,123 - transcriptx - INFO - llm_speaker_summary completed in 24.01s
+2026-08-08 12:19:39,123 - transcriptx - INFO - Running llm_summary analysis (model=qwen2.5:7b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Abstractive transcript summary via local LLM (model: qwen2.5:7b)...
+2026-08-08 12:19:39,124 - transcriptx - INFO - Starting llm_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:19:39,125 - transcriptx - INFO - Starting llm_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:20:01,740 - transcriptx - INFO - Completed llm_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Abstractive transcript summary via local LLM
+
+2026-08-08 12:20:01,741 - transcriptx - INFO - Completed llm_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:20:01,741 - transcriptx - INFO - llm_summary completed in 22.62s
+2026-08-08 12:20:01,741 - transcriptx - INFO - Running ner analysis
+
+────────────────────────────────────────────────────────────
+🏷️ NER
+────────────────────────────────────────────────────────────
+🔍 Running Named Entity Recognition...
+2026-08-08 12:20:01,742 - transcriptx - INFO - Starting ner analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:20:04,926 - transcriptx - INFO - Starting ner analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+Processing 1007 segments for NER analysis...
+Processing batch 1/11 (100 segments)
+Processing batch 2/11 (100 segments)
+Processing batch 3/11 (100 segments)
+Processing batch 4/11 (100 segments)
+Processing batch 5/11 (100 segments)
+Processing batch 6/11 (100 segments)
+Processing batch 7/11 (100 segments)
+Processing batch 8/11 (100 segments)
+Processing batch 9/11 (100 segments)
+Processing batch 10/11 (100 segments)
+Processing batch 11/11 (7 segments)
+NER processing complete.
+2026-08-08 12:21:01,746 - transcriptx - INFO - ner still running... 60.0s elapsed
+2026-08-08 12:21:11,597 - transcriptx - INFO - Completed ner analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Named Entity Recognition
+
+2026-08-08 12:21:11,599 - transcriptx - INFO - Completed ner analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:11,599 - transcriptx - INFO - ner completed in 69.85s
+2026-08-08 12:21:11,599 - transcriptx - INFO - Running pauses analysis
+
+────────────────────────────────────────────────────────────
+⏸️ PAUSES
+────────────────────────────────────────────────────────────
+🔍 Running Silence and Timing Analysis...
+2026-08-08 12:21:11,600 - transcriptx - INFO - Starting pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:11,601 - transcriptx - INFO - Starting pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:12,411 - transcriptx - INFO - Completed pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Silence and Timing Analysis
+
+2026-08-08 12:21:12,411 - transcriptx - INFO - Completed pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:12,411 - transcriptx - INFO - pauses completed in 0.81s
+2026-08-08 12:21:12,411 - transcriptx - INFO - Running momentum analysis
+
+────────────────────────────────────────────────────────────
+🚀 MOMENTUM
+────────────────────────────────────────────────────────────
+🔍 Running Stall/Flow Index Analysis...
+2026-08-08 12:21:12,412 - transcriptx - INFO - Starting momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:12,413 - transcriptx - INFO - Starting momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:12,710 - transcriptx - INFO - Completed momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Stall/Flow Index Analysis
+
+2026-08-08 12:21:12,711 - transcriptx - INFO - Completed momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:12,711 - transcriptx - INFO - momentum completed in 0.30s
+2026-08-08 12:21:12,711 - transcriptx - INFO - Running moments analysis
+
+────────────────────────────────────────────────────────────
+⭐ MOMENTS
+────────────────────────────────────────────────────────────
+🔍 Running Ranked Moments Worth Revisiting...
+2026-08-08 12:21:12,711 - transcriptx - INFO - Starting moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:12,712 - transcriptx - INFO - Starting moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:13,001 - transcriptx - INFO - Completed moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Ranked Moments Worth Revisiting
+
+2026-08-08 12:21:13,001 - transcriptx - INFO - Completed moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:13,001 - transcriptx - INFO - moments completed in 0.29s
+2026-08-08 12:21:13,002 - transcriptx - INFO - Running politeness analysis
+
+────────────────────────────────────────────────────────────
+⚙️ POLITENESS
+────────────────────────────────────────────────────────────
+🔍 Running Politeness / formality / directiveness markers...
+2026-08-08 12:21:13,003 - transcriptx - INFO - Starting politeness analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:13,004 - transcriptx - INFO - Starting politeness analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:14,612 - transcriptx - INFO - Completed politeness analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Politeness / formality / directiveness markers
+
+2026-08-08 12:21:14,612 - transcriptx - INFO - Completed politeness analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:14,612 - transcriptx - INFO - politeness completed in 1.61s
+2026-08-08 12:21:14,612 - transcriptx - INFO - Running qa_analysis analysis
+
+────────────────────────────────────────────────────────────
+❓ QA ANALYSIS
+────────────────────────────────────────────────────────────
+🔍 Running Question-Answer Pairing and Response Quality...
+2026-08-08 12:21:14,613 - transcriptx - INFO - Starting qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:14,615 - transcriptx - INFO - Starting qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:15,624 - transcriptx - INFO - Completed qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Question-Answer Pairing and Response Quality
+
+2026-08-08 12:21:15,625 - transcriptx - INFO - Completed qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:15,625 - transcriptx - INFO - qa_analysis completed in 1.01s
+2026-08-08 12:21:15,625 - transcriptx - INFO - Running semantic_similarity analysis
+
+────────────────────────────────────────────────────────────
+🔗 SEMANTIC SIMILARITY
+────────────────────────────────────────────────────────────
+🔍 Running Semantic similarity (batched embeddings, vectorized similarity)...
+2026-08-08 12:21:15,625 - transcriptx - INFO - Starting semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:15,687 - transcriptx - INFO - Starting semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:16,833 - transcriptx - INFO - [SEMANTIC] Loaded semantic model: sentence-transformers/all-mpnet-base-v2
+2026-08-08 12:21:33,996 - transcriptx - INFO - [SEMANTIC] Created 6 v2 visualizations
+2026-08-08 12:21:33,997 - transcriptx - INFO - Completed semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Semantic similarity (batched embeddings, vectorized similarity)
+
+2026-08-08 12:21:33,997 - transcriptx - INFO - Completed semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:33,997 - transcriptx - INFO - semantic_similarity completed in 18.37s
+2026-08-08 12:21:33,997 - transcriptx - INFO - Running sentiment analysis
+
+────────────────────────────────────────────────────────────
+😊 SENTIMENT
+────────────────────────────────────────────────────────────
+🔍 Running Sentiment Analysis...
+2026-08-08 12:21:33,998 - transcriptx - INFO - Starting sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+Some weights of the model checkpoint at /Users/89298/.cache/huggingface/hub/models--cardiffnlp--twitter-roberta-base-sentiment-latest/snapshots/3216a57f2a0d9c45a2e6c20157c20c49fb4bf9c7 were not used when initializing RobertaForSequenceClassification: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+- This IS expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+Device set to use mps:0
+2026-08-08 12:21:34,818 - transcriptx - INFO - [SENTIMENT] Transformers sentiment model loaded successfully
+2026-08-08 12:21:34,818 - transcriptx - INFO - Starting sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:57,573 - transcriptx - INFO - Completed sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Sentiment Analysis
+
+2026-08-08 12:21:57,579 - transcriptx - INFO - Completed sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:57,579 - transcriptx - INFO - sentiment completed in 23.58s
+2026-08-08 12:21:57,579 - transcriptx - INFO - Running affect_tension analysis
+
+────────────────────────────────────────────────────────────
+⚙️ AFFECT TENSION
+────────────────────────────────────────────────────────────
+🔍 Running Emotion + Sentiment mismatch and tension indices...
+2026-08-08 12:21:57,580 - transcriptx - INFO - Starting affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:21:57,581 - transcriptx - INFO - Starting affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:02,173 - transcriptx - INFO - Completed affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Emotion + Sentiment mismatch and tension indices
+
+2026-08-08 12:22:02,174 - transcriptx - INFO - Completed affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:02,174 - transcriptx - INFO - affect_tension completed in 4.59s
+2026-08-08 12:22:02,174 - transcriptx - INFO - Running entity_sentiment analysis
+
+────────────────────────────────────────────────────────────
+💭 ENTITY SENTIMENT
+────────────────────────────────────────────────────────────
+🔍 Running Entity-based Sentiment Analysis...
+2026-08-08 12:22:02,175 - transcriptx - INFO - Starting entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:02,176 - transcriptx - INFO - Starting entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:06,776 - transcriptx - INFO - Completed entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Entity-based Sentiment Analysis
+
+2026-08-08 12:22:06,778 - transcriptx - INFO - Completed entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:06,778 - transcriptx - INFO - entity_sentiment completed in 4.60s
+2026-08-08 12:22:06,778 - transcriptx - INFO - Running simplified_transcript analysis
+
+────────────────────────────────────────────────────────────
+⚙️ SIMPLIFIED TRANSCRIPT
+────────────────────────────────────────────────────────────
+🔍 Running Simplified transcript (tics, agreements, repetitions removed)...
+2026-08-08 12:22:06,778 - transcriptx - INFO - Starting simplified_transcript analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:06,780 - transcriptx - INFO - Starting simplified_transcript analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:06,807 - transcriptx - INFO - Completed simplified_transcript analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Simplified transcript (tics, agreements, repetitions removed)
+
+2026-08-08 12:22:06,808 - transcriptx - INFO - Completed simplified_transcript analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:06,808 - transcriptx - INFO - simplified_transcript completed in 0.03s
+2026-08-08 12:22:06,808 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+📊 STATS
+────────────────────────────────────────────────────────────
+🔍 Running Statistical Analysis...
+2026-08-08 12:22:06,809 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:06,813 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:07,027 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Statistical Analysis
+
+2026-08-08 12:22:07,028 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:07,028 - transcriptx - INFO - stats completed in 0.22s
+2026-08-08 12:22:07,028 - transcriptx - INFO - Running temporal_dynamics analysis
+
+────────────────────────────────────────────────────────────
+⏱️ TEMPORAL DYNAMICS
+────────────────────────────────────────────────────────────
+🔍 Running Temporal Dynamics Analysis...
+2026-08-08 12:22:07,028 - transcriptx - INFO - Starting temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:07,030 - transcriptx - INFO - Starting temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:08,327 - transcriptx - INFO - Completed temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Temporal Dynamics Analysis
+
+2026-08-08 12:22:08,328 - transcriptx - INFO - Completed temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:08,328 - transcriptx - INFO - temporal_dynamics completed in 1.30s
+2026-08-08 12:22:08,328 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+✔️ TICS
+────────────────────────────────────────────────────────────
+🔍 Running Verbal Tics Analysis...
+2026-08-08 12:22:08,329 - transcriptx - INFO - Starting tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:08,329 - transcriptx - INFO - Starting tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:10,060 - transcriptx - INFO - Completed tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Verbal Tics Analysis
+
+2026-08-08 12:22:10,061 - transcriptx - INFO - Completed tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:10,061 - transcriptx - INFO - tics completed in 1.73s
+2026-08-08 12:22:10,061 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+🔍 Running Shared content-vs-style insight eligibility pipeline...
+2026-08-08 12:22:10,062 - transcriptx - INFO - Starting insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:10,070 - transcriptx - INFO - Starting insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:18,092 - transcriptx - INFO - Completed insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-08 12:22:18,093 - transcriptx - INFO - Completed insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:18,093 - transcriptx - INFO - insight_eligibility completed in 8.03s
+2026-08-08 12:22:18,093 - transcriptx - INFO - Running bertopic analysis
+
+────────────────────────────────────────────────────────────
+⚙️ BERTOPIC
+────────────────────────────────────────────────────────────
+🔍 Running BERTopic topic modeling (optional / stack — see 
+docs/dev/bertopic_optional_module.md)...
+2026-08-08 12:22:18,093 - transcriptx - INFO - Starting bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:22:18,099 - transcriptx - INFO - Starting bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+/Users/89298/.pyenv/versions/3.10.13/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

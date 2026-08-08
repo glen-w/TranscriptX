@@ -1,1 +1,22 @@
-{"schema_version": "1.0", "source": {"type": "manual", "original_path": "originals/speaker_mapped.json", "imported_at": "2026-01-01T00:00:00Z"}, "segments": [{"speaker": "SPEAKER_00", "text": "Hello from 0", "start": 0.0, "end": 1.0}, {"speaker": "SPEAKER_01", "text": "Hello from 1", "start": 1.0, "end": 2.0}]}
+{
+  "schema_version": 1,
+  "source": {
+    "type": "manual",
+    "original_path": "originals/speaker_mapped.json",
+    "imported_at": "2026-01-01T00:00:00Z"
+  },
+  "segments": [
+    {
+      "speaker": "SPEAKER_00",
+      "text": "Hello from 0",
+      "start": 0.0,
+      "end": 1.0
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "text": "Hello from 1",
+      "start": 1.0,
+      "end": 2.0
+    }
+  ]
+}

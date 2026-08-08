@@ -28,6 +28,7 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **0.9.x — harden + public surfaces (automatable)** — audit judgements draft; perf recipe; trust drafts + AI labelling + NOTICE; website + Pages; release-ops draft; Data/Explorer redirects removed (**cut as 0.9.7**). RTD slug may remain owner-gated; Large-library soak measured later.
 - [x] **0.9.x — hygiene + honesty + human-pass prep** — epoch/deps cleanup; BERTopic-out-of-base; Balanced experimental-emotion honesty; known-limitations page; maintainer + unfamiliar-user kits (**cut as 0.9.8**). Templates ≠ measured ≠ signed-off for remaining owner-gated residuals (e.g. RTD slug, cohort).
 - [x] **Maintainer acceptance pass** — kit journeys closed **2026-08-07** ([manual_acceptance_1_0.md](manual_acceptance_1_0.md), incl. §3.12 Medium Balanced + Large-library); severity-justified fixes only if residual findings remain
+- [x] **Final Thorough stress pass (speaker-complete)** — Thorough + `qwen2.5:7b` on **all** speaker-complete transcripts **and** qualifying groups **pass** 2026-08-08 (2 tx + 2 groups, corpus wall **68.7 min**, 0 failures) → `artifacts/roadmap_1_0_llm_analysis/stress_pass_20260808/`
 - [ ] **0.9.9 — Overview / results presentation polish** — retire Insights **Analysis** tab (redistribute modules into Summary / Speakers / Highlights; Charts + Artifacts stay sibling pages); Overview hierarchy polish; Charts catalogue; list in [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md); **after** maintainer findings, **before** unfamiliar-user round
 - [ ] **Unfamiliar-user validation** — Clean-room round (2–5 people, ≥1 non-technical); kit in [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); mandatory before 1.0
 - [ ] **RC → 1.0** — Severity triage clear; gates pass; release ops/support policy published; governance evidence on exact commit
@@ -535,7 +536,7 @@ Focus: operational tolerance, trust, docs surfaces — split across further 0.9.
 - [ ] Sustained personal/corpus testing; bug fixes; GUI friction removal
 - [x] Deterministic vs AI quality audit judgements (provisional overlay **0.9.7**)
 - [ ] Prompt/model-output tuning; failure-state improvements (only severity-justified leftovers)
-- [x] Performance and resource envelope **recipe** + corpus sizes documented (**0.9.7**; Medium Balanced + Large-library UI measured **2026-08-07**; Thorough named-speaker + `qwen2.5:7b` measured **2026-08-07**)
+- [x] Performance and resource envelope **recipe** + corpus sizes documented (**0.9.7**; Medium Balanced + Large-library UI measured **2026-08-07**; Thorough named-speaker + `qwen2.5:7b` measured **2026-08-07**; final Thorough stress pass tx+groups **2026-08-08**)
 - [x] Trust / privacy / model-governance gate (**0.9.7**; Hub-card residual **dropped** 2026-08-07)
 - [ ] First screenshot-based user guides
 - [ ] RTD navigation polish (usable docs required; polish not a hard blocker) — go-live owner-gated
@@ -778,7 +779,7 @@ Define representative corpus sizes (small / medium / large-for-1.0) and record e
 - [x] Startup time (recipe + expectation; measure on release hardware)
 - [x] Import time (recipe + expectation)
 - [x] Time to first useful result (recipe + expectation)
-- [x] Default-preset runtime (recipe; use run_performance.json) — Medium Balanced batch **pass** 2026-08-07; thorough full-preset + `qwen2.5:7b` on speaker-complete corpus **pass** 2026-08-07 (see [performance_envelopes_1_0.md](performance_envelopes_1_0.md) § Thorough full-preset LLM timings)
+- [x] Default-preset runtime (recipe; use run_performance.json) — Medium Balanced batch **pass** 2026-08-07; thorough full-preset + `qwen2.5:7b` on speaker-complete corpus **pass** 2026-08-07; final Thorough stress pass (tx + groups) **pass** 2026-08-08 (see [performance_envelopes_1_0.md](performance_envelopes_1_0.md) § Thorough full-preset LLM timings / § Final Thorough stress pass)
 - [x] Memory and disk use (recipe)
 - [x] Model download sizes (documented via runtime/models.md)
 - [x] Docker image size (baseline doc + recipe)
@@ -789,6 +790,8 @@ Define representative corpus sizes (small / medium / large-for-1.0) and record e
 These become **documented expectations and regression indicators**. Non-critical misses may ship as known limitations; capacity failures that corrupt data or hang without recovery are release blockers / must-fix per §7.
 
 **2026-08-07 Thorough / ~6B-class LLM probe (speaker-complete only):** model **`qwen2.5:7b`** (~7.6B). Qualifying set = 2 managed transcripts with `speaker_map_status=complete` (`260615_Ana_phd_presentation_QA`, `260615_Ana_phd_supervision_meeting`); incomplete maps excluded. Clean supervision wall **~10.1 min** (DAG ~3.9 + `chart_descriptions` ~6.1), 42 modules / 0 errors. Presentation QA initial wall **~71.4 min** under Ollama contention (`qwen3-vl:8b` resident → 4×600 s LLM soft-timeouts → `partial`); LLM-only retry **~31.7 s** once Ollama was free → **~31.9 min** effective success estimate; **corpus effective sum ~42.0 min**. Detail + module tables: [performance_envelopes_1_0.md](performance_envelopes_1_0.md) § Thorough full-preset LLM timings · scratch `artifacts/roadmap_1_0_llm_analysis/corpus_timings.json`. Ops note: multi-model contention is a capacity risk, not an analysis correctness failure when soft-fail continues.
+
+**2026-08-08 Final Thorough stress pass (speaker-complete transcripts + groups) — PASS:** model **`qwen2.5:7b`** (~7.6B), package `0.9.8.8` / git `3b206e3`. Scope = every managed transcript with `speaker_map_status=complete` **and** every group whose members are all in that set (**2 transcripts + 2 groups**). Preset = Thorough (42 modules incl. BERTopic + LLM consumers + `chart_descriptions`). Walls: presentation QA **9.8 min**, supervision **10.9 min**, `_deep_test_bertopic_group2` **24.0 min**, `Perf smoke Ana multi-speaker` **24.0 min** → **corpus sum 68.7 min**; all `completed` / hard success, 0 module failures. Detail: [performance_envelopes_1_0.md](performance_envelopes_1_0.md) § Final Thorough stress pass · scratch `artifacts/roadmap_1_0_llm_analysis/stress_pass_20260808/`.
 
 ---
 
@@ -997,7 +1000,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 - [x] **Local scratch directory convention** — `.local/` documented in Phase 0A (`docs/dev/local_scratch.md`)
 - [x] **Exact archive subcategory names** — `docs/archive/{assessments,plans,investigations,migrations}/` from inventory
 - [ ] **Unfamiliar-user cohort** — who / when / consent and recording method
-- [x] **Representative corpus sizes** for performance envelopes (Small/Medium/Large-for-1.0 defined; Medium Balanced + Large-library UI measured 2026-08-07; Thorough named-speaker `qwen2.5:7b` corpus ~42 min effective 2026-08-07)
+- [x] **Representative corpus sizes** for performance envelopes (Small/Medium/Large-for-1.0 defined; Medium Balanced + Large-library UI measured 2026-08-07; Thorough named-speaker `qwen2.5:7b` corpus ~42 min effective 2026-08-07; final stress pass 2 tx + 2 groups **68.7 min** 2026-08-08)
 - [ ] **RC duration** default (e.g. minimum soak window) if not already in release governance
 - [ ] **Security-reporting contact** channel for 1.0
 

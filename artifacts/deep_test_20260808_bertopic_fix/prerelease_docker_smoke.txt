@@ -1,0 +1,25 @@
+Running Docker first-run smoke test...
+=== Docker Web Launcher Smoke Test ===
+--- transcriptx --help ---
+ Container transcriptx-transcriptx-web-run-671dde875b2f Creating 
+ Container transcriptx-transcriptx-web-run-671dde875b2f Created 
+usage: transcriptx [-h] [--host HOST] [--port PORT]
+
+TranscriptX — launch the web interface
+
+options:
+  -h, --help   show this help message and exit
+  --host HOST  Host to bind to (default: 127.0.0.1)
+  --port PORT  Port to listen on (default: 8501)
+--- python -m transcriptx.web --help ---
+ Container transcriptx-transcriptx-web-run-f21578b351eb Creating 
+ Container transcriptx-transcriptx-web-run-f21578b351eb Created 
+usage: transcriptx [-h] [--host HOST] [--port PORT]
+
+TranscriptX — launch the web interface
+
+options:
+  -h, --help   show this help message and exit
+  --host HOST  Host to bind to (default: 127.0.0.1)
+  --port PORT  Port to listen on (default: 8501)
+=== Smoke test complete ===

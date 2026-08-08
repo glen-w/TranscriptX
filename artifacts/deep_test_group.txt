@@ -1,601 +1,920 @@
-GROUP_UUID fe57111e-b198-4982-b484-291480ef8db7
-MODULES ['acts', 'conversation_loops', 'contagion', 'emotion', 'contextual_emotion', 'fine_grained_emotion', 'entity_sentiment', 'affect_tension', 'interactions', 'ner', 'semantic_similarity', 'sentiment', 'epistemic_markers', 'keyphrases', 'stats', 'topic_modeling', 'bertopic', 'transcript_output', 'simplified_transcript', 'understandability', 'lexical_diversity', 'wordclouds', 'tics', 'transcript_quality', 'insight_eligibility', 'temporal_dynamics', 'qa_analysis', 'pauses', 'echoes', 'politeness', 'momentum', 'topic_shift', 'moments', 'highlights', 'summary', 'insights']
-2026-08-07 14:59:05,559 - transcriptx - INFO - Starting group analysis pipeline for 2 transcripts with modules: acts, conversation_loops, contagion, emotion, contextual_emotion, fine_grained_emotion, entity_sentiment, affect_tension, interactions, ner, semantic_similarity, sentiment, epistemic_markers, keyphrases, stats, topic_modeling, bertopic, transcript_output, simplified_transcript, understandability, lexical_diversity, wordclouds, tics, transcript_quality, insight_eligibility, temporal_dynamics, qa_analysis, pauses, echoes, politeness, momentum, topic_shift, moments, highlights, summary, insights
-2026-08-07 14:59:05,559 - transcriptx - INFO - Starting analysis pipeline for /mnt/transcripts/_deep_test_mini_probe.json with modules: acts, conversation_loops, contagion, emotion, contextual_emotion, fine_grained_emotion, entity_sentiment, affect_tension, interactions, ner, semantic_similarity, sentiment, epistemic_markers, keyphrases, stats, topic_modeling, bertopic, transcript_output, simplified_transcript, understandability, lexical_diversity, wordclouds, tics, transcript_quality, insight_eligibility, temporal_dynamics, qa_analysis, pauses, echoes, politeness, momentum, topic_shift, moments, highlights, summary, insights
-2026-08-07 14:59:05,833 - transcriptx - INFO - Module registry finalized and locked
+---
+pid: 97003
+cwd: "/Users/89298/Documents/transcriptx"
+command: "python3 - <<'PY'\nimport json\nfrom pathlib import Path\np=Path('/Users/89298/Documents/transcripts/_deep_test_mini_probe_b.json')\nd=json.loads(p.read_text())\nprint('source before', d.get('source'))\nsrc=d.get('source') or {}\nif isinstance(src, dict):\n    src['original_path']='originals/_deep_test_mini_probe_b.json'\n    # common alternate keys\n    for k in list(src):\n        if 'original' in k.lower() and isinstance(src[k], str) and 'mini_probe.json' in src[k] and '_b' not in src[k]:\n            src[k]='originals/_deep_test_mini_probe_b.json'\n    d['source']=src\np.write_text(json.dumps(d, indent=2)+'\\n')\nprint('source after', d.get('source'))\n# also fix archived original content path references if any\nop=Path('/Users/89298/Documents/transcripts/originals/_deep_test_mini_probe_b.json')\nif op.exists():\n    od=json.loads(op.read_text())\n    osrc=od.get('source') or {}\n    if isinstance(osrc, dict):\n        osrc['original_path']='originals/_deep_test_mini_probe_b.json'\n        od['source']=osrc\n        op.write_text(json.dumps(od, indent=2)+'\\n')\nprint('fixed')\nPY\ndocker compose exec -T transcriptx-web python - <<'PY'\nfrom pathlib import Path\nfrom transcriptx.app.models.requests import AnalysisRequest, GroupAnalysisRequest\nfrom transcriptx.app.workflows.analysis import validate_analysis_readiness, run_group_analysis\np=Path('/mnt/transcripts/_deep_test_mini_probe_b.json')\nprint('readiness', validate_analysis_readiness(AnalysisRequest(transcript_path=p, mode='quick')))\nmodules = [\n    \"stats\",\"summary\",\"highlights\",\"keyphrases\",\"moments\",\"pauses\",\"momentum\",\"tics\",\n    \"insight_eligibility\",\"lexical_diversity\",\"politeness\",\"echoes\",\"transcript_output\",\n    \"transcript_quality\",\"simplified_transcript\",\n]\nresult = run_group_analysis(GroupAnalysisRequest(\n    group_uuid=\"7f6a8ed4-2709-4a14-bd19-0b1e15902918\",\n    mode=\"quick\",\n    modules=modules,\n))\nprint(\"SUCCESS\", result.success)\nprint(\"ERRORS_N\", len(result.errors or []))\nprint(\"RUN_DIR\", getattr(result, \"run_dir\", None))\nprint(\"MODULES_N\", len(getattr(result, \"modules_executed\", None) or []))\nif result.errors:\n    for e in result.errors[:8]:\n        print(\"ERR\", str(e)[:300])\nraise SystemExit(0 if result.success else 1)\nPY\necho DONE_GROUP=$?\nls -lt \"/Users/89298/Documents/transcriptx outputs/groups/7f6a8ed4-2709-4a14-bd19-0b1e15902918/\" 2>/dev/null | head -5\n"
+title: "Fix mini_b sidecar path; re-run group analysis"
+status: running  
+started_at: 2026-08-07T15:12:00.638Z
+running_for_ms: 40029    
+---
+source before {'type': 'manual', 'original_path': 'originals/_deep_test_mini_probe.json', 'imported_at': '2026-01-01T00:00:00Z'}
+source after {'type': 'manual', 'original_path': 'originals/_deep_test_mini_probe_b.json', 'imported_at': '2026-01-01T00:00:00Z'}
+fixed
+readiness []
+2026-08-07 15:12:07,584 - transcriptx - INFO - Starting group analysis pipeline for 2 transcripts with modules: stats, summary, highlights, keyphrases, moments, pauses, momentum, tics, insight_eligibility, lexical_diversity, politeness, echoes, transcript_output, transcript_quality, simplified_transcript
+2026-08-07 15:12:07,585 - transcriptx - INFO - Starting analysis pipeline for /mnt/transcripts/_deep_test_mini_probe.json with modules: stats, summary, highlights, keyphrases, moments, pauses, momentum, tics, insight_eligibility, lexical_diversity, politeness, echoes, transcript_output, transcript_quality, simplified_transcript
+2026-08-07 15:12:08,465 - transcriptx - INFO - Module registry finalized and locked
 
 ---
 Review before run
 ---
   Transcript: _deep_test_mini_probe.json
-  Outputs:    /mnt/outputs/_deep_test_mini_probe/20260807_145905_14745643
+  Outputs:    /mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812
   Modules that will run:
-    • acts
-    • affect_tension
-    • bertopic
-    • contagion
-    • contextual_emotion
-    • conversation_loops
     • echoes
-    • emotion
-    • entity_sentiment
-    • epistemic_markers
-    • fine_grained_emotion
     • highlights
     • insight_eligibility
-    • insights
-    • interactions
     • keyphrases
     • lexical_diversity
     • moments
     • momentum
-    • ner
     • pauses
     • politeness
-    • qa_analysis
-    • semantic_similarity
-    • sentiment
     • simplified_transcript
     • stats
     • summary
-    • temporal_dynamics
     • tics
-    • topic_modeling
-    • topic_shift
     • transcript_output
     • transcript_quality
-    • understandability
-    • wordclouds
 ---
 
-2026-08-07 14:59:05,844 - transcriptx - INFO - Starting DAG pipeline for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:05,844 - transcriptx - INFO - Execution order: acts, contextual_emotion, conversation_loops, echoes, emotion, contagion, epistemic_markers, fine_grained_emotion, interactions, lexical_diversity, ner, pauses, momentum, moments, politeness, qa_analysis, semantic_similarity, sentiment, affect_tension, entity_sentiment, simplified_transcript, stats, temporal_dynamics, tics, insight_eligibility, bertopic, highlights, keyphrases, summary, topic_modeling, insights, topic_shift, transcript_output, transcript_quality, understandability, wordclouds
-2026-08-07 14:59:05,844 - transcriptx - INFO - Running acts analysis
-
-────────────────────────────────────────────────────────────
-ACTS
-────────────────────────────────────────────────────────────
- Running Dialogue Act Classification...
-2026-08-07 14:59:05,845 - transcriptx - INFO - Starting acts analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:05,852 - transcriptx - INFO - Starting acts analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:05,852 - transcriptx.core.analysis.acts.ml_classifier - INFO - PyTorch version: 2.13.0+cpu
-2026-08-07 14:59:05,852 - transcriptx.core.analysis.acts.ml_classifier - INFO - Transformers library available
-2026-08-07 14:59:06,026 - transcriptx.core.analysis.acts.ml_classifier - INFO - Scikit-learn available
-2026-08-07 14:59:06,026 - transcriptx.core.analysis.acts.ml_classifier - INFO - Creating ML classifier instance...
-2026-08-07 14:59:06,026 - transcriptx.core.analysis.acts.ml_classifier - INFO - Acts TF-IDF/RF scaffolding initialized (untrained); using heuristic classification
-2026-08-07 14:59:06,026 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML components available: traditional_ml
-2026-08-07 14:59:06,026 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML classifier created successfully (ML available: True)
-2026-08-07 14:59:07,520 - transcriptx - INFO - Completed acts analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Completed Dialogue Act Classification
-
-2026-08-07 14:59:07,521 - transcriptx - INFO - Completed acts analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:07,521 - transcriptx - INFO - acts completed in 1.67s
-2026-08-07 14:59:07,521 - transcriptx - INFO - Running contextual_emotion analysis
-
-────────────────────────────────────────────────────────────
-CONTEXTUAL EMOTION
-────────────────────────────────────────────────────────────
- Running Contextual emotion (broad classifier, experimental)...
-2026-08-07 14:59:07,521 - transcriptx - INFO - Starting contextual_emotion analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:07,541 - transcriptx - INFO - Starting contextual_emotion analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:09,085 - transcriptx - INFO - [CONTEXTUAL_EMOTION] scored=10 failed=0 usable=True channel=experimental
-2026-08-07 14:59:09,948 - transcriptx - INFO - Completed contextual_emotion analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Completed Contextual emotion (broad classifier, experimental)
-
-2026-08-07 14:59:09,949 - transcriptx - INFO - Completed contextual_emotion analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:09,949 - transcriptx - INFO - contextual_emotion completed in 2.43s
-2026-08-07 14:59:09,949 - transcriptx - INFO - Running conversation_loops analysis
-
-────────────────────────────────────────────────────────────
-CONVERSATION LOOPS
-────────────────────────────────────────────────────────────
- Running Conversation Loop Detection...
-2026-08-07 14:59:09,950 - transcriptx - INFO - Starting conversation_loops analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:10,239 - transcriptx - INFO - Starting conversation_loops analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:10,254 - transcriptx - INFO - Completed conversation_loops analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Completed Conversation Loop Detection
-
-2026-08-07 14:59:10,256 - transcriptx - INFO - Completed conversation_loops analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:10,256 - transcriptx - INFO - conversation_loops completed in 0.30s
-2026-08-07 14:59:10,257 - transcriptx - INFO - Running echoes analysis
+2026-08-07 15:12:08,491 - transcriptx - INFO - Starting DAG pipeline for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:08,493 - transcriptx - INFO - Execution order: echoes, lexical_diversity, pauses, momentum, moments, politeness, simplified_transcript, stats, tics, insight_eligibility, highlights, keyphrases, summary, transcript_output, transcript_quality
+2026-08-07 15:12:08,493 - transcriptx - INFO - Running echoes analysis
 
 ────────────────────────────────────────────────────────────
 ECHOES
 ────────────────────────────────────────────────────────────
  Running Quote/Echo/Paraphrase Detection...
-2026-08-07 14:59:10,258 - transcriptx - INFO - Starting echoes analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:10,270 - transcriptx - INFO - Starting echoes analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:10,296 - transcriptx - INFO - Completed echoes analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:08,495 - transcriptx - INFO - Starting echoes analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:08,966 - transcriptx - INFO - Starting echoes analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:09,037 - transcriptx - INFO - Completed echoes analysis for: /mnt/transcripts/_deep_test_mini_probe.json
  Completed Quote/Echo/Paraphrase Detection
 
-2026-08-07 14:59:10,296 - transcriptx - INFO - Completed echoes analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:10,297 - transcriptx - INFO - echoes completed in 0.04s
-2026-08-07 14:59:10,297 - transcriptx - INFO - Running emotion analysis
-
-────────────────────────────────────────────────────────────
-EMOTION
-────────────────────────────────────────────────────────────
- Running Emotion-associated vocabulary (NRC lexicon)...
-2026-08-07 14:59:10,298 - transcriptx - INFO - Starting emotion analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:10,299 - transcriptx - INFO - Starting emotion analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:12,248 - transcriptx - INFO - Completed emotion analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Completed Emotion-associated vocabulary (NRC lexicon)
-
-2026-08-07 14:59:12,250 - transcriptx - INFO - Completed emotion analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:12,250 - transcriptx - INFO - emotion completed in 1.95s
-2026-08-07 14:59:12,250 - transcriptx - INFO - Running contagion analysis
-
-────────────────────────────────────────────────────────────
-CONTAGION
-────────────────────────────────────────────────────────────
- Running Emotional Contagion Detection...
-2026-08-07 14:59:12,251 - transcriptx - INFO - Starting contagion analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:12,256 - transcriptx - INFO - Starting contagion analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:12,533 - transcriptx - INFO - Completed contagion analysis for: /mnt/transcripts/_deep_test_mini_probe.json
- Completed Emotional Contagion Detection
-
-2026-08-07 14:59:12,535 - transcriptx - INFO - Completed contagion analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:12,535 - transcriptx - INFO - contagion completed in 0.28s
-2026-08-07 14:59:12,535 - transcriptx - INFO - Running epistemic_markers analysis
-
-────────────────────────────────────────────────────────────
-EPISTEMIC MARKERS
-────────────────────────────────────────────────────────────
- Running Hedging / certainty / epistemic markers...
-2026-08-07 14:59:12,536 - transcriptx - INFO - Starting epistemic_markers analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:12,543 - transcriptx - INFO - Starting epistemic_markers analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:12,831 - transcriptx - INFO - Completed epistemic_markers analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Completed Hedging / certainty / epistemic markers
-
-2026-08-07 14:59:12,833 - transcriptx - INFO - Completed epistemic_markers analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:12,833 - transcriptx - INFO - epistemic_markers completed in 0.30s
-2026-08-07 14:59:12,833 - transcriptx - INFO - Running fine_grained_emotion analysis
-
-────────────────────────────────────────────────────────────
-FINE GRAINED EMOTION
-────────────────────────────────────────────────────────────
- Running Fine-grained multi-label emotion (experimental)...
-2026-08-07 14:59:12,833 - transcriptx - INFO - Starting fine_grained_emotion analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:12,837 - transcriptx - INFO - Starting fine_grained_emotion analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:13,088 - transcriptx - INFO - [FINE_GRAINED_EMOTION] scored=10 failed=0 mixed=1
-2026-08-07 14:59:14,445 - transcriptx - INFO - Completed fine_grained_emotion analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Completed Fine-grained multi-label emotion (experimental)
-
-2026-08-07 14:59:14,446 - transcriptx - INFO - Completed fine_grained_emotion analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:14,446 - transcriptx - INFO - fine_grained_emotion completed in 1.61s
-2026-08-07 14:59:14,446 - transcriptx - INFO - Running interactions analysis
-
-────────────────────────────────────────────────────────────
-INTERACTIONS
-────────────────────────────────────────────────────────────
- Running Speaker Interaction Analysis...
-2026-08-07 14:59:14,447 - transcriptx - INFO - Starting interactions analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:14,460 - transcriptx - INFO - Starting interactions analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Analyzing 10 segments for interactions...
- Found 18 interactions
-2026-08-07 14:59:17,277 - transcriptx - INFO - Completed interactions analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Completed Speaker Interaction Analysis
-
-2026-08-07 14:59:17,281 - transcriptx - INFO - Completed interactions analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:17,282 - transcriptx - INFO - interactions completed in 2.83s
-2026-08-07 14:59:17,283 - transcriptx - INFO - Running lexical_diversity analysis
+2026-08-07 15:12:09,039 - transcriptx - INFO - Completed echoes analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:09,039 - transcriptx - INFO - echoes completed in 0.54s
+2026-08-07 15:12:09,039 - transcriptx - INFO - Running lexical_diversity analysis
 
 ────────────────────────────────────────────────────────────
 LEXICAL DIVERSITY
 ────────────────────────────────────────────────────────────
  Running Lexical diversity metrics (TTR, MTLD, hapax rate)...
-2026-08-07 14:59:17,284 - transcriptx - INFO - Starting lexical_diversity analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:17,291 - transcriptx - INFO - Starting lexical_diversity analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:17,728 - transcriptx - INFO - Completed lexical_diversity analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:09,042 - transcriptx - INFO - Starting lexical_diversity analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:09,047 - transcriptx - INFO - Starting lexical_diversity analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:10,476 - transcriptx - INFO - Completed lexical_diversity analysis for /mnt/transcripts/_deep_test_mini_probe.json
  Completed Lexical diversity metrics (TTR, MTLD, hapax rate)
 
-2026-08-07 14:59:17,729 - transcriptx - INFO - Completed lexical_diversity analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:17,729 - transcriptx - INFO - lexical_diversity completed in 0.44s
-2026-08-07 14:59:17,729 - transcriptx - INFO - Running ner analysis
-
-────────────────────────────────────────────────────────────
-NER
-────────────────────────────────────────────────────────────
- Running Named Entity Recognition...
-2026-08-07 14:59:17,730 - transcriptx - INFO - Starting ner analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:23,395 - transcriptx - INFO - Starting ner analysis for /mnt/transcripts/_deep_test_mini_probe.json
-Processing 10 segments for NER analysis...
-Processing batch 1/1 (10 segments)
-NER processing complete.
-2026-08-07 14:59:29,860 - transcriptx - INFO - Completed ner analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Completed Named Entity Recognition
-
-2026-08-07 14:59:29,866 - transcriptx - INFO - Completed ner analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:29,866 - transcriptx - INFO - ner completed in 12.13s
-2026-08-07 14:59:29,866 - transcriptx - INFO - Running pauses analysis
+2026-08-07 15:12:10,479 - transcriptx - INFO - Completed lexical_diversity analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:10,479 - transcriptx - INFO - lexical_diversity completed in 1.43s
+2026-08-07 15:12:10,480 - transcriptx - INFO - Running pauses analysis
 
 ────────────────────────────────────────────────────────────
 PAUSES
 ────────────────────────────────────────────────────────────
  Running Silence and Timing Analysis...
-2026-08-07 14:59:29,868 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:29,871 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:30,086 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:10,482 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:10,485 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:10,821 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
  Completed Silence and Timing Analysis
 
-2026-08-07 14:59:30,087 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:30,087 - transcriptx - INFO - pauses completed in 0.22s
-2026-08-07 14:59:30,087 - transcriptx - INFO - Running momentum analysis
+2026-08-07 15:12:10,823 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:10,823 - transcriptx - INFO - pauses completed in 0.34s
+2026-08-07 15:12:10,823 - transcriptx - INFO - Running momentum analysis
 
 ────────────────────────────────────────────────────────────
 MOMENTUM
 ────────────────────────────────────────────────────────────
  Running Stall/Flow Index Analysis...
-2026-08-07 14:59:30,088 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:30,090 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:30,273 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:10,825 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:10,828 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:11,191 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
  Completed Stall/Flow Index Analysis
 
-2026-08-07 14:59:30,275 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:30,275 - transcriptx - INFO - momentum completed in 0.19s
-2026-08-07 14:59:30,275 - transcriptx - INFO - Running moments analysis
+2026-08-07 15:12:11,193 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:11,194 - transcriptx - INFO - momentum completed in 0.37s
+2026-08-07 15:12:11,194 - transcriptx - INFO - Running moments analysis
 
 ────────────────────────────────────────────────────────────
 MOMENTS
 ────────────────────────────────────────────────────────────
  Running Ranked Moments Worth Revisiting...
-2026-08-07 14:59:30,276 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:30,279 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:30,293 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:11,197 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:11,214 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:11,252 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
  Completed Ranked Moments Worth Revisiting
 
-2026-08-07 14:59:30,294 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:30,294 - transcriptx - INFO - moments completed in 0.02s
-2026-08-07 14:59:30,295 - transcriptx - INFO - Running politeness analysis
+2026-08-07 15:12:11,256 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:11,256 - transcriptx - INFO - moments completed in 0.06s
+2026-08-07 15:12:11,256 - transcriptx - INFO - Running politeness analysis
 
 ────────────────────────────────────────────────────────────
 POLITENESS
 ────────────────────────────────────────────────────────────
  Running Politeness / formality / directiveness markers...
-2026-08-07 14:59:30,297 - transcriptx - INFO - Starting politeness analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:30,300 - transcriptx - INFO - Starting politeness analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:30,595 - transcriptx - INFO - Completed politeness analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:11,258 - transcriptx - INFO - Starting politeness analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:11,275 - transcriptx - INFO - Starting politeness analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:12,149 - transcriptx - INFO - Completed politeness analysis for /mnt/transcripts/_deep_test_mini_probe.json
  Completed Politeness / formality / directiveness markers
 
-2026-08-07 14:59:30,596 - transcriptx - INFO - Completed politeness analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:30,596 - transcriptx - INFO - politeness completed in 0.30s
-2026-08-07 14:59:30,596 - transcriptx - INFO - Running qa_analysis analysis
-
-────────────────────────────────────────────────────────────
-QA ANALYSIS
-────────────────────────────────────────────────────────────
- Running Question-Answer Pairing and Response Quality...
-2026-08-07 14:59:30,597 - transcriptx - INFO - Starting qa_analysis analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:30,601 - transcriptx - INFO - Starting qa_analysis analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:31,586 - transcriptx - INFO - Completed qa_analysis analysis for: /mnt/transcripts/_deep_test_mini_probe.json
- Completed Question-Answer Pairing and Response Quality
-
-2026-08-07 14:59:31,588 - transcriptx - INFO - Completed qa_analysis analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:31,588 - transcriptx - INFO - qa_analysis completed in 0.99s
-2026-08-07 14:59:31,588 - transcriptx - INFO - Running semantic_similarity analysis
-
-────────────────────────────────────────────────────────────
-SEMANTIC SIMILARITY
-────────────────────────────────────────────────────────────
- Running Semantic similarity (batched embeddings, vectorized similarity)...
-2026-08-07 14:59:31,590 - transcriptx - INFO - Starting semantic_similarity analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:31,614 - transcriptx - INFO - Starting semantic_similarity analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:32,577 - transcriptx - INFO - [SEMANTIC] Loaded semantic model: sentence-transformers/all-mpnet-base-v2
-2026-08-07 14:59:33,186 - transcriptx - INFO - [SEMANTIC] Created 0 v2 visualizations
-2026-08-07 14:59:33,191 - transcriptx - INFO - Completed semantic_similarity analysis for: /mnt/transcripts/_deep_test_mini_probe.json
- Completed Semantic similarity (batched embeddings, vectorized similarity)
-
-2026-08-07 14:59:33,198 - transcriptx - INFO - Completed semantic_similarity analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:33,198 - transcriptx - INFO - semantic_similarity completed in 1.60s
-2026-08-07 14:59:33,199 - transcriptx - INFO - Running sentiment analysis
-
-────────────────────────────────────────────────────────────
-SENTIMENT
-────────────────────────────────────────────────────────────
- Running Sentiment Analysis...
-2026-08-07 14:59:33,200 - transcriptx - INFO - Starting sentiment analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-Some weights of the model checkpoint at /data/.cache/huggingface/hub/models--cardiffnlp--twitter-roberta-base-sentiment-latest/snapshots/3216a57f2a0d9c45a2e6c20157c20c49fb4bf9c7 were not used when initializing RobertaForSequenceClassification: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
-- This IS expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
-- This IS NOT expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
-Device set to use cpu
-2026-08-07 14:59:33,710 - transcriptx - INFO - [SENTIMENT] Transformers sentiment model loaded successfully
-2026-08-07 14:59:33,710 - transcriptx - INFO - Starting sentiment analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:35,693 - transcriptx - INFO - Completed sentiment analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Completed Sentiment Analysis
-
-2026-08-07 14:59:35,703 - transcriptx - INFO - Completed sentiment analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:35,703 - transcriptx - INFO - sentiment completed in 2.50s
-2026-08-07 14:59:35,703 - transcriptx - INFO - Running affect_tension analysis
-
-────────────────────────────────────────────────────────────
-AFFECT TENSION
-────────────────────────────────────────────────────────────
- Running Emotion + Sentiment mismatch and tension indices...
-2026-08-07 14:59:35,705 - transcriptx - INFO - Starting affect_tension analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:35,709 - transcriptx - INFO - Starting affect_tension analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:38,296 - transcriptx - INFO - Completed affect_tension analysis for: /mnt/transcripts/_deep_test_mini_probe.json
- Completed Emotion + Sentiment mismatch and tension indices
-
-2026-08-07 14:59:38,310 - transcriptx - INFO - Completed affect_tension analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:38,310 - transcriptx - INFO - affect_tension completed in 2.59s
-2026-08-07 14:59:38,311 - transcriptx - INFO - Running entity_sentiment analysis
-
-────────────────────────────────────────────────────────────
-ENTITY SENTIMENT
-────────────────────────────────────────────────────────────
- Running Entity-based Sentiment Analysis...
-2026-08-07 14:59:38,313 - transcriptx - INFO - Starting entity_sentiment analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:38,319 - transcriptx - INFO - Starting entity_sentiment analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:38,412 - transcriptx - INFO - Completed entity_sentiment analysis for: /mnt/transcripts/_deep_test_mini_probe.json
- Completed Entity-based Sentiment Analysis
-
-2026-08-07 14:59:38,413 - transcriptx - INFO - Completed entity_sentiment analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:38,413 - transcriptx - INFO - entity_sentiment completed in 0.10s
-2026-08-07 14:59:38,414 - transcriptx - INFO - Running simplified_transcript analysis
+2026-08-07 15:12:12,158 - transcriptx - INFO - Completed politeness analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:12,158 - transcriptx - INFO - politeness completed in 0.89s
+2026-08-07 15:12:12,159 - transcriptx - INFO - Running simplified_transcript analysis
 
 ────────────────────────────────────────────────────────────
 SIMPLIFIED TRANSCRIPT
 ────────────────────────────────────────────────────────────
  Running Simplified transcript (tics, agreements, repetitions removed)...
-2026-08-07 14:59:38,415 - transcriptx - INFO - Starting simplified_transcript analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:38,420 - transcriptx - INFO - Starting simplified_transcript analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:38,427 - transcriptx - INFO - Completed simplified_transcript analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:12,161 - transcriptx - INFO - Starting simplified_transcript analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:12,172 - transcriptx - INFO - Starting simplified_transcript analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:12,194 - transcriptx - INFO - Completed simplified_transcript analysis for /mnt/transcripts/_deep_test_mini_probe.json
  Completed Simplified transcript (tics, agreements, repetitions removed)
 
-2026-08-07 14:59:38,428 - transcriptx - INFO - Completed simplified_transcript analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:38,428 - transcriptx - INFO - simplified_transcript completed in 0.01s
-2026-08-07 14:59:38,428 - transcriptx - INFO - Running stats analysis
+2026-08-07 15:12:12,196 - transcriptx - INFO - Completed simplified_transcript analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:12,196 - transcriptx - INFO - simplified_transcript completed in 0.03s
+2026-08-07 15:12:12,197 - transcriptx - INFO - Running stats analysis
 
 ────────────────────────────────────────────────────────────
 STATS
 ────────────────────────────────────────────────────────────
  Running Statistical Analysis...
-2026-08-07 14:59:38,429 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:38,440 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:38,474 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:12,200 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:13,143 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:13,207 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
  Completed Statistical Analysis
 
-2026-08-07 14:59:38,475 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:38,475 - transcriptx - INFO - stats completed in 0.05s
-2026-08-07 14:59:38,475 - transcriptx - INFO - Running temporal_dynamics analysis
-
-────────────────────────────────────────────────────────────
-TEMPORAL DYNAMICS
-────────────────────────────────────────────────────────────
- Running Temporal Dynamics Analysis...
-2026-08-07 14:59:38,476 - transcriptx - INFO - Starting temporal_dynamics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:38,480 - transcriptx - INFO - Starting temporal_dynamics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:39,187 - transcriptx - INFO - Completed temporal_dynamics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
- Completed Temporal Dynamics Analysis
-
-2026-08-07 14:59:39,189 - transcriptx - INFO - Completed temporal_dynamics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:39,189 - transcriptx - INFO - temporal_dynamics completed in 0.71s
-2026-08-07 14:59:39,189 - transcriptx - INFO - Running tics analysis
+2026-08-07 15:12:13,213 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:13,213 - transcriptx - INFO - stats completed in 1.01s
+2026-08-07 15:12:13,213 - transcriptx - INFO - Running tics analysis
 
 ────────────────────────────────────────────────────────────
 TICS
 ────────────────────────────────────────────────────────────
  Running Verbal Tics Analysis...
-2026-08-07 14:59:39,191 - transcriptx - INFO - Starting tics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:39,192 - transcriptx - INFO - Starting tics analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:39,349 - transcriptx - INFO - Completed tics analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:13,215 - transcriptx - INFO - Starting tics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:13,216 - transcriptx - INFO - Starting tics analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:13,596 - transcriptx - INFO - Completed tics analysis for /mnt/transcripts/_deep_test_mini_probe.json
  Completed Verbal Tics Analysis
 
-2026-08-07 14:59:39,350 - transcriptx - INFO - Completed tics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:39,350 - transcriptx - INFO - tics completed in 0.16s
-2026-08-07 14:59:39,350 - transcriptx - INFO - Running insight_eligibility analysis
+2026-08-07 15:12:13,599 - transcriptx - INFO - Completed tics analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:13,599 - transcriptx - INFO - tics completed in 0.38s
+2026-08-07 15:12:13,600 - transcriptx - INFO - Running insight_eligibility analysis
 
 ────────────────────────────────────────────────────────────
 INSIGHT ELIGIBILITY
 ────────────────────────────────────────────────────────────
  Running Shared content-vs-style insight eligibility pipeline...
-2026-08-07 14:59:39,351 - transcriptx - INFO - Starting insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:39,366 - transcriptx - INFO - Starting insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:39,489 - transcriptx - INFO - Completed insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:13,602 - transcriptx - INFO - Starting insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:13,630 - transcriptx - INFO - Starting insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:24,106 - transcriptx - INFO - Completed insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe.json
  Completed Shared content-vs-style insight eligibility pipeline
 
-2026-08-07 14:59:39,490 - transcriptx - INFO - Completed insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:39,490 - transcriptx - INFO - insight_eligibility completed in 0.14s
-2026-08-07 14:59:39,490 - transcriptx - INFO - Running bertopic analysis
-
-────────────────────────────────────────────────────────────
-BERTOPIC
-────────────────────────────────────────────────────────────
- Running BERTopic topic modeling (optional / stack — see 
-docs/dev/bertopic_optional_module.md)...
-2026-08-07 14:59:39,491 - transcriptx - INFO - Starting bertopic analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:39,505 - transcriptx - INFO - Starting bertopic analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:52,724 - transcriptx - INFO - Completed bertopic analysis for: /mnt/transcripts/_deep_test_mini_probe.json
- Completed BERTopic topic modeling (optional / stack — see 
-docs/dev/bertopic_optional_module.md)
-
-2026-08-07 14:59:52,725 - transcriptx - INFO - Completed bertopic analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:52,725 - transcriptx - INFO - bertopic completed in 13.23s
-2026-08-07 14:59:52,725 - transcriptx - INFO - Running highlights analysis
+2026-08-07 15:12:24,150 - transcriptx - INFO - Completed insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:24,150 - transcriptx - INFO - insight_eligibility completed in 10.51s
+2026-08-07 15:12:24,151 - transcriptx - INFO - Running highlights analysis
 
 ────────────────────────────────────────────────────────────
 HIGHLIGHTS
 ────────────────────────────────────────────────────────────
  Running Highlights and conflict moments (quote-forward)...
-2026-08-07 14:59:52,726 - transcriptx - INFO - Starting highlights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:52,734 - transcriptx - INFO - Starting highlights analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:52,779 - transcriptx - INFO - Completed highlights analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:24,160 - transcriptx - INFO - Starting highlights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:24,191 - transcriptx - INFO - Starting highlights analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:24,356 - transcriptx - INFO - Completed highlights analysis for /mnt/transcripts/_deep_test_mini_probe.json
  Completed Highlights and conflict moments (quote-forward)
 
-2026-08-07 14:59:52,780 - transcriptx - INFO - Completed highlights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:52,780 - transcriptx - INFO - highlights completed in 0.05s
-2026-08-07 14:59:52,780 - transcriptx - INFO - Running keyphrases analysis
+2026-08-07 15:12:24,358 - transcriptx - INFO - Completed highlights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:24,359 - transcriptx - INFO - highlights completed in 0.20s
+2026-08-07 15:12:24,359 - transcriptx - INFO - Running keyphrases analysis
 
 ────────────────────────────────────────────────────────────
 KEYPHRASES
 ────────────────────────────────────────────────────────────
  Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
-2026-08-07 14:59:52,781 - transcriptx - INFO - Starting keyphrases analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:52,798 - transcriptx - INFO - Starting keyphrases analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:54,168 - transcriptx - INFO - Completed keyphrases analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:24,362 - transcriptx - INFO - Starting keyphrases analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:24,450 - transcriptx - INFO - Starting keyphrases analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:28,716 - transcriptx - INFO - Completed keyphrases analysis for /mnt/transcripts/_deep_test_mini_probe.json
  Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
 
-2026-08-07 14:59:54,173 - transcriptx - INFO - Completed keyphrases analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:54,173 - transcriptx - INFO - keyphrases completed in 1.39s
-2026-08-07 14:59:54,173 - transcriptx - INFO - Running summary analysis
+2026-08-07 15:12:28,722 - transcriptx - INFO - Completed keyphrases analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:28,723 - transcriptx - INFO - keyphrases completed in 4.35s
+2026-08-07 15:12:28,723 - transcriptx - INFO - Running summary analysis
 
 ────────────────────────────────────────────────────────────
 SUMMARY
 ────────────────────────────────────────────────────────────
  Running Executive brief summary derived from highlights...
-2026-08-07 14:59:54,174 - transcriptx - INFO - Starting summary analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 14:59:54,196 - transcriptx - INFO - Starting summary analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:00:00,410 - transcriptx - INFO - Saved all-charts PDF to /mnt/outputs/_deep_test_mini_probe/20260807_145905_14745643/summary/all_charts.pdf (16 modules, 71 charts)
-2026-08-07 15:00:00,410 - transcriptx - INFO - Completed summary analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:28,725 - transcriptx - INFO - Starting summary analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:28,733 - transcriptx - INFO - Starting summary analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:30,296 - transcriptx - INFO - Saved all-charts PDF to /mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/summary/all_charts.pdf (5 modules, 8 charts)
+2026-08-07 15:12:30,298 - transcriptx - INFO - Completed summary analysis for /mnt/transcripts/_deep_test_mini_probe.json
  Completed Executive brief summary derived from highlights
 
-2026-08-07 15:00:00,412 - transcriptx - INFO - Completed summary analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:00:00,412 - transcriptx - INFO - summary completed in 6.24s
-2026-08-07 15:00:00,412 - transcriptx - INFO - Running topic_modeling analysis
-
-────────────────────────────────────────────────────────────
-TOPIC MODELING
-────────────────────────────────────────────────────────────
- Running Topic Modeling...
-2026-08-07 15:00:00,413 - transcriptx - INFO - Starting topic_modeling analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:00:00,413 - transcriptx - INFO - Starting topic_modeling analysis for /mnt/transcripts/_deep_test_mini_probe.json
-[TOPICS] Finding optimal k for LDA...
-[TOPICS] Warning: Insufficient data for optimal k selection
-[TOPICS] Finding optimal k for NMF...
-[TOPICS] Warning: Insufficient data for optimal k selection
-[TOPICS] Created discourse analysis charts
-[DEBUG] create_topic_evolution_timeline: received 4 doc topics
-[DEBUG] DataFrame head:
-                                                text  ... confidence
-0  demo is next week san francisco spoke dana ope...  ...   0.978659
-1  can send calendar invite address agenda new yo...  ...   0.986703
-2  should keep concise decisions risks next steps...  ...   0.661698
-3  miss friday leadership will be unhappy let avo...  ...   0.981192
-
-[4 rows x 6 columns]
-[TOPICS] Created topic evolution timeline: /mnt/outputs/_deep_test_mini_probe/20260807_145905_14745643/topic_modeling/charts/global/static/timeline/topic_evolution_timeline.png
-[DEBUG] create_speaker_topic_engagement_heatmap: received 4 doc topics
-[DEBUG] DataFrame head:
-                                                text  ... confidence
-0  demo is next week san francisco spoke dana ope...  ...   0.978659
-1  can send calendar invite address agenda new yo...  ...   0.986703
-2  should keep concise decisions risks next steps...  ...   0.661698
-3  miss friday leadership will be unhappy let avo...  ...   0.981192
-
-[4 rows x 6 columns]
-[DEBUG] speaker-topic engagement heatmap: contributors=4, matrix_sum=4.000000
-[TOPICS] Created speaker-topic engagement heatmap: /mnt/outputs/_deep_test_mini_probe/20260807_145905_14745643/topic_modeling/charts/global/static/heatmap/speaker_topic_engagement_heatmap.png
-[DEBUG] create_expected_topic_proportions_bar: received 4 doc topics
-[DEBUG] DataFrame head:
-                                                text  ... confidence
-0  demo is next week san francisco spoke dana ope...  ...   0.978659
-1  can send calendar invite address agenda new yo...  ...   0.986703
-2  should keep concise decisions risks next steps...  ...   0.661698
-3  miss friday leadership will be unhappy let avo...  ...   0.981192
-
-[4 rows x 6 columns]
-[TOPICS] Created expected topic proportions bar chart: /mnt/outputs/_deep_test_mini_probe/20260807_145905_14745643/topic_modeling/charts/global/static/bar/expected_topic_proportions.png
-[TOPICS] Enhanced HTML report created: /mnt/outputs/_deep_test_mini_probe/20260807_145905_14745643/topic_modeling/_deep_test_mini_probe_enhanced_topic_modeling_report.html
-2026-08-07 15:00:02,190 - transcriptx - INFO - Completed topic_modeling analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Completed Topic Modeling
-
-2026-08-07 15:00:02,191 - transcriptx - INFO - Completed topic_modeling analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:00:02,191 - transcriptx - INFO - topic_modeling completed in 1.78s
-2026-08-07 15:00:02,191 - transcriptx - INFO - Running insights analysis
-
-────────────────────────────────────────────────────────────
-INSIGHTS
-────────────────────────────────────────────────────────────
- Running Content-first insights layer separated from style markers...
-2026-08-07 15:00:02,192 - transcriptx - INFO - Starting insights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:00:02,194 - transcriptx - INFO - Starting insights analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:00:02,198 - transcriptx - INFO - Completed insights analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Completed Content-first insights layer separated from style markers
-
-2026-08-07 15:00:02,199 - transcriptx - INFO - Completed insights analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:00:02,199 - transcriptx - INFO - insights completed in 0.01s
-2026-08-07 15:00:02,199 - transcriptx - INFO - Running topic_shift analysis (model=gemma3:12b)
-
-────────────────────────────────────────────────────────────
-TOPIC SHIFT
-────────────────────────────────────────────────────────────
- Running Topic-shift chapter segmentation (model: gemma3:12b)...
-2026-08-07 15:00:02,200 - transcriptx - INFO - Starting topic_shift analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:00:02,223 - transcriptx - INFO - Starting topic_shift analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:01:02,215 - transcriptx - INFO - topic_shift still running... 60.0s elapsed
-2026-08-07 15:02:02,264 - transcriptx - INFO - topic_shift still running... 120.1s elapsed
-2026-08-07 15:03:02,274 - transcriptx - INFO - topic_shift still running... 180.1s elapsed
-2026-08-07 15:04:02,290 - transcriptx - INFO - topic_shift still running... 240.1s elapsed
-2026-08-07 15:05:02,295 - transcriptx - INFO - topic_shift still running... 300.1s elapsed
-2026-08-07 15:06:02,306 - transcriptx - INFO - topic_shift still running... 360.1s elapsed
-2026-08-07 15:07:02,316 - transcriptx - INFO - topic_shift still running... 420.1s elapsed
-2026-08-07 15:08:02,329 - transcriptx - INFO - topic_shift still running... 480.1s elapsed
-2026-08-07 15:09:02,334 - transcriptx - INFO - topic_shift still running... 540.1s elapsed
-2026-08-07 15:09:04,523 - transcriptx - INFO - topic_shift enrichment generate failed: Ollama request timed out
-2026-08-07 15:09:04,721 - transcriptx - INFO - Completed topic_shift analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Completed Topic-shift chapter segmentation
-
-2026-08-07 15:09:04,784 - transcriptx - INFO - Completed topic_shift analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:09:04,785 - transcriptx - INFO - topic_shift completed in 542.52s
-2026-08-07 15:09:04,788 - transcriptx - INFO - Running transcript_output analysis
+2026-08-07 15:12:30,302 - transcriptx - INFO - Completed summary analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:30,302 - transcriptx - INFO - summary completed in 1.57s
+2026-08-07 15:12:30,302 - transcriptx - INFO - Running transcript_output analysis
 
 ────────────────────────────────────────────────────────────
 TRANSCRIPT OUTPUT
 ────────────────────────────────────────────────────────────
  Running Generate human readable transcripts...
-2026-08-07 15:09:04,798 - transcriptx - INFO - Starting transcript_output analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:09:04,833 - transcriptx - INFO - Starting transcript_output analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:09:04,871 - transcriptx - INFO - Generating human-friendly transcript for _deep_test_mini_probe
-2026-08-07 15:09:04,898 - transcriptx - INFO - Human-friendly transcript generated successfully: /mnt/outputs/_deep_test_mini_probe/20260807_145905_14745643/transcripts/_deep_test_mini_probe-transcript.txt
+2026-08-07 15:12:30,306 - transcriptx - INFO - Starting transcript_output analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:30,312 - transcriptx - INFO - Starting transcript_output analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:30,319 - transcriptx - INFO - Generating human-friendly transcript for _deep_test_mini_probe
+2026-08-07 15:12:30,334 - transcriptx - INFO - Human-friendly transcript generated successfully: /mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/transcripts/_deep_test_mini_probe-transcript.txt
  Generated human-friendly transcript
 
-2026-08-07 15:09:04,900 - transcriptx - INFO - Completed transcript_output analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:30,335 - transcriptx - INFO - Completed transcript_output analysis for /mnt/transcripts/_deep_test_mini_probe.json
  Completed Generate human readable transcripts
 
-2026-08-07 15:09:04,902 - transcriptx - INFO - Completed transcript_output analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:09:04,902 - transcriptx - INFO - transcript_output completed in 0.10s
-2026-08-07 15:09:04,902 - transcriptx - INFO - Running transcript_quality analysis
+2026-08-07 15:12:30,337 - transcriptx - INFO - Completed transcript_output analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:30,337 - transcriptx - INFO - transcript_output completed in 0.03s
+2026-08-07 15:12:30,337 - transcriptx - INFO - Running transcript_quality analysis
 
 ────────────────────────────────────────────────────────────
 TRANSCRIPT QUALITY
 ────────────────────────────────────────────────────────────
  Running ASR Confidence...
-2026-08-07 15:09:04,904 - transcriptx - INFO - Starting transcript_quality analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:09:04,957 - transcriptx - INFO - Starting transcript_quality analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:09:04,989 - transcriptx - INFO - Completed transcript_quality analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:30,341 - transcriptx - INFO - Starting transcript_quality analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:30,356 - transcriptx - INFO - Starting transcript_quality analysis for /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:30,378 - transcriptx - INFO - Completed transcript_quality analysis for /mnt/transcripts/_deep_test_mini_probe.json
  Completed ASR Confidence
 
-2026-08-07 15:09:04,990 - transcriptx - INFO - Completed transcript_quality analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:09:04,990 - transcriptx - INFO - transcript_quality completed in 0.09s
-2026-08-07 15:09:04,991 - transcriptx - INFO - Running understandability analysis
+2026-08-07 15:12:30,380 - transcriptx - INFO - Completed transcript_quality analysis for: /mnt/transcripts/_deep_test_mini_probe.json
+2026-08-07 15:12:30,380 - transcriptx - INFO - transcript_quality completed in 0.04s
+2026-08-07 15:12:30,381 - transcriptx - INFO - Pipeline completed. Ran 15 modules with 0 errors
+2026-08-07 15:12:30,454 - transcriptx - INFO - Saved run results summary to /mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/run_results.json
+2026-08-07 15:12:30,492 - transcriptx - INFO - Saved output manifest to /mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/manifest.json
+2026-08-07 15:12:30,696 - transcriptx - INFO - Saved run manifest to /mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: _deep_test_mini_probe
+📂 Output Directory: /mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812
+🔄 Analysis Status: 15/15 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (15):
+--------------------------------------------------
+
+✅ STATS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ SUMMARY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_summary.json (6.4 KB)
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_highlights.json (22.3 KB)
+
+✅ KEYPHRASES
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/keyphrases
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_keyphrases.json (39.5 KB)
+      • data/global/_deep_test_mini_probe_keyphrases_summary.json (1.2 KB)
+      • data/global/_deep_test_mini_probe_keyphrases.csv (8.4 KB)
+
+✅ MOMENTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/moments
+   📄 Files: 3
+   📂 Subdirectories: 4
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_moments_summary.json (0.9 KB)
+      • data/global/moments.stats.json (0.0 KB)
+      • data/global/moments.events.json (0.0 KB)
+
+✅ PAUSES
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/pauses
+   📄 Files: 7
+   📂 Subdirectories: 9
+   📋 Key outputs:
+      • charts/global/dynamic/hist/pauses_hist.html (4745.1 KB)
+      • charts/global/static/hist/pauses_hist.png (62.2 KB)
+      • charts/global/static/hist/pauses_hist.evidence.json (0.9 KB)
+      • data/global/pauses.per_segment.json (0.5 KB)
+      • data/global/_deep_test_mini_probe_pauses_summary.json (1.2 KB)
+      • ... and 2 more files
+
+✅ MOMENTUM
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/momentum
+   📄 Files: 7
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/timeseries/momentum.html (4744.9 KB)
+      • charts/global/static/timeseries/momentum.evidence.json (0.6 KB)
+      • charts/global/static/timeseries/momentum.png (79.3 KB)
+      • data/global/_deep_test_mini_probe_momentum_summary.json (1.0 KB)
+      • data/global/momentum.stats.json (0.1 KB)
+      • ... and 2 more files
+
+✅ TICS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/tics
+   📄 Files: 6
+   📂 Subdirectories: 9
+   📋 Key outputs:
+      • charts/speakers/Alice/dynamic/tics/tics.html (4744.9 KB)
+      • charts/speakers/Alice/static/tics/tics.evidence.json (0.5 KB)
+      • charts/speakers/Alice/static/tics/tics.png (65.9 KB)
+      • data/global/_deep_test_mini_probe_tics_summary.txt (0.0 KB)
+      • data/global/_deep_test_mini_probe_tics_summary.json (0.9 KB)
+      • ... and 1 more files
+
+✅ INSIGHT_ELIGIBILITY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/insight_eligibility
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_insight_eligibility.json (30.0 KB)
+      • data/global/_deep_test_mini_probe_insight_eligibility_tic_mask.json (2.5
+KB)
+      • data/global/_deep_test_mini_probe_insight_eligibility_phrase_scores.json
+(7.1 KB)
+
+✅ LEXICAL_DIVERSITY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/lexical_diversity
+   📄 Files: 12
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/lexical_diversity/lexical-ttr.html (4744.9 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-mtld.html (4744.9 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-hapax-rate.html (4744.9 
+KB)
+      • charts/global/static/lexical_diversity/lexical-hapax-rate.evidence.json 
+(0.5 KB)
+      • charts/global/static/lexical_diversity/lexical-mtld.evidence.json (0.5 
+KB)
+      • ... and 7 more files
+
+✅ POLITENESS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/politeness
+   📄 Files: 9
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/politeness/category_rates.html (4745.0 KB)
+      • charts/speakers/Bob/static/politeness/category_rates.png (162.6 KB)
+      • charts/speakers/Bob/static/politeness/category_rates.evidence.json (0.7 
+KB)
+      • charts/speakers/Alice/dynamic/politeness/category_rates.html (4745.1 KB)
+      • charts/speakers/Alice/static/politeness/category_rates.png (151.0 KB)
+      • ... and 4 more files
+
+✅ ECHOES
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/echoes
+   📄 Files: 3
+   📂 Subdirectories: 4
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_echoes_summary.json (0.9 KB)
+      • data/global/echoes.stats.json (0.1 KB)
+      • data/global/echoes.events.json (0.0 KB)
+
+✅ TRANSCRIPT_OUTPUT
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • _deep_test_mini_probe-transcript.txt (0.9 KB)
+      • _deep_test_mini_probe_simplified_transcript_summary.json (0.1 KB)
+      • _deep_test_mini_probe-transcript.csv (0.8 KB)
+      • _deep_test_mini_probe_simplified_transcript.json (1.1 KB)
+
+✅ TRANSCRIPT_QUALITY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/transcript_quality
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_transcript_quality_spans.json (0.0 KB)
+      • data/global/_deep_test_mini_probe_transcript_quality.json (1.3 KB)
+
+✅ SIMPLIFIED_TRANSCRIPT
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • _deep_test_mini_probe-transcript.txt (0.9 KB)
+      • _deep_test_mini_probe_simplified_transcript_summary.json (0.1 KB)
+      • _deep_test_mini_probe-transcript.csv (0.8 KB)
+      • _deep_test_mini_probe_simplified_transcript.json (1.1 KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (5.4 KB)
+   • report.md (0.4 KB)
+   • run_results.json (2.8 KB)
+   • report.txt (0.4 KB)
+   • manifest.json (50.2 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 70
+   • Total output size: 38.6 MB
+   • Successful modules: 15
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  /mnt/outputs/_deep_test_mini_probe/20260807_151207_15527812
+  Executed:
+    • echoes
+    • highlights
+    • insight_eligibility
+    • keyphrases
+    • lexical_diversity
+    • moments
+    • momentum
+    • pauses
+    • politeness
+    • simplified_transcript
+    • stats
+    • summary
+    • tics
+    • transcript_output
+    • transcript_quality
+  To explore results: open the web interface
+---
+
+2026-08-07 15:12:30,920 - transcriptx - INFO - Pipeline completed for /mnt/transcripts/_deep_test_mini_probe.json - Successfully ran: echoes, lexical_diversity, pauses, momentum, moments, politeness, simplified_transcript, stats, tics, insight_eligibility, highlights, keyphrases, summary, transcript_output, transcript_quality
+2026-08-07 15:12:30,939 - transcriptx - INFO - Starting analysis pipeline for /mnt/transcripts/_deep_test_mini_probe_b.json with modules: stats, summary, highlights, keyphrases, moments, pauses, momentum, tics, insight_eligibility, lexical_diversity, politeness, echoes, transcript_output, transcript_quality, simplified_transcript
+2026-08-07 15:12:32,079 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: _deep_test_mini_probe_b.json
+  Outputs:    /mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125
+  Modules that will run:
+    • echoes
+    • highlights
+    • insight_eligibility
+    • keyphrases
+    • lexical_diversity
+    • moments
+    • momentum
+    • pauses
+    • politeness
+    • simplified_transcript
+    • stats
+    • summary
+    • tics
+    • transcript_output
+    • transcript_quality
+---
+
+2026-08-07 15:12:32,109 - transcriptx - INFO - Starting DAG pipeline for /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:32,111 - transcriptx - INFO - Execution order: echoes, lexical_diversity, pauses, momentum, moments, politeness, simplified_transcript, stats, tics, insight_eligibility, highlights, keyphrases, summary, transcript_output, transcript_quality
+2026-08-07 15:12:32,111 - transcriptx - INFO - Running echoes analysis
 
 ────────────────────────────────────────────────────────────
-UNDERSTANDABILITY
+ECHOES
 ────────────────────────────────────────────────────────────
- Running Understandability Analysis...
-2026-08-07 15:09:04,993 - transcriptx - INFO - Starting understandability analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:09:05,063 - transcriptx - INFO - Starting understandability analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Global CSV saved to 
-/mnt/outputs/_deep_test_mini_probe/20260807_145905_14745643/understandability/da
-ta/global/_deep_test_mini_probe_understandability.csv
+ Running Quote/Echo/Paraphrase Detection...
+2026-08-07 15:12:32,113 - transcriptx - INFO - Starting echoes analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:32,116 - transcriptx - INFO - Starting echoes analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:32,222 - transcriptx - INFO - Completed echoes analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Quote/Echo/Paraphrase Detection
 
-2026-08-07 15:09:10,233 - transcriptx - INFO - Completed understandability analysis for /mnt/transcripts/_deep_test_mini_probe.json
- Completed Understandability Analysis
-
-2026-08-07 15:09:10,237 - transcriptx - INFO - Completed understandability analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:09:10,237 - transcriptx - INFO - understandability completed in 5.24s
-2026-08-07 15:09:10,237 - transcriptx - INFO - Running wordclouds analysis
+2026-08-07 15:12:32,226 - transcriptx - INFO - Completed echoes analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:32,226 - transcriptx - INFO - echoes completed in 0.11s
+2026-08-07 15:12:32,226 - transcriptx - INFO - Running lexical_diversity analysis
 
 ────────────────────────────────────────────────────────────
-WORDCLOUDS
+LEXICAL DIVERSITY
 ────────────────────────────────────────────────────────────
- Running Word Cloud Generation...
-2026-08-07 15:09:10,239 - transcriptx - INFO - Starting wordclouds analysis for: /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:09:10,241 - transcriptx - INFO - Starting wordclouds analysis for /mnt/transcripts/_deep_test_mini_probe.json
-2026-08-07 15:09:10,251 - transcriptx - INFO - [WORDCLOUDS] Using precomputed speaker grouping from pipeline: 2 speakers: ['Alice', 'Bob']
- Word cloud saved for Alice
+ Running Lexical diversity metrics (TTR, MTLD, hapax rate)...
+2026-08-07 15:12:32,228 - transcriptx - INFO - Starting lexical_diversity analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:32,229 - transcriptx - INFO - Starting lexical_diversity analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:33,224 - transcriptx - INFO - Completed lexical_diversity analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Lexical diversity metrics (TTR, MTLD, hapax rate)
 
- Word cloud saved for Bob
+2026-08-07 15:12:33,228 - transcriptx - INFO - Completed lexical_diversity analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:33,228 - transcriptx - INFO - lexical_diversity completed in 1.00s
+2026-08-07 15:12:33,228 - transcriptx - INFO - Running pauses analysis
 
- Word cloud saved for wordcloud-ALL
+────────────────────────────────────────────────────────────
+PAUSES
+────────────────────────────────────────────────────────────
+ Running Silence and Timing Analysis...
+2026-08-07 15:12:33,232 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:33,233 - transcriptx - INFO - Starting pauses analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:33,759 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Silence and Timing Analysis
 
+2026-08-07 15:12:33,765 - transcriptx - INFO - Completed pauses analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:33,765 - transcriptx - INFO - pauses completed in 0.53s
+2026-08-07 15:12:33,766 - transcriptx - INFO - Running momentum analysis
+
+────────────────────────────────────────────────────────────
+MOMENTUM
+────────────────────────────────────────────────────────────
+ Running Stall/Flow Index Analysis...
+2026-08-07 15:12:33,769 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:33,771 - transcriptx - INFO - Starting momentum analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:34,303 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Stall/Flow Index Analysis
+
+2026-08-07 15:12:34,307 - transcriptx - INFO - Completed momentum analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:34,307 - transcriptx - INFO - momentum completed in 0.53s
+2026-08-07 15:12:34,307 - transcriptx - INFO - Running moments analysis
+
+────────────────────────────────────────────────────────────
+MOMENTS
+────────────────────────────────────────────────────────────
+ Running Ranked Moments Worth Revisiting...
+2026-08-07 15:12:34,311 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:34,312 - transcriptx - INFO - Starting moments analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:34,337 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Ranked Moments Worth Revisiting
+
+2026-08-07 15:12:34,339 - transcriptx - INFO - Completed moments analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:34,339 - transcriptx - INFO - moments completed in 0.03s
+2026-08-07 15:12:34,339 - transcriptx - INFO - Running politeness analysis
+
+────────────────────────────────────────────────────────────
+POLITENESS
+────────────────────────────────────────────────────────────
+ Running Politeness / formality / directiveness markers...
+2026-08-07 15:12:34,342 - transcriptx - INFO - Starting politeness analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:34,343 - transcriptx - INFO - Starting politeness analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:34,985 - transcriptx - INFO - Completed politeness analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Politeness / formality / directiveness markers
+
+2026-08-07 15:12:34,987 - transcriptx - INFO - Completed politeness analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:34,987 - transcriptx - INFO - politeness completed in 0.64s
+2026-08-07 15:12:34,987 - transcriptx - INFO - Running simplified_transcript analysis
+
+────────────────────────────────────────────────────────────
+SIMPLIFIED TRANSCRIPT
+────────────────────────────────────────────────────────────
+ Running Simplified transcript (tics, agreements, repetitions removed)...
+2026-08-07 15:12:34,990 - transcriptx - INFO - Starting simplified_transcript analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:34,990 - transcriptx - INFO - Starting simplified_transcript analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,004 - transcriptx - INFO - Completed simplified_transcript analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Simplified transcript (tics, agreements, repetitions removed)
+
+2026-08-07 15:12:35,006 - transcriptx - INFO - Completed simplified_transcript analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,006 - transcriptx - INFO - simplified_transcript completed in 0.01s
+2026-08-07 15:12:35,006 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+STATS
+────────────────────────────────────────────────────────────
+ Running Statistical Analysis...
+2026-08-07 15:12:35,008 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,010 - transcriptx - INFO - Starting stats analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,064 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Statistical Analysis
+
+2026-08-07 15:12:35,065 - transcriptx - INFO - Completed stats analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,065 - transcriptx - INFO - stats completed in 0.06s
+2026-08-07 15:12:35,065 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+TICS
+────────────────────────────────────────────────────────────
+ Running Verbal Tics Analysis...
+2026-08-07 15:12:35,067 - transcriptx - INFO - Starting tics analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,068 - transcriptx - INFO - Starting tics analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,407 - transcriptx - INFO - Completed tics analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Verbal Tics Analysis
+
+2026-08-07 15:12:35,409 - transcriptx - INFO - Completed tics analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,409 - transcriptx - INFO - tics completed in 0.34s
+2026-08-07 15:12:35,409 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+ Running Shared content-vs-style insight eligibility pipeline...
+2026-08-07 15:12:35,412 - transcriptx - INFO - Starting insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,413 - transcriptx - INFO - Starting insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,674 - transcriptx - INFO - Completed insight_eligibility analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-07 15:12:35,675 - transcriptx - INFO - Completed insight_eligibility analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,675 - transcriptx - INFO - insight_eligibility completed in 0.26s
+2026-08-07 15:12:35,676 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+HIGHLIGHTS
+────────────────────────────────────────────────────────────
+ Running Highlights and conflict moments (quote-forward)...
+2026-08-07 15:12:35,678 - transcriptx - INFO - Starting highlights analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,679 - transcriptx - INFO - Starting highlights analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,805 - transcriptx - INFO - Completed highlights analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-07 15:12:35,806 - transcriptx - INFO - Completed highlights analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,806 - transcriptx - INFO - highlights completed in 0.13s
+2026-08-07 15:12:35,807 - transcriptx - INFO - Running keyphrases analysis
+
+────────────────────────────────────────────────────────────
+KEYPHRASES
+────────────────────────────────────────────────────────────
+ Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
+2026-08-07 15:12:35,810 - transcriptx - INFO - Starting keyphrases analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:35,811 - transcriptx - INFO - Starting keyphrases analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:37,402 - transcriptx - INFO - Completed keyphrases analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
+
+2026-08-07 15:12:37,405 - transcriptx - INFO - Completed keyphrases analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:37,405 - transcriptx - INFO - keyphrases completed in 1.59s
+2026-08-07 15:12:37,405 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+SUMMARY
+────────────────────────────────────────────────────────────
+ Running Executive brief summary derived from highlights...
+2026-08-07 15:12:37,406 - transcriptx - INFO - Starting summary analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:37,409 - transcriptx - INFO - Starting summary analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:38,882 - transcriptx - INFO - Saved all-charts PDF to /mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/summary/all_charts.pdf (5 modules, 8 charts)
+2026-08-07 15:12:38,884 - transcriptx - INFO - Completed summary analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Executive brief summary derived from highlights
+
+2026-08-07 15:12:38,887 - transcriptx - INFO - Completed summary analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:38,888 - transcriptx - INFO - summary completed in 1.48s
+2026-08-07 15:12:38,888 - transcriptx - INFO - Running transcript_output analysis
+
+────────────────────────────────────────────────────────────
+TRANSCRIPT OUTPUT
+────────────────────────────────────────────────────────────
+ Running Generate human readable transcripts...
+2026-08-07 15:12:38,891 - transcriptx - INFO - Starting transcript_output analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:38,892 - transcriptx - INFO - Starting transcript_output analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:38,899 - transcriptx - INFO - Generating human-friendly transcript for _deep_test_mini_probe_b
+2026-08-07 15:12:38,922 - transcriptx - INFO - Human-friendly transcript generated successfully: /mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/transcripts/_deep_test_mini_probe_b-transcript.txt
+ Generated human-friendly transcript
+
+2026-08-07 15:12:38,923 - transcriptx - INFO - Completed transcript_output analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed Generate human readable transcripts
+
+2026-08-07 15:12:38,924 - transcriptx - INFO - Completed transcript_output analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:38,925 - transcriptx - INFO - transcript_output completed in 0.03s
+2026-08-07 15:12:38,925 - transcriptx - INFO - Running transcript_quality analysis
+
+────────────────────────────────────────────────────────────
+TRANSCRIPT QUALITY
+────────────────────────────────────────────────────────────
+ Running ASR Confidence...
+2026-08-07 15:12:38,928 - transcriptx - INFO - Starting transcript_quality analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:38,929 - transcriptx - INFO - Starting transcript_quality analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:38,946 - transcriptx - INFO - Completed transcript_quality analysis for /mnt/transcripts/_deep_test_mini_probe_b.json
+ Completed ASR Confidence
+
+2026-08-07 15:12:38,947 - transcriptx - INFO - Completed transcript_quality analysis for: /mnt/transcripts/_deep_test_mini_probe_b.json
+2026-08-07 15:12:38,947 - transcriptx - INFO - transcript_quality completed in 0.02s
+2026-08-07 15:12:38,948 - transcriptx - INFO - Pipeline completed. Ran 15 modules with 0 errors
+2026-08-07 15:12:39,007 - transcriptx - INFO - Saved run results summary to /mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/run_results.json
+2026-08-07 15:12:39,038 - transcriptx - INFO - Saved output manifest to /mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/manifest.json
+2026-08-07 15:12:39,157 - transcriptx - INFO - Saved run manifest to /mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: _deep_test_mini_probe_b
+📂 Output Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125
+🔄 Analysis Status: 15/15 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (15):
+--------------------------------------------------
+
+✅ STATS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ SUMMARY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_b_summary.json (6.4 KB)
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_b_highlights.json (22.3 KB)
+
+✅ KEYPHRASES
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/keyphrases
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_b_keyphrases.json (39.5 KB)
+      • data/global/_deep_test_mini_probe_b_keyphrases.csv (8.4 KB)
+      • data/global/_deep_test_mini_probe_b_keyphrases_summary.json (1.2 KB)
+
+✅ MOMENTS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/moments
+   📄 Files: 3
+   📂 Subdirectories: 4
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_b_moments_summary.json (0.9 KB)
+      • data/global/moments.stats.json (0.0 KB)
+      • data/global/moments.events.json (0.0 KB)
+
+✅ PAUSES
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/pauses
+   📄 Files: 7
+   📂 Subdirectories: 9
+   📋 Key outputs:
+      • charts/global/dynamic/hist/pauses_hist.html (4745.1 KB)
+      • charts/global/static/hist/pauses_hist.png (62.2 KB)
+      • charts/global/static/hist/pauses_hist.evidence.json (0.9 KB)
+      • data/global/pauses.per_segment.json (0.5 KB)
+      • data/global/_deep_test_mini_probe_b_pauses_summary.json (1.2 KB)
+      • ... and 2 more files
+
+✅ MOMENTUM
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/momentum
+   📄 Files: 7
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/timeseries/momentum.html (4744.9 KB)
+      • charts/global/static/timeseries/momentum.evidence.json (0.6 KB)
+      • charts/global/static/timeseries/momentum.png (79.3 KB)
+      • data/global/_deep_test_mini_probe_b_momentum_summary.json (1.0 KB)
+      • data/global/momentum.stats.json (0.1 KB)
+      • ... and 2 more files
+
+✅ TICS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/tics
+   📄 Files: 6
+   📂 Subdirectories: 9
+   📋 Key outputs:
+      • charts/speakers/Alice/dynamic/tics/tics.html (4744.9 KB)
+      • charts/speakers/Alice/static/tics/tics.evidence.json (0.5 KB)
+      • charts/speakers/Alice/static/tics/tics.png (65.9 KB)
+      • data/global/_deep_test_mini_probe_b_with_tics.json (1.8 KB)
+      • data/global/_deep_test_mini_probe_b_tics_summary.txt (0.0 KB)
+      • ... and 1 more files
+
+✅ INSIGHT_ELIGIBILITY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/insight_eligibilit
+y
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_b_insight_eligibility_tic_mask.json 
+(2.5 KB)
+      • 
+data/global/_deep_test_mini_probe_b_insight_eligibility_phrase_scores.json (7.1 
+KB)
+      • data/global/_deep_test_mini_probe_b_insight_eligibility.json (30.0 KB)
+
+✅ LEXICAL_DIVERSITY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/lexical_diversity
+   📄 Files: 12
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/lexical_diversity/lexical-ttr.html (4744.9 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-mtld.html (4744.9 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-hapax-rate.html (4744.9 
+KB)
+      • charts/global/static/lexical_diversity/lexical-hapax-rate.evidence.json 
+(0.5 KB)
+      • charts/global/static/lexical_diversity/lexical-mtld.evidence.json (0.5 
+KB)
+      • ... and 7 more files
+
+✅ POLITENESS
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/politeness
+   📄 Files: 9
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/politeness/category_rates.html (4745.0 KB)
+      • charts/speakers/Bob/static/politeness/category_rates.png (162.6 KB)
+      • charts/speakers/Bob/static/politeness/category_rates.evidence.json (0.7 
+KB)
+      • charts/speakers/Alice/dynamic/politeness/category_rates.html (4745.1 KB)
+      • charts/speakers/Alice/static/politeness/category_rates.png (151.0 KB)
+      • ... and 4 more files
+
+✅ ECHOES
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/echoes
+   📄 Files: 3
+   📂 Subdirectories: 4
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_b_echoes_summary.json (0.9 KB)
+      • data/global/echoes.stats.json (0.1 KB)
+      • data/global/echoes.events.json (0.0 KB)
+
+✅ TRANSCRIPT_OUTPUT
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • _deep_test_mini_probe_b-transcript.csv (0.8 KB)
+      • _deep_test_mini_probe_b_simplified_transcript_summary.json (0.1 KB)
+      • _deep_test_mini_probe_b_simplified_transcript.json (1.1 KB)
+      • _deep_test_mini_probe_b-transcript.txt (0.9 KB)
+
+✅ TRANSCRIPT_QUALITY
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/transcript_quality
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_b_transcript_quality.json (1.3 KB)
+      • data/global/_deep_test_mini_probe_b_transcript_quality_spans.json (0.0 
+KB)
+
+✅ SIMPLIFIED_TRANSCRIPT
+   📁 Directory: 
+/mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • _deep_test_mini_probe_b-transcript.csv (0.8 KB)
+      • _deep_test_mini_probe_b_simplified_transcript_summary.json (0.1 KB)
+      • _deep_test_mini_probe_b_simplified_transcript.json (1.1 KB)
+      • _deep_test_mini_probe_b-transcript.txt (0.9 KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (5.4 KB)
+   • report.md (0.4 KB)
+   • run_results.json (2.8 KB)
+   • report.txt (0.4 KB)
+   • manifest.json (50.3 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 70
+   • Total output size: 38.6 MB
+   • Successful modules: 15
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  /mnt/outputs/_deep_test_mini_probe_b/20260807_151231_15551125
+  Executed:
+    • echoes
+    • highlights
+    • insight_eligibility
+    • keyphrases
+    • lexical_diversity
+    • moments
+    • momentum
+    • pauses
+    • politeness
+    • simplified_transcript
+    • stats
+    • summary
+    • tics
+    • transcript_output
+    • transcript_quality
+  To explore results: open the web interface
+---
+
+2026-08-07 15:12:39,301 - transcriptx - INFO - Pipeline completed for /mnt/transcripts/_deep_test_mini_probe_b.json - Successfully ran: echoes, lexical_diversity, pauses, momentum, moments, politeness, simplified_transcript, stats, tics, insight_eligibility, highlights, keyphrases, summary, transcript_output, transcript_quality

@@ -1,0 +1,239 @@
+START 2026-08-07 23:29:57
+MODULES ['narrative_summary', 'llm_summary', 'llm_speaker_summary', 'llm_action_items']
+2026-08-07 23:29:57,357 - transcriptx - INFO - Starting analysis pipeline for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json with modules: narrative_summary, llm_summary, llm_speaker_summary, llm_action_items
+2026-08-07 23:29:57,365 - transcriptx - WARNING - [VALIDATION] Segment 202 has empty text
+2026-08-07 23:29:57,621 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: 260615_Ana_phd_presentation_QA.json
+  Outputs:    
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_presentation_QA/2
+0260807_232957_38197390
+  Modules that will run:
+    • highlights
+    • insight_eligibility
+    • llm_action_items
+    • llm_speaker_summary
+    • llm_summary
+    • narrative_summary
+    • summary
+    • tics
+---
+
+2026-08-07 23:29:57,639 - transcriptx - INFO - Starting DAG pipeline for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:29:57,643 - transcriptx - WARNING - [VALIDATION] Segment 202 has empty text
+2026-08-07 23:29:57,643 - transcriptx - INFO - Execution order: llm_action_items, llm_speaker_summary, llm_summary, tics, insight_eligibility, highlights, summary, narrative_summary
+2026-08-07 23:29:57,643 - transcriptx - INFO - Running llm_action_items analysis (model=qwen2.5:7b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM ACTION ITEMS
+────────────────────────────────────────────────────────────
+🔍 Running Extract structured action items via local LLM (model: qwen2.5:7b)...
+2026-08-07 23:29:57,644 - transcriptx - INFO - Starting llm_action_items analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:29:57,646 - transcriptx - INFO - Starting llm_action_items analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:03,683 - transcriptx - INFO - Completed llm_action_items analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+✅ Completed Extract structured action items via local LLM
+
+2026-08-07 23:30:03,684 - transcriptx - INFO - Completed llm_action_items analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:03,684 - transcriptx - INFO - llm_action_items completed in 6.04s
+2026-08-07 23:30:03,684 - transcriptx - INFO - Running llm_speaker_summary analysis (model=qwen2.5:7b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM SPEAKER SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Abstractive per-speaker summaries via local LLM (model: 
+qwen2.5:7b)...
+2026-08-07 23:30:03,685 - transcriptx - INFO - Starting llm_speaker_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:03,686 - transcriptx - INFO - Starting llm_speaker_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:09,367 - transcriptx - INFO - Completed llm_speaker_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+✅ Completed Abstractive per-speaker summaries via local LLM
+
+2026-08-07 23:30:09,368 - transcriptx - INFO - Completed llm_speaker_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:09,368 - transcriptx - INFO - llm_speaker_summary completed in 5.68s
+2026-08-07 23:30:09,368 - transcriptx - INFO - Running llm_summary analysis (model=qwen2.5:7b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Abstractive transcript summary via local LLM (model: qwen2.5:7b)...
+2026-08-07 23:30:09,369 - transcriptx - INFO - Starting llm_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:09,369 - transcriptx - INFO - Starting llm_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:12,598 - transcriptx - INFO - Completed llm_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+✅ Completed Abstractive transcript summary via local LLM
+
+2026-08-07 23:30:12,600 - transcriptx - INFO - Completed llm_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:12,600 - transcriptx - INFO - llm_summary completed in 3.23s
+2026-08-07 23:30:12,600 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+✔️ TICS
+────────────────────────────────────────────────────────────
+🔍 Running Verbal Tics Analysis...
+2026-08-07 23:30:12,601 - transcriptx - INFO - Starting tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:12,603 - transcriptx - INFO - Starting tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:13,538 - transcriptx - INFO - Completed tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+✅ Completed Verbal Tics Analysis
+
+2026-08-07 23:30:13,539 - transcriptx - INFO - Completed tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:13,539 - transcriptx - INFO - tics completed in 0.94s
+2026-08-07 23:30:13,539 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+🔍 Running Shared content-vs-style insight eligibility pipeline...
+2026-08-07 23:30:13,540 - transcriptx - INFO - Starting insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:13,548 - transcriptx - INFO - Starting insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:21,695 - transcriptx - INFO - Completed insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+✅ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-07 23:30:21,695 - transcriptx - INFO - Completed insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:21,695 - transcriptx - INFO - insight_eligibility completed in 8.15s
+2026-08-07 23:30:21,696 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ HIGHLIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Highlights and conflict moments (quote-forward)...
+2026-08-07 23:30:21,696 - transcriptx - INFO - Starting highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:21,717 - transcriptx - INFO - Starting highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:23,058 - transcriptx - INFO - Completed highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+✅ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-07 23:30:23,058 - transcriptx - INFO - Completed highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:23,058 - transcriptx - INFO - highlights completed in 1.36s
+2026-08-07 23:30:23,058 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+⚙️ SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Executive brief summary derived from highlights...
+2026-08-07 23:30:23,059 - transcriptx - INFO - Starting summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:23,061 - transcriptx - INFO - Starting summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:23,357 - transcriptx - INFO - Saved all-charts PDF to /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_presentation_QA/20260807_232957_38197390/summary/all_charts.pdf (1 modules, 2 charts)
+2026-08-07 23:30:23,357 - transcriptx - INFO - Completed summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+✅ Completed Executive brief summary derived from highlights
+
+2026-08-07 23:30:23,358 - transcriptx - INFO - Completed summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:23,358 - transcriptx - INFO - summary completed in 0.30s
+2026-08-07 23:30:23,358 - transcriptx - INFO - Running narrative_summary analysis (model=qwen2.5:7b)
+
+────────────────────────────────────────────────────────────
+⚙️ NARRATIVE SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Grounded executive narrative from deterministic summary (LLM) (model:
+qwen2.5:7b)...
+2026-08-07 23:30:23,359 - transcriptx - INFO - Starting narrative_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:23,360 - transcriptx - INFO - Starting narrative_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:29,033 - transcriptx - INFO - Completed narrative_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+✅ Completed Grounded executive narrative from deterministic summary (LLM)
+
+2026-08-07 23:30:29,034 - transcriptx - INFO - Completed narrative_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json
+2026-08-07 23:30:29,034 - transcriptx - INFO - narrative_summary completed in 5.67s
+2026-08-07 23:30:29,034 - transcriptx - INFO - Pipeline completed. Ran 8 modules with 0 errors
+2026-08-07 23:30:29,038 - transcriptx - INFO - Saved run results summary to /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_presentation_QA/20260807_232957_38197390/run_results.json
+2026-08-07 23:30:29,051 - transcriptx - INFO - Saved output manifest to /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_presentation_QA/20260807_232957_38197390/manifest.json
+2026-08-07 23:30:29,081 - transcriptx - INFO - Saved run manifest to /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_presentation_QA/20260807_232957_38197390/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: 260615_Ana_phd_presentation_QA
+📂 Output Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_presentation_QA/2
+0260807_232957_38197390
+🔄 Analysis Status: 8/4 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (4):
+--------------------------------------------------
+
+✅ NARRATIVE_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_presentation_QA/2
+0260807_232957_38197390/narrative_summary
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_presentation_QA_narrative_summary.json (1.3 
+KB)
+
+✅ LLM_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_presentation_QA/2
+0260807_232957_38197390/llm_summary
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_presentation_QA_llm_summary.json (2.0 KB)
+
+✅ LLM_SPEAKER_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_presentation_QA/2
+0260807_232957_38197390/llm_speaker_summary
+   📄 Files: 6
+   📂 Subdirectories: 3
+   📋 Key outputs:
+      • 
+data/speakers/260615_Ana_phd_presentation_QA_Ana_llm_speaker_summary.json (1.8 
+KB)
+      • 
+data/speakers/260615_Ana_phd_presentation_QA_academia_llm_speaker_summary.json 
+(2.3 KB)
+      • 
+data/global/260615_Ana_phd_presentation_QA_llm_speaker_summary_index.json (0.7 
+KB)
+
+✅ LLM_ACTION_ITEMS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_presentation_QA/2
+0260807_232957_38197390/llm_action_items
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_presentation_QA_llm_action_items.json (3.3 
+KB)
+
+📄 ADDITIONAL FILES (3):
+------------------------------
+   • run_results.json (1.2 KB)
+   • manifest.json (20.1 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 12
+   • Total output size: 0.0 MB
+   • Successful modules: 4
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_presentation_QA/2
+0260807_232957_38197390
+  Executed:
+    • highlights
+    • insight_eligibility
+    • llm_action_items
+    • llm_speaker_summary
+    • llm_summary
+    • narrative_summary
+    • summary
+    • tics
+  To explore results: open the web interface
+---
+
+2026-08-07 23:30:29,094 - transcriptx - INFO - Pipeline completed for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_presentation_QA.json - Successfully ran: llm_action_items, llm_speaker_summary, llm_summary, tics, insight_eligibility, highlights, summary, narrative_summary
+END 2026-08-07 23:30:29
+WALL_SECONDS 31.8
+SUCCESS True
+ERRORS_N 0
+RUN_DIR /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_presentation_QA/20260807_232957_38197390
+MODULES_N 8

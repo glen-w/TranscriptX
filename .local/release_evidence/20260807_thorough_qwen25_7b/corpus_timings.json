@@ -1,0 +1,482 @@
+{
+  "date": "2026-08-07",
+  "package_version": "0.9.8.7",
+  "git_sha_short": "3c13bff",
+  "environment": "native host (PYTHONPATH=src) + Ollama localhost:11434",
+  "model": "qwen2.5:7b",
+  "model_params": "~7.6B",
+  "model_rationale": "Closest available ~6B-class text LLM already pulled; project-recommended for structured JSON analysis (preferred over llama3.2:3b).",
+  "mode": "full",
+  "analysis_preset_equivalent": "Thorough (recommended full module set via mode=full)",
+  "selection_rule": "managed transcripts with speaker_map_status=complete",
+  "qualifying": [
+    {
+      "id": "260615_Ana_phd_presentation_QA",
+      "segments": 297,
+      "audio_s": 1678.8,
+      "named": 10,
+      "ignored": 0
+    },
+    {
+      "id": "260615_Ana_phd_supervision_meeting",
+      "segments": 450,
+      "audio_s": 2156.2,
+      "named": 3,
+      "ignored": 0
+    }
+  ],
+  "excluded_incomplete": [
+    {
+      "id": "_deep_test_large_norm",
+      "status": "partial",
+      "unidentified": 1
+    },
+    {
+      "id": "_deep_test_mini_probe",
+      "status": "none"
+    }
+  ],
+  "runs": {
+    "presentation_QA_initial": {
+      "run_id": "20260807_171909_15949872",
+      "run_dir": "data/outputs/260615_Ana_phd_presentation_QA/20260807_171909_15949872",
+      "wall_clock_s": 4282.9,
+      "final_status": "partial",
+      "execution_status": "partial",
+      "modules_n": 41,
+      "modules_failed": [
+        "llm_action_items",
+        "narrative_summary",
+        "llm_summary",
+        "llm_speaker_summary"
+      ],
+      "modules_run": [
+        "topic_shift",
+        "ner",
+        "wordclouds",
+        "bertopic",
+        "topic_modeling",
+        "semantic_similarity",
+        "sentiment",
+        "contextual_emotion",
+        "summary",
+        "acts",
+        "fine_grained_emotion",
+        "interactions",
+        "insight_eligibility",
+        "affect_tension",
+        "understandability",
+        "echoes",
+        "entity_sentiment",
+        "highlights",
+        "qa_analysis",
+        "temporal_dynamics",
+        "emotion",
+        "transcript_quality",
+        "lexical_diversity",
+        "keyphrases",
+        "pauses",
+        "tics",
+        "epistemic_markers",
+        "conversation_loops",
+        "politeness",
+        "contagion",
+        "moments",
+        "momentum",
+        "stats",
+        "transcript_output",
+        "llm_custom_qa",
+        "simplified_transcript",
+        "insights"
+      ],
+      "top_modules_s": [
+        {
+          "module": "llm_action_items",
+          "status": "FAIL",
+          "duration_s": 600.022,
+          "reason": null,
+          "error": "Module 'llm_action_items' timed out after 600s; abandoning this module and continuing the pipeline"
+        },
+        {
+          "module": "narrative_summary",
+          "status": "FAIL",
+          "duration_s": 600.022,
+          "reason": null,
+          "error": "Module 'narrative_summary' timed out after 600s; abandoning this module and continuing the pipeline"
+        },
+        {
+          "module": "llm_summary",
+          "status": "FAIL",
+          "duration_s": 600.017,
+          "reason": null,
+          "error": "Module 'llm_summary' timed out after 600s; abandoning this module and continuing the pipeline"
+        },
+        {
+          "module": "llm_speaker_summary",
+          "status": "FAIL",
+          "duration_s": 600.016,
+          "reason": null,
+          "error": "Module 'llm_speaker_summary' timed out after 600s; abandoning this module and continuing the pipeline"
+        },
+        {
+          "module": "topic_shift",
+          "status": "RUN",
+          "duration_s": 545.415,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "ner",
+          "status": "RUN",
+          "duration_s": 69.213,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "wordclouds",
+          "status": "RUN",
+          "duration_s": 28.345,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "bertopic",
+          "status": "RUN",
+          "duration_s": 23.638,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "topic_modeling",
+          "status": "RUN",
+          "duration_s": 21.011,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "semantic_similarity",
+          "status": "RUN",
+          "duration_s": 20.005,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "sentiment",
+          "status": "RUN",
+          "duration_s": 17.839,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "contextual_emotion",
+          "status": "RUN",
+          "duration_s": 15.742,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "summary",
+          "status": "RUN",
+          "duration_s": 11.868,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "acts",
+          "status": "RUN",
+          "duration_s": 5.296,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "fine_grained_emotion",
+          "status": "RUN",
+          "duration_s": 5.22,
+          "reason": null,
+          "error": null
+        }
+      ],
+      "llm": {
+        "call_count": null,
+        "success_count": null,
+        "failure_count": null,
+        "logical_wall_s": null,
+        "tokens_per_second": null,
+        "models": null
+      },
+      "errors": [
+        "Module 'llm_action_items' timed out after 600s; abandoning this module and continuing the pipeline",
+        "Module 'llm_speaker_summary' timed out after 600s; abandoning this module and continuing the pipeline",
+        "Module 'llm_summary' timed out after 600s; abandoning this module and continuing the pipeline",
+        "Module 'narrative_summary' timed out after 600s; abandoning this module and continuing the pipeline"
+      ]
+    },
+    "presentation_QA_llm_retry": {
+      "run_id": "20260807_232957_38197390",
+      "run_dir": "data/outputs/260615_Ana_phd_presentation_QA/20260807_232957_38197390",
+      "wall_clock_s": 31.7,
+      "final_status": "succeeded",
+      "execution_status": "succeeded",
+      "modules_n": 8,
+      "modules_failed": [],
+      "modules_run": [
+        "insight_eligibility",
+        "llm_action_items",
+        "llm_speaker_summary",
+        "narrative_summary",
+        "llm_summary",
+        "highlights",
+        "tics",
+        "summary"
+      ],
+      "top_modules_s": [
+        {
+          "module": "insight_eligibility",
+          "status": "RUN",
+          "duration_s": 8.155,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "llm_action_items",
+          "status": "RUN",
+          "duration_s": 6.039,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "llm_speaker_summary",
+          "status": "RUN",
+          "duration_s": 5.682,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "narrative_summary",
+          "status": "RUN",
+          "duration_s": 5.674,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "llm_summary",
+          "status": "RUN",
+          "duration_s": 3.23,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "highlights",
+          "status": "RUN",
+          "duration_s": 1.362,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "tics",
+          "status": "RUN",
+          "duration_s": 0.938,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "summary",
+          "status": "RUN",
+          "duration_s": 0.298,
+          "reason": null,
+          "error": null
+        }
+      ],
+      "llm": {
+        "call_count": 4,
+        "success_count": 4,
+        "failure_count": 0,
+        "logical_wall_s": 14.9,
+        "tokens_per_second": 53.60350056716977,
+        "models": [
+          "qwen2.5:7b"
+        ]
+      },
+      "errors": []
+    },
+    "supervision": {
+      "run_id": "20260807_233852_38732557",
+      "run_dir": "data/outputs/260615_Ana_phd_supervision_meeting/20260807_233852_38732557",
+      "wall_clock_s": 606.2,
+      "final_status": "succeeded",
+      "execution_status": "succeeded",
+      "modules_n": 41,
+      "modules_failed": [],
+      "modules_run": [
+        "ner",
+        "wordclouds",
+        "bertopic",
+        "semantic_similarity",
+        "topic_modeling",
+        "summary",
+        "topic_shift",
+        "sentiment",
+        "llm_action_items",
+        "llm_speaker_summary",
+        "contextual_emotion",
+        "echoes",
+        "acts",
+        "insight_eligibility",
+        "interactions",
+        "fine_grained_emotion",
+        "affect_tension",
+        "narrative_summary",
+        "llm_summary",
+        "entity_sentiment",
+        "highlights",
+        "understandability",
+        "temporal_dynamics",
+        "emotion",
+        "qa_analysis",
+        "keyphrases",
+        "tics",
+        "politeness",
+        "epistemic_markers",
+        "transcript_quality",
+        "lexical_diversity",
+        "pauses",
+        "contagion",
+        "conversation_loops",
+        "moments",
+        "momentum",
+        "stats",
+        "simplified_transcript",
+        "transcript_output",
+        "llm_custom_qa",
+        "insights"
+      ],
+      "top_modules_s": [
+        {
+          "module": "ner",
+          "status": "RUN",
+          "duration_s": 46.918,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "wordclouds",
+          "status": "RUN",
+          "duration_s": 30.206,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "bertopic",
+          "status": "RUN",
+          "duration_s": 17.944,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "semantic_similarity",
+          "status": "RUN",
+          "duration_s": 17.146,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "topic_modeling",
+          "status": "RUN",
+          "duration_s": 16.036,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "summary",
+          "status": "RUN",
+          "duration_s": 14.26,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "topic_shift",
+          "status": "RUN",
+          "duration_s": 13.572,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "sentiment",
+          "status": "RUN",
+          "duration_s": 13.206,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "llm_action_items",
+          "status": "RUN",
+          "duration_s": 7.021,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "llm_speaker_summary",
+          "status": "RUN",
+          "duration_s": 6.542,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "contextual_emotion",
+          "status": "RUN",
+          "duration_s": 5.003,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "echoes",
+          "status": "RUN",
+          "duration_s": 4.684,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "acts",
+          "status": "RUN",
+          "duration_s": 4.291,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "insight_eligibility",
+          "status": "RUN",
+          "duration_s": 4.183,
+          "reason": null,
+          "error": null
+        },
+        {
+          "module": "interactions",
+          "status": "RUN",
+          "duration_s": 3.444,
+          "reason": null,
+          "error": null
+        }
+      ],
+      "llm": {
+        "call_count": 5,
+        "success_count": 5,
+        "failure_count": 0,
+        "logical_wall_s": 16.5,
+        "tokens_per_second": 43.423774911525655,
+        "models": [
+          "qwen2.5:7b"
+        ]
+      },
+      "errors": []
+    }
+  },
+  "totals": {
+    "qa_initial_partial_wall_s": 4282.9,
+    "qa_timeout_dead_time_s": 2400.1,
+    "qa_llm_retry_wall_s": 31.7,
+    "qa_effective_success_wall_s": 1914.5,
+    "supervision_success_wall_s": 606.2,
+    "corpus_effective_wall_sum_s": 2520.7,
+    "corpus_effective_wall_sum_min": 42.0
+  }
+}

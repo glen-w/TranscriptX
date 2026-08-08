@@ -1,0 +1,2870 @@
+START group retry b55c0ffa-eb33-4d76-9326-e51c1dca5528 modules 44 True
+2026-08-08 13:28:21,911 - transcriptx - INFO - Starting group analysis pipeline for 2 transcripts with modules: acts, conversation_loops, contagion, emotion, contextual_emotion, fine_grained_emotion, entity_sentiment, affect_tension, interactions, ner, semantic_similarity, sentiment, epistemic_markers, keyphrases, stats, topic_modeling, bertopic, transcript_output, simplified_transcript, understandability, lexical_diversity, wordclouds, tics, transcript_quality, insight_eligibility, temporal_dynamics, qa_analysis, pauses, echoes, politeness, momentum, topic_shift, moments, highlights, summary, narrative_summary, llm_summary, llm_speaker_summary, llm_action_items, llm_custom_qa, insights, voice_features, prosody_dashboard, voice_charts_core
+2026-08-08 13:28:21,912 - transcriptx - INFO - Starting analysis pipeline for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json with modules: acts, conversation_loops, contagion, emotion, contextual_emotion, fine_grained_emotion, entity_sentiment, affect_tension, interactions, ner, semantic_similarity, sentiment, epistemic_markers, keyphrases, stats, topic_modeling, bertopic, transcript_output, simplified_transcript, understandability, lexical_diversity, wordclouds, tics, transcript_quality, insight_eligibility, temporal_dynamics, qa_analysis, pauses, echoes, politeness, momentum, topic_shift, moments, highlights, summary, narrative_summary, llm_summary, llm_speaker_summary, llm_action_items, llm_custom_qa, insights, voice_features, prosody_dashboard, voice_charts_core
+2026-08-08 13:28:22,169 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: _deep_test_mini_probe.json
+  Outputs:    
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915
+  Modules that will run:
+    • acts
+    • affect_tension
+    • bertopic
+    • contagion
+    • contextual_emotion
+    • conversation_loops
+    • echoes
+    • emotion
+    • entity_sentiment
+    • epistemic_markers
+    • fine_grained_emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • interactions
+    • keyphrases
+    • lexical_diversity
+    • llm_action_items
+    • llm_custom_qa
+    • llm_speaker_summary
+    • llm_summary
+    • moments
+    • momentum
+    • narrative_summary
+    • ner
+    • pauses
+    • politeness
+    • prosody_dashboard
+    • qa_analysis
+    • semantic_similarity
+    • sentiment
+    • simplified_transcript
+    • stats
+    • summary
+    • temporal_dynamics
+    • tics
+    • topic_modeling
+    • topic_shift
+    • transcript_output
+    • transcript_quality
+    • understandability
+    • voice_charts_core
+    • voice_features
+    • wordclouds
+---
+
+2026-08-08 13:28:22,178 - transcriptx - INFO - Starting DAG pipeline for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:22,179 - transcriptx - INFO - Execution order: acts, contextual_emotion, conversation_loops, echoes, emotion, contagion, epistemic_markers, fine_grained_emotion, interactions, lexical_diversity, llm_action_items, llm_custom_qa, llm_speaker_summary, llm_summary, ner, pauses, momentum, moments, politeness, qa_analysis, semantic_similarity, sentiment, affect_tension, entity_sentiment, simplified_transcript, stats, temporal_dynamics, tics, insight_eligibility, bertopic, highlights, keyphrases, summary, narrative_summary, topic_modeling, insights, topic_shift, transcript_output, transcript_quality, understandability, voice_features, prosody_dashboard, voice_charts_core, wordclouds
+2026-08-08 13:28:22,179 - transcriptx - INFO - Running acts analysis
+
+────────────────────────────────────────────────────────────
+🗣️ ACTS
+────────────────────────────────────────────────────────────
+🔍 Running Dialogue Act Classification...
+2026-08-08 13:28:22,180 - transcriptx - INFO - Starting acts analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:22,184 - transcriptx - INFO - Starting acts analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:22,184 - transcriptx.core.analysis.acts.ml_classifier - INFO - PyTorch version: 2.2.2
+2026-08-08 13:28:22,184 - transcriptx.core.analysis.acts.ml_classifier - WARNING - PyTorch version 2.2.2 is below 2.6.0. ML models may not work properly.
+2026-08-08 13:28:22,185 - transcriptx.core.analysis.acts.ml_classifier - INFO - Transformers library available
+2026-08-08 13:28:23,084 - transcriptx.core.analysis.acts.ml_classifier - INFO - Scikit-learn available
+2026-08-08 13:28:23,084 - transcriptx.core.analysis.acts.ml_classifier - INFO - Creating ML classifier instance...
+2026-08-08 13:28:23,084 - transcriptx.core.analysis.acts.ml_classifier - INFO - Acts TF-IDF/RF scaffolding initialized (untrained); using heuristic classification
+2026-08-08 13:28:23,084 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML components available: traditional_ml
+2026-08-08 13:28:23,084 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML classifier created successfully (ML available: True)
+2026-08-08 13:28:25,415 - transcriptx - INFO - Completed acts analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Dialogue Act Classification
+
+2026-08-08 13:28:25,416 - transcriptx - INFO - Completed acts analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:25,416 - transcriptx - INFO - acts completed in 3.24s
+2026-08-08 13:28:25,416 - transcriptx - INFO - Running contextual_emotion analysis
+
+────────────────────────────────────────────────────────────
+⚙️ CONTEXTUAL EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Contextual emotion (broad classifier, experimental)...
+2026-08-08 13:28:25,417 - transcriptx - INFO - Starting contextual_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:25,430 - transcriptx - INFO - Starting contextual_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:28,107 - transcriptx - INFO - [CONTEXTUAL_EMOTION] scored=10 failed=0 usable=True channel=experimental
+2026-08-08 13:28:29,355 - transcriptx - INFO - Completed contextual_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Contextual emotion (broad classifier, experimental)
+
+2026-08-08 13:28:29,356 - transcriptx - INFO - Completed contextual_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:29,356 - transcriptx - INFO - contextual_emotion completed in 3.94s
+2026-08-08 13:28:29,356 - transcriptx - INFO - Running conversation_loops analysis
+
+────────────────────────────────────────────────────────────
+🔄 CONVERSATION LOOPS
+────────────────────────────────────────────────────────────
+🔍 Running Conversation Loop Detection...
+2026-08-08 13:28:29,357 - transcriptx - INFO - Starting conversation_loops analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:29,632 - transcriptx - INFO - Starting conversation_loops analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:29,642 - transcriptx - INFO - Completed conversation_loops analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Conversation Loop Detection
+
+2026-08-08 13:28:29,644 - transcriptx - INFO - Completed conversation_loops analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:29,644 - transcriptx - INFO - conversation_loops completed in 0.29s
+2026-08-08 13:28:29,644 - transcriptx - INFO - Running echoes analysis
+
+────────────────────────────────────────────────────────────
+🔁 ECHOES
+────────────────────────────────────────────────────────────
+🔍 Running Quote/Echo/Paraphrase Detection...
+2026-08-08 13:28:29,645 - transcriptx - INFO - Starting echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:29,649 - transcriptx - INFO - Starting echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:29,673 - transcriptx - INFO - Completed echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Quote/Echo/Paraphrase Detection
+
+2026-08-08 13:28:29,673 - transcriptx - INFO - Completed echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:29,673 - transcriptx - INFO - echoes completed in 0.03s
+2026-08-08 13:28:29,673 - transcriptx - INFO - Running emotion analysis
+
+────────────────────────────────────────────────────────────
+😄 EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Emotion-associated vocabulary (NRC lexicon)...
+2026-08-08 13:28:29,674 - transcriptx - INFO - Starting emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:29,674 - transcriptx - INFO - Starting emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:29,721 - transcriptx - INFO - [EMOTION] lexical v2 complete: scored=10 skipped=0 empty=0 failed=0 usable=True cache_hit=True
+2026-08-08 13:28:30,368 - transcriptx - INFO - Completed emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Emotion-associated vocabulary (NRC lexicon)
+
+2026-08-08 13:28:30,369 - transcriptx - INFO - Completed emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:30,369 - transcriptx - INFO - emotion completed in 0.69s
+2026-08-08 13:28:30,369 - transcriptx - INFO - Running contagion analysis
+
+────────────────────────────────────────────────────────────
+🌊 CONTAGION
+────────────────────────────────────────────────────────────
+🔍 Running Emotional Contagion Detection...
+2026-08-08 13:28:30,370 - transcriptx - INFO - Starting contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:30,372 - transcriptx - INFO - Starting contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:30,709 - transcriptx - INFO - Completed contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Emotional Contagion Detection
+
+2026-08-08 13:28:30,710 - transcriptx - INFO - Completed contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:30,710 - transcriptx - INFO - contagion completed in 0.34s
+2026-08-08 13:28:30,710 - transcriptx - INFO - Running epistemic_markers analysis
+
+────────────────────────────────────────────────────────────
+⚙️ EPISTEMIC MARKERS
+────────────────────────────────────────────────────────────
+🔍 Running Hedging / certainty / epistemic markers...
+2026-08-08 13:28:30,710 - transcriptx - INFO - Starting epistemic_markers analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:30,713 - transcriptx - INFO - Starting epistemic_markers analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:31,108 - transcriptx - INFO - Completed epistemic_markers analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Hedging / certainty / epistemic markers
+
+2026-08-08 13:28:31,109 - transcriptx - INFO - Completed epistemic_markers analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:31,109 - transcriptx - INFO - epistemic_markers completed in 0.40s
+2026-08-08 13:28:31,109 - transcriptx - INFO - Running fine_grained_emotion analysis
+
+────────────────────────────────────────────────────────────
+⚙️ FINE GRAINED EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Fine-grained multi-label emotion (experimental)...
+2026-08-08 13:28:31,110 - transcriptx - INFO - Starting fine_grained_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:31,111 - transcriptx - INFO - Starting fine_grained_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:31,598 - transcriptx - INFO - [FINE_GRAINED_EMOTION] scored=10 failed=0 mixed=1
+2026-08-08 13:28:33,375 - transcriptx - INFO - Completed fine_grained_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Fine-grained multi-label emotion (experimental)
+
+2026-08-08 13:28:33,375 - transcriptx - INFO - Completed fine_grained_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:33,375 - transcriptx - INFO - fine_grained_emotion completed in 2.27s
+2026-08-08 13:28:33,375 - transcriptx - INFO - Running interactions analysis
+
+────────────────────────────────────────────────────────────
+🤝 INTERACTIONS
+────────────────────────────────────────────────────────────
+🔍 Running Speaker Interaction Analysis...
+2026-08-08 13:28:33,376 - transcriptx - INFO - Starting interactions analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:33,381 - transcriptx - INFO - Starting interactions analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+🔍 Analyzing 10 segments for interactions...
+✅ Found 18 interactions
+2026-08-08 13:28:36,134 - transcriptx - INFO - Completed interactions analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Speaker Interaction Analysis
+
+2026-08-08 13:28:36,134 - transcriptx - INFO - Completed interactions analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:36,134 - transcriptx - INFO - interactions completed in 2.76s
+2026-08-08 13:28:36,134 - transcriptx - INFO - Running lexical_diversity analysis
+
+────────────────────────────────────────────────────────────
+⚙️ LEXICAL DIVERSITY
+────────────────────────────────────────────────────────────
+🔍 Running Lexical diversity metrics (TTR, MTLD, hapax rate)...
+2026-08-08 13:28:36,135 - transcriptx - INFO - Starting lexical_diversity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:36,136 - transcriptx - INFO - Starting lexical_diversity analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:36,644 - transcriptx - INFO - Completed lexical_diversity analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Lexical diversity metrics (TTR, MTLD, hapax rate)
+
+2026-08-08 13:28:36,645 - transcriptx - INFO - Completed lexical_diversity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:36,645 - transcriptx - INFO - lexical_diversity completed in 0.51s
+2026-08-08 13:28:36,645 - transcriptx - INFO - Running llm_action_items analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM ACTION ITEMS
+────────────────────────────────────────────────────────────
+🔍 Running Extract structured action items via local LLM (model: gemma3:12b)...
+2026-08-08 13:28:36,646 - transcriptx - INFO - Starting llm_action_items analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:36,649 - transcriptx - INFO - Starting llm_action_items analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:51,049 - transcriptx - INFO - Completed llm_action_items analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Extract structured action items via local LLM
+
+2026-08-08 13:28:51,051 - transcriptx - INFO - Completed llm_action_items analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:51,051 - transcriptx - INFO - llm_action_items completed in 14.40s
+2026-08-08 13:28:51,051 - transcriptx - INFO - Running llm_custom_qa analysis
+
+────────────────────────────────────────────────────────────
+⚙️ LLM CUSTOM QA
+────────────────────────────────────────────────────────────
+🔍 Running Answer custom questions against the transcript via local LLM...
+2026-08-08 13:28:51,052 - transcriptx - INFO - Starting llm_custom_qa analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:51,053 - transcriptx - INFO - Starting llm_custom_qa analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:51,058 - transcriptx - INFO - Completed llm_custom_qa analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Answer custom questions against the transcript via local LLM
+
+2026-08-08 13:28:51,059 - transcriptx - INFO - Completed llm_custom_qa analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:51,059 - transcriptx - INFO - llm_custom_qa completed in 0.01s
+2026-08-08 13:28:51,059 - transcriptx - INFO - Running llm_speaker_summary analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM SPEAKER SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Abstractive per-speaker summaries via local LLM (model: 
+gemma3:12b)...
+2026-08-08 13:28:51,060 - transcriptx - INFO - Starting llm_speaker_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:51,063 - transcriptx - INFO - Starting llm_speaker_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:55,846 - transcriptx - INFO - Completed llm_speaker_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Abstractive per-speaker summaries via local LLM
+
+2026-08-08 13:28:55,847 - transcriptx - INFO - Completed llm_speaker_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:55,847 - transcriptx - INFO - llm_speaker_summary completed in 4.79s
+2026-08-08 13:28:55,847 - transcriptx - INFO - Running llm_summary analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Abstractive transcript summary via local LLM (model: gemma3:12b)...
+2026-08-08 13:28:55,849 - transcriptx - INFO - Starting llm_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:55,850 - transcriptx - INFO - Starting llm_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:58,962 - transcriptx - INFO - Completed llm_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Abstractive transcript summary via local LLM
+
+2026-08-08 13:28:58,963 - transcriptx - INFO - Completed llm_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:28:58,963 - transcriptx - INFO - llm_summary completed in 3.11s
+2026-08-08 13:28:58,963 - transcriptx - INFO - Running ner analysis
+
+────────────────────────────────────────────────────────────
+🏷️ NER
+────────────────────────────────────────────────────────────
+🔍 Running Named Entity Recognition...
+2026-08-08 13:28:58,964 - transcriptx - INFO - Starting ner analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:02,081 - transcriptx - INFO - Starting ner analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+Processing 10 segments for NER analysis...
+Processing batch 1/1 (10 segments)
+NER processing complete.
+2026-08-08 13:29:33,780 - transcriptx - INFO - Completed ner analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Named Entity Recognition
+
+2026-08-08 13:29:33,781 - transcriptx - INFO - Completed ner analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:33,781 - transcriptx - INFO - ner completed in 34.82s
+2026-08-08 13:29:33,782 - transcriptx - INFO - Running pauses analysis
+
+────────────────────────────────────────────────────────────
+⏸️ PAUSES
+────────────────────────────────────────────────────────────
+🔍 Running Silence and Timing Analysis...
+2026-08-08 13:29:33,784 - transcriptx - INFO - Starting pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:33,786 - transcriptx - INFO - Starting pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:34,040 - transcriptx - INFO - Completed pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Silence and Timing Analysis
+
+2026-08-08 13:29:34,041 - transcriptx - INFO - Completed pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:34,041 - transcriptx - INFO - pauses completed in 0.26s
+2026-08-08 13:29:34,041 - transcriptx - INFO - Running momentum analysis
+
+────────────────────────────────────────────────────────────
+🚀 MOMENTUM
+────────────────────────────────────────────────────────────
+🔍 Running Stall/Flow Index Analysis...
+2026-08-08 13:29:34,042 - transcriptx - INFO - Starting momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:34,043 - transcriptx - INFO - Starting momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:34,292 - transcriptx - INFO - Completed momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Stall/Flow Index Analysis
+
+2026-08-08 13:29:34,293 - transcriptx - INFO - Completed momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:34,293 - transcriptx - INFO - momentum completed in 0.25s
+2026-08-08 13:29:34,293 - transcriptx - INFO - Running moments analysis
+
+────────────────────────────────────────────────────────────
+⭐ MOMENTS
+────────────────────────────────────────────────────────────
+🔍 Running Ranked Moments Worth Revisiting...
+2026-08-08 13:29:34,294 - transcriptx - INFO - Starting moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:34,295 - transcriptx - INFO - Starting moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:34,297 - transcriptx - INFO - Completed moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Ranked Moments Worth Revisiting
+
+2026-08-08 13:29:34,298 - transcriptx - INFO - Completed moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:34,298 - transcriptx - INFO - moments completed in 0.00s
+2026-08-08 13:29:34,298 - transcriptx - INFO - Running politeness analysis
+
+────────────────────────────────────────────────────────────
+⚙️ POLITENESS
+────────────────────────────────────────────────────────────
+🔍 Running Politeness / formality / directiveness markers...
+2026-08-08 13:29:34,298 - transcriptx - INFO - Starting politeness analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:34,299 - transcriptx - INFO - Starting politeness analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:34,732 - transcriptx - INFO - Completed politeness analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Politeness / formality / directiveness markers
+
+2026-08-08 13:29:34,733 - transcriptx - INFO - Completed politeness analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:34,733 - transcriptx - INFO - politeness completed in 0.43s
+2026-08-08 13:29:34,733 - transcriptx - INFO - Running qa_analysis analysis
+
+────────────────────────────────────────────────────────────
+❓ QA ANALYSIS
+────────────────────────────────────────────────────────────
+🔍 Running Question-Answer Pairing and Response Quality...
+2026-08-08 13:29:34,733 - transcriptx - INFO - Starting qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:34,735 - transcriptx - INFO - Starting qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:35,596 - transcriptx - INFO - Completed qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Question-Answer Pairing and Response Quality
+
+2026-08-08 13:29:35,597 - transcriptx - INFO - Completed qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:35,597 - transcriptx - INFO - qa_analysis completed in 0.86s
+2026-08-08 13:29:35,597 - transcriptx - INFO - Running semantic_similarity analysis
+
+────────────────────────────────────────────────────────────
+🔗 SEMANTIC SIMILARITY
+────────────────────────────────────────────────────────────
+🔍 Running Semantic similarity (batched embeddings, vectorized similarity)...
+2026-08-08 13:29:35,597 - transcriptx - INFO - Starting semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:35,604 - transcriptx - INFO - Starting semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:36,700 - transcriptx - INFO - [SEMANTIC] Loaded semantic model: sentence-transformers/all-mpnet-base-v2
+2026-08-08 13:29:37,396 - transcriptx - INFO - [SEMANTIC] Created 0 v2 visualizations
+2026-08-08 13:29:37,397 - transcriptx - INFO - Completed semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Semantic similarity (batched embeddings, vectorized similarity)
+
+2026-08-08 13:29:37,397 - transcriptx - INFO - Completed semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:37,397 - transcriptx - INFO - semantic_similarity completed in 1.80s
+2026-08-08 13:29:37,397 - transcriptx - INFO - Running sentiment analysis
+
+────────────────────────────────────────────────────────────
+😊 SENTIMENT
+────────────────────────────────────────────────────────────
+🔍 Running Sentiment Analysis...
+2026-08-08 13:29:37,398 - transcriptx - INFO - Starting sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+Some weights of the model checkpoint at /Users/89298/.cache/huggingface/hub/models--cardiffnlp--twitter-roberta-base-sentiment-latest/snapshots/3216a57f2a0d9c45a2e6c20157c20c49fb4bf9c7 were not used when initializing RobertaForSequenceClassification: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+- This IS expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+Device set to use mps:0
+2026-08-08 13:29:38,159 - transcriptx - INFO - [SENTIMENT] Transformers sentiment model loaded successfully
+2026-08-08 13:29:38,159 - transcriptx - INFO - Starting sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:39,732 - transcriptx - INFO - Completed sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Sentiment Analysis
+
+2026-08-08 13:29:39,737 - transcriptx - INFO - Completed sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:39,737 - transcriptx - INFO - sentiment completed in 2.34s
+2026-08-08 13:29:39,737 - transcriptx - INFO - Running affect_tension analysis
+
+────────────────────────────────────────────────────────────
+⚙️ AFFECT TENSION
+────────────────────────────────────────────────────────────
+🔍 Running Emotion + Sentiment mismatch and tension indices...
+2026-08-08 13:29:39,737 - transcriptx - INFO - Starting affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:39,739 - transcriptx - INFO - Starting affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:42,471 - transcriptx - INFO - Completed affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Emotion + Sentiment mismatch and tension indices
+
+2026-08-08 13:29:42,471 - transcriptx - INFO - Completed affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:42,471 - transcriptx - INFO - affect_tension completed in 2.73s
+2026-08-08 13:29:42,472 - transcriptx - INFO - Running entity_sentiment analysis
+
+────────────────────────────────────────────────────────────
+💭 ENTITY SENTIMENT
+────────────────────────────────────────────────────────────
+🔍 Running Entity-based Sentiment Analysis...
+2026-08-08 13:29:42,472 - transcriptx - INFO - Starting entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:42,473 - transcriptx - INFO - Starting entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:42,510 - transcriptx - INFO - Completed entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Entity-based Sentiment Analysis
+
+2026-08-08 13:29:42,511 - transcriptx - INFO - Completed entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:42,511 - transcriptx - INFO - entity_sentiment completed in 0.04s
+2026-08-08 13:29:42,511 - transcriptx - INFO - Running simplified_transcript analysis
+
+────────────────────────────────────────────────────────────
+⚙️ SIMPLIFIED TRANSCRIPT
+────────────────────────────────────────────────────────────
+🔍 Running Simplified transcript (tics, agreements, repetitions removed)...
+2026-08-08 13:29:42,511 - transcriptx - INFO - Starting simplified_transcript analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:42,513 - transcriptx - INFO - Starting simplified_transcript analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:42,515 - transcriptx - INFO - Completed simplified_transcript analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Simplified transcript (tics, agreements, repetitions removed)
+
+2026-08-08 13:29:42,516 - transcriptx - INFO - Completed simplified_transcript analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:42,516 - transcriptx - INFO - simplified_transcript completed in 0.00s
+2026-08-08 13:29:42,516 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+📊 STATS
+────────────────────────────────────────────────────────────
+🔍 Running Statistical Analysis...
+2026-08-08 13:29:42,517 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:42,521 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:42,538 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Statistical Analysis
+
+2026-08-08 13:29:42,539 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:42,539 - transcriptx - INFO - stats completed in 0.02s
+2026-08-08 13:29:42,539 - transcriptx - INFO - Running temporal_dynamics analysis
+
+────────────────────────────────────────────────────────────
+⏱️ TEMPORAL DYNAMICS
+────────────────────────────────────────────────────────────
+🔍 Running Temporal Dynamics Analysis...
+2026-08-08 13:29:42,539 - transcriptx - INFO - Starting temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:42,540 - transcriptx - INFO - Starting temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:43,411 - transcriptx - INFO - Completed temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Temporal Dynamics Analysis
+
+2026-08-08 13:29:43,412 - transcriptx - INFO - Completed temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:43,412 - transcriptx - INFO - temporal_dynamics completed in 0.87s
+2026-08-08 13:29:43,412 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+✔️ TICS
+────────────────────────────────────────────────────────────
+🔍 Running Verbal Tics Analysis...
+2026-08-08 13:29:43,413 - transcriptx - INFO - Starting tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:43,413 - transcriptx - INFO - Starting tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:43,601 - transcriptx - INFO - Completed tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Verbal Tics Analysis
+
+2026-08-08 13:29:43,602 - transcriptx - INFO - Completed tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:43,602 - transcriptx - INFO - tics completed in 0.19s
+2026-08-08 13:29:43,602 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+🔍 Running Shared content-vs-style insight eligibility pipeline...
+2026-08-08 13:29:43,602 - transcriptx - INFO - Starting insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:43,610 - transcriptx - INFO - Starting insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:43,721 - transcriptx - INFO - Completed insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-08 13:29:43,721 - transcriptx - INFO - Completed insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:43,721 - transcriptx - INFO - insight_eligibility completed in 0.12s
+2026-08-08 13:29:43,721 - transcriptx - INFO - Running bertopic analysis
+
+────────────────────────────────────────────────────────────
+⚙️ BERTOPIC
+────────────────────────────────────────────────────────────
+🔍 Running BERTopic topic modeling (optional / stack — see 
+docs/dev/bertopic_optional_module.md)...
+2026-08-08 13:29:43,722 - transcriptx - INFO - Starting bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:29:43,727 - transcriptx - INFO - Starting bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:08,018 - transcriptx - INFO - Completed bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed BERTopic topic modeling (optional / stack — see 
+docs/dev/bertopic_optional_module.md)
+
+2026-08-08 13:30:08,020 - transcriptx - INFO - Completed bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:08,020 - transcriptx - INFO - bertopic completed in 24.30s
+2026-08-08 13:30:08,020 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ HIGHLIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Highlights and conflict moments (quote-forward)...
+2026-08-08 13:30:08,021 - transcriptx - INFO - Starting highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:08,028 - transcriptx - INFO - Starting highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:08,080 - transcriptx - INFO - Completed highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-08 13:30:08,080 - transcriptx - INFO - Completed highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:08,080 - transcriptx - INFO - highlights completed in 0.06s
+2026-08-08 13:30:08,080 - transcriptx - INFO - Running keyphrases analysis
+
+────────────────────────────────────────────────────────────
+⚙️ KEYPHRASES
+────────────────────────────────────────────────────────────
+🔍 Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
+2026-08-08 13:30:08,081 - transcriptx - INFO - Starting keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:08,093 - transcriptx - INFO - Starting keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:08,122 - transcriptx - INFO - Completed keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
+
+2026-08-08 13:30:08,123 - transcriptx - INFO - Completed keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:08,123 - transcriptx - INFO - keyphrases completed in 0.04s
+2026-08-08 13:30:08,123 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+⚙️ SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Executive brief summary derived from highlights...
+2026-08-08 13:30:08,123 - transcriptx - INFO - Starting summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:08,125 - transcriptx - INFO - Starting summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:16,235 - transcriptx - INFO - Saved all-charts PDF to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_132821_88501915/summary/all_charts.pdf (17 modules, 74 charts)
+2026-08-08 13:30:16,235 - transcriptx - INFO - Completed summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Executive brief summary derived from highlights
+
+2026-08-08 13:30:16,236 - transcriptx - INFO - Completed summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:16,236 - transcriptx - INFO - summary completed in 8.11s
+2026-08-08 13:30:16,236 - transcriptx - INFO - Running narrative_summary analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ NARRATIVE SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Grounded executive narrative from deterministic summary (LLM) (model:
+gemma3:12b)...
+2026-08-08 13:30:16,237 - transcriptx - INFO - Starting narrative_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:16,241 - transcriptx - INFO - Starting narrative_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:21,436 - transcriptx - INFO - Completed narrative_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Grounded executive narrative from deterministic summary (LLM)
+
+2026-08-08 13:30:21,437 - transcriptx - INFO - Completed narrative_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:21,437 - transcriptx - INFO - narrative_summary completed in 5.20s
+2026-08-08 13:30:21,437 - transcriptx - INFO - Running topic_modeling analysis
+
+────────────────────────────────────────────────────────────
+💡 TOPIC MODELING
+────────────────────────────────────────────────────────────
+🔍 Running Topic Modeling...
+2026-08-08 13:30:21,438 - transcriptx - INFO - Starting topic_modeling analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:21,438 - transcriptx - INFO - Starting topic_modeling analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+[TOPICS] Finding optimal k for LDA...
+[TOPICS] Warning: Insufficient data for optimal k selection
+[TOPICS] Finding optimal k for NMF...
+[TOPICS] Warning: Insufficient data for optimal k selection
+[TOPICS] Created discourse analysis charts
+[DEBUG] create_topic_evolution_timeline: received 4 doc topics
+[DEBUG] DataFrame head:
+                                                text  ... confidence
+0  demo is next week san francisco spoke dana ope...  ...   0.978659
+1  can send calendar invite address agenda new yo...  ...   0.986703
+2  should keep concise decisions risks next steps...  ...   0.661698
+3  miss friday leadership will be unhappy let avo...  ...   0.981192
+
+[4 rows x 6 columns]
+[TOPICS] Created topic evolution timeline: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_132821_88501915/topic_modeling/charts/global/static/timeline/topic_evolution_timeline.png
+[DEBUG] create_speaker_topic_engagement_heatmap: received 4 doc topics
+[DEBUG] DataFrame head:
+                                                text  ... confidence
+0  demo is next week san francisco spoke dana ope...  ...   0.978659
+1  can send calendar invite address agenda new yo...  ...   0.986703
+2  should keep concise decisions risks next steps...  ...   0.661698
+3  miss friday leadership will be unhappy let avo...  ...   0.981192
+
+[4 rows x 6 columns]
+[DEBUG] speaker-topic engagement heatmap: contributors=4, matrix_sum=4.000000
+[TOPICS] Created speaker-topic engagement heatmap: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_132821_88501915/topic_modeling/charts/global/static/heatmap/speaker_topic_engagement_heatmap.png
+[DEBUG] create_expected_topic_proportions_bar: received 4 doc topics
+[DEBUG] DataFrame head:
+                                                text  ... confidence
+0  demo is next week san francisco spoke dana ope...  ...   0.978659
+1  can send calendar invite address agenda new yo...  ...   0.986703
+2  should keep concise decisions risks next steps...  ...   0.661698
+3  miss friday leadership will be unhappy let avo...  ...   0.981192
+
+[4 rows x 6 columns]
+[TOPICS] Created expected topic proportions bar chart: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_132821_88501915/topic_modeling/charts/global/static/bar/expected_topic_proportions.png
+[TOPICS] Enhanced HTML report created: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_132821_88501915/topic_modeling/_deep_test_mini_probe_enhanced_topic_modeling_report.html
+2026-08-08 13:30:25,142 - transcriptx - INFO - Completed topic_modeling analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Topic Modeling
+
+2026-08-08 13:30:25,143 - transcriptx - INFO - Completed topic_modeling analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:25,143 - transcriptx - INFO - topic_modeling completed in 3.70s
+2026-08-08 13:30:25,143 - transcriptx - INFO - Running insights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Content-first insights layer separated from style markers...
+2026-08-08 13:30:25,144 - transcriptx - INFO - Starting insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:25,145 - transcriptx - INFO - Starting insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:25,147 - transcriptx - INFO - Completed insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Content-first insights layer separated from style markers
+
+2026-08-08 13:30:25,147 - transcriptx - INFO - Completed insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:25,147 - transcriptx - INFO - insights completed in 0.00s
+2026-08-08 13:30:25,147 - transcriptx - INFO - Running topic_shift analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ TOPIC SHIFT
+────────────────────────────────────────────────────────────
+🔍 Running Topic-shift chapter segmentation (model: gemma3:12b)...
+2026-08-08 13:30:25,148 - transcriptx - INFO - Starting topic_shift analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:25,167 - transcriptx - INFO - Starting topic_shift analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:31,838 - transcriptx - INFO - Completed topic_shift analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Topic-shift chapter segmentation
+
+2026-08-08 13:30:31,839 - transcriptx - INFO - Completed topic_shift analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:31,839 - transcriptx - INFO - topic_shift completed in 6.69s
+2026-08-08 13:30:31,839 - transcriptx - INFO - Running transcript_output analysis
+
+────────────────────────────────────────────────────────────
+📃 TRANSCRIPT OUTPUT
+────────────────────────────────────────────────────────────
+🔍 Running Generate human readable transcripts...
+2026-08-08 13:30:31,840 - transcriptx - INFO - Starting transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:31,841 - transcriptx - INFO - Starting transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:31,842 - transcriptx - INFO - Generating human-friendly transcript for _deep_test_mini_probe
+2026-08-08 13:30:31,843 - transcriptx - INFO - Human-friendly transcript generated successfully: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_132821_88501915/transcripts/_deep_test_mini_probe-transcript.txt
+✅ Generated human-friendly transcript
+
+2026-08-08 13:30:31,844 - transcriptx - INFO - Completed transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Generate human readable transcripts
+
+2026-08-08 13:30:31,844 - transcriptx - INFO - Completed transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:31,844 - transcriptx - INFO - transcript_output completed in 0.00s
+2026-08-08 13:30:31,844 - transcriptx - INFO - Running transcript_quality analysis
+
+────────────────────────────────────────────────────────────
+⚙️ TRANSCRIPT QUALITY
+────────────────────────────────────────────────────────────
+🔍 Running ASR Confidence...
+2026-08-08 13:30:31,845 - transcriptx - INFO - Starting transcript_quality analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:31,848 - transcriptx - INFO - Starting transcript_quality analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:31,850 - transcriptx - INFO - Completed transcript_quality analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed ASR Confidence
+
+2026-08-08 13:30:31,851 - transcriptx - INFO - Completed transcript_quality analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:31,851 - transcriptx - INFO - transcript_quality completed in 0.01s
+2026-08-08 13:30:31,851 - transcriptx - INFO - Running understandability analysis
+
+────────────────────────────────────────────────────────────
+📖 UNDERSTANDABILITY
+────────────────────────────────────────────────────────────
+🔍 Running Understandability Analysis...
+2026-08-08 13:30:31,851 - transcriptx - INFO - Starting understandability analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:31,865 - transcriptx - INFO - Starting understandability analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Global CSV saved to 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/understandability/data/global/_deep_test_mini_probe_understandabi
+lity.csv
+
+2026-08-08 13:30:32,940 - transcriptx - INFO - Completed understandability analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Understandability Analysis
+
+2026-08-08 13:30:32,941 - transcriptx - INFO - Completed understandability analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:32,941 - transcriptx - INFO - understandability completed in 1.09s
+2026-08-08 13:30:32,941 - transcriptx - INFO - Running voice_features analysis
+
+────────────────────────────────────────────────────────────
+⚙️ VOICE FEATURES
+────────────────────────────────────────────────────────────
+🔍 Running Voice feature extraction and caching...
+2026-08-08 13:30:32,941 - transcriptx - INFO - Starting voice_features analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:32,942 - transcriptx - INFO - Starting voice_features analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:33,004 - transcriptx - INFO - Completed voice_features analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Voice feature extraction and caching
+
+2026-08-08 13:30:33,005 - transcriptx - INFO - Completed voice_features analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:33,005 - transcriptx - INFO - voice_features completed in 0.06s
+2026-08-08 13:30:33,005 - transcriptx - INFO - Running prosody_dashboard analysis
+
+────────────────────────────────────────────────────────────
+⚙️ PROSODY DASHBOARD
+────────────────────────────────────────────────────────────
+🔍 Running Prosody dashboard charts from voice features...
+2026-08-08 13:30:33,006 - transcriptx - INFO - Starting prosody_dashboard analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:33,007 - transcriptx - INFO - Starting prosody_dashboard analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:33,009 - transcriptx - INFO - Completed prosody_dashboard analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Prosody dashboard charts from voice features
+
+2026-08-08 13:30:33,009 - transcriptx - INFO - Completed prosody_dashboard analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:33,009 - transcriptx - INFO - prosody_dashboard completed in 0.00s
+2026-08-08 13:30:33,009 - transcriptx - INFO - Running voice_charts_core analysis
+
+────────────────────────────────────────────────────────────
+⚙️ VOICE CHARTS CORE
+────────────────────────────────────────────────────────────
+🔍 Running Voice charts core: pauses + rhythm indices...
+2026-08-08 13:30:33,010 - transcriptx - INFO - Starting voice_charts_core analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:33,011 - transcriptx - INFO - Starting voice_charts_core analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:33,013 - transcriptx - INFO - Completed voice_charts_core analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Voice charts core: pauses + rhythm indices
+
+2026-08-08 13:30:33,013 - transcriptx - INFO - Completed voice_charts_core analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:33,013 - transcriptx - INFO - voice_charts_core completed in 0.00s
+2026-08-08 13:30:33,013 - transcriptx - INFO - Running wordclouds analysis
+
+────────────────────────────────────────────────────────────
+💬 WORDCLOUDS
+────────────────────────────────────────────────────────────
+🔍 Running Word Cloud Generation...
+2026-08-08 13:30:33,014 - transcriptx - INFO - Starting wordclouds analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:33,014 - transcriptx - INFO - Starting wordclouds analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:33,017 - transcriptx - INFO - [WORDCLOUDS] Using precomputed speaker grouping from pipeline: 2 speakers: ['Alice', 'Bob']
+✅ Word cloud saved for Alice
+
+✅ Word cloud saved for Bob
+
+✅ Word cloud saved for wordcloud-ALL
+
+2026-08-08 13:30:46,911 - transcriptx - INFO - [WORDCLOUDS] Completed wordcloud generation for _deep_test_mini_probe
+2026-08-08 13:30:46,911 - transcriptx - INFO - Completed wordclouds analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+✅ Completed Word Cloud Generation
+
+2026-08-08 13:30:46,912 - transcriptx - INFO - Completed wordclouds analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json
+2026-08-08 13:30:46,912 - transcriptx - INFO - wordclouds completed in 13.90s
+2026-08-08 13:30:46,912 - transcriptx - INFO - Pipeline completed. Ran 44 modules with 0 errors
+2026-08-08 13:30:47,022 - transcriptx - INFO - Saved run results summary to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_132821_88501915/run_results.json
+2026-08-08 13:30:47,137 - transcriptx - INFO - Saved output manifest to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_132821_88501915/manifest.json
+2026-08-08 13:30:48,162 - transcriptx - INFO - Saved run manifest to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_132821_88501915/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: _deep_test_mini_probe
+📂 Output Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915
+🔄 Analysis Status: 44/44 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (44):
+--------------------------------------------------
+
+✅ ACTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/acts
+   📄 Files: 34
+   📂 Subdirectories: 32
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/temporal/acts_temporal.html (4552.4 KB)
+      • charts/speakers/Bob/dynamic/pie/acts_pie.html (4552.4 KB)
+      • charts/speakers/Bob/dynamic/bar/acts_bar.html (4552.4 KB)
+      • charts/speakers/Bob/static/temporal/acts_temporal.evidence.json (0.7 KB)
+      • charts/speakers/Bob/static/temporal/acts_temporal.png (99.4 KB)
+      • ... and 29 more files
+
+✅ CONVERSATION_LOOPS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/conversation_loops
+   📄 Files: 5
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_conversation_loops.json (1.7 KB)
+      • data/global/_deep_test_mini_probe_conversation_loops_summary.json (1.1 
+KB)
+      • data/global/_deep_test_mini_probe_conversation_loops.csv (0.0 KB)
+      • data/global/_deep_test_mini_probe_summary.txt (0.5 KB)
+      • data/global/_deep_test_mini_probe_summary.json (0.5 KB)
+
+✅ CONTAGION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/contagion
+   📄 Files: 7
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/matrix/contagion_matrix.html (4552.6 KB)
+      • charts/global/static/matrix/contagion_matrix.png (81.5 KB)
+      • charts/global/static/matrix/contagion_matrix.evidence.json (0.7 KB)
+      • data/global/_deep_test_mini_probe_contagion_branches.json (2.6 KB)
+      • data/global/_deep_test_mini_probe_contagion_summary.json (1.4 KB)
+      • ... and 2 more files
+
+✅ EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/emotion
+   📄 Files: 19
+   📂 Subdirectories: 22
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • charts/speakers/Bob/dynamic/bar/emotion_assignment_counts.html (4552.4 
+KB)
+      • charts/speakers/Bob/static/bar/emotion_assignment_counts.png (115.0 KB)
+      • charts/speakers/Bob/static/bar/emotion_assignment_counts.evidence.json 
+(0.7 KB)
+      • charts/speakers/Alice/dynamic/bar/emotion_assignment_counts.html (4552.4
+KB)
+      • ... and 14 more files
+
+✅ CONTEXTUAL_EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/contextual_emotion
+   📄 Files: 29
+   📂 Subdirectories: 21
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • charts/speakers/Bob/dynamic/bar/contextual_emotion_label_counts.html 
+(4552.3 KB)
+      • 
+charts/speakers/Bob/static/bar/contextual_emotion_label_counts.evidence.json 
+(0.5 KB)
+      • charts/speakers/Bob/static/bar/contextual_emotion_label_counts.png (50.9
+KB)
+      • 
+charts/speakers/Alice/dynamic/bar/contextual_emotion_label_counts_excluding_neut
+ral.html (4552.3 KB)
+      • ... and 24 more files
+
+✅ FINE_GRAINED_EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/fine_grained_emotion
+   📄 Files: 35
+   📂 Subdirectories: 21
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • 
+charts/speakers/Bob/dynamic/bar/fine_grained_native_label_share_non_neutral.html
+(4552.4 KB)
+      • 
+charts/speakers/Bob/dynamic/bar/fine_grained_native_label_prevalence.html 
+(4552.4 KB)
+      • 
+charts/speakers/Bob/dynamic/bar/fine_grained_native_label_prevalence_excluding_n
+eutral.html (4552.4 KB)
+      • 
+charts/speakers/Bob/static/bar/fine_grained_native_label_share_non_neutral.png 
+(80.2 KB)
+      • ... and 30 more files
+
+✅ ENTITY_SENTIMENT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/entity_sentiment
+   📄 Files: 5
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_entity_sentiment.json (0.5 KB)
+      • data/global/_deep_test_mini_probe_entity_sentiment.csv (0.0 KB)
+      • data/global/_deep_test_mini_probe_summary.txt (0.3 KB)
+      • data/global/_deep_test_mini_probe_summary.json (0.2 KB)
+      • data/global/_deep_test_mini_probe_entity_sentiment_summary.json (1.1 KB)
+
+✅ AFFECT_TENSION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/affect_tension
+   📄 Files: 35
+   📂 Subdirectories: 13
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/entropy_volatility_timeseries.html (4552.7 
+KB)
+      • charts/speakers/Bob/static/entropy_volatility_timeseries.evidence.json 
+(1.1 KB)
+      • charts/speakers/Bob/static/entropy_volatility_timeseries.png (116.7 KB)
+      • charts/speakers/Alice/dynamic/entropy_volatility_timeseries.html (4552.6
+KB)
+      • charts/speakers/Alice/static/entropy_volatility_timeseries.evidence.json
+(1.0 KB)
+      • ... and 30 more files
+
+✅ INTERACTIONS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/interactions
+   📄 Files: 35
+   📂 Subdirectories: 29
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/timeline/timeline.html (4552.8 KB)
+      • charts/speakers/Bob/static/timeline/timeline.evidence.json (1.3 KB)
+      • charts/speakers/Bob/static/timeline/timeline.png (97.9 KB)
+      • charts/speakers/Alice/dynamic/timeline/timeline.html (4552.8 KB)
+      • charts/speakers/Alice/static/timeline/timeline.evidence.json (1.3 KB)
+      • ... and 29 more files
+
+✅ NER
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/ner
+   📄 Files: 22
+   📂 Subdirectories: 23
+   📋 Key outputs:
+      • maps/images/_deep_test_mini_probe-locations-ALL.png (63.4 KB)
+      • maps/images/_deep_test_mini_probe-locations-Bob.png (61.6 KB)
+      • maps/images/_deep_test_mini_probe-locations-Alice.png (61.2 KB)
+      • maps/html/_deep_test_mini_probe-locations-Alice.html (3.8 KB)
+      • maps/html/_deep_test_mini_probe-locations-Bob.html (3.8 KB)
+      • ... and 17 more files
+
+⚠️ SEMANTIC_SIMILARITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/semantic_similarity
+   📄 Files: 4
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_semantic_similarity_clusters.json (0.2
+KB)
+      • data/global/_deep_test_mini_probe_semantic_similarity_summary.json (1.3 
+KB)
+      • data/global/_deep_test_mini_probe_semantic_similarity_repetitions.json 
+(38.6 KB)
+      • data/global/_deep_test_mini_probe_semantic_similarity_diagnostics.json 
+(1.1 KB)
+   ⚠️  Validation warnings: Required directory missing: charts/global
+
+✅ SENTIMENT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/sentiment
+   📄 Files: 17
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/rolling_sentiment.html (4552.5 KB)
+      • charts/speakers/Bob/static/rolling_sentiment.evidence.json (0.8 KB)
+      • charts/speakers/Bob/static/rolling_sentiment.png (116.3 KB)
+      • charts/speakers/Alice/dynamic/rolling_sentiment.html (4552.5 KB)
+      • charts/speakers/Alice/static/rolling_sentiment.evidence.json (0.8 KB)
+      • ... and 12 more files
+
+✅ EPISTEMIC_MARKERS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/epistemic_markers
+   📄 Files: 9
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/epistemic_markers/category_rates.html 
+(4552.4 KB)
+      • charts/speakers/Bob/static/epistemic_markers/category_rates.png (146.0 
+KB)
+      • 
+charts/speakers/Bob/static/epistemic_markers/category_rates.evidence.json (0.6 
+KB)
+      • charts/speakers/Alice/dynamic/epistemic_markers/category_rates.html 
+(4552.4 KB)
+      • charts/speakers/Alice/static/epistemic_markers/category_rates.png (145.6
+KB)
+      • ... and 4 more files
+
+✅ KEYPHRASES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/keyphrases
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_keyphrases.json (11.4 KB)
+      • data/global/_deep_test_mini_probe_keyphrases_summary.json (1.4 KB)
+      • data/global/_deep_test_mini_probe_keyphrases.csv (1.5 KB)
+
+✅ STATS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ TOPIC_MODELING
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/topic_modeling
+   📄 Files: 30
+   📂 Subdirectories: 21
+   📋 Key outputs:
+      • _deep_test_mini_probe_enhanced_topic_modeling_report.html (4.2 KB)
+      • charts/speakers/Alice___Bob/dynamic/bar/topic_bar.html (4552.4 KB)
+      • charts/speakers/Alice___Bob/static/bar/topic_bar.png (113.6 KB)
+      • charts/speakers/Alice___Bob/static/bar/topic_bar.evidence.json (0.6 KB)
+      • charts/global/dynamic/heatmap/enhanced_nmf_topic_word_heatmap.html 
+(4553.1 KB)
+      • ... and 25 more files
+
+⚠️ BERTOPIC
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/bertopic
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_bertopic_error.json (0.5 KB)
+   ⚠️  Validation warnings: No files matching pattern: *_bertopic_topics.json
+
+✅ TRANSCRIPT_OUTPUT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • _deep_test_mini_probe-transcript.txt (0.9 KB)
+      • _deep_test_mini_probe_simplified_transcript_summary.json (0.1 KB)
+      • _deep_test_mini_probe-transcript.csv (0.8 KB)
+      • _deep_test_mini_probe_simplified_transcript.json (1.1 KB)
+
+✅ SIMPLIFIED_TRANSCRIPT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • _deep_test_mini_probe-transcript.txt (0.9 KB)
+      • _deep_test_mini_probe_simplified_transcript_summary.json (0.1 KB)
+      • _deep_test_mini_probe-transcript.csv (0.8 KB)
+      • _deep_test_mini_probe_simplified_transcript.json (1.1 KB)
+
+✅ UNDERSTANDABILITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/understandability
+   📄 Files: 14
+   📂 Subdirectories: 11
+   📋 Key outputs:
+      • charts/global/dynamic/understandability/readability-indices-bars.html 
+(4552.6 KB)
+      • charts/global/dynamic/structure/word-count-bars.html (4552.3 KB)
+      • charts/global/dynamic/structure/structure-bars.html (4552.6 KB)
+      • 
+charts/global/static/understandability/readability-indices-bars.evidence.json 
+(1.1 KB)
+      • charts/global/static/understandability/readability-indices-bars.png 
+(90.2 KB)
+      • ... and 9 more files
+
+✅ LEXICAL_DIVERSITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/lexical_diversity
+   📄 Files: 12
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/lexical_diversity/lexical-ttr.html (4552.4 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-mtld.html (4552.4 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-hapax-rate.html (4552.3 
+KB)
+      • charts/global/static/lexical_diversity/lexical-hapax-rate.evidence.json 
+(0.5 KB)
+      • charts/global/static/lexical_diversity/lexical-mtld.evidence.json (0.5 
+KB)
+      • ... and 7 more files
+
+✅ WORDCLOUDS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/wordclouds
+   📄 Files: 133
+   📂 Subdirectories: 61
+   📋 Key outputs:
+      • 
+charts/speakers/Bob/dynamic/views/_deep_test_mini_probe_wordcloud-adj_explorer.h
+tml (8.4 KB)
+      • 
+charts/speakers/Bob/dynamic/views/_deep_test_mini_probe_tfidf_explorer.html 
+(14.2 KB)
+      • 
+charts/speakers/Bob/dynamic/views/_deep_test_mini_probe_wordcloud_explorer.html 
+(13.3 KB)
+      • 
+charts/speakers/Bob/dynamic/views/_deep_test_mini_probe_wordcloud-noun_explorer.
+html (10.0 KB)
+      • 
+charts/speakers/Bob/dynamic/views/_deep_test_mini_probe_wordcloud-tics_explorer.
+html (8.5 KB)
+      • ... and 128 more files
+
+✅ TICS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/tics
+   📄 Files: 6
+   📂 Subdirectories: 9
+   📋 Key outputs:
+      • charts/speakers/Alice/dynamic/tics/tics.html (4552.3 KB)
+      • charts/speakers/Alice/static/tics/tics.evidence.json (0.5 KB)
+      • charts/speakers/Alice/static/tics/tics.png (65.9 KB)
+      • data/global/_deep_test_mini_probe_tics_summary.txt (0.0 KB)
+      • data/global/_deep_test_mini_probe_tics_summary.json (1.1 KB)
+      • ... and 1 more files
+
+✅ TRANSCRIPT_QUALITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/transcript_quality
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_transcript_quality_spans.json (0.0 KB)
+      • data/global/_deep_test_mini_probe_transcript_quality.json (1.3 KB)
+
+✅ INSIGHT_ELIGIBILITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/insight_eligibility
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_insight_eligibility.json (30.0 KB)
+      • data/global/_deep_test_mini_probe_insight_eligibility_tic_mask.json (2.5
+KB)
+      • data/global/_deep_test_mini_probe_insight_eligibility_phrase_scores.json
+(7.1 KB)
+
+✅ TEMPORAL_DYNAMICS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/temporal_dynamics
+   📄 Files: 15
+   📂 Subdirectories: 6
+   📋 Key outputs:
+      • charts/global/dynamic/temporal_dashboard.html (4552.5 KB)
+      • charts/global/dynamic/engagement_timeseries.html (4552.4 KB)
+      • charts/global/dynamic/temporal_dashboard_speaking_rate.html (4552.4 KB)
+      • charts/global/dynamic/sentiment_timeseries.html (4552.4 KB)
+      • charts/global/static/temporal_dashboard.evidence.json (0.8 KB)
+      • ... and 10 more files
+
+✅ QA_ANALYSIS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/qa_analysis
+   📄 Files: 16
+   📂 Subdirectories: 6
+   📋 Key outputs:
+      • charts/global/dynamic/response_quality.html (4552.6 KB)
+      • charts/global/dynamic/qa_timeline.html (4552.4 KB)
+      • charts/global/dynamic/response_time_analysis.html (4552.6 KB)
+      • charts/global/dynamic/question_type_breakdown.html (4552.3 KB)
+      • charts/global/static/qa_timeline.evidence.json (0.7 KB)
+      • ... and 11 more files
+
+✅ PAUSES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/pauses
+   📄 Files: 7
+   📂 Subdirectories: 9
+   📋 Key outputs:
+      • charts/global/dynamic/hist/pauses_hist.html (4552.5 KB)
+      • charts/global/static/hist/pauses_hist.png (62.2 KB)
+      • charts/global/static/hist/pauses_hist.evidence.json (0.9 KB)
+      • data/global/pauses.per_segment.json (0.5 KB)
+      • data/global/_deep_test_mini_probe_pauses_summary.json (1.4 KB)
+      • ... and 2 more files
+
+✅ ECHOES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/echoes
+   📄 Files: 3
+   📂 Subdirectories: 4
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_echoes_summary.json (1.1 KB)
+      • data/global/echoes.stats.json (0.1 KB)
+      • data/global/echoes.events.json (0.0 KB)
+
+✅ POLITENESS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/politeness
+   📄 Files: 9
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/politeness/category_rates.html (4552.4 KB)
+      • charts/speakers/Bob/static/politeness/category_rates.png (162.6 KB)
+      • charts/speakers/Bob/static/politeness/category_rates.evidence.json (0.7 
+KB)
+      • charts/speakers/Alice/dynamic/politeness/category_rates.html (4552.5 KB)
+      • charts/speakers/Alice/static/politeness/category_rates.png (151.0 KB)
+      • ... and 4 more files
+
+✅ MOMENTUM
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/momentum
+   📄 Files: 7
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/timeseries/momentum.html (4552.3 KB)
+      • charts/global/static/timeseries/momentum.evidence.json (0.6 KB)
+      • charts/global/static/timeseries/momentum.png (79.3 KB)
+      • data/global/_deep_test_mini_probe_momentum_summary.json (1.2 KB)
+      • data/global/momentum.stats.json (0.1 KB)
+      • ... and 2 more files
+
+✅ TOPIC_SHIFT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/topic_shift
+   📄 Files: 15
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • .topic_shift_enrichment/ACTIVE.json (0.3 KB)
+      • .topic_shift_enrichment/generations/20260808T113031_e4bf9983/COMMIT.json
+(0.5 KB)
+      • 
+.topic_shift_enrichment/generations/20260808T113031_e4bf9983/topic_shift.enrichm
+ent.json (1.1 KB)
+      • .topic_shift_generations/artifact_index.json (0.4 KB)
+      • 
+.topic_shift_generations/generations/135b912609854088bf968466fe4646f5/topic_shif
+t.spans.json (1.7 KB)
+      • ... and 10 more files
+
+✅ MOMENTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/moments
+   📄 Files: 3
+   📂 Subdirectories: 4
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_moments_summary.json (1.1 KB)
+      • data/global/moments.stats.json (0.0 KB)
+      • data/global/moments.events.json (0.0 KB)
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_highlights.json (22.0 KB)
+
+✅ SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_summary.json (6.5 KB)
+
+✅ NARRATIVE_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/narrative_summary
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_narrative_summary.json (1.2 KB)
+
+✅ LLM_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/llm_summary
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_llm_summary.json (1.5 KB)
+
+✅ LLM_SPEAKER_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/llm_speaker_summary
+   📄 Files: 6
+   📂 Subdirectories: 3
+   📋 Key outputs:
+      • data/speakers/_deep_test_mini_probe_Bob_llm_speaker_summary.json (1.5 
+KB)
+      • data/speakers/_deep_test_mini_probe_Alice_llm_speaker_summary.json (1.5 
+KB)
+      • data/global/_deep_test_mini_probe_llm_speaker_summary_index.json (0.7 
+KB)
+
+✅ LLM_ACTION_ITEMS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/llm_action_items
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_llm_action_items.json (3.6 KB)
+
+✅ LLM_CUSTOM_QA
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/llm_custom_qa
+   📄 Files: 5
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • questions_metadata.json (0.2 KB)
+      • data/global/_deep_test_mini_probe_llm_custom_qa.json (1.6 KB)
+
+✅ INSIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/insights
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_insights.json (7.2 KB)
+
+✅ VOICE_FEATURES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/voice_features
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_voice_features_summary.json (1.1 KB)
+      • data/global/_deep_test_mini_probe_voice_features_locator.json (0.1 KB)
+
+✅ PROSODY_DASHBOARD
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/prosody_dashboard
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_prosody_dashboard_locator.json (0.1 
+KB)
+
+✅ VOICE_CHARTS_CORE
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915/voice/v1
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_mini_probe_voice_charts_core_summary.json (0.1 
+KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (5.4 KB)
+   • report.md (0.4 KB)
+   • run_results.json (7.9 KB)
+   • report.txt (0.4 KB)
+   • manifest.json (521.1 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 572
+   • Total output size: 410.9 MB
+   • Successful modules: 44
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260808_1
+32821_88501915
+  Executed:
+    • acts
+    • affect_tension
+    • bertopic
+    • contagion
+    • contextual_emotion
+    • conversation_loops
+    • echoes
+    • emotion
+    • entity_sentiment
+    • epistemic_markers
+    • fine_grained_emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • interactions
+    • keyphrases
+    • lexical_diversity
+    • llm_action_items
+    • llm_custom_qa
+    • llm_speaker_summary
+    • llm_summary
+    • moments
+    • momentum
+    • narrative_summary
+    • ner
+    • pauses
+    • politeness
+    • prosody_dashboard
+    • qa_analysis
+    • semantic_similarity
+    • sentiment
+    • simplified_transcript
+    • stats
+    • summary
+    • temporal_dynamics
+    • tics
+    • topic_modeling
+    • topic_shift
+    • transcript_output
+    • transcript_quality
+    • understandability
+    • voice_charts_core
+    • voice_features
+    • wordclouds
+  To explore results: open the web interface
+---
+
+2026-08-08 13:30:48,330 - transcriptx - INFO - Pipeline completed for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_mini_probe.json - Successfully ran: acts, contextual_emotion, conversation_loops, echoes, emotion, contagion, epistemic_markers, fine_grained_emotion, interactions, lexical_diversity, llm_action_items, llm_custom_qa, llm_speaker_summary, llm_summary, ner, pauses, momentum, moments, politeness, qa_analysis, semantic_similarity, sentiment, affect_tension, entity_sentiment, simplified_transcript, stats, temporal_dynamics, tics, insight_eligibility, bertopic, highlights, keyphrases, summary, narrative_summary, topic_modeling, insights, topic_shift, transcript_output, transcript_quality, understandability, voice_features, prosody_dashboard, voice_charts_core, wordclouds
+2026-08-08 13:30:48,330 - transcriptx - INFO - Starting analysis pipeline for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json with modules: acts, conversation_loops, contagion, emotion, contextual_emotion, fine_grained_emotion, entity_sentiment, affect_tension, interactions, ner, semantic_similarity, sentiment, epistemic_markers, keyphrases, stats, topic_modeling, bertopic, transcript_output, simplified_transcript, understandability, lexical_diversity, wordclouds, tics, transcript_quality, insight_eligibility, temporal_dynamics, qa_analysis, pauses, echoes, politeness, momentum, topic_shift, moments, highlights, summary, narrative_summary, llm_summary, llm_speaker_summary, llm_action_items, llm_custom_qa, insights, voice_features, prosody_dashboard, voice_charts_core
+2026-08-08 13:30:48,643 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: _deep_test_large_norm.json
+  Outputs:    
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405
+  Modules that will run:
+    • acts
+    • affect_tension
+    • bertopic
+    • contagion
+    • contextual_emotion
+    • conversation_loops
+    • echoes
+    • emotion
+    • entity_sentiment
+    • epistemic_markers
+    • fine_grained_emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • interactions
+    • keyphrases
+    • lexical_diversity
+    • llm_action_items
+    • llm_custom_qa
+    • llm_speaker_summary
+    • llm_summary
+    • moments
+    • momentum
+    • narrative_summary
+    • ner
+    • pauses
+    • politeness
+    • prosody_dashboard
+    • qa_analysis
+    • semantic_similarity
+    • sentiment
+    • simplified_transcript
+    • stats
+    • summary
+    • temporal_dynamics
+    • tics
+    • topic_modeling
+    • topic_shift
+    • transcript_output
+    • transcript_quality
+    • understandability
+    • voice_charts_core
+    • voice_features
+    • wordclouds
+---
+
+2026-08-08 13:30:48,684 - transcriptx - INFO - Starting DAG pipeline for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:30:48,693 - transcriptx - INFO - Execution order: acts, contextual_emotion, conversation_loops, echoes, emotion, contagion, epistemic_markers, fine_grained_emotion, interactions, lexical_diversity, llm_action_items, llm_custom_qa, llm_speaker_summary, llm_summary, ner, pauses, momentum, moments, politeness, qa_analysis, semantic_similarity, sentiment, affect_tension, entity_sentiment, simplified_transcript, stats, temporal_dynamics, tics, insight_eligibility, bertopic, highlights, keyphrases, summary, narrative_summary, topic_modeling, insights, topic_shift, transcript_output, transcript_quality, understandability, voice_features, prosody_dashboard, voice_charts_core, wordclouds
+2026-08-08 13:30:48,694 - transcriptx - INFO - Running acts analysis
+
+────────────────────────────────────────────────────────────
+🗣️ ACTS
+────────────────────────────────────────────────────────────
+🔍 Running Dialogue Act Classification...
+2026-08-08 13:30:48,694 - transcriptx - INFO - Starting acts analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:30:48,694 - transcriptx - INFO - Starting acts analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:30:56,740 - transcriptx - INFO - Completed acts analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Dialogue Act Classification
+
+2026-08-08 13:30:56,741 - transcriptx - INFO - Completed acts analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:30:56,741 - transcriptx - INFO - acts completed in 8.05s
+2026-08-08 13:30:56,741 - transcriptx - INFO - Running contextual_emotion analysis
+
+────────────────────────────────────────────────────────────
+⚙️ CONTEXTUAL EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Contextual emotion (broad classifier, experimental)...
+2026-08-08 13:30:56,742 - transcriptx - INFO - Starting contextual_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:30:56,742 - transcriptx - INFO - Starting contextual_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:30:56,865 - transcriptx - INFO - [CONTEXTUAL_EMOTION] scored=1007 failed=0 usable=True channel=experimental
+2026-08-08 13:31:01,947 - transcriptx - INFO - Completed contextual_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Contextual emotion (broad classifier, experimental)
+
+2026-08-08 13:31:01,947 - transcriptx - INFO - Completed contextual_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:01,948 - transcriptx - INFO - contextual_emotion completed in 5.21s
+2026-08-08 13:31:01,948 - transcriptx - INFO - Running conversation_loops analysis
+
+────────────────────────────────────────────────────────────
+🔄 CONVERSATION LOOPS
+────────────────────────────────────────────────────────────
+🔍 Running Conversation Loop Detection...
+2026-08-08 13:31:01,948 - transcriptx - INFO - Starting conversation_loops analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:01,948 - transcriptx - INFO - Starting conversation_loops analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:02,137 - transcriptx - INFO - Completed conversation_loops analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Conversation Loop Detection
+
+2026-08-08 13:31:02,137 - transcriptx - INFO - Completed conversation_loops analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:02,137 - transcriptx - INFO - conversation_loops completed in 0.19s
+2026-08-08 13:31:02,138 - transcriptx - INFO - Running echoes analysis
+
+────────────────────────────────────────────────────────────
+🔁 ECHOES
+────────────────────────────────────────────────────────────
+🔍 Running Quote/Echo/Paraphrase Detection...
+2026-08-08 13:31:02,139 - transcriptx - INFO - Starting echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:02,139 - transcriptx - INFO - Starting echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:11,927 - transcriptx - INFO - Completed echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Quote/Echo/Paraphrase Detection
+
+2026-08-08 13:31:11,927 - transcriptx - INFO - Completed echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:11,927 - transcriptx - INFO - echoes completed in 9.79s
+2026-08-08 13:31:11,927 - transcriptx - INFO - Running emotion analysis
+
+────────────────────────────────────────────────────────────
+😄 EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Emotion-associated vocabulary (NRC lexicon)...
+2026-08-08 13:31:11,928 - transcriptx - INFO - Starting emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:11,928 - transcriptx - INFO - Starting emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:12,076 - transcriptx - INFO - [EMOTION] lexical v2 complete: scored=1007 skipped=0 empty=0 failed=0 usable=True cache_hit=True
+2026-08-08 13:31:14,341 - transcriptx - INFO - Completed emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Emotion-associated vocabulary (NRC lexicon)
+
+2026-08-08 13:31:14,343 - transcriptx - INFO - Completed emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:14,343 - transcriptx - INFO - emotion completed in 2.41s
+2026-08-08 13:31:14,343 - transcriptx - INFO - Running contagion analysis
+
+────────────────────────────────────────────────────────────
+🌊 CONTAGION
+────────────────────────────────────────────────────────────
+🔍 Running Emotional Contagion Detection...
+2026-08-08 13:31:14,343 - transcriptx - INFO - Starting contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:14,343 - transcriptx - INFO - Starting contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:14,819 - transcriptx - INFO - Completed contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Emotional Contagion Detection
+
+2026-08-08 13:31:14,820 - transcriptx - INFO - Completed contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:14,820 - transcriptx - INFO - contagion completed in 0.48s
+2026-08-08 13:31:14,821 - transcriptx - INFO - Running epistemic_markers analysis
+
+────────────────────────────────────────────────────────────
+⚙️ EPISTEMIC MARKERS
+────────────────────────────────────────────────────────────
+🔍 Running Hedging / certainty / epistemic markers...
+2026-08-08 13:31:14,821 - transcriptx - INFO - Starting epistemic_markers analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:14,822 - transcriptx - INFO - Starting epistemic_markers analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:16,405 - transcriptx - INFO - Completed epistemic_markers analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Hedging / certainty / epistemic markers
+
+2026-08-08 13:31:16,406 - transcriptx - INFO - Completed epistemic_markers analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:16,406 - transcriptx - INFO - epistemic_markers completed in 1.58s
+2026-08-08 13:31:16,406 - transcriptx - INFO - Running fine_grained_emotion analysis
+
+────────────────────────────────────────────────────────────
+⚙️ FINE GRAINED EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Fine-grained multi-label emotion (experimental)...
+2026-08-08 13:31:16,407 - transcriptx - INFO - Starting fine_grained_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:16,407 - transcriptx - INFO - Starting fine_grained_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:16,616 - transcriptx - INFO - [FINE_GRAINED_EMOTION] scored=1007 failed=0 mixed=56
+2026-08-08 13:31:22,822 - transcriptx - INFO - Completed fine_grained_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Fine-grained multi-label emotion (experimental)
+
+2026-08-08 13:31:22,822 - transcriptx - INFO - Completed fine_grained_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:22,822 - transcriptx - INFO - fine_grained_emotion completed in 6.41s
+2026-08-08 13:31:22,823 - transcriptx - INFO - Running interactions analysis
+
+────────────────────────────────────────────────────────────
+🤝 INTERACTIONS
+────────────────────────────────────────────────────────────
+🔍 Running Speaker Interaction Analysis...
+2026-08-08 13:31:22,823 - transcriptx - INFO - Starting interactions analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:22,823 - transcriptx - INFO - Starting interactions analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+🔍 Analyzing 1007 segments for interactions...
+✅ Found 255 interactions
+2026-08-08 13:31:28,028 - transcriptx - INFO - Completed interactions analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Speaker Interaction Analysis
+
+2026-08-08 13:31:28,029 - transcriptx - INFO - Completed interactions analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:28,029 - transcriptx - INFO - interactions completed in 5.21s
+2026-08-08 13:31:28,030 - transcriptx - INFO - Running lexical_diversity analysis
+
+────────────────────────────────────────────────────────────
+⚙️ LEXICAL DIVERSITY
+────────────────────────────────────────────────────────────
+🔍 Running Lexical diversity metrics (TTR, MTLD, hapax rate)...
+2026-08-08 13:31:28,031 - transcriptx - INFO - Starting lexical_diversity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:28,031 - transcriptx - INFO - Starting lexical_diversity analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:28,707 - transcriptx - INFO - Completed lexical_diversity analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Lexical diversity metrics (TTR, MTLD, hapax rate)
+
+2026-08-08 13:31:28,708 - transcriptx - INFO - Completed lexical_diversity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:28,708 - transcriptx - INFO - lexical_diversity completed in 0.68s
+2026-08-08 13:31:28,708 - transcriptx - INFO - Running llm_action_items analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM ACTION ITEMS
+────────────────────────────────────────────────────────────
+🔍 Running Extract structured action items via local LLM (model: gemma3:12b)...
+2026-08-08 13:31:28,709 - transcriptx - INFO - Starting llm_action_items analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:28,709 - transcriptx - INFO - Starting llm_action_items analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:51,918 - transcriptx - INFO - Completed llm_action_items analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Extract structured action items via local LLM
+
+2026-08-08 13:31:51,919 - transcriptx - INFO - Completed llm_action_items analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:51,919 - transcriptx - INFO - llm_action_items completed in 23.21s
+2026-08-08 13:31:51,919 - transcriptx - INFO - Running llm_custom_qa analysis
+
+────────────────────────────────────────────────────────────
+⚙️ LLM CUSTOM QA
+────────────────────────────────────────────────────────────
+🔍 Running Answer custom questions against the transcript via local LLM...
+2026-08-08 13:31:51,920 - transcriptx - INFO - Starting llm_custom_qa analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:51,920 - transcriptx - INFO - Starting llm_custom_qa analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:51,925 - transcriptx - INFO - Completed llm_custom_qa analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Answer custom questions against the transcript via local LLM
+
+2026-08-08 13:31:51,926 - transcriptx - INFO - Completed llm_custom_qa analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:51,926 - transcriptx - INFO - llm_custom_qa completed in 0.01s
+2026-08-08 13:31:51,926 - transcriptx - INFO - Running llm_speaker_summary analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM SPEAKER SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Abstractive per-speaker summaries via local LLM (model: 
+gemma3:12b)...
+2026-08-08 13:31:51,927 - transcriptx - INFO - Starting llm_speaker_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:31:51,927 - transcriptx - INFO - Starting llm_speaker_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:32:51,932 - transcriptx - INFO - llm_speaker_summary still running... 60.0s elapsed
+2026-08-08 13:32:56,928 - transcriptx - INFO - Completed llm_speaker_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Abstractive per-speaker summaries via local LLM
+
+2026-08-08 13:32:56,930 - transcriptx - INFO - Completed llm_speaker_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:32:56,930 - transcriptx - INFO - llm_speaker_summary completed in 65.00s
+2026-08-08 13:32:56,930 - transcriptx - INFO - Running llm_summary analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Abstractive transcript summary via local LLM (model: gemma3:12b)...
+2026-08-08 13:32:56,931 - transcriptx - INFO - Starting llm_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:32:56,931 - transcriptx - INFO - Starting llm_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:33:33,451 - transcriptx - INFO - Completed llm_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Abstractive transcript summary via local LLM
+
+2026-08-08 13:33:33,452 - transcriptx - INFO - Completed llm_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:33:33,452 - transcriptx - INFO - llm_summary completed in 36.52s
+2026-08-08 13:33:33,452 - transcriptx - INFO - Running ner analysis
+
+────────────────────────────────────────────────────────────
+🏷️ NER
+────────────────────────────────────────────────────────────
+🔍 Running Named Entity Recognition...
+2026-08-08 13:33:33,452 - transcriptx - INFO - Starting ner analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:33:33,453 - transcriptx - INFO - Starting ner analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+Processing 1007 segments for NER analysis...
+Processing batch 1/11 (100 segments)
+Processing batch 2/11 (100 segments)
+Processing batch 3/11 (100 segments)
+Processing batch 4/11 (100 segments)
+Processing batch 5/11 (100 segments)
+Processing batch 6/11 (100 segments)
+Processing batch 7/11 (100 segments)
+Processing batch 8/11 (100 segments)
+Processing batch 9/11 (100 segments)
+Processing batch 10/11 (100 segments)
+Processing batch 11/11 (7 segments)
+NER processing complete.
+2026-08-08 13:34:33,453 - transcriptx - INFO - ner still running... 60.0s elapsed
+2026-08-08 13:34:38,296 - transcriptx - INFO - Completed ner analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Named Entity Recognition
+
+2026-08-08 13:34:38,297 - transcriptx - INFO - Completed ner analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:38,297 - transcriptx - INFO - ner completed in 64.84s
+2026-08-08 13:34:38,297 - transcriptx - INFO - Running pauses analysis
+
+────────────────────────────────────────────────────────────
+⏸️ PAUSES
+────────────────────────────────────────────────────────────
+🔍 Running Silence and Timing Analysis...
+2026-08-08 13:34:38,298 - transcriptx - INFO - Starting pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:38,298 - transcriptx - INFO - Starting pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:38,963 - transcriptx - INFO - Completed pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Silence and Timing Analysis
+
+2026-08-08 13:34:38,964 - transcriptx - INFO - Completed pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:38,964 - transcriptx - INFO - pauses completed in 0.67s
+2026-08-08 13:34:38,964 - transcriptx - INFO - Running momentum analysis
+
+────────────────────────────────────────────────────────────
+🚀 MOMENTUM
+────────────────────────────────────────────────────────────
+🔍 Running Stall/Flow Index Analysis...
+2026-08-08 13:34:38,965 - transcriptx - INFO - Starting momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:38,965 - transcriptx - INFO - Starting momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:39,297 - transcriptx - INFO - Completed momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Stall/Flow Index Analysis
+
+2026-08-08 13:34:39,297 - transcriptx - INFO - Completed momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:39,297 - transcriptx - INFO - momentum completed in 0.33s
+2026-08-08 13:34:39,298 - transcriptx - INFO - Running moments analysis
+
+────────────────────────────────────────────────────────────
+⭐ MOMENTS
+────────────────────────────────────────────────────────────
+🔍 Running Ranked Moments Worth Revisiting...
+2026-08-08 13:34:39,298 - transcriptx - INFO - Starting moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:39,298 - transcriptx - INFO - Starting moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:39,613 - transcriptx - INFO - Completed moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Ranked Moments Worth Revisiting
+
+2026-08-08 13:34:39,614 - transcriptx - INFO - Completed moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:39,614 - transcriptx - INFO - moments completed in 0.32s
+2026-08-08 13:34:39,615 - transcriptx - INFO - Running politeness analysis
+
+────────────────────────────────────────────────────────────
+⚙️ POLITENESS
+────────────────────────────────────────────────────────────
+🔍 Running Politeness / formality / directiveness markers...
+2026-08-08 13:34:39,616 - transcriptx - INFO - Starting politeness analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:39,616 - transcriptx - INFO - Starting politeness analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:41,372 - transcriptx - INFO - Completed politeness analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Politeness / formality / directiveness markers
+
+2026-08-08 13:34:41,373 - transcriptx - INFO - Completed politeness analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:41,373 - transcriptx - INFO - politeness completed in 1.76s
+2026-08-08 13:34:41,373 - transcriptx - INFO - Running qa_analysis analysis
+
+────────────────────────────────────────────────────────────
+❓ QA ANALYSIS
+────────────────────────────────────────────────────────────
+🔍 Running Question-Answer Pairing and Response Quality...
+2026-08-08 13:34:41,374 - transcriptx - INFO - Starting qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:41,374 - transcriptx - INFO - Starting qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:42,499 - transcriptx - INFO - Completed qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Question-Answer Pairing and Response Quality
+
+2026-08-08 13:34:42,499 - transcriptx - INFO - Completed qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:42,499 - transcriptx - INFO - qa_analysis completed in 1.13s
+2026-08-08 13:34:42,499 - transcriptx - INFO - Running semantic_similarity analysis
+
+────────────────────────────────────────────────────────────
+🔗 SEMANTIC SIMILARITY
+────────────────────────────────────────────────────────────
+🔍 Running Semantic similarity (batched embeddings, vectorized similarity)...
+2026-08-08 13:34:42,500 - transcriptx - INFO - Starting semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:42,553 - transcriptx - INFO - Starting semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:34:43,166 - transcriptx - INFO - [SEMANTIC] Loaded semantic model: sentence-transformers/all-mpnet-base-v2
+2026-08-08 13:35:01,888 - transcriptx - INFO - [SEMANTIC] Created 6 v2 visualizations
+2026-08-08 13:35:01,889 - transcriptx - INFO - Completed semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Semantic similarity (batched embeddings, vectorized similarity)
+
+2026-08-08 13:35:01,889 - transcriptx - INFO - Completed semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:01,889 - transcriptx - INFO - semantic_similarity completed in 19.39s
+2026-08-08 13:35:01,889 - transcriptx - INFO - Running sentiment analysis
+
+────────────────────────────────────────────────────────────
+😊 SENTIMENT
+────────────────────────────────────────────────────────────
+🔍 Running Sentiment Analysis...
+2026-08-08 13:35:01,890 - transcriptx - INFO - Starting sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+Some weights of the model checkpoint at /Users/89298/.cache/huggingface/hub/models--cardiffnlp--twitter-roberta-base-sentiment-latest/snapshots/3216a57f2a0d9c45a2e6c20157c20c49fb4bf9c7 were not used when initializing RobertaForSequenceClassification: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+- This IS expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+Device set to use mps:0
+2026-08-08 13:35:02,578 - transcriptx - INFO - [SENTIMENT] Transformers sentiment model loaded successfully
+2026-08-08 13:35:02,578 - transcriptx - INFO - Starting sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:24,899 - transcriptx - INFO - Completed sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Sentiment Analysis
+
+2026-08-08 13:35:24,904 - transcriptx - INFO - Completed sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:24,904 - transcriptx - INFO - sentiment completed in 23.01s
+2026-08-08 13:35:24,904 - transcriptx - INFO - Running affect_tension analysis
+
+────────────────────────────────────────────────────────────
+⚙️ AFFECT TENSION
+────────────────────────────────────────────────────────────
+🔍 Running Emotion + Sentiment mismatch and tension indices...
+2026-08-08 13:35:24,905 - transcriptx - INFO - Starting affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:24,905 - transcriptx - INFO - Starting affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:29,743 - transcriptx - INFO - Completed affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Emotion + Sentiment mismatch and tension indices
+
+2026-08-08 13:35:29,744 - transcriptx - INFO - Completed affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:29,744 - transcriptx - INFO - affect_tension completed in 4.84s
+2026-08-08 13:35:29,744 - transcriptx - INFO - Running entity_sentiment analysis
+
+────────────────────────────────────────────────────────────
+💭 ENTITY SENTIMENT
+────────────────────────────────────────────────────────────
+🔍 Running Entity-based Sentiment Analysis...
+2026-08-08 13:35:29,745 - transcriptx - INFO - Starting entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:29,745 - transcriptx - INFO - Starting entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:34,538 - transcriptx - INFO - Completed entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Entity-based Sentiment Analysis
+
+2026-08-08 13:35:34,539 - transcriptx - INFO - Completed entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:34,539 - transcriptx - INFO - entity_sentiment completed in 4.79s
+2026-08-08 13:35:34,540 - transcriptx - INFO - Running simplified_transcript analysis
+
+────────────────────────────────────────────────────────────
+⚙️ SIMPLIFIED TRANSCRIPT
+────────────────────────────────────────────────────────────
+🔍 Running Simplified transcript (tics, agreements, repetitions removed)...
+2026-08-08 13:35:34,540 - transcriptx - INFO - Starting simplified_transcript analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:34,540 - transcriptx - INFO - Starting simplified_transcript analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:34,577 - transcriptx - INFO - Completed simplified_transcript analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Simplified transcript (tics, agreements, repetitions removed)
+
+2026-08-08 13:35:34,578 - transcriptx - INFO - Completed simplified_transcript analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:34,578 - transcriptx - INFO - simplified_transcript completed in 0.04s
+2026-08-08 13:35:34,578 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+📊 STATS
+────────────────────────────────────────────────────────────
+🔍 Running Statistical Analysis...
+2026-08-08 13:35:34,579 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:34,579 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:34,787 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Statistical Analysis
+
+2026-08-08 13:35:34,788 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:34,788 - transcriptx - INFO - stats completed in 0.21s
+2026-08-08 13:35:34,788 - transcriptx - INFO - Running temporal_dynamics analysis
+
+────────────────────────────────────────────────────────────
+⏱️ TEMPORAL DYNAMICS
+────────────────────────────────────────────────────────────
+🔍 Running Temporal Dynamics Analysis...
+2026-08-08 13:35:34,789 - transcriptx - INFO - Starting temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:34,789 - transcriptx - INFO - Starting temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:36,339 - transcriptx - INFO - Completed temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Temporal Dynamics Analysis
+
+2026-08-08 13:35:36,340 - transcriptx - INFO - Completed temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:36,340 - transcriptx - INFO - temporal_dynamics completed in 1.55s
+2026-08-08 13:35:36,340 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+✔️ TICS
+────────────────────────────────────────────────────────────
+🔍 Running Verbal Tics Analysis...
+2026-08-08 13:35:36,340 - transcriptx - INFO - Starting tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:36,340 - transcriptx - INFO - Starting tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:38,167 - transcriptx - INFO - Completed tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Verbal Tics Analysis
+
+2026-08-08 13:35:38,168 - transcriptx - INFO - Completed tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:38,168 - transcriptx - INFO - tics completed in 1.83s
+2026-08-08 13:35:38,168 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+🔍 Running Shared content-vs-style insight eligibility pipeline...
+2026-08-08 13:35:38,168 - transcriptx - INFO - Starting insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:38,169 - transcriptx - INFO - Starting insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:46,506 - transcriptx - INFO - Completed insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-08 13:35:46,507 - transcriptx - INFO - Completed insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:46,507 - transcriptx - INFO - insight_eligibility completed in 8.34s
+2026-08-08 13:35:46,507 - transcriptx - INFO - Running bertopic analysis
+
+────────────────────────────────────────────────────────────
+⚙️ BERTOPIC
+────────────────────────────────────────────────────────────
+🔍 Running BERTopic topic modeling (optional / stack — see 
+docs/dev/bertopic_optional_module.md)...
+2026-08-08 13:35:46,508 - transcriptx - INFO - Starting bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:35:46,508 - transcriptx - INFO - Starting bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:14,731 - transcriptx - INFO - Completed bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed BERTopic topic modeling (optional / stack — see 
+docs/dev/bertopic_optional_module.md)
+
+2026-08-08 13:36:14,733 - transcriptx - INFO - Completed bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:14,733 - transcriptx - INFO - bertopic completed in 28.22s
+2026-08-08 13:36:14,734 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ HIGHLIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Highlights and conflict moments (quote-forward)...
+2026-08-08 13:36:14,735 - transcriptx - INFO - Starting highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:14,735 - transcriptx - INFO - Starting highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:19,298 - transcriptx - INFO - Completed highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-08 13:36:19,299 - transcriptx - INFO - Completed highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:19,299 - transcriptx - INFO - highlights completed in 4.56s
+2026-08-08 13:36:19,299 - transcriptx - INFO - Running keyphrases analysis
+
+────────────────────────────────────────────────────────────
+⚙️ KEYPHRASES
+────────────────────────────────────────────────────────────
+🔍 Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
+2026-08-08 13:36:19,300 - transcriptx - INFO - Starting keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:19,300 - transcriptx - INFO - Starting keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:21,170 - transcriptx - INFO - Completed keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
+
+2026-08-08 13:36:21,171 - transcriptx - INFO - Completed keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:21,171 - transcriptx - INFO - keyphrases completed in 1.87s
+2026-08-08 13:36:21,171 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+⚙️ SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Executive brief summary derived from highlights...
+2026-08-08 13:36:21,171 - transcriptx - INFO - Starting summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:21,172 - transcriptx - INFO - Starting summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:44,066 - transcriptx - INFO - Saved all-charts PDF to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_133048_88648405/summary/all_charts.pdf (22 modules, 194 charts)
+2026-08-08 13:36:44,067 - transcriptx - INFO - Completed summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Executive brief summary derived from highlights
+
+2026-08-08 13:36:44,068 - transcriptx - INFO - Completed summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:44,068 - transcriptx - INFO - summary completed in 22.90s
+2026-08-08 13:36:44,068 - transcriptx - INFO - Running narrative_summary analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ NARRATIVE SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Grounded executive narrative from deterministic summary (LLM) (model:
+gemma3:12b)...
+2026-08-08 13:36:44,069 - transcriptx - INFO - Starting narrative_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:44,069 - transcriptx - INFO - Starting narrative_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:58,313 - transcriptx - INFO - Completed narrative_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Grounded executive narrative from deterministic summary (LLM)
+
+2026-08-08 13:36:58,314 - transcriptx - INFO - Completed narrative_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:58,314 - transcriptx - INFO - narrative_summary completed in 14.24s
+2026-08-08 13:36:58,314 - transcriptx - INFO - Running topic_modeling analysis
+
+────────────────────────────────────────────────────────────
+💡 TOPIC MODELING
+────────────────────────────────────────────────────────────
+🔍 Running Topic Modeling...
+2026-08-08 13:36:58,315 - transcriptx - INFO - Starting topic_modeling analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:36:58,316 - transcriptx - INFO - Starting topic_modeling analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+[TOPICS] Finding optimal k for LDA...
+[TOPICS] Optimal k for LDA: 8
+[TOPICS] Diagnostic scores: Likelihood=-12320.949, Coherence=0.617, Silhouette=0.821
+[TOPICS] Finding optimal k for NMF...
+[TOPICS] Optimal k for NMF: 15
+[TOPICS] Diagnostic scores: Likelihood=-0.001, Coherence=5.191, Silhouette=0.411
+[TOPICS] Created LDA diagnostic plots
+[TOPICS] Created NMF diagnostic plots
+[TOPICS] Created discourse analysis charts
+[DEBUG] create_topic_evolution_timeline: received 457 doc topics
+[DEBUG] DataFrame head:
+                                                text  ... confidence
+0  thank can compare other can compare other can ...  ...   0.791693
+1  can compare other can compare other can compar...  ...   0.902778
+2  can compare other can compare other top hill d...  ...   0.732123
+3        top hill did go was good was good are ready  ...   0.589228
+4  was good was good are ready going forget prepa...  ...   0.550243
+
+[5 rows x 6 columns]
+[TOPICS] Created topic evolution timeline: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_133048_88648405/topic_modeling/charts/global/static/timeline/topic_evolution_timeline.png
+[DEBUG] create_speaker_topic_engagement_heatmap: received 457 doc topics
+[DEBUG] DataFrame head:
+                                                text  ... confidence
+0  thank can compare other can compare other can ...  ...   0.791693
+1  can compare other can compare other can compar...  ...   0.902778
+2  can compare other can compare other top hill d...  ...   0.732123
+3        top hill did go was good was good are ready  ...   0.589228
+4  was good was good are ready going forget prepa...  ...   0.550243
+
+[5 rows x 6 columns]
+[DEBUG] speaker-topic engagement heatmap: contributors=457, matrix_sum=457.000000
+[TOPICS] Created speaker-topic engagement heatmap: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_133048_88648405/topic_modeling/charts/global/static/heatmap/speaker_topic_engagement_heatmap.png
+[DEBUG] create_expected_topic_proportions_bar: received 457 doc topics
+[DEBUG] DataFrame head:
+                                                text  ... confidence
+0  thank can compare other can compare other can ...  ...   0.791693
+1  can compare other can compare other can compar...  ...   0.902778
+2  can compare other can compare other top hill d...  ...   0.732123
+3        top hill did go was good was good are ready  ...   0.589228
+4  was good was good are ready going forget prepa...  ...   0.550243
+
+[5 rows x 6 columns]
+[TOPICS] Created expected topic proportions bar chart: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_133048_88648405/topic_modeling/charts/global/static/bar/expected_topic_proportions.png
+[TOPICS] Enhanced HTML report created: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_133048_88648405/topic_modeling/_deep_test_large_norm_enhanced_topic_modeling_report.html
+2026-08-08 13:37:39,212 - transcriptx - INFO - Completed topic_modeling analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Topic Modeling
+
+2026-08-08 13:37:39,213 - transcriptx - INFO - Completed topic_modeling analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:37:39,213 - transcriptx - INFO - topic_modeling completed in 40.90s
+2026-08-08 13:37:39,213 - transcriptx - INFO - Running insights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Content-first insights layer separated from style markers...
+2026-08-08 13:37:39,214 - transcriptx - INFO - Starting insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:37:39,214 - transcriptx - INFO - Starting insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:37:39,219 - transcriptx - INFO - Completed insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Content-first insights layer separated from style markers
+
+2026-08-08 13:37:39,219 - transcriptx - INFO - Completed insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:37:39,220 - transcriptx - INFO - insights completed in 0.01s
+2026-08-08 13:37:39,220 - transcriptx - INFO - Running topic_shift analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ TOPIC SHIFT
+────────────────────────────────────────────────────────────
+🔍 Running Topic-shift chapter segmentation (model: gemma3:12b)...
+2026-08-08 13:37:39,220 - transcriptx - INFO - Starting topic_shift analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:37:39,220 - transcriptx - INFO - Starting topic_shift analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:03,626 - transcriptx - INFO - Completed topic_shift analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Topic-shift chapter segmentation
+
+2026-08-08 13:38:03,630 - transcriptx - INFO - Completed topic_shift analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:03,630 - transcriptx - INFO - topic_shift completed in 24.41s
+2026-08-08 13:38:03,630 - transcriptx - INFO - Running transcript_output analysis
+
+────────────────────────────────────────────────────────────
+📃 TRANSCRIPT OUTPUT
+────────────────────────────────────────────────────────────
+🔍 Running Generate human readable transcripts...
+2026-08-08 13:38:03,631 - transcriptx - INFO - Starting transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:03,632 - transcriptx - INFO - Starting transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:03,638 - transcriptx - INFO - Generating human-friendly transcript for _deep_test_large_norm
+2026-08-08 13:38:03,671 - transcriptx - INFO - Human-friendly transcript generated successfully: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_133048_88648405/transcripts/_deep_test_large_norm-transcript.txt
+✅ Generated human-friendly transcript
+
+2026-08-08 13:38:03,672 - transcriptx - INFO - Completed transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Generate human readable transcripts
+
+2026-08-08 13:38:03,673 - transcriptx - INFO - Completed transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:03,673 - transcriptx - INFO - transcript_output completed in 0.04s
+2026-08-08 13:38:03,673 - transcriptx - INFO - Running transcript_quality analysis
+
+────────────────────────────────────────────────────────────
+⚙️ TRANSCRIPT QUALITY
+────────────────────────────────────────────────────────────
+🔍 Running ASR Confidence...
+2026-08-08 13:38:03,673 - transcriptx - INFO - Starting transcript_quality analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:03,674 - transcriptx - INFO - Starting transcript_quality analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:04,367 - transcriptx - INFO - Completed transcript_quality analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed ASR Confidence
+
+2026-08-08 13:38:04,368 - transcriptx - INFO - Completed transcript_quality analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:04,368 - transcriptx - INFO - transcript_quality completed in 0.69s
+2026-08-08 13:38:04,369 - transcriptx - INFO - Running understandability analysis
+
+────────────────────────────────────────────────────────────
+📖 UNDERSTANDABILITY
+────────────────────────────────────────────────────────────
+🔍 Running Understandability Analysis...
+2026-08-08 13:38:04,369 - transcriptx - INFO - Starting understandability analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:04,370 - transcriptx - INFO - Starting understandability analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Global CSV saved to 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/understandability/data/global/_deep_test_large_norm_understandabi
+lity.csv
+
+2026-08-08 13:38:05,246 - transcriptx - INFO - Completed understandability analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Understandability Analysis
+
+2026-08-08 13:38:05,247 - transcriptx - INFO - Completed understandability analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:05,247 - transcriptx - INFO - understandability completed in 0.88s
+2026-08-08 13:38:05,247 - transcriptx - INFO - Running voice_features analysis
+
+────────────────────────────────────────────────────────────
+⚙️ VOICE FEATURES
+────────────────────────────────────────────────────────────
+🔍 Running Voice feature extraction and caching...
+2026-08-08 13:38:05,248 - transcriptx - INFO - Starting voice_features analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:05,248 - transcriptx - INFO - Starting voice_features analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:05,452 - transcriptx - INFO - Completed voice_features analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Voice feature extraction and caching
+
+2026-08-08 13:38:05,453 - transcriptx - INFO - Completed voice_features analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:05,453 - transcriptx - INFO - voice_features completed in 0.20s
+2026-08-08 13:38:05,453 - transcriptx - INFO - Running prosody_dashboard analysis
+
+────────────────────────────────────────────────────────────
+⚙️ PROSODY DASHBOARD
+────────────────────────────────────────────────────────────
+🔍 Running Prosody dashboard charts from voice features...
+2026-08-08 13:38:05,453 - transcriptx - INFO - Starting prosody_dashboard analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:05,454 - transcriptx - INFO - Starting prosody_dashboard analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:05,457 - transcriptx - INFO - Completed prosody_dashboard analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Prosody dashboard charts from voice features
+
+2026-08-08 13:38:05,458 - transcriptx - INFO - Completed prosody_dashboard analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:05,458 - transcriptx - INFO - prosody_dashboard completed in 0.00s
+2026-08-08 13:38:05,458 - transcriptx - INFO - Running voice_charts_core analysis
+
+────────────────────────────────────────────────────────────
+⚙️ VOICE CHARTS CORE
+────────────────────────────────────────────────────────────
+🔍 Running Voice charts core: pauses + rhythm indices...
+2026-08-08 13:38:05,458 - transcriptx - INFO - Starting voice_charts_core analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:05,459 - transcriptx - INFO - Starting voice_charts_core analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:05,462 - transcriptx - INFO - Completed voice_charts_core analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Voice charts core: pauses + rhythm indices
+
+2026-08-08 13:38:05,462 - transcriptx - INFO - Completed voice_charts_core analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:05,462 - transcriptx - INFO - voice_charts_core completed in 0.00s
+2026-08-08 13:38:05,462 - transcriptx - INFO - Running wordclouds analysis
+
+────────────────────────────────────────────────────────────
+💬 WORDCLOUDS
+────────────────────────────────────────────────────────────
+🔍 Running Word Cloud Generation...
+2026-08-08 13:38:05,463 - transcriptx - INFO - Starting wordclouds analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:05,463 - transcriptx - INFO - Starting wordclouds analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:38:05,470 - transcriptx - INFO - [WORDCLOUDS] Using precomputed speaker grouping from pipeline: 13 speakers: ['SPEAKER_12', 'Glen', 'Speaker 13', 'Speaker 6', 'Mariela', 'Hala', 'Vibhu', 'Speaker 12', 'Rochelle', 'Frank', 'Rana', 'Jonas', 'Speaker 11']
+✅ Word cloud saved for Glen
+
+✅ Word cloud saved for Mariela
+
+✅ Word cloud saved for Hala
+
+✅ Word cloud saved for Vibhu
+
+✅ Word cloud saved for Rochelle
+
+✅ Word cloud saved for Frank
+
+✅ Word cloud saved for Rana
+
+✅ Word cloud saved for Jonas
+
+✅ Word cloud saved for wordcloud-ALL
+
+2026-08-08 13:38:59,161 - transcriptx - INFO - [WORDCLOUDS] Completed wordcloud generation for _deep_test_large_norm
+2026-08-08 13:39:04,666 - transcriptx - INFO - Completed wordclouds analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Word Cloud Generation
+
+2026-08-08 13:39:04,668 - transcriptx - INFO - Completed wordclouds analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 13:39:04,668 - transcriptx - INFO - wordclouds completed in 59.20s
+2026-08-08 13:39:04,668 - transcriptx - INFO - Pipeline completed. Ran 44 modules with 0 errors
+2026-08-08 13:39:05,029 - transcriptx - INFO - Saved run results summary to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_133048_88648405/run_results.json
+2026-08-08 13:39:05,398 - transcriptx - INFO - Saved output manifest to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_133048_88648405/manifest.json
+2026-08-08 13:39:09,573 - transcriptx - INFO - Saved run manifest to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_133048_88648405/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: _deep_test_large_norm
+📂 Output Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405
+🔄 Analysis Status: 44/44 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (44):
+--------------------------------------------------
+
+✅ ACTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/acts
+   📄 Files: 94
+   📂 Subdirectories: 86
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/temporal/acts_temporal.html (4553.3 KB)
+      • charts/speakers/Rochelle/dynamic/pie/acts_pie.html (4552.4 KB)
+      • charts/speakers/Rochelle/dynamic/bar/acts_bar.html (4552.5 KB)
+      • charts/speakers/Rochelle/static/temporal/acts_temporal.evidence.json 
+(2.5 KB)
+      • charts/speakers/Rochelle/static/temporal/acts_temporal.png (147.6 KB)
+      • ... and 89 more files
+
+✅ CONVERSATION_LOOPS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/conversation_loops
+   📄 Files: 5
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_conversation_loops.csv (0.0 KB)
+      • data/global/_deep_test_large_norm_conversation_loops_summary.json (1.1 
+KB)
+      • data/global/_deep_test_large_norm_summary.txt (0.5 KB)
+      • data/global/_deep_test_large_norm_conversation_loops.json (1.7 KB)
+      • data/global/_deep_test_large_norm_summary.json (0.5 KB)
+
+✅ CONTAGION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/contagion
+   📄 Files: 7
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/matrix/contagion_matrix.html (4552.8 KB)
+      • charts/global/static/matrix/contagion_matrix.png (143.7 KB)
+      • charts/global/static/matrix/contagion_matrix.evidence.json (1.7 KB)
+      • data/global/_deep_test_large_norm_contagion_events.json (3.5 KB)
+      • data/global/_deep_test_large_norm_contagion_summary.json (1.4 KB)
+      • ... and 2 more files
+
+✅ EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/emotion
+   📄 Files: 43
+   📂 Subdirectories: 52
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • charts/speakers/Rochelle/dynamic/bar/emotion_assignment_counts.html 
+(4552.4 KB)
+      • charts/speakers/Rochelle/static/bar/emotion_assignment_counts.png (136.7
+KB)
+      • 
+charts/speakers/Rochelle/static/bar/emotion_assignment_counts.evidence.json (0.7
+KB)
+      • charts/speakers/Mariela/dynamic/bar/emotion_assignment_counts.html 
+(4552.4 KB)
+      • ... and 38 more files
+
+✅ CONTEXTUAL_EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/contextual_emotion
+   📄 Files: 83
+   📂 Subdirectories: 51
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • 
+charts/speakers/Rochelle/dynamic/bar/contextual_emotion_label_counts_excluding_n
+eutral.html (4552.4 KB)
+      • 
+charts/speakers/Rochelle/dynamic/bar/contextual_emotion_label_counts.html 
+(4552.4 KB)
+      • 
+charts/speakers/Rochelle/dynamic/bar/contextual_emotion_label_share_non_neutral.
+html (4552.4 KB)
+      • 
+charts/speakers/Rochelle/static/bar/contextual_emotion_label_counts.evidence.jso
+n (0.6 KB)
+      • ... and 78 more files
+
+✅ FINE_GRAINED_EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/fine_grained_emotion
+   📄 Files: 83
+   📂 Subdirectories: 51
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • 
+charts/speakers/Rochelle/dynamic/bar/fine_grained_native_label_share_non_neutral
+.html (4552.6 KB)
+      • 
+charts/speakers/Rochelle/dynamic/bar/fine_grained_native_label_prevalence.html 
+(4552.5 KB)
+      • 
+charts/speakers/Rochelle/dynamic/bar/fine_grained_native_label_prevalence_exclud
+ing_neutral.html (4552.5 KB)
+      • 
+charts/speakers/Rochelle/static/bar/fine_grained_native_label_share_non_neutral.
+png (163.5 KB)
+      • ... and 78 more files
+
+✅ ENTITY_SENTIMENT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/entity_sentiment
+   📄 Files: 34
+   📂 Subdirectories: 47
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/bar/entity_mentions.html (4552.3 KB)
+      • charts/speakers/Rochelle/static/bar/entity_mentions.png (69.0 KB)
+      • charts/speakers/Rochelle/static/bar/entity_mentions.evidence.json (0.5 
+KB)
+      • charts/speakers/Mariela/dynamic/bar/entity_mentions.html (4552.4 KB)
+      • charts/speakers/Mariela/static/bar/entity_mentions.png (82.6 KB)
+      • ... and 29 more files
+
+✅ AFFECT_TENSION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/affect_tension
+   📄 Files: 53
+   📂 Subdirectories: 31
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/entropy_volatility_timeseries.html 
+(4555.5 KB)
+      • 
+charts/speakers/Rochelle/static/entropy_volatility_timeseries.evidence.json (5.7
+KB)
+      • charts/speakers/Rochelle/static/entropy_volatility_timeseries.png (168.4
+KB)
+      • charts/speakers/Mariela/dynamic/entropy_volatility_timeseries.html 
+(4556.8 KB)
+      • 
+charts/speakers/Mariela/static/entropy_volatility_timeseries.evidence.json (6.7 
+KB)
+      • ... and 48 more files
+
+✅ INTERACTIONS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/interactions
+   📄 Files: 53
+   📂 Subdirectories: 59
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/timeline/timeline.html (4553.3 KB)
+      • charts/speakers/Rochelle/static/timeline/timeline.evidence.json (2.3 KB)
+      • charts/speakers/Rochelle/static/timeline/timeline.png (170.1 KB)
+      • charts/speakers/Mariela/dynamic/timeline/timeline.html (4554.1 KB)
+      • charts/speakers/Mariela/static/timeline/timeline.evidence.json (4.1 KB)
+      • ... and 47 more files
+
+✅ NER
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/ner
+   📄 Files: 52
+   📂 Subdirectories: 53
+   📋 Key outputs:
+      • maps/images/_deep_test_large_norm-locations-Mariela.png (61.3 KB)
+      • maps/images/_deep_test_large_norm-locations-Vibhu.png (66.3 KB)
+      • maps/images/_deep_test_large_norm-locations-ALL.png (86.8 KB)
+      • maps/images/_deep_test_large_norm-locations-Hala.png (61.4 KB)
+      • maps/images/_deep_test_large_norm-locations-Frank.png (66.8 KB)
+      • ... and 47 more files
+
+✅ SEMANTIC_SIMILARITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/semantic_similarity
+   📄 Files: 22
+   📂 Subdirectories: 6
+   📋 Key outputs:
+      • charts/global/dynamic/speaker_repetitions.html (4552.5 KB)
+      • charts/global/dynamic/classification.html (4552.4 KB)
+      • charts/global/dynamic/similarity_distribution.html (4552.7 KB)
+      • charts/global/dynamic/speaker_repetition_frequency.html (4552.5 KB)
+      • charts/global/dynamic/speaker_similarity.html (4552.7 KB)
+      • ... and 17 more files
+
+✅ SENTIMENT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/sentiment
+   📄 Files: 47
+   📂 Subdirectories: 32
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/rolling_sentiment.html (4554.4 KB)
+      • charts/speakers/Rochelle/static/rolling_sentiment.evidence.json (3.7 KB)
+      • charts/speakers/Rochelle/static/rolling_sentiment.png (167.3 KB)
+      • charts/speakers/Mariela/dynamic/rolling_sentiment.html (4555.3 KB)
+      • charts/speakers/Mariela/static/rolling_sentiment.evidence.json (4.0 KB)
+      • ... and 42 more files
+
+✅ EPISTEMIC_MARKERS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/epistemic_markers
+   📄 Files: 24
+   📂 Subdirectories: 39
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/epistemic_markers/category_rates.html 
+(4552.5 KB)
+      • charts/speakers/Rochelle/static/epistemic_markers/category_rates.png 
+(148.4 KB)
+      • 
+charts/speakers/Rochelle/static/epistemic_markers/category_rates.evidence.json 
+(0.7 KB)
+      • charts/speakers/Mariela/dynamic/epistemic_markers/category_rates.html 
+(4552.5 KB)
+      • charts/speakers/Mariela/static/epistemic_markers/category_rates.png 
+(147.5 KB)
+      • ... and 19 more files
+
+✅ KEYPHRASES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/keyphrases
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_keyphrases.json (215.8 KB)
+      • data/global/_deep_test_large_norm_keyphrases_summary.json (1.9 KB)
+      • data/global/_deep_test_large_norm_keyphrases.csv (26.0 KB)
+
+✅ STATS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ TOPIC_MODELING
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/topic_modeling
+   📄 Files: 390
+   📂 Subdirectories: 468
+   📋 Key outputs:
+      • _deep_test_large_norm_enhanced_topic_modeling_report.html (30.0 KB)
+      • charts/speakers/Glen___Hala___Mariela___Rana/dynamic/bar/topic_bar.html 
+(4552.4 KB)
+      • charts/speakers/Glen___Hala___Mariela___Rana/static/bar/topic_bar.png 
+(92.5 KB)
+      • 
+charts/speakers/Glen___Hala___Mariela___Rana/static/bar/topic_bar.evidence.json 
+(0.6 KB)
+      • charts/speakers/Hala___Mariela___Vibhu/dynamic/bar/topic_bar.html 
+(4552.4 KB)
+      • ... and 385 more files
+
+✅ BERTOPIC
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/bertopic
+   📄 Files: 9
+   📂 Subdirectories: 10
+   📋 Key outputs:
+      • charts/global/dynamic/heatmap/bertopic_topic_word_heatmap.html (4553.1 
+KB)
+      • charts/global/dynamic/bar/bertopic_topic_prevalence.html (4552.5 KB)
+      • charts/global/static/heatmap/bertopic_topic_word_heatmap.evidence.json 
+(1.6 KB)
+      • charts/global/static/heatmap/bertopic_topic_word_heatmap.png (171.9 KB)
+      • charts/global/static/bar/bertopic_topic_prevalence.evidence.json (0.7 
+KB)
+      • ... and 4 more files
+
+✅ TRANSCRIPT_OUTPUT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • _deep_test_large_norm_simplified_transcript.json (82.4 KB)
+      • _deep_test_large_norm-transcript.txt (57.3 KB)
+      • _deep_test_large_norm-transcript.csv (62.0 KB)
+      • _deep_test_large_norm_simplified_transcript_summary.json (0.1 KB)
+
+✅ SIMPLIFIED_TRANSCRIPT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • _deep_test_large_norm_simplified_transcript.json (82.4 KB)
+      • _deep_test_large_norm-transcript.txt (57.3 KB)
+      • _deep_test_large_norm-transcript.csv (62.0 KB)
+      • _deep_test_large_norm_simplified_transcript_summary.json (0.1 KB)
+
+✅ UNDERSTANDABILITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/understandability
+   📄 Files: 20
+   📂 Subdirectories: 11
+   📋 Key outputs:
+      • charts/global/dynamic/understandability/readability-indices-bars.html 
+(4553.1 KB)
+      • charts/global/dynamic/structure/word-count-bars.html (4552.4 KB)
+      • charts/global/dynamic/structure/structure-bars.html (4553.0 KB)
+      • 
+charts/global/static/understandability/readability-indices-bars.evidence.json 
+(2.0 KB)
+      • charts/global/static/understandability/readability-indices-bars.png 
+(138.7 KB)
+      • ... and 15 more files
+
+✅ LEXICAL_DIVERSITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/lexical_diversity
+   📄 Files: 12
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/lexical_diversity/lexical-ttr.html (4552.5 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-mtld.html (4552.5 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-hapax-rate.html (4552.5 
+KB)
+      • charts/global/static/lexical_diversity/lexical-hapax-rate.evidence.json 
+(0.8 KB)
+      • charts/global/static/lexical_diversity/lexical-mtld.evidence.json (0.7 
+KB)
+      • ... and 7 more files
+
+✅ WORDCLOUDS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/wordclouds
+   📄 Files: 439
+   📂 Subdirectories: 193
+   📋 Key outputs:
+      • 
+charts/speakers/Rochelle/dynamic/views/_deep_test_large_norm_tfidf_explorer.html
+(12.8 KB)
+      • 
+charts/speakers/Rochelle/dynamic/views/_deep_test_large_norm_wordcloud-adj_explo
+rer.html (9.4 KB)
+      • 
+charts/speakers/Rochelle/dynamic/views/_deep_test_large_norm_wordcloud-verb_expl
+orer.html (9.8 KB)
+      • 
+charts/speakers/Rochelle/dynamic/views/_deep_test_large_norm_wordcloud-keyphrase
+s-noun_chunks_explorer.html (9.8 KB)
+      • 
+charts/speakers/Rochelle/dynamic/views/_deep_test_large_norm_tfidf-bigrams_explo
+rer.html (12.8 KB)
+      • ... and 434 more files
+
+✅ TICS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/tics
+   📄 Files: 24
+   📂 Subdirectories: 39
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/tics/tics.html (4552.4 KB)
+      • charts/speakers/Rochelle/static/tics/tics.evidence.json (0.6 KB)
+      • charts/speakers/Rochelle/static/tics/tics.png (101.9 KB)
+      • charts/speakers/Mariela/dynamic/tics/tics.html (4552.4 KB)
+      • charts/speakers/Mariela/static/tics/tics.evidence.json (0.6 KB)
+      • ... and 19 more files
+
+✅ TRANSCRIPT_QUALITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/transcript_quality
+   📄 Files: 8
+   📂 Subdirectories: 10
+   📋 Key outputs:
+      • charts/global/dynamic/distribution/asr_score_hist.html (4552.5 KB)
+      • charts/global/dynamic/timeline/asr_low_score_timeline.html (4553.6 KB)
+      • charts/global/static/distribution/asr_score_hist.evidence.json (0.7 KB)
+      • charts/global/static/distribution/asr_score_hist.png (112.5 KB)
+      • charts/global/static/timeline/asr_low_score_timeline.evidence.json (2.7 
+KB)
+      • ... and 3 more files
+
+✅ INSIGHT_ELIGIBILITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/insight_eligibility
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_insight_eligibility_tic_mask.json (2.5
+KB)
+      • data/global/_deep_test_large_norm_insight_eligibility_phrase_scores.json
+(430.0 KB)
+      • data/global/_deep_test_large_norm_insight_eligibility.json (1058.0 KB)
+
+✅ TEMPORAL_DYNAMICS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/temporal_dynamics
+   📄 Files: 18
+   📂 Subdirectories: 6
+   📋 Key outputs:
+      • charts/global/dynamic/temporal_dashboard.html (4558.2 KB)
+      • charts/global/dynamic/engagement_timeseries.html (4555.6 KB)
+      • charts/global/dynamic/temporal_dashboard_speaking_rate.html (4555.6 KB)
+      • charts/global/dynamic/phase_detection.html (4552.4 KB)
+      • charts/global/dynamic/sentiment_timeseries.html (4555.4 KB)
+      • ... and 13 more files
+
+✅ QA_ANALYSIS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/qa_analysis
+   📄 Files: 16
+   📂 Subdirectories: 6
+   📋 Key outputs:
+      • charts/global/dynamic/response_quality.html (4552.6 KB)
+      • charts/global/dynamic/qa_timeline.html (4555.7 KB)
+      • charts/global/dynamic/response_time_analysis.html (4552.6 KB)
+      • charts/global/dynamic/question_type_breakdown.html (4552.4 KB)
+      • charts/global/static/qa_timeline.evidence.json (5.5 KB)
+      • ... and 11 more files
+
+✅ PAUSES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/pauses
+   📄 Files: 18
+   📂 Subdirectories: 11
+   📋 Key outputs:
+      • charts/global/dynamic/hist/pauses_hist.html (4552.6 KB)
+      • charts/global/dynamic/timeline/pauses_timeline.html (4554.1 KB)
+      • charts/global/static/hist/pauses_hist.png (223.8 KB)
+      • charts/global/static/hist/pauses_hist.evidence.json (0.9 KB)
+      • charts/global/static/timeline/pauses_timeline.png (112.3 KB)
+      • ... and 13 more files
+
+✅ ECHOES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/echoes
+   📄 Files: 10
+   📂 Subdirectories: 10
+   📋 Key outputs:
+      • charts/global/dynamic/heatmap/echo_heatmap.html (4552.7 KB)
+      • charts/global/dynamic/timeline/echo_timeline.html (4553.6 KB)
+      • charts/global/static/heatmap/echo_heatmap.png (128.1 KB)
+      • charts/global/static/heatmap/echo_heatmap.evidence.json (1.1 KB)
+      • charts/global/static/timeline/echo_timeline.png (60.6 KB)
+      • ... and 5 more files
+
+✅ POLITENESS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/politeness
+   📄 Files: 24
+   📂 Subdirectories: 39
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/politeness/category_rates.html (4552.5 
+KB)
+      • charts/speakers/Rochelle/static/politeness/category_rates.png (168.5 KB)
+      • charts/speakers/Rochelle/static/politeness/category_rates.evidence.json 
+(0.7 KB)
+      • charts/speakers/Mariela/dynamic/politeness/category_rates.html (4552.5 
+KB)
+      • charts/speakers/Mariela/static/politeness/category_rates.png (171.1 KB)
+      • ... and 19 more files
+
+✅ MOMENTUM
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/momentum
+   📄 Files: 8
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/timeseries/momentum.html (4557.5 KB)
+      • charts/global/static/timeseries/momentum.evidence.json (3.6 KB)
+      • charts/global/static/timeseries/momentum.png (173.9 KB)
+      • data/global/stall_zones.csv (0.3 KB)
+      • data/global/_deep_test_large_norm_momentum_summary.json (1.2 KB)
+      • ... and 3 more files
+
+✅ TOPIC_SHIFT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/topic_shift
+   📄 Files: 15
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • .topic_shift_enrichment/ACTIVE.json (0.3 KB)
+      • .topic_shift_enrichment/generations/20260808T113803_6a3848be/COMMIT.json
+(0.5 KB)
+      • 
+.topic_shift_enrichment/generations/20260808T113803_6a3848be/topic_shift.enrichm
+ent.json (2.7 KB)
+      • .topic_shift_generations/artifact_index.json (0.4 KB)
+      • 
+.topic_shift_generations/generations/ed3d20c15a314c789b21c7b9d6153566/topic_shif
+t.spans.json (5.5 KB)
+      • ... and 10 more files
+
+✅ MOMENTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/moments
+   📄 Files: 8
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/timeline/moments_timeline.html (4553.2 KB)
+      • charts/global/static/timeline/moments_timeline.evidence.json (1.4 KB)
+      • charts/global/static/timeline/moments_timeline.png (102.9 KB)
+      • data/global/moments.moments.json (27.7 KB)
+      • data/global/_deep_test_large_norm_moments_summary.json (1.1 KB)
+      • ... and 3 more files
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_highlights.json (29.6 KB)
+
+✅ SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_summary.json (16.7 KB)
+
+✅ NARRATIVE_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/narrative_summary
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_narrative_summary.json (1.7 KB)
+
+✅ LLM_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/llm_summary
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_llm_summary.json (2.8 KB)
+
+✅ LLM_SPEAKER_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/llm_speaker_summary
+   📄 Files: 18
+   📂 Subdirectories: 3
+   📋 Key outputs:
+      • data/speakers/_deep_test_large_norm_Frank_llm_speaker_summary.json (1.9 
+KB)
+      • data/speakers/_deep_test_large_norm_Glen_llm_speaker_summary.json (2.2 
+KB)
+      • data/speakers/_deep_test_large_norm_Hala_llm_speaker_summary.json (2.3 
+KB)
+      • data/speakers/_deep_test_large_norm_Mariela_llm_speaker_summary.json 
+(2.3 KB)
+      • data/speakers/_deep_test_large_norm_Jonas_llm_speaker_summary.json (1.3 
+KB)
+      • ... and 4 more files
+
+✅ LLM_ACTION_ITEMS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/llm_action_items
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_llm_action_items.json (2.2 KB)
+      • data/global/_deep_test_large_norm_llm_action_items.raw.txt (0.0 KB)
+
+✅ LLM_CUSTOM_QA
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/llm_custom_qa
+   📄 Files: 5
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • questions_metadata.json (0.2 KB)
+      • data/global/_deep_test_large_norm_llm_custom_qa.json (1.6 KB)
+
+✅ INSIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/insights
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_insights.json (8.3 KB)
+
+✅ VOICE_FEATURES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/voice_features
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_voice_features_summary.json (1.1 KB)
+      • data/global/_deep_test_large_norm_voice_features_locator.json (0.1 KB)
+
+✅ PROSODY_DASHBOARD
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/prosody_dashboard
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_prosody_dashboard_locator.json (0.1 
+KB)
+
+✅ VOICE_CHARTS_CORE
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405/voice/v1
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_voice_charts_core_summary.json (0.1 
+KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (9.1 KB)
+   • report.md (0.6 KB)
+   • run_results.json (7.9 KB)
+   • report.txt (0.6 KB)
+   • manifest.json (1714.4 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 1675
+   • Total output size: 1520.4 MB
+   • Successful modules: 44
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+33048_88648405
+  Executed:
+    • acts
+    • affect_tension
+    • bertopic
+    • contagion
+    • contextual_emotion
+    • conversation_loops
+    • echoes
+    • emotion
+    • entity_sentiment
+    • epistemic_markers
+    • fine_grained_emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • interactions
+    • keyphrases
+    • lexical_diversity
+    • llm_action_items
+    • llm_custom_qa
+    • llm_speaker_summary
+    • llm_summary
+    • moments
+    • momentum
+    • narrative_summary
+    • ner
+    • pauses
+    • politeness
+    • prosody_dashboard
+    • qa_analysis
+    • semantic_similarity
+    • sentiment
+    • simplified_transcript
+    • stats
+    • summary
+    • temporal_dynamics
+    • tics
+    • topic_modeling
+    • topic_shift
+    • transcript_output
+    • transcript_quality
+    • understandability
+    • voice_charts_core
+    • voice_features
+    • wordclouds
+  To explore results: open the web interface
+---
+
+2026-08-08 13:39:09,998 - transcriptx - INFO - Pipeline completed for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json - Successfully ran: acts, contextual_emotion, conversation_loops, echoes, emotion, contagion, epistemic_markers, fine_grained_emotion, interactions, lexical_diversity, llm_action_items, llm_custom_qa, llm_speaker_summary, llm_summary, ner, pauses, momentum, moments, politeness, qa_analysis, semantic_similarity, sentiment, affect_tension, entity_sentiment, simplified_transcript, stats, temporal_dynamics, tics, insight_eligibility, bertopic, highlights, keyphrases, summary, narrative_summary, topic_modeling, insights, topic_shift, transcript_output, transcript_quality, understandability, voice_features, prosody_dashboard, voice_charts_core, wordclouds
+[TOPICS] Finding optimal k for LDA...
+[TOPICS] Optimal k for LDA: 9
+[TOPICS] Diagnostic scores: Likelihood=-4540.022, Coherence=2.144, Silhouette=0.749
+2026-08-08 13:41:24,933 - transcriptx - INFO - Saved output manifest to /Users/89298/Documents/transcriptx/data/outputs/groups/b55c0ffa-eb33-4d76-9326-e51c1dca5528/20260808_113909_1bd0fc1f/manifest.json
+2026-08-08 13:41:24,936 - transcriptx - INFO - Saved run results summary to /Users/89298/Documents/transcriptx/data/outputs/groups/b55c0ffa-eb33-4d76-9326-e51c1dca5528/20260808_113909_1bd0fc1f/run_results.json
+DONE True [] /Users/89298/Documents/transcriptx/data/outputs/groups/b55c0ffa-eb33-4d76-9326-e51c1dca5528/20260808_113909_1bd0fc1f
+run_results_exists True manifest_exists True
+modules_failed []
+errors []
+BERTOPIC_OUTCOME {'module_id': 'bertopic', 'execution_status': 'run'}

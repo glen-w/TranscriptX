@@ -1,0 +1,1597 @@
+START 2026-08-07 23:38:52
+2026-08-07 23:38:52,508 - transcriptx - INFO - Starting analysis pipeline for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json with modules: acts, conversation_loops, contagion, emotion, contextual_emotion, fine_grained_emotion, entity_sentiment, affect_tension, interactions, ner, semantic_similarity, sentiment, epistemic_markers, keyphrases, stats, topic_modeling, bertopic, transcript_output, simplified_transcript, understandability, lexical_diversity, wordclouds, tics, transcript_quality, insight_eligibility, temporal_dynamics, qa_analysis, pauses, echoes, politeness, momentum, topic_shift, moments, highlights, summary, narrative_summary, llm_summary, llm_speaker_summary, llm_action_items, llm_custom_qa, chart_descriptions, insights
+2026-08-07 23:38:52,799 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: 260615_Ana_phd_supervision_meeting.json
+  Outputs:    
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557
+  Modules that will run:
+    • acts
+    • affect_tension
+    • bertopic
+    • contagion
+    • contextual_emotion
+    • conversation_loops
+    • echoes
+    • emotion
+    • entity_sentiment
+    • epistemic_markers
+    • fine_grained_emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • interactions
+    • keyphrases
+    • lexical_diversity
+    • llm_action_items
+    • llm_custom_qa
+    • llm_speaker_summary
+    • llm_summary
+    • moments
+    • momentum
+    • narrative_summary
+    • ner
+    • pauses
+    • politeness
+    • qa_analysis
+    • semantic_similarity
+    • sentiment
+    • simplified_transcript
+    • stats
+    • summary
+    • temporal_dynamics
+    • tics
+    • topic_modeling
+    • topic_shift
+    • transcript_output
+    • transcript_quality
+    • understandability
+    • wordclouds
+---
+
+2026-08-07 23:38:52,827 - transcriptx - INFO - Starting DAG pipeline for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:38:52,832 - transcriptx - INFO - Execution order: acts, contextual_emotion, conversation_loops, echoes, emotion, contagion, epistemic_markers, fine_grained_emotion, interactions, lexical_diversity, llm_action_items, llm_custom_qa, llm_speaker_summary, llm_summary, ner, pauses, momentum, moments, politeness, qa_analysis, semantic_similarity, sentiment, affect_tension, entity_sentiment, simplified_transcript, stats, temporal_dynamics, tics, insight_eligibility, bertopic, highlights, keyphrases, summary, narrative_summary, topic_modeling, insights, topic_shift, transcript_output, transcript_quality, understandability, wordclouds
+2026-08-07 23:38:52,832 - transcriptx - INFO - Running acts analysis
+
+────────────────────────────────────────────────────────────
+🗣️ ACTS
+────────────────────────────────────────────────────────────
+🔍 Running Dialogue Act Classification...
+2026-08-07 23:38:52,833 - transcriptx - INFO - Starting acts analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:38:52,836 - transcriptx - INFO - Starting acts analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:38:52,837 - transcriptx.core.analysis.acts.ml_classifier - INFO - PyTorch version: 2.2.2
+2026-08-07 23:38:52,837 - transcriptx.core.analysis.acts.ml_classifier - WARNING - PyTorch version 2.2.2 is below 2.6.0. ML models may not work properly.
+2026-08-07 23:38:52,837 - transcriptx.core.analysis.acts.ml_classifier - INFO - Transformers library available
+2026-08-07 23:38:53,665 - transcriptx.core.analysis.acts.ml_classifier - INFO - Scikit-learn available
+2026-08-07 23:38:53,666 - transcriptx.core.analysis.acts.ml_classifier - INFO - Creating ML classifier instance...
+2026-08-07 23:38:53,666 - transcriptx.core.analysis.acts.ml_classifier - INFO - Acts TF-IDF/RF scaffolding initialized (untrained); using heuristic classification
+2026-08-07 23:38:53,666 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML components available: traditional_ml
+2026-08-07 23:38:53,666 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML classifier created successfully (ML available: True)
+2026-08-07 23:38:57,124 - transcriptx - INFO - Completed acts analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Dialogue Act Classification
+
+2026-08-07 23:38:57,125 - transcriptx - INFO - Completed acts analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:38:57,125 - transcriptx - INFO - acts completed in 4.29s
+2026-08-07 23:38:57,125 - transcriptx - INFO - Running contextual_emotion analysis
+
+────────────────────────────────────────────────────────────
+⚙️ CONTEXTUAL EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Contextual emotion (broad classifier, experimental)...
+2026-08-07 23:38:57,125 - transcriptx - INFO - Starting contextual_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:38:57,140 - transcriptx - INFO - Starting contextual_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:38:59,764 - transcriptx - INFO - [CONTEXTUAL_EMOTION] scored=450 failed=0 usable=True channel=experimental
+2026-08-07 23:39:02,129 - transcriptx - INFO - Completed contextual_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Contextual emotion (broad classifier, experimental)
+
+2026-08-07 23:39:02,129 - transcriptx - INFO - Completed contextual_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:02,129 - transcriptx - INFO - contextual_emotion completed in 5.00s
+2026-08-07 23:39:02,129 - transcriptx - INFO - Running conversation_loops analysis
+
+────────────────────────────────────────────────────────────
+🔄 CONVERSATION LOOPS
+────────────────────────────────────────────────────────────
+🔍 Running Conversation Loop Detection...
+2026-08-07 23:39:02,130 - transcriptx - INFO - Starting conversation_loops analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:02,401 - transcriptx - INFO - Starting conversation_loops analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:02,499 - transcriptx - INFO - Completed conversation_loops analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Conversation Loop Detection
+
+2026-08-07 23:39:02,501 - transcriptx - INFO - Completed conversation_loops analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:02,501 - transcriptx - INFO - conversation_loops completed in 0.37s
+2026-08-07 23:39:02,501 - transcriptx - INFO - Running echoes analysis
+
+────────────────────────────────────────────────────────────
+🔁 ECHOES
+────────────────────────────────────────────────────────────
+🔍 Running Quote/Echo/Paraphrase Detection...
+2026-08-07 23:39:02,502 - transcriptx - INFO - Starting echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:02,507 - transcriptx - INFO - Starting echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:07,186 - transcriptx - INFO - Completed echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Quote/Echo/Paraphrase Detection
+
+2026-08-07 23:39:07,186 - transcriptx - INFO - Completed echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:07,186 - transcriptx - INFO - echoes completed in 4.68s
+2026-08-07 23:39:07,186 - transcriptx - INFO - Running emotion analysis
+
+────────────────────────────────────────────────────────────
+😄 EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Emotion-associated vocabulary (NRC lexicon)...
+2026-08-07 23:39:07,187 - transcriptx - INFO - Starting emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:07,187 - transcriptx - INFO - Starting emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:07,367 - transcriptx - INFO - [EMOTION] lexical v2 complete: scored=450 skipped=0 empty=0 failed=0 usable=True cache_hit=True
+2026-08-07 23:39:08,305 - transcriptx - INFO - Completed emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Emotion-associated vocabulary (NRC lexicon)
+
+2026-08-07 23:39:08,305 - transcriptx - INFO - Completed emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:08,305 - transcriptx - INFO - emotion completed in 1.12s
+2026-08-07 23:39:08,306 - transcriptx - INFO - Running contagion analysis
+
+────────────────────────────────────────────────────────────
+🌊 CONTAGION
+────────────────────────────────────────────────────────────
+🔍 Running Emotional Contagion Detection...
+2026-08-07 23:39:08,306 - transcriptx - INFO - Starting contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:08,308 - transcriptx - INFO - Starting contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:08,679 - transcriptx - INFO - Completed contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Emotional Contagion Detection
+
+2026-08-07 23:39:08,679 - transcriptx - INFO - Completed contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:08,679 - transcriptx - INFO - contagion completed in 0.37s
+2026-08-07 23:39:08,680 - transcriptx - INFO - Running epistemic_markers analysis
+
+────────────────────────────────────────────────────────────
+⚙️ EPISTEMIC MARKERS
+────────────────────────────────────────────────────────────
+🔍 Running Hedging / certainty / epistemic markers...
+2026-08-07 23:39:08,680 - transcriptx - INFO - Starting epistemic_markers analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:08,683 - transcriptx - INFO - Starting epistemic_markers analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:09,304 - transcriptx - INFO - Completed epistemic_markers analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Hedging / certainty / epistemic markers
+
+2026-08-07 23:39:09,304 - transcriptx - INFO - Completed epistemic_markers analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:09,304 - transcriptx - INFO - epistemic_markers completed in 0.62s
+2026-08-07 23:39:09,304 - transcriptx - INFO - Running fine_grained_emotion analysis
+
+────────────────────────────────────────────────────────────
+⚙️ FINE GRAINED EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Fine-grained multi-label emotion (experimental)...
+2026-08-07 23:39:09,305 - transcriptx - INFO - Starting fine_grained_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:09,306 - transcriptx - INFO - Starting fine_grained_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:09,825 - transcriptx - INFO - [FINE_GRAINED_EMOTION] scored=450 failed=0 mixed=30
+2026-08-07 23:39:12,659 - transcriptx - INFO - Completed fine_grained_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Fine-grained multi-label emotion (experimental)
+
+2026-08-07 23:39:12,659 - transcriptx - INFO - Completed fine_grained_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:12,659 - transcriptx - INFO - fine_grained_emotion completed in 3.35s
+2026-08-07 23:39:12,659 - transcriptx - INFO - Running interactions analysis
+
+────────────────────────────────────────────────────────────
+🤝 INTERACTIONS
+────────────────────────────────────────────────────────────
+🔍 Running Speaker Interaction Analysis...
+2026-08-07 23:39:12,660 - transcriptx - INFO - Starting interactions analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:12,665 - transcriptx - INFO - Starting interactions analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+🔍 Analyzing 450 segments for interactions...
+✅ Found 151 interactions
+2026-08-07 23:39:16,103 - transcriptx - INFO - Completed interactions analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Speaker Interaction Analysis
+
+2026-08-07 23:39:16,104 - transcriptx - INFO - Completed interactions analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:16,104 - transcriptx - INFO - interactions completed in 3.44s
+2026-08-07 23:39:16,105 - transcriptx - INFO - Running lexical_diversity analysis
+
+────────────────────────────────────────────────────────────
+⚙️ LEXICAL DIVERSITY
+────────────────────────────────────────────────────────────
+🔍 Running Lexical diversity metrics (TTR, MTLD, hapax rate)...
+2026-08-07 23:39:16,105 - transcriptx - INFO - Starting lexical_diversity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:16,106 - transcriptx - INFO - Starting lexical_diversity analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:16,668 - transcriptx - INFO - Completed lexical_diversity analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Lexical diversity metrics (TTR, MTLD, hapax rate)
+
+2026-08-07 23:39:16,669 - transcriptx - INFO - Completed lexical_diversity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:16,669 - transcriptx - INFO - lexical_diversity completed in 0.56s
+2026-08-07 23:39:16,669 - transcriptx - INFO - Running llm_action_items analysis (model=qwen2.5:7b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM ACTION ITEMS
+────────────────────────────────────────────────────────────
+🔍 Running Extract structured action items via local LLM (model: qwen2.5:7b)...
+2026-08-07 23:39:16,669 - transcriptx - INFO - Starting llm_action_items analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:16,673 - transcriptx - INFO - Starting llm_action_items analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:23,690 - transcriptx - INFO - Completed llm_action_items analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Extract structured action items via local LLM
+
+2026-08-07 23:39:23,691 - transcriptx - INFO - Completed llm_action_items analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:23,691 - transcriptx - INFO - llm_action_items completed in 7.02s
+2026-08-07 23:39:23,691 - transcriptx - INFO - Running llm_custom_qa analysis
+
+────────────────────────────────────────────────────────────
+⚙️ LLM CUSTOM QA
+────────────────────────────────────────────────────────────
+🔍 Running Answer custom questions against the transcript via local LLM...
+2026-08-07 23:39:23,691 - transcriptx - INFO - Starting llm_custom_qa analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:23,692 - transcriptx - INFO - Starting llm_custom_qa analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:23,695 - transcriptx - INFO - Completed llm_custom_qa analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Answer custom questions against the transcript via local LLM
+
+2026-08-07 23:39:23,696 - transcriptx - INFO - Completed llm_custom_qa analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:23,696 - transcriptx - INFO - llm_custom_qa completed in 0.00s
+2026-08-07 23:39:23,696 - transcriptx - INFO - Running llm_speaker_summary analysis (model=qwen2.5:7b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM SPEAKER SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Abstractive per-speaker summaries via local LLM (model: 
+qwen2.5:7b)...
+2026-08-07 23:39:23,697 - transcriptx - INFO - Starting llm_speaker_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:23,699 - transcriptx - INFO - Starting llm_speaker_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:30,239 - transcriptx - INFO - Completed llm_speaker_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Abstractive per-speaker summaries via local LLM
+
+2026-08-07 23:39:30,239 - transcriptx - INFO - Completed llm_speaker_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:30,239 - transcriptx - INFO - llm_speaker_summary completed in 6.54s
+2026-08-07 23:39:30,240 - transcriptx - INFO - Running llm_summary analysis (model=qwen2.5:7b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Abstractive transcript summary via local LLM (model: qwen2.5:7b)...
+2026-08-07 23:39:30,240 - transcriptx - INFO - Starting llm_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:30,241 - transcriptx - INFO - Starting llm_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:33,171 - transcriptx - INFO - Completed llm_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Abstractive transcript summary via local LLM
+
+2026-08-07 23:39:33,172 - transcriptx - INFO - Completed llm_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:33,172 - transcriptx - INFO - llm_summary completed in 2.93s
+2026-08-07 23:39:33,172 - transcriptx - INFO - Running ner analysis
+
+────────────────────────────────────────────────────────────
+🏷️ NER
+────────────────────────────────────────────────────────────
+🔍 Running Named Entity Recognition...
+2026-08-07 23:39:33,173 - transcriptx - INFO - Starting ner analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:39:36,190 - transcriptx - INFO - Starting ner analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+Processing 450 segments for NER analysis...
+Processing batch 1/5 (100 segments)
+Processing batch 2/5 (100 segments)
+Processing batch 3/5 (100 segments)
+Processing batch 4/5 (100 segments)
+Processing batch 5/5 (50 segments)
+NER processing complete.
+2026-08-07 23:40:20,091 - transcriptx - INFO - Completed ner analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Named Entity Recognition
+
+2026-08-07 23:40:20,093 - transcriptx - INFO - Completed ner analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:20,093 - transcriptx - INFO - ner completed in 46.92s
+2026-08-07 23:40:20,093 - transcriptx - INFO - Running pauses analysis
+
+────────────────────────────────────────────────────────────
+⏸️ PAUSES
+────────────────────────────────────────────────────────────
+🔍 Running Silence and Timing Analysis...
+2026-08-07 23:40:20,094 - transcriptx - INFO - Starting pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:20,095 - transcriptx - INFO - Starting pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:20,647 - transcriptx - INFO - Completed pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Silence and Timing Analysis
+
+2026-08-07 23:40:20,647 - transcriptx - INFO - Completed pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:20,647 - transcriptx - INFO - pauses completed in 0.55s
+2026-08-07 23:40:20,647 - transcriptx - INFO - Running momentum analysis
+
+────────────────────────────────────────────────────────────
+🚀 MOMENTUM
+────────────────────────────────────────────────────────────
+🔍 Running Stall/Flow Index Analysis...
+2026-08-07 23:40:20,648 - transcriptx - INFO - Starting momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:20,649 - transcriptx - INFO - Starting momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:20,911 - transcriptx - INFO - Completed momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Stall/Flow Index Analysis
+
+2026-08-07 23:40:20,911 - transcriptx - INFO - Completed momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:20,911 - transcriptx - INFO - momentum completed in 0.26s
+2026-08-07 23:40:20,911 - transcriptx - INFO - Running moments analysis
+
+────────────────────────────────────────────────────────────
+⭐ MOMENTS
+────────────────────────────────────────────────────────────
+🔍 Running Ranked Moments Worth Revisiting...
+2026-08-07 23:40:20,912 - transcriptx - INFO - Starting moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:20,913 - transcriptx - INFO - Starting moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:21,198 - transcriptx - INFO - Completed moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Ranked Moments Worth Revisiting
+
+2026-08-07 23:40:21,199 - transcriptx - INFO - Completed moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:21,199 - transcriptx - INFO - moments completed in 0.29s
+2026-08-07 23:40:21,200 - transcriptx - INFO - Running politeness analysis
+
+────────────────────────────────────────────────────────────
+⚙️ POLITENESS
+────────────────────────────────────────────────────────────
+🔍 Running Politeness / formality / directiveness markers...
+2026-08-07 23:40:21,200 - transcriptx - INFO - Starting politeness analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:21,201 - transcriptx - INFO - Starting politeness analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:21,895 - transcriptx - INFO - Completed politeness analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Politeness / formality / directiveness markers
+
+2026-08-07 23:40:21,896 - transcriptx - INFO - Completed politeness analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:21,896 - transcriptx - INFO - politeness completed in 0.70s
+2026-08-07 23:40:21,896 - transcriptx - INFO - Running qa_analysis analysis
+
+────────────────────────────────────────────────────────────
+❓ QA ANALYSIS
+────────────────────────────────────────────────────────────
+🔍 Running Question-Answer Pairing and Response Quality...
+2026-08-07 23:40:21,897 - transcriptx - INFO - Starting qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:21,899 - transcriptx - INFO - Starting qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:22,835 - transcriptx - INFO - Completed qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Question-Answer Pairing and Response Quality
+
+2026-08-07 23:40:22,835 - transcriptx - INFO - Completed qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:22,835 - transcriptx - INFO - qa_analysis completed in 0.94s
+2026-08-07 23:40:22,835 - transcriptx - INFO - Running semantic_similarity analysis
+
+────────────────────────────────────────────────────────────
+🔗 SEMANTIC SIMILARITY
+────────────────────────────────────────────────────────────
+🔍 Running Semantic similarity (batched embeddings, vectorized similarity)...
+2026-08-07 23:40:22,836 - transcriptx - INFO - Starting semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:22,860 - transcriptx - INFO - Starting semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:23,868 - transcriptx - INFO - [SEMANTIC] Loaded semantic model: sentence-transformers/all-mpnet-base-v2
+2026-08-07 23:40:39,981 - transcriptx - INFO - [SEMANTIC] Created 6 v2 visualizations
+2026-08-07 23:40:39,982 - transcriptx - INFO - Completed semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Semantic similarity (batched embeddings, vectorized similarity)
+
+2026-08-07 23:40:39,983 - transcriptx - INFO - Completed semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:39,983 - transcriptx - INFO - semantic_similarity completed in 17.15s
+2026-08-07 23:40:39,983 - transcriptx - INFO - Running sentiment analysis
+
+────────────────────────────────────────────────────────────
+😊 SENTIMENT
+────────────────────────────────────────────────────────────
+🔍 Running Sentiment Analysis...
+2026-08-07 23:40:39,983 - transcriptx - INFO - Starting sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+Some weights of the model checkpoint at /Users/89298/.cache/huggingface/hub/models--cardiffnlp--twitter-roberta-base-sentiment-latest/snapshots/3216a57f2a0d9c45a2e6c20157c20c49fb4bf9c7 were not used when initializing RobertaForSequenceClassification: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+- This IS expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+Device set to use mps:0
+2026-08-07 23:40:40,612 - transcriptx - INFO - [SENTIMENT] Transformers sentiment model loaded successfully
+2026-08-07 23:40:40,612 - transcriptx - INFO - Starting sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:53,184 - transcriptx - INFO - Completed sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Sentiment Analysis
+
+2026-08-07 23:40:53,190 - transcriptx - INFO - Completed sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:53,190 - transcriptx - INFO - sentiment completed in 13.21s
+2026-08-07 23:40:53,190 - transcriptx - INFO - Running affect_tension analysis
+
+────────────────────────────────────────────────────────────
+⚙️ AFFECT TENSION
+────────────────────────────────────────────────────────────
+🔍 Running Emotion + Sentiment mismatch and tension indices...
+2026-08-07 23:40:53,191 - transcriptx - INFO - Starting affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:53,192 - transcriptx - INFO - Starting affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:56,235 - transcriptx - INFO - Completed affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Emotion + Sentiment mismatch and tension indices
+
+2026-08-07 23:40:56,235 - transcriptx - INFO - Completed affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:56,235 - transcriptx - INFO - affect_tension completed in 3.04s
+2026-08-07 23:40:56,235 - transcriptx - INFO - Running entity_sentiment analysis
+
+────────────────────────────────────────────────────────────
+💭 ENTITY SENTIMENT
+────────────────────────────────────────────────────────────
+🔍 Running Entity-based Sentiment Analysis...
+2026-08-07 23:40:56,236 - transcriptx - INFO - Starting entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:56,237 - transcriptx - INFO - Starting entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:58,786 - transcriptx - INFO - Completed entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Entity-based Sentiment Analysis
+
+2026-08-07 23:40:58,787 - transcriptx - INFO - Completed entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:58,787 - transcriptx - INFO - entity_sentiment completed in 2.55s
+2026-08-07 23:40:58,787 - transcriptx - INFO - Running simplified_transcript analysis
+
+────────────────────────────────────────────────────────────
+⚙️ SIMPLIFIED TRANSCRIPT
+────────────────────────────────────────────────────────────
+🔍 Running Simplified transcript (tics, agreements, repetitions removed)...
+2026-08-07 23:40:58,788 - transcriptx - INFO - Starting simplified_transcript analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:58,789 - transcriptx - INFO - Starting simplified_transcript analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:58,805 - transcriptx - INFO - Completed simplified_transcript analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Simplified transcript (tics, agreements, repetitions removed)
+
+2026-08-07 23:40:58,806 - transcriptx - INFO - Completed simplified_transcript analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:58,806 - transcriptx - INFO - simplified_transcript completed in 0.02s
+2026-08-07 23:40:58,806 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+📊 STATS
+────────────────────────────────────────────────────────────
+🔍 Running Statistical Analysis...
+2026-08-07 23:40:58,806 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:58,811 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:58,917 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Statistical Analysis
+
+2026-08-07 23:40:58,918 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:58,918 - transcriptx - INFO - stats completed in 0.11s
+2026-08-07 23:40:58,918 - transcriptx - INFO - Running temporal_dynamics analysis
+
+────────────────────────────────────────────────────────────
+⏱️ TEMPORAL DYNAMICS
+────────────────────────────────────────────────────────────
+🔍 Running Temporal Dynamics Analysis...
+2026-08-07 23:40:58,918 - transcriptx - INFO - Starting temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:40:58,920 - transcriptx - INFO - Starting temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:00,165 - transcriptx - INFO - Completed temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Temporal Dynamics Analysis
+
+2026-08-07 23:41:00,166 - transcriptx - INFO - Completed temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:00,166 - transcriptx - INFO - temporal_dynamics completed in 1.25s
+2026-08-07 23:41:00,166 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+✔️ TICS
+────────────────────────────────────────────────────────────
+🔍 Running Verbal Tics Analysis...
+2026-08-07 23:41:00,167 - transcriptx - INFO - Starting tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:00,167 - transcriptx - INFO - Starting tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:00,885 - transcriptx - INFO - Completed tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Verbal Tics Analysis
+
+2026-08-07 23:41:00,886 - transcriptx - INFO - Completed tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:00,886 - transcriptx - INFO - tics completed in 0.72s
+2026-08-07 23:41:00,886 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+🔍 Running Shared content-vs-style insight eligibility pipeline...
+2026-08-07 23:41:00,887 - transcriptx - INFO - Starting insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:00,894 - transcriptx - INFO - Starting insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:05,070 - transcriptx - INFO - Completed insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-07 23:41:05,071 - transcriptx - INFO - Completed insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:05,071 - transcriptx - INFO - insight_eligibility completed in 4.18s
+2026-08-07 23:41:05,071 - transcriptx - INFO - Running bertopic analysis
+
+────────────────────────────────────────────────────────────
+⚙️ BERTOPIC
+────────────────────────────────────────────────────────────
+🔍 Running BERTopic topic modeling (optional / stack — see 
+docs/dev/bertopic_optional_module.md)...
+2026-08-07 23:41:05,072 - transcriptx - INFO - Starting bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:05,077 - transcriptx - INFO - Starting bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+OMP: Info #276: omp_set_nested routine deprecated, please use omp_set_max_active_levels instead.
+2026-08-07 23:41:23,016 - transcriptx - INFO - Completed bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed BERTopic topic modeling (optional / stack — see 
+docs/dev/bertopic_optional_module.md)
+
+2026-08-07 23:41:23,017 - transcriptx - INFO - Completed bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:23,017 - transcriptx - INFO - bertopic completed in 17.94s
+2026-08-07 23:41:23,017 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ HIGHLIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Highlights and conflict moments (quote-forward)...
+2026-08-07 23:41:23,018 - transcriptx - INFO - Starting highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:23,024 - transcriptx - INFO - Starting highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:25,225 - transcriptx - INFO - Completed highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-07 23:41:25,226 - transcriptx - INFO - Completed highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:25,226 - transcriptx - INFO - highlights completed in 2.21s
+2026-08-07 23:41:25,226 - transcriptx - INFO - Running keyphrases analysis
+
+────────────────────────────────────────────────────────────
+⚙️ KEYPHRASES
+────────────────────────────────────────────────────────────
+🔍 Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
+2026-08-07 23:41:25,227 - transcriptx - INFO - Starting keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:25,239 - transcriptx - INFO - Starting keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:26,127 - transcriptx - INFO - Completed keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
+
+2026-08-07 23:41:26,128 - transcriptx - INFO - Completed keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:26,128 - transcriptx - INFO - keyphrases completed in 0.90s
+2026-08-07 23:41:26,128 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+⚙️ SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Executive brief summary derived from highlights...
+2026-08-07 23:41:26,128 - transcriptx - INFO - Starting summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:26,130 - transcriptx - INFO - Starting summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:40,387 - transcriptx - INFO - Saved all-charts PDF to /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260807_233852_38732557/summary/all_charts.pdf (21 modules, 110 charts)
+2026-08-07 23:41:40,388 - transcriptx - INFO - Completed summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Executive brief summary derived from highlights
+
+2026-08-07 23:41:40,389 - transcriptx - INFO - Completed summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:40,389 - transcriptx - INFO - summary completed in 14.26s
+2026-08-07 23:41:40,389 - transcriptx - INFO - Running narrative_summary analysis (model=qwen2.5:7b)
+
+────────────────────────────────────────────────────────────
+⚙️ NARRATIVE SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Grounded executive narrative from deterministic summary (LLM) (model:
+qwen2.5:7b)...
+2026-08-07 23:41:40,390 - transcriptx - INFO - Starting narrative_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:40,393 - transcriptx - INFO - Starting narrative_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:43,355 - transcriptx - INFO - Completed narrative_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Grounded executive narrative from deterministic summary (LLM)
+
+2026-08-07 23:41:43,356 - transcriptx - INFO - Completed narrative_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:43,356 - transcriptx - INFO - narrative_summary completed in 2.96s
+2026-08-07 23:41:43,356 - transcriptx - INFO - Running topic_modeling analysis
+
+────────────────────────────────────────────────────────────
+💡 TOPIC MODELING
+────────────────────────────────────────────────────────────
+🔍 Running Topic Modeling...
+2026-08-07 23:41:43,357 - transcriptx - INFO - Starting topic_modeling analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:43,357 - transcriptx - INFO - Starting topic_modeling analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+[TOPICS] Finding optimal k for LDA...
+[TOPICS] Optimal k for LDA: 6
+[TOPICS] Diagnostic scores: Likelihood=-9150.606, Coherence=0.055, Silhouette=0.859
+[TOPICS] Finding optimal k for NMF...
+[TOPICS] Optimal k for NMF: 15
+[TOPICS] Diagnostic scores: Likelihood=-0.001, Coherence=5.754, Silhouette=0.431
+[TOPICS] Created LDA diagnostic plots
+[TOPICS] Created NMF diagnostic plots
+[TOPICS] Created discourse analysis charts
+[DEBUG] create_topic_evolution_timeline: received 193 doc topics
+[DEBUG] DataFrame head:
+                                                text  ... confidence
+0  robots logical approach is do are classifying ...  ...   0.907267
+1  purpose purpose are assigning goals logics wan...  ...   0.961831
+2  want see are goals logics are represented exis...  ...   0.983276
+3  does make difference have sure is common emble...  ...   0.983295
+4  comparable say basic income policies day menti...  ...   0.983622
+
+[5 rows x 6 columns]
+[TOPICS] Created topic evolution timeline: /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260807_233852_38732557/topic_modeling/charts/global/static/timeline/topic_evolution_timeline.png
+[DEBUG] create_speaker_topic_engagement_heatmap: received 193 doc topics
+[DEBUG] DataFrame head:
+                                                text  ... confidence
+0  robots logical approach is do are classifying ...  ...   0.907267
+1  purpose purpose are assigning goals logics wan...  ...   0.961831
+2  want see are goals logics are represented exis...  ...   0.983276
+3  does make difference have sure is common emble...  ...   0.983295
+4  comparable say basic income policies day menti...  ...   0.983622
+
+[5 rows x 6 columns]
+[DEBUG] speaker-topic engagement heatmap: contributors=193, matrix_sum=193.000000
+[TOPICS] Created speaker-topic engagement heatmap: /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260807_233852_38732557/topic_modeling/charts/global/static/heatmap/speaker_topic_engagement_heatmap.png
+[DEBUG] create_expected_topic_proportions_bar: received 193 doc topics
+[DEBUG] DataFrame head:
+                                                text  ... confidence
+0  robots logical approach is do are classifying ...  ...   0.907267
+1  purpose purpose are assigning goals logics wan...  ...   0.961831
+2  want see are goals logics are represented exis...  ...   0.983276
+3  does make difference have sure is common emble...  ...   0.983295
+4  comparable say basic income policies day menti...  ...   0.983622
+
+[5 rows x 6 columns]
+[TOPICS] Created expected topic proportions bar chart: /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260807_233852_38732557/topic_modeling/charts/global/static/bar/expected_topic_proportions.png
+[TOPICS] Enhanced HTML report created: /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260807_233852_38732557/topic_modeling/260615_Ana_phd_supervision_meeting_enhanced_topic_modeling_report.html
+2026-08-07 23:41:59,392 - transcriptx - INFO - Completed topic_modeling analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Topic Modeling
+
+2026-08-07 23:41:59,393 - transcriptx - INFO - Completed topic_modeling analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:59,393 - transcriptx - INFO - topic_modeling completed in 16.04s
+2026-08-07 23:41:59,393 - transcriptx - INFO - Running insights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Content-first insights layer separated from style markers...
+2026-08-07 23:41:59,394 - transcriptx - INFO - Starting insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:59,395 - transcriptx - INFO - Starting insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:59,398 - transcriptx - INFO - Completed insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Content-first insights layer separated from style markers
+
+2026-08-07 23:41:59,398 - transcriptx - INFO - Completed insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:59,398 - transcriptx - INFO - insights completed in 0.00s
+2026-08-07 23:41:59,398 - transcriptx - INFO - Running topic_shift analysis (model=qwen2.5:7b)
+
+────────────────────────────────────────────────────────────
+⚙️ TOPIC SHIFT
+────────────────────────────────────────────────────────────
+🔍 Running Topic-shift chapter segmentation (model: qwen2.5:7b)...
+2026-08-07 23:41:59,399 - transcriptx - INFO - Starting topic_shift analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:41:59,420 - transcriptx - INFO - Starting topic_shift analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:42:12,971 - transcriptx - INFO - Completed topic_shift analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Topic-shift chapter segmentation
+
+2026-08-07 23:42:12,972 - transcriptx - INFO - Completed topic_shift analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:42:12,972 - transcriptx - INFO - topic_shift completed in 13.57s
+2026-08-07 23:42:12,972 - transcriptx - INFO - Running transcript_output analysis
+
+────────────────────────────────────────────────────────────
+📃 TRANSCRIPT OUTPUT
+────────────────────────────────────────────────────────────
+🔍 Running Generate human readable transcripts...
+2026-08-07 23:42:12,973 - transcriptx - INFO - Starting transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:42:12,973 - transcriptx - INFO - Starting transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:42:12,976 - transcriptx - INFO - Generating human-friendly transcript for 260615_Ana_phd_supervision_meeting
+2026-08-07 23:42:12,988 - transcriptx - INFO - Human-friendly transcript generated successfully: /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260807_233852_38732557/transcripts/260615_Ana_phd_supervision_meeting-transcript.txt
+✅ Generated human-friendly transcript
+
+2026-08-07 23:42:12,989 - transcriptx - INFO - Completed transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Generate human readable transcripts
+
+2026-08-07 23:42:12,989 - transcriptx - INFO - Completed transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:42:12,989 - transcriptx - INFO - transcript_output completed in 0.02s
+2026-08-07 23:42:12,989 - transcriptx - INFO - Running transcript_quality analysis
+
+────────────────────────────────────────────────────────────
+⚙️ TRANSCRIPT QUALITY
+────────────────────────────────────────────────────────────
+🔍 Running ASR Confidence...
+2026-08-07 23:42:12,990 - transcriptx - INFO - Starting transcript_quality analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:42:12,994 - transcriptx - INFO - Starting transcript_quality analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:42:13,596 - transcriptx - INFO - Completed transcript_quality analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed ASR Confidence
+
+2026-08-07 23:42:13,597 - transcriptx - INFO - Completed transcript_quality analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:42:13,597 - transcriptx - INFO - transcript_quality completed in 0.61s
+2026-08-07 23:42:13,597 - transcriptx - INFO - Running understandability analysis
+
+────────────────────────────────────────────────────────────
+📖 UNDERSTANDABILITY
+────────────────────────────────────────────────────────────
+🔍 Running Understandability Analysis...
+2026-08-07 23:42:13,598 - transcriptx - INFO - Starting understandability analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:42:13,612 - transcriptx - INFO - Starting understandability analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Global CSV saved to 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/understandability/data/global/260615_Ana_phd_supervi
+sion_meeting_understandability.csv
+
+2026-08-07 23:42:15,021 - transcriptx - INFO - Completed understandability analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Understandability Analysis
+
+2026-08-07 23:42:15,021 - transcriptx - INFO - Completed understandability analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:42:15,021 - transcriptx - INFO - understandability completed in 1.42s
+2026-08-07 23:42:15,021 - transcriptx - INFO - Running wordclouds analysis
+
+────────────────────────────────────────────────────────────
+💬 WORDCLOUDS
+────────────────────────────────────────────────────────────
+🔍 Running Word Cloud Generation...
+2026-08-07 23:42:15,022 - transcriptx - INFO - Starting wordclouds analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:42:15,022 - transcriptx - INFO - Starting wordclouds analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:42:15,026 - transcriptx - INFO - [WORDCLOUDS] Using precomputed speaker grouping from pipeline: 3 speakers: ['Filka', 'Federico', 'Ana']
+✅ Word cloud saved for Filka
+
+✅ Word cloud saved for Federico
+
+✅ Word cloud saved for Ana
+
+✅ Word cloud saved for wordcloud-ALL
+
+2026-08-07 23:42:42,728 - transcriptx - INFO - [WORDCLOUDS] Completed wordcloud generation for 260615_Ana_phd_supervision_meeting
+2026-08-07 23:42:45,228 - transcriptx - INFO - Completed wordclouds analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Word Cloud Generation
+
+2026-08-07 23:42:45,229 - transcriptx - INFO - Completed wordclouds analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-07 23:42:45,229 - transcriptx - INFO - wordclouds completed in 30.21s
+2026-08-07 23:42:45,229 - transcriptx - INFO - Pipeline completed. Ran 41 modules with 0 errors
+2026-08-07 23:42:45,416 - transcriptx - INFO - Saved run results summary to /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260807_233852_38732557/run_results.json
+2026-08-07 23:42:47,017 - transcriptx - INFO - [CHART_DESCRIPTIONS] 1/197 viz_id=wordclouds.wordcloud-noun.view.Ana chart_key=000c296e48c23f4a71818c727c4abcaaf1cbbc8cf8620771c8f533c045bb74bd timeout=120s
+2026-08-07 23:42:48,076 - transcriptx - INFO - [CHART_DESCRIPTIONS] 2/197 viz_id=temporal_dynamics.temporal_dashboard.global chart_key=037ca35cd3ff5f7b4793d947cd3be72e2d355f14dc21b207693c0ad02ee27911 timeout=120s
+2026-08-07 23:42:49,932 - transcriptx - INFO - [CHART_DESCRIPTIONS] 3/197 viz_id=wordcloud.wordcloud.speaker.tfidf chart_key=06181f42b823fe8ea50ed97a38348037d4ffc54d6fe4836d296f70309bfde16e timeout=120s
+2026-08-07 23:42:51,206 - transcriptx - INFO - [CHART_DESCRIPTIONS] 4/197 viz_id=entity_sentiment.entity_mentions.speaker chart_key=09e6cc5e5ff99788bda36a2f681c89fb9c30ed1be9c3f55c93e3296a9a55fa35 timeout=120s
+2026-08-07 23:42:52,828 - transcriptx - INFO - [CHART_DESCRIPTIONS] 5/197 viz_id=wordclouds.wordcloud.view chart_key=0b0ce088e5bffcd6c94e5da07455d42bfdea8389e1c70b92a9e81239ee289314 timeout=120s
+2026-08-07 23:42:53,820 - transcriptx - INFO - [CHART_DESCRIPTIONS] 6/197 viz_id=wordcloud.wordcloud.speaker.adj chart_key=0b9bd06caa7ceadf3cf8e33a8ca3e67c2b8ef3a3919aa93170818653ed37ab83 timeout=120s
+2026-08-07 23:42:55,094 - transcriptx - INFO - [CHART_DESCRIPTIONS] 7/197 viz_id=wordclouds.wordcloud-noun-ALL.global chart_key=0c4138204009762eaf62b6460c07452ac9d472d3aaf1398667a9d56867cb6c7e timeout=120s
+2026-08-07 23:42:56,359 - transcriptx - INFO - [CHART_DESCRIPTIONS] 8/197 viz_id=topic_modeling.speaker_topic_engagement_heatmap.global chart_key=0d231af80a5ff733a4440b1356294df1cf34bb4790d1c0d539e71b55c2f98467 timeout=120s
+2026-08-07 23:42:57,997 - transcriptx - INFO - [CHART_DESCRIPTIONS] 9/197 viz_id=wordclouds.tfidf.view.Filka chart_key=0dea67c2eee9a5ec494cb05190edd7ff93e8db3f3fe165428de349fd0356cfad timeout=120s
+2026-08-07 23:42:58,935 - transcriptx - INFO - [CHART_DESCRIPTIONS] 10/197 viz_id=wordclouds.wordcloud-adj.view.Federico chart_key=0ea1e2068effa23644a5ab7feb1d3a214b5d5e1d7cb0fba8eecb282171461d85 timeout=120s
+2026-08-07 23:42:59,823 - transcriptx - INFO - [CHART_DESCRIPTIONS] 11/197 viz_id=tics.tics.speaker chart_key=0f9eb3fe3ca5bef86076b2f5236b816f6efa8dac790f51cc46f88a8f4e8add98 timeout=120s
+2026-08-07 23:43:01,110 - transcriptx - INFO - [CHART_DESCRIPTIONS] 12/197 viz_id=wordclouds.wordcloud-bigrams.view.Filka chart_key=1238ca8050fa8ff910a83d2885407bc16839e9dc98769f32ecff317342173c06 timeout=120s
+2026-08-07 23:43:02,293 - transcriptx - INFO - [CHART_DESCRIPTIONS] 13/197 viz_id=politeness.category_rates.speaker chart_key=17e75afe2c2572b113431c867e27a85972d8faa1280d8456088d9c5688c140d0 timeout=120s
+2026-08-07 23:43:03,836 - transcriptx - INFO - [CHART_DESCRIPTIONS] 14/197 viz_id=interactions.heatmap_interruptions.global chart_key=1806cad6600981ceeb21aa27a9b3e31b0c1278b92dc237e27ada3a251d2a38f0 timeout=120s
+2026-08-07 23:43:05,750 - transcriptx - INFO - [CHART_DESCRIPTIONS] 15/197 viz_id=wordcloud.wordcloud.speaker.keyphrases_noun_chunks chart_key=1a23cc42389432e1b0a611c88ed453d799a294dd68408e1a84dccb94fd939680 timeout=120s
+2026-08-07 23:43:06,932 - transcriptx - INFO - [CHART_DESCRIPTIONS] 16/197 viz_id=wordclouds.wordcloud-bigrams.view.Ana chart_key=1a3c85502e8a19e8a35830da5f1e4a9090ef9f2dc30fd0d12f86d61b3668e9de timeout=120s
+2026-08-07 23:43:08,064 - transcriptx - INFO - [CHART_DESCRIPTIONS] 17/197 viz_id=fine_grained_emotion.label_counts_excluding_neutral.speaker chart_key=1b53d2673495626a9c12e4b7e768cf0a42c73994aac41ed875fcc58cd1888ced timeout=120s
+2026-08-07 23:43:09,547 - transcriptx - INFO - [CHART_DESCRIPTIONS] 18/197 viz_id=ner.entity_types.speaker chart_key=1d3ae9922f6a399f094fa3d48e438260b5ff8f53048de93a1bcc0067de9ad67b timeout=120s
+2026-08-07 23:43:11,172 - transcriptx - INFO - [CHART_DESCRIPTIONS] 19/197 viz_id=wordcloud.wordcloud.global.tfidf_bigrams chart_key=1d557af0c3a2cab37fe734db6f40c54df738e1ebda2fe09ab6f2a1f00cfd8c0b timeout=120s
+2026-08-07 23:43:12,510 - transcriptx - INFO - [CHART_DESCRIPTIONS] 20/197 viz_id=affect_tension.avg_volatility.global chart_key=1e2808eb01ddda28220ca17683287f1b4e0fc7bd8511810ce86d0b5144922480 timeout=120s
+2026-08-07 23:43:14,344 - transcriptx - INFO - [CHART_DESCRIPTIONS] 21/197 viz_id=contextual_emotion.label_share_non_neutral.global chart_key=1e38844ad783ed73c8fa621cb4617f5308bde03c24ca457d62d281f34c62e8fd timeout=120s
+2026-08-07 23:43:16,302 - transcriptx - INFO - [CHART_DESCRIPTIONS] 22/197 viz_id=qa_analysis.question_type_breakdown.global chart_key=20bc9eddb26acbc1e51e3409b369cccc089c43375305b6072a5d9308944f1dfa timeout=120s
+2026-08-07 23:43:17,810 - transcriptx - INFO - [CHART_DESCRIPTIONS] 23/197 viz_id=fine_grained_emotion.label_share_non_neutral.speaker chart_key=20d7fd31da614de6fadd4119c8b46f711cc97a691c81474ffdd951fea5f7e7ee timeout=120s
+2026-08-07 23:43:19,279 - transcriptx - INFO - [CHART_DESCRIPTIONS] 24/197 viz_id=wordclouds.tfidf-bigrams.view.Ana chart_key=21267bdeebc3eeaf1f2cb769c95d98f18a66c5515d2c248ee1650cbc8bf87e0f timeout=120s
+2026-08-07 23:43:20,117 - transcriptx - INFO - [CHART_DESCRIPTIONS] 25/197 viz_id=temporal_dynamics.sentiment_timeseries.global chart_key=229c24ec7968f71e19bbac00ea62674384877ab9d003e472085b91e62ca8fa76 timeout=120s
+2026-08-07 23:43:21,499 - transcriptx - INFO - [CHART_DESCRIPTIONS] 26/197 viz_id=sentiment.rolling_sentiment.speaker chart_key=28ef026c2f0ac62418ce30fa7cd78f2a183e4d835a5857f7db2aa4b9b93bdeb0 timeout=120s
+2026-08-07 23:43:22,839 - transcriptx - INFO - [CHART_DESCRIPTIONS] 27/197 viz_id=understandability.readability-indices-bars.global chart_key=29f8e7b1d23555aeddc7534ee0d2274d6a004c5a32ed39b149701dbdb68415d4 timeout=120s
+2026-08-07 23:43:24,272 - transcriptx - INFO - [CHART_DESCRIPTIONS] 28/197 viz_id=wordclouds.wordcloud.view.Ana chart_key=3010e241b506745857ea57ff61dc3684a4e53c2abf91f8d8a605143884c35aa6 timeout=120s
+2026-08-07 23:43:25,211 - transcriptx - INFO - [CHART_DESCRIPTIONS] 29/197 viz_id=contextual_emotion.label_counts.global chart_key=30ea9b1cf8c3aa18d7e7b957a31712e361172b128511e508764576e1c1663618 timeout=120s
+2026-08-07 23:43:26,559 - transcriptx - INFO - [CHART_DESCRIPTIONS] 30/197 viz_id=temporal_dynamics.temporal_dashboard_speaking_rate.global chart_key=324c2fcad4f6ee38d13f262e2d4d6b009e7d59b3428cc1c90ad13db9f1dba5a1 timeout=120s
+2026-08-07 23:43:27,844 - transcriptx - INFO - [CHART_DESCRIPTIONS] 31/197 viz_id=pauses.pauses_timeline.global chart_key=33bd04840023fc0e68777769f915ec4d716556403d632aab11332ab77e669445 timeout=120s
+2026-08-07 23:43:29,021 - transcriptx - INFO - [CHART_DESCRIPTIONS] 32/197 viz_id=epistemic_markers.category_rates.speaker chart_key=349a8bf948652c203d3a7607c91ddcd6206e7bd28bdfbea6161b15e393730623 timeout=120s
+2026-08-07 23:43:31,218 - transcriptx - INFO - [CHART_DESCRIPTIONS] 33/197 viz_id=wordcloud.wordcloud.speaker.bigrams chart_key=3500c319cc940994e6b6805024b8fac5cb83312d7b59ea8a7ccb208bf6ee241e timeout=120s
+2026-08-07 23:43:32,873 - transcriptx - INFO - [CHART_DESCRIPTIONS] 34/197 viz_id=emotion.radar.speaker chart_key=3651a31c54bcc4ee709e0816be3ea9ee03a87ad9895deb1a02e4316a6d24b3b0 timeout=120s
+2026-08-07 23:43:34,110 - transcriptx - INFO - [CHART_DESCRIPTIONS] 35/197 viz_id=fine_grained_emotion.label_counts.global chart_key=3855b4eec9349a344c4eb54ab591874cb6e83c381dc5c955f09d67f7b256681d timeout=120s
+2026-08-07 23:43:35,381 - transcriptx - INFO - [CHART_DESCRIPTIONS] 36/197 viz_id=contextual_emotion.label_counts.speaker chart_key=3ecf347363934b0feff3689674a286c3979f54957e7a5cd1c9a62d8099c321e5 timeout=120s
+2026-08-07 23:43:37,187 - transcriptx - INFO - [CHART_DESCRIPTIONS] 37/197 viz_id=affect_tension.entropy_volatility_timeseries.speaker chart_key=3f685452700240bf0d6f0b177aa06b4e01b357830ed609389d57315d815cda80 timeout=120s
+2026-08-07 23:43:38,702 - transcriptx - INFO - [CHART_DESCRIPTIONS] 38/197 viz_id=wordclouds.wordcloud-verb.view.Ana chart_key=3fe1f83ab71e289e8ff5d862bef9c8e13a6e0c21d2782865238670e191ded57a timeout=120s
+2026-08-07 23:43:39,790 - transcriptx - INFO - [CHART_DESCRIPTIONS] 39/197 viz_id=acts.acts_temporal_all.global chart_key=401fc8a74cfb090cf1fe44c95d7e62f13f6bd5f5826f4636e9e98222d0c40c09 timeout=120s
+2026-08-07 23:43:42,065 - transcriptx - INFO - [CHART_DESCRIPTIONS] 40/197 viz_id=sentiment.rolling_sentiment.speaker chart_key=402a98c6903ff25f49cd99168dfdecce51cd7c9c48dc48c0131585802bbb75b9 timeout=120s
+2026-08-07 23:43:43,278 - transcriptx - INFO - [CHART_DESCRIPTIONS] 41/197 viz_id=wordcloud.wordcloud.speaker.adj chart_key=406c6c5f397f073b4a8af17b0aea44c4c5d07d34d48c0e9ed351e3a99386d9d4 timeout=120s
+2026-08-07 23:43:44,468 - transcriptx - INFO - [CHART_DESCRIPTIONS] 42/197 viz_id=wordclouds.wordcloud-noun.view.Federico chart_key=40b5875445daaf98bc81136d5d5e544830dfbe23f7a9480384664c566f93ec98 timeout=120s
+2026-08-07 23:43:45,420 - transcriptx - INFO - [CHART_DESCRIPTIONS] 43/197 viz_id=ner.entity_types.speaker chart_key=44cb4fe7106ea26d6ddeff30ef8a5759e4116b1521f18abf4e70e4e425776bb6 timeout=120s
+2026-08-07 23:43:46,971 - transcriptx - INFO - [CHART_DESCRIPTIONS] 44/197 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks.view.Federico chart_key=459870dcc609bceb3a869fcb461abfd4e4e8dadc2f599ceb1d8b80ed52e215a7 timeout=120s
+2026-08-07 23:43:47,843 - transcriptx - INFO - [CHART_DESCRIPTIONS] 45/197 viz_id=entity_sentiment.entity_mentions.speaker chart_key=47b593d672936c50b55965832f95257a5d3591a1620fd90e40092ed07e1f2db3 timeout=120s
+2026-08-07 23:43:49,319 - transcriptx - INFO - [CHART_DESCRIPTIONS] 46/197 viz_id=entity_sentiment.sentiment_heatmap.global chart_key=4a6eff8218a47f4ebd9a31c18b4fc6d5dc69eb2d93054feb119a95b54847f719 timeout=120s
+2026-08-07 23:43:51,234 - transcriptx - INFO - [CHART_DESCRIPTIONS] 47/197 viz_id=interactions.network.global chart_key=4c24d8a281960efa031b498ffa25e3ce3e51dc51577713d8406a1c55c838f170 timeout=120s
+2026-08-07 23:43:52,254 - transcriptx - INFO - [CHART_DESCRIPTIONS] 48/197 viz_id=topic_modeling.lda_diagnostic_plots.global chart_key=4c7ac784beee98da70bfc8862a7dfd9bb78df81d025f992aed3089e36ce8dec0 timeout=120s
+2026-08-07 23:43:54,320 - transcriptx - INFO - [CHART_DESCRIPTIONS] 49/197 viz_id=acts.acts_pie.speaker chart_key=4d5104023b41c5c5935d9c54a4185b6b8e4a1afdaf7f5254dab0824da10d39da timeout=120s
+2026-08-07 23:43:55,664 - transcriptx - INFO - [CHART_DESCRIPTIONS] 50/197 viz_id=interactions.equity.summary.global chart_key=4f02007abf3504a2b53344f846bdd0c4565c85e117a7e5def15b2ee62cda943b timeout=120s
+2026-08-07 23:43:56,948 - transcriptx - INFO - [CHART_DESCRIPTIONS] 51/197 viz_id=interactions.heatmap_responses.global chart_key=4f44da7aefa92e0ad2786537170fb2b4865b791b95d3ed2806037ba245b3412e timeout=120s
+2026-08-07 23:43:58,245 - transcriptx - INFO - [CHART_DESCRIPTIONS] 52/197 viz_id=affect_tension.derived_polite_tension.global chart_key=4f7e66218767f8da3183366f934bf0482d0a23fc771e38d341b0a008240784da timeout=120s
+2026-08-07 23:43:59,601 - transcriptx - INFO - [CHART_DESCRIPTIONS] 53/197 viz_id=interactions.timeline.global chart_key=4fdad3edf19175772e3bedbab6f4908f006f845abeb6f5c0adb406eb0d27e10a timeout=120s
+2026-08-07 23:44:01,399 - transcriptx - INFO - [CHART_DESCRIPTIONS] 54/197 viz_id=wordclouds.wordcloud-tics.view.Filka chart_key=509c6acdbff2f456f1492f7e851a66b5bca7f728154139116458711b6e678f85 timeout=120s
+2026-08-07 23:44:02,474 - transcriptx - INFO - [CHART_DESCRIPTIONS] 55/197 viz_id=momentum.momentum.global chart_key=522b19fde9887cb58530f895e2b85d7fb369204d04a350a9dbce87637c79c4da timeout=120s
+2026-08-07 23:44:03,665 - transcriptx - INFO - [CHART_DESCRIPTIONS] 56/197 viz_id=wordcloud.wordcloud.speaker.tfidf_bigrams chart_key=528ea647d727f7abe44f77f98cf7b8685bfadc4866773c3a7428f71f6de6bfbc timeout=120s
+2026-08-07 23:44:05,020 - transcriptx - INFO - [CHART_DESCRIPTIONS] 57/197 viz_id=acts.acts_temporal.speaker chart_key=5362d820df1d7c1662585bda2567ec1e51ee663f6bbb99e932d5d13d5cde49d1 timeout=120s
+2026-08-07 23:44:06,255 - transcriptx - INFO - [CHART_DESCRIPTIONS] 58/197 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks.view.Filka chart_key=573efb4b8b21a3da9884c98912365fcec2cd33ae6cb4b416a62b14b78bda9dbb timeout=120s
+2026-08-07 23:44:07,473 - transcriptx - INFO - [CHART_DESCRIPTIONS] 59/197 viz_id=semantic_similarity.speaker_repetitions.global chart_key=5744995f5f79c817cf56958e70564e7b5506d3be9905d5d2935c1a0ddba2fefd timeout=120s
+2026-08-07 23:44:09,061 - transcriptx - INFO - [CHART_DESCRIPTIONS] 60/197 viz_id=contextual_emotion.label_counts_excluding_neutral.global chart_key=5753bab94ab5353aa1d835c2f08155b95ba476e493c9acfa645ee358475f7188 timeout=120s
+2026-08-07 23:44:10,451 - transcriptx - INFO - [CHART_DESCRIPTIONS] 61/197 viz_id=wordcloud.wordcloud.speaker.verb chart_key=58749cbe401ce95c4021a199b11544e3175c1217ed6bb2d22a23adbe07bca5bc timeout=120s
+2026-08-07 23:44:11,483 - transcriptx - INFO - [CHART_DESCRIPTIONS] 62/197 viz_id=topic_modeling.lda_topic_word_heatmap.global chart_key=59a072e8b54cebf2066ab45ab09aab7a790b1cfe3a983653fcb2172568ec866f timeout=120s
+2026-08-07 23:44:13,108 - transcriptx - INFO - [CHART_DESCRIPTIONS] 63/197 viz_id=contextual_emotion.label_counts.speaker chart_key=5a14695d09bb30529fe76e2d9e2525172099def159373be08552265f79ff0903 timeout=120s
+2026-08-07 23:44:14,171 - transcriptx - INFO - [CHART_DESCRIPTIONS] 64/197 viz_id=acts.acts_bar.speaker chart_key=5a46bc9731caf59ea9642951092fbe6c3a0820eaa5fa70fd65d53869428fa4d2 timeout=120s
+2026-08-07 23:44:15,383 - transcriptx - INFO - [CHART_DESCRIPTIONS] 65/197 viz_id=wordclouds.wordcloud-noun.view.Filka chart_key=5b0a9e18bac8f4b190a5f8201448acab15f1b4d9fae499ab0a4537ed11f3c5d2 timeout=120s
+2026-08-07 23:44:16,309 - transcriptx - INFO - [CHART_DESCRIPTIONS] 66/197 viz_id=acts.acts_temporal.speaker chart_key=5b20de2f73c6d629d0b395165b3a51fd7942a20c1bdd7309509c8bcabed2ac31 timeout=120s
+2026-08-07 23:44:17,642 - transcriptx - INFO - [CHART_DESCRIPTIONS] 67/197 viz_id=transcript_quality.asr_score_hist.global chart_key=5c191d1e8ce2979737b4b1cbaa362863a07c38542db368cbedfd4791707d4295 timeout=120s
+2026-08-07 23:44:19,609 - transcriptx - INFO - [CHART_DESCRIPTIONS] 68/197 viz_id=semantic_similarity.speaker_repetition_frequency.global chart_key=5ee6e7e7aed71e59b9e28082ef3b5f281111b9a269a08d8c3eedef0c3ead778e timeout=120s
+2026-08-07 23:44:21,021 - transcriptx - INFO - [CHART_DESCRIPTIONS] 69/197 viz_id=qa_analysis.response_quality.global chart_key=60f4f4685c6c901d73d41d2fc0f2aa20103d139dd6e120af2d0ed5030f37826a timeout=120s
+2026-08-07 23:44:22,649 - transcriptx - INFO - [CHART_DESCRIPTIONS] 70/197 viz_id=wordclouds.tfidf.view.Ana chart_key=621c09cb35789c9cb40060966430fcc7b120c4e2eb636eeeb0b70bcef209b9eb timeout=120s
+2026-08-07 23:44:23,612 - transcriptx - INFO - [CHART_DESCRIPTIONS] 71/197 viz_id=wordcloud.wordcloud.speaker.noun chart_key=63132a7f552a9d886ec176d20e6c6e5946b5a3e3feba53dcefe82b9549c1eb74 timeout=120s
+2026-08-07 23:44:24,766 - transcriptx - INFO - [CHART_DESCRIPTIONS] 72/197 viz_id=contextual_emotion.label_share_non_neutral.speaker chart_key=63bab79ed690c4fad736b42d0c89df3d39575a5ecf045016b4d9133c25343177 timeout=120s
+2026-08-07 23:44:26,578 - transcriptx - INFO - [CHART_DESCRIPTIONS] 73/197 viz_id=affect_tension.mismatch_timeseries.global chart_key=64edbb361bf0e0b5f2e92b8e9e517e81a567890abf801c11f634d927f8c1db67 timeout=120s
+2026-08-07 23:44:27,850 - transcriptx - INFO - [CHART_DESCRIPTIONS] 74/197 viz_id=pauses.pauses_hist.global chart_key=6580e8161ce1d5489a38c1cea96c80d81abc92673c1773c91d6f0d1ef50513fc timeout=120s
+2026-08-07 23:44:29,707 - transcriptx - INFO - [CHART_DESCRIPTIONS] 75/197 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks-ALL.view chart_key=66b298050c964cafbb8eaa8502a2b41fa7ca81a3c548bfe258d4faf0f3c06c02 timeout=120s
+2026-08-07 23:44:30,602 - transcriptx - INFO - [CHART_DESCRIPTIONS] 76/197 viz_id=emotion.radar.speaker chart_key=66eff622f0d44ab74c021ae76cc5639c9acbe97b77187c3e6769eb111f43f4ee timeout=120s
+2026-08-07 23:44:32,225 - transcriptx - INFO - [CHART_DESCRIPTIONS] 77/197 viz_id=contextual_emotion.label_counts_excluding_neutral.speaker chart_key=677b97a27ee0583decd79680e537e04e4b1a62c9b10cafb7f2ae3ab883edfa95 timeout=120s
+2026-08-07 23:44:33,984 - transcriptx - INFO - [CHART_DESCRIPTIONS] 78/197 viz_id=semantic_similarity.speaker_similarity.global chart_key=6860c04e3bf01be04622d89d18e43f84798b74daa335975a2c535ac505d513c6 timeout=120s
+2026-08-07 23:44:35,784 - transcriptx - INFO - [CHART_DESCRIPTIONS] 79/197 viz_id=ner.entity_types.speaker chart_key=69b867cb747165a100f25703cda43726daf4266b606db9b99b0b8878634220d9 timeout=120s
+2026-08-07 23:44:37,382 - transcriptx - INFO - [CHART_DESCRIPTIONS] 80/197 viz_id=wordclouds.wordcloud.view.Federico chart_key=6bb8466d51cf26ddb13bb6409400b36c595a59850c61f1c2e48856eb8cf5f4b9 timeout=120s
+2026-08-07 23:44:38,306 - transcriptx - INFO - [CHART_DESCRIPTIONS] 81/197 viz_id=acts.acts_bar.speaker chart_key=6c7e6080e78b51b9a0b3255dfb19a52a66c1d622f31cfcdad39d4c96e6c3e744 timeout=120s
+2026-08-07 23:44:39,971 - transcriptx - INFO - [CHART_DESCRIPTIONS] 82/197 viz_id=wordclouds.wordcloud.speaker chart_key=6e255c2dc241322dfe4f8a9b5f23fe43d1edfaeb14e5a8c80a3c00c10420679b timeout=120s
+2026-08-07 23:44:42,312 - transcriptx - INFO - [CHART_DESCRIPTIONS] 83/197 viz_id=wordclouds.wordcloud.global chart_key=6ed93a274cdde2087c5297d9d0cc36340b822467d32d5131a9583317aefe6ed2 timeout=120s
+2026-08-07 23:44:44,715 - transcriptx - INFO - [CHART_DESCRIPTIONS] 84/197 viz_id=affect_tension.entropy_volatility_timeseries.speaker chart_key=7336bb6c2f75b1d9ddcd7f5dc8a66861f09acdfa8aa1b6f843ebadb517cd02df timeout=120s
+2026-08-07 23:44:50,954 - transcriptx - INFO - [CHART_DESCRIPTIONS] 85/197 viz_id=contextual_emotion.label_counts_excluding_neutral.speaker chart_key=7379c90ae76fc54899f4403b36749e8c822259d6dfbf83e7fce6571820caeb9e timeout=120s
+2026-08-07 23:44:52,937 - transcriptx - INFO - [CHART_DESCRIPTIONS] 86/197 viz_id=emotion.radar.speaker chart_key=740e2c108182c06bb3a2308f66691d0132bded1f652a36d7560231048368bdc3 timeout=120s
+2026-08-07 23:44:54,501 - transcriptx - INFO - [CHART_DESCRIPTIONS] 87/197 viz_id=affect_tension.entropy_volatility_timeseries.speaker chart_key=752850e94a67e01f9a144906a6a0702b900eaacf18e9eb82cc7747dfe5a43fdd timeout=120s
+2026-08-07 23:45:00,638 - transcriptx - INFO - [CHART_DESCRIPTIONS] 88/197 viz_id=wordclouds.wordcloud-bigrams.view.Federico chart_key=75e47ecce1e07401f2ddb000acd6f6d4325bff512e632edd76240749ef5d95b9 timeout=120s
+2026-08-07 23:45:01,761 - transcriptx - INFO - [CHART_DESCRIPTIONS] 89/197 viz_id=acts.acts_bar.speaker chart_key=7675cc99fb4f0e64152e113e4d49b65991768bc90e8795a901479f7fd288aefd timeout=120s
+2026-08-07 23:45:03,610 - transcriptx - INFO - [CHART_DESCRIPTIONS] 90/197 viz_id=wordclouds.wordcloud.view.Filka chart_key=76851774e7b01415328b606660a951ee878c3817057fbc8cf89eef8ab0665748 timeout=120s
+2026-08-07 23:45:04,780 - transcriptx - INFO - [CHART_DESCRIPTIONS] 91/197 viz_id=wordcloud.wordcloud.speaker.bigrams chart_key=77e6c4b81b15f73c4e6352b36e24b81e2eb33e1eb2c72f98910e68c1ca47216a timeout=120s
+2026-08-07 23:45:07,046 - transcriptx - INFO - [CHART_DESCRIPTIONS] 92/197 viz_id=bertopic.topic_word_heatmap.global chart_key=79dc93babd887af8cd616d55851b8aed6a411f0b203c535b207538c746cfddb4 timeout=120s
+2026-08-07 23:45:09,718 - transcriptx - INFO - [CHART_DESCRIPTIONS] 93/197 viz_id=fine_grained_emotion.label_counts.speaker chart_key=7ab0004aa31b19e41bfb1f96011e28168726107948444a800d4088b8ca911057 timeout=120s
+2026-08-07 23:45:11,832 - transcriptx - INFO - [CHART_DESCRIPTIONS] 94/197 viz_id=lexical_diversity.ttr.speaker chart_key=7b32241c8ff08e15db823c290fe530f9d793a6286dadc9bf4e7c642b9a3aa70f timeout=120s
+2026-08-07 23:45:13,929 - transcriptx - INFO - [CHART_DESCRIPTIONS] 95/197 viz_id=wordcloud.wordcloud.speaker.tfidf chart_key=7e07777e1e38ab779e277943e8e5e7ffbf12651c9073ec81f87ceb3fd8284450 timeout=120s
+2026-08-07 23:45:17,209 - transcriptx - INFO - [CHART_DESCRIPTIONS] 96/197 viz_id=topic_modeling.topic_bar.speaker chart_key=7eb453d71c5d4fd5eda40aa80b3226ed7560763a30bdc492a09651a48ba1edc3 timeout=120s
+2026-08-07 23:45:19,591 - transcriptx - INFO - [CHART_DESCRIPTIONS] 97/197 viz_id=fine_grained_emotion.label_counts_excluding_neutral.global chart_key=84315f27b0d78cb7700588a5c308f685a52e2281d1e4d9489e18311a2a783ee0 timeout=120s
+2026-08-07 23:45:21,526 - transcriptx - INFO - [CHART_DESCRIPTIONS] 98/197 viz_id=qa_analysis.response_time_analysis.global chart_key=8508b9e3e89f752d9dc804f6db11d0a57cb4172177b775121ccc694ca5f965dd timeout=120s
+2026-08-07 23:45:23,373 - transcriptx - INFO - [CHART_DESCRIPTIONS] 99/197 viz_id=wordcloud.wordcloud.global.keyphrases_noun_chunks chart_key=888704baee6f0904e46660b940f9c11e2608fd9e0510e32433ace72101652df2 timeout=120s
+2026-08-07 23:45:25,105 - transcriptx - INFO - [CHART_DESCRIPTIONS] 100/197 viz_id=topic_modeling.discourse_analysis.global chart_key=8a0e8a4a461f09627ccfa33dae4d791b7a419620f0954d38069588fc0694b11d timeout=120s
+2026-08-07 23:45:27,079 - transcriptx - INFO - [CHART_DESCRIPTIONS] 101/197 viz_id=acts.acts_pie.speaker chart_key=8a39c89c02c60a14a133b9e08e35b8106680126e523a3ca50fc65d2d251d494c timeout=120s
+2026-08-07 23:45:28,845 - transcriptx - INFO - [CHART_DESCRIPTIONS] 102/197 viz_id=wordcloud.wordcloud.global.tfidf chart_key=8b15c973faaf5ff12ef954330e91b2a0e3bd6d1e4d8bc905cad547e4a1785f2f timeout=120s
+2026-08-07 23:45:32,025 - transcriptx - INFO - [CHART_DESCRIPTIONS] 103/197 viz_id=affect_tension.avg_entropy.global chart_key=8c2ae954c9f7abcc4ac080c2626b520b3e5da9dd2a417d2366a48ca3b231d473 timeout=120s
+2026-08-07 23:45:34,391 - transcriptx - INFO - [CHART_DESCRIPTIONS] 104/197 viz_id=tics.tics.speaker chart_key=8d115ff18d8fb1b4c919219808cb9c8f2f276878bd6de772f6371842b9b12639 timeout=120s
+2026-08-07 23:45:36,217 - transcriptx - INFO - [CHART_DESCRIPTIONS] 105/197 viz_id=topic_modeling.topic_evolution_timeline.global chart_key=8d1b9053a73d1fe0582ab78e80b032b460e777e4649230c60e7b113eda6247f5 timeout=120s
+2026-08-07 23:45:39,341 - transcriptx - INFO - [CHART_DESCRIPTIONS] 106/197 viz_id=wordcloud.wordcloud.speaker.tics chart_key=8d30215491ac16cc86ca78ff9fd7266362ab015f3761ac515837e6f761b78e3f timeout=120s
+2026-08-07 23:45:40,760 - transcriptx - INFO - [CHART_DESCRIPTIONS] 107/197 viz_id=interactions.network_graph.global chart_key=8de3f21bf5415f719feee5972e8b7a1426c5d592ce1d49d6adf5eae822aebe9f timeout=120s
+2026-08-07 23:45:42,251 - transcriptx - INFO - [CHART_DESCRIPTIONS] 108/197 viz_id=politeness.category_rates.speaker chart_key=90f1ad17381a7834c4af067745bcb4eba1e3594dac3275c08b56efb321c41683 timeout=120s
+2026-08-07 23:45:44,070 - transcriptx - INFO - [CHART_DESCRIPTIONS] 109/197 viz_id=wordclouds.wordcloud-verb.view.Filka chart_key=926b13e5acfc8a46bba13609c583469492dd8809e243bc1ae4f0382b25b71f75 timeout=120s
+2026-08-07 23:45:45,025 - transcriptx - INFO - [CHART_DESCRIPTIONS] 110/197 viz_id=contextual_emotion.label_counts.speaker chart_key=93a1f656c1a2466eea49367c06e1f324efb34a5376ecaf6e0e4374f6744a4f54 timeout=120s
+2026-08-07 23:45:47,174 - transcriptx - INFO - [CHART_DESCRIPTIONS] 111/197 viz_id=wordcloud.wordcloud.speaker.keyphrases_noun_chunks chart_key=9406a4fcf9d6943dda6891199328040c2b688901d2f2334820349240d2a6d6a9 timeout=120s
+2026-08-07 23:45:48,947 - transcriptx - INFO - [CHART_DESCRIPTIONS] 112/197 viz_id=wordclouds.wordcloud.speaker chart_key=96d1c26c82a566bd2bc42b1a2586177bb70bd90a12dc1a8e843a4563874ef2bd timeout=120s
+2026-08-07 23:45:51,035 - transcriptx - INFO - [CHART_DESCRIPTIONS] 113/197 viz_id=wordclouds.tfidf-bigrams.view.Federico chart_key=983d1bc1eb181c3ebf576f4aec27978a3b3b410cd439e1a75ac806366d0ad7b4 timeout=120s
+2026-08-07 23:45:52,258 - transcriptx - INFO - [CHART_DESCRIPTIONS] 114/197 viz_id=affect_tension.entropy_volatility_timeseries.global chart_key=998dece0d13e68476702b6fbcb79f56341627fbd2f6c3007f1e00a577c4ca472 timeout=120s
+2026-08-07 23:45:58,903 - transcriptx - INFO - [CHART_DESCRIPTIONS] 115/197 viz_id=affect_tension.mismatch_heatmap.global chart_key=9affa9b046f1f8634b9dd2221c105c36330c1601c0d1938be4bba4cc825b8647 timeout=120s
+2026-08-07 23:46:01,410 - transcriptx - INFO - [CHART_DESCRIPTIONS] 116/197 viz_id=acts.global_acts_bar.global chart_key=9bbae269d5ef4fe3f129b43043a88899975463ad4675479c8522d7e4c417f388 timeout=120s
+2026-08-07 23:46:04,048 - transcriptx - INFO - [CHART_DESCRIPTIONS] 117/197 viz_id=fine_grained_emotion.label_share_non_neutral.global chart_key=9c1a923548363b689a4577d036d8cdf3ab2f472c4f9ae8289cc0d2bec75d39a3 timeout=120s
+2026-08-07 23:46:06,782 - transcriptx - INFO - [CHART_DESCRIPTIONS] 118/197 viz_id=topic_modeling.nmf_diagnostic_plots.global chart_key=9c994f4bc7da1ae391feb0cddcf59119659f68fee45179673f97176d4a96943a timeout=120s
+2026-08-07 23:46:11,287 - transcriptx - INFO - [CHART_DESCRIPTIONS] 119/197 viz_id=topic_modeling.topic_bar.speaker chart_key=9da3aadd55a6b1f7ad9519d6632e1f916aaebd64f0e6801e24ecf9a4d3f29a56 timeout=120s
+2026-08-07 23:46:13,383 - transcriptx - INFO - [CHART_DESCRIPTIONS] 120/197 viz_id=contagion.contagion_matrix.global chart_key=a078876111c55d0e9da3a6f685c708702dc68e4ce95149692bd9a01b8dfd5bd7 timeout=120s
+2026-08-07 23:46:15,080 - transcriptx - INFO - [CHART_DESCRIPTIONS] 121/197 viz_id=epistemic_markers.category_rates.speaker chart_key=a07d54efb9f0b99204394563b8015bfbc32460b67cabec5cff9174aaca9ae3b6 timeout=120s
+2026-08-07 23:46:17,218 - transcriptx - INFO - [CHART_DESCRIPTIONS] 122/197 viz_id=wordclouds.wordcloud-tics.view.Federico chart_key=a1452300833044cba3b7541b875d32442f24f2246b09d3612b2f191c9230012d timeout=120s
+2026-08-07 23:46:18,208 - transcriptx - INFO - [CHART_DESCRIPTIONS] 123/197 viz_id=fine_grained_emotion.label_counts_excluding_neutral.speaker chart_key=a43d83be3ca44830449e5c34b8a0d26b53b751352a0d281fa266cc8f56a14b11 timeout=120s
+2026-08-07 23:46:19,815 - transcriptx - INFO - [CHART_DESCRIPTIONS] 124/197 viz_id=interactions.timeline.speaker chart_key=a960ccf8f12dca220b8234e04fdabc0182384cf38b7600bd47bd8361cf4a8f22 timeout=120s
+2026-08-07 23:46:23,899 - transcriptx - INFO - [CHART_DESCRIPTIONS] 125/197 viz_id=topic_modeling.topic_bar.speaker chart_key=aa6e7deb02fa5acfc644992fad1e744e8ed92a205955c396d8e3fba093fcea27 timeout=120s
+2026-08-07 23:46:26,125 - transcriptx - INFO - [CHART_DESCRIPTIONS] 126/197 viz_id=wordcloud.wordcloud.speaker.verb chart_key=aaa0a9786bd4bd7cdd7ff49898d6282de23b2e3c8fba94beea8e5a7b7a14d412 timeout=120s
+2026-08-07 23:46:28,256 - transcriptx - INFO - [CHART_DESCRIPTIONS] 127/197 viz_id=temporal_dynamics.engagement_timeseries.global chart_key=ab4937955b753c57030acee40266f68fd5ef194d332c65f729ec818a998ecc8d timeout=120s
+2026-08-07 23:46:30,838 - transcriptx - INFO - [CHART_DESCRIPTIONS] 128/197 viz_id=wordclouds.wordcloud.speaker chart_key=ac6849627a99aa61f922731b6fcbdb0750e81bb9c46285843ec0cdb2007558f8 timeout=120s
+2026-08-07 23:46:32,940 - transcriptx - INFO - [CHART_DESCRIPTIONS] 129/197 viz_id=wordclouds.wordcloud-verb.view.Federico chart_key=ad6bba807a8ffa95975c68d23d7d6e0fd68f09d4dcf5c4ca16c68f75ff80d91e timeout=120s
+2026-08-07 23:46:34,127 - transcriptx - INFO - [CHART_DESCRIPTIONS] 130/197 viz_id=sentiment.multi_speaker_sentiment.global chart_key=ada7e430c2144772f03ffead0092be30d3129cb9e793dab9ab7d7bdb8d0727a3 timeout=120s
+2026-08-07 23:46:45,659 - transcriptx - INFO - [CHART_DESCRIPTIONS] 131/197 viz_id=wordclouds.wordcloud-adj-ALL.global chart_key=b01b2a4fea664c0fad072644db25856c6b61e8b81b187de441a2d59df6530773 timeout=120s
+2026-08-07 23:46:47,969 - transcriptx - INFO - [CHART_DESCRIPTIONS] 132/197 viz_id=wordclouds.wordcloud-verb-ALL.global chart_key=b03d55a273974dfebbf152dcdbf4509c87dcc48b0d4dcdc9c2e8a83ee1483118 timeout=120s
+2026-08-07 23:46:50,101 - transcriptx - INFO - [CHART_DESCRIPTIONS] 133/197 viz_id=lexical_diversity.hapax_rate.speaker chart_key=b185ffbd667d8f32fa72a1f36c1367f540ff6598773526f7a8b1d791d5bf0ad2 timeout=120s
+2026-08-07 23:46:52,190 - transcriptx - INFO - [CHART_DESCRIPTIONS] 134/197 viz_id=wordclouds.wordcloud-adj.view.Filka chart_key=b1b59803addecea27aa3eb7a55f9753cf537b9727a85d045ae44da7f58be06d6 timeout=120s
+2026-08-07 23:46:53,259 - transcriptx - INFO - [CHART_DESCRIPTIONS] 135/197 viz_id=moments.moments_timeline.global chart_key=b2a5f72a2592cd1fe08ccee9be9d7c7902acc424988497f628c63fd7233bce67 timeout=120s
+2026-08-07 23:46:55,336 - transcriptx - INFO - [CHART_DESCRIPTIONS] 136/197 viz_id=topic_modeling.nmf_topic_word_heatmap.global chart_key=b31b759d1bbf3137ab99868c7531656b3370774d06f9f026a87bea4d1a9027d9 timeout=120s
+2026-08-07 23:46:58,284 - transcriptx - INFO - [CHART_DESCRIPTIONS] 137/197 viz_id=wordclouds.wordcloud-adj.view.Ana chart_key=b357856d26bdae4adfcdf9e36471278e4451b78263450bf21f5f793ac4fb6d13 timeout=120s
+2026-08-07 23:46:59,350 - transcriptx - INFO - [CHART_DESCRIPTIONS] 138/197 viz_id=tics.tics.speaker chart_key=b39767ab2544a7451bb7226cdcac1dd6538b0e19ebcd78b7280c1e2ee6756f8c timeout=120s
+2026-08-07 23:47:00,832 - transcriptx - INFO - [CHART_DESCRIPTIONS] 139/197 viz_id=wordcloud.wordcloud.speaker.tfidf chart_key=ba24df8c6f807e7c9ebb3495f828383da08fb1df10ffb6c5b502f4d2f495bbb7 timeout=120s
+2026-08-07 23:47:04,402 - transcriptx - INFO - [CHART_DESCRIPTIONS] 140/197 viz_id=wordcloud.wordcloud.speaker.bigrams chart_key=bace594df15859223e6a5dc8267408caab09646f873f45d5c02fa64b8e137ac1 timeout=120s
+2026-08-07 23:47:06,831 - transcriptx - INFO - [CHART_DESCRIPTIONS] 141/197 viz_id=interactions.equity.floor.global chart_key=bd28c42785b4d60d9a520b17b3a521b8062b804f3f3d273de5b70eb004f6b592 timeout=120s
+2026-08-07 23:47:08,518 - transcriptx - INFO - [CHART_DESCRIPTIONS] 142/197 viz_id=wordclouds.wordcloud-verb-ALL.view chart_key=bf4a704c4ad08388d3cf9295050ce1d1f30eeeb895ca3db505e9873fa84c82f3 timeout=120s
+2026-08-07 23:47:09,441 - transcriptx - INFO - [CHART_DESCRIPTIONS] 143/197 viz_id=wordcloud.wordcloud.speaker.adj chart_key=bfb5d377421e6ba02d4bc131bd9d39bfd2a448cefb31e87f4da628ca6eb5f11d timeout=120s
+2026-08-07 23:47:11,812 - transcriptx - INFO - [CHART_DESCRIPTIONS] 144/197 viz_id=epistemic_markers.category_rates.speaker chart_key=bffe68f3465afa397e2e85f75ecd3e73a9d157fe90e1f52542206463701f364e timeout=120s
+2026-08-07 23:47:14,217 - transcriptx - INFO - [CHART_DESCRIPTIONS] 145/197 viz_id=affect_tension.derived_suppressed_conflict.global chart_key=c114866d17f342274fec47abfb53c7aa59ad270a6b48674f34c221bd3d676b2f timeout=120s
+2026-08-07 23:47:15,948 - transcriptx - INFO - [CHART_DESCRIPTIONS] 146/197 viz_id=wordclouds.wordcloud-bigrams-ALL.view chart_key=c2379aac53c549765fc24439ef858a83c44e0c721075ff8d88d553b6e76a4cc3 timeout=120s
+2026-08-07 23:47:17,074 - transcriptx - INFO - [CHART_DESCRIPTIONS] 147/197 viz_id=wordcloud.wordcloud.speaker.noun chart_key=c3772e664ec67e63fd80ac11a3d94c782cfa13c994871a66a08e2359e486e917 timeout=120s
+2026-08-07 23:47:19,116 - transcriptx - INFO - [CHART_DESCRIPTIONS] 148/197 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks.view.Ana chart_key=c3ec378b2940dd72304f0829c6e982ab44c83cb8529e20a79d612363699a4e4c timeout=120s
+2026-08-07 23:47:20,316 - transcriptx - INFO - [CHART_DESCRIPTIONS] 149/197 viz_id=topic_shift.timeline.global chart_key=c43d23e0a077b4da2ef0013f60802743d2ea0052ea1f864c16c5d4a61bc8abb6 timeout=120s
+2026-08-07 23:47:22,009 - transcriptx - INFO - [CHART_DESCRIPTIONS] 150/197 viz_id=lexical_diversity.mtld.speaker chart_key=c6aa63ceae9cc4b6a97f5b8558c0dd9d49567f46a1a9bb795911c153ab2840f3 timeout=120s
+2026-08-07 23:47:23,854 - transcriptx - INFO - [CHART_DESCRIPTIONS] 151/197 viz_id=understandability.word-count-bars.global chart_key=c9c45bb13dd06e5015c8ccaf763754b71ee83851b3edcff462742422d75b56b0 timeout=120s
+2026-08-07 23:47:25,452 - transcriptx - INFO - [CHART_DESCRIPTIONS] 152/197 viz_id=contextual_emotion.label_counts_excluding_neutral.speaker chart_key=c9dd1a684c2a7c4db31021959a30e2699f48b247c55b6fa64b3b6cec77068c37 timeout=120s
+2026-08-07 23:47:26,990 - transcriptx - INFO - [CHART_DESCRIPTIONS] 153/197 viz_id=wordclouds.wordcloud-noun-ALL.view chart_key=cb5e995e8126204663cfe12a7b592a0e8eeb63050c007a7e618671ee1d6f4040 timeout=120s
+2026-08-07 23:47:28,053 - transcriptx - INFO - [CHART_DESCRIPTIONS] 154/197 viz_id=acts.global_acts_pie.global chart_key=cca204fa5ee711cf8861655856f0731e32590675d862a0ff33cbc72e3ae482ed timeout=120s
+2026-08-07 23:47:29,755 - transcriptx - INFO - [CHART_DESCRIPTIONS] 155/197 viz_id=interactions.dominance.global chart_key=ccaad890763a3d874efd28e6f2c5a8343fe8d7489bb1f85557d66b5a03f4a3f9 timeout=120s
+2026-08-07 23:47:31,462 - transcriptx - INFO - [CHART_DESCRIPTIONS] 156/197 viz_id=topic_modeling.expected_topic_proportions.global chart_key=cd5ace29fa3652abbd5fe10a695bfdb9769a3fe7786bfe2b58cd72998759814a timeout=120s
+2026-08-07 23:47:33,277 - transcriptx - INFO - [CHART_DESCRIPTIONS] 157/197 viz_id=wordclouds.tfidf.view.Federico chart_key=cd9642c24bde0724771f85c964da18e3e1acb38a25fd135819966153819e95a8 timeout=120s
+2026-08-07 23:47:34,170 - transcriptx - INFO - [CHART_DESCRIPTIONS] 158/197 viz_id=fine_grained_emotion.label_share_non_neutral.speaker chart_key=ce7e062dad979993046d10129e1676b91fa241443f0b2b24bef7a9c9e02d0e5d timeout=120s
+2026-08-07 23:47:36,590 - transcriptx - INFO - [CHART_DESCRIPTIONS] 159/197 viz_id=wordcloud.wordcloud.speaker.tfidf_bigrams chart_key=cef354288c638166ec866bf10e70cfc74940d8b5de91aa17902c57c5cddcb7cf timeout=120s
+2026-08-07 23:47:39,685 - transcriptx - INFO - [CHART_DESCRIPTIONS] 160/197 viz_id=wordcloud.wordcloud.speaker.tics chart_key=d01c8ec359c9274a07003ce091b17e12c152e4471751373c844de134ff33c44f timeout=120s
+2026-08-07 23:47:41,074 - transcriptx - INFO - [CHART_DESCRIPTIONS] 161/197 viz_id=semantic_similarity.similarity_distribution.global chart_key=d194f9346d3029299b6ad8c9e4e09b2e1dddfd2489b467ba3ac289a2a8fcc02a timeout=120s
+2026-08-07 23:47:43,501 - transcriptx - INFO - [CHART_DESCRIPTIONS] 162/197 viz_id=politeness.category_rates.speaker chart_key=d1ab97648b4f5835a70cb7c94a4088e7c543f90d52a77305605796cb25949d12 timeout=120s
+2026-08-07 23:47:45,083 - transcriptx - INFO - [CHART_DESCRIPTIONS] 163/197 viz_id=interactions.timeline.speaker chart_key=d358e140f723ced9278189a339c9d08005aaf8db6428c75aca5faabf3918cfdf timeout=120s
+2026-08-07 23:47:49,044 - transcriptx - INFO - [CHART_DESCRIPTIONS] 164/197 viz_id=affect_tension.mismatch_rate.global chart_key=d3f13c8584036473d21b1d83d75de0353706e41a15084d1c3d3ee3cd7a9832a9 timeout=120s
+2026-08-07 23:47:50,479 - transcriptx - INFO - [CHART_DESCRIPTIONS] 165/197 viz_id=sentiment.rolling_sentiment.speaker chart_key=d4c2e9f5e41d585d9dc53813e42f85aa6dc3b805cf929f466e6e95a4f7af89c0 timeout=120s
+2026-08-07 23:47:54,444 - transcriptx - INFO - [CHART_DESCRIPTIONS] 166/197 viz_id=transcript_quality.asr_low_score_timeline.global chart_key=d4fc76bb109d4497cd3595737a7b5a761a974416ed5c13ca52b1bfe29ad1cf03 timeout=120s
+2026-08-07 23:47:57,131 - transcriptx - INFO - [CHART_DESCRIPTIONS] 167/197 viz_id=bertopic.topic_prevalence.global chart_key=d637db2fd896792fc2a117033c0b9196abaf3b592155c38c0dd0a27a37281b24 timeout=120s
+2026-08-07 23:47:58,913 - transcriptx - INFO - [CHART_DESCRIPTIONS] 168/197 viz_id=semantic_similarity.agreement_disagreement_breakdown.global chart_key=d6780ddeec54a02407d2da6e5ee0b5973b1d2d064eca8ed65ec5ef3c3fa8c06d timeout=120s
+2026-08-07 23:48:00,361 - transcriptx - INFO - [CHART_DESCRIPTIONS] 169/197 viz_id=acts.acts_pie.speaker chart_key=d6e4664f8b8b913a25b6cbd45ca21ef05ce43b25c812e66f0f4cceddc5b23e79 timeout=120s
+2026-08-07 23:48:02,149 - transcriptx - INFO - [CHART_DESCRIPTIONS] 170/197 viz_id=fine_grained_emotion.label_counts_excluding_neutral.speaker chart_key=d9543f134ad7b82f0eabff16a1caa442d3591a16baf473239f111a120cb192a6 timeout=120s
+2026-08-07 23:48:03,649 - transcriptx - INFO - [CHART_DESCRIPTIONS] 171/197 viz_id=wordcloud.wordcloud.speaker.verb chart_key=dad8c49505a215a7696b54118eed22977d00a69b887a7cc93cc7148303db2d47 timeout=120s
+2026-08-07 23:48:05,917 - transcriptx - INFO - [CHART_DESCRIPTIONS] 172/197 viz_id=wordclouds.wordcloud-adj-ALL.view chart_key=dc0b69c45132a01b319907191faa0b235f63879f85f15c10a7adf4d34dd2fab8 timeout=120s
+2026-08-07 23:48:06,781 - transcriptx - INFO - [CHART_DESCRIPTIONS] 173/197 viz_id=wordcloud.wordcloud.speaker.tics chart_key=de594fe3c4ae88c7ca60b64efcd25abcca2ab2a674ee3298393061853cfb09a4 timeout=120s
+2026-08-07 23:48:08,260 - transcriptx - INFO - [CHART_DESCRIPTIONS] 174/197 viz_id=fine_grained_emotion.label_counts.speaker chart_key=df7e6f56135275ac52e7c00e93de1107019483bc85e1fe78d0c9b646ae4d5b8e timeout=120s
+2026-08-07 23:48:09,798 - transcriptx - INFO - [CHART_DESCRIPTIONS] 175/197 viz_id=fine_grained_emotion.label_share_non_neutral.speaker chart_key=e159d886326320f103b2149e2c6c8438e24f42239c3f8b36af631c7099ff7636 timeout=120s
+2026-08-07 23:48:12,677 - transcriptx - INFO - [CHART_DESCRIPTIONS] 176/197 viz_id=semantic_similarity.classification.global chart_key=e1de8dc92acfc5ed1514872145f1095009bdc865ef371ebe6aa909e2efd3b617 timeout=120s
+2026-08-07 23:48:14,126 - transcriptx - INFO - [CHART_DESCRIPTIONS] 177/197 viz_id=wordcloud.wordcloud.speaker.keyphrases_noun_chunks chart_key=e369642230418518e7a913a793ad5af1e24d47921843c62c7bd835400335b32e timeout=120s
+2026-08-07 23:48:15,962 - transcriptx - INFO - [CHART_DESCRIPTIONS] 178/197 viz_id=entity_sentiment.entity_type_analysis.global chart_key=e3cff3c5407eedf128cd67cfbfa15e51300417293107a970c9b4828c563e8a98 timeout=120s
+2026-08-07 23:48:17,843 - transcriptx - INFO - [CHART_DESCRIPTIONS] 179/197 viz_id=qa_analysis.qa_timeline.global chart_key=e5887387d0d9c0cbb56fcf8dbd9d337be023fa459510b3c763ce581e483b546d timeout=120s
+2026-08-07 23:48:20,950 - transcriptx - INFO - [CHART_DESCRIPTIONS] 180/197 viz_id=acts.acts_temporal.speaker chart_key=e758ee924caba59bafafcccc3531923f8d2d719e78d4d5b011d139baa0be01e7 timeout=120s
+2026-08-07 23:48:23,696 - transcriptx - INFO - [CHART_DESCRIPTIONS] 181/197 viz_id=contextual_emotion.label_share_non_neutral.speaker chart_key=e8818db2032c367ea96c6e73b2e0cc46fa2a0835669100595012ba3448c65aa7 timeout=120s
+2026-08-07 23:48:25,681 - transcriptx - INFO - [CHART_DESCRIPTIONS] 182/197 viz_id=wordcloud.wordcloud.speaker.noun chart_key=e886f9471504fcb7e4628b359cd789c70db0b150ada6887b1b15e3e92404b778 timeout=120s
+2026-08-07 23:48:27,565 - transcriptx - INFO - [CHART_DESCRIPTIONS] 183/197 viz_id=wordclouds.tfidf-ALL.view chart_key=e8ea221d563411ef66c4b002d6594af505921cee510835076b15ff7abb5871a8 timeout=120s
+2026-08-07 23:48:28,526 - transcriptx - INFO - [CHART_DESCRIPTIONS] 184/197 viz_id=affect_tension.derived_institutional_tone.global chart_key=ebfcba4cff4f2dcc29abe6b9c53704500cc5ed89b14514a8a8d51a2037d99f45 timeout=120s
+2026-08-07 23:48:30,861 - transcriptx - INFO - [CHART_DESCRIPTIONS] 185/197 viz_id=wordclouds.wordcloud-bigrams-ALL.global chart_key=edffe4c6c7f96a0ebd093c05b6b0fca030968edece402830350db541f72d8729 timeout=120s
+2026-08-07 23:48:32,921 - transcriptx - INFO - [CHART_DESCRIPTIONS] 186/197 viz_id=wordclouds.tfidf-bigrams-ALL.view chart_key=ef3e419298f5d9ecba6a0e39b1e8772390320e0a610e547ab94ffaec5ee77f16 timeout=120s
+2026-08-07 23:48:34,170 - transcriptx - INFO - [CHART_DESCRIPTIONS] 187/197 viz_id=emotion.radar.global chart_key=f30b620b7b22b4aa2b79b0980d2fac5dde0f8d57aa8360436b32d65080910ba0 timeout=120s
+2026-08-07 23:48:36,113 - transcriptx - INFO - [CHART_DESCRIPTIONS] 188/197 viz_id=temporal_dynamics.phase_detection.global chart_key=f3d990887941396c87664ebb004e60161fdfa253bc5fccf6bdcbb1d1a7296939 timeout=120s
+2026-08-07 23:48:37,838 - transcriptx - INFO - [CHART_DESCRIPTIONS] 189/197 viz_id=contextual_emotion.label_share_non_neutral.speaker chart_key=f688402f4f31bcf2b1a90039309b31b6e37686a2c56797f66aca44a52a632b33 timeout=120s
+2026-08-07 23:48:39,779 - transcriptx - INFO - [CHART_DESCRIPTIONS] 190/197 viz_id=wordclouds.wordcloud-tics.view.Ana chart_key=f74b4b9a68d888e207d30e253e75976b12d01c763774ddd47a2f98ff59a3ea76 timeout=120s
+2026-08-07 23:48:40,729 - transcriptx - INFO - [CHART_DESCRIPTIONS] 191/197 viz_id=interactions.timeline.speaker chart_key=f7dd9eec4826807f002bfd5196a3e2fa57e75df46f2a81096c1c70ba6d854a76 timeout=120s
+2026-08-07 23:48:44,474 - transcriptx - INFO - [CHART_DESCRIPTIONS] 192/197 viz_id=wordclouds.tfidf-bigrams.view.Filka chart_key=f8293f51c192b7f47071081e4a55b2cbd6646bff9a68876393e88e3fb64c8e3f timeout=120s
+2026-08-07 23:48:45,494 - transcriptx - INFO - [CHART_DESCRIPTIONS] 193/197 viz_id=wordcloud.wordcloud.speaker.tfidf_bigrams chart_key=fa60a2f6d9bf55d5a2c8004f0a38c4f159e40cd90c4eed89ff976cc5dea375e7 timeout=120s
+2026-08-07 23:48:48,669 - transcriptx - INFO - [CHART_DESCRIPTIONS] 194/197 viz_id=fine_grained_emotion.label_counts.speaker chart_key=fbffd764721d4873f559bc12b8c02bc119d3f98c3b2fe876b7ffb93b08356970 timeout=120s
+2026-08-07 23:48:50,526 - transcriptx - INFO - [CHART_DESCRIPTIONS] 195/197 viz_id=entity_sentiment.entity_mentions.speaker chart_key=fc7115db11571cd415ab35f075fe810acdbac8830dfd37b878a61aee183b5dce timeout=120s
+2026-08-07 23:48:52,637 - transcriptx - INFO - [CHART_DESCRIPTIONS] 196/197 viz_id=ner.entity_types.global chart_key=fd5beb250ab8fadc3e83666f31be2daf048385d98ca141aa0d4a25d4acabd770 timeout=120s
+2026-08-07 23:48:54,286 - transcriptx - INFO - [CHART_DESCRIPTIONS] 197/197 viz_id=understandability.structure-bars.global chart_key=fffe466205fb93e8a4f59b559614fd7b02260eb1bbea90d3467dc74d3b5caa00 timeout=120s
+2026-08-07 23:48:56,655 - transcriptx - INFO - Saved output manifest to /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260807_233852_38732557/manifest.json
+2026-08-07 23:48:56,657 - transcriptx - INFO - Saved run results summary to /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260807_233852_38732557/run_results.json
+2026-08-07 23:48:58,474 - transcriptx - INFO - Saved run manifest to /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260807_233852_38732557/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: 260615_Ana_phd_supervision_meeting
+📂 Output Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557
+🔄 Analysis Status: 42/42 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (42):
+--------------------------------------------------
+
+✅ ACTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/acts
+   📄 Files: 44
+   📂 Subdirectories: 41
+   📋 Key outputs:
+      • charts/speakers/Ana/dynamic/temporal/acts_temporal.html (4554.5 KB)
+      • charts/speakers/Ana/dynamic/pie/acts_pie.html (4552.4 KB)
+      • charts/speakers/Ana/dynamic/bar/acts_bar.html (4552.5 KB)
+      • charts/speakers/Ana/static/temporal/acts_temporal.evidence.json (2.8 KB)
+      • charts/speakers/Ana/static/temporal/acts_temporal.png (233.4 KB)
+      • ... and 39 more files
+
+✅ CONVERSATION_LOOPS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/conversation_loops
+   📄 Files: 5
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • 
+data/global/260615_Ana_phd_supervision_meeting_conversation_loops_summary.json 
+(1.2 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_summary.json (0.5 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_conversation_loops.csv 
+(0.0 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_summary.txt (0.5 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_conversation_loops.json 
+(1.7 KB)
+
+✅ CONTAGION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/contagion
+   📄 Files: 7
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/matrix/contagion_matrix.html (4552.6 KB)
+      • charts/global/static/matrix/contagion_matrix.png (94.9 KB)
+      • charts/global/static/matrix/contagion_matrix.evidence.json (0.8 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_contagion_summary.json 
+(1.5 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_contagion_events.json 
+(1.3 KB)
+      • ... and 2 more files
+
+✅ EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/emotion
+   📄 Files: 23
+   📂 Subdirectories: 27
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • charts/speakers/Ana/dynamic/bar/emotion_assignment_counts.html (4552.4 
+KB)
+      • charts/speakers/Ana/static/bar/emotion_assignment_counts.png (113.2 KB)
+      • charts/speakers/Ana/static/bar/emotion_assignment_counts.evidence.json 
+(0.7 KB)
+      • charts/speakers/Filka/dynamic/bar/emotion_assignment_counts.html (4552.4
+KB)
+      • ... and 18 more files
+
+✅ CONTEXTUAL_EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/contextual_emotion
+   📄 Files: 44
+   📂 Subdirectories: 26
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • 
+charts/speakers/Ana/dynamic/bar/contextual_emotion_label_counts_excluding_neutra
+l.html (4552.4 KB)
+      • charts/speakers/Ana/dynamic/bar/contextual_emotion_label_counts.html 
+(4552.4 KB)
+      • 
+charts/speakers/Ana/dynamic/bar/contextual_emotion_label_share_non_neutral.html 
+(4552.4 KB)
+      • 
+charts/speakers/Ana/static/bar/contextual_emotion_label_counts.evidence.json 
+(0.6 KB)
+      • ... and 39 more files
+
+✅ FINE_GRAINED_EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/fine_grained_emotion
+   📄 Files: 44
+   📂 Subdirectories: 26
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • 
+charts/speakers/Ana/dynamic/bar/fine_grained_native_label_share_non_neutral.html
+(4552.7 KB)
+      • 
+charts/speakers/Ana/dynamic/bar/fine_grained_native_label_prevalence.html 
+(4552.5 KB)
+      • 
+charts/speakers/Ana/dynamic/bar/fine_grained_native_label_prevalence_excluding_n
+eutral.html (4552.5 KB)
+      • 
+charts/speakers/Ana/static/bar/fine_grained_native_label_share_non_neutral.png 
+(150.0 KB)
+      • ... and 39 more files
+
+✅ ENTITY_SENTIMENT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/entity_sentiment
+   📄 Files: 22
+   📂 Subdirectories: 27
+   📋 Key outputs:
+      • charts/speakers/Ana/dynamic/bar/entity_mentions.html (4552.4 KB)
+      • charts/speakers/Ana/static/bar/entity_mentions.png (126.6 KB)
+      • charts/speakers/Ana/static/bar/entity_mentions.evidence.json (0.7 KB)
+      • charts/speakers/Filka/dynamic/bar/entity_mentions.html (4552.4 KB)
+      • charts/speakers/Filka/static/bar/entity_mentions.png (125.4 KB)
+      • ... and 17 more files
+
+✅ AFFECT_TENSION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/affect_tension
+   📄 Files: 38
+   📂 Subdirectories: 16
+   📋 Key outputs:
+      • charts/speakers/Ana/dynamic/entropy_volatility_timeseries.html (4559.3 
+KB)
+      • charts/speakers/Ana/static/entropy_volatility_timeseries.evidence.json 
+(6.4 KB)
+      • charts/speakers/Ana/static/entropy_volatility_timeseries.png (290.7 KB)
+      • charts/speakers/Filka/dynamic/entropy_volatility_timeseries.html (4558.6
+KB)
+      • charts/speakers/Filka/static/entropy_volatility_timeseries.evidence.json
+(6.4 KB)
+      • ... and 33 more files
+
+✅ INTERACTIONS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/interactions
+   📄 Files: 38
+   📂 Subdirectories: 34
+   📋 Key outputs:
+      • charts/speakers/Ana/dynamic/timeline/timeline.html (4554.0 KB)
+      • charts/speakers/Ana/static/timeline/timeline.evidence.json (3.8 KB)
+      • charts/speakers/Ana/static/timeline/timeline.png (205.6 KB)
+      • charts/speakers/Filka/dynamic/timeline/timeline.html (4554.3 KB)
+      • charts/speakers/Filka/static/timeline/timeline.evidence.json (4.3 KB)
+      • ... and 32 more files
+
+✅ NER
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/ner
+   📄 Files: 28
+   📂 Subdirectories: 28
+   📋 Key outputs:
+      • maps/images/260615_Ana_phd_supervision_meeting-locations-Filka.png (60.7
+KB)
+      • maps/images/260615_Ana_phd_supervision_meeting-locations-ALL.png (66.6 
+KB)
+      • maps/images/260615_Ana_phd_supervision_meeting-locations-Ana.png (60.7 
+KB)
+      • maps/images/260615_Ana_phd_supervision_meeting-locations-Federico.png 
+(66.0 KB)
+      • maps/html/260615_Ana_phd_supervision_meeting-locations-Federico.html 
+(7.6 KB)
+      • ... and 23 more files
+
+✅ SEMANTIC_SIMILARITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/semantic_similarity
+   📄 Files: 22
+   📂 Subdirectories: 6
+   📋 Key outputs:
+      • charts/global/dynamic/speaker_repetitions.html (4552.3 KB)
+      • charts/global/dynamic/classification.html (4552.4 KB)
+      • charts/global/dynamic/similarity_distribution.html (4552.7 KB)
+      • charts/global/dynamic/speaker_repetition_frequency.html (4552.4 KB)
+      • charts/global/dynamic/speaker_similarity.html (4552.4 KB)
+      • ... and 17 more files
+
+✅ SENTIMENT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/sentiment
+   📄 Files: 22
+   📂 Subdirectories: 17
+   📋 Key outputs:
+      • charts/speakers/Ana/dynamic/rolling_sentiment.html (4557.3 KB)
+      • charts/speakers/Ana/static/rolling_sentiment.evidence.json (4.0 KB)
+      • charts/speakers/Ana/static/rolling_sentiment.png (235.3 KB)
+      • charts/speakers/Filka/dynamic/rolling_sentiment.html (4556.7 KB)
+      • charts/speakers/Filka/static/rolling_sentiment.evidence.json (4.0 KB)
+      • ... and 17 more files
+
+✅ EPISTEMIC_MARKERS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/epistemic_markers
+   📄 Files: 12
+   📂 Subdirectories: 19
+   📋 Key outputs:
+      • charts/speakers/Ana/dynamic/epistemic_markers/category_rates.html 
+(4552.5 KB)
+      • charts/speakers/Ana/static/epistemic_markers/category_rates.png (135.9 
+KB)
+      • 
+charts/speakers/Ana/static/epistemic_markers/category_rates.evidence.json (0.7 
+KB)
+      • charts/speakers/Filka/dynamic/epistemic_markers/category_rates.html 
+(4552.5 KB)
+      • charts/speakers/Filka/static/epistemic_markers/category_rates.png (131.5
+KB)
+      • ... and 7 more files
+
+✅ KEYPHRASES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/keyphrases
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_keyphrases.csv (14.6 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_keyphrases.json (127.7 
+KB)
+      • data/global/260615_Ana_phd_supervision_meeting_keyphrases_summary.json 
+(1.6 KB)
+
+✅ STATS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ TOPIC_MODELING
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/topic_modeling
+   📄 Files: 46
+   📂 Subdirectories: 33
+   📋 Key outputs:
+      • 260615_Ana_phd_supervision_meeting_enhanced_topic_modeling_report.html 
+(7.3 KB)
+      • charts/speakers/Ana/dynamic/bar/topic_bar.html (4552.5 KB)
+      • charts/speakers/Ana/static/bar/topic_bar.png (172.2 KB)
+      • charts/speakers/Ana/static/bar/topic_bar.evidence.json (0.7 KB)
+      • charts/speakers/Filka/dynamic/bar/topic_bar.html (4552.4 KB)
+      • ... and 41 more files
+
+✅ BERTOPIC
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/bertopic
+   📄 Files: 9
+   📂 Subdirectories: 10
+   📋 Key outputs:
+      • charts/global/dynamic/heatmap/bertopic_topic_word_heatmap.html (4553.3 
+KB)
+      • charts/global/dynamic/bar/bertopic_topic_prevalence.html (4552.6 KB)
+      • charts/global/static/heatmap/bertopic_topic_word_heatmap.evidence.json 
+(2.2 KB)
+      • charts/global/static/heatmap/bertopic_topic_word_heatmap.png (167.3 KB)
+      • charts/global/static/bar/bertopic_topic_prevalence.evidence.json (0.8 
+KB)
+      • ... and 4 more files
+
+✅ TRANSCRIPT_OUTPUT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • 260615_Ana_phd_supervision_meeting_simplified_transcript.json (46.3 KB)
+      • 260615_Ana_phd_supervision_meeting-transcript.csv (34.3 KB)
+      • 260615_Ana_phd_supervision_meeting_simplified_transcript_summary.json 
+(0.1 KB)
+      • 260615_Ana_phd_supervision_meeting-transcript.txt (32.1 KB)
+
+✅ SIMPLIFIED_TRANSCRIPT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • 260615_Ana_phd_supervision_meeting_simplified_transcript.json (46.3 KB)
+      • 260615_Ana_phd_supervision_meeting-transcript.csv (34.3 KB)
+      • 260615_Ana_phd_supervision_meeting_simplified_transcript_summary.json 
+(0.1 KB)
+      • 260615_Ana_phd_supervision_meeting-transcript.txt (32.1 KB)
+
+✅ UNDERSTANDABILITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/understandability
+   📄 Files: 15
+   📂 Subdirectories: 11
+   📋 Key outputs:
+      • charts/global/dynamic/understandability/readability-indices-bars.html 
+(4552.7 KB)
+      • charts/global/dynamic/structure/word-count-bars.html (4552.4 KB)
+      • charts/global/dynamic/structure/structure-bars.html (4552.7 KB)
+      • 
+charts/global/static/understandability/readability-indices-bars.evidence.json 
+(1.3 KB)
+      • charts/global/static/understandability/readability-indices-bars.png 
+(102.7 KB)
+      • ... and 10 more files
+
+✅ LEXICAL_DIVERSITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/lexical_diversity
+   📄 Files: 12
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/lexical_diversity/lexical-ttr.html (4552.4 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-mtld.html (4552.4 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-hapax-rate.html (4552.4 
+KB)
+      • charts/global/static/lexical_diversity/lexical-hapax-rate.evidence.json 
+(0.6 KB)
+      • charts/global/static/lexical_diversity/lexical-mtld.evidence.json (0.6 
+KB)
+      • ... and 7 more files
+
+✅ WORDCLOUDS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/wordclouds
+   📄 Files: 203
+   📂 Subdirectories: 91
+   📋 Key outputs:
+      • 
+charts/speakers/Ana/dynamic/views/260615_Ana_phd_supervision_meeting_wordcloud-a
+dj_explorer.html (10.8 KB)
+      • 
+charts/speakers/Ana/dynamic/views/260615_Ana_phd_supervision_meeting_wordcloud-k
+eyphrases-noun_chunks_explorer.html (12.3 KB)
+      • 
+charts/speakers/Ana/dynamic/views/260615_Ana_phd_supervision_meeting_wordcloud-v
+erb_explorer.html (13.6 KB)
+      • 
+charts/speakers/Ana/dynamic/views/260615_Ana_phd_supervision_meeting_wordcloud-t
+ics_explorer.html (8.6 KB)
+      • 
+charts/speakers/Ana/dynamic/views/260615_Ana_phd_supervision_meeting_wordcloud-n
+oun_explorer.html (18.7 KB)
+      • ... and 198 more files
+
+✅ TICS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/tics
+   📄 Files: 12
+   📂 Subdirectories: 19
+   📋 Key outputs:
+      • charts/speakers/Ana/dynamic/tics/tics.html (4552.4 KB)
+      • charts/speakers/Ana/static/tics/tics.evidence.json (0.6 KB)
+      • charts/speakers/Ana/static/tics/tics.png (104.6 KB)
+      • charts/speakers/Filka/dynamic/tics/tics.html (4552.4 KB)
+      • charts/speakers/Filka/static/tics/tics.evidence.json (0.6 KB)
+      • ... and 7 more files
+
+✅ TRANSCRIPT_QUALITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/transcript_quality
+   📄 Files: 8
+   📂 Subdirectories: 10
+   📋 Key outputs:
+      • charts/global/dynamic/distribution/asr_score_hist.html (4552.5 KB)
+      • charts/global/dynamic/timeline/asr_low_score_timeline.html (4553.4 KB)
+      • charts/global/static/distribution/asr_score_hist.evidence.json (0.7 KB)
+      • charts/global/static/distribution/asr_score_hist.png (109.7 KB)
+      • charts/global/static/timeline/asr_low_score_timeline.evidence.json (2.5 
+KB)
+      • ... and 3 more files
+
+✅ INSIGHT_ELIGIBILITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/insight_eligibility
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • 
+data/global/260615_Ana_phd_supervision_meeting_insight_eligibility_tic_mask.json
+(2.5 KB)
+      • 
+data/global/260615_Ana_phd_supervision_meeting_insight_eligibility_phrase_scores
+.json (230.5 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_insight_eligibility.json 
+(530.6 KB)
+
+✅ TEMPORAL_DYNAMICS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/temporal_dynamics
+   📄 Files: 18
+   📂 Subdirectories: 6
+   📋 Key outputs:
+      • charts/global/dynamic/temporal_dashboard.html (4553.7 KB)
+      • charts/global/dynamic/engagement_timeseries.html (4553.1 KB)
+      • charts/global/dynamic/temporal_dashboard_speaking_rate.html (4553.2 KB)
+      • charts/global/dynamic/phase_detection.html (4552.4 KB)
+      • charts/global/dynamic/sentiment_timeseries.html (4553.2 KB)
+      • ... and 13 more files
+
+✅ QA_ANALYSIS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/qa_analysis
+   📄 Files: 16
+   📂 Subdirectories: 6
+   📋 Key outputs:
+      • charts/global/dynamic/response_quality.html (4552.6 KB)
+      • charts/global/dynamic/qa_timeline.html (4553.4 KB)
+      • charts/global/dynamic/response_time_analysis.html (4552.6 KB)
+      • charts/global/dynamic/question_type_breakdown.html (4552.3 KB)
+      • charts/global/static/qa_timeline.evidence.json (2.6 KB)
+      • ... and 11 more files
+
+✅ PAUSES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/pauses
+   📄 Files: 13
+   📂 Subdirectories: 11
+   📋 Key outputs:
+      • charts/global/dynamic/hist/pauses_hist.html (4552.6 KB)
+      • charts/global/dynamic/timeline/pauses_timeline.html (4553.1 KB)
+      • charts/global/static/hist/pauses_hist.png (125.6 KB)
+      • charts/global/static/hist/pauses_hist.evidence.json (0.9 KB)
+      • charts/global/static/timeline/pauses_timeline.png (115.8 KB)
+      • ... and 8 more files
+
+✅ ECHOES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/echoes
+   📄 Files: 3
+   📂 Subdirectories: 4
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_echoes_summary.json (1.2 
+KB)
+      • data/global/echoes.stats.json (0.1 KB)
+      • data/global/echoes.events.json (0.0 KB)
+
+✅ POLITENESS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/politeness
+   📄 Files: 12
+   📂 Subdirectories: 19
+   📋 Key outputs:
+      • charts/speakers/Ana/dynamic/politeness/category_rates.html (4552.5 KB)
+      • charts/speakers/Ana/static/politeness/category_rates.png (162.6 KB)
+      • charts/speakers/Ana/static/politeness/category_rates.evidence.json (0.7 
+KB)
+      • charts/speakers/Filka/dynamic/politeness/category_rates.html (4552.5 KB)
+      • charts/speakers/Filka/static/politeness/category_rates.png (154.5 KB)
+      • ... and 7 more files
+
+✅ MOMENTUM
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/momentum
+   📄 Files: 8
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/timeseries/momentum.html (4554.0 KB)
+      • charts/global/static/timeseries/momentum.evidence.json (3.1 KB)
+      • charts/global/static/timeseries/momentum.png (160.8 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_momentum_summary.json 
+(1.3 KB)
+      • data/global/stall_zones.csv (0.2 KB)
+      • ... and 3 more files
+
+✅ TOPIC_SHIFT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/topic_shift
+   📄 Files: 15
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • .topic_shift_enrichment/ACTIVE.json (0.3 KB)
+      • .topic_shift_enrichment/generations/20260807T214212_ae7570f9/COMMIT.json
+(0.5 KB)
+      • 
+.topic_shift_enrichment/generations/20260807T214212_ae7570f9/topic_shift.enrichm
+ent.json (2.9 KB)
+      • .topic_shift_generations/artifact_index.json (0.4 KB)
+      • 
+.topic_shift_generations/generations/154fe7c1b130476aa74765f842d554c7/topic_shif
+t.spans.json (6.6 KB)
+      • ... and 10 more files
+
+✅ MOMENTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/moments
+   📄 Files: 8
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/timeline/moments_timeline.html (4552.9 KB)
+      • charts/global/static/timeline/moments_timeline.evidence.json (1.1 KB)
+      • charts/global/static/timeline/moments_timeline.png (82.3 KB)
+      • data/global/moments.moments.json (19.3 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_moments_summary.json (1.1
+KB)
+      • ... and 3 more files
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_highlights.json (27.9 KB)
+
+✅ SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_summary.json (17.4 KB)
+
+✅ NARRATIVE_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/narrative_summary
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_narrative_summary.json 
+(1.5 KB)
+
+✅ LLM_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/llm_summary
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_llm_summary.json (1.7 KB)
+
+✅ LLM_SPEAKER_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/llm_speaker_summary
+   📄 Files: 8
+   📂 Subdirectories: 3
+   📋 Key outputs:
+      • 
+data/speakers/260615_Ana_phd_supervision_meeting_Ana_llm_speaker_summary.json 
+(1.7 KB)
+      • 
+data/speakers/260615_Ana_phd_supervision_meeting_Filka_llm_speaker_summary.json 
+(1.7 KB)
+      • 
+data/speakers/260615_Ana_phd_supervision_meeting_Federico_llm_speaker_summary.js
+on (1.8 KB)
+      • 
+data/global/260615_Ana_phd_supervision_meeting_llm_speaker_summary_index.json 
+(0.8 KB)
+
+✅ LLM_ACTION_ITEMS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/llm_action_items
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_llm_action_items.json 
+(3.1 KB)
+
+✅ LLM_CUSTOM_QA
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/llm_custom_qa
+   📄 Files: 5
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • questions_metadata.json (0.2 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_llm_custom_qa.json (1.6 
+KB)
+
+⚠️ CHART_DESCRIPTIONS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/chart_descriptions
+   📄 Files: 0
+   📂 Subdirectories: 0
+   ⚠️  Validation warnings: Module directory does not exist: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/chart_descriptions
+
+✅ INSIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557/insights
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_insights.json (10.8 KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (6.2 KB)
+   • report.md (0.4 KB)
+   • run_results.json (7.5 KB)
+   • report.txt (0.5 KB)
+   • manifest.json (1059.3 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 788
+   • Total output size: 663.2 MB
+   • Successful modules: 42
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260807_233852_38732557
+  Executed:
+    • acts
+    • affect_tension
+    • bertopic
+    • chart_descriptions
+    • contagion
+    • contextual_emotion
+    • conversation_loops
+    • echoes
+    • emotion
+    • entity_sentiment
+    • epistemic_markers
+    • fine_grained_emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • interactions
+    • keyphrases
+    • lexical_diversity
+    • llm_action_items
+    • llm_custom_qa
+    • llm_speaker_summary
+    • llm_summary
+    • moments
+    • momentum
+    • narrative_summary
+    • ner
+    • pauses
+    • politeness
+    • qa_analysis
+    • semantic_similarity
+    • sentiment
+    • simplified_transcript
+    • stats
+    • summary
+    • temporal_dynamics
+    • tics
+    • topic_modeling
+    • topic_shift
+    • transcript_output
+    • transcript_quality
+    • understandability
+    • wordclouds
+  To explore results: open the web interface
+---
+
+2026-08-07 23:48:58,700 - transcriptx - INFO - Pipeline completed for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json - Successfully ran: acts, contextual_emotion, conversation_loops, echoes, emotion, contagion, epistemic_markers, fine_grained_emotion, interactions, lexical_diversity, llm_action_items, llm_custom_qa, llm_speaker_summary, llm_summary, ner, pauses, momentum, moments, politeness, qa_analysis, semantic_similarity, sentiment, affect_tension, entity_sentiment, simplified_transcript, stats, temporal_dynamics, tics, insight_eligibility, bertopic, highlights, keyphrases, summary, narrative_summary, topic_modeling, insights, topic_shift, transcript_output, transcript_quality, understandability, wordclouds, chart_descriptions
+END 2026-08-07 23:48:58
+WALL_SECONDS 606.3
+SUCCESS True
+ERRORS_N 0
+RUN_DIR /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260807_233852_38732557
+MODULES_N 42

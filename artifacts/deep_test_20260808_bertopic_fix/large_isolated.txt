@@ -1,0 +1,1859 @@
+START large full with isolated bertopic
+2026-08-08 12:26:19,562 - transcriptx - INFO - Starting analysis pipeline for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json with modules: acts, conversation_loops, contagion, emotion, contextual_emotion, fine_grained_emotion, entity_sentiment, affect_tension, interactions, ner, semantic_similarity, sentiment, epistemic_markers, keyphrases, stats, topic_modeling, bertopic, transcript_output, simplified_transcript, understandability, lexical_diversity, wordclouds, tics, transcript_quality, insight_eligibility, temporal_dynamics, qa_analysis, pauses, echoes, politeness, momentum, topic_shift, moments, highlights, summary, narrative_summary, llm_summary, llm_speaker_summary, llm_action_items, llm_custom_qa, chart_descriptions, insights
+2026-08-08 12:26:19,892 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: _deep_test_large_norm.json
+  Outputs:    
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644
+  Modules that will run:
+    • acts
+    • affect_tension
+    • bertopic
+    • contagion
+    • contextual_emotion
+    • conversation_loops
+    • echoes
+    • emotion
+    • entity_sentiment
+    • epistemic_markers
+    • fine_grained_emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • interactions
+    • keyphrases
+    • lexical_diversity
+    • llm_action_items
+    • llm_custom_qa
+    • llm_speaker_summary
+    • llm_summary
+    • moments
+    • momentum
+    • narrative_summary
+    • ner
+    • pauses
+    • politeness
+    • qa_analysis
+    • semantic_similarity
+    • sentiment
+    • simplified_transcript
+    • stats
+    • summary
+    • temporal_dynamics
+    • tics
+    • topic_modeling
+    • topic_shift
+    • transcript_output
+    • transcript_quality
+    • understandability
+    • wordclouds
+---
+
+2026-08-08 12:26:19,937 - transcriptx - INFO - Starting DAG pipeline for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:19,948 - transcriptx - INFO - Execution order: acts, contextual_emotion, conversation_loops, echoes, emotion, contagion, epistemic_markers, fine_grained_emotion, interactions, lexical_diversity, llm_action_items, llm_custom_qa, llm_speaker_summary, llm_summary, ner, pauses, momentum, moments, politeness, qa_analysis, semantic_similarity, sentiment, affect_tension, entity_sentiment, simplified_transcript, stats, temporal_dynamics, tics, insight_eligibility, bertopic, highlights, keyphrases, summary, narrative_summary, topic_modeling, insights, topic_shift, transcript_output, transcript_quality, understandability, wordclouds
+2026-08-08 12:26:19,948 - transcriptx - INFO - Running acts analysis
+
+────────────────────────────────────────────────────────────
+🗣️ ACTS
+────────────────────────────────────────────────────────────
+🔍 Running Dialogue Act Classification...
+2026-08-08 12:26:19,949 - transcriptx - INFO - Starting acts analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:19,952 - transcriptx - INFO - Starting acts analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:19,953 - transcriptx.core.analysis.acts.ml_classifier - INFO - PyTorch version: 2.2.2
+2026-08-08 12:26:19,953 - transcriptx.core.analysis.acts.ml_classifier - WARNING - PyTorch version 2.2.2 is below 2.6.0. ML models may not work properly.
+2026-08-08 12:26:19,953 - transcriptx.core.analysis.acts.ml_classifier - INFO - Transformers library available
+2026-08-08 12:26:20,762 - transcriptx.core.analysis.acts.ml_classifier - INFO - Scikit-learn available
+2026-08-08 12:26:20,762 - transcriptx.core.analysis.acts.ml_classifier - INFO - Creating ML classifier instance...
+2026-08-08 12:26:20,762 - transcriptx.core.analysis.acts.ml_classifier - INFO - Acts TF-IDF/RF scaffolding initialized (untrained); using heuristic classification
+2026-08-08 12:26:20,762 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML components available: traditional_ml
+2026-08-08 12:26:20,762 - transcriptx.core.analysis.acts.ml_classifier - INFO - ML classifier created successfully (ML available: True)
+2026-08-08 12:26:28,556 - transcriptx - INFO - Completed acts analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Dialogue Act Classification
+
+2026-08-08 12:26:28,557 - transcriptx - INFO - Completed acts analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:28,557 - transcriptx - INFO - acts completed in 8.61s
+2026-08-08 12:26:28,557 - transcriptx - INFO - Running contextual_emotion analysis
+
+────────────────────────────────────────────────────────────
+⚙️ CONTEXTUAL EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Contextual emotion (broad classifier, experimental)...
+2026-08-08 12:26:28,558 - transcriptx - INFO - Starting contextual_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:28,571 - transcriptx - INFO - Starting contextual_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:31,091 - transcriptx - INFO - [CONTEXTUAL_EMOTION] scored=1007 failed=0 usable=True channel=experimental
+2026-08-08 12:26:36,056 - transcriptx - INFO - Completed contextual_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Contextual emotion (broad classifier, experimental)
+
+2026-08-08 12:26:36,057 - transcriptx - INFO - Completed contextual_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:36,057 - transcriptx - INFO - contextual_emotion completed in 7.50s
+2026-08-08 12:26:36,057 - transcriptx - INFO - Running conversation_loops analysis
+
+────────────────────────────────────────────────────────────
+🔄 CONVERSATION LOOPS
+────────────────────────────────────────────────────────────
+🔍 Running Conversation Loop Detection...
+2026-08-08 12:26:36,057 - transcriptx - INFO - Starting conversation_loops analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:36,314 - transcriptx - INFO - Starting conversation_loops analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:36,514 - transcriptx - INFO - Completed conversation_loops analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Conversation Loop Detection
+
+2026-08-08 12:26:36,516 - transcriptx - INFO - Completed conversation_loops analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:36,516 - transcriptx - INFO - conversation_loops completed in 0.46s
+2026-08-08 12:26:36,517 - transcriptx - INFO - Running echoes analysis
+
+────────────────────────────────────────────────────────────
+🔁 ECHOES
+────────────────────────────────────────────────────────────
+🔍 Running Quote/Echo/Paraphrase Detection...
+2026-08-08 12:26:36,517 - transcriptx - INFO - Starting echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:36,527 - transcriptx - INFO - Starting echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:46,796 - transcriptx - INFO - Completed echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Quote/Echo/Paraphrase Detection
+
+2026-08-08 12:26:46,796 - transcriptx - INFO - Completed echoes analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:46,796 - transcriptx - INFO - echoes completed in 10.28s
+2026-08-08 12:26:46,796 - transcriptx - INFO - Running emotion analysis
+
+────────────────────────────────────────────────────────────
+😄 EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Emotion-associated vocabulary (NRC lexicon)...
+2026-08-08 12:26:46,797 - transcriptx - INFO - Starting emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:46,797 - transcriptx - INFO - Starting emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:47,077 - transcriptx - INFO - [EMOTION] lexical v2 complete: scored=1007 skipped=0 empty=0 failed=0 usable=True cache_hit=True
+2026-08-08 12:26:49,173 - transcriptx - INFO - Completed emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Emotion-associated vocabulary (NRC lexicon)
+
+2026-08-08 12:26:49,174 - transcriptx - INFO - Completed emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:49,174 - transcriptx - INFO - emotion completed in 2.38s
+2026-08-08 12:26:49,174 - transcriptx - INFO - Running contagion analysis
+
+────────────────────────────────────────────────────────────
+🌊 CONTAGION
+────────────────────────────────────────────────────────────
+🔍 Running Emotional Contagion Detection...
+2026-08-08 12:26:49,175 - transcriptx - INFO - Starting contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:49,177 - transcriptx - INFO - Starting contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:49,650 - transcriptx - INFO - Completed contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Emotional Contagion Detection
+
+2026-08-08 12:26:49,651 - transcriptx - INFO - Completed contagion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:49,651 - transcriptx - INFO - contagion completed in 0.48s
+2026-08-08 12:26:49,652 - transcriptx - INFO - Running epistemic_markers analysis
+
+────────────────────────────────────────────────────────────
+⚙️ EPISTEMIC MARKERS
+────────────────────────────────────────────────────────────
+🔍 Running Hedging / certainty / epistemic markers...
+2026-08-08 12:26:49,653 - transcriptx - INFO - Starting epistemic_markers analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:49,655 - transcriptx - INFO - Starting epistemic_markers analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:51,184 - transcriptx - INFO - Completed epistemic_markers analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Hedging / certainty / epistemic markers
+
+2026-08-08 12:26:51,184 - transcriptx - INFO - Completed epistemic_markers analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:51,184 - transcriptx - INFO - epistemic_markers completed in 1.53s
+2026-08-08 12:26:51,184 - transcriptx - INFO - Running fine_grained_emotion analysis
+
+────────────────────────────────────────────────────────────
+⚙️ FINE GRAINED EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Fine-grained multi-label emotion (experimental)...
+2026-08-08 12:26:51,185 - transcriptx - INFO - Starting fine_grained_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:51,186 - transcriptx - INFO - Starting fine_grained_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:51,850 - transcriptx - INFO - [FINE_GRAINED_EMOTION] scored=1007 failed=0 mixed=56
+2026-08-08 12:26:57,594 - transcriptx - INFO - Completed fine_grained_emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Fine-grained multi-label emotion (experimental)
+
+2026-08-08 12:26:57,595 - transcriptx - INFO - Completed fine_grained_emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:57,595 - transcriptx - INFO - fine_grained_emotion completed in 6.41s
+2026-08-08 12:26:57,595 - transcriptx - INFO - Running interactions analysis
+
+────────────────────────────────────────────────────────────
+🤝 INTERACTIONS
+────────────────────────────────────────────────────────────
+🔍 Running Speaker Interaction Analysis...
+2026-08-08 12:26:57,595 - transcriptx - INFO - Starting interactions analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:26:57,601 - transcriptx - INFO - Starting interactions analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+🔍 Analyzing 1007 segments for interactions...
+✅ Found 255 interactions
+2026-08-08 12:27:02,260 - transcriptx - INFO - Completed interactions analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Speaker Interaction Analysis
+
+2026-08-08 12:27:02,261 - transcriptx - INFO - Completed interactions analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:27:02,261 - transcriptx - INFO - interactions completed in 4.66s
+2026-08-08 12:27:02,262 - transcriptx - INFO - Running lexical_diversity analysis
+
+────────────────────────────────────────────────────────────
+⚙️ LEXICAL DIVERSITY
+────────────────────────────────────────────────────────────
+🔍 Running Lexical diversity metrics (TTR, MTLD, hapax rate)...
+2026-08-08 12:27:02,262 - transcriptx - INFO - Starting lexical_diversity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:27:02,264 - transcriptx - INFO - Starting lexical_diversity analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:27:02,919 - transcriptx - INFO - Completed lexical_diversity analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Lexical diversity metrics (TTR, MTLD, hapax rate)
+
+2026-08-08 12:27:02,920 - transcriptx - INFO - Completed lexical_diversity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:27:02,920 - transcriptx - INFO - lexical_diversity completed in 0.66s
+2026-08-08 12:27:02,920 - transcriptx - INFO - Running llm_action_items analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM ACTION ITEMS
+────────────────────────────────────────────────────────────
+🔍 Running Extract structured action items via local LLM (model: gemma3:12b)...
+2026-08-08 12:27:02,921 - transcriptx - INFO - Starting llm_action_items analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:27:02,924 - transcriptx - INFO - Starting llm_action_items analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:27:31,245 - transcriptx - INFO - Completed llm_action_items analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Extract structured action items via local LLM
+
+2026-08-08 12:27:31,248 - transcriptx - INFO - Completed llm_action_items analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:27:31,248 - transcriptx - INFO - llm_action_items completed in 28.32s
+2026-08-08 12:27:31,248 - transcriptx - INFO - Running llm_custom_qa analysis
+
+────────────────────────────────────────────────────────────
+⚙️ LLM CUSTOM QA
+────────────────────────────────────────────────────────────
+🔍 Running Answer custom questions against the transcript via local LLM...
+2026-08-08 12:27:31,250 - transcriptx - INFO - Starting llm_custom_qa analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:27:31,251 - transcriptx - INFO - Starting llm_custom_qa analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:27:31,257 - transcriptx - INFO - Completed llm_custom_qa analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Answer custom questions against the transcript via local LLM
+
+2026-08-08 12:27:31,258 - transcriptx - INFO - Completed llm_custom_qa analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:27:31,258 - transcriptx - INFO - llm_custom_qa completed in 0.01s
+2026-08-08 12:27:31,258 - transcriptx - INFO - Running llm_speaker_summary analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM SPEAKER SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Abstractive per-speaker summaries via local LLM (model: 
+gemma3:12b)...
+2026-08-08 12:27:31,259 - transcriptx - INFO - Starting llm_speaker_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:27:31,263 - transcriptx - INFO - Starting llm_speaker_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:28:31,270 - transcriptx - INFO - llm_speaker_summary still running... 60.0s elapsed
+2026-08-08 12:28:37,638 - transcriptx - INFO - Completed llm_speaker_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Abstractive per-speaker summaries via local LLM
+
+2026-08-08 12:28:37,640 - transcriptx - INFO - Completed llm_speaker_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:28:37,640 - transcriptx - INFO - llm_speaker_summary completed in 66.38s
+2026-08-08 12:28:37,640 - transcriptx - INFO - Running llm_summary analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ LLM SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Abstractive transcript summary via local LLM (model: gemma3:12b)...
+2026-08-08 12:28:37,641 - transcriptx - INFO - Starting llm_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:28:37,643 - transcriptx - INFO - Starting llm_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:29:11,835 - transcriptx - INFO - Completed llm_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Abstractive transcript summary via local LLM
+
+2026-08-08 12:29:11,836 - transcriptx - INFO - Completed llm_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:29:11,836 - transcriptx - INFO - llm_summary completed in 34.19s
+2026-08-08 12:29:11,836 - transcriptx - INFO - Running ner analysis
+
+────────────────────────────────────────────────────────────
+🏷️ NER
+────────────────────────────────────────────────────────────
+🔍 Running Named Entity Recognition...
+2026-08-08 12:29:11,838 - transcriptx - INFO - Starting ner analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:29:15,041 - transcriptx - INFO - Starting ner analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+Processing 1007 segments for NER analysis...
+Processing batch 1/11 (100 segments)
+Processing batch 2/11 (100 segments)
+Processing batch 3/11 (100 segments)
+Processing batch 4/11 (100 segments)
+Processing batch 5/11 (100 segments)
+Processing batch 6/11 (100 segments)
+Processing batch 7/11 (100 segments)
+Processing batch 8/11 (100 segments)
+Processing batch 9/11 (100 segments)
+Processing batch 10/11 (100 segments)
+Processing batch 11/11 (7 segments)
+NER processing complete.
+2026-08-08 12:30:11,848 - transcriptx - INFO - ner still running... 60.0s elapsed
+2026-08-08 12:30:20,855 - transcriptx - INFO - Completed ner analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Named Entity Recognition
+
+2026-08-08 12:30:20,858 - transcriptx - INFO - Completed ner analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:20,858 - transcriptx - INFO - ner completed in 69.02s
+2026-08-08 12:30:20,858 - transcriptx - INFO - Running pauses analysis
+
+────────────────────────────────────────────────────────────
+⏸️ PAUSES
+────────────────────────────────────────────────────────────
+🔍 Running Silence and Timing Analysis...
+2026-08-08 12:30:20,859 - transcriptx - INFO - Starting pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:20,861 - transcriptx - INFO - Starting pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:21,703 - transcriptx - INFO - Completed pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Silence and Timing Analysis
+
+2026-08-08 12:30:21,704 - transcriptx - INFO - Completed pauses analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:21,704 - transcriptx - INFO - pauses completed in 0.84s
+2026-08-08 12:30:21,704 - transcriptx - INFO - Running momentum analysis
+
+────────────────────────────────────────────────────────────
+🚀 MOMENTUM
+────────────────────────────────────────────────────────────
+🔍 Running Stall/Flow Index Analysis...
+2026-08-08 12:30:21,705 - transcriptx - INFO - Starting momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:21,706 - transcriptx - INFO - Starting momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:22,005 - transcriptx - INFO - Completed momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Stall/Flow Index Analysis
+
+2026-08-08 12:30:22,006 - transcriptx - INFO - Completed momentum analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:22,006 - transcriptx - INFO - momentum completed in 0.30s
+2026-08-08 12:30:22,006 - transcriptx - INFO - Running moments analysis
+
+────────────────────────────────────────────────────────────
+⭐ MOMENTS
+────────────────────────────────────────────────────────────
+🔍 Running Ranked Moments Worth Revisiting...
+2026-08-08 12:30:22,007 - transcriptx - INFO - Starting moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:22,008 - transcriptx - INFO - Starting moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:22,306 - transcriptx - INFO - Completed moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Ranked Moments Worth Revisiting
+
+2026-08-08 12:30:22,307 - transcriptx - INFO - Completed moments analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:22,307 - transcriptx - INFO - moments completed in 0.30s
+2026-08-08 12:30:22,308 - transcriptx - INFO - Running politeness analysis
+
+────────────────────────────────────────────────────────────
+⚙️ POLITENESS
+────────────────────────────────────────────────────────────
+🔍 Running Politeness / formality / directiveness markers...
+2026-08-08 12:30:22,309 - transcriptx - INFO - Starting politeness analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:22,310 - transcriptx - INFO - Starting politeness analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:23,957 - transcriptx - INFO - Completed politeness analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Politeness / formality / directiveness markers
+
+2026-08-08 12:30:23,958 - transcriptx - INFO - Completed politeness analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:23,958 - transcriptx - INFO - politeness completed in 1.65s
+2026-08-08 12:30:23,958 - transcriptx - INFO - Running qa_analysis analysis
+
+────────────────────────────────────────────────────────────
+❓ QA ANALYSIS
+────────────────────────────────────────────────────────────
+🔍 Running Question-Answer Pairing and Response Quality...
+2026-08-08 12:30:23,958 - transcriptx - INFO - Starting qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:23,960 - transcriptx - INFO - Starting qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:24,973 - transcriptx - INFO - Completed qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Question-Answer Pairing and Response Quality
+
+2026-08-08 12:30:24,974 - transcriptx - INFO - Completed qa_analysis analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:24,974 - transcriptx - INFO - qa_analysis completed in 1.02s
+2026-08-08 12:30:24,974 - transcriptx - INFO - Running semantic_similarity analysis
+
+────────────────────────────────────────────────────────────
+🔗 SEMANTIC SIMILARITY
+────────────────────────────────────────────────────────────
+🔍 Running Semantic similarity (batched embeddings, vectorized similarity)...
+2026-08-08 12:30:24,975 - transcriptx - INFO - Starting semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:25,039 - transcriptx - INFO - Starting semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:26,009 - transcriptx - INFO - [SEMANTIC] Loaded semantic model: sentence-transformers/all-mpnet-base-v2
+2026-08-08 12:30:43,199 - transcriptx - INFO - [SEMANTIC] Created 6 v2 visualizations
+2026-08-08 12:30:43,200 - transcriptx - INFO - Completed semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Semantic similarity (batched embeddings, vectorized similarity)
+
+2026-08-08 12:30:43,201 - transcriptx - INFO - Completed semantic_similarity analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:30:43,201 - transcriptx - INFO - semantic_similarity completed in 18.22s
+2026-08-08 12:30:43,201 - transcriptx - INFO - Running sentiment analysis
+
+────────────────────────────────────────────────────────────
+😊 SENTIMENT
+────────────────────────────────────────────────────────────
+🔍 Running Sentiment Analysis...
+2026-08-08 12:30:43,201 - transcriptx - INFO - Starting sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+Some weights of the model checkpoint at /Users/89298/.cache/huggingface/hub/models--cardiffnlp--twitter-roberta-base-sentiment-latest/snapshots/3216a57f2a0d9c45a2e6c20157c20c49fb4bf9c7 were not used when initializing RobertaForSequenceClassification: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+- This IS expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+Device set to use mps:0
+2026-08-08 12:30:44,374 - transcriptx - INFO - [SENTIMENT] Transformers sentiment model loaded successfully
+2026-08-08 12:30:44,374 - transcriptx - INFO - Starting sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:06,629 - transcriptx - INFO - Completed sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Sentiment Analysis
+
+2026-08-08 12:31:06,635 - transcriptx - INFO - Completed sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:06,635 - transcriptx - INFO - sentiment completed in 23.43s
+2026-08-08 12:31:06,635 - transcriptx - INFO - Running affect_tension analysis
+
+────────────────────────────────────────────────────────────
+⚙️ AFFECT TENSION
+────────────────────────────────────────────────────────────
+🔍 Running Emotion + Sentiment mismatch and tension indices...
+2026-08-08 12:31:06,635 - transcriptx - INFO - Starting affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:06,637 - transcriptx - INFO - Starting affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:11,446 - transcriptx - INFO - Completed affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Emotion + Sentiment mismatch and tension indices
+
+2026-08-08 12:31:11,447 - transcriptx - INFO - Completed affect_tension analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:11,447 - transcriptx - INFO - affect_tension completed in 4.81s
+2026-08-08 12:31:11,447 - transcriptx - INFO - Running entity_sentiment analysis
+
+────────────────────────────────────────────────────────────
+💭 ENTITY SENTIMENT
+────────────────────────────────────────────────────────────
+🔍 Running Entity-based Sentiment Analysis...
+2026-08-08 12:31:11,448 - transcriptx - INFO - Starting entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:11,449 - transcriptx - INFO - Starting entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:16,304 - transcriptx - INFO - Completed entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Entity-based Sentiment Analysis
+
+2026-08-08 12:31:16,306 - transcriptx - INFO - Completed entity_sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:16,306 - transcriptx - INFO - entity_sentiment completed in 4.86s
+2026-08-08 12:31:16,306 - transcriptx - INFO - Running simplified_transcript analysis
+
+────────────────────────────────────────────────────────────
+⚙️ SIMPLIFIED TRANSCRIPT
+────────────────────────────────────────────────────────────
+🔍 Running Simplified transcript (tics, agreements, repetitions removed)...
+2026-08-08 12:31:16,307 - transcriptx - INFO - Starting simplified_transcript analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:16,309 - transcriptx - INFO - Starting simplified_transcript analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:16,337 - transcriptx - INFO - Completed simplified_transcript analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Simplified transcript (tics, agreements, repetitions removed)
+
+2026-08-08 12:31:16,338 - transcriptx - INFO - Completed simplified_transcript analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:16,338 - transcriptx - INFO - simplified_transcript completed in 0.03s
+2026-08-08 12:31:16,338 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+📊 STATS
+────────────────────────────────────────────────────────────
+🔍 Running Statistical Analysis...
+2026-08-08 12:31:16,339 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:16,344 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:16,566 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Statistical Analysis
+
+2026-08-08 12:31:16,566 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:16,567 - transcriptx - INFO - stats completed in 0.23s
+2026-08-08 12:31:16,567 - transcriptx - INFO - Running temporal_dynamics analysis
+
+────────────────────────────────────────────────────────────
+⏱️ TEMPORAL DYNAMICS
+────────────────────────────────────────────────────────────
+🔍 Running Temporal Dynamics Analysis...
+2026-08-08 12:31:16,567 - transcriptx - INFO - Starting temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:16,569 - transcriptx - INFO - Starting temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:17,880 - transcriptx - INFO - Completed temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Temporal Dynamics Analysis
+
+2026-08-08 12:31:17,881 - transcriptx - INFO - Completed temporal_dynamics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:17,881 - transcriptx - INFO - temporal_dynamics completed in 1.31s
+2026-08-08 12:31:17,881 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+✔️ TICS
+────────────────────────────────────────────────────────────
+🔍 Running Verbal Tics Analysis...
+2026-08-08 12:31:17,882 - transcriptx - INFO - Starting tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:17,882 - transcriptx - INFO - Starting tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:19,581 - transcriptx - INFO - Completed tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Verbal Tics Analysis
+
+2026-08-08 12:31:19,582 - transcriptx - INFO - Completed tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:19,582 - transcriptx - INFO - tics completed in 1.70s
+2026-08-08 12:31:19,582 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+🔍 Running Shared content-vs-style insight eligibility pipeline...
+2026-08-08 12:31:19,583 - transcriptx - INFO - Starting insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:19,591 - transcriptx - INFO - Starting insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:28,060 - transcriptx - INFO - Completed insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-08 12:31:28,061 - transcriptx - INFO - Completed insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:28,061 - transcriptx - INFO - insight_eligibility completed in 8.48s
+2026-08-08 12:31:28,061 - transcriptx - INFO - Running bertopic analysis
+
+────────────────────────────────────────────────────────────
+⚙️ BERTOPIC
+────────────────────────────────────────────────────────────
+🔍 Running BERTopic topic modeling (optional / stack — see 
+docs/dev/bertopic_optional_module.md)...
+2026-08-08 12:31:28,062 - transcriptx - INFO - Starting bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:31:28,068 - transcriptx - INFO - Starting bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:05,488 - transcriptx - INFO - Completed bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed BERTopic topic modeling (optional / stack — see 
+docs/dev/bertopic_optional_module.md)
+
+2026-08-08 12:32:05,490 - transcriptx - INFO - Completed bertopic analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:05,490 - transcriptx - INFO - bertopic completed in 37.43s
+2026-08-08 12:32:05,491 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ HIGHLIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Highlights and conflict moments (quote-forward)...
+2026-08-08 12:32:05,491 - transcriptx - INFO - Starting highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:05,499 - transcriptx - INFO - Starting highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:10,353 - transcriptx - INFO - Completed highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-08 12:32:10,354 - transcriptx - INFO - Completed highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:10,354 - transcriptx - INFO - highlights completed in 4.86s
+2026-08-08 12:32:10,354 - transcriptx - INFO - Running keyphrases analysis
+
+────────────────────────────────────────────────────────────
+⚙️ KEYPHRASES
+────────────────────────────────────────────────────────────
+🔍 Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
+2026-08-08 12:32:10,355 - transcriptx - INFO - Starting keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:10,370 - transcriptx - INFO - Starting keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:12,338 - transcriptx - INFO - Completed keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
+
+2026-08-08 12:32:12,339 - transcriptx - INFO - Completed keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:12,339 - transcriptx - INFO - keyphrases completed in 1.98s
+2026-08-08 12:32:12,339 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+⚙️ SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Executive brief summary derived from highlights...
+2026-08-08 12:32:12,340 - transcriptx - INFO - Starting summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:12,342 - transcriptx - INFO - Starting summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:36,096 - transcriptx - INFO - Saved all-charts PDF to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_122619_84779644/summary/all_charts.pdf (22 modules, 194 charts)
+2026-08-08 12:32:36,096 - transcriptx - INFO - Completed summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Executive brief summary derived from highlights
+
+2026-08-08 12:32:36,097 - transcriptx - INFO - Completed summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:36,097 - transcriptx - INFO - summary completed in 23.76s
+2026-08-08 12:32:36,097 - transcriptx - INFO - Running narrative_summary analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ NARRATIVE SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Grounded executive narrative from deterministic summary (LLM) (model:
+gemma3:12b)...
+2026-08-08 12:32:36,098 - transcriptx - INFO - Starting narrative_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:36,105 - transcriptx - INFO - Starting narrative_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:49,814 - transcriptx - INFO - Completed narrative_summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Grounded executive narrative from deterministic summary (LLM)
+
+2026-08-08 12:32:49,815 - transcriptx - INFO - Completed narrative_summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:49,815 - transcriptx - INFO - narrative_summary completed in 13.72s
+2026-08-08 12:32:49,815 - transcriptx - INFO - Running topic_modeling analysis
+
+────────────────────────────────────────────────────────────
+💡 TOPIC MODELING
+────────────────────────────────────────────────────────────
+🔍 Running Topic Modeling...
+2026-08-08 12:32:49,816 - transcriptx - INFO - Starting topic_modeling analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:32:49,816 - transcriptx - INFO - Starting topic_modeling analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+[TOPICS] Finding optimal k for LDA...
+[TOPICS] Optimal k for LDA: 8
+[TOPICS] Diagnostic scores: Likelihood=-12320.949, Coherence=0.617, Silhouette=0.821
+[TOPICS] Finding optimal k for NMF...
+[TOPICS] Optimal k for NMF: 15
+[TOPICS] Diagnostic scores: Likelihood=-0.001, Coherence=5.191, Silhouette=0.411
+[TOPICS] Created LDA diagnostic plots
+[TOPICS] Created NMF diagnostic plots
+[TOPICS] Created discourse analysis charts
+[DEBUG] create_topic_evolution_timeline: received 457 doc topics
+[DEBUG] DataFrame head:
+                                                text  ... confidence
+0  thank can compare other can compare other can ...  ...   0.791693
+1  can compare other can compare other can compar...  ...   0.902778
+2  can compare other can compare other top hill d...  ...   0.732123
+3        top hill did go was good was good are ready  ...   0.589228
+4  was good was good are ready going forget prepa...  ...   0.550243
+
+[5 rows x 6 columns]
+[TOPICS] Created topic evolution timeline: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_122619_84779644/topic_modeling/charts/global/static/timeline/topic_evolution_timeline.png
+[DEBUG] create_speaker_topic_engagement_heatmap: received 457 doc topics
+[DEBUG] DataFrame head:
+                                                text  ... confidence
+0  thank can compare other can compare other can ...  ...   0.791693
+1  can compare other can compare other can compar...  ...   0.902778
+2  can compare other can compare other top hill d...  ...   0.732123
+3        top hill did go was good was good are ready  ...   0.589228
+4  was good was good are ready going forget prepa...  ...   0.550243
+
+[5 rows x 6 columns]
+[DEBUG] speaker-topic engagement heatmap: contributors=457, matrix_sum=457.000000
+[TOPICS] Created speaker-topic engagement heatmap: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_122619_84779644/topic_modeling/charts/global/static/heatmap/speaker_topic_engagement_heatmap.png
+[DEBUG] create_expected_topic_proportions_bar: received 457 doc topics
+[DEBUG] DataFrame head:
+                                                text  ... confidence
+0  thank can compare other can compare other can ...  ...   0.791693
+1  can compare other can compare other can compar...  ...   0.902778
+2  can compare other can compare other top hill d...  ...   0.732123
+3        top hill did go was good was good are ready  ...   0.589228
+4  was good was good are ready going forget prepa...  ...   0.550243
+
+[5 rows x 6 columns]
+[TOPICS] Created expected topic proportions bar chart: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_122619_84779644/topic_modeling/charts/global/static/bar/expected_topic_proportions.png
+[TOPICS] Enhanced HTML report created: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_122619_84779644/topic_modeling/_deep_test_large_norm_enhanced_topic_modeling_report.html
+2026-08-08 12:33:32,158 - transcriptx - INFO - Completed topic_modeling analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Topic Modeling
+
+2026-08-08 12:33:32,159 - transcriptx - INFO - Completed topic_modeling analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:32,159 - transcriptx - INFO - topic_modeling completed in 42.34s
+2026-08-08 12:33:32,159 - transcriptx - INFO - Running insights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Content-first insights layer separated from style markers...
+2026-08-08 12:33:32,160 - transcriptx - INFO - Starting insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:32,162 - transcriptx - INFO - Starting insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:32,166 - transcriptx - INFO - Completed insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Content-first insights layer separated from style markers
+
+2026-08-08 12:33:32,167 - transcriptx - INFO - Completed insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:32,167 - transcriptx - INFO - insights completed in 0.01s
+2026-08-08 12:33:32,167 - transcriptx - INFO - Running topic_shift analysis (model=gemma3:12b)
+
+────────────────────────────────────────────────────────────
+⚙️ TOPIC SHIFT
+────────────────────────────────────────────────────────────
+🔍 Running Topic-shift chapter segmentation (model: gemma3:12b)...
+2026-08-08 12:33:32,168 - transcriptx - INFO - Starting topic_shift analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:32,188 - transcriptx - INFO - Starting topic_shift analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:55,744 - transcriptx - INFO - Completed topic_shift analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Topic-shift chapter segmentation
+
+2026-08-08 12:33:55,745 - transcriptx - INFO - Completed topic_shift analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:55,745 - transcriptx - INFO - topic_shift completed in 23.58s
+2026-08-08 12:33:55,745 - transcriptx - INFO - Running transcript_output analysis
+
+────────────────────────────────────────────────────────────
+📃 TRANSCRIPT OUTPUT
+────────────────────────────────────────────────────────────
+🔍 Running Generate human readable transcripts...
+2026-08-08 12:33:55,746 - transcriptx - INFO - Starting transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:55,747 - transcriptx - INFO - Starting transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:55,751 - transcriptx - INFO - Generating human-friendly transcript for _deep_test_large_norm
+2026-08-08 12:33:55,778 - transcriptx - INFO - Human-friendly transcript generated successfully: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_122619_84779644/transcripts/_deep_test_large_norm-transcript.txt
+✅ Generated human-friendly transcript
+
+2026-08-08 12:33:55,778 - transcriptx - INFO - Completed transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Generate human readable transcripts
+
+2026-08-08 12:33:55,779 - transcriptx - INFO - Completed transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:55,779 - transcriptx - INFO - transcript_output completed in 0.03s
+2026-08-08 12:33:55,779 - transcriptx - INFO - Running transcript_quality analysis
+
+────────────────────────────────────────────────────────────
+⚙️ TRANSCRIPT QUALITY
+────────────────────────────────────────────────────────────
+🔍 Running ASR Confidence...
+2026-08-08 12:33:55,780 - transcriptx - INFO - Starting transcript_quality analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:55,784 - transcriptx - INFO - Starting transcript_quality analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:56,572 - transcriptx - INFO - Completed transcript_quality analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed ASR Confidence
+
+2026-08-08 12:33:56,573 - transcriptx - INFO - Completed transcript_quality analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:56,573 - transcriptx - INFO - transcript_quality completed in 0.79s
+2026-08-08 12:33:56,574 - transcriptx - INFO - Running understandability analysis
+
+────────────────────────────────────────────────────────────
+📖 UNDERSTANDABILITY
+────────────────────────────────────────────────────────────
+🔍 Running Understandability Analysis...
+2026-08-08 12:33:56,575 - transcriptx - INFO - Starting understandability analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:56,590 - transcriptx - INFO - Starting understandability analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Global CSV saved to 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/understandability/data/global/_deep_test_large_norm_understandabi
+lity.csv
+
+2026-08-08 12:33:58,277 - transcriptx - INFO - Completed understandability analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Understandability Analysis
+
+2026-08-08 12:33:58,278 - transcriptx - INFO - Completed understandability analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:58,278 - transcriptx - INFO - understandability completed in 1.70s
+2026-08-08 12:33:58,278 - transcriptx - INFO - Running wordclouds analysis
+
+────────────────────────────────────────────────────────────
+💬 WORDCLOUDS
+────────────────────────────────────────────────────────────
+🔍 Running Word Cloud Generation...
+2026-08-08 12:33:58,279 - transcriptx - INFO - Starting wordclouds analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:58,279 - transcriptx - INFO - Starting wordclouds analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:33:58,286 - transcriptx - INFO - [WORDCLOUDS] Using precomputed speaker grouping from pipeline: 13 speakers: ['SPEAKER_12', 'Glen', 'Speaker 13', 'Speaker 6', 'Mariela', 'Hala', 'Vibhu', 'Speaker 12', 'Rochelle', 'Frank', 'Rana', 'Jonas', 'Speaker 11']
+✅ Word cloud saved for Glen
+
+✅ Word cloud saved for Mariela
+
+✅ Word cloud saved for Hala
+
+✅ Word cloud saved for Vibhu
+
+✅ Word cloud saved for Rochelle
+
+✅ Word cloud saved for Frank
+
+✅ Word cloud saved for Rana
+
+✅ Word cloud saved for Jonas
+
+✅ Word cloud saved for wordcloud-ALL
+
+2026-08-08 12:34:53,208 - transcriptx - INFO - [WORDCLOUDS] Completed wordcloud generation for _deep_test_large_norm
+2026-08-08 12:34:58,288 - transcriptx - INFO - wordclouds still running... 60.0s elapsed
+2026-08-08 12:34:59,144 - transcriptx - INFO - Completed wordclouds analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Word Cloud Generation
+
+2026-08-08 12:34:59,145 - transcriptx - INFO - Completed wordclouds analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-08 12:34:59,145 - transcriptx - INFO - wordclouds completed in 60.87s
+2026-08-08 12:34:59,146 - transcriptx - INFO - Pipeline completed. Ran 41 modules with 0 errors
+2026-08-08 12:34:59,529 - transcriptx - INFO - Saved run results summary to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_122619_84779644/run_results.json
+2026-08-08 12:35:03,316 - transcriptx - INFO - [CHART_DESCRIPTIONS] 1/452 viz_id=fine_grained_emotion.label_counts_excluding_neutral.speaker chart_key=0091a6cc5d8dcfbfe5075addd2141a6ce62ee34e40f5ac04ab5cd4fe00ed1789 timeout=120s
+2026-08-08 12:35:07,127 - transcriptx - INFO - [CHART_DESCRIPTIONS] 2/452 viz_id=emotion.radar.speaker chart_key=022f93e1aa085ee5075ee1c9fc282cbb93a31f856c0f35412ee070e41f9678b2 timeout=120s
+2026-08-08 12:35:10,533 - transcriptx - INFO - [CHART_DESCRIPTIONS] 3/452 viz_id=wordcloud.wordcloud.speaker.bigrams chart_key=0284697801fa500387d74ed6167acbcb142fa378f4d09b5727893b41594ca950 timeout=120s
+2026-08-08 12:35:14,873 - transcriptx - INFO - [CHART_DESCRIPTIONS] 4/452 viz_id=wordcloud.wordcloud.speaker.keyphrases_noun_chunks chart_key=032b65108500f7532bb59c2cbddefc248dbffdf45c1dd954e03ce96eafea791d timeout=120s
+2026-08-08 12:35:19,131 - transcriptx - INFO - [CHART_DESCRIPTIONS] 5/452 viz_id=sentiment.rolling_sentiment.speaker chart_key=0379e23950c75d58a705059bd6ec684206ebda6a14183bf05ed73adcbfdb0f9b timeout=120s
+2026-08-08 12:35:25,488 - transcriptx - INFO - [CHART_DESCRIPTIONS] 6/452 viz_id=affect_tension.avg_volatility.global chart_key=04365edbe3ad5e4150f43396bdc017c256cc6d961b6a05a52b3b693e14b80505 timeout=120s
+2026-08-08 12:35:29,616 - transcriptx - INFO - [CHART_DESCRIPTIONS] 7/452 viz_id=topic_modeling.topic_bar.speaker chart_key=0496b3979431e6832efcbbde9b6b083f45293a634f4f152ca283fa5d11c124b5 timeout=120s
+2026-08-08 12:35:32,996 - transcriptx - INFO - [CHART_DESCRIPTIONS] 8/452 viz_id=affect_tension.mismatch_heatmap.global chart_key=04a375ffd9582662f477c1b0f6238b630c79778de5406142519a7503c2528153 timeout=120s
+2026-08-08 12:35:37,759 - transcriptx - INFO - [CHART_DESCRIPTIONS] 9/452 viz_id=acts.acts_pie.speaker chart_key=04c6cd0fee62d68c46ab061fc8a1a9236a894c7161913dd62590e1fe18d8ed03 timeout=120s
+2026-08-08 12:35:41,471 - transcriptx - INFO - [CHART_DESCRIPTIONS] 10/452 viz_id=wordclouds.wordcloud.view.Rana chart_key=05cddc95c8da9d7d35f1ab67bc6721b5ef63d7c2264bbc0e94cdc167eef6aef7 timeout=120s
+2026-08-08 12:35:44,882 - transcriptx - INFO - [CHART_DESCRIPTIONS] 11/452 viz_id=wordcloud.wordcloud.speaker.keyphrases_noun_chunks chart_key=065201029a0ef5f5d9047ee865a2dc87708ae4b06992e2855922af0bb91addf9 timeout=120s
+2026-08-08 12:35:48,927 - transcriptx - INFO - [CHART_DESCRIPTIONS] 12/452 viz_id=wordclouds.wordcloud.speaker chart_key=06823007d713358cb71fbb531b996dbda9f451e2903bba5e895d596fbb0d8ab6 timeout=120s
+2026-08-08 12:35:53,224 - transcriptx - INFO - [CHART_DESCRIPTIONS] 13/452 viz_id=echoes.echo_heatmap.global chart_key=06cfe22aeeabde96edcbbf4e391dc30b2d39a6c59c95aa3f8f36f02b3b5874fa timeout=120s
+2026-08-08 12:35:57,771 - transcriptx - INFO - [CHART_DESCRIPTIONS] 14/452 viz_id=pauses.pauses_hist.global chart_key=0746972d3788399860795913a01d243d6eacb35f913eaded4927ca21e36007c1 timeout=120s
+2026-08-08 12:36:02,684 - transcriptx - INFO - [CHART_DESCRIPTIONS] 15/452 viz_id=topic_modeling.topic_bar.speaker chart_key=07a107903b3ea4eb09e63faf5ca58193cbecd8beb63f4e280acba3007f3d7179 timeout=120s
+2026-08-08 12:36:06,283 - transcriptx - INFO - [CHART_DESCRIPTIONS] 16/452 viz_id=contagion.contagion_matrix.global chart_key=086c17fb1e5b6a5c82974f7ea58cce3f651708e4c734d9ab0d3410209e868012 timeout=120s
+2026-08-08 12:36:10,757 - transcriptx - INFO - [CHART_DESCRIPTIONS] 17/452 viz_id=acts.acts_temporal.speaker chart_key=0954b498af59504670585440fadbba0ca228b224da71ad28d1626524e15dd422 timeout=120s
+2026-08-08 12:36:16,122 - transcriptx - INFO - [CHART_DESCRIPTIONS] 18/452 viz_id=wordcloud.wordcloud.speaker.adj chart_key=09eaf686d8bad409729998275cd405b2b371df401882a3ddc94a2d6af030a082 timeout=120s
+2026-08-08 12:36:19,436 - transcriptx - INFO - [CHART_DESCRIPTIONS] 19/452 viz_id=topic_modeling.topic_bar.speaker chart_key=09f8b9f755eed8ec786b3b9528e075d6f5635e3249f3e1f88a785648c13ee4cc timeout=120s
+2026-08-08 12:36:22,817 - transcriptx - INFO - [CHART_DESCRIPTIONS] 20/452 viz_id=contextual_emotion.label_counts_excluding_neutral.speaker chart_key=0a21de56ed7dfa48ac18e366b37d202b4d6bb6b7f6fa6cd11d5125213ace5ffe timeout=120s
+2026-08-08 12:36:25,747 - transcriptx - INFO - [CHART_DESCRIPTIONS] 21/452 viz_id=interactions.timeline.speaker chart_key=0afd97bdba182e48d54bf9e83cb0a25c9c94a5ed2889c27fb869debafeaabca3 timeout=120s
+2026-08-08 12:36:30,714 - transcriptx - INFO - [CHART_DESCRIPTIONS] 22/452 viz_id=wordcloud.wordcloud.speaker.tfidf_bigrams chart_key=0b73027d2515eea3e9074ceb717e1208bd23fc6b2ba424e836d76d370610aaf2 timeout=120s
+2026-08-08 12:36:36,909 - transcriptx - INFO - [CHART_DESCRIPTIONS] 23/452 viz_id=wordclouds.wordcloud-tics.view.Frank chart_key=0c7a0084883474b8f5506b012993bc321f35f78cc2093fd4ebb5073a72c961f2 timeout=120s
+2026-08-08 12:36:40,297 - transcriptx - INFO - [CHART_DESCRIPTIONS] 24/452 viz_id=topic_modeling.topic_bar.speaker chart_key=0cf288ad32affecae2ad5d960526658ef6daeaf68e3ac2f89957643d20feda36 timeout=120s
+2026-08-08 12:36:44,294 - transcriptx - INFO - [CHART_DESCRIPTIONS] 25/452 viz_id=topic_modeling.topic_bar.speaker chart_key=0e2fc66090d802f61ae3b6cd2d916dd44a28da4b44fc5e603e8c190857bc8435 timeout=120s
+2026-08-08 12:36:47,628 - transcriptx - INFO - [CHART_DESCRIPTIONS] 26/452 viz_id=interactions.timeline.speaker chart_key=0e405a69f0864c0e4265b6a62ccfa95bb8ee76d9c0c456fc0917d6e35798da1d timeout=120s
+2026-08-08 12:36:52,281 - transcriptx - INFO - [CHART_DESCRIPTIONS] 27/452 viz_id=topic_modeling.topic_bar.speaker chart_key=0ea855061f8f50c1f72a6665341b35065d60e5392f1dadf77f3e99ca7330dca0 timeout=120s
+2026-08-08 12:36:54,958 - transcriptx - INFO - [CHART_DESCRIPTIONS] 28/452 viz_id=wordcloud.wordcloud.speaker.bigrams chart_key=0f5bd6c85ae21e0b55e3e568f7855e06d3906945ebf863bd8947f021827ad7fb timeout=120s
+2026-08-08 12:36:59,916 - transcriptx - INFO - [CHART_DESCRIPTIONS] 29/452 viz_id=topic_modeling.topic_bar.speaker chart_key=0f90c633ba7e2aa7fc86f662ff0014d3c2d5b2db7d2d0ed66600082787a4ace6 timeout=120s
+2026-08-08 12:37:03,678 - transcriptx - INFO - [CHART_DESCRIPTIONS] 30/452 viz_id=ner.entity_types.speaker chart_key=0ffbfc0760ab6a945a056d1cf52b1593d55be6436cf4c903843cf3b944708a48 timeout=120s
+2026-08-08 12:37:07,256 - transcriptx - INFO - [CHART_DESCRIPTIONS] 31/452 viz_id=semantic_similarity.similarity_distribution.global chart_key=1121d21b93fead33043b40fe904127da141c5d27682bcc839985d044aa58e900 timeout=120s
+2026-08-08 12:37:12,137 - transcriptx - INFO - [CHART_DESCRIPTIONS] 32/452 viz_id=wordclouds.wordcloud-adj.view.Vibhu chart_key=112412f55d4f9da902f3cf9af537291d961d2e98089711d2be7942853fc4b1de timeout=120s
+2026-08-08 12:37:14,925 - transcriptx - INFO - [CHART_DESCRIPTIONS] 33/452 viz_id=wordcloud.wordcloud.speaker.tfidf_bigrams chart_key=112a9bcebe962799b28bb6c4ba06403e4c83b01285d12d794d44f8dc4ed43a27 timeout=120s
+2026-08-08 12:37:21,179 - transcriptx - INFO - [CHART_DESCRIPTIONS] 34/452 viz_id=fine_grained_emotion.label_counts_excluding_neutral.speaker chart_key=13ad55b00d8d9998a06aadd50b1dc08287354443bc44c12711f9e504dab10d01 timeout=120s
+2026-08-08 12:37:24,682 - transcriptx - INFO - [CHART_DESCRIPTIONS] 35/452 viz_id=fine_grained_emotion.label_share_non_neutral.global chart_key=13c4669eab3b336495c4ec60012e364b88435d9a1518f0db546eccd101dd01ce timeout=120s
+2026-08-08 12:37:29,493 - transcriptx - INFO - [CHART_DESCRIPTIONS] 36/452 viz_id=wordcloud.wordcloud.speaker.verb chart_key=141a96a17d7acfaa1d9014ca49da598e317affa47a206897ef73899e57f086ed timeout=120s
+2026-08-08 12:37:33,877 - transcriptx - INFO - [CHART_DESCRIPTIONS] 37/452 viz_id=temporal_dynamics.temporal_dashboard_speaking_rate.global chart_key=14aaca2feba608c9bbd281c2d01a6badbc5a1707214b9dd2e1933fd7d9443e62 timeout=120s
+2026-08-08 12:37:39,809 - transcriptx - INFO - [CHART_DESCRIPTIONS] 38/452 viz_id=semantic_similarity.classification.global chart_key=1524da3358e9e80986dde80af93b4531c6f3dfc2b75c379a9cab46a80a446e05 timeout=120s
+2026-08-08 12:37:43,245 - transcriptx - INFO - [CHART_DESCRIPTIONS] 39/452 viz_id=wordcloud.wordcloud.global.tfidf_bigrams chart_key=1658c72ebc2c5348aa801dc377df025c835a3a026464f8a226625fc4d71b53bf timeout=120s
+2026-08-08 12:37:49,225 - transcriptx - INFO - [CHART_DESCRIPTIONS] 40/452 viz_id=emotion.radar.speaker chart_key=166bdf4d96be02889d5b3bf050d24cb72a352afa9853d0df9b95045f9906e87c timeout=120s
+2026-08-08 12:37:53,130 - transcriptx - INFO - [CHART_DESCRIPTIONS] 41/452 viz_id=acts.acts_temporal.speaker chart_key=167ede15950be72bda270ce2d05a2f068ea0c1c5bc4835c56366efd5cd181651 timeout=120s
+2026-08-08 12:37:58,554 - transcriptx - INFO - [CHART_DESCRIPTIONS] 42/452 viz_id=wordclouds.wordcloud.speaker chart_key=1706bdee8b395cfb485c4b1dc329a94be65b51d08ca233e64194d7eecc0998fe timeout=120s
+2026-08-08 12:38:02,903 - transcriptx - INFO - [CHART_DESCRIPTIONS] 43/452 viz_id=wordclouds.wordcloud-bigrams.view.Rochelle chart_key=170e4caae8d062e2532744105bb337562c71726158b94e9f77e52019e0b2bf75 timeout=120s
+2026-08-08 12:38:05,693 - transcriptx - INFO - [CHART_DESCRIPTIONS] 44/452 viz_id=affect_tension.entropy_volatility_timeseries.speaker chart_key=173710434803bc1e710c5179f8b39ed57f56edaf3dc622e6987886c0f2a256b3 timeout=120s
+2026-08-08 12:38:15,604 - transcriptx - INFO - [CHART_DESCRIPTIONS] 45/452 viz_id=wordcloud.wordcloud.speaker.tics chart_key=17b760668a84a7e2882343d1a8abe5f0fe2c2b7c0f04191a3fa9a69222c4410e timeout=120s
+2026-08-08 12:38:19,955 - transcriptx - INFO - [CHART_DESCRIPTIONS] 46/452 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks.view.Jonas chart_key=17cb0aab42c43bdfee7a14db4c20cd7fb9f6145b885fa2445d75c512a6d57496 timeout=120s
+2026-08-08 12:38:23,586 - transcriptx - INFO - [CHART_DESCRIPTIONS] 47/452 viz_id=politeness.category_rates.speaker chart_key=185c9931c675c8fc3ea449f5d353f1aa17eb7978b44bc9be6fc0bc4c013c40c6 timeout=120s
+2026-08-08 12:38:27,904 - transcriptx - INFO - [CHART_DESCRIPTIONS] 48/452 viz_id=wordcloud.wordcloud.speaker.verb chart_key=1881d43e47a7a8553bc3c1ba68dbe0916d38eebd145d19fc33adb5eb27f0ce23 timeout=120s
+2026-08-08 12:38:31,939 - transcriptx - INFO - [CHART_DESCRIPTIONS] 49/452 viz_id=wordcloud.wordcloud.speaker.bigrams chart_key=18bdebd4354c6ed1ba1201384797a10366e8c6afcb1adb2a1145e1d696340891 timeout=120s
+2026-08-08 12:38:37,702 - transcriptx - INFO - [CHART_DESCRIPTIONS] 50/452 viz_id=fine_grained_emotion.label_counts.speaker chart_key=18d646b03a338d93fc123d9719ee99762e8e115b7c3a5a1d55db05cd36545e20 timeout=120s
+2026-08-08 12:38:41,061 - transcriptx - INFO - [CHART_DESCRIPTIONS] 51/452 viz_id=wordclouds.wordcloud-tics.view.Rochelle chart_key=196aff832896cf8c042b4b82cddb3613779fe86be7f9f9d3bf761593e800b9b1 timeout=120s
+2026-08-08 12:38:44,409 - transcriptx - INFO - [CHART_DESCRIPTIONS] 52/452 viz_id=wordclouds.wordcloud.speaker chart_key=19e84579f24f103985a9487b9f77f89e080c385633c75b076206887d669b5966 timeout=120s
+2026-08-08 12:38:49,184 - transcriptx - INFO - [CHART_DESCRIPTIONS] 53/452 viz_id=wordcloud.wordcloud.speaker.keyphrases_noun_chunks chart_key=1a2f677d7b65bc1bf46c8b66e15db64b1b361719a539e89249fb68d8f1094028 timeout=120s
+2026-08-08 12:38:52,826 - transcriptx - INFO - [CHART_DESCRIPTIONS] 54/452 viz_id=wordclouds.wordcloud-adj.view.Hala chart_key=1a4448aa9a4a1e7761b32794ecde0ffd0d05d0d0e76a168f7e6893d6777aede7 timeout=120s
+2026-08-08 12:38:56,003 - transcriptx - INFO - [CHART_DESCRIPTIONS] 55/452 viz_id=contextual_emotion.label_counts.speaker chart_key=1a4d6ea0f57555028addeb3bfb8c3df2e018f7c6d92f785b7de268a3aef139eb timeout=120s
+2026-08-08 12:38:58,984 - transcriptx - INFO - [CHART_DESCRIPTIONS] 56/452 viz_id=semantic_similarity.speaker_repetition_frequency.global chart_key=1a631d1b86e3d7db926fdfb2beec4112c6f1bc353b4455892c930ed0625c924d timeout=120s
+2026-08-08 12:39:03,032 - transcriptx - INFO - [CHART_DESCRIPTIONS] 57/452 viz_id=epistemic_markers.category_rates.speaker chart_key=1cb21b80b1f15ced481f960dccf964202b31fa11ad47b3c8c976086ae5edd49b timeout=120s
+2026-08-08 12:39:08,123 - transcriptx - INFO - [CHART_DESCRIPTIONS] 58/452 viz_id=topic_modeling.topic_bar.speaker chart_key=1d0cea21a01f006742a86e62448e5ade6e11c5603074030e3734987eb780d14e timeout=120s
+2026-08-08 12:39:11,261 - transcriptx - INFO - [CHART_DESCRIPTIONS] 59/452 viz_id=topic_modeling.topic_bar.speaker chart_key=1e1e188aff73d120db7529a2fcef64bd1c1ae261ed7be2d5303d81f82347d97b timeout=120s
+2026-08-08 12:39:14,358 - transcriptx - INFO - [CHART_DESCRIPTIONS] 60/452 viz_id=topic_modeling.topic_bar.speaker chart_key=1e42bf8bec41406e903319ce1cde59fc08bf17c0c485f2886b274ebe35b00fa5 timeout=120s
+2026-08-08 12:39:17,602 - transcriptx - INFO - [CHART_DESCRIPTIONS] 61/452 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks.view.Frank chart_key=1ed331ae9ee773ecfcac29ed291c5ef875add623882068d2176b291dd983e40b timeout=120s
+2026-08-08 12:39:20,783 - transcriptx - INFO - [CHART_DESCRIPTIONS] 62/452 viz_id=wordclouds.tfidf-bigrams.view.Mariela chart_key=1f83802f8a3f5d64a0bd287bc9f7ba3c3f6502b68d7923c3f885060f4d583d9c timeout=120s
+2026-08-08 12:39:23,704 - transcriptx - INFO - [CHART_DESCRIPTIONS] 63/452 viz_id=fine_grained_emotion.label_share_non_neutral.speaker chart_key=20b3db897544eb3c23344fe4d4fc380fb66f952909953fbd8446657d0db4150b timeout=120s
+2026-08-08 12:39:28,318 - transcriptx - INFO - [CHART_DESCRIPTIONS] 64/452 viz_id=fine_grained_emotion.label_share_non_neutral.speaker chart_key=214d4f24ac7b9ae2e7026f126787ec2fa5daa009b7811c34c80757b2f822f238 timeout=120s
+2026-08-08 12:39:31,983 - transcriptx - INFO - [CHART_DESCRIPTIONS] 65/452 viz_id=affect_tension.derived_polite_tension.global chart_key=216737ba2f322609c5ce510a27aed7ec1fdc098382f13aab76ebb87119fbac9d timeout=120s
+2026-08-08 12:39:36,546 - transcriptx - INFO - [CHART_DESCRIPTIONS] 66/452 viz_id=wordclouds.wordcloud-bigrams-ALL.global chart_key=2193764f57248c191c486878347e0343d2afa2bf9194f3ccf518a118bab650a5 timeout=120s
+2026-08-08 12:39:41,480 - transcriptx - INFO - [CHART_DESCRIPTIONS] 67/452 viz_id=topic_modeling.topic_bar.speaker chart_key=21d08e888f72b0f268a615a96983b97b7604f5497d55847158bc2bc0c6f9f611 timeout=120s
+2026-08-08 12:39:45,298 - transcriptx - INFO - [CHART_DESCRIPTIONS] 68/452 viz_id=wordcloud.wordcloud.speaker.noun chart_key=2236e2f36e73e2e351e5ca5d1a2276f96589dec879dfc5ca81286693b191e5f2 timeout=120s
+2026-08-08 12:39:49,637 - transcriptx - INFO - [CHART_DESCRIPTIONS] 69/452 viz_id=wordcloud.wordcloud.speaker.keyphrases_noun_chunks chart_key=22440e5ea99bf5f3118bb77d9dcfc31c9f142cc6e438f9303d5dd516fbf27860 timeout=120s
+2026-08-08 12:39:54,751 - transcriptx - INFO - [CHART_DESCRIPTIONS] 70/452 viz_id=wordcloud.wordcloud.speaker.verb chart_key=229d897b94a9c1a830758e05f7f461683040aeae547fa37b8bb764658196c216 timeout=120s
+2026-08-08 12:39:58,765 - transcriptx - INFO - [CHART_DESCRIPTIONS] 71/452 viz_id=ner.entity_types.global chart_key=22e1f79b6eb8d48f5d0f9254c1f9186f1b74c760384d9f43dc6ad71a60fd60b2 timeout=120s
+2026-08-08 12:40:02,350 - transcriptx - INFO - [CHART_DESCRIPTIONS] 72/452 viz_id=topic_modeling.topic_bar.speaker chart_key=233070ad16f1e4ee3faf56d8225a54a08487349adcdff367a7a8b624cd1f9129 timeout=120s
+2026-08-08 12:40:07,196 - transcriptx - INFO - [CHART_DESCRIPTIONS] 73/452 viz_id=topic_modeling.topic_bar.speaker chart_key=233cf7547538c0f9e13e184a1f4495e1ec0262b7629ac69aac4f696ab900a6e2 timeout=120s
+2026-08-08 12:40:11,643 - transcriptx - INFO - [CHART_DESCRIPTIONS] 74/452 viz_id=acts.acts_bar.speaker chart_key=248efc87b0c260c7081bac18e1671613a9ba36fb6ad4bb6537d7d0ba2d5d287f timeout=120s
+2026-08-08 12:40:15,677 - transcriptx - INFO - [CHART_DESCRIPTIONS] 75/452 viz_id=wordclouds.tfidf-bigrams.view.Jonas chart_key=24fb3c7f5d1256d75bf009de2344302f95ad7542f20bb77788e8211b1a1e35de timeout=120s
+2026-08-08 12:40:18,428 - transcriptx - INFO - [CHART_DESCRIPTIONS] 76/452 viz_id=fine_grained_emotion.label_share_non_neutral.speaker chart_key=272babf100c2a5fac3d327e8ecd20e2e0347663d914b2639ab1e11457853a16e timeout=120s
+2026-08-08 12:40:23,105 - transcriptx - INFO - [CHART_DESCRIPTIONS] 77/452 viz_id=wordcloud.wordcloud.speaker.tics chart_key=2798280e920f14164ba185708cf91fe991aadb5ec67c3f1ffffb7b56af4be5bd timeout=120s
+2026-08-08 12:40:26,327 - transcriptx - INFO - [CHART_DESCRIPTIONS] 78/452 viz_id=topic_modeling.topic_bar.speaker chart_key=27a6c3bb5e50e5df6980964e389b32f75446d20c23a10d20ca19f2fa5f05ef53 timeout=120s
+2026-08-08 12:40:29,589 - transcriptx - INFO - [CHART_DESCRIPTIONS] 79/452 viz_id=emotion.radar.global chart_key=2a1d764a2c226c1afa0beb5cf9768ca1ce1f1c618751aa4eb9f111b8f3b7c409 timeout=120s
+2026-08-08 12:40:33,396 - transcriptx - INFO - [CHART_DESCRIPTIONS] 80/452 viz_id=wordclouds.tfidf-bigrams.view.Rochelle chart_key=2a75774e7b1fee0291ea62ab3e6e83991faa847fcecd67ed00bba04f9f33d62c timeout=120s
+2026-08-08 12:40:37,093 - transcriptx - INFO - [CHART_DESCRIPTIONS] 81/452 viz_id=acts.acts_bar.speaker chart_key=2be3548c574aa8baf08f47764a733544e304ace0d30b71933942e1de5d4bb0c4 timeout=120s
+2026-08-08 12:40:40,280 - transcriptx - INFO - [CHART_DESCRIPTIONS] 82/452 viz_id=sentiment.rolling_sentiment.speaker chart_key=2c48c2847d86dac208a9d49d6dd7ad79199bc44b796c048482918a804203933e timeout=120s
+2026-08-08 12:40:48,036 - transcriptx - INFO - [CHART_DESCRIPTIONS] 83/452 viz_id=fine_grained_emotion.label_counts.speaker chart_key=2d0ec20f4912b896588b2761c3a1f146392b7b97b15948db5899b028c41d6bfb timeout=120s
+2026-08-08 12:40:51,754 - transcriptx - INFO - [CHART_DESCRIPTIONS] 84/452 viz_id=topic_modeling.topic_bar.speaker chart_key=2d3e833dbc7e9a93a31b8c879a6871d663f51f02a915a69639abb1b89f7cdb14 timeout=120s
+2026-08-08 12:40:54,494 - transcriptx - INFO - [CHART_DESCRIPTIONS] 85/452 viz_id=affect_tension.entropy_volatility_timeseries.speaker chart_key=2db70aef1efc809f0c5129201e04abb5847bca642fb4f354ba9ee234d9304e9a timeout=120s
+2026-08-08 12:41:04,275 - transcriptx - INFO - [CHART_DESCRIPTIONS] 86/452 viz_id=topic_modeling.topic_bar.speaker chart_key=2dd3cc2cd53df1b97fe3ce67a441d6f62264016280826646efe97fb8cfdacf3e timeout=120s
+2026-08-08 12:41:07,489 - transcriptx - INFO - [CHART_DESCRIPTIONS] 87/452 viz_id=topic_modeling.expected_topic_proportions.global chart_key=2de94ce00c45598eb6bf446a566a51ae36b0e0d3fc00c263dd71f76456958003 timeout=120s
+2026-08-08 12:41:12,363 - transcriptx - INFO - [CHART_DESCRIPTIONS] 88/452 viz_id=topic_modeling.topic_bar.speaker chart_key=2dfa631a04c0b5954a32e38f346223cbcf9682bf96e0b4067b5c34e2ba6ecc86 timeout=120s
+2026-08-08 12:41:16,150 - transcriptx - INFO - [CHART_DESCRIPTIONS] 89/452 viz_id=topic_modeling.topic_bar.speaker chart_key=2f0b557d84898a9c96c5571640ee12c1a13e9c92e94af99ffc9ab8098daa585b timeout=120s
+2026-08-08 12:41:19,631 - transcriptx - INFO - [CHART_DESCRIPTIONS] 90/452 viz_id=acts.acts_temporal.speaker chart_key=2f1af20688bc64302ffc921bca8e5adc6d5ee63b707c930d2527b06e51f99be8 timeout=120s
+2026-08-08 12:41:25,379 - transcriptx - INFO - [CHART_DESCRIPTIONS] 91/452 viz_id=wordclouds.wordcloud-verb.view.Vibhu chart_key=2f1dccb99919957c152ea8621b1248fdf05f1cf7b8e31cf0a55f0112261da580 timeout=120s
+2026-08-08 12:41:28,758 - transcriptx - INFO - [CHART_DESCRIPTIONS] 92/452 viz_id=acts.acts_temporal_all.global chart_key=2f3c5cf63516628ee3351ce5c222671887e38197a38ee5cb17c1768c37a7f774 timeout=120s
+2026-08-08 12:41:46,120 - transcriptx - INFO - [CHART_DESCRIPTIONS] 93/452 viz_id=topic_modeling.topic_bar.speaker chart_key=2ff0df0fa4e4e6c3a3e18d44c48028d927ecd052653e3cbd96585ebea1cb84d1 timeout=120s
+2026-08-08 12:41:49,627 - transcriptx - INFO - [CHART_DESCRIPTIONS] 94/452 viz_id=wordcloud.wordcloud.speaker.noun chart_key=305012bc8f5e00f91700db459b109493380135b7afa653f835a0d1b4cf8ee5b3 timeout=120s
+2026-08-08 12:41:54,154 - transcriptx - INFO - [CHART_DESCRIPTIONS] 95/452 viz_id=wordclouds.wordcloud.view.Rochelle chart_key=30a6cc2b002ac626ae14b715ec85c84b2d0b8c8d37ef8fb54e18a6cd9cd843dc timeout=120s
+2026-08-08 12:41:57,247 - transcriptx - INFO - [CHART_DESCRIPTIONS] 96/452 viz_id=politeness.category_rates.speaker chart_key=31106de9bcb37d8998e7dbcc936ad34b89c9e931f322a1c6a0efb41b6d389557 timeout=120s
+2026-08-08 12:42:01,621 - transcriptx - INFO - [CHART_DESCRIPTIONS] 97/452 viz_id=topic_modeling.topic_bar.speaker chart_key=31c7c60a99d1984ff2964c4aec3c28abce6d0b781a6e1034058141fe9dd86701 timeout=120s
+2026-08-08 12:42:05,317 - transcriptx - INFO - [CHART_DESCRIPTIONS] 98/452 viz_id=affect_tension.entropy_volatility_timeseries.global chart_key=3201e86663aa75098410f6352cda2d6e20af6492b7d1ed20c3ad7e30f22c0a39 timeout=120s
+2026-08-08 12:42:16,607 - transcriptx - INFO - [CHART_DESCRIPTIONS] 99/452 viz_id=topic_modeling.topic_bar.speaker chart_key=330e8fb5c209e358e40256619358b063c4e08fc9905661f28dbdc1f19834c4d8 timeout=120s
+2026-08-08 12:42:19,825 - transcriptx - INFO - [CHART_DESCRIPTIONS] 100/452 viz_id=interactions.timeline.speaker chart_key=334dd3eb7365079b395ecbcc2451ea8455aecc924284dacd94ffb4768c87d9a9 timeout=120s
+2026-08-08 12:42:26,663 - transcriptx - INFO - [CHART_DESCRIPTIONS] 101/452 viz_id=topic_modeling.topic_bar.speaker chart_key=3424aedb0a6dd5bce0eb16d7bb9b800933054b0940223e85f95d021d1a09e17b timeout=120s
+2026-08-08 12:42:30,147 - transcriptx - INFO - [CHART_DESCRIPTIONS] 102/452 viz_id=wordcloud.wordcloud.speaker.adj chart_key=342d1fbed74cbaf6fadd3359f43c1fd0e0cd1c0926046c30663a8c16b78bd5c7 timeout=120s
+2026-08-08 12:42:34,432 - transcriptx - INFO - [CHART_DESCRIPTIONS] 103/452 viz_id=ner.entity_types.speaker chart_key=34abf17a6b1952f957fd69e82ca4a1927444120c3fb70de3499eb95b12a003e7 timeout=120s
+2026-08-08 12:42:38,575 - transcriptx - INFO - [CHART_DESCRIPTIONS] 104/452 viz_id=topic_modeling.topic_bar.speaker chart_key=352edcd17be81eedaf00594e90223ae306a2a226aad9252f0c920158a15bbe0d timeout=120s
+2026-08-08 12:42:41,717 - transcriptx - INFO - [CHART_DESCRIPTIONS] 105/452 viz_id=wordcloud.wordcloud.speaker.bigrams chart_key=354a358f4c022191508eee97f08e5a3d52af550b686492763da3fcca09112920 timeout=120s
+2026-08-08 12:42:45,414 - transcriptx - INFO - [CHART_DESCRIPTIONS] 106/452 viz_id=contextual_emotion.label_counts_excluding_neutral.global chart_key=361359a52d97f13a64554af096e8d456f4ea935ad1fd52bc99649b639d1dcda6 timeout=120s
+2026-08-08 12:42:49,297 - transcriptx - INFO - [CHART_DESCRIPTIONS] 107/452 viz_id=transcript_quality.asr_score_hist.global chart_key=36de293cbdf1854c42a198ae78f41d3881055062b2434e8095d325448019c969 timeout=120s
+2026-08-08 12:42:53,646 - transcriptx - INFO - [CHART_DESCRIPTIONS] 108/452 viz_id=topic_modeling.topic_bar.speaker chart_key=371109fe02ede322513fc0cc7e5109a74aed8a65cb3f04e9deca6c497390e90d timeout=120s
+2026-08-08 12:42:57,179 - transcriptx - INFO - [CHART_DESCRIPTIONS] 109/452 viz_id=tics.tics.speaker chart_key=3789c2dc98c0ef783ab01c472d929626243bac68a9a533e162614ae69e9d90f1 timeout=120s
+2026-08-08 12:43:01,548 - transcriptx - INFO - [CHART_DESCRIPTIONS] 110/452 viz_id=affect_tension.avg_entropy.global chart_key=378da6ebfeb335fbb9ee15af79a4d0f53aa2839ecd59c02a15ba4112b8993dd5 timeout=120s
+2026-08-08 12:43:07,270 - transcriptx - INFO - [CHART_DESCRIPTIONS] 111/452 viz_id=wordclouds.wordcloud-tics.view.Glen chart_key=3920630a2dacba29bf310314b97a31ed0468554600acc35e54bab1f4e175f004 timeout=120s
+2026-08-08 12:43:10,746 - transcriptx - INFO - [CHART_DESCRIPTIONS] 112/452 viz_id=topic_modeling.topic_bar.speaker chart_key=39f673f632a470e5449f5da22c5394dde27fe9a5c49a9d8bf27256d0a20a0b04 timeout=120s
+2026-08-08 12:43:14,105 - transcriptx - INFO - [CHART_DESCRIPTIONS] 113/452 viz_id=contextual_emotion.label_counts.speaker chart_key=3a1af929638f5fa366bdf5bc044ab345f211cbc7f41c989d50a03f1c52dcb6ca timeout=120s
+2026-08-08 12:43:18,054 - transcriptx - INFO - [CHART_DESCRIPTIONS] 114/452 viz_id=wordcloud.wordcloud.speaker.bigrams chart_key=3a81ae0a865b3b6ed94e68fd09ec2582c43900dea94796061455d417314f5fd3 timeout=120s
+2026-08-08 12:43:23,296 - transcriptx - INFO - [CHART_DESCRIPTIONS] 115/452 viz_id=understandability.structure-bars.global chart_key=3a89bd336da5d7e023e2205f1ea6a1c5ee82cac672baa66042b893b4b65db9f3 timeout=120s
+2026-08-08 12:43:28,501 - transcriptx - INFO - [CHART_DESCRIPTIONS] 116/452 viz_id=wordclouds.wordcloud.view.Mariela chart_key=3bb1d81dfe724741a4b0a43adfc27851a99299f1131bf68b670c716d28223fea timeout=120s
+2026-08-08 12:43:31,221 - transcriptx - INFO - [CHART_DESCRIPTIONS] 117/452 viz_id=temporal_dynamics.engagement_timeseries.global chart_key=3bcd37ba3e197ddbb9485aef951676512b6259d8672680658dc22e2f79c47ffd timeout=120s
+2026-08-08 12:43:37,634 - transcriptx - INFO - [CHART_DESCRIPTIONS] 118/452 viz_id=wordclouds.wordcloud.view chart_key=3c154b58a0d8cc470c1f701993bfb018bf98ad7d296a91663bd5e2d320b61fde timeout=120s
+2026-08-08 12:43:40,687 - transcriptx - INFO - [CHART_DESCRIPTIONS] 119/452 viz_id=wordcloud.wordcloud.speaker.noun chart_key=3d2441a611f915b801d377a0410d0213fee4cb9af90159b9e5d1f66d7426fe0a timeout=120s
+2026-08-08 12:43:45,343 - transcriptx - INFO - [CHART_DESCRIPTIONS] 120/452 viz_id=epistemic_markers.category_rates.speaker chart_key=3e08c26a32c367141acdea9e0faf38365bb5108c73ff7d567c5309146be2d5eb timeout=120s
+2026-08-08 12:43:50,275 - transcriptx - INFO - [CHART_DESCRIPTIONS] 121/452 viz_id=entity_sentiment.entity_mentions.speaker chart_key=3e77314b85c554532356c8d1f326a730950d8128fbbf954420b6d18b8a62feb7 timeout=120s
+2026-08-08 12:43:53,488 - transcriptx - INFO - [CHART_DESCRIPTIONS] 122/452 viz_id=wordclouds.wordcloud-noun-ALL.view chart_key=3f2d49d768d3b32b7fd28763171b2b77c51de5f34b2fed3b1393c382cf7704f4 timeout=120s
+2026-08-08 12:43:56,605 - transcriptx - INFO - [CHART_DESCRIPTIONS] 123/452 viz_id=temporal_dynamics.phase_detection.global chart_key=406d37acf8d085de7d94ec90d6b3ddf02f44f4ef1a9bd1ef876aa3c877500de9 timeout=120s
+2026-08-08 12:44:00,822 - transcriptx - INFO - [CHART_DESCRIPTIONS] 124/452 viz_id=acts.acts_temporal.speaker chart_key=411d17ce0c2e54804f54587271fe9cf5db3fe6cb719ad9f79106a2b7ee64e698 timeout=120s
+2026-08-08 12:44:06,048 - transcriptx - INFO - [CHART_DESCRIPTIONS] 125/452 viz_id=sentiment.rolling_sentiment.speaker chart_key=413245005b3ebfb02f5e4bc89730cacc86d257595d63c911d5241e2d80dbca6c timeout=120s
+2026-08-08 12:44:11,206 - transcriptx - INFO - [CHART_DESCRIPTIONS] 126/452 viz_id=topic_modeling.topic_bar.speaker chart_key=4144c505fb7d68708340d8117cd2eeed6b0eb27ec77afd5f94ef70ebd684af75 timeout=120s
+2026-08-08 12:44:14,787 - transcriptx - INFO - [CHART_DESCRIPTIONS] 127/452 viz_id=wordclouds.wordcloud-adj.view.Rochelle chart_key=429ac2a895a0ceb00647c4a270689eff628072350bed985333988aa2d992468b timeout=120s
+2026-08-08 12:44:18,132 - transcriptx - INFO - [CHART_DESCRIPTIONS] 128/452 viz_id=epistemic_markers.category_rates.speaker chart_key=42e7f3ff7067b6fb5c7070e26d7e54dd2c4cd90cc5546c1836846f02c4d3ba6b timeout=120s
+2026-08-08 12:44:22,746 - transcriptx - INFO - [CHART_DESCRIPTIONS] 129/452 viz_id=wordclouds.wordcloud-noun.view.Mariela chart_key=4307a1ee08ab44c521d3e2c31b8ef8613143fedf2e0d9f6a228b814c36724ec9 timeout=120s
+2026-08-08 12:44:25,755 - transcriptx - INFO - [CHART_DESCRIPTIONS] 130/452 viz_id=topic_modeling.topic_bar.speaker chart_key=4328e1f448abf7435a3f5f4f7c236121978685a710324d4d6b750ee8685b8a67 timeout=120s
+2026-08-08 12:44:30,256 - transcriptx - INFO - [CHART_DESCRIPTIONS] 131/452 viz_id=topic_modeling.topic_bar.speaker chart_key=435a0e398ca52615eb3dd27087dcc3707774d80274ceec5ab312309187478fa7 timeout=120s
+2026-08-08 12:44:34,188 - transcriptx - INFO - [CHART_DESCRIPTIONS] 132/452 viz_id=entity_sentiment.entity_mentions.speaker chart_key=43f9c4b81f4a0daaa707e312b3da3dd2486ef5ad148b58aeb757c249944bae0f timeout=120s
+2026-08-08 12:44:37,676 - transcriptx - INFO - [CHART_DESCRIPTIONS] 133/452 viz_id=topic_modeling.topic_bar.speaker chart_key=440fae4c67fe3b538fc0d0199bb7993cf0169f7ca0cfdd710d253517b63ad5a7 timeout=120s
+2026-08-08 12:44:41,726 - transcriptx - INFO - [CHART_DESCRIPTIONS] 134/452 viz_id=topic_modeling.topic_bar.speaker chart_key=44b9f1ba0e3783bdd75037d8de034a063c3a694854e08c9e68e8879fffd2681a timeout=120s
+2026-08-08 12:44:46,382 - transcriptx - INFO - [CHART_DESCRIPTIONS] 135/452 viz_id=wordclouds.wordcloud-noun.view.Rana chart_key=44c559c25a835b53911ba13c1508799da586f2388b05f8bc8dd7658ca9480b69 timeout=120s
+2026-08-08 12:44:49,412 - transcriptx - INFO - [CHART_DESCRIPTIONS] 136/452 viz_id=wordclouds.tfidf-bigrams.view.Rana chart_key=44ef71c0537d8cf43b7cd9495653f0d6cb03509688def11f3586e5114c14f8b4 timeout=120s
+2026-08-08 12:44:52,357 - transcriptx - INFO - [CHART_DESCRIPTIONS] 137/452 viz_id=wordclouds.tfidf-bigrams.view.Glen chart_key=4558d0a02175ec3f3ed615b5804513fa99c6aa44c03aba586f079f33142b6ecf timeout=120s
+2026-08-08 12:44:55,608 - transcriptx - INFO - [CHART_DESCRIPTIONS] 138/452 viz_id=wordcloud.wordcloud.speaker.verb chart_key=464970e7d090c5e3b171385f9b73564ef9d68656b6ae192c7d59f05aa6377a52 timeout=120s
+2026-08-08 12:44:59,018 - transcriptx - INFO - [CHART_DESCRIPTIONS] 139/452 viz_id=topic_modeling.topic_bar.speaker chart_key=46e72c128b4e200bff4a879b9f7299db77d5729194a4a17f513238d12de5acbb timeout=120s
+2026-08-08 12:45:02,944 - transcriptx - INFO - [CHART_DESCRIPTIONS] 140/452 viz_id=topic_modeling.topic_bar.speaker chart_key=47fc920da79c2682f58dd18fafd3b52666d3bffd85547cb8366f543d92ea9746 timeout=120s
+2026-08-08 12:45:06,727 - transcriptx - INFO - [CHART_DESCRIPTIONS] 141/452 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks.view.Glen chart_key=495e0d30e7676b0e94e721775f57fbed329af04466c9c9be815db9df6a6f946d timeout=120s
+2026-08-08 12:45:09,984 - transcriptx - INFO - [CHART_DESCRIPTIONS] 142/452 viz_id=temporal_dynamics.sentiment_timeseries.global chart_key=49fcf60e8827ca740f8e5cf79a1368ad41fcca445470f2c3ddd056bf7c2b53d8 timeout=120s
+2026-08-08 12:45:16,470 - transcriptx - INFO - [CHART_DESCRIPTIONS] 143/452 viz_id=contextual_emotion.label_counts_excluding_neutral.speaker chart_key=4a996ff5a73dc7236c192613757e3995404852b4aba3ed58dbb5dcb84e83e31c timeout=120s
+2026-08-08 12:45:19,237 - transcriptx - INFO - [CHART_DESCRIPTIONS] 144/452 viz_id=semantic_similarity.agreement_disagreement_breakdown.global chart_key=4b161773def49f98771133bae5fce3b61972e4688dfb2077fa168b339923e68c timeout=120s
+2026-08-08 12:45:22,731 - transcriptx - INFO - [CHART_DESCRIPTIONS] 145/452 viz_id=entity_sentiment.entity_mentions.speaker chart_key=4cdb46103c90f4cb75deba75901260ea85664c0a52956b2a576f22f480a017dc timeout=120s
+2026-08-08 12:45:26,309 - transcriptx - INFO - [CHART_DESCRIPTIONS] 146/452 viz_id=topic_modeling.topic_bar.speaker chart_key=50f22284485484d33069eb12452a0edac4f3ebd350dce1071e950f419dd7c054 timeout=120s
+2026-08-08 12:45:29,552 - transcriptx - INFO - [CHART_DESCRIPTIONS] 147/452 viz_id=qa_analysis.qa_timeline.global chart_key=53d609e33a2b857133bb38fb59d6e95601d5fbaafd1ff5f18d1a232231658d42 timeout=120s
+2026-08-08 12:45:38,142 - transcriptx - INFO - [CHART_DESCRIPTIONS] 148/452 viz_id=topic_modeling.topic_bar.speaker chart_key=54c9c30baa0d83a2d67cc93d7dcdb54edda433d6be1fb1a8af1031d1f892bf31 timeout=120s
+2026-08-08 12:45:42,071 - transcriptx - INFO - [CHART_DESCRIPTIONS] 149/452 viz_id=contextual_emotion.label_counts.speaker chart_key=54dd8a81a8df580ddcb96cc453514bb3affc1c77240259076a590638bd63564a timeout=120s
+2026-08-08 12:45:45,473 - transcriptx - INFO - [CHART_DESCRIPTIONS] 150/452 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks-ALL.view chart_key=55888cd174b7e48525aa4cc2d012b1aa185644267840c715c70872bf732386a2 timeout=120s
+2026-08-08 12:45:48,962 - transcriptx - INFO - [CHART_DESCRIPTIONS] 151/452 viz_id=topic_modeling.topic_bar.speaker chart_key=561f3a80194260e98f201cb741d998e3c1896f7f17023c22609f5c862d7106cc timeout=120s
+2026-08-08 12:45:52,889 - transcriptx - INFO - [CHART_DESCRIPTIONS] 152/452 viz_id=contextual_emotion.label_counts_excluding_neutral.speaker chart_key=56584334f60b6d08c3ec702641304da01e874dc865a543b32480848b875fca8e timeout=120s
+2026-08-08 12:45:56,518 - transcriptx - INFO - [CHART_DESCRIPTIONS] 153/452 viz_id=wordclouds.wordcloud-verb.view.Mariela chart_key=57532fadadbd9c379972e148fdcb9006ad8c6b5a05281e99822377bdb72fd534 timeout=120s
+2026-08-08 12:45:59,187 - transcriptx - INFO - [CHART_DESCRIPTIONS] 154/452 viz_id=affect_tension.mismatch_timeseries.global chart_key=57596803461c38809fb27be392e3d225515b768a8b1ee1152ab1d19167653a1c timeout=120s
+2026-08-08 12:46:04,981 - transcriptx - INFO - [CHART_DESCRIPTIONS] 155/452 viz_id=wordcloud.wordcloud.speaker.noun chart_key=57b986100f4917092541e23f4025927e649ab260a0ae879e09ef05c34d7e66af timeout=120s
+2026-08-08 12:46:08,136 - transcriptx - INFO - [CHART_DESCRIPTIONS] 156/452 viz_id=topic_modeling.topic_bar.speaker chart_key=58fe2d71139b8c014a46e4f29a13791343aa0a41d4b0a5ba1e33661f028bf046 timeout=120s
+2026-08-08 12:46:11,033 - transcriptx - INFO - [CHART_DESCRIPTIONS] 157/452 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks.view.Hala chart_key=5a18bb145b1292c5dc2605dbc20f9a246936534126c3bf066b2322f3eaebac96 timeout=120s
+2026-08-08 12:46:14,170 - transcriptx - INFO - [CHART_DESCRIPTIONS] 158/452 viz_id=wordcloud.wordcloud.speaker.adj chart_key=5a293b2059ac166b23c7f705014c67e91d90a9614ca9e246c3e62bc22513ace9 timeout=120s
+2026-08-08 12:46:18,756 - transcriptx - INFO - [CHART_DESCRIPTIONS] 159/452 viz_id=interactions.heatmap_responses.global chart_key=5bd1756a53e85ce3c838c0a4efa023419daf56a42b8e54d85101f391f5940339 timeout=120s
+2026-08-08 12:46:23,200 - transcriptx - INFO - [CHART_DESCRIPTIONS] 160/452 viz_id=wordclouds.wordcloud-bigrams.view.Mariela chart_key=5bf550b5b313619d1b312fcb54d99ddc74038120ea26335280c9ac5e954630be timeout=120s
+2026-08-08 12:46:26,777 - transcriptx - INFO - [CHART_DESCRIPTIONS] 161/452 viz_id=politeness.category_rates.speaker chart_key=5c34cfdf4512870c4f9c0ef8c2ff0eea83487f90eec60c8f8f5c97c373b51ece timeout=120s
+2026-08-08 12:46:31,178 - transcriptx - INFO - [CHART_DESCRIPTIONS] 162/452 viz_id=sentiment.rolling_sentiment.speaker chart_key=5c3eb3da9d793d37b87da3eee02d470722cf0731b764f0b649455ca977558d35 timeout=120s
+2026-08-08 12:46:38,566 - transcriptx - INFO - [CHART_DESCRIPTIONS] 163/452 viz_id=topic_modeling.topic_bar.speaker chart_key=5c9b0e53554af918aa8558305865a4b5a3be9807dd531e9c47f7f6513fcb5206 timeout=120s
+2026-08-08 12:46:41,658 - transcriptx - INFO - [CHART_DESCRIPTIONS] 164/452 viz_id=sentiment.rolling_sentiment.speaker chart_key=5c9eff806ede69739e2271fa294984cc7ce3a98d6b5a9ce573ae65380a0d9699 timeout=120s
+2026-08-08 12:46:48,615 - transcriptx - INFO - [CHART_DESCRIPTIONS] 165/452 viz_id=wordcloud.wordcloud.speaker.keyphrases_noun_chunks chart_key=5dba27a47b6e6697487c131975c38332c560dc13a51ec2cbaef129ede8d691c8 timeout=120s
+2026-08-08 12:46:53,209 - transcriptx - INFO - [CHART_DESCRIPTIONS] 166/452 viz_id=topic_modeling.topic_bar.speaker chart_key=5dda5c5b26120f508131355030673854031da51c7338aa505029948b8e545f23 timeout=120s
+2026-08-08 12:46:56,045 - transcriptx - INFO - [CHART_DESCRIPTIONS] 167/452 viz_id=topic_modeling.topic_bar.speaker chart_key=5dfbf47eea00f86dc6e9e05f890c162dc4a7751bb6ea447c49b79d705e48a6ef timeout=120s
+2026-08-08 12:46:59,202 - transcriptx - INFO - [CHART_DESCRIPTIONS] 168/452 viz_id=topic_modeling.topic_bar.speaker chart_key=5e2afdeeac8c672b13971709dbccb32ef4c3d54963e6450c27c7c8f6abc70530 timeout=120s
+2026-08-08 12:47:02,668 - transcriptx - INFO - [CHART_DESCRIPTIONS] 169/452 viz_id=interactions.equity.summary.global chart_key=5ef52a4bd5d2340c36457d50d1e57d25c17c510598f408accc5ba9b224b8789f timeout=120s
+2026-08-08 12:47:07,148 - transcriptx - INFO - [CHART_DESCRIPTIONS] 170/452 viz_id=wordcloud.wordcloud.speaker.tics chart_key=5f26c727dd5e03df8bc8fda98eeb30101ca36b2e226bc3c4cd8d0bbb77565bf0 timeout=120s
+2026-08-08 12:47:10,637 - transcriptx - INFO - [CHART_DESCRIPTIONS] 171/452 viz_id=lexical_diversity.mtld.speaker chart_key=5f5e0f104859ab03fb4d7504c03e17c1c02e91f269534b00dbfdaa2ea8341828 timeout=120s
+2026-08-08 12:47:14,281 - transcriptx - INFO - [CHART_DESCRIPTIONS] 172/452 viz_id=topic_modeling.topic_bar.speaker chart_key=5fe6bf33046592710bb0caa2e616b671c39a3b3d7c83ed2708d1318baa99ca24 timeout=120s
+2026-08-08 12:47:16,983 - transcriptx - INFO - [CHART_DESCRIPTIONS] 173/452 viz_id=acts.acts_pie.speaker chart_key=5ff6ab315bea4530c9ca590ef2de7796566d85e52e03949b7c6065525dc66fd2 timeout=120s
+2026-08-08 12:47:20,623 - transcriptx - INFO - [CHART_DESCRIPTIONS] 174/452 viz_id=ner.entity_types.speaker chart_key=60847faf0b91c5a173c15fbf97b210c8d906486a590c1f7ad73a0a2beda3f679 timeout=120s
+2026-08-08 12:47:24,363 - transcriptx - INFO - [CHART_DESCRIPTIONS] 175/452 viz_id=acts.acts_temporal.speaker chart_key=61551cfc32cd8429fbf1b2524feee2bb85718faa30822259942dd21b2b6a0504 timeout=120s
+2026-08-08 12:47:28,784 - transcriptx - INFO - [CHART_DESCRIPTIONS] 176/452 viz_id=topic_modeling.topic_bar.speaker chart_key=61f3d26eb0187de2b832e733d05de9a06d330b457610c38f62874d7abee2abd4 timeout=120s
+2026-08-08 12:47:32,229 - transcriptx - INFO - [CHART_DESCRIPTIONS] 177/452 viz_id=wordclouds.wordcloud-noun.view.Jonas chart_key=6223ca3c6acb4e1d4c2456f801ea6fa999b1693a0ee5778872f8f7a36a7e2821 timeout=120s
+2026-08-08 12:47:35,152 - transcriptx - INFO - [CHART_DESCRIPTIONS] 178/452 viz_id=topic_modeling.topic_bar.speaker chart_key=62a1f228e3d457b7f43ddbb72f7e57e303baeb4fe8c086a2a5c9bf6f55e1e09f timeout=120s
+2026-08-08 12:47:39,012 - transcriptx - INFO - [CHART_DESCRIPTIONS] 179/452 viz_id=wordcloud.wordcloud.global.tfidf chart_key=62ceebe0f353d7cbdca64ed220c8e9363b181269c42e4024b8d6472f924bd3d9 timeout=120s
+2026-08-08 12:47:45,192 - transcriptx - INFO - [CHART_DESCRIPTIONS] 180/452 viz_id=wordclouds.wordcloud.speaker chart_key=63ef5847dd181a9725cd45755504bd07e40ea7b5c3b1fc5868a3b096d06157f8 timeout=120s
+2026-08-08 12:47:49,202 - transcriptx - INFO - [CHART_DESCRIPTIONS] 181/452 viz_id=wordcloud.wordcloud.speaker.adj chart_key=64452cd70ea078750ef7874fe3fc5c3ed8ee23b5c2b0a6f8db8dcdc9386a7081 timeout=120s
+2026-08-08 12:47:52,343 - transcriptx - INFO - [CHART_DESCRIPTIONS] 182/452 viz_id=wordcloud.wordcloud.speaker.tfidf chart_key=65f0e43409c986b7bae7a92d24eacc69ac974286defc7855f8fbdf81f0605106 timeout=120s
+2026-08-08 12:47:59,200 - transcriptx - INFO - [CHART_DESCRIPTIONS] 183/452 viz_id=wordclouds.wordcloud.speaker chart_key=6acc8f6db789d99774cbdee38ad738a6094ffbe5b95df4b6fd5e307fd577abad timeout=120s
+2026-08-08 12:48:03,346 - transcriptx - INFO - [CHART_DESCRIPTIONS] 184/452 viz_id=topic_modeling.topic_bar.speaker chart_key=6b34aefbacab5734691a6f160cbe6a599f8181caa83685dfa1f481ef75bde6ca timeout=120s
+2026-08-08 12:48:06,782 - transcriptx - INFO - [CHART_DESCRIPTIONS] 185/452 viz_id=fine_grained_emotion.label_counts.speaker chart_key=6c265e0871f2822d7cbbf9e1d521deca1f03f5bad0688fee410a9c269903cbce timeout=120s
+2026-08-08 12:48:10,982 - transcriptx - INFO - [CHART_DESCRIPTIONS] 186/452 viz_id=topic_modeling.topic_bar.speaker chart_key=6d2c46acd4896cb5d0e89bc6ba47adcf78cdc2ae309405005b25a372e0f4eceb timeout=120s
+2026-08-08 12:48:14,026 - transcriptx - INFO - [CHART_DESCRIPTIONS] 187/452 viz_id=topic_modeling.topic_bar.speaker chart_key=6d5cb0b84e5899134d5f5504bf02386e72b5502a2a68241e4100971c343e65e8 timeout=120s
+2026-08-08 12:48:16,875 - transcriptx - INFO - [CHART_DESCRIPTIONS] 188/452 viz_id=tics.tics.speaker chart_key=6efef54880fc0157d4bd245f3d433f9fb43d8d5a9ba5736184848e032f952785 timeout=120s
+2026-08-08 12:48:20,517 - transcriptx - INFO - [CHART_DESCRIPTIONS] 189/452 viz_id=entity_sentiment.sentiment_heatmap.global chart_key=6f9094fe1f1247692c5adf81716f165e3562a0292fad2e0f18cb7cdfe6c58da0 timeout=120s
+2026-08-08 12:48:25,312 - transcriptx - INFO - [CHART_DESCRIPTIONS] 190/452 viz_id=topic_modeling.topic_bar.speaker chart_key=6fcb7ed895463670214e363a5938a4a9e540aab91a2a3f424b7d94d4e4e7682e timeout=120s
+2026-08-08 12:48:28,129 - transcriptx - INFO - [CHART_DESCRIPTIONS] 191/452 viz_id=wordclouds.wordcloud-verb.view.Glen chart_key=6fd287edebe79ad440f9cc9b9fbe64c2e326c3b436447b8ba2597b2579ec64f4 timeout=120s
+2026-08-08 12:48:31,369 - transcriptx - INFO - [CHART_DESCRIPTIONS] 192/452 viz_id=momentum.momentum.global chart_key=6fee7b8809ef3f4a7bcc83edc8234b7dcdc7b27e68521d98be49ca7b1b30d9e2 timeout=120s
+2026-08-08 12:48:38,657 - transcriptx - INFO - [CHART_DESCRIPTIONS] 193/452 viz_id=wordclouds.wordcloud.speaker chart_key=71368061a8b599a1be2925331673973cc1923b9498fccd56d86d8141f2cabd3e timeout=120s
+2026-08-08 12:48:41,911 - transcriptx - INFO - [CHART_DESCRIPTIONS] 194/452 viz_id=topic_modeling.topic_bar.speaker chart_key=713b7e1783689a14ae4e2c07d458b473be335643dece124158ef85f2cccd1c9b timeout=120s
+2026-08-08 12:48:45,651 - transcriptx - INFO - [CHART_DESCRIPTIONS] 195/452 viz_id=politeness.category_rates.speaker chart_key=71ad8d9fd39207aeec7bb217192e7829187aa9a5295f8a4625d5bb7980b27dde timeout=120s
+2026-08-08 12:48:50,160 - transcriptx - INFO - [CHART_DESCRIPTIONS] 196/452 viz_id=fine_grained_emotion.label_share_non_neutral.speaker chart_key=72453e9dffe276d4209ce21916d91905cc4ed6fca264fb4182d8a54c2d379c10 timeout=120s
+2026-08-08 12:48:55,100 - transcriptx - INFO - [CHART_DESCRIPTIONS] 197/452 viz_id=wordcloud.wordcloud.speaker.tfidf_bigrams chart_key=72d5afed2783d11fcef1ae2105ef484a71410dc4c1519eeedc9d45d02a63ff3e timeout=120s
+2026-08-08 12:48:59,559 - transcriptx - INFO - [CHART_DESCRIPTIONS] 198/452 viz_id=wordcloud.wordcloud.speaker.tfidf chart_key=73af2ed3f7a1c2235b32a53e999729b7c6549cea80c32352dbe5698eb22ec00a timeout=120s
+2026-08-08 12:49:05,942 - transcriptx - INFO - [CHART_DESCRIPTIONS] 199/452 viz_id=topic_modeling.lda_topic_word_heatmap.global chart_key=73b8073afe6372bbef0de1e7d62bd8ea7592c0da315b95e1e766752d682082dd timeout=120s
+2026-08-08 12:49:12,438 - transcriptx - INFO - [CHART_DESCRIPTIONS] 200/452 viz_id=wordclouds.wordcloud-verb.view.Frank chart_key=73d0709791e895e6c0355fb1f75f8b62b256e1fed75ae4276bd86c8235dc8e32 timeout=120s
+2026-08-08 12:49:15,217 - transcriptx - INFO - [CHART_DESCRIPTIONS] 201/452 viz_id=interactions.timeline.speaker chart_key=761c1ea751608d2de5af3855e00fbe1abe263ccc65e369b7cde4da03c820ea54 timeout=120s
+2026-08-08 12:49:19,018 - transcriptx - INFO - [CHART_DESCRIPTIONS] 202/452 viz_id=understandability.word-count-bars.global chart_key=76713f78fa06040769627e61f1f525a317c02d8839c7ebd3e1abf5d153a4f27c timeout=120s
+2026-08-08 12:49:22,787 - transcriptx - INFO - [CHART_DESCRIPTIONS] 203/452 viz_id=acts.acts_temporal.speaker chart_key=76d27a1a55d5fd274c029fed0432bf9a5bd4d80a887adfedc0e084c874346949 timeout=120s
+2026-08-08 12:49:26,282 - transcriptx - INFO - [CHART_DESCRIPTIONS] 204/452 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks.view.Rochelle chart_key=76fc00f183777c4e3a454e2487be4afd1a52cbe4b275d8934e49e9331f8a8195 timeout=120s
+2026-08-08 12:49:29,469 - transcriptx - INFO - [CHART_DESCRIPTIONS] 205/452 viz_id=emotion.radar.speaker chart_key=772c6008a3c4863fc7520a600fa00518c00e260e1332834b6d60a74c78b79c69 timeout=120s
+2026-08-08 12:49:33,907 - transcriptx - INFO - [CHART_DESCRIPTIONS] 206/452 viz_id=wordcloud.wordcloud.speaker.tfidf chart_key=782561b695bee5123a77361c91784c12e763c0f065930988477e10702b3e5dd1 timeout=120s
+2026-08-08 12:49:39,258 - transcriptx - INFO - [CHART_DESCRIPTIONS] 207/452 viz_id=contextual_emotion.label_counts.global chart_key=78789abf34e162bd3669e48bbebd2dacb808e4c71b2a57e1157aa4feb8c70330 timeout=120s
+2026-08-08 12:49:42,667 - transcriptx - INFO - [CHART_DESCRIPTIONS] 208/452 viz_id=pauses.pauses_timeline.global chart_key=7a2fff0c5b29aaeb52dfe7bb7bced50fe1f5f951ac08b513f98227984032c7b4 timeout=120s
+2026-08-08 12:49:48,783 - transcriptx - INFO - [CHART_DESCRIPTIONS] 209/452 viz_id=sentiment.rolling_sentiment.speaker chart_key=7a7f5c57b76fdac826373067a49aa2076a305f0148b5b355b4882675e135413e timeout=120s
+2026-08-08 12:49:52,535 - transcriptx - INFO - [CHART_DESCRIPTIONS] 210/452 viz_id=sentiment.rolling_sentiment.speaker chart_key=7ab7cab0d70bae1135e3af280c6b72afd72fc9029f2f5cfed588327251b5759d timeout=120s
+2026-08-08 12:49:59,983 - transcriptx - INFO - [CHART_DESCRIPTIONS] 211/452 viz_id=topic_modeling.topic_bar.speaker chart_key=7b056734ad8c92364374237b51f44044faec50a48cf25946e1b6d9c481e9e6f2 timeout=120s
+2026-08-08 12:50:02,676 - transcriptx - INFO - [CHART_DESCRIPTIONS] 212/452 viz_id=topic_modeling.topic_bar.speaker chart_key=7b0d42186de9eadcc2a580257a3df6de927ce2bd03a5e99e6f3de406243d0fe0 timeout=120s
+2026-08-08 12:50:05,519 - transcriptx - INFO - [CHART_DESCRIPTIONS] 213/452 viz_id=acts.acts_bar.speaker chart_key=7b568d087e1f1b126d3240724c47f2299c25db0f370eaf98bfa9b2743ec9560a timeout=120s
+2026-08-08 12:50:08,748 - transcriptx - INFO - [CHART_DESCRIPTIONS] 214/452 viz_id=fine_grained_emotion.label_counts_excluding_neutral.speaker chart_key=7bfe7fad6885167ba742cf0f7d7139608bba3460406c1008a3ed19c4978765bd timeout=120s
+2026-08-08 12:50:12,155 - transcriptx - INFO - [CHART_DESCRIPTIONS] 215/452 viz_id=contextual_emotion.label_share_non_neutral.speaker chart_key=7d82e2bb070e73e7920d0e7a0412f35e77f06fd78a38ff632433169898bc8ee7 timeout=120s
+2026-08-08 12:50:15,652 - transcriptx - INFO - [CHART_DESCRIPTIONS] 216/452 viz_id=wordclouds.wordcloud-noun-ALL.global chart_key=7db1128a3bb918ec2ff866f5df7bfd31baf911d676656e0ea4bc6b80eb3ee623 timeout=120s
+2026-08-08 12:50:20,831 - transcriptx - INFO - [CHART_DESCRIPTIONS] 217/452 viz_id=wordcloud.wordcloud.speaker.tfidf_bigrams chart_key=7e424d6d0316cae3624f2385ac7fdba986ee11d57b960c9f659fd21d42983d23 timeout=120s
+2026-08-08 12:50:26,982 - transcriptx - INFO - [CHART_DESCRIPTIONS] 218/452 viz_id=contextual_emotion.label_share_non_neutral.speaker chart_key=7f6dbc2c4fbcb8dfef3d2273a45c7803a5624a2c7f2af04f43279d5f67e37aa0 timeout=120s
+2026-08-08 12:50:30,793 - transcriptx - INFO - [CHART_DESCRIPTIONS] 219/452 viz_id=epistemic_markers.category_rates.speaker chart_key=801493e3cab68242711bcf9de0ab3dd908bdcbcaa9dd9ad64831d308edfbca1c timeout=120s
+2026-08-08 12:50:34,438 - transcriptx - INFO - [CHART_DESCRIPTIONS] 220/452 viz_id=contextual_emotion.label_share_non_neutral.speaker chart_key=8094adc58064df27ff861ab96aac424cd43ced6458f058b4a9d05ef4bcf07908 timeout=120s
+2026-08-08 12:50:37,937 - transcriptx - INFO - [CHART_DESCRIPTIONS] 221/452 viz_id=tics.tics.speaker chart_key=80a11bbf3a91f0266e4b2bb7a78373289754896b5cbf762b803386381cdf89cb timeout=120s
+2026-08-08 12:50:41,108 - transcriptx - INFO - [CHART_DESCRIPTIONS] 222/452 viz_id=wordclouds.tfidf-bigrams-ALL.view chart_key=81388100e4f582fb136b06fc1e7a2799d1fdafd894be498754978f26eb11c28b timeout=120s
+2026-08-08 12:50:44,056 - transcriptx - INFO - [CHART_DESCRIPTIONS] 223/452 viz_id=wordclouds.wordcloud-tics.view.Rana chart_key=814732da290ac81824bf91407b29b123475cccdf07e35f4b59caa96844cf13e1 timeout=120s
+2026-08-08 12:50:47,182 - transcriptx - INFO - [CHART_DESCRIPTIONS] 224/452 viz_id=affect_tension.derived_institutional_tone.global chart_key=836c7dead9ce01622c87c29667149e17da67ae63a8b6d5ce31ca444e54f29f0a timeout=120s
+2026-08-08 12:50:51,660 - transcriptx - INFO - [CHART_DESCRIPTIONS] 225/452 viz_id=topic_modeling.topic_bar.speaker chart_key=83fac0cf77a280da4a97228b79f109a0135d4c1bfca0351e3f65ebde3ebc4b02 timeout=120s
+2026-08-08 12:50:55,277 - transcriptx - INFO - [CHART_DESCRIPTIONS] 226/452 viz_id=topic_modeling.topic_bar.speaker chart_key=8576d5399828ee5cc9fc5502a08852d50ae5b082f16dd154d037967447bb89c7 timeout=120s
+2026-08-08 12:50:58,558 - transcriptx - INFO - [CHART_DESCRIPTIONS] 227/452 viz_id=fine_grained_emotion.label_counts.speaker chart_key=85b29246e6d70c86b03b02704b3b79326561d4032449403f5e18f2b9abaecc75 timeout=120s
+2026-08-08 12:51:02,373 - transcriptx - INFO - [CHART_DESCRIPTIONS] 228/452 viz_id=bertopic.topic_word_heatmap.global chart_key=865218ad42fad8946e242a38314fb10e2878bba282734c7ebfe2086a0ee85073 timeout=120s
+2026-08-08 12:51:07,235 - transcriptx - INFO - [CHART_DESCRIPTIONS] 229/452 viz_id=wordclouds.tfidf.view.Hala chart_key=86b69d7c250c51cd73471d32b188d57c48fd0cea855b3f97f3090d87246e4d93 timeout=120s
+2026-08-08 12:51:10,100 - transcriptx - INFO - [CHART_DESCRIPTIONS] 230/452 viz_id=moments.moments_timeline.global chart_key=874907ca9f5e0c4aed07b64527502f035128f10a1f8f31c9fda57b7c250da962 timeout=120s
+2026-08-08 12:51:14,700 - transcriptx - INFO - [CHART_DESCRIPTIONS] 231/452 viz_id=tics.tics.speaker chart_key=87a566b2348cca26944035fa00235bca814a79115a11bd9ce1767dddbcb76802 timeout=120s
+2026-08-08 12:51:19,381 - transcriptx - INFO - [CHART_DESCRIPTIONS] 232/452 viz_id=wordclouds.tfidf.view.Rana chart_key=87c73dedec5f25b446f4af341c6f7d820818ee16c805c12811f70ae2621c250c timeout=120s
+2026-08-08 12:51:22,364 - transcriptx - INFO - [CHART_DESCRIPTIONS] 233/452 viz_id=interactions.timeline.speaker chart_key=87fb67d3683c4ddb66c1b6e5d15510768ef9faf0bc9d4354d3045a2a3bc56b67 timeout=120s
+2026-08-08 12:51:27,311 - transcriptx - INFO - [CHART_DESCRIPTIONS] 234/452 viz_id=topic_modeling.topic_bar.speaker chart_key=887238c4a61ad74a2b4d2691bf3f50644399011fec5ba07aa1ce807ef3ac4a81 timeout=120s
+2026-08-08 12:51:31,658 - transcriptx - INFO - [CHART_DESCRIPTIONS] 235/452 viz_id=topic_modeling.topic_bar.speaker chart_key=893769345078042075b167480e9b8e3a115c3de0878b7ec42a3396a93e2a8b5f timeout=120s
+2026-08-08 12:51:36,356 - transcriptx - INFO - [CHART_DESCRIPTIONS] 236/452 viz_id=wordclouds.wordcloud-noun.view.Vibhu chart_key=895638d6a814fc36603b116334e7fecc3ba259f148aea8c100cdc48a737b19c9 timeout=120s
+2026-08-08 12:51:39,029 - transcriptx - INFO - [CHART_DESCRIPTIONS] 237/452 viz_id=topic_modeling.nmf_topic_word_heatmap.global chart_key=897e1ef0ef074aa8e1395b5d6b051b9606fdd3765bb8013c8526bda26aaa77db timeout=120s
+2026-08-08 12:51:45,171 - transcriptx - INFO - [CHART_DESCRIPTIONS] 238/452 viz_id=wordclouds.wordcloud.global chart_key=8ab1a6897843adee95993f714fb0b00042b0d7cb80330bcf94480363b071ecea timeout=120s
+2026-08-08 12:51:49,439 - transcriptx - INFO - [CHART_DESCRIPTIONS] 239/452 viz_id=wordclouds.wordcloud-adj.view.Glen chart_key=8b1cf03049d7e096309ccd31cb6fb1836a436ae5a434319d6022df500e447c2a timeout=120s
+2026-08-08 12:51:52,369 - transcriptx - INFO - [CHART_DESCRIPTIONS] 240/452 viz_id=emotion.radar.speaker chart_key=8b1ede85bee2692fcd9848f5ab7e52317067d31226c912e9366df1ed2570e114 timeout=120s
+2026-08-08 12:51:55,958 - transcriptx - INFO - [CHART_DESCRIPTIONS] 241/452 viz_id=fine_grained_emotion.label_counts.speaker chart_key=8b644466419f5e85c517f6b3cb5151ac5e2cdd6a025c5ee1da36ac2c2ec42a1a timeout=120s
+2026-08-08 12:52:00,167 - transcriptx - INFO - [CHART_DESCRIPTIONS] 242/452 viz_id=contextual_emotion.label_counts.speaker chart_key=8b8e9ca3488dc1cc335ea7dc4d2da2bf26c1d1b13a78af916125901b1740030e timeout=120s
+2026-08-08 12:52:03,782 - transcriptx - INFO - [CHART_DESCRIPTIONS] 243/452 viz_id=acts.acts_bar.speaker chart_key=8be217b418451b11793f56d108480f34a527223d4f5380cc43425546921e0ca2 timeout=120s
+2026-08-08 12:52:07,524 - transcriptx - INFO - [CHART_DESCRIPTIONS] 244/452 viz_id=qa_analysis.question_type_breakdown.global chart_key=8c1e11ce298d412d86f74bd3e54fe0643df333deea89f57dd842c4176e110ed7 timeout=120s
+2026-08-08 12:52:11,379 - transcriptx - INFO - [CHART_DESCRIPTIONS] 245/452 viz_id=topic_modeling.topic_bar.speaker chart_key=8c47b805edc2f8c22aacf4932be686f7fe7dd68de4bd2adf75b1f2d5c2c5a422 timeout=120s
+2026-08-08 12:52:14,573 - transcriptx - INFO - [CHART_DESCRIPTIONS] 246/452 viz_id=ner.entity_types.speaker chart_key=8d181163e22af36a90f08b6f31e0ad65c01721765d0010c844fcdb6d6d357169 timeout=120s
+2026-08-08 12:52:17,043 - transcriptx - INFO - [CHART_DESCRIPTIONS] 247/452 viz_id=contextual_emotion.label_share_non_neutral.speaker chart_key=8d49629bd3a991f50e36ce83d0fd784b66967f2730d5045e62d39673a9cd2f70 timeout=120s
+2026-08-08 12:52:20,825 - transcriptx - INFO - [CHART_DESCRIPTIONS] 248/452 viz_id=interactions.heatmap_interruptions.global chart_key=8d7858df7da886659fe21ffdf2c4fb4c1bf9840467a9a33d6973123f2c875b4c timeout=120s
+2026-08-08 12:52:25,750 - transcriptx - INFO - [CHART_DESCRIPTIONS] 249/452 viz_id=contextual_emotion.label_counts_excluding_neutral.speaker chart_key=8dae425da0a74c7618cd066f5582b5bacdea4199385047662f40c5dec37d2d56 timeout=120s
+2026-08-08 12:52:28,344 - transcriptx - INFO - [CHART_DESCRIPTIONS] 250/452 viz_id=topic_modeling.topic_bar.speaker chart_key=8f04c45521f5a79be85b09cea3015f454c559149c636c74a25107f723dc497c6 timeout=120s
+2026-08-08 12:52:32,347 - transcriptx - INFO - [CHART_DESCRIPTIONS] 251/452 viz_id=wordclouds.wordcloud.speaker chart_key=9004c611fda63d59724080eb6fd0fcf86b0167f61f6be208cdd79a69c2b62a65 timeout=120s
+2026-08-08 12:52:36,230 - transcriptx - INFO - [CHART_DESCRIPTIONS] 252/452 viz_id=wordclouds.wordcloud-adj.view.Frank chart_key=9017c0c94734e2e2135410dc6564738faf43f1245ca4d14a5b6f1a250d44ecd1 timeout=120s
+2026-08-08 12:52:39,159 - transcriptx - INFO - [CHART_DESCRIPTIONS] 253/452 viz_id=contextual_emotion.label_counts.speaker chart_key=906e32ccfc5db7c63800bbe294f15654c97b9a8842a1f49610e056eb0a214c0a timeout=120s
+2026-08-08 12:52:42,642 - transcriptx - INFO - [CHART_DESCRIPTIONS] 254/452 viz_id=bertopic.topic_prevalence.global chart_key=909a29a4f0d77638c00cf55e2548e49573aeeca30a48527b906aad81cf5281f5 timeout=120s
+2026-08-08 12:52:46,866 - transcriptx - INFO - [CHART_DESCRIPTIONS] 255/452 viz_id=wordcloud.wordcloud.speaker.tfidf_bigrams chart_key=909a8237a1249de56a622a4846fa8cf96ec9039976433b40703cdd24b1984595 timeout=120s
+2026-08-08 12:52:50,373 - transcriptx - INFO - [CHART_DESCRIPTIONS] 256/452 viz_id=contextual_emotion.label_counts.speaker chart_key=90ce2454f66921f7c20d85dee888db73fd283addd3827e81759a25ba84f09511 timeout=120s
+2026-08-08 12:52:53,668 - transcriptx - INFO - [CHART_DESCRIPTIONS] 257/452 viz_id=echoes.echo_timeline.global chart_key=91937e5f12fca2136f69400972f726f28958ec79e444b02e51fb0e1895e0303b timeout=120s
+2026-08-08 12:52:59,657 - transcriptx - INFO - [CHART_DESCRIPTIONS] 258/452 viz_id=wordcloud.wordcloud.speaker.tfidf chart_key=92a573d7dc0e0172377d97a16def9479d802a658cc745a1bbc51ec9b285344fa timeout=120s
+2026-08-08 12:53:05,592 - transcriptx - INFO - [CHART_DESCRIPTIONS] 259/452 viz_id=contextual_emotion.label_share_non_neutral.speaker chart_key=934bd2570be5fb4b4716d862df92205fbdc4103348832c9f0b93f2561f5f7f58 timeout=120s
+2026-08-08 12:53:09,133 - transcriptx - INFO - [CHART_DESCRIPTIONS] 260/452 viz_id=wordcloud.wordcloud.speaker.noun chart_key=935dc7c68e5c591e140f22843a6a00dc571cbb4ac38f614b4f5396643915e6fe timeout=120s
+2026-08-08 12:53:13,749 - transcriptx - INFO - [CHART_DESCRIPTIONS] 261/452 viz_id=acts.acts_pie.speaker chart_key=93632c476a50d4f0156fbf7199accec2658f7be7a2ceae4b1560929dde644e08 timeout=120s
+2026-08-08 12:53:17,652 - transcriptx - INFO - [CHART_DESCRIPTIONS] 262/452 viz_id=topic_modeling.discourse_analysis.global chart_key=9391075431e92d475db6d0abfbe3b0b009023cb7b8f4d2ba1cc47e5d2aac8596 timeout=120s
+2026-08-08 12:53:23,081 - transcriptx - INFO - [CHART_DESCRIPTIONS] 263/452 viz_id=topic_modeling.topic_bar.speaker chart_key=94abdad159674f5a95faed12269d25a770931754f653a57d805809e8f759930a timeout=120s
+2026-08-08 12:53:26,773 - transcriptx - INFO - [CHART_DESCRIPTIONS] 264/452 viz_id=contextual_emotion.label_share_non_neutral.global chart_key=953c2e5793b29d7fc08cdde13c25416fcbb5b0fea29a6970f9bbdeedd3ce9f8e timeout=120s
+2026-08-08 12:53:30,500 - transcriptx - INFO - [CHART_DESCRIPTIONS] 265/452 viz_id=topic_modeling.topic_bar.speaker chart_key=957b9126698da7af688d67e11d406c9e9f7ac3bf88381c74b17647a08de68a57 timeout=120s
+2026-08-08 12:53:34,033 - transcriptx - INFO - [CHART_DESCRIPTIONS] 266/452 viz_id=affect_tension.entropy_volatility_timeseries.speaker chart_key=95869d49fc9d337cd67411047336a5dc6c61841b4aa38768bd847ffefedac7e5 timeout=120s
+2026-08-08 12:53:43,332 - transcriptx - INFO - [CHART_DESCRIPTIONS] 267/452 viz_id=interactions.network_graph.global chart_key=95a1b34acb627fe21d487010cafebd3d82b7cbd20f0b000bd509837d74b08e4e timeout=120s
+2026-08-08 12:53:46,723 - transcriptx - INFO - [CHART_DESCRIPTIONS] 268/452 viz_id=emotion.radar.speaker chart_key=966bdc733b3f1b5b344706f16de9215ff4537a0411dab2e8c885201a29a1e168 timeout=120s
+2026-08-08 12:53:51,157 - transcriptx - INFO - [CHART_DESCRIPTIONS] 269/452 viz_id=wordcloud.wordcloud.speaker.noun chart_key=96b3cf305e47c52bcc48484cb00423f6ecd9a605c3eb068e8fd59d6185bdb6ce timeout=120s
+2026-08-08 12:53:55,400 - transcriptx - INFO - [CHART_DESCRIPTIONS] 270/452 viz_id=topic_modeling.topic_bar.speaker chart_key=96cc46edd1367c04625b534f01e4c013fbd462c83e8d7ef85656586ad6a77335 timeout=120s
+2026-08-08 12:53:58,908 - transcriptx - INFO - [CHART_DESCRIPTIONS] 271/452 viz_id=wordcloud.wordcloud.speaker.tfidf_bigrams chart_key=9731e4f8a17aa81df123865ea55b200b89c22794964bbd6291d3c3a27a80b84b timeout=120s
+2026-08-08 12:54:04,786 - transcriptx - INFO - [CHART_DESCRIPTIONS] 272/452 viz_id=acts.acts_temporal.speaker chart_key=981467172dccd7ad6b2d169333fcd78c548e78a74efeb91b9aa6e9e5af10246e timeout=120s
+2026-08-08 12:54:09,249 - transcriptx - INFO - [CHART_DESCRIPTIONS] 273/452 viz_id=temporal_dynamics.temporal_dashboard.global chart_key=989fb977f23493f97c0130572525280f26c051069c17d6326ebb62d3e48b0cfd timeout=120s
+2026-08-08 12:54:17,566 - transcriptx - INFO - [CHART_DESCRIPTIONS] 274/452 viz_id=topic_modeling.topic_bar.speaker chart_key=995286f08f3ce1a4acc571f8cc40377d2b2a1c8c554b690388f6d9cf3a3b2bd8 timeout=120s
+2026-08-08 12:54:20,289 - transcriptx - INFO - [CHART_DESCRIPTIONS] 275/452 viz_id=wordcloud.wordcloud.speaker.noun chart_key=999487c4e7eb913a86bc01821944a3f49910f6d518464f8e2f59f6e36f1a9e02 timeout=120s
+2026-08-08 12:54:24,743 - transcriptx - INFO - [CHART_DESCRIPTIONS] 276/452 viz_id=acts.acts_temporal.speaker chart_key=9a6106b723150f44a0b9a3bfc3f9502881880f101bc732caf6729fdf09b2c037 timeout=120s
+2026-08-08 12:54:30,185 - transcriptx - INFO - [CHART_DESCRIPTIONS] 277/452 viz_id=wordclouds.wordcloud-verb.view.Hala chart_key=9a931f4c68bd5e0137b7ff1ff7b99d51beb20d83ba790271df2b3eef3c1e79cf timeout=120s
+2026-08-08 12:54:33,154 - transcriptx - INFO - [CHART_DESCRIPTIONS] 278/452 viz_id=entity_sentiment.entity_mentions.speaker chart_key=9aaa3d31a5ee8153d811e2dcde4272e07d5ab8b86e893042bf9d27c3460ab3b2 timeout=120s
+2026-08-08 12:54:36,216 - transcriptx - INFO - [CHART_DESCRIPTIONS] 279/452 viz_id=wordcloud.wordcloud.speaker.bigrams chart_key=9ac54be05ad9e6f71dc86e5a908dddf7552d50fd5bb51c8e8d43d6d8510ca398 timeout=120s
+2026-08-08 12:54:40,754 - transcriptx - INFO - [CHART_DESCRIPTIONS] 280/452 viz_id=entity_sentiment.entity_mentions.speaker chart_key=9aeb3edc50d16ecbf68a0dc371d917bc4489a26b2b89a2f5cfb074574acd6a7f timeout=120s
+2026-08-08 12:54:45,972 - transcriptx - INFO - [CHART_DESCRIPTIONS] 281/452 viz_id=topic_modeling.topic_bar.speaker chart_key=9bba20def3ca0cda9d5d8857bf3b19db45db9a00ff12f9b60c51a41d707d8317 timeout=120s
+2026-08-08 12:54:50,587 - transcriptx - INFO - [CHART_DESCRIPTIONS] 282/452 viz_id=interactions.timeline.speaker chart_key=9c199c27da925e52dbf3f56e5facfd6b9bab0b748413ce00d30e00e56e705f49 timeout=120s
+2026-08-08 12:54:57,454 - transcriptx - INFO - [CHART_DESCRIPTIONS] 283/452 viz_id=acts.acts_pie.speaker chart_key=9cc4ba054bcc722b297bfe49f39f14a99e6257ae6becbf5d58f5d0ff0cfa368d timeout=120s
+2026-08-08 12:55:00,706 - transcriptx - INFO - [CHART_DESCRIPTIONS] 284/452 viz_id=wordclouds.tfidf.view.Glen chart_key=9d9927823a6fee3627204b90f638e2d63213f9707f39cdc8725fb3ebd8b090a0 timeout=120s
+2026-08-08 12:55:03,739 - transcriptx - INFO - [CHART_DESCRIPTIONS] 285/452 viz_id=wordclouds.wordcloud-verb.view.Rochelle chart_key=9db2131ff05927fbdfd4c5d2fe0078bc77bd3c9d62e991c251d73274fc2d88f2 timeout=120s
+2026-08-08 12:55:06,599 - transcriptx - INFO - [CHART_DESCRIPTIONS] 286/452 viz_id=fine_grained_emotion.label_counts_excluding_neutral.speaker chart_key=9de8965c93bae1c800346c94e5814e47a3446bc0f35cf73c3356c3cd8b5f6595 timeout=120s
+2026-08-08 12:55:10,637 - transcriptx - INFO - [CHART_DESCRIPTIONS] 287/452 viz_id=wordclouds.tfidf.view.Mariela chart_key=9e79239f4b0e930809c7860a85a52daaaeb8e8d5ad102fba3a7e03384f34c635 timeout=120s
+2026-08-08 12:55:13,563 - transcriptx - INFO - [CHART_DESCRIPTIONS] 288/452 viz_id=fine_grained_emotion.label_counts_excluding_neutral.speaker chart_key=9ee0c4240e415bbfa8bca2fdbf1a2d6f3f0789a30b2e6f21a16590a70572a513 timeout=120s
+2026-08-08 12:55:16,828 - transcriptx - INFO - [CHART_DESCRIPTIONS] 289/452 viz_id=contextual_emotion.label_counts_excluding_neutral.speaker chart_key=9f2c8078780264229edf02c6620ad1b274642eac7849e5bdc5c6b2eb3cb5f8c7 timeout=120s
+2026-08-08 12:55:19,162 - transcriptx - INFO - [CHART_DESCRIPTIONS] 290/452 viz_id=wordclouds.wordcloud-bigrams.view.Frank chart_key=9fe0f0fe88f657a5d668e48f5c4316c6512a2647bbf0afcfbb1f5e759cb4cc41 timeout=120s
+2026-08-08 12:55:22,081 - transcriptx - INFO - [CHART_DESCRIPTIONS] 291/452 viz_id=ner.entity_types.speaker chart_key=a0375e01537a2fb53da3c587b3b2535f68627ad2c66aecfa93b61e441de0b67d timeout=120s
+2026-08-08 12:55:25,640 - transcriptx - INFO - [CHART_DESCRIPTIONS] 292/452 viz_id=fine_grained_emotion.label_counts.global chart_key=a218b6a2fdb3a411a0b49bf34ec8f79909a920b0ea5e86f725cefd6f75667f45 timeout=120s
+2026-08-08 12:55:29,922 - transcriptx - INFO - [CHART_DESCRIPTIONS] 293/452 viz_id=topic_modeling.topic_evolution_timeline.global chart_key=a22653219941b64fd74fc4f308b21d08c1c74fd605641beefc0e041563263d6a timeout=120s
+2026-08-08 12:55:37,647 - transcriptx - INFO - [CHART_DESCRIPTIONS] 294/452 viz_id=wordcloud.wordcloud.speaker.tfidf_bigrams chart_key=a2fa161fc5f2d405c0240ca676b514a8a9baa4c7e7b592f9c4afd37c0335699c timeout=120s
+2026-08-08 12:55:43,566 - transcriptx - INFO - [CHART_DESCRIPTIONS] 295/452 viz_id=wordclouds.wordcloud-tics.view.Mariela chart_key=a39b58909ffbfafbe82b1cde200909dd6738d388dd675d74527448663d607220 timeout=120s
+2026-08-08 12:55:46,229 - transcriptx - INFO - [CHART_DESCRIPTIONS] 296/452 viz_id=topic_modeling.topic_bar.speaker chart_key=a40a65acd5ebd01077e20d5ab88dd4584ea2557c76113de1ec51787c215c1241 timeout=120s
+2026-08-08 12:55:49,320 - transcriptx - INFO - [CHART_DESCRIPTIONS] 297/452 viz_id=wordclouds.wordcloud.view.Glen chart_key=a424c5bb31854fcf645fd883b23b9b188158dd41a955eab9b5b89499233a5947 timeout=120s
+2026-08-08 12:55:52,596 - transcriptx - INFO - [CHART_DESCRIPTIONS] 298/452 viz_id=wordclouds.wordcloud-bigrams.view.Vibhu chart_key=a4ca3b000ad023c313cf3d3be78dfe94a00b5b238147077591a9276f45432fdb timeout=120s
+2026-08-08 12:55:55,421 - transcriptx - INFO - [CHART_DESCRIPTIONS] 299/452 viz_id=contextual_emotion.label_counts.speaker chart_key=a5be4cb2c238df658ec24187218a8205fabb80eb5fc5815ba8e5136c5721ad06 timeout=120s
+2026-08-08 12:55:58,899 - transcriptx - INFO - [CHART_DESCRIPTIONS] 300/452 viz_id=semantic_similarity.speaker_similarity.global chart_key=a722a9ecb7185af606cbf100597aa6f3e28fd7f552ef628616f54c456db915de timeout=120s
+2026-08-08 12:56:03,723 - transcriptx - INFO - [CHART_DESCRIPTIONS] 301/452 viz_id=wordcloud.wordcloud.speaker.bigrams chart_key=a723144b8b54a7663c7648794cc111ab380dab423d6cf47ef4c68091238dd09c timeout=120s
+2026-08-08 12:56:08,280 - transcriptx - INFO - [CHART_DESCRIPTIONS] 302/452 viz_id=wordclouds.tfidf-bigrams.view.Frank chart_key=a72b81f08525713194351c1d341ce9bc167b0c65aa8637c2bf23e615657ec091 timeout=120s
+2026-08-08 12:56:11,612 - transcriptx - INFO - [CHART_DESCRIPTIONS] 303/452 viz_id=wordclouds.wordcloud-bigrams.view.Jonas chart_key=a73742f41af6595cf60e5405ef4cc00d86512c3d90d4d09c8e70e9b8c1160b6a timeout=120s
+2026-08-08 12:56:14,424 - transcriptx - INFO - [CHART_DESCRIPTIONS] 304/452 viz_id=wordcloud.wordcloud.speaker.tics chart_key=a760955f1e55d99f52db4644c69e9183b25b5679d21ce482b0aa919081953f50 timeout=120s
+2026-08-08 12:56:17,894 - transcriptx - INFO - [CHART_DESCRIPTIONS] 305/452 viz_id=topic_modeling.topic_bar.speaker chart_key=a7d5c11c5e8620bb78fd69c2431134dabbbf9e27499ee91b413874e33cea45d5 timeout=120s
+2026-08-08 12:56:21,354 - transcriptx - INFO - [CHART_DESCRIPTIONS] 306/452 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks.view.Rana chart_key=a8362850d06ad8fcca7fd6eb17e9c7b36db42f05097465efe2c03e15ad47fdf1 timeout=120s
+2026-08-08 12:56:24,520 - transcriptx - INFO - [CHART_DESCRIPTIONS] 307/452 viz_id=wordcloud.wordcloud.speaker.adj chart_key=a8dbf5f59887c5603cc7df752a7b16eefb28f867df20315d2e676ae914c6af91 timeout=120s
+2026-08-08 12:56:28,091 - transcriptx - INFO - [CHART_DESCRIPTIONS] 308/452 viz_id=wordcloud.wordcloud.speaker.tics chart_key=a909b2467e55a7da6d71ac9a47a213ff0f05d2e75ce332c93a0db70afd0a51ec timeout=120s
+2026-08-08 12:56:31,540 - transcriptx - INFO - [CHART_DESCRIPTIONS] 309/452 viz_id=affect_tension.entropy_volatility_timeseries.speaker chart_key=a9336ae50d722e1569aa58db80c16964c7ffe8a17ee81a500802a21df680a5a5 timeout=120s
+2026-08-08 12:56:39,916 - transcriptx - INFO - [CHART_DESCRIPTIONS] 310/452 viz_id=understandability.readability-indices-bars.global chart_key=acd56e60afadae3f18f85907d5bceedd8daa1cfc67834de9e2c358b6ba72bb56 timeout=120s
+2026-08-08 12:56:44,700 - transcriptx - INFO - [CHART_DESCRIPTIONS] 311/452 viz_id=topic_modeling.topic_bar.speaker chart_key=ad0ca4dad905c634eec85185982758e1b87e882c9d171e0c941858dc3589f05c timeout=120s
+2026-08-08 12:56:48,268 - transcriptx - INFO - [CHART_DESCRIPTIONS] 312/452 viz_id=topic_modeling.topic_bar.speaker chart_key=ad1b68ac57eb3c4d6dd273ff2d39264d5ed3b4158fc9fc59e9ef0f07fd417905 timeout=120s
+2026-08-08 12:56:51,953 - transcriptx - INFO - [CHART_DESCRIPTIONS] 313/452 viz_id=entity_sentiment.entity_mentions.speaker chart_key=ae1b8dece508457dde2f3b22962c0b91bc607e22e8c461f1b028e6fb74a94955 timeout=120s
+2026-08-08 12:56:54,829 - transcriptx - INFO - [CHART_DESCRIPTIONS] 314/452 viz_id=contextual_emotion.label_counts_excluding_neutral.speaker chart_key=aec74cfa35efe7355f4cb8f6387bb6ca66ca4cc1a48a6f3debaa69b1e2551a48 timeout=120s
+2026-08-08 12:56:58,088 - transcriptx - INFO - [CHART_DESCRIPTIONS] 315/452 viz_id=fine_grained_emotion.label_share_non_neutral.speaker chart_key=b1462332eca0c310d24efc0dc80e0e15a00efbc3b9e29225a1901561408149b1 timeout=120s
+2026-08-08 12:57:02,530 - transcriptx - INFO - [CHART_DESCRIPTIONS] 316/452 viz_id=wordcloud.wordcloud.global.keyphrases_noun_chunks chart_key=b168b814a217c5c5bf07fdd5ed717c7110f8ac3a1806da888c5327d8449f054b timeout=120s
+2026-08-08 12:57:06,756 - transcriptx - INFO - [CHART_DESCRIPTIONS] 317/452 viz_id=sentiment.multi_speaker_sentiment.global chart_key=b3102eaa8b70c5e4af225a73127cba17ff1b838b3c929b236f503829b118d329 timeout=120s
+2026-08-08 12:57:36,192 - transcriptx - INFO - [CHART_DESCRIPTIONS] 318/452 viz_id=wordclouds.wordcloud-verb-ALL.global chart_key=b3a94eda49777bf17949a006c81b38ee7d0e11a597bd9a992d5df70df263aabf timeout=120s
+2026-08-08 12:57:40,731 - transcriptx - INFO - [CHART_DESCRIPTIONS] 319/452 viz_id=wordcloud.wordcloud.speaker.keyphrases_noun_chunks chart_key=b3c0716f57b73db1a030ac94a6a95ab4ad3ad41240a52e1e76bd840541853a90 timeout=120s
+2026-08-08 12:57:45,008 - transcriptx - INFO - [CHART_DESCRIPTIONS] 320/452 viz_id=contextual_emotion.label_share_non_neutral.speaker chart_key=b63f6749a5b48361b00bb6a1ffcf93ef2bd4d73c11bd2618db31485d1d4b081d timeout=120s
+2026-08-08 12:57:48,939 - transcriptx - INFO - [CHART_DESCRIPTIONS] 321/452 viz_id=fine_grained_emotion.label_counts.speaker chart_key=b78202ad1e5bc4d7ad16ba244af8582f74cf0b68e5d0855683fb13cb6acd8df2 timeout=120s
+2026-08-08 12:57:52,246 - transcriptx - INFO - [CHART_DESCRIPTIONS] 322/452 viz_id=topic_modeling.topic_bar.speaker chart_key=b7fe6ce87cfb921d765c34835f4c4274782798322b1723e6eecb37b9f0b29ed9 timeout=120s
+2026-08-08 12:57:55,224 - transcriptx - INFO - [CHART_DESCRIPTIONS] 323/452 viz_id=fine_grained_emotion.label_counts.speaker chart_key=b8014a6117798e4cc0cc756d8d9bbcf49a41c9fdfa5da18a84cab03a6326cfef timeout=120s
+2026-08-08 12:57:59,242 - transcriptx - INFO - [CHART_DESCRIPTIONS] 324/452 viz_id=ner.entity_types.speaker chart_key=b809cfa555c0e52e39ff8cb62288f32c734326a216fb3d5fc23820f74ee899ea timeout=120s
+2026-08-08 12:58:02,947 - transcriptx - INFO - [CHART_DESCRIPTIONS] 325/452 viz_id=lexical_diversity.ttr.speaker chart_key=b85ae52f5496f00a92da15e99965db8f1e4e92f737de026a659b91c5044cd90b timeout=120s
+2026-08-08 12:58:07,368 - transcriptx - INFO - [CHART_DESCRIPTIONS] 326/452 viz_id=wordclouds.tfidf.view.Rochelle chart_key=b862eec1ae029436a701b398631d3abd57141fe9ece8ff44d5910352fa689406 timeout=120s
+2026-08-08 12:58:10,336 - transcriptx - INFO - [CHART_DESCRIPTIONS] 327/452 viz_id=fine_grained_emotion.label_counts.speaker chart_key=ba10c6c083aeb7c1587cd7ea5a70dd45257b0e4b748f04408e87fd5e56c94cdc timeout=120s
+2026-08-08 12:58:13,940 - transcriptx - INFO - [CHART_DESCRIPTIONS] 328/452 viz_id=wordclouds.wordcloud-bigrams.view.Glen chart_key=ba294a7d5d828cf26adcada17945bb711903ccc3da315d99f933da57f0e288d3 timeout=120s
+2026-08-08 12:58:16,632 - transcriptx - INFO - [CHART_DESCRIPTIONS] 329/452 viz_id=interactions.timeline.global chart_key=bb75205f3e02b239783b30c22036c63ded50330a06fdb5b19b4946c104ec4c64 timeout=120s
+2026-08-08 12:58:23,955 - transcriptx - INFO - [CHART_DESCRIPTIONS] 330/452 viz_id=politeness.category_rates.speaker chart_key=bb892d65239557e51cf61008d5ea859adeb95101f6edcdef2ba2548f53343973 timeout=120s
+2026-08-08 12:58:26,999 - transcriptx - INFO - [CHART_DESCRIPTIONS] 331/452 viz_id=politeness.category_rates.speaker chart_key=bbd6f753b7408dd0c26867e2c93e700f2748c2632f9ff864b20bd9e0bf444e59 timeout=120s
+2026-08-08 12:58:31,857 - transcriptx - INFO - [CHART_DESCRIPTIONS] 332/452 viz_id=wordclouds.wordcloud-verb.view.Rana chart_key=bc40b84a893b416d71627667a31c1c3ed307238bad17dbd1003ee2956ece377c timeout=120s
+2026-08-08 12:58:34,974 - transcriptx - INFO - [CHART_DESCRIPTIONS] 333/452 viz_id=interactions.dominance.global chart_key=bd400eace44a17d1eaa0c16a483e3857f64223e68058c282189c2ad6811c361b timeout=120s
+2026-08-08 12:58:39,224 - transcriptx - INFO - [CHART_DESCRIPTIONS] 334/452 viz_id=topic_modeling.topic_bar.speaker chart_key=bdb5a3fef4b4aa1b9e5b9fd303983641b99ddfad0b55988f73119d49a649423c timeout=120s
+2026-08-08 12:58:42,778 - transcriptx - INFO - [CHART_DESCRIPTIONS] 335/452 viz_id=affect_tension.entropy_volatility_timeseries.speaker chart_key=bf37f1fb6c244d8ae4490ce3abc1449726f6849e34e22fc476c38d921c38fe09 timeout=120s
+2026-08-08 12:58:46,904 - transcriptx - INFO - [CHART_DESCRIPTIONS] 336/452 viz_id=wordcloud.wordcloud.speaker.verb chart_key=bf617024056b8d3b70844242aba3d04f41a28b5ae4e86e7cdf9b50a4e57acf03 timeout=120s
+2026-08-08 12:58:51,353 - transcriptx - INFO - [CHART_DESCRIPTIONS] 337/452 viz_id=acts.acts_pie.speaker chart_key=c1083ed756c29d58e3fd083a4b55c5aef418d3ec2185e44b7aeeee2b4760d7f7 timeout=120s
+2026-08-08 12:58:54,608 - transcriptx - INFO - [CHART_DESCRIPTIONS] 338/452 viz_id=topic_modeling.topic_bar.speaker chart_key=c11c81212ba078f4200af5bb3dca4af3be9e679452a43ef72eba76d7d774aee5 timeout=120s
+2026-08-08 12:58:58,341 - transcriptx - INFO - [CHART_DESCRIPTIONS] 339/452 viz_id=affect_tension.derived_suppressed_conflict.global chart_key=c11f7e3e10ab8a4a6d67ded7dfa904558df36ed7bf3d7051468dedad4e04e727 timeout=120s
+2026-08-08 12:59:02,996 - transcriptx - INFO - [CHART_DESCRIPTIONS] 340/452 viz_id=transcript_quality.asr_low_score_timeline.global chart_key=c16ca0f6a24e85cc889f1da59285d3ed4b7e7221597d4a2404ba23549dce794d timeout=120s
+2026-08-08 12:59:07,894 - transcriptx - INFO - [CHART_DESCRIPTIONS] 341/452 viz_id=contextual_emotion.label_counts_excluding_neutral.speaker chart_key=c197c93f5e9b87d7dc6056e28be881236a7a90fdf9f40fffc58cd76ef1154641 timeout=120s
+2026-08-08 12:59:10,782 - transcriptx - INFO - [CHART_DESCRIPTIONS] 342/452 viz_id=wordclouds.wordcloud-bigrams-ALL.view chart_key=c1a0326cebc9fba980709b23f8a1b2b8138f73be97eac4c240740beb72ace39f timeout=120s
+2026-08-08 12:59:13,637 - transcriptx - INFO - [CHART_DESCRIPTIONS] 343/452 viz_id=wordclouds.wordcloud-bigrams.view.Rana chart_key=c1c0d44fbbae1c94f3b276c0b2bf3a58eaa7eab75886da1a8be8e014e26c7916 timeout=120s
+2026-08-08 12:59:16,640 - transcriptx - INFO - [CHART_DESCRIPTIONS] 344/452 viz_id=acts.global_acts_bar.global chart_key=c22cce9607cc54bb76890b6954593078209e0ba8d48d06f39c974f7c079b4b39 timeout=120s
+2026-08-08 12:59:24,293 - transcriptx - INFO - [CHART_DESCRIPTIONS] 345/452 viz_id=fine_grained_emotion.label_share_non_neutral.speaker chart_key=c279f78ad631afab15d4eaabcfb7eb4a997f7c5cc7b5784af65cfdc9e04b45c9 timeout=120s
+2026-08-08 12:59:28,367 - transcriptx - INFO - [CHART_DESCRIPTIONS] 346/452 viz_id=interactions.timeline.speaker chart_key=c27ffa862d16d39090274137774ad8adc27716e0c2412c9457aa0ebba7fe4ba0 timeout=120s
+2026-08-08 12:59:36,634 - transcriptx - INFO - [CHART_DESCRIPTIONS] 347/452 viz_id=wordclouds.tfidf.view.Frank chart_key=c4357a969b5941b150a42bc6c7b557ab994fe2a3a66ffad80088d6094c9f1349 timeout=120s
+2026-08-08 12:59:39,180 - transcriptx - INFO - [CHART_DESCRIPTIONS] 348/452 viz_id=topic_modeling.topic_bar.speaker chart_key=c521e538db88e3b319c5a968968f909a234c3b8e1d9d815e55b791d0ad8dfe4e timeout=120s
+2026-08-08 12:59:42,368 - transcriptx - INFO - [CHART_DESCRIPTIONS] 349/452 viz_id=emotion.radar.speaker chart_key=c540e5393bb98751058a9dc71a18f1950e6958dc746cabe1475ab62aa7018ff6 timeout=120s
+2026-08-08 12:59:46,552 - transcriptx - INFO - [CHART_DESCRIPTIONS] 350/452 viz_id=wordcloud.wordcloud.speaker.tfidf chart_key=c70e473755aa3ec7dbaa1dd9cae17d366cc3ee05c9f3168bc27af03b8fe4db28 timeout=120s
+2026-08-08 12:59:51,165 - transcriptx - INFO - [CHART_DESCRIPTIONS] 351/452 viz_id=affect_tension.entropy_volatility_timeseries.speaker chart_key=c7d1f8304f15856fbce4845560a2b0448ce93a03bc0e61edaa5eee1c042e1579 timeout=120s
+2026-08-08 12:59:59,637 - transcriptx - INFO - [CHART_DESCRIPTIONS] 352/452 viz_id=topic_modeling.topic_bar.speaker chart_key=c825d85f5dc6d84c71f0dc417cdd42107c5ff50f909aa031f9e62c7596f476b5 timeout=120s
+2026-08-08 13:00:03,148 - transcriptx - INFO - [CHART_DESCRIPTIONS] 353/452 viz_id=wordclouds.wordcloud-tics.view.Vibhu chart_key=c82e706bc97a8025002482d21342abe61f618a50d63a2b59d7ce7857310259b1 timeout=120s
+2026-08-08 13:00:06,248 - transcriptx - INFO - [CHART_DESCRIPTIONS] 354/452 viz_id=wordclouds.wordcloud-noun.view.Glen chart_key=c84434a2ab7b70dd4592069cf393eafa46591cd268be332c4d3a79c83e76f30c timeout=120s
+2026-08-08 13:00:08,960 - transcriptx - INFO - [CHART_DESCRIPTIONS] 355/452 viz_id=interactions.timeline.speaker chart_key=c893e815cbbf9347b79757ca71f168864d7531e67b52d797782f1e2c8b411ad8 timeout=120s
+2026-08-08 13:00:14,244 - transcriptx - INFO - [CHART_DESCRIPTIONS] 356/452 viz_id=wordclouds.tfidf-bigrams.view.Hala chart_key=c8985360e51069dfd48fdb6d9f35fa901f7176bdd162bd94155a14d0eb652c55 timeout=120s
+2026-08-08 13:00:17,034 - transcriptx - INFO - [CHART_DESCRIPTIONS] 357/452 viz_id=wordcloud.wordcloud.speaker.adj chart_key=ca4361571f1d778406f509387aef3b0e95ebdd05bd36c52fc37c7524675692f1 timeout=120s
+2026-08-08 13:00:20,412 - transcriptx - INFO - [CHART_DESCRIPTIONS] 358/452 viz_id=wordclouds.wordcloud.view.Vibhu chart_key=ca47611123a50edbeb65345c6a73d1b920362330656b221a189a5260dfc28af8 timeout=120s
+2026-08-08 13:00:22,756 - transcriptx - INFO - [CHART_DESCRIPTIONS] 359/452 viz_id=topic_modeling.topic_bar.speaker chart_key=cb55834784857ceae8496fc64331b0d4c6173f7be562c45d57fcd2a5b2fdcd40 timeout=120s
+2026-08-08 13:00:27,384 - transcriptx - INFO - [CHART_DESCRIPTIONS] 360/452 viz_id=topic_modeling.topic_bar.speaker chart_key=cbb08db6c2a25105a1e288f5ee65317632b73743a13c4830b17434c4d49204f2 timeout=120s
+2026-08-08 13:00:30,321 - transcriptx - INFO - [CHART_DESCRIPTIONS] 361/452 viz_id=semantic_similarity.speaker_repetitions.global chart_key=cbce2cc1627afa828ca9d1e6075f638b3db85cd3b0bbf10ad867e8f3c185463c timeout=120s
+2026-08-08 13:00:34,377 - transcriptx - INFO - [CHART_DESCRIPTIONS] 362/452 viz_id=contextual_emotion.label_counts.speaker chart_key=cc20028fcc064d439d8cf3759f0e5d6807db5ee8db3da7c9c3f2670d2f4b3af4 timeout=120s
+2026-08-08 13:00:37,295 - transcriptx - INFO - [CHART_DESCRIPTIONS] 363/452 viz_id=wordclouds.wordcloud.speaker chart_key=ccf3da547c5ae3685a4d745ade89af46e1a0d1dcc6a269b33fa4ada3b0b15e6e timeout=120s
+2026-08-08 13:00:42,007 - transcriptx - INFO - [CHART_DESCRIPTIONS] 364/452 viz_id=ner.entity_types.speaker chart_key=ce27ff6333f4af81e6049d9fc362b7762349c1f2411f4b23f744fe7268dacb67 timeout=120s
+2026-08-08 13:00:45,606 - transcriptx - INFO - [CHART_DESCRIPTIONS] 365/452 viz_id=acts.global_acts_pie.global chart_key=ce7beefadf0a407dbcd2f0a49de3a63e71025e18c88ee851987981f3db519cf9 timeout=120s
+2026-08-08 13:00:49,632 - transcriptx - INFO - [CHART_DESCRIPTIONS] 366/452 viz_id=topic_modeling.topic_bar.speaker chart_key=cea357489e98cccb99f163cff5bebc843f56586e533acf82391f3181fe509feb timeout=120s
+2026-08-08 13:00:53,342 - transcriptx - INFO - [CHART_DESCRIPTIONS] 367/452 viz_id=acts.acts_bar.speaker chart_key=d019d667537f5cfe0f1f682d525747fa4794b346ce46cb43a858b4203df96c30 timeout=120s
+2026-08-08 13:00:56,015 - transcriptx - INFO - [CHART_DESCRIPTIONS] 368/452 viz_id=contextual_emotion.label_share_non_neutral.speaker chart_key=d029bf7c2086e9d92e7c2e4ef67011b9c46ea693f5bc0716214e593aac325129 timeout=120s
+2026-08-08 13:00:59,568 - transcriptx - INFO - [CHART_DESCRIPTIONS] 369/452 viz_id=wordclouds.wordcloud-adj-ALL.global chart_key=d099825885e347c364e87f0625f343c21a06347250ce69c70f30e50aa46096c3 timeout=120s
+2026-08-08 13:01:04,158 - transcriptx - INFO - [CHART_DESCRIPTIONS] 370/452 viz_id=wordclouds.wordcloud-adj.view.Rana chart_key=d0e8dffb11cd4f8fd9458b78a779de96eaa8328a87cadc33f397fdcf676a6ca7 timeout=120s
+2026-08-08 13:01:06,750 - transcriptx - INFO - [CHART_DESCRIPTIONS] 371/452 viz_id=tics.tics.speaker chart_key=d1d6bee086fb876c1d59826cc1d364a859b91bcfc70ef0c9368eddbe062ba139 timeout=120s
+2026-08-08 13:01:10,554 - transcriptx - INFO - [CHART_DESCRIPTIONS] 372/452 viz_id=tics.tics.speaker chart_key=d20021725d0e7ead93e0cdf6b6cd30b259ec6988e630a1c364bb06435485331c timeout=120s
+2026-08-08 13:01:14,069 - transcriptx - INFO - [CHART_DESCRIPTIONS] 373/452 viz_id=affect_tension.entropy_volatility_timeseries.speaker chart_key=d2cdefbccb910db4c36c1575caff15045cdf2cfc8869bfdc00c056290ea788df timeout=120s
+2026-08-08 13:01:23,425 - transcriptx - INFO - [CHART_DESCRIPTIONS] 374/452 viz_id=wordclouds.tfidf-bigrams.view.Vibhu chart_key=d42ff4e810b7391b0de811aed14ea70fa60dbdcefdf96e653ba31d1064fb0119 timeout=120s
+2026-08-08 13:01:26,124 - transcriptx - INFO - [CHART_DESCRIPTIONS] 375/452 viz_id=politeness.category_rates.speaker chart_key=d470905aeeff89a8e7b1c5f3ec4b8c1bfab753d80340fe17dcc78171cc3d0b92 timeout=120s
+2026-08-08 13:01:29,139 - transcriptx - INFO - [CHART_DESCRIPTIONS] 376/452 viz_id=wordcloud.wordcloud.speaker.noun chart_key=d4924b384f8a9c865678b1eb45c335c525d0619273e3bc70e84d66a875655ec4 timeout=120s
+2026-08-08 13:01:33,401 - transcriptx - INFO - [CHART_DESCRIPTIONS] 377/452 viz_id=epistemic_markers.category_rates.speaker chart_key=d4b9a55f447a4c05c0a7a5c0542a5a0144e2c9cc4fa174f101841a01bba4e6f1 timeout=120s
+2026-08-08 13:01:38,485 - transcriptx - INFO - [CHART_DESCRIPTIONS] 378/452 viz_id=acts.acts_bar.speaker chart_key=d4ec41660cde9d0088e075b38f39457c83168f16bb816967d6acb7a786645801 timeout=120s
+2026-08-08 13:01:42,652 - transcriptx - INFO - [CHART_DESCRIPTIONS] 379/452 viz_id=wordclouds.wordcloud-bigrams.view.Hala chart_key=d53d88c0e12ceca48782f06a8cd0b5e33ea90710dae191e00dc02b4586c33598 timeout=120s
+2026-08-08 13:01:45,383 - transcriptx - INFO - [CHART_DESCRIPTIONS] 380/452 viz_id=topic_modeling.topic_bar.speaker chart_key=d74c436f0d919b232e148a790e4414034b392ea82746022d998edce30197d974 timeout=120s
+2026-08-08 13:01:49,795 - transcriptx - INFO - [CHART_DESCRIPTIONS] 381/452 viz_id=topic_modeling.topic_bar.speaker chart_key=d867e8f05934e8c940d3c2f760e6e6a1d51b42acb950e28ce2a29689ade4ec75 timeout=120s
+2026-08-08 13:01:53,270 - transcriptx - INFO - [CHART_DESCRIPTIONS] 382/452 viz_id=wordcloud.wordcloud.speaker.tfidf chart_key=d88d7e6c901cb02e7ef86971db4c5bc4c3722d6978b362aad6fcada1d319b699 timeout=120s
+2026-08-08 13:01:59,829 - transcriptx - INFO - [CHART_DESCRIPTIONS] 383/452 viz_id=topic_modeling.topic_bar.speaker chart_key=d951de6aee0b6c25fd8b0d496c3b4ee4c7954423dc7a7687e6cd7a5697164ca2 timeout=120s
+2026-08-08 13:02:03,082 - transcriptx - INFO - [CHART_DESCRIPTIONS] 384/452 viz_id=acts.acts_pie.speaker chart_key=d99846f01ab34a389b96ff6c7483cc6e26b75aaac9ca278535c006b9b06729ff timeout=120s
+2026-08-08 13:02:05,807 - transcriptx - INFO - [CHART_DESCRIPTIONS] 385/452 viz_id=acts.acts_bar.speaker chart_key=dc1d50ccf8961297c84da5f9716559c727be8c02c4dc28ca961cd01b6acf02e9 timeout=120s
+2026-08-08 13:02:09,382 - transcriptx - INFO - [CHART_DESCRIPTIONS] 386/452 viz_id=topic_modeling.topic_bar.speaker chart_key=dc43c4c5b15cc36f699442388c909af14e5e429d79849dcb569e56c2da2dab78 timeout=120s
+2026-08-08 13:02:12,857 - transcriptx - INFO - [CHART_DESCRIPTIONS] 387/452 viz_id=fine_grained_emotion.label_counts_excluding_neutral.speaker chart_key=dc66d997c5f3bcd8ad6b02d2fbba0d91cef0ccbd21ae785315affc1fc5b1acdd timeout=120s
+2026-08-08 13:02:16,102 - transcriptx - INFO - [CHART_DESCRIPTIONS] 388/452 viz_id=topic_modeling.speaker_topic_engagement_heatmap.global chart_key=dce3da41f61a4d273620b69fa48c7dde5d075af918a96f4b711998c665e08090 timeout=120s
+2026-08-08 13:02:21,745 - transcriptx - INFO - [CHART_DESCRIPTIONS] 389/452 viz_id=entity_sentiment.entity_type_analysis.global chart_key=dd3cf9728f5127b71756792b7a2dd26c9352d6bd3c92b5040b25274eae5753a5 timeout=120s
+2026-08-08 13:02:25,034 - transcriptx - INFO - [CHART_DESCRIPTIONS] 390/452 viz_id=wordcloud.wordcloud.speaker.adj chart_key=dda282f5850acc993e21fb560ea1573be76a7443de2a72cc12dc19bc276958fb timeout=120s
+2026-08-08 13:02:28,568 - transcriptx - INFO - [CHART_DESCRIPTIONS] 391/452 viz_id=topic_modeling.topic_bar.speaker chart_key=ddd68494a8c67575fd86d977ff47bacb6604567d650c003cfefd9d12ca56a5a3 timeout=120s
+2026-08-08 13:02:32,033 - transcriptx - INFO - [CHART_DESCRIPTIONS] 392/452 viz_id=fine_grained_emotion.label_share_non_neutral.speaker chart_key=ddd82f5d1b27618f54ff023239d2c01135c1ffec03724325d7b037080078e5fc timeout=120s
+2026-08-08 13:02:36,131 - transcriptx - INFO - [CHART_DESCRIPTIONS] 393/452 viz_id=sentiment.rolling_sentiment.speaker chart_key=df6ba6048a8813ddd7533c3df52c778889d76df6f9b92a2c72712522b5f9a2e7 timeout=120s
+2026-08-08 13:02:42,447 - transcriptx - INFO - [CHART_DESCRIPTIONS] 394/452 viz_id=fine_grained_emotion.label_counts_excluding_neutral.speaker chart_key=e05cad29199bf429dfd89ae7dd1ab7ff9aae6f3c9f56e1cb3759e4082d16e276 timeout=120s
+2026-08-08 13:02:46,040 - transcriptx - INFO - [CHART_DESCRIPTIONS] 395/452 viz_id=ner.entity_types.speaker chart_key=e1544c73bea932c9848a51a4e0a7ccbc06eaeb5fe67c439be6fe21d010011a2a timeout=120s
+2026-08-08 13:02:49,318 - transcriptx - INFO - [CHART_DESCRIPTIONS] 396/452 viz_id=epistemic_markers.category_rates.speaker chart_key=e17d44c39f51f0efa7dde282f24539a34ee3e9909dc5c6ba70c415842d8e4046 timeout=120s
+2026-08-08 13:02:53,323 - transcriptx - INFO - [CHART_DESCRIPTIONS] 397/452 viz_id=topic_modeling.topic_bar.speaker chart_key=e1a78677e302703ace52bc0e6bd5786551065e29744f34a5febd5bc00dc6c37c timeout=120s
+2026-08-08 13:02:56,007 - transcriptx - INFO - [CHART_DESCRIPTIONS] 398/452 viz_id=topic_modeling.topic_bar.speaker chart_key=e1e3702fcf24e1b3a28dccaa6bbc101193bc6e883f6ed31870408719663215a1 timeout=120s
+2026-08-08 13:02:59,438 - transcriptx - INFO - [CHART_DESCRIPTIONS] 399/452 viz_id=topic_modeling.topic_bar.speaker chart_key=e2b6f2e0af697ebad268758bced46d198e5acf067f97e91db61e6944320c222b timeout=120s
+2026-08-08 13:03:02,720 - transcriptx - INFO - [CHART_DESCRIPTIONS] 400/452 viz_id=wordclouds.tfidf.view.Jonas chart_key=e2eb3ae1ceec188d50975d6406cb6a22130110553a459c922c78eb93716b65a7 timeout=120s
+2026-08-08 13:03:05,539 - transcriptx - INFO - [CHART_DESCRIPTIONS] 401/452 viz_id=acts.acts_pie.speaker chart_key=e3c73f02d91f58b7a9e66effdde659ed336db2617735bf21caddf5043f492308 timeout=120s
+2026-08-08 13:03:08,531 - transcriptx - INFO - [CHART_DESCRIPTIONS] 402/452 viz_id=lexical_diversity.hapax_rate.speaker chart_key=e470b62f11eae0da38652974b477828f633a642f2a3eafa16f1fb29b1c228443 timeout=120s
+2026-08-08 13:03:12,531 - transcriptx - INFO - [CHART_DESCRIPTIONS] 403/452 viz_id=wordclouds.wordcloud.view.Frank chart_key=e52d70105b09218109f4fc24dd3c6211cee6776cd59987cde1ce367796d747c8 timeout=120s
+2026-08-08 13:03:15,774 - transcriptx - INFO - [CHART_DESCRIPTIONS] 404/452 viz_id=wordclouds.tfidf.view.Vibhu chart_key=e5e1228f954cc56ef250fe04fb0bc7ba78c2ca24090a2674c3f4fa52acfdbd40 timeout=120s
+2026-08-08 13:03:18,924 - transcriptx - INFO - [CHART_DESCRIPTIONS] 405/452 viz_id=wordclouds.wordcloud-noun.view.Frank chart_key=e67aa702a50e48a13d93bc4fb04e39d2bef66165efb723b7e2d8aea956b035a8 timeout=120s
+2026-08-08 13:03:21,632 - transcriptx - INFO - [CHART_DESCRIPTIONS] 406/452 viz_id=qa_analysis.response_time_analysis.global chart_key=e6d7ec0300957c2dc281e0028ff7f9147ce5d4cb42e0c499f4c6c60b349e9cb9 timeout=120s
+2026-08-08 13:03:26,484 - transcriptx - INFO - [CHART_DESCRIPTIONS] 407/452 viz_id=emotion.radar.speaker chart_key=e797dc5d2efecff4791daf0429ca5b771b07a20b4cb52f6af3caf42400412ccc timeout=120s
+2026-08-08 13:03:30,665 - transcriptx - INFO - [CHART_DESCRIPTIONS] 408/452 viz_id=entity_sentiment.entity_mentions.speaker chart_key=e7ac7d05e54f4c6b3db1e6af81e687dbc5b0c072fce1ece7985eb64dcd2d6409 timeout=120s
+2026-08-08 13:03:33,615 - transcriptx - INFO - [CHART_DESCRIPTIONS] 409/452 viz_id=topic_modeling.topic_bar.speaker chart_key=e9862c329c311d7703daa1fc26da19a6f6af9a41a459a67b62e8bc5f4fd18d62 timeout=120s
+2026-08-08 13:03:36,609 - transcriptx - INFO - [CHART_DESCRIPTIONS] 410/452 viz_id=topic_modeling.topic_bar.speaker chart_key=e9bad518518baf18274fda3f21e8dc971e543e1eaef83cae937a939573a2943f timeout=120s
+2026-08-08 13:03:39,573 - transcriptx - INFO - [CHART_DESCRIPTIONS] 411/452 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks.view.Mariela chart_key=e9fe5ac5875c42262f232ae7603f0f2702e6e3eb2b20b5073925ae62106ed74f timeout=120s
+2026-08-08 13:03:42,637 - transcriptx - INFO - [CHART_DESCRIPTIONS] 412/452 viz_id=topic_modeling.topic_bar.speaker chart_key=ea1b25a454574a77e16135c8c31507d1439c6c5afba5b41222abecf7333d7812 timeout=120s
+2026-08-08 13:03:45,959 - transcriptx - INFO - [CHART_DESCRIPTIONS] 413/452 viz_id=topic_modeling.topic_bar.speaker chart_key=ea67e31b0b5bf3e5a414849b3cfb1926f172f626b812dff9bd80fd899ea58e71 timeout=120s
+2026-08-08 13:03:49,350 - transcriptx - INFO - [CHART_DESCRIPTIONS] 414/452 viz_id=wordcloud.wordcloud.speaker.tfidf chart_key=eae59574c06bc1c668d707fab12013716d5217ad726b12beed4b3598cd66f07f timeout=120s
+2026-08-08 13:03:53,223 - transcriptx - INFO - [CHART_DESCRIPTIONS] 415/452 viz_id=qa_analysis.response_quality.global chart_key=ed6fd0f15b889af3247896d913f7b4c33681d1ef9c430ba9e0c83211362165b2 timeout=120s
+2026-08-08 13:03:57,816 - transcriptx - INFO - [CHART_DESCRIPTIONS] 416/452 viz_id=topic_modeling.topic_bar.speaker chart_key=edf852b29738fb2c8b813a33159e92ef03045bbbd4a991ff2f89c097147f9199 timeout=120s
+2026-08-08 13:04:00,909 - transcriptx - INFO - [CHART_DESCRIPTIONS] 417/452 viz_id=interactions.network.global chart_key=ee3140038a897fe399135caadec33e191446816f27e0e07c834f510543a1fbe3 timeout=120s
+2026-08-08 13:04:05,182 - transcriptx - INFO - [CHART_DESCRIPTIONS] 418/452 viz_id=emotion.radar.speaker chart_key=ee5d9256124f41f9cef09f90c64dc63e395380fa02f78c4e2e195f512ce1a05e timeout=120s
+2026-08-08 13:04:09,067 - transcriptx - INFO - [CHART_DESCRIPTIONS] 419/452 viz_id=epistemic_markers.category_rates.speaker chart_key=eecdb8dccfb92a299e5cdf4c45a1d4bf2dc9764ec36cac77564b2cee963bf71d timeout=120s
+2026-08-08 13:04:13,537 - transcriptx - INFO - [CHART_DESCRIPTIONS] 420/452 viz_id=wordclouds.wordcloud-noun.view.Hala chart_key=efbc6eb02e0fbd6976c0c413c3cfc988a6fd2bf08d7b86d19286b3d9eeebb0f6 timeout=120s
+2026-08-08 13:04:16,448 - transcriptx - INFO - [CHART_DESCRIPTIONS] 421/452 viz_id=wordcloud.wordcloud.speaker.bigrams chart_key=efcd237e790d40dd8569a6b5d45f5710104ca4252f168addd905147819ea38a5 timeout=120s
+2026-08-08 13:04:20,981 - transcriptx - INFO - [CHART_DESCRIPTIONS] 422/452 viz_id=wordcloud.wordcloud.speaker.keyphrases_noun_chunks chart_key=f03109fe55f33b12b7e5fdf8f3a28bd34916465f9e9edeef50afc7900f314c07 timeout=120s
+2026-08-08 13:04:24,012 - transcriptx - INFO - [CHART_DESCRIPTIONS] 423/452 viz_id=wordclouds.wordcloud-adj-ALL.view chart_key=f0bd611a55239a4b1989d99809ec1bbe15dbfa60838e46a49156a66c863c2e08 timeout=120s
+2026-08-08 13:04:27,015 - transcriptx - INFO - [CHART_DESCRIPTIONS] 424/452 viz_id=affect_tension.mismatch_rate.global chart_key=f12cb71fb2d448cac7a168401b6a3c8cf1a49554349bd56b25f9981b53b0bcb2 timeout=120s
+2026-08-08 13:04:31,479 - transcriptx - INFO - [CHART_DESCRIPTIONS] 425/452 viz_id=topic_modeling.nmf_diagnostic_plots.global chart_key=f1d4a2a0299e68098ffec198c929593bd05a2cb6e4ddee58266032923c5b224e timeout=120s
+2026-08-08 13:04:37,777 - transcriptx - INFO - [CHART_DESCRIPTIONS] 426/452 viz_id=wordclouds.wordcloud-noun.view.Rochelle chart_key=f22d0c72c3509c81d7e74aa9eafcd8902910c54c1d6522c92fade41d6b4e2c98 timeout=120s
+2026-08-08 13:04:40,700 - transcriptx - INFO - [CHART_DESCRIPTIONS] 427/452 viz_id=topic_modeling.topic_bar.speaker chart_key=f274dbaa353e5bd1bbaffb13724a50d27749afe9f139379ed3d739fffd73e19b timeout=120s
+2026-08-08 13:04:44,304 - transcriptx - INFO - [CHART_DESCRIPTIONS] 428/452 viz_id=acts.acts_bar.speaker chart_key=f30ef60776ba657ceaf8bfeee5cf9f64620ac9f3eacf3563f422ed813781c000 timeout=120s
+2026-08-08 13:04:48,153 - transcriptx - INFO - [CHART_DESCRIPTIONS] 429/452 viz_id=wordclouds.wordcloud-adj.view.Mariela chart_key=f402d3b62cec31877b0ce66904b5dd85322d38bb7f783a952e2b5ef09f742c5d timeout=120s
+2026-08-08 13:04:51,050 - transcriptx - INFO - [CHART_DESCRIPTIONS] 430/452 viz_id=topic_modeling.topic_bar.speaker chart_key=f40c8b44f68d18e36895633b6d24ef712765e3cd2892107053bc6318cb8cb57e timeout=120s
+2026-08-08 13:04:54,711 - transcriptx - INFO - [CHART_DESCRIPTIONS] 431/452 viz_id=tics.tics.speaker chart_key=f42ff0a5503e1ab1dd0a7acb614797e295e90403b585798f4a25a840dbf0b8bd timeout=120s
+2026-08-08 13:04:58,018 - transcriptx - INFO - [CHART_DESCRIPTIONS] 432/452 viz_id=topic_modeling.topic_bar.speaker chart_key=f67f3f73c0f29dc621b6b5ae8e20b1e316a95d8a06a4d97c8f2d63d4b72e97b6 timeout=120s
+2026-08-08 13:05:01,729 - transcriptx - INFO - [CHART_DESCRIPTIONS] 433/452 viz_id=wordclouds.wordcloud.view.Hala chart_key=f6ac66dcbca44c76d0aa31b8fd050e45ab25e2e7e5a94010a610fd3c9434bcf5 timeout=120s
+2026-08-08 13:05:05,125 - transcriptx - INFO - [CHART_DESCRIPTIONS] 434/452 viz_id=wordcloud.wordcloud.speaker.verb chart_key=f74c69948b49bbd3a71407aac8e44199d038584f015deccdee66a6807228c497 timeout=120s
+2026-08-08 13:05:08,730 - transcriptx - INFO - [CHART_DESCRIPTIONS] 435/452 viz_id=topic_modeling.lda_diagnostic_plots.global chart_key=f7ea4244ff64033dd27c447ff0560a56a35894822e2a31d50eb282781550db2b timeout=120s
+2026-08-08 13:05:15,047 - transcriptx - INFO - [CHART_DESCRIPTIONS] 436/452 viz_id=wordclouds.wordcloud-keyphrases-noun_chunks.view.Vibhu chart_key=f7f161fd0a89f802edac88300eddb2124e6249fa9615940c1a523e7404d902e9 timeout=120s
+2026-08-08 13:05:18,022 - transcriptx - INFO - [CHART_DESCRIPTIONS] 437/452 viz_id=wordclouds.tfidf-ALL.view chart_key=f82f727234df1509eac0fb74917c6e6d242650d8586d6eec0368b5de8eb5805e timeout=120s
+2026-08-08 13:05:20,819 - transcriptx - INFO - [CHART_DESCRIPTIONS] 438/452 viz_id=wordcloud.wordcloud.speaker.tfidf chart_key=f834806a2a90aa5067079e87e6b536f710ead7cfa051f07c3fc19673fa8410bf timeout=120s
+2026-08-08 13:05:26,543 - transcriptx - INFO - [CHART_DESCRIPTIONS] 439/452 viz_id=topic_shift.timeline.global chart_key=f84c8f58160b5bfb66e3f21a6352248d7569da44c27eee5c03d72952eccd3b36 timeout=120s
+2026-08-08 13:05:32,073 - transcriptx - INFO - [CHART_DESCRIPTIONS] 440/452 viz_id=affect_tension.entropy_volatility_timeseries.speaker chart_key=f9673fdbbd26379ffad5255e234a2d6509637984bd0d732225d2f141e7f02dd2 timeout=120s
+2026-08-08 13:05:37,785 - transcriptx - INFO - [CHART_DESCRIPTIONS] 441/452 viz_id=interactions.equity.floor.global chart_key=f9ff875eb35087caac7e9fc3a33c2341750bb432cc1fa0c2f2a2352c435d607f timeout=120s
+2026-08-08 13:05:42,805 - transcriptx - INFO - [CHART_DESCRIPTIONS] 442/452 viz_id=topic_modeling.topic_bar.speaker chart_key=fb31b8c79cce2478e5fb78cdc23232a728795d8fe3b2158a13e84e6e29be32da timeout=120s
+2026-08-08 13:05:45,802 - transcriptx - INFO - [CHART_DESCRIPTIONS] 443/452 viz_id=wordcloud.wordcloud.speaker.tfidf_bigrams chart_key=fb735d5dcb6038670230f86fc7bd2b2c22b5243347f22fe8d37fc89fef6d515e timeout=120s
+2026-08-08 13:05:50,695 - transcriptx - INFO - [CHART_DESCRIPTIONS] 444/452 viz_id=wordcloud.wordcloud.speaker.keyphrases_noun_chunks chart_key=fb8559b33df4073b89f5fdfbd20f0ce487fddc96c4070a0b240ed2338c9c4701 timeout=120s
+2026-08-08 13:05:54,913 - transcriptx - INFO - [CHART_DESCRIPTIONS] 445/452 viz_id=fine_grained_emotion.label_counts_excluding_neutral.global chart_key=fcbf9c2d38a63ce08c686c196e678f1f3e49b48b98687fa0ecca91f818ec43cf timeout=120s
+2026-08-08 13:05:58,801 - transcriptx - INFO - [CHART_DESCRIPTIONS] 446/452 viz_id=topic_modeling.topic_bar.speaker chart_key=fd22513631803932dfa84fa7abe5a072a8f64fc3631a961fd2ce330070bc9530 timeout=120s
+2026-08-08 13:06:02,097 - transcriptx - INFO - [CHART_DESCRIPTIONS] 447/452 viz_id=acts.acts_pie.speaker chart_key=fed379d8670beed1e1a60ea96637d7c65aec698e2129e1a1342aa2c84927094f timeout=120s
+2026-08-08 13:06:05,217 - transcriptx - INFO - [CHART_DESCRIPTIONS] 448/452 viz_id=wordclouds.wordcloud.view.Jonas chart_key=feda0609cdbd701cc65410b6ad6219a66ee7d7e19469a3c1cb800ec8e2dddfb7 timeout=120s
+2026-08-08 13:06:07,931 - transcriptx - INFO - [CHART_DESCRIPTIONS] 449/452 viz_id=wordcloud.wordcloud.speaker.verb chart_key=fefe792b0d55be7d411249efa77efa0c0ca632493ade62daacccf0ec01c1b58c timeout=120s
+2026-08-08 13:06:11,624 - transcriptx - INFO - [CHART_DESCRIPTIONS] 450/452 viz_id=topic_modeling.topic_bar.speaker chart_key=ff428daa2fbc07ca4a5eedc9b095dbdb5d6b769db315e6cf8a35b74847d75865 timeout=120s
+2026-08-08 13:06:14,454 - transcriptx - INFO - [CHART_DESCRIPTIONS] 451/452 viz_id=wordcloud.wordcloud.speaker.tics chart_key=ff7bd45f4318692bec979170e9520107999d755acc0e861a1efb78f92806f370 timeout=120s
+2026-08-08 13:06:18,362 - transcriptx - INFO - [CHART_DESCRIPTIONS] 452/452 viz_id=wordclouds.wordcloud-verb-ALL.view chart_key=ffdcbb5218a686b11f8cb4fa2214ce9cf2dc5de75a57b9b0bde35c406ffe86d4 timeout=120s
+2026-08-08 13:06:21,640 - transcriptx - INFO - Saved output manifest to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_122619_84779644/manifest.json
+2026-08-08 13:06:21,644 - transcriptx - INFO - Saved run results summary to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_122619_84779644/run_results.json
+2026-08-08 13:06:25,974 - transcriptx - INFO - Saved run manifest to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_122619_84779644/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: _deep_test_large_norm
+📂 Output Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644
+🔄 Analysis Status: 42/42 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (42):
+--------------------------------------------------
+
+✅ ACTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/acts
+   📄 Files: 94
+   📂 Subdirectories: 86
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/temporal/acts_temporal.html (4553.3 KB)
+      • charts/speakers/Rochelle/dynamic/pie/acts_pie.html (4552.4 KB)
+      • charts/speakers/Rochelle/dynamic/bar/acts_bar.html (4552.5 KB)
+      • charts/speakers/Rochelle/static/temporal/acts_temporal.evidence.json 
+(2.5 KB)
+      • charts/speakers/Rochelle/static/temporal/acts_temporal.png (146.8 KB)
+      • ... and 89 more files
+
+✅ CONVERSATION_LOOPS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/conversation_loops
+   📄 Files: 5
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_conversation_loops.csv (0.0 KB)
+      • data/global/_deep_test_large_norm_conversation_loops_summary.json (1.1 
+KB)
+      • data/global/_deep_test_large_norm_summary.txt (0.5 KB)
+      • data/global/_deep_test_large_norm_conversation_loops.json (1.7 KB)
+      • data/global/_deep_test_large_norm_summary.json (0.5 KB)
+
+✅ CONTAGION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/contagion
+   📄 Files: 7
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/matrix/contagion_matrix.html (4552.8 KB)
+      • charts/global/static/matrix/contagion_matrix.png (123.4 KB)
+      • charts/global/static/matrix/contagion_matrix.evidence.json (1.7 KB)
+      • data/global/_deep_test_large_norm_contagion_events.json (3.5 KB)
+      • data/global/_deep_test_large_norm_contagion_summary.json (1.4 KB)
+      • ... and 2 more files
+
+✅ EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/emotion
+   📄 Files: 43
+   📂 Subdirectories: 52
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • charts/speakers/Rochelle/dynamic/bar/emotion_assignment_counts.html 
+(4552.4 KB)
+      • charts/speakers/Rochelle/static/bar/emotion_assignment_counts.png (113.6
+KB)
+      • 
+charts/speakers/Rochelle/static/bar/emotion_assignment_counts.evidence.json (0.7
+KB)
+      • charts/speakers/Mariela/dynamic/bar/emotion_assignment_counts.html 
+(4552.4 KB)
+      • ... and 38 more files
+
+✅ CONTEXTUAL_EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/contextual_emotion
+   📄 Files: 83
+   📂 Subdirectories: 51
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • 
+charts/speakers/Rochelle/dynamic/bar/contextual_emotion_label_counts_excluding_n
+eutral.html (4552.4 KB)
+      • 
+charts/speakers/Rochelle/dynamic/bar/contextual_emotion_label_counts.html 
+(4552.4 KB)
+      • 
+charts/speakers/Rochelle/dynamic/bar/contextual_emotion_label_share_non_neutral.
+html (4552.4 KB)
+      • 
+charts/speakers/Rochelle/static/bar/contextual_emotion_label_counts.evidence.jso
+n (0.6 KB)
+      • ... and 78 more files
+
+✅ FINE_GRAINED_EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/fine_grained_emotion
+   📄 Files: 83
+   📂 Subdirectories: 51
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • 
+charts/speakers/Rochelle/dynamic/bar/fine_grained_native_label_share_non_neutral
+.html (4552.6 KB)
+      • 
+charts/speakers/Rochelle/dynamic/bar/fine_grained_native_label_prevalence.html 
+(4552.5 KB)
+      • 
+charts/speakers/Rochelle/dynamic/bar/fine_grained_native_label_prevalence_exclud
+ing_neutral.html (4552.5 KB)
+      • 
+charts/speakers/Rochelle/static/bar/fine_grained_native_label_share_non_neutral.
+png (137.5 KB)
+      • ... and 78 more files
+
+✅ ENTITY_SENTIMENT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/entity_sentiment
+   📄 Files: 34
+   📂 Subdirectories: 47
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/bar/entity_mentions.html (4552.3 KB)
+      • charts/speakers/Rochelle/static/bar/entity_mentions.png (64.3 KB)
+      • charts/speakers/Rochelle/static/bar/entity_mentions.evidence.json (0.5 
+KB)
+      • charts/speakers/Mariela/dynamic/bar/entity_mentions.html (4552.4 KB)
+      • charts/speakers/Mariela/static/bar/entity_mentions.png (88.8 KB)
+      • ... and 29 more files
+
+✅ AFFECT_TENSION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/affect_tension
+   📄 Files: 53
+   📂 Subdirectories: 31
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/entropy_volatility_timeseries.html 
+(4555.5 KB)
+      • 
+charts/speakers/Rochelle/static/entropy_volatility_timeseries.evidence.json (5.7
+KB)
+      • charts/speakers/Rochelle/static/entropy_volatility_timeseries.png (161.1
+KB)
+      • charts/speakers/Mariela/dynamic/entropy_volatility_timeseries.html 
+(4556.8 KB)
+      • 
+charts/speakers/Mariela/static/entropy_volatility_timeseries.evidence.json (6.7 
+KB)
+      • ... and 48 more files
+
+✅ INTERACTIONS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/interactions
+   📄 Files: 53
+   📂 Subdirectories: 59
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/timeline/timeline.html (4553.3 KB)
+      • charts/speakers/Rochelle/static/timeline/timeline.evidence.json (2.3 KB)
+      • charts/speakers/Rochelle/static/timeline/timeline.png (163.8 KB)
+      • charts/speakers/Mariela/dynamic/timeline/timeline.html (4554.1 KB)
+      • charts/speakers/Mariela/static/timeline/timeline.evidence.json (4.1 KB)
+      • ... and 47 more files
+
+✅ NER
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/ner
+   📄 Files: 52
+   📂 Subdirectories: 53
+   📋 Key outputs:
+      • maps/images/_deep_test_large_norm-locations-Mariela.png (61.3 KB)
+      • maps/images/_deep_test_large_norm-locations-Vibhu.png (66.3 KB)
+      • maps/images/_deep_test_large_norm-locations-ALL.png (86.8 KB)
+      • maps/images/_deep_test_large_norm-locations-Hala.png (61.4 KB)
+      • maps/images/_deep_test_large_norm-locations-Frank.png (66.8 KB)
+      • ... and 47 more files
+
+✅ SEMANTIC_SIMILARITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/semantic_similarity
+   📄 Files: 22
+   📂 Subdirectories: 6
+   📋 Key outputs:
+      • charts/global/dynamic/speaker_repetitions.html (4552.5 KB)
+      • charts/global/dynamic/classification.html (4552.4 KB)
+      • charts/global/dynamic/similarity_distribution.html (4552.7 KB)
+      • charts/global/dynamic/speaker_repetition_frequency.html (4552.5 KB)
+      • charts/global/dynamic/speaker_similarity.html (4552.7 KB)
+      • ... and 17 more files
+
+✅ SENTIMENT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/sentiment
+   📄 Files: 47
+   📂 Subdirectories: 32
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/rolling_sentiment.html (4554.4 KB)
+      • charts/speakers/Rochelle/static/rolling_sentiment.evidence.json (3.7 KB)
+      • charts/speakers/Rochelle/static/rolling_sentiment.png (163.5 KB)
+      • charts/speakers/Mariela/dynamic/rolling_sentiment.html (4555.3 KB)
+      • charts/speakers/Mariela/static/rolling_sentiment.evidence.json (4.0 KB)
+      • ... and 42 more files
+
+✅ EPISTEMIC_MARKERS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/epistemic_markers
+   📄 Files: 24
+   📂 Subdirectories: 39
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/epistemic_markers/category_rates.html 
+(4552.5 KB)
+      • charts/speakers/Rochelle/static/epistemic_markers/category_rates.png 
+(137.4 KB)
+      • 
+charts/speakers/Rochelle/static/epistemic_markers/category_rates.evidence.json 
+(0.7 KB)
+      • charts/speakers/Mariela/dynamic/epistemic_markers/category_rates.html 
+(4552.5 KB)
+      • charts/speakers/Mariela/static/epistemic_markers/category_rates.png 
+(134.4 KB)
+      • ... and 19 more files
+
+✅ KEYPHRASES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/keyphrases
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_keyphrases.json (215.8 KB)
+      • data/global/_deep_test_large_norm_keyphrases_summary.json (1.9 KB)
+      • data/global/_deep_test_large_norm_keyphrases.csv (26.0 KB)
+
+✅ STATS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ TOPIC_MODELING
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/topic_modeling
+   📄 Files: 390
+   📂 Subdirectories: 468
+   📋 Key outputs:
+      • _deep_test_large_norm_enhanced_topic_modeling_report.html (30.0 KB)
+      • charts/speakers/Glen___Hala___Mariela___Rana/dynamic/bar/topic_bar.html 
+(4552.4 KB)
+      • charts/speakers/Glen___Hala___Mariela___Rana/static/bar/topic_bar.png 
+(92.5 KB)
+      • 
+charts/speakers/Glen___Hala___Mariela___Rana/static/bar/topic_bar.evidence.json 
+(0.6 KB)
+      • charts/speakers/Hala___Mariela___Vibhu/dynamic/bar/topic_bar.html 
+(4552.4 KB)
+      • ... and 385 more files
+
+✅ BERTOPIC
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/bertopic
+   📄 Files: 9
+   📂 Subdirectories: 10
+   📋 Key outputs:
+      • charts/global/dynamic/heatmap/bertopic_topic_word_heatmap.html (4553.1 
+KB)
+      • charts/global/dynamic/bar/bertopic_topic_prevalence.html (4552.5 KB)
+      • charts/global/static/heatmap/bertopic_topic_word_heatmap.evidence.json 
+(1.6 KB)
+      • charts/global/static/heatmap/bertopic_topic_word_heatmap.png (153.0 KB)
+      • charts/global/static/bar/bertopic_topic_prevalence.evidence.json (0.7 
+KB)
+      • ... and 4 more files
+
+✅ TRANSCRIPT_OUTPUT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • _deep_test_large_norm_simplified_transcript.json (82.4 KB)
+      • _deep_test_large_norm-transcript.txt (57.3 KB)
+      • _deep_test_large_norm-transcript.csv (62.0 KB)
+      • _deep_test_large_norm_simplified_transcript_summary.json (0.1 KB)
+
+✅ SIMPLIFIED_TRANSCRIPT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/transcripts
+   📄 Files: 5
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • _deep_test_large_norm_simplified_transcript.json (82.4 KB)
+      • _deep_test_large_norm-transcript.txt (57.3 KB)
+      • _deep_test_large_norm-transcript.csv (62.0 KB)
+      • _deep_test_large_norm_simplified_transcript_summary.json (0.1 KB)
+
+✅ UNDERSTANDABILITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/understandability
+   📄 Files: 20
+   📂 Subdirectories: 11
+   📋 Key outputs:
+      • charts/global/dynamic/understandability/readability-indices-bars.html 
+(4553.1 KB)
+      • charts/global/dynamic/structure/word-count-bars.html (4552.4 KB)
+      • charts/global/dynamic/structure/structure-bars.html (4553.0 KB)
+      • 
+charts/global/static/understandability/readability-indices-bars.evidence.json 
+(2.0 KB)
+      • charts/global/static/understandability/readability-indices-bars.png 
+(138.7 KB)
+      • ... and 15 more files
+
+✅ LEXICAL_DIVERSITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/lexical_diversity
+   📄 Files: 12
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/lexical_diversity/lexical-ttr.html (4552.5 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-mtld.html (4552.5 KB)
+      • charts/global/dynamic/lexical_diversity/lexical-hapax-rate.html (4552.5 
+KB)
+      • charts/global/static/lexical_diversity/lexical-hapax-rate.evidence.json 
+(0.8 KB)
+      • charts/global/static/lexical_diversity/lexical-mtld.evidence.json (0.7 
+KB)
+      • ... and 7 more files
+
+✅ WORDCLOUDS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/wordclouds
+   📄 Files: 439
+   📂 Subdirectories: 193
+   📋 Key outputs:
+      • 
+charts/speakers/Rochelle/dynamic/views/_deep_test_large_norm_tfidf_explorer.html
+(12.8 KB)
+      • 
+charts/speakers/Rochelle/dynamic/views/_deep_test_large_norm_wordcloud-adj_explo
+rer.html (9.4 KB)
+      • 
+charts/speakers/Rochelle/dynamic/views/_deep_test_large_norm_wordcloud-verb_expl
+orer.html (9.8 KB)
+      • 
+charts/speakers/Rochelle/dynamic/views/_deep_test_large_norm_wordcloud-keyphrase
+s-noun_chunks_explorer.html (9.8 KB)
+      • 
+charts/speakers/Rochelle/dynamic/views/_deep_test_large_norm_tfidf-bigrams_explo
+rer.html (12.8 KB)
+      • ... and 434 more files
+
+✅ TICS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/tics
+   📄 Files: 24
+   📂 Subdirectories: 39
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/tics/tics.html (4552.4 KB)
+      • charts/speakers/Rochelle/static/tics/tics.evidence.json (0.6 KB)
+      • charts/speakers/Rochelle/static/tics/tics.png (99.9 KB)
+      • charts/speakers/Mariela/dynamic/tics/tics.html (4552.4 KB)
+      • charts/speakers/Mariela/static/tics/tics.evidence.json (0.6 KB)
+      • ... and 19 more files
+
+✅ TRANSCRIPT_QUALITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/transcript_quality
+   📄 Files: 8
+   📂 Subdirectories: 10
+   📋 Key outputs:
+      • charts/global/dynamic/distribution/asr_score_hist.html (4552.5 KB)
+      • charts/global/dynamic/timeline/asr_low_score_timeline.html (4553.6 KB)
+      • charts/global/static/distribution/asr_score_hist.evidence.json (0.7 KB)
+      • charts/global/static/distribution/asr_score_hist.png (112.5 KB)
+      • charts/global/static/timeline/asr_low_score_timeline.evidence.json (2.7 
+KB)
+      • ... and 3 more files
+
+✅ INSIGHT_ELIGIBILITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/insight_eligibility
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_insight_eligibility_tic_mask.json (2.5
+KB)
+      • data/global/_deep_test_large_norm_insight_eligibility_phrase_scores.json
+(430.0 KB)
+      • data/global/_deep_test_large_norm_insight_eligibility.json (1058.0 KB)
+
+✅ TEMPORAL_DYNAMICS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/temporal_dynamics
+   📄 Files: 18
+   📂 Subdirectories: 6
+   📋 Key outputs:
+      • charts/global/dynamic/temporal_dashboard.html (4558.2 KB)
+      • charts/global/dynamic/engagement_timeseries.html (4555.6 KB)
+      • charts/global/dynamic/temporal_dashboard_speaking_rate.html (4555.6 KB)
+      • charts/global/dynamic/phase_detection.html (4552.4 KB)
+      • charts/global/dynamic/sentiment_timeseries.html (4555.4 KB)
+      • ... and 13 more files
+
+✅ QA_ANALYSIS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/qa_analysis
+   📄 Files: 16
+   📂 Subdirectories: 6
+   📋 Key outputs:
+      • charts/global/dynamic/response_quality.html (4552.6 KB)
+      • charts/global/dynamic/qa_timeline.html (4555.7 KB)
+      • charts/global/dynamic/response_time_analysis.html (4552.6 KB)
+      • charts/global/dynamic/question_type_breakdown.html (4552.4 KB)
+      • charts/global/static/qa_timeline.evidence.json (5.5 KB)
+      • ... and 11 more files
+
+✅ PAUSES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/pauses
+   📄 Files: 18
+   📂 Subdirectories: 11
+   📋 Key outputs:
+      • charts/global/dynamic/hist/pauses_hist.html (4552.6 KB)
+      • charts/global/dynamic/timeline/pauses_timeline.html (4554.1 KB)
+      • charts/global/static/hist/pauses_hist.png (179.5 KB)
+      • charts/global/static/hist/pauses_hist.evidence.json (0.9 KB)
+      • charts/global/static/timeline/pauses_timeline.png (105.4 KB)
+      • ... and 13 more files
+
+✅ ECHOES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/echoes
+   📄 Files: 10
+   📂 Subdirectories: 10
+   📋 Key outputs:
+      • charts/global/dynamic/heatmap/echo_heatmap.html (4552.7 KB)
+      • charts/global/dynamic/timeline/echo_timeline.html (4553.6 KB)
+      • charts/global/static/heatmap/echo_heatmap.png (117.5 KB)
+      • charts/global/static/heatmap/echo_heatmap.evidence.json (1.1 KB)
+      • charts/global/static/timeline/echo_timeline.png (56.3 KB)
+      • ... and 5 more files
+
+✅ POLITENESS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/politeness
+   📄 Files: 24
+   📂 Subdirectories: 39
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/politeness/category_rates.html (4552.5 
+KB)
+      • charts/speakers/Rochelle/static/politeness/category_rates.png (155.1 KB)
+      • charts/speakers/Rochelle/static/politeness/category_rates.evidence.json 
+(0.7 KB)
+      • charts/speakers/Mariela/dynamic/politeness/category_rates.html (4552.5 
+KB)
+      • charts/speakers/Mariela/static/politeness/category_rates.png (155.0 KB)
+      • ... and 19 more files
+
+✅ MOMENTUM
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/momentum
+   📄 Files: 8
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/timeseries/momentum.html (4557.5 KB)
+      • charts/global/static/timeseries/momentum.evidence.json (3.6 KB)
+      • charts/global/static/timeseries/momentum.png (171.4 KB)
+      • data/global/stall_zones.csv (0.3 KB)
+      • data/global/_deep_test_large_norm_momentum_summary.json (1.2 KB)
+      • ... and 3 more files
+
+✅ TOPIC_SHIFT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/topic_shift
+   📄 Files: 15
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • .topic_shift_enrichment/ACTIVE.json (0.3 KB)
+      • .topic_shift_enrichment/generations/20260808T103355_2dfa0f0b/COMMIT.json
+(0.5 KB)
+      • 
+.topic_shift_enrichment/generations/20260808T103355_2dfa0f0b/topic_shift.enrichm
+ent.json (2.7 KB)
+      • .topic_shift_generations/artifact_index.json (0.4 KB)
+      • 
+.topic_shift_generations/generations/4bb929137a4040028d264014f8f3a4d2/topic_shif
+t.spans.json (5.5 KB)
+      • ... and 10 more files
+
+✅ MOMENTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/moments
+   📄 Files: 8
+   📂 Subdirectories: 8
+   📋 Key outputs:
+      • charts/global/dynamic/timeline/moments_timeline.html (4553.2 KB)
+      • charts/global/static/timeline/moments_timeline.evidence.json (1.4 KB)
+      • charts/global/static/timeline/moments_timeline.png (93.0 KB)
+      • data/global/moments.moments.json (27.7 KB)
+      • data/global/_deep_test_large_norm_moments_summary.json (1.1 KB)
+      • ... and 3 more files
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_highlights.json (29.6 KB)
+
+✅ SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_summary.json (16.7 KB)
+
+✅ NARRATIVE_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/narrative_summary
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_narrative_summary.json (1.7 KB)
+
+✅ LLM_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/llm_summary
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_llm_summary.json (2.8 KB)
+
+✅ LLM_SPEAKER_SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/llm_speaker_summary
+   📄 Files: 18
+   📂 Subdirectories: 3
+   📋 Key outputs:
+      • data/speakers/_deep_test_large_norm_Frank_llm_speaker_summary.json (1.9 
+KB)
+      • data/speakers/_deep_test_large_norm_Glen_llm_speaker_summary.json (2.2 
+KB)
+      • data/speakers/_deep_test_large_norm_Hala_llm_speaker_summary.json (2.3 
+KB)
+      • data/speakers/_deep_test_large_norm_Mariela_llm_speaker_summary.json 
+(2.3 KB)
+      • data/speakers/_deep_test_large_norm_Jonas_llm_speaker_summary.json (1.3 
+KB)
+      • ... and 4 more files
+
+✅ LLM_ACTION_ITEMS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/llm_action_items
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_llm_action_items.json (2.2 KB)
+      • data/global/_deep_test_large_norm_llm_action_items.raw.txt (0.0 KB)
+
+✅ LLM_CUSTOM_QA
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/llm_custom_qa
+   📄 Files: 5
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • questions_metadata.json (0.2 KB)
+      • data/global/_deep_test_large_norm_llm_custom_qa.json (1.6 KB)
+
+⚠️ CHART_DESCRIPTIONS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/chart_descriptions
+   📄 Files: 0
+   📂 Subdirectories: 0
+   ⚠️  Validation warnings: Module directory does not exist: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/chart_descriptions
+
+✅ INSIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644/insights
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_insights.json (8.3 KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (9.1 KB)
+   • report.md (0.6 KB)
+   • run_results.json (7.5 KB)
+   • report.txt (0.6 KB)
+   • manifest.json (2375.5 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 1671
+   • Total output size: 1516.4 MB
+   • Successful modules: 42
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_1
+22619_84779644
+  Executed:
+    • acts
+    • affect_tension
+    • bertopic
+    • chart_descriptions
+    • contagion
+    • contextual_emotion
+    • conversation_loops
+    • echoes
+    • emotion
+    • entity_sentiment
+    • epistemic_markers
+    • fine_grained_emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • interactions
+    • keyphrases
+    • lexical_diversity
+    • llm_action_items
+    • llm_custom_qa
+    • llm_speaker_summary
+    • llm_summary
+    • moments
+    • momentum
+    • narrative_summary
+    • ner
+    • pauses
+    • politeness
+    • qa_analysis
+    • semantic_similarity
+    • sentiment
+    • simplified_transcript
+    • stats
+    • summary
+    • temporal_dynamics
+    • tics
+    • topic_modeling
+    • topic_shift
+    • transcript_output
+    • transcript_quality
+    • understandability
+    • wordclouds
+  To explore results: open the web interface
+---
+
+2026-08-08 13:06:26,426 - transcriptx - INFO - Pipeline completed for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json - Successfully ran: acts, contextual_emotion, conversation_loops, echoes, emotion, contagion, epistemic_markers, fine_grained_emotion, interactions, lexical_diversity, llm_action_items, llm_custom_qa, llm_speaker_summary, llm_summary, ner, pauses, momentum, moments, politeness, qa_analysis, semantic_similarity, sentiment, affect_tension, entity_sentiment, simplified_transcript, stats, temporal_dynamics, tics, insight_eligibility, bertopic, highlights, keyphrases, summary, narrative_summary, topic_modeling, insights, topic_shift, transcript_output, transcript_quality, understandability, wordclouds, chart_descriptions
+DONE True [] /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260808_122619_84779644

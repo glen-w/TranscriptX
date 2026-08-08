@@ -1,0 +1,347 @@
+{
+  "transcript": "260615_Ana_phd_supervision_meeting.json",
+  "run_id": "20260807_233852_38732557",
+  "run_dir": "data/outputs/260615_Ana_phd_supervision_meeting/20260807_233852_38732557",
+  "model": "qwen2.5:7b",
+  "mode": "full",
+  "wall_clock_duration_ms": 606172.3970831372,
+  "final_status": "succeeded",
+  "modules_run": [
+    "acts",
+    "contextual_emotion",
+    "conversation_loops",
+    "echoes",
+    "emotion",
+    "contagion",
+    "epistemic_markers",
+    "fine_grained_emotion",
+    "interactions",
+    "lexical_diversity",
+    "llm_action_items",
+    "llm_custom_qa",
+    "llm_speaker_summary",
+    "llm_summary",
+    "ner",
+    "pauses",
+    "momentum",
+    "moments",
+    "politeness",
+    "qa_analysis",
+    "semantic_similarity",
+    "sentiment",
+    "affect_tension",
+    "entity_sentiment",
+    "simplified_transcript",
+    "stats",
+    "temporal_dynamics",
+    "tics",
+    "insight_eligibility",
+    "bertopic",
+    "highlights",
+    "keyphrases",
+    "summary",
+    "narrative_summary",
+    "topic_modeling",
+    "insights",
+    "topic_shift",
+    "transcript_output",
+    "transcript_quality",
+    "understandability",
+    "wordclouds",
+    "chart_descriptions"
+  ],
+  "modules_failed": [],
+  "errors": [],
+  "module_outcomes": [
+    {
+      "module_id": "ner",
+      "execution_status": "run",
+      "duration_ms": 46918.433875078335,
+      "reason_code": null
+    },
+    {
+      "module_id": "wordclouds",
+      "execution_status": "run",
+      "duration_ms": 30206.252624979243,
+      "reason_code": null
+    },
+    {
+      "module_id": "bertopic",
+      "execution_status": "run",
+      "duration_ms": 17944.2779161036,
+      "reason_code": null
+    },
+    {
+      "module_id": "semantic_similarity",
+      "execution_status": "run",
+      "duration_ms": 17146.080665988848,
+      "reason_code": null
+    },
+    {
+      "module_id": "topic_modeling",
+      "execution_status": "run",
+      "duration_ms": 16035.619667032734,
+      "reason_code": null
+    },
+    {
+      "module_id": "summary",
+      "execution_status": "run",
+      "duration_ms": 14259.919958887622,
+      "reason_code": null
+    },
+    {
+      "module_id": "topic_shift",
+      "execution_status": "run",
+      "duration_ms": 13572.23975006491,
+      "reason_code": null
+    },
+    {
+      "module_id": "sentiment",
+      "execution_status": "run",
+      "duration_ms": 13205.746166873723,
+      "reason_code": null
+    },
+    {
+      "module_id": "llm_action_items",
+      "execution_status": "run",
+      "duration_ms": 7020.756165962666,
+      "reason_code": null
+    },
+    {
+      "module_id": "llm_speaker_summary",
+      "execution_status": "run",
+      "duration_ms": 6541.818666970357,
+      "reason_code": null
+    },
+    {
+      "module_id": "contextual_emotion",
+      "execution_status": "run",
+      "duration_ms": 5003.116958076134,
+      "reason_code": null
+    },
+    {
+      "module_id": "echoes",
+      "execution_status": "run",
+      "duration_ms": 4683.8996252045035,
+      "reason_code": null
+    },
+    {
+      "module_id": "acts",
+      "execution_status": "run",
+      "duration_ms": 4291.187415830791,
+      "reason_code": null
+    },
+    {
+      "module_id": "insight_eligibility",
+      "execution_status": "run",
+      "duration_ms": 4182.989000109956,
+      "reason_code": null
+    },
+    {
+      "module_id": "interactions",
+      "execution_status": "run",
+      "duration_ms": 3443.5242919716984,
+      "reason_code": null
+    },
+    {
+      "module_id": "fine_grained_emotion",
+      "execution_status": "run",
+      "duration_ms": 3353.649416938424,
+      "reason_code": null
+    },
+    {
+      "module_id": "affect_tension",
+      "execution_status": "run",
+      "duration_ms": 3044.1905420739204,
+      "reason_code": null
+    },
+    {
+      "module_id": "narrative_summary",
+      "execution_status": "run",
+      "duration_ms": 2964.892875170335,
+      "reason_code": null
+    },
+    {
+      "module_id": "llm_summary",
+      "execution_status": "run",
+      "duration_ms": 2931.083249859512,
+      "reason_code": null
+    },
+    {
+      "module_id": "entity_sentiment",
+      "execution_status": "run",
+      "duration_ms": 2550.126167014241,
+      "reason_code": null
+    },
+    {
+      "module_id": "highlights",
+      "execution_status": "run",
+      "duration_ms": 2207.1654999163,
+      "reason_code": null
+    },
+    {
+      "module_id": "understandability",
+      "execution_status": "run",
+      "duration_ms": 1422.973166918382,
+      "reason_code": null
+    },
+    {
+      "module_id": "temporal_dynamics",
+      "execution_status": "run",
+      "duration_ms": 1247.3465418443084,
+      "reason_code": null
+    },
+    {
+      "module_id": "emotion",
+      "execution_status": "run",
+      "duration_ms": 1117.9015829693526,
+      "reason_code": null
+    },
+    {
+      "module_id": "qa_analysis",
+      "execution_status": "run",
+      "duration_ms": 937.7775001339614,
+      "reason_code": null
+    },
+    {
+      "module_id": "keyphrases",
+      "execution_status": "run",
+      "duration_ms": 900.239999871701,
+      "reason_code": null
+    },
+    {
+      "module_id": "tics",
+      "execution_status": "run",
+      "duration_ms": 718.5127080883831,
+      "reason_code": null
+    },
+    {
+      "module_id": "politeness",
+      "execution_status": "run",
+      "duration_ms": 695.4125419724733,
+      "reason_code": null
+    },
+    {
+      "module_id": "epistemic_markers",
+      "execution_status": "run",
+      "duration_ms": 623.4880420379341,
+      "reason_code": null
+    },
+    {
+      "module_id": "transcript_quality",
+      "execution_status": "run",
+      "duration_ms": 606.0830419883132,
+      "reason_code": null
+    },
+    {
+      "module_id": "lexical_diversity",
+      "execution_status": "run",
+      "duration_ms": 562.8391250502318,
+      "reason_code": null
+    },
+    {
+      "module_id": "pauses",
+      "execution_status": "run",
+      "duration_ms": 552.9765000101179,
+      "reason_code": null
+    },
+    {
+      "module_id": "contagion",
+      "execution_status": "run",
+      "duration_ms": 372.5963339675218,
+      "reason_code": null
+    },
+    {
+      "module_id": "conversation_loops",
+      "execution_status": "run",
+      "duration_ms": 368.8691249117255,
+      "reason_code": null
+    },
+    {
+      "module_id": "moments",
+      "execution_status": "run",
+      "duration_ms": 286.52766696177423,
+      "reason_code": null
+    },
+    {
+      "module_id": "momentum",
+      "execution_status": "run",
+      "duration_ms": 262.76337495073676,
+      "reason_code": null
+    },
+    {
+      "module_id": "stats",
+      "execution_status": "run",
+      "duration_ms": 110.93791690655053,
+      "reason_code": null
+    },
+    {
+      "module_id": "simplified_transcript",
+      "execution_status": "run",
+      "duration_ms": 17.421291209757328,
+      "reason_code": null
+    },
+    {
+      "module_id": "transcript_output",
+      "execution_status": "run",
+      "duration_ms": 16.307499958202243,
+      "reason_code": null
+    },
+    {
+      "module_id": "insights",
+      "execution_status": "run",
+      "duration_ms": 4.405166953802109,
+      "reason_code": null
+    },
+    {
+      "module_id": "llm_custom_qa",
+      "execution_status": "run",
+      "duration_ms": 4.1185421869158745,
+      "reason_code": null
+    },
+    {
+      "module_id": "chart_descriptions",
+      "execution_status": "run",
+      "duration_ms": null,
+      "reason_code": null
+    }
+  ],
+  "llm_module_outcomes": [
+    {
+      "module_id": "topic_shift",
+      "execution_status": "run",
+      "duration_ms": 13572.23975006491
+    },
+    {
+      "module_id": "llm_action_items",
+      "execution_status": "run",
+      "duration_ms": 7020.756165962666
+    },
+    {
+      "module_id": "llm_speaker_summary",
+      "execution_status": "run",
+      "duration_ms": 6541.818666970357
+    },
+    {
+      "module_id": "narrative_summary",
+      "execution_status": "run",
+      "duration_ms": 2964.892875170335
+    },
+    {
+      "module_id": "llm_summary",
+      "execution_status": "run",
+      "duration_ms": 2931.083249859512
+    },
+    {
+      "module_id": "llm_custom_qa",
+      "execution_status": "run",
+      "duration_ms": 4.1185421869158745
+    },
+    {
+      "module_id": "chart_descriptions",
+      "execution_status": "run",
+      "duration_ms": null
+    }
+  ],
+  "notes": "Clean full run including chart_descriptions; Ollama free with qwen2.5:7b."
+}

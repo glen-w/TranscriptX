@@ -3,7 +3,7 @@ Authority: self
 
 # Performance and resource envelopes (1.0)
 
-**Status:** measurement recipe + baseline notes (**0.9.7**); large-library UI soak **pass** 2026-08-07 (200+ transcripts); Medium Balanced batch **pass** 2026-08-07 (~9.3 min / 6 transcripts on Docker Compose); thorough full-preset LLM timings on speaker-complete corpus **pass** 2026-08-07 (`qwen2.5:7b`)
+**Status:** measurement recipe + baseline notes (**0.9.7**); large-library UI soak **pass** 2026-08-07 (200+ transcripts); Medium Balanced batch **pass** 2026-08-07 (~9.3 min / 6 transcripts on Docker Compose); thorough full-preset LLM timings on speaker-complete corpus **pass** 2026-08-07 (`qwen2.5:7b`); final Thorough stress pass (2 tx + 2 groups) **pass** 2026-08-08 (corpus **68.7 min**)
 **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) §12  
 **Related:** [release_severity_triage_1_0.md](release_severity_triage_1_0.md), [run_performance.md](run_performance.md), [runtime/docker-efficiency-baseline.md](../runtime/docker-efficiency-baseline.md)
 
@@ -77,7 +77,7 @@ Keep notes in `.local/perf_envelopes_<date>.md` (gitignored). Curated numbers on
 | Startup time | measured-or-tagged | Target: interactive Home under ~30s cold on supported Docker/native (known limitation if host-bound) |
 | Import time | measured-or-tagged | Small: seconds–low tens; Medium scales ~linear with file count |
 | Time to first useful result | measured-or-tagged | Small path should complete without undocumented steps |
-| Default-preset runtime | measured | Medium Balanced **pass** 2026-08-07 — 6 transcripts, batch wall ~9.3 min, all succeeded (see [manual_acceptance_1_0.md](manual_acceptance_1_0.md) §3.12). Thorough full-preset + local LLM (`qwen2.5:7b`) on speaker-complete corpus: see § Thorough full-preset LLM timings below. |
+| Default-preset runtime | measured | Medium Balanced **pass** 2026-08-07 — 6 transcripts, batch wall ~9.3 min, all succeeded (see [manual_acceptance_1_0.md](manual_acceptance_1_0.md) §3.12). Thorough full-preset + local LLM (`qwen2.5:7b`) on speaker-complete corpus: see § Thorough full-preset LLM timings + § Final Thorough stress pass below. |
 | Memory and disk use | measured-or-tagged | Record peak RSS + data-root delta; OOM without recovery = blocker |
 | Model download sizes | documented | See [runtime/models.md](../runtime/models.md); first-run download is expected when enabled |
 | Docker image size | documented baseline | Historical ~3.7GB class — [docker-efficiency-baseline.md](../runtime/docker-efficiency-baseline.md); re-measure on release hardware |
@@ -123,6 +123,30 @@ Keep notes in `.local/perf_envelopes_<date>.md` (gitignored). Curated numbers on
 - **Ollama contention is a first-class risk:** a resident multi-GB vision model can push LLM modules into the 600 s soft-timeout path and inflate wall clock by ~40 minutes even though non-LLM work is fine. Documented expectation: keep the intended chat model loaded (or unload others) before thorough LLM runs; treat multi-model contention hangs as capacity / ops, not analysis correctness failures when the circuit-breaker soft-fails.
 - **`chart_descriptions` dominate thorough walls** once LLM chat modules are healthy (often longer than the entire DAG on chart-heavy transcripts).
 - Machine-readable copies: `artifacts/roadmap_1_0_llm_analysis/corpus_timings.json`, `qa_timings.json`, plus run logs / `thorough_named_speaker_corpus.md`. Private mirror: `.local/release_evidence/20260807_thorough_qwen25_7b/`. Run dirs: `…/260615_Ana_phd_presentation_QA/20260807_171909_15949872` (+ retry `…/20260807_232957_38197390`), `…/260615_Ana_phd_supervision_meeting/20260807_233852_38732557`.
+
+## Final Thorough stress pass (2026-08-08)
+
+**Scope:** same speaker-complete transcript rule as above, **plus** every group whose members are all speaker-complete. Qualifying set on this host: 2 transcripts + 2 groups (`_deep_test_bertopic_group2`, `Perf smoke Ana multi-speaker` — identical Ana member pair).
+
+**Environment:** native host Python `0.9.8.8` / git `3b206e3`, Apple Silicon / host Ollama, shared model **`qwen2.5:7b`** only (no vision contention). Preset=`thorough` (42 suitable modules including BERTopic + LLM consumers + `chart_descriptions`).
+
+### Results
+
+| Run | Wall | Final status | Notes |
+|-----|-----:|--------------|-------|
+| Presentation QA | **9.8 min** (585.5 s) | **succeeded** | 42 modules / 0 failures; DAG ~199 s; `chart_descriptions` est ~6.4 min; LLM 4/4 calls / 15.3 s logical |
+| Supervision meeting | **10.9 min** (651.9 s) | **succeeded** | 42 modules / 0 failures; DAG ~261 s; `chart_descriptions` est ~6.5 min; LLM 5/5 calls / 44.1 s logical |
+| Group `_deep_test_bertopic_group2` | **24.0 min** (1442.6 s) | **succeeded** | both members + aggregation + group charts |
+| Group `Perf smoke Ana multi-speaker` | **24.0 min** (1439.4 s) | **succeeded** | same members; independent group run |
+| **Corpus sum** | **68.7 min** (4119.4 s) | **passed** | transcripts 20.6 + groups 48.0 |
+
+Clean-Ollama transcript walls are ~4× faster than the contended 2026-08-07 presentation QA probe; group walls are ~2.3× the two-transcript sum (member re-analysis + aggregation + group `chart_descriptions`).
+
+### Artifacts
+
+- Scratch: `artifacts/roadmap_1_0_llm_analysis/stress_pass_20260808/` (`SUMMARY.md`, `batch_summary.json`, `corpus_timings.json`, `batch.log`)
+- Private mirror: `.local/release_evidence/20260808_thorough_stress_pass/`
+- Run dirs: `…/260615_Ana_phd_presentation_QA/20260808_151213_94733139`, `…/260615_Ana_phd_supervision_meeting/20260808_152158_95318679`, `…/groups/7b9c6531-…/20260808_135224_e1985784`, `…/groups/bba6641e-…/20260808_141623_8a279f84`
 
 ## Recording
 

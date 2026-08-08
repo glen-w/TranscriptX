@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8.9] - 2026-08-08
+
+### Changed
+
+- Record final Thorough stress-pass evidence for speaker-complete transcripts **and** qualifying groups (`qwen2.5:7b`, corpus wall **68.7 min**, 0 module failures) in the 1.0 performance envelope / pre-release roadmap, with scratch + private release-evidence mirrors.
+- Capture BERTopic macOS deep-test / pre-release verification logs from the 2026-08-08 isolated-fit hardening follow-up.
+
 ## [0.9.8.8] - 2026-08-08
 
 ### Fixed

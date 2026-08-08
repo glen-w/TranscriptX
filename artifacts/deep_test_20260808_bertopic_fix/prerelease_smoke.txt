@@ -1,0 +1,30 @@
+Running CI smoke gate...
+============================= test session starts ==============================
+platform darwin -- Python 3.10.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/89298/Documents/transcriptx
+configfile: pytest.ini
+plugins: html-4.1.1, xdist-3.8.0, mock-3.15.0, timeout-2.4.0, asyncio-1.4.0, metadata-3.1.1, cov-4.1.0, clarity-1.0.1, anyio-3.7.1, hypothesis-6.136.1, typeguard-4.4.4
+timeout: 300.0s
+timeout method: thread
+timeout func_only: False
+asyncio: mode=strict, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 41 items
+
+tests/smoke/test_all_modules_smoke.py ............................       [ 68%]
+tests/smoke/test_analysis_pipeline_smoke.py ...                          [ 75%]
+tests/smoke/test_analyze_smoke.py .                                      [ 78%]
+tests/smoke/test_capabilities_snapshot.py ..                             [ 82%]
+tests/smoke/test_cli_help.py ..                                          [ 87%]
+tests/smoke/test_group_analysis_smoke.py .                               [ 90%]
+tests/smoke/test_install_run_smoke.py .                                  [ 92%]
+tests/smoke/test_module_registry_smoke.py .                              [ 95%]
+tests/smoke/test_sentiment_module_smoke.py .                             [ 97%]
+tests/smoke/test_stats_module_smoke.py .                                 [100%]
+
+=============================== warnings summary ===============================
+../../.pyenv/versions/3.10.13/lib/python3.10/site-packages/_hypothesis_pytestplugin.py:461
+  /Users/89298/.pyenv/versions/3.10.13/lib/python3.10/site-packages/_hypothesis_pytestplugin.py:461: UserWarning: Skipping collection of '.hypothesis' directory - this usually means you've explicitly set the `norecursedirs` pytest config option, replacing rather than extending the default ignores.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================== 41 passed, 1 warning in 137.28s (0:02:17) ===================
