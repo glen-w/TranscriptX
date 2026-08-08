@@ -96,6 +96,37 @@ def test_streamlit_progress_callback_without_slot_still_mutates_snapshot(
 
 
 @pytest.mark.unit
+def test_streamlit_progress_callback_persists_current_item_across_modules(
+    monkeypatch,
+) -> None:
+    """Batch transcript label must survive nested module_started events."""
+    session: dict = {SNAPSHOT_KEY: make_initial_snapshot(3)}
+
+    class _St:
+        session_state = session
+
+    monkeypatch.setattr(panel_mod, "st", _St)
+    cb = StreamlitProgressCallback()
+    cb.on_stage_progress(
+        "Processing 2/6: CSE_two_speaker.json",
+        pct=None,
+        current_item="2/6 · CSE_two_speaker",
+    )
+    cb.on_event(
+        {
+            "event": "module_started",
+            "module_name": "wordclouds",
+            "index": 30,
+            "total": 30,
+        }
+    )
+    snap = session[SNAPSHOT_KEY]
+    assert snap["current_item"] == "2/6 · CSE_two_speaker"
+    assert snap["current_module"] == "wordclouds"
+    assert "wordclouds" in snap["latest_event"]
+
+
+@pytest.mark.unit
 def test_run_analysis_execute_uses_live_panel_not_spinner() -> None:
     """Contract: pending launch must bind a progress slot and avoid spinner overlay."""
     import transcriptx.web.page_modules.run_analysis as mod

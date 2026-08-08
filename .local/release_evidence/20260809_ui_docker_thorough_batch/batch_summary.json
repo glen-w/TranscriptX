@@ -1,0 +1,40 @@
+{
+  "started_approx": "2026-08-09T00:52:15+02:00",
+  "stalled_at": "2026-08-09T01:12:09+02:00",
+  "status": "stalled",
+  "package_version": "0.9.8.9",
+  "environment": "docker_compose_transcriptx_web + host_ollama",
+  "analysis_preset": "thorough",
+  "requested_module_count": 41,
+  "live_llm_model": "gemma3:4b",
+  "config_llm_model_observed": "gemma3:12b",
+  "prelude": {
+    "note": "Owner aborted a Balanced (~30 module) UI batch minutes earlier; not counted toward Thorough evidence."
+  },
+  "phases": [
+    {
+      "id": "skip_heavy_head",
+      "anonymized_label": "10 library-head transcripts (unnamed-speaker / skip-heavy)",
+      "n_transcripts": 10,
+      "status": "succeeded",
+      "wall_clock_duration_ms_sum": 126000,
+      "wall_min_sum_approx": 2.1,
+      "typical_module_status": {"RUN": 5, "SKIP": 20},
+      "module_failures": 0
+    },
+    {
+      "id": "tx-full-01",
+      "anonymized_label": "first full Thorough transcript in batch (named speakers)",
+      "n_transcripts": 1,
+      "status": "stalled_after_pipeline_artifacts",
+      "wall_min_approx": 18.0,
+      "modules_run": 41,
+      "modules_failed": 0,
+      "chart_descriptions_completed": "197/197",
+      "missing_artifacts": [".transcriptx/run_performance.json"],
+      "present_lock": ".run_finalization.lock"
+    }
+  ],
+  "batch_advanced_after_tx_full_01": false,
+  "anonymization": "Transcript stems, host paths, and speaker display names omitted on purpose."
+}

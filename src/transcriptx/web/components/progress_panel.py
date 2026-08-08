@@ -2,12 +2,13 @@
 Streamlit progress panel — pure renderer of a ProgressSnapshot dict.
 
 The panel reads exactly one object (the snapshot) from session state and
-renders five things:
+renders:
   1. Overall status line  (from snapshot["phase"])
-  2. Current module       (from snapshot["current_module"])
-  3. Progress bar         (from snapshot["pct"] + counts)
-  4. Latest event line    (from snapshot["latest_event"])
-  5. Last 5-10 log lines  (tail of snapshot["recent_logs"])
+  2. Current item         (from snapshot["current_item"] — e.g. batch transcript)
+  3. Current module       (from snapshot["current_module"])
+  4. Progress bar         (from snapshot["pct"] + counts)
+  5. Latest event line    (from snapshot["latest_event"])
+  6. Last 5-10 log lines  (tail of snapshot["recent_logs"])
 
 No state is inferred from logs. No state is stored inside this class.
 StreamlitProgressCallback bridges the ProgressCallback protocol and
@@ -51,14 +52,16 @@ def render_progress_panel(
     *,
     unit_label: str = "modules",
     current_label: str = "Current module",
+    item_label: str = "Current transcript",
 ) -> None:
     """
-    Render the compact five-item progress panel from a snapshot dict.
+    Render the compact progress panel from a snapshot dict.
     This function is stateless and has no side effects beyond Streamlit widgets.
     """
     phase: str = snapshot.get("phase", "running")  # type: ignore[assignment]
     status: str = snapshot.get("status", "running")  # type: ignore[assignment]
     current_module: str = snapshot.get("current_module", "")  # type: ignore[assignment]
+    current_item: str = snapshot.get("current_item", "")  # type: ignore[assignment]
     completed: int = snapshot.get("completed", 0)  # type: ignore[assignment]
     skipped: int = snapshot.get("skipped", 0)  # type: ignore[assignment]
     failed: int = snapshot.get("failed", 0)  # type: ignore[assignment]
@@ -93,7 +96,17 @@ def render_progress_panel(
     else:
         st.info(f"**{phase_label}**")
 
-    # 2. Current module / file
+    # 2. Current item (batch transcript / subject) — shown above module so
+    # nested module events never hide which file is being processed.
+    if current_item:
+        item_prefix = (
+            f"Last {item_label.lower().replace('current ', '')}:"
+            if status in ("completed", "failed")
+            else f"{item_label}:"
+        )
+        st.markdown(f"{item_prefix} `{current_item}`")
+
+    # 3. Current module / file
     if current_module:
         prefix = (
             f"Last {current_label.lower().replace('current ', '')}:"
@@ -102,7 +115,7 @@ def render_progress_panel(
         )
         st.markdown(f"{prefix} `{current_module}`")
 
-    # 3. Progress bar with x / y units
+    # 4. Progress bar with x / y units
     if total > 0:
         bar_label = f"{done} / {total} {unit_label}"
         if skipped:
@@ -113,11 +126,11 @@ def render_progress_panel(
     else:
         st.progress(0.0)
 
-    # 4. Latest event line
+    # 5. Latest event line
     if latest_event:
         st.caption(latest_event)
 
-    # 5. Last N log lines
+    # 6. Last N log lines
     if recent_logs:
         tail = recent_logs[-PANEL_LOG_LINES:]
         with st.expander("Recent logs", expanded=False):
@@ -153,11 +166,13 @@ class StreamlitProgressCallback:
         render_slot: Any | None = None,
         unit_label: str = "modules",
         current_label: str = "Current module",
+        item_label: str = "Current transcript",
     ) -> None:
         self._snapshot_key = snapshot_key
         self._render_slot = render_slot
         self._unit_label = unit_label
         self._current_label = current_label
+        self._item_label = item_label
 
     def _snap(self) -> Optional[MutableMapping[str, Any]]:
         return st.session_state.get(self._snapshot_key)
@@ -174,6 +189,7 @@ class StreamlitProgressCallback:
                 snap,  # type: ignore[arg-type]
                 unit_label=self._unit_label,
                 current_label=self._current_label,
+                item_label=self._item_label,
             )
 
     # ------------------------------------------------------------------
@@ -196,10 +212,18 @@ class StreamlitProgressCallback:
             )
             self.refresh_panel()
 
-    def on_stage_progress(self, message: str, pct: Optional[float] = None) -> None:
+    def on_stage_progress(
+        self,
+        message: str,
+        pct: Optional[float] = None,
+        *,
+        current_item: Optional[str] = None,
+    ) -> None:
         snap = self._snap()
         if snap is not None:
             snap["latest_event"] = message
+            if current_item is not None:
+                snap["current_item"] = current_item
             if pct is not None:
                 snap["pct"] = min(100.0, float(pct))
             self.refresh_panel()

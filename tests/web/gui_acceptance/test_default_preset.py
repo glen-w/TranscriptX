@@ -71,6 +71,7 @@ def test_default_preset_balanced_and_stubbed_launch(
         "request": request,
         "transcript_path": str(ws.transcript_path),
         "selected_group": None,
+        "form_cleared": True,
         "started": False,
         "footer_summary": "Balanced · stubbed",
     }

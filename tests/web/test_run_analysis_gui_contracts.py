@@ -130,6 +130,7 @@ def test_pending_launch_snapshot_is_launch_authority() -> None:
     source = Path(mod.__file__).read_text(encoding="utf-8")
     assert "_PENDING_LAUNCH_KEY" in source
     assert '"started": False' in source or "'started': False" in source
+    assert '"form_cleared": False' in source or "'form_cleared': False" in source
     assert "_execute_pending_launch" in source
     # Button path stores request then reruns; execute uses stored request.
     assert (
@@ -138,6 +139,8 @@ def test_pending_launch_snapshot_is_launch_authority() -> None:
         or 'pending["request"]' in source
     )
     assert "st.rerun()" in source
+    # Flush rerun drops prior form widgets before the blocking execute.
+    assert 'pending.get("form_cleared")' in source
     # Live panel (not spinner) is the in-run progress affordance.
     assert "render_slot=progress_slot" in source
     assert 'with st.spinner("Running analysis…")' not in source

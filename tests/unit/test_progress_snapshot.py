@@ -56,6 +56,10 @@ class TestMakeInitialSnapshot:
         snap = make_initial_snapshot(total=3)
         assert snap["current_module"] == ""
 
+    def test_current_item_is_empty(self):
+        snap = make_initial_snapshot(total=3)
+        assert snap["current_item"] == ""
+
 
 @pytest.mark.unit
 class TestRefreshPct:

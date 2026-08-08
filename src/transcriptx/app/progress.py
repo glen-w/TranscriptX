@@ -39,6 +39,8 @@ state. The UI renders only this object — no state is inferred from logs.
     status          : "running" | "completed" | "failed"
     phase           : one of the phase strings above
     current_module  : last active module (persists after run ends)
+    current_item    : batch/group subject label (e.g. transcript name); persists
+                      across nested module events so the UI can show both
     completed       : int
     skipped         : int
     failed          : int
@@ -137,6 +139,7 @@ class ProgressSnapshot(TypedDict, total=False):
     status: str  # StatusType
     phase: str  # PhaseType
     current_module: str
+    current_item: str  # e.g. "2/6 · CSE_two_speaker" during batch
     completed: int
     skipped: int
     failed: int
@@ -160,6 +163,7 @@ def make_initial_snapshot(total: int) -> ProgressSnapshot:
         status="running",
         phase="running_pipeline",
         current_module="",
+        current_item="",
         completed=0,
         skipped=0,
         failed=0,
@@ -324,8 +328,18 @@ class ProgressCallback(Protocol):
         """Called when a high-level phase begins."""
         ...
 
-    def on_stage_progress(self, message: str, pct: Optional[float] = None) -> None:
-        """Called with progress within a phase. pct is 0-100 or None."""
+    def on_stage_progress(
+        self,
+        message: str,
+        pct: Optional[float] = None,
+        *,
+        current_item: Optional[str] = None,
+    ) -> None:
+        """Called with progress within a phase. pct is 0-100 or None.
+
+        ``current_item`` is an optional stable label (e.g. batch transcript
+        name) that survives nested module events overwriting ``latest_event``.
+        """
         ...
 
     def on_stage_complete(self, stage_name: str) -> None:
@@ -347,7 +361,13 @@ class NullProgress:
     def on_stage_start(self, stage_name: str) -> None:
         pass
 
-    def on_stage_progress(self, message: str, pct: Optional[float] = None) -> None:
+    def on_stage_progress(
+        self,
+        message: str,
+        pct: Optional[float] = None,
+        *,
+        current_item: Optional[str] = None,
+    ) -> None:
         pass
 
     def on_stage_complete(self, stage_name: str) -> None:

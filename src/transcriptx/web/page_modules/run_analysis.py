@@ -559,6 +559,7 @@ def _run_analysis_config_and_launch_fragment(
         "selected_group": (
             selected_group.group_id if selected_group is not None else None
         ),
+        "form_cleared": False,
         "started": False,
         "footer_summary": summary_html,
     }
@@ -621,7 +622,10 @@ def render_run_analysis_page() -> None:
         render_batch_analysis_panel()
         return
 
-    # Two-phase launch: show progress footer, then execute stored request.
+    # Three-phase launch so Streamlit can drop the prior form widgets:
+    # 1) click stores pending + rerun
+    # 2) paint progress only + form_cleared + rerun (ends script → clears form)
+    # 3) paint progress + execute (blocking; form stays gone)
     pending = st.session_state.get(_PENDING_LAUNCH_KEY)
     if st.session_state.get("analysis_run_in_progress", False) and isinstance(
         pending, dict
@@ -644,6 +648,11 @@ def render_run_analysis_page() -> None:
             else:
                 with progress_slot.container():
                     st.info("Analysis is running…")
+        if not pending.get("form_cleared"):
+            pending["form_cleared"] = True
+            st.session_state[_PENDING_LAUNCH_KEY] = pending
+            st.rerun()
+            return
         if not pending.get("started"):
             pending["started"] = True
             st.session_state[_PENDING_LAUNCH_KEY] = pending

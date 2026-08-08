@@ -202,7 +202,7 @@ def test_run_batch_analysis_emits_progress_without_fractional_pct(
     second.write_text("{}", encoding="utf-8")
     request = BatchAnalysisRequest(transcript_paths=[first, second])
 
-    stage_progress: list[tuple[str, float | None]] = []
+    stage_progress: list[tuple[str, float | None, str | None]] = []
     logs: list[str] = []
     stage_starts: list[str] = []
 
@@ -210,8 +210,14 @@ def test_run_batch_analysis_emits_progress_without_fractional_pct(
         def on_stage_start(self, stage_name: str) -> None:
             stage_starts.append(stage_name)
 
-        def on_stage_progress(self, message: str, pct: float | None = None) -> None:
-            stage_progress.append((message, pct))
+        def on_stage_progress(
+            self,
+            message: str,
+            pct: float | None = None,
+            *,
+            current_item: str | None = None,
+        ) -> None:
+            stage_progress.append((message, pct, current_item))
 
         def on_stage_complete(self, stage_name: str) -> None:
             return None
@@ -242,9 +248,11 @@ def test_run_batch_analysis_emits_progress_without_fractional_pct(
     assert result.success is True
     assert stage_starts == ["batch_analysis", "batch_analysis"]
     assert len(stage_progress) == 2
-    assert all(pct is None for _, pct in stage_progress)
+    assert all(pct is None for _, pct, _ in stage_progress)
     assert "Processing 1/2: a.json" in stage_progress[0][0]
     assert "Processing 2/2: b.json" in stage_progress[1][0]
+    assert stage_progress[0][2] == "1/2 · a"
+    assert stage_progress[1][2] == "2/2 · b"
     assert any("Analyzing a.json" in line for line in logs)
     assert any("Analyzing b.json" in line for line in logs)
 

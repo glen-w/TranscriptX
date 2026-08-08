@@ -89,8 +89,13 @@ def run_batch_analysis(
         progress.on_stage_start("batch_analysis")
         # Leave pct to nested per-transcript module events (0–100). Passing a
         # 0–1 batch fraction here used to collapse the live bar.
+        # current_item persists on the snapshot while module events overwrite
+        # latest_event — so the UI can keep showing which transcript is running.
+        item_label = f"{idx + 1}/{total} · {path.stem}"
         progress.on_stage_progress(
-            f"Processing {idx + 1}/{total}: {path.name}", pct=None
+            f"Processing {idx + 1}/{total}: {path.name}",
+            pct=None,
+            current_item=item_label,
         )
         progress.on_log(f"Analyzing {path.name}", level="info")
 

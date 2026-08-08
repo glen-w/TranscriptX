@@ -793,6 +793,8 @@ These become **documented expectations and regression indicators**. Non-critical
 
 **2026-08-08 Final Thorough stress pass (speaker-complete transcripts + groups) — PASS:** model **`qwen2.5:7b`** (~7.6B), package `0.9.8.8` / git `3b206e3`. Scope = every managed transcript with `speaker_map_status=complete` **and** every group whose members are all in that set (**2 transcripts + 2 groups**). Preset = Thorough (42 modules incl. BERTopic + LLM consumers + `chart_descriptions`). Walls: presentation QA **9.8 min**, supervision **10.9 min**, `_deep_test_bertopic_group2` **24.0 min**, `Perf smoke Ana multi-speaker` **24.0 min** → **corpus sum 68.7 min**; all `completed` / hard success, 0 module failures. Detail: [performance_envelopes_1_0.md](performance_envelopes_1_0.md) § Final Thorough stress pass · scratch `artifacts/roadmap_1_0_llm_analysis/stress_pass_20260808/`.
 
+**2026-08-09 UI Docker Thorough batch — STALLED (incomplete):** package `0.9.8.9`, Docker Compose UI Batch, Thorough (**41** modules), live LLM **`gemma3:4b`**. Skip-heavy library-head (**10** txs, ~**2.1 min** sum) then first full Thorough transcript (**~18 min**, 41/41 modules, **197/197** `chart_descriptions`, 0 failures) — batch then **hung** (no next pipeline; finalize lock left; `run_performance.json` missing). Preceding Balanced UI kick aborted as wrong preset. Not an envelope pass. Anonymised evidence: [performance_envelopes_1_0.md](performance_envelopes_1_0.md) § UI Docker Thorough batch · `artifacts/roadmap_1_0_llm_analysis/ui_thorough_batch_20260809/`.
+
 ---
 
 ## 13. Trust, privacy and model-governance gate

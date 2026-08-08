@@ -159,6 +159,70 @@ def _stub_batch_config_ui(monkeypatch, mod) -> None:
 
 
 @pytest.mark.unit
+def test_batch_panel_form_cleared_flush_skips_execute(monkeypatch) -> None:
+    """First pending paint marks form_cleared and reruns without executing."""
+    import transcriptx.web.components.progress_panel as progress_panel
+    import transcriptx.web.page_modules.batch_ops as mod
+    from transcriptx.app.models.requests import BatchAnalysisRequest
+    from transcriptx.app.progress import make_initial_snapshot
+
+    DummyHomeStreamlit.session_state = {
+        "batch_transcripts": ["/tmp/alice.json"],
+        progress_panel.SNAPSHOT_KEY: make_initial_snapshot(1),
+        mod._PENDING_BATCH_KEY: {
+            "request": BatchAnalysisRequest(
+                transcript_paths=[Path("/tmp/alice.json")],
+                analysis_mode="quick",
+                selected_modules=["stats"],
+            ),
+            "execute": True,
+            "form_cleared": False,
+            "started": False,
+        },
+    }
+    reruns: list[bool] = []
+    executed: list[bool] = []
+
+    class _BatchStreamlit(DummyHomeStreamlit):
+        @staticmethod
+        def button(*_args, **_kwargs):
+            return False
+
+        @staticmethod
+        def rerun():
+            reruns.append(True)
+
+    class _Ctrl:
+        def run_batch_analysis(self, _request, progress=None):
+            executed.append(True)
+            return SimpleNamespace(
+                success=True, message="ok", runs=[], errors=[], transcript_count=1
+            )
+
+    monkeypatch.setattr(mod, "st", _BatchStreamlit)
+    monkeypatch.setattr(progress_panel, "st", _BatchStreamlit)
+    monkeypatch.setattr(mod, "render_progress_panel", lambda *_a, **_k: None)
+    monkeypatch.setattr(progress_panel, "render_progress_panel", lambda *_a, **_k: None)
+    monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
+    _stub_batch_config_ui(monkeypatch, mod)
+    monkeypatch.setattr(
+        mod,
+        "get_cached_list_transcript_picker_options",
+        lambda: [SimpleNamespace(path="/tmp/alice.json", label="alice")],
+    )
+    monkeypatch.setattr(mod, "cached_get_module_info_list", lambda: [])
+    monkeypatch.setattr(mod, "BatchController", _Ctrl)
+
+    mod.render_batch_analysis_panel()
+
+    pending = DummyHomeStreamlit.session_state[mod._PENDING_BATCH_KEY]
+    assert pending["form_cleared"] is True
+    assert pending["started"] is False
+    assert reruns == [True]
+    assert executed == []
+
+
+@pytest.mark.unit
 def test_batch_panel_controller_exception_shows_error_and_clears_cache(
     monkeypatch,
 ) -> None:
@@ -177,6 +241,7 @@ def test_batch_panel_controller_exception_shows_error_and_clears_cache(
                 selected_modules=["stats"],
             ),
             "execute": True,
+            "form_cleared": True,
             "started": False,
         },
         mod._BATCH_RESULT_KEY: SimpleNamespace(success=True, runs=[], errors=[]),
@@ -256,6 +321,7 @@ def test_batch_panel_workflow_error_clears_prior_result(monkeypatch) -> None:
                 selected_modules=["stats"],
             ),
             "execute": True,
+            "form_cleared": True,
             "started": False,
         },
         mod._BATCH_RESULT_KEY: SimpleNamespace(
@@ -323,6 +389,7 @@ def test_batch_panel_success_replaces_prior_result(monkeypatch) -> None:
                 selected_modules=["stats"],
             ),
             "execute": True,
+            "form_cleared": True,
             "started": False,
         },
         mod._BATCH_RESULT_KEY: old,
@@ -387,6 +454,7 @@ def test_batch_panel_execute_binds_live_progress_not_spinner(monkeypatch) -> Non
                 selected_modules=["stats"],
             ),
             "execute": True,
+            "form_cleared": True,
             "started": False,
         },
     }
@@ -460,6 +528,7 @@ def test_batch_ops_execute_contract_uses_live_panel() -> None:
     source = Path(mod.__file__).read_text(encoding="utf-8")
     assert "render_slot=progress_slot" in source
     assert "StreamlitProgressCallback" in source
+    assert 'pending.get("form_cleared")' in source
     assert 'with st.spinner("Running batch analysis...")' not in source
 
 

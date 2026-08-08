@@ -5,7 +5,8 @@ Selection widgets run in ``@st.fragment`` so multiselect chip toggles do not rer
 the full app (sidebar + page chrome).
 
 Live progress uses the same ``StreamlitProgressCallback`` + panel as single/group
-runs (bar + recent logs), not a blocking spinner.
+runs (bar + recent logs), not a blocking spinner. Launch is three-phase so a
+short ``form_cleared`` rerun drops prior selection widgets before execute.
 """
 
 from __future__ import annotations
@@ -184,7 +185,10 @@ def render_batch_analysis_panel() -> None:
 
     pending = st.session_state.get(_PENDING_BATCH_KEY)
     if isinstance(pending, dict) and pending.get("execute"):
-        # Two-phase launch: paint the progress panel, then execute once.
+        # Three-phase launch so Streamlit can drop the prior form widgets:
+        # 1) click stores pending + rerun
+        # 2) paint progress only + form_cleared + rerun (ends script → clears form)
+        # 3) paint progress + execute (blocking; form stays gone)
         progress_slot = st.empty()
         snapshot = st.session_state.get(SNAPSHOT_KEY)
         if snapshot is not None:
@@ -193,6 +197,11 @@ def render_batch_analysis_panel() -> None:
         else:
             with progress_slot.container():
                 st.info("Batch analysis is running…")
+        if not pending.get("form_cleared"):
+            pending["form_cleared"] = True
+            st.session_state[_PENDING_BATCH_KEY] = pending
+            st.rerun()
+            return
         if not pending.get("started"):
             pending["started"] = True
             st.session_state[_PENDING_BATCH_KEY] = pending
@@ -286,6 +295,7 @@ def render_batch_analysis_panel() -> None:
             st.session_state[_PENDING_BATCH_KEY] = {
                 "request": request,
                 "execute": True,
+                "form_cleared": False,
                 "started": False,
             }
             st.rerun()

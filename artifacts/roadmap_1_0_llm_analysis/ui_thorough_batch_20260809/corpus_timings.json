@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "evidence_id": "ui_thorough_batch_20260809",
+  "status": "stalled",
+  "package_version": "0.9.8.9",
+  "environment": "docker_compose",
+  "preset": "thorough",
+  "llm": "gemma3:4b",
+  "timings": [
+    {
+      "run_key": "skip_heavy_head_aggregate",
+      "wall_s": 126.0,
+      "status": "succeeded",
+      "n": 10
+    },
+    {
+      "run_key": "tx-full-01",
+      "wall_s": 1080.0,
+      "status": "stalled_after_artifacts",
+      "n": 1,
+      "chart_descriptions": 197
+    }
+  ],
+  "corpus_wall_s_observed_before_stall": 1206.0,
+  "notes": [
+    "Wall for tx-full-01 estimated from run start stamp to run_results mtime (~18 min).",
+    "Skip-heavy sum from run_performance wall_clock_duration_ms on 10 finished heads."
+  ]
+}

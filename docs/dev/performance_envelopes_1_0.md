@@ -148,6 +148,22 @@ Clean-Ollama transcript walls are ~4× faster than the contended 2026-08-07 pres
 - Private mirror: `.local/release_evidence/20260808_thorough_stress_pass/`
 - Run dirs: `…/260615_Ana_phd_presentation_QA/20260808_151213_94733139`, `…/260615_Ana_phd_supervision_meeting/20260808_152158_95318679`, `…/groups/7b9c6531-…/20260808_135224_e1985784`, `…/groups/bba6641e-…/20260808_141623_8a279f84`
 
+## UI Docker Thorough batch — partial / stalled (2026-08-09)
+
+**Scope:** Streamlit Batch Analysis via Docker Compose on the mounted managed library (not the native speaker-complete stress corpus above). Preset = Thorough (**41** modules). Live LLM **`gemma3:4b`**. Package `0.9.8.9`.
+
+**Outcome:** **stalled** — incomplete; do not treat as a Thorough envelope pass.
+
+| Phase | Wall | Status | Notes |
+|-------|-----:|--------|-------|
+| 10 skip-heavy library-head transcripts | **~2.1 min** sum | succeeded | Unnamed-speaker gates → mostly SKIP; ~9–16 s each |
+| First full Thorough transcript (`tx-full-01`) | **~18 min** | artifacts written; batch did not advance | 41/41 modules, 0 failures; **197/197** `chart_descriptions` |
+| Batch remainder | — | **stalled** | No next pipeline start after `tx-full-01`; `.run_finalization.lock` left; `.transcriptx/run_performance.json` missing |
+
+**Ops notes:** UI Thorough on a mixed library is skip-heavy until named-speaker rows; long `chart_descriptions` is a batch-resilience risk (logs look finished while the queue hangs). An earlier Balanced UI kick the same evening was aborted as the wrong preset.
+
+**Artifacts:** `artifacts/roadmap_1_0_llm_analysis/ui_thorough_batch_20260809/` (anonymised labels only) · private mirror `.local/release_evidence/20260809_ui_docker_thorough_batch/`
+
 ## Recording
 
 Record measured values per environment (Docker vs native) in release-evidence notes when claiming envelopes. Soft-cut for 0.9.7 allows recipe + tagged gaps; RC prefers filled Small/Medium rows on release hardware.

@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Run Analysis **Batch** progress panel now keeps showing the current transcript (`N/M · name`) while nested module events update the bar and latest-event line.
+
 ## [0.9.8.9] - 2026-08-08
 
 ### Changed
