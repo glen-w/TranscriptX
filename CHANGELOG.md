@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Overview artifact ZIP export writes selection-scoped **`index.epub`** beside **`index.html`** when `ebooklib` is available (`[visualization]` / `[full]` / Docker `requirements.txt`). Guide: [docs/runtime/export.md](docs/runtime/export.md); limits: [docs/known_limitations.md](docs/known_limitations.md).
+
 ### Fixed
 
 - Run Analysis **Batch** progress panel now keeps showing the current transcript (`N/M · name`) while nested module events update the bar and latest-event line.

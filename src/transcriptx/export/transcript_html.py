@@ -6,6 +6,10 @@ import html
 from typing import Any
 
 from transcriptx.export.grouping import group_contiguous_segments_by_speaker
+from transcriptx.export.transcript_meta import (
+    format_transcript_meta_bits,
+    transcript_export_meta,
+)
 from transcriptx.utils.text_utils import format_time_detailed
 
 
@@ -26,36 +30,10 @@ def render_transcript_section(transcript_data: dict[str, Any]) -> str:
     Every dynamic value is HTML-escaped.
     """
     segments = transcript_data.get("segments") or []
-    metadata = transcript_data.get("metadata") or {}
-
-    distinct_speakers: list[str] = []
-    seen: set[str] = set()
-    for segment in segments:
-        speaker = segment.get("speaker_display") or segment.get("speaker")
-        if speaker and speaker not in seen:
-            seen.add(speaker)
-            distinct_speakers.append(speaker)
-
-    duration = metadata.get("duration")
-    if duration is None and segments:
-        try:
-            duration = max(float(s.get("end", 0) or 0) for s in segments)
-        except (TypeError, ValueError):
-            duration = None
-
-    meta_bits: list[str] = [
-        f"{len(segments)} segments",
-        f"{len(distinct_speakers)} speakers",
-    ]
-    if duration:
-        try:
-            meta_bits.append(f"Duration {format_time_detailed(float(duration))}")
-        except (TypeError, ValueError):
-            pass
-    language = metadata.get("language")
-    if language:
-        meta_bits.append(f"Language: {language}")
-    meta_line = " · ".join(html.escape(str(bit)) for bit in meta_bits)
+    meta = transcript_export_meta(transcript_data)
+    meta_line = " · ".join(
+        html.escape(str(bit)) for bit in format_transcript_meta_bits(meta)
+    )
 
     blocks: list[str] = []
     for speaker_name, group_segments in group_contiguous_segments_by_speaker(segments):

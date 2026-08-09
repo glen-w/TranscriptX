@@ -36,6 +36,7 @@ Where you need the actual definition or invariant, always read the linked CONTRA
 
 - **Outputs and run artifacts**  
   - See output contract: `docs/contracts/output-contract-v1.md`.
+  - Overview ZIP / HTML / EPUB packaging: `docs/runtime/export.md` (guide; selection-scoped presentation indexes).
 
 - **Public surface / supported surface**  
   - See public surfaces contract: `docs/public_surfaces.md`.

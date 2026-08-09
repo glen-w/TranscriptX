@@ -5,12 +5,19 @@ from __future__ import annotations
 import html
 from typing import Any, Callable, Optional, Sequence
 
-from transcriptx.export.charts import render_chart_sections
+from transcriptx.export.charts import (
+    render_chart_sections,
+    render_chart_sections_from_groups,
+)
 from transcriptx.export.html_shell import omitted_charts_banner, wrap_export_page
 from transcriptx.export.markdown_html import summary_markdown_to_html
 from transcriptx.export.resolve import normalize_transcript_payload
 from transcriptx.export.transcript_html import render_transcript_section
-from transcriptx.export.types import ExportTextSummary, ExportableItem
+from transcriptx.export.types import (
+    ChartModuleGroup,
+    ExportTextSummary,
+    ExportableItem,
+)
 
 ModuleOrderFn = Callable[[Sequence[str]], list[str]]
 
@@ -93,6 +100,7 @@ def build_export_index_html(
     page_title: str,
     transcript_data: Optional[dict[str, Any]] = None,
     chart_items: Optional[list[ExportableItem]] = None,
+    chart_groups: Optional[Sequence[ChartModuleGroup]] = None,
     text_summaries: Optional[Sequence[ExportTextSummary]] = None,
     llm_summary: Optional[ExportTextSummary] = None,
     omitted_count: int = 0,
@@ -131,13 +139,15 @@ def build_export_index_html(
 
     chart_toc: list[str] = []
     chart_sections: list[str] = []
-    if chart_items:
-        try:
+    try:
+        if chart_groups is not None:
+            chart_toc, chart_sections = render_chart_sections_from_groups(chart_groups)
+        elif chart_items:
             chart_toc, chart_sections = render_chart_sections(
                 chart_items, order_modules=order_modules
             )
-        except Exception:
-            chart_toc, chart_sections = [], []
+    except Exception:
+        chart_toc, chart_sections = [], []
 
     has_transcript = transcript_section is not None
     has_summaries = summaries_section is not None

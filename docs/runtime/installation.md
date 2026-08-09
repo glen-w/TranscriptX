@@ -51,7 +51,7 @@ The package is **not published on PyPI**. Do not use bare `pip install transcrip
 - **GUI only:** `pip install -e ".[web]"` (Streamlit; not part of `[full]`)
 - **Full analysis extras:** `pip install -e ".[full]"` (all optional analysis modules; core_mode off; may fail on some hosts; **does not** install Streamlit)
 - **Native GUI ≈ Docker:** `pip install -e ".[full,web]"` or use `./transcriptx.sh` / `requirements.txt`
-- **Specific extras:** `pip install -e ".[voice]"`, `pip install -e '.[nlp]'`, `pip install -e ".[keyphrases]"` (optional YAKE / KeyBERT for the `keyphrases` module; noun-chunks path works without the extra), `pip install -e ".[speaker_match]"`, etc.
+- **Specific extras:** `pip install -e ".[voice]"`, `pip install -e '.[nlp]'`, `pip install -e ".[keyphrases]"` (optional YAKE / KeyBERT for the `keyphrases` module; noun-chunks path works without the extra), `pip install -e ".[visualization]"` (charts helpers + Overview export EPUB via `ebooklib`), `pip install -e ".[speaker_match]"`, etc.
 
 > **Install profiles (honesty):** Runtime markers today are **`core` | `full` only**. Streamlit lives in the **`[web]`** extra and in Docker/`requirements.txt`/`transcriptx.sh` — not in `[full]`. Aspirational names such as `basic` / `llm` as separate install profiles are **not** implemented. Docker images follow the fuller dependency set via `requirements.txt` / image build — that is **not** the same path as `pip install -e ".[full]"`. Treat Docker, `./transcriptx.sh`, and editable extras as related but non-equivalent install stories. See [install_profiles_matrix.md](../dev/install_profiles_matrix.md).
 >

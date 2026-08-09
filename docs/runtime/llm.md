@@ -331,7 +331,7 @@ Identity for caching is a distinct namespace (`provenance.cache_key`); schema/pr
 
 - **Insights** layout (`default`, `executive`): block `llm_action_items_block` renders sectioned Markdown or a typed table titled **Meeting extracts**.
 - **Overview** module metrics: summary extractor surfaces meeting-extract counts by type and status.
-- **Zip export**: JSON/MD are included in module/data exports; `index.html` lists a **Meeting extracts** summary section (see `resolve_export_text_summaries` in `export_index.py`).
+- **Zip export**: JSON/MD are included in module/data exports; Overview ZIP `index.html` / `index.epub` list a **Meeting extracts** summary section when those artifacts are selected (see `resolve_export_text_summaries` in `transcriptx.export.resolve_summaries`). Full export behaviour: [runtime/export.md](export.md).
 
 ## Truncation
 

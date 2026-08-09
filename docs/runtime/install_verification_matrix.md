@@ -44,7 +44,7 @@ Authority: docs/runtime/installation.md
 | **bertopic** | `pip install -e ".[bertopic]"` | Optional BERTopic stack (`bertopic`/`hdbscan`/`umap-learn`); also in `[full]` / Docker |
 | **keyphrases** | `pip install -e ".[keyphrases]"` | Optional YAKE + KeyBERT for `keyphrases` module (noun-chunks path works without this extra) |
 | **maps** | `pip install -e ".[maps]"` | Maps extras; Playwright for optional HTML→PNG (not required for Streamlit GUI) |
-| **visualization** | `pip install -e ".[visualization]"` | Viz extras |
+| **visualization** | `pip install -e ".[visualization]"` | Charts/PDF helpers + **ebooklib** for Overview export `index.epub` (with matplotlib/seaborn/wordcloud) |
 | **plotly** | `pip install -e ".[plotly]"` | Plotly extras |
 | **web** | `pip install -e ".[web]"` | Streamlit GUI only (not included in `[full]`) |
 | **full** | `pip install -e ".[full]"` | All optional **analysis** extras; may fail on some hosts (e.g. llvmlite) — does **not** install Streamlit |

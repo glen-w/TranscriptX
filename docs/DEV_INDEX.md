@@ -48,6 +48,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 |-----|---------|
 | [pipeline_contracts.md](dev/pipeline_contracts.md) | Pipeline layering contracts |
 | [output_conventions.md](dev/output_conventions.md) | Output conventions guide |
+| [export.md](runtime/export.md) | Overview ZIP / HTML / EPUB export guide |
 | [run_outcome_model.md](dev/run_outcome_model.md) | Run outcome developer notes |
 | [run_performance.md](dev/run_performance.md) | Analysis-run performance telemetry |
 | [COMPLEXITY_GATES.md](dev/COMPLEXITY_GATES.md) | Complexity / performance gates |

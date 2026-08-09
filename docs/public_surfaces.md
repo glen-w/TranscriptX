@@ -15,7 +15,7 @@ This document defines which TranscriptX surfaces are **supported** and which are
   - Running analysis on individual transcripts and groups.
   - Viewing results via **Transcript → Overview → Insights → Charts → Artifacts**.
   - Managing basic settings exposed in the UI.
-- Use **Artifacts** (Browse / Preview / Export). Legacy `Data` / `Explorer` (File List) page keys are no longer supported (removed in 0.9.7).
+- Use **Artifacts** (Browse / Preview / Export). Overview / Artifacts ZIP export includes selected files plus generated `index.html` and, when `ebooklib` is available, `index.epub` (see [runtime/export.md](runtime/export.md)). Legacy `Data` / `Explorer` (File List) page keys are no longer supported (removed in 0.9.7).
 - Built-in layout profile id `default` is displayed as **Standard** and is immutable; clone via Dashboard Builder.
 ### 1.2 Python API
 

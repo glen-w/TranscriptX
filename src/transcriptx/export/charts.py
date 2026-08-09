@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
 from pathlib import Path
 import html
 from typing import Callable, Optional, Sequence
 
+from transcriptx.export.chart_prep import prepare_chart_export_view
 from transcriptx.export.html_shell import omitted_charts_banner, wrap_export_page
 from transcriptx.export.paths import resolve_artifact_source_path
 from transcriptx.export.types import (
     HARD_CAP_BYTES,
+    ChartModuleGroup,
     ChartsExportResult,
     ExportableItem,
 )
@@ -72,14 +73,63 @@ def resolve_exportable(
     return items
 
 
-def _sort_key(item: ExportableItem) -> tuple[str, str]:
-    module = item.artifact.module or "Other"
-    return (module.lower(), item.artifact.rel_path)
-
-
-def _default_order_modules(values: Sequence[str]) -> list[str]:
-    """Alphabetical fallback when no UI module-order callable is injected."""
-    return sorted(values, key=lambda value: (value.lower(), value))
+def render_chart_sections_from_groups(
+    groups: Sequence[ChartModuleGroup],
+) -> tuple[list[str], list[str]]:
+    """Render prepared chart groups to TOC entries and section HTML."""
+    toc_entries: list[str] = []
+    section_html: list[str] = []
+    for group in groups:
+        toc_entries.append(
+            f'<li><a href="#{html.escape(group.anchor_id, quote=True)}">'
+            f"{html.escape(group.module_name)}</a></li>"
+        )
+        cards: list[str] = []
+        for card in group.cards:
+            rel = card.export_rel_path.as_posix()
+            if card.kind == "static":
+                body = (
+                    f'<a class="chart-thumb" href="{html.escape(rel, quote=True)}" '
+                    f'title="Open {html.escape(card.title, quote=True)}">'
+                    f'<img src="{html.escape(rel, quote=True)}" '
+                    f'alt="{html.escape(card.title, quote=True)}" loading="lazy" />'
+                    "</a>"
+                )
+            else:
+                body = (
+                    '<span class="badge">Interactive HTML</span>'
+                    f'<a class="open-link" href="{html.escape(rel, quote=True)}">'
+                    "Open chart</a>"
+                    f'<iframe title="{html.escape(card.title, quote=True)}" '
+                    f'src="{html.escape(rel, quote=True)}"></iframe>'
+                    '<p class="hint">Inline preview is best effort for local files.</p>'
+                )
+            description_html = ""
+            if card.description:
+                description_html = (
+                    f'<p class="chart-desc">{html.escape(card.description)}</p>'
+                )
+            llm_html = ""
+            if card.llm_description:
+                llm_html = (
+                    f'<p class="chart-narrative">'
+                    f"{html.escape(card.llm_description)}</p>"
+                )
+            cards.append(
+                '<article class="card">'
+                f"<h3>{html.escape(card.title)}</h3>"
+                f'<p class="meta">{html.escape(card.meta)}</p>'
+                f"{description_html}"
+                f"{body}"
+                f"{llm_html}"
+                "</article>"
+            )
+        section_html.append(
+            f'<section id="{html.escape(group.anchor_id, quote=True)}">'
+            f"<h2>{html.escape(group.module_name)}</h2>"
+            '<div class="card-grid">' + "".join(cards) + "</div></section>"
+        )
+    return toc_entries, section_html
 
 
 def render_chart_sections(
@@ -93,77 +143,12 @@ def render_chart_sections(
     Returns a tuple of (toc_entries, section_html). Shared by the charts-only
     export index and the combined Overview export index.
     """
-    order_fn = order_modules or _default_order_modules
-    grouped: dict[str, list[ExportableItem]] = defaultdict(list)
-    for item in sorted(items, key=_sort_key):
-        grouped[item.artifact.module or "Other"].append(item)
-    ordered_modules = order_fn(list(grouped.keys()))
-
-    toc_entries: list[str] = []
-    section_html: list[str] = []
-    for module_name in ordered_modules:
-        anchor = f"module-{module_name.lower().replace(' ', '-')}"
-        toc_entries.append(
-            f'<li><a href="#{html.escape(anchor, quote=True)}">'
-            f"{html.escape(module_name)}</a></li>"
-        )
-        cards: list[str] = []
-        for item in grouped[module_name]:
-            artifact = item.artifact
-            rel = item.export_rel_path.as_posix()
-            title = artifact.title or Path(artifact.rel_path).name
-            tags_s = ", ".join(sorted(artifact.tags)) if artifact.tags else "—"
-            meta = (
-                f"{artifact.module or '—'} · {artifact.scope or '—'} · "
-                f"{artifact.kind} · {tags_s}"
-            )
-            if artifact.kind == "chart_static":
-                body = (
-                    f'<a class="chart-thumb" href="{html.escape(rel, quote=True)}" '
-                    f'title="Open {html.escape(title, quote=True)}">'
-                    f'<img src="{html.escape(rel, quote=True)}" '
-                    f'alt="{html.escape(title, quote=True)}" loading="lazy" />'
-                    "</a>"
-                )
-            else:
-                body = (
-                    '<span class="badge">Interactive HTML</span>'
-                    f'<a class="open-link" href="{html.escape(rel, quote=True)}">'
-                    "Open chart</a>"
-                    f'<iframe title="{html.escape(title, quote=True)}" '
-                    f'src="{html.escape(rel, quote=True)}"></iframe>'
-                    '<p class="hint">Inline preview is best effort for local files.</p>'
-                )
-            description = item.description
-            if description is None and description_fn is not None:
-                try:
-                    description = description_fn(artifact)
-                except Exception:
-                    description = None
-            description_html = ""
-            if description:
-                description_html = (
-                    f'<p class="chart-desc">{html.escape(description)}</p>'
-                )
-            llm_text = item.llm_description
-            llm_html = ""
-            if llm_text:
-                llm_html = f'<p class="chart-narrative">{html.escape(llm_text)}</p>'
-            cards.append(
-                '<article class="card">'
-                f"<h3>{html.escape(title)}</h3>"
-                f'<p class="meta">{html.escape(meta)}</p>'
-                f"{description_html}"
-                f"{body}"
-                f"{llm_html}"
-                "</article>"
-            )
-        section_html.append(
-            f'<section id="{html.escape(anchor, quote=True)}">'
-            f"<h2>{html.escape(module_name)}</h2>"
-            '<div class="card-grid">' + "".join(cards) + "</div></section>"
-        )
-    return toc_entries, section_html
+    groups = prepare_chart_export_view(
+        items,
+        order_modules=order_modules,
+        description_fn=description_fn,
+    )
+    return render_chart_sections_from_groups(groups)
 
 
 def build_charts_index_html(

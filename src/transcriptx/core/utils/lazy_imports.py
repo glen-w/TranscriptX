@@ -428,6 +428,14 @@ def get_reportlab() -> Any:
     )
 
 
+def get_ebooklib() -> Any:
+    """
+    Get the ebooklib package for EPUB export.
+    Lazy-loaded; no auto-install (same policy as reportlab).
+    """
+    return optional_import("ebooklib", "EPUB export", "visualization")
+
+
 def ensure_pdf_ready(silent: bool = False) -> bool:
     """
     Ensure reportlab (and thus PDF deps) are available, installing into the

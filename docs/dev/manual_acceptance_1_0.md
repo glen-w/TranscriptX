@@ -98,7 +98,7 @@ Deliberate failures — expected recovery / severity:
 
 ### 3.5 Export — **required**
 
-- [x] Create export / download artifacts (see also residual **R2**) — **pass** 2026-07-26 (export visible → zip; HTML index looks good)
+- [x] Create export / download artifacts (see also residual **R2**) — **pass** 2026-07-26 (export visible → zip; HTML index looks good). **Follow-up:** re-check Overview ZIP for `index.epub` when `ebooklib` is present ([runtime/export.md](../runtime/export.md)).
 
 ### 3.6 Transcribe command generation — **required**
 

@@ -29,6 +29,24 @@ Voice fingerprint / speaker-match features are identity-sensitive. Read the in-a
 
 Optional Ollama / Local AI modules are stochastic. Re-runs can differ. Artifacts carry model identity fields where available; treat Local AI text as assistive, not ground truth. Principal surfaces label Local AI vs deterministic summaries.
 
+## Overview export EPUB
+
+Full behaviour: [runtime/export.md](runtime/export.md).
+
+Overview artifact ZIP export writes ``index.epub`` beside ``index.html`` when the
+optional ``ebooklib`` dependency is available (``pip install -e '.[visualization]'``
+or ``.[full]``; also in Docker / ``requirements.txt`` images). Content is
+**selection-scoped** — the same artifacts copied into the ZIP that feed the HTML
+index — not a silent full-run book.
+
+Static chart rasters (PNG/JPEG/WebP/GIF) are embedded when valid; interactive
+HTML charts appear as captions/notes only (e-readers cannot run them). Generated
+``index.html`` / ``index.epub`` files are exempt from the ZIP source hard-cap and
+are excluded from feeding subsequent export resolvers if re-selected.
+
+Charts-only ZIP export remains HTML-only (no EPUB) in this release.
+
 ## Install honesty (Mac MPS)
 
 Native **Apple MPS** is **supported-with-caveats**, not universally validated for every optional model. Prefer **Docker CPU** for predictable installs. If MPS initialisation or model execution fails, use `TRANSCRIPTX_FORCE_CPU=1` (documented in [installation.md](runtime/installation.md)). Do not assume every optional model runs reliably on MPS.
+

@@ -149,6 +149,7 @@ visualization = [
     "matplotlib==3.7.2",
     "seaborn==0.12.2",
     "wordcloud==1.9.2",
+    "ebooklib>=0.18",
 ]
 plotly = [
     "plotly>=5.0.0",
@@ -173,6 +174,7 @@ full = [
     "matplotlib==3.7.2",
     "seaborn==0.12.2",
     "wordcloud==1.9.2",
+    "ebooklib>=0.18",
     "plotly>=5.0.0",
     "speechbrain==1.0.2",
     "torchaudio>=2.6.0",
