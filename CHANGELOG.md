@@ -10,13 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.9] - 2026-08-09
+
 ### Added
 
 - Overview artifact ZIP export writes selection-scoped **`index.epub`** beside **`index.html`** when `ebooklib` is available (`[visualization]` / `[full]` / Docker `requirements.txt`). Guide: [docs/runtime/export.md](docs/runtime/export.md); limits: [docs/known_limitations.md](docs/known_limitations.md).
+- Unit coverage for subprocess-isolated BERTopic fit helpers, raw config unwrap/validation messages, and export chart-prep / transcript-meta helpers.
 
 ### Fixed
 
 - Run Analysis **Batch** progress panel now keeps showing the current transcript (`N/M · name`) while nested module events update the bar and latest-event line.
+
+### Changed
+
+- Cut **0.9.9** Overview / results presentation theme: Insights **Analysis** tab retirement (landed earlier in 0.9.8.7) plus export EPUB and batch progress honesty. Remaining Overview hierarchy polish and full Charts catalogue audit stay deferred for pre-unfamiliar-user follow-up ([overview_presentation_0_9_9.md](docs/dev/overview_presentation_0_9_9.md)).
 
 ## [0.9.8.9] - 2026-08-08
 

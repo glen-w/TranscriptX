@@ -1182,6 +1182,46 @@ def test_speaker_map_display_name_ignores_placeholder_self_mapping() -> None:
     assert _speaker_map_display_name(m, "SPEAKER_01") == "Alice"
 
 
+def test_remaining_count_and_speaker_label_helpers() -> None:
+    """Named / ignored / remaining counts and jump labels stay consistent."""
+    from types import SimpleNamespace
+
+    from transcriptx.web.page_modules.speaker_id import (
+        _remaining_count,
+        _speaker_label,
+        _voice_display_from_result,
+    )
+
+    speaker_ids = ["SPEAKER_00", "SPEAKER_01", "SPEAKER_02"]
+    speaker_map = {"SPEAKER_00": "Alice"}
+    ignored = ["SPEAKER_02"]
+    named, n_ignored, remaining = _remaining_count(speaker_ids, speaker_map, ignored)
+    assert (named, n_ignored, remaining) == (1, 1, 1)
+    assert "→ Alice" in _speaker_label("SPEAKER_00", 0, speaker_map, ignored)
+    assert "🔇" in _speaker_label("SPEAKER_02", 2, speaker_map, ignored)
+    assert "❓" in _speaker_label("SPEAKER_01", 1, speaker_map, ignored)
+
+    result = SimpleNamespace(
+        outcome="matched",
+        detail="ok",
+        candidates_ui=[
+            {
+                "profile_id": "p1",
+                "display_name": "stale",
+                "confidence": 0.9,
+                "reference_count": 2,
+            },
+            {"profile_id": None, "display_name": "anon", "confidence": 0.1},
+        ],
+    )
+    payload = _voice_display_from_result(
+        result, profile_name_lookup=lambda pid: "Live" if pid == "p1" else None
+    )
+    assert payload["outcome"] == "matched"
+    assert payload["candidates"][0]["display_name"] == "Live"
+    assert payload["candidates"][1]["display_name"] == "anon"
+
+
 def test_speaker_id_named_and_remaining_counts_with_variant_diarized_ids(
     monkeypatch: pytest.MonkeyPatch,
     transcript_dir: Path,

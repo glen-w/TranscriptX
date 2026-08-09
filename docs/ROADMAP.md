@@ -42,7 +42,7 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Harden + public surfaces (automatable) | Audit judgements draft; perf recipe; trust drafts + AI labelling + NOTICE; website + Pages; release-ops; Data/Explorer redirects removed | **0.9.7** |
 | Hygiene + honesty + human-pass prep | Epoch/deps cleanup; BERTopic-out-of-base; Balanced emotion honesty; known-limitations; acceptance kits | **0.9.8** |
 | Maintainer acceptance | Manual acceptance + a11y/browser; severity-justified fixes | **done** 2026-08-07 (kit journeys closed; see [manual_acceptance_1_0.md](dev/manual_acceptance_1_0.md)) |
-| Overview / results presentation | Retire Insights Analysis tab; redistribute into Summary / Speakers / Actions / Highlights — [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | **0.9.9** (next) |
+| Overview / results presentation | Retire Insights Analysis tab; redistribute into Summary / Speakers / Actions / Highlights — [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | **0.9.9** (Charts/Overview hierarchy residuals deferred) |
 | Unfamiliar-user → RC | Clean-room validation; clean-env soak; RTD slug (owner) | next (pre-RC) |
 
 **Module freeze:** no new analysis modules in 0.9.x unless required to complete or repair the 1.0 journey. Backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).

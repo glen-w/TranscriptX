@@ -3,12 +3,12 @@ Authority: docs/dev/pre_release_roadmap_1_0.md
 
 # 0.9.9 — Overview / results presentation polish
 
-**Status:** in progress (Analysis tab retired; Overview/Charts polish remaining)  
+**Status:** cut as **`0.9.9`** (2026-08-09) — Analysis tab retired; Overview EPUB + batch progress honesty landed; Overview hierarchy + Charts catalogue residuals deferred for pre-unfamiliar-user follow-up  
 **Slot:** after **maintainer acceptance** findings settle; **before** unfamiliar-user validation  
 **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md)  
 **Related:** [manual_acceptance_1_0.md](manual_acceptance_1_0.md) §3.3 (Overview works; presentation debt parked here)
 
-Presentation-only theme. No new analysis modules. Prefer coherent organisation and clearer hierarchy over feature expansion. Cut as **`0.9.9`** (or next free 0.9.x patch) when the list is actionable and tested.
+Presentation-only theme. No new analysis modules. Prefer coherent organisation and clearer hierarchy over feature expansion.
 
 ## Why this slot
 
@@ -117,4 +117,4 @@ Add bullets here as Insights / Artifacts / Settings findings appear — keep eac
 - [ ] Charts catalogue assessed for 1-speaker, 2-speaker, and multi-speaker; must-fix chart issues fixed or severity-triaged
 - [ ] Maintainer re-check of Overview + Insights (and sample Charts) on a real run (pass or documented residual)
 - [ ] No new release blockers introduced
-- [ ] Theme cut tagged; unfamiliar-user kit may proceed
+- [x] Theme cut tagged (`v0.9.9`); unfamiliar-user kit may proceed (Charts/Overview hierarchy residuals tracked above)

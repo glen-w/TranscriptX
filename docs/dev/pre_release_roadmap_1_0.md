@@ -29,7 +29,7 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **0.9.x — hygiene + honesty + human-pass prep** — epoch/deps cleanup; BERTopic-out-of-base; Balanced experimental-emotion honesty; known-limitations page; maintainer + unfamiliar-user kits (**cut as 0.9.8**). Templates ≠ measured ≠ signed-off for remaining owner-gated residuals (e.g. RTD slug, cohort).
 - [x] **Maintainer acceptance pass** — kit journeys closed **2026-08-07** ([manual_acceptance_1_0.md](manual_acceptance_1_0.md), incl. §3.12 Medium Balanced + Large-library); severity-justified fixes only if residual findings remain
 - [x] **Final Thorough stress pass (speaker-complete)** — Thorough + `qwen2.5:7b` on **all** speaker-complete transcripts **and** qualifying groups **pass** 2026-08-08 (2 tx + 2 groups, corpus wall **68.7 min**, 0 failures) → `artifacts/roadmap_1_0_llm_analysis/stress_pass_20260808/`
-- [ ] **0.9.9 — Overview / results presentation polish** — retire Insights **Analysis** tab (redistribute modules into Summary / Speakers / Highlights; Charts + Artifacts stay sibling pages); Overview hierarchy polish; Charts catalogue; list in [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md); **after** maintainer findings, **before** unfamiliar-user round
+- [x] **0.9.9 — Overview / results presentation polish** — Insights **Analysis** tab retired/redistributed; selection-scoped Overview EPUB; batch progress labels (**cut as 0.9.9**). Overview hierarchy polish + Charts catalogue remain deferred residuals — [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md)
 - [ ] **Unfamiliar-user validation** — Clean-room round (2–5 people, ≥1 non-technical); kit in [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); mandatory before 1.0
 - [ ] **RC → 1.0** — Severity triage clear; gates pass; release ops/support policy published; governance evidence on exact commit
 
@@ -1023,6 +1023,6 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 11. [x] Execute **0.9.x harden + public surfaces (automatable)** theme (**0.9.7**) ← **landed** (RTD slug may remain owner-gated; Large-library soak measured 2026-08-07; Hub-card residual dropped 2026-08-07)
 12. [x] Execute **0.9.x hygiene + honesty + human-pass prep** theme (**0.9.8**) ← **landed** (BMC closed; Hub-card residual dropped; Large-library measured; RTD slug + cohort remain owner residuals)
 13. [x] **Maintainer acceptance pass** — kit journeys closed **2026-08-07** ([manual_acceptance_1_0.md](manual_acceptance_1_0.md)); severity-justified fixes only if residual findings remain
-14. [ ] **0.9.9 Overview / results presentation polish** — retire Insights Analysis tab + redistribute; [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md) (after maintainer findings; before unfamiliar-user)
+14. [x] **0.9.9 Overview / results presentation polish** — cut **0.9.9**; Analysis IA + EPUB + batch progress landed; Charts/Overview hierarchy residuals deferred ([overview_presentation_0_9_9.md](overview_presentation_0_9_9.md))
 15. [ ] **Unfamiliar-user round** — [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); blockers/must-fix prevent RC
 16. [ ] **Final gate review** → RC rehearsal → RC → public **1.0**

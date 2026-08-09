@@ -2321,3 +2321,50 @@ Follow-up: expand testing of knobs-heavy GUI pages (Settings Analysis, Custom QA
 1. Keep optional-dep reason strings (`missing_extra:` / `broken_extra:`) stable; contract tests guard the format.
 2. Continue Overview 0.9.9 polish with pure-helper unit tests before AppTest journeys.
 3. Do not re-enable collect-ignored semantic v1 modules until rewritten for current semantic similarity APIs.
+
+---
+
+## 79. Expansion (2026-08-09) – bertopic_fit isolation, config raw validation, export chart/meta
+
+### Trigger
+`/tests` (full suite review + targeted expansion)
+
+### Backup
+- `/Users/89298/Documents/transcriptx backup/260809-1826.zip` (8.5M); `custom-commands/` mirrored.
+
+### Review
+- **Collection (default filter):** `7848/8026` selected (`178` deselected). Full `-m ""`: **8026**.
+- **Baseline before expansion:** `7845 passed, 3 skipped, 178 deselected` (green).
+- **Cleanup:** disabled (per command).
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0; `-m quarantined` selects nothing); not re-enabled.
+- **Markers / addopts:** unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow/gui_acceptance).
+- **Structure:** `tests/{analysis,app,contracts,core,integration,io,optional,packaging,pipeline,presentation,quarantine,regression,release,scripts,services,smoke,unit,utils,web}` (+ `tests/web/transcript_viewer/`, `tests/web/gui_acceptance/`).
+- **Skipped-at-collection:** no import failures. Collect-ignored obsolete semantic v1 modules remain ignored (update-or-remove candidates; not re-enabled). Historical `tests/analysis/test_rules.py` imports live `acts.rules`.
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| BERTopic isolated fit (0.9.8.8) | Parent helper paths (timeout / missing result / soft-fail / success / signal hint) only lightly covered via pipeline mocks | New `tests/unit/test_bertopic_fit_isolated.py` |
+| Config raw validation | `unwrap_config_payload` + unknown/legacy section messages only partial | New `tests/unit/test_config_raw_validation.py` |
+| Export chart prep + transcript meta | `module_anchor_id`, kind mapping, grouping, meta bits, duration edges under-covered vs EPUB planner tests | New `tests/utils/test_export_chart_prep_and_meta.py` |
+| Speaker ID display helpers | `_remaining_count` / `_speaker_label` / `_voice_display_from_result` | Extend `tests/web/test_speaker_id_page.py` |
+
+### Tests added / extended
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/unit/test_bertopic_fit_isolated.py` | **new (+7)** | cfg snapshot; timeout; missing result; soft-fail; success; exit 139 signal; `_serialize_probs` |
+| `tests/unit/test_config_raw_validation.py` | **new (+9)** | unwrap; transcription/unknown keys; overview_chart_types; llm/audio legacy; minimal accept |
+| `tests/utils/test_export_chart_prep_and_meta.py` | **new (+9)** | anchors/kinds/sanitize; prepare groups; transcript meta; slugify/provenance |
+| `tests/web/test_speaker_id_page.py` | **+1** | remaining counts + voice display payload |
+
+### Validation
+- Focused slice: **26 passed**.
+- Default suite after expansion: **7871 passed, 3 skipped, 178 deselected**.
+- Optional `integration_core`: **55 passed, 3 failed** — same pre-existing failures as §78 (group-finalize new modules; VTT managed-import; manifest artifact path). Not fixed here (outside tests-only scope).
+- **Production code:** none (this `#tests` pass).
+- **Quarantined tests:** not re-enabled.
+
+### Recommendations
+1. Keep bertopic isolated-fit error strings (`bertopic_fit_timeout`, `bertopic_native_crash:…`) stable; unit tests pin them.
+2. Prefer pure helper unit tests for export HTML/EPUB shared prep before AppTest export journeys.
+3. Do not re-enable collect-ignored semantic v1 modules until rewritten for current semantic similarity APIs.
