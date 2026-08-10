@@ -85,3 +85,57 @@ def test_build_workspace_data_uses_nonblocking_clips(tmp_path: Path) -> None:
     assert data["protocol_version"] == "1"
     assert data["samples"][0]["clip_status"] == "pending"
     assert ctrl.joined == 0
+
+
+def test_dispatch_ack_includes_authoritative_fields() -> None:
+    """Bridge must surface revision/effect fields for optimistic reconciliation."""
+    from transcriptx.app.speaker_id import (
+        SpeakerIdAck,
+        SpeakerIdEffects,
+        SpeakerIdFlash,
+    )
+    from transcriptx.web.workspaces.speaker_id_bridge import dispatch_workspace_command
+
+    class _Svc:
+        _expected_builds = set()
+
+        def execute(self, command):
+            return SpeakerIdAck(
+                action_id=command.action_id,
+                action_seq=command.action_seq,
+                status="ok",
+                transcript_id=command.transcript_id,
+                transcript_revision="tr1",
+                mapping_revision="mr1",
+                active_speaker_id="SPEAKER_00",
+                active_speaker_idx=0,
+                effects=SpeakerIdEffects(
+                    flashes=(SpeakerIdFlash(level="info", message="saved"),),
+                    requires_app_rerun=True,
+                ),
+            )
+
+    applied = []
+    out = dispatch_workspace_command(
+        {
+            "action": "save_name",
+            "action_id": "aid1",
+            "action_seq": 7,
+            "protocol_version": "1",
+            "frontend_build_id": "legacy",
+            "expected_speaker_id": "SPEAKER_00",
+            "payload": {"name": "Alice"},
+        },
+        service=_Svc(),  # type: ignore[arg-type]
+        speaker_ids=["SPEAKER_00"],
+        current_speaker_idx=0,
+        apply_ack=applied.append,
+    )
+    assert out is not None
+    assert out["status"] == "ok"
+    assert out["transcript_revision"] == "tr1"
+    assert out["mapping_revision"] == "mr1"
+    assert out["active_speaker_id"] == "SPEAKER_00"
+    assert out["requires_app_rerun"] is True
+    assert out["flashes"] == [{"level": "info", "message": "saved"}]
+    assert len(applied) == 1
