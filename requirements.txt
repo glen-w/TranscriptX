@@ -157,6 +157,8 @@ keybert>=0.8.0
 # Web Framework
 # ============================================================================
 streamlit>=1.55.0
+# Theme C CCv2 workspaces (path install; see packages/transcriptx_workspaces)
+# pip install -e packages/transcriptx_workspaces
 
 # ============================================================================
 # Development and Testing (for core functionality)

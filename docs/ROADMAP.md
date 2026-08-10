@@ -77,7 +77,7 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 |-------|--------|------------------|
 | A. Insights & analysis quality | Stronger deterministic/hybrid insights; clearer result UX | Early 1.x |
 | B. Corrections & transcript editing | Word-level propose/apply in the reader; studio as batch/review | Early 1.x |
-| C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections (and later rich edit) | Near-term 1.x |
+| C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections (and later rich edit) | Near-term 1.x — **in progress** (action service + CCv2 kit; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md)) |
 | D. Playback & reading UX | Karaoke-style word highlight; reader polish that Components unlock | With / after C |
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
 | F. Library & organisation | Transcript tagging; Groups interaction rules | Mid 1.x |
@@ -126,6 +126,8 @@ Speaker ID is reaching Streamlit’s architectural edge; TranscriptX as a whole 
 **1.x plan:** keep Streamlit as the application shell. Allow a small category of high-interaction workspaces to escape ordinary Streamlit widget trees: **Speaker Identification**, **Corrections Studio**, and possibly rich transcript editing later. Prototype a **Streamlit Components v2** Speaker ID surface against the existing controller. The component owns persistent audio player, play/pause/seek, sample-row paging, active-speaker selection, name input, keyboard shortcuts, optimistic navigation, and loading/disabled states. Python keeps transcript/sidecar reading, mapping mutations, profile creation, voice analysis, clip extraction, validation/locking, and domain services. Meaningful actions still cause Python reruns; routine browser-side interactions can stay local. If it works, migrate only interaction-heavy workspaces. Only if that becomes restrictive, consider a proper local frontend + Python API (later, much larger). Avoid wholesale jumps to Gradio/NiceGUI.
 
 **Trajectory:** Streamlit shell + Python domain services + specialised frontend components for workstation-like interactions.
+
+**Implementation status (2026-08):** Phase −1 `SpeakerIdActionService` shared by legacy + CCv2; non-blocking ClipService APIs; packaged `transcriptx-workspaces` CCv2 Speaker ID surface (feature-flagged, default-on with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0` rollback); Corrections revisioned command protocol; PlaybackHost handoff for Theme D; legacy fragment path retained until Phase 9 criteria. Design authority: [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
 
 ---
 

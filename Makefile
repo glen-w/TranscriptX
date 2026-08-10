@@ -1,7 +1,7 @@
 # TranscriptX Makefile
 # Main targets for documentation and development
 
-.PHONY: docs-gen docs docs-clean help test-smoke test-smoke-nlp test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance docker-smoke run clean-test-artifacts perf-envelopes
+.PHONY: docs-gen docs docs-clean help test-smoke test-smoke-nlp test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance test-workspaces test-theme-c-browser workspaces-build docker-smoke run clean-test-artifacts perf-envelopes
 
 help:
 	@echo "TranscriptX Makefile"
@@ -11,6 +11,11 @@ help:
 	@echo "  docs         Build Sphinx HTML into docs/_build/html (requires .[docs])"
 	@echo "  docs-clean   Remove Sphinx build artifacts (keeps docs/generated/)"
 	@echo "  perf-envelopes  Print performance-envelope measurement recipe (0.9.7)"
+	@echo ""
+	@echo "Workspaces (Theme C):"
+	@echo "  workspaces-build       Build CCv2 frontend assets"
+	@echo "  test-workspaces        Protocol/clip/action + Vitest lifecycle tests"
+	@echo "  test-theme-c-browser   Playwright browser suite (Theme C)"
 	@echo ""
 	@echo "Docker:"
 	@echo "  run            Streamlit web app in Docker (full TTY)"
@@ -121,6 +126,19 @@ test-config-coverage:
 test-release-only:
 	@echo "Running release-only packaging smoke..."
 	@pytest -q tests/release -m "release_only and not quarantined"
+
+workspaces-build:
+	@echo "Building Theme C CCv2 workspace frontend..."
+	@cd packages/transcriptx_workspaces/transcriptx_workspaces/frontend && npm ci && npm run build
+
+test-workspaces:
+	@echo "Theme C unit/protocol + Vitest lifecycle..."
+	@pytest -q tests/app/test_speaker_id_action_service.py tests/app/test_corrections_action_service.py tests/web/test_workspaces_theme_c.py tests/services/speaker_studio/test_clip_service.py
+	@cd packages/transcriptx_workspaces/transcriptx_workspaces/frontend && npm ci && npm test
+
+test-theme-c-browser:
+	@echo "Theme C Playwright browser suite..."
+	@pytest -q tests/browser -m browser
 
 docker-smoke:
 	@echo "Running Docker first-run smoke test..."

@@ -189,3 +189,43 @@ jobs:
             artifacts/pre-release/
             dist/
           if-no-files-found: warn
+
+  # Theme C: CCv2 workspaces — Streamlit min + current matrix, frontend build, browser harness
+  workspaces-theme-c:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        streamlit: ["1.55.0", "1.61.1"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: packages/transcriptx_workspaces/transcriptx_workspaces/frontend/package-lock.json
+      - name: Install TranscriptX + workspaces + Streamlit pin
+        run: |
+          python -m pip install -U pip
+          pip install -e ".[dev]"
+          pip install -e packages/transcriptx_workspaces
+          pip install "streamlit==${{ matrix.streamlit }}"
+          pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Build + Vitest
+        run: make workspaces-build && make test-workspaces
+      - name: Clean wheel install smoke
+        run: |
+          python -m pip install build
+          python -m build packages/transcriptx_workspaces
+          python -m venv /tmp/tx-ws-wheel
+          /tmp/tx-ws-wheel/bin/pip install -U pip
+          /tmp/tx-ws-wheel/bin/pip install packages/transcriptx_workspaces/dist/transcriptx_workspaces-*.whl
+          /tmp/tx-ws-wheel/bin/python -c "import transcriptx_workspaces; print(transcriptx_workspaces.FRONTEND_BUILD_ID)"
+      - name: Browser harness
+        run: make test-theme-c-browser

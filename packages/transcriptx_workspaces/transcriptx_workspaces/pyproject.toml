@@ -1,0 +1,8 @@
+# Ship a minimal metadata file that can be picked up by Streamlit at runtime.
+[project]
+name = "transcriptx-workspaces"
+version = "0.1.0"
+
+[[tool.streamlit.component.components]]
+name = "speaker_id_workspace"
+asset_dir = "frontend/build"

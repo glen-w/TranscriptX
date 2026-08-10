@@ -130,6 +130,9 @@ keyphrases = [
 # GUI only — Streamlit is not in base or [full]. Docker / transcriptx.sh install via requirements.txt.
 web = [
     "streamlit>=1.55.0",
+    # Theme C CCv2 package: install alongside with
+    #   pip install -e packages/transcriptx_workspaces
+    # (also wired in Makefile workspaces targets / Docker when GUI image is built).
 ]
 # Optional BERTopic analysis stack (also in [full] / Docker). Was briefly in base
 # when wheels worked; kept out of core so umap→llvmlite cannot block clean installs.

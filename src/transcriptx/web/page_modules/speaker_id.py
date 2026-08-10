@@ -1393,6 +1393,126 @@ def _render_voice_suggestions(
         st.warning(f"Voice suggestions unavailable: {exc}")
 
 
+# ── CCv2 workspace mount (Theme C) ────────────────────────────────────────────
+
+
+def _render_ccv2_speaker_workspace(
+    *,
+    transcript_path: str,
+    controller: SpeakerStudioController,
+    speaker_ids: list[str],
+    speaker_idx: int,
+    active_id: str,
+    speaker_map: Dict[str, str],
+    ignored: List[str],
+    active_segs: list,
+    current_name: str,
+    playback_ctx,
+    status_badge: str,
+    total_speakers: int,
+) -> None:
+    """Mount the packaged CCv2 Speaker ID workspace against the action service."""
+    from transcriptx.web.workspaces.speaker_id_bridge import (
+        build_workspace_data,
+        dispatch_workspace_command,
+        stable_workspace_key,
+    )
+
+    try:
+        from transcriptx_workspaces import speaker_id_workspace
+    except Exception as exc:
+        st.error(
+            "Speaker ID workspace component is enabled but could not be imported. "
+            f"Install ``transcriptx-workspaces`` or disable the feature flag. ({exc})"
+        )
+        st.info("Falling back is manual: unset TX_SPEAKER_ID_WORKSPACE_COMPONENT.")
+        return
+
+    profile_ctx = _resolve_profile_context(transcript_path)
+    labels = {
+        sid: _speaker_label(sid, i, speaker_map, ignored)
+        for i, sid in enumerate(speaker_ids)
+    }
+    samples = [
+        {
+            "start": float(s.start),
+            "end": float(s.end),
+            "text": s.text or "",
+        }
+        for s in active_segs[:10]
+    ]
+    last_ack = st.session_state.get(widget_key(transcript_path, "ccv2_last_ack"))
+    data = build_workspace_data(
+        transcript_path=str(transcript_path),
+        speaker_ids=speaker_ids,
+        active_speaker_id=active_id,
+        speaker_labels=labels,
+        speaker_map=speaker_map,
+        ignored_speakers=ignored,
+        samples=samples,
+        controller=controller,
+        audio_path=getattr(playback_ctx, "audio_path", None),
+        link_profile_allowed=profile_ctx.is_managed,
+        draft_name=current_name,
+        ui_status=f"{speaker_idx + 1}/{total_speakers} · {status_badge}",
+        last_ack=last_ack if isinstance(last_ack, dict) else None,
+    )
+
+    result_key = stable_workspace_key(str(Path(transcript_path).resolve()))
+
+    def _on_command() -> None:
+        # Trigger callback: command is available on the component result / session.
+        pass
+
+    result = speaker_id_workspace(
+        data=data,
+        key=result_key,
+        on_command_change=_on_command,
+    )
+    command = None
+    if result is not None:
+        command = getattr(result, "command", None)
+        if command is None and isinstance(result, dict):
+            command = result.get("command")
+    # Also accept session_state mirror when keyed.
+    if command is None:
+        mirrored = st.session_state.get(result_key)
+        if mirrored is not None:
+            command = getattr(mirrored, "command", None)
+            if command is None and isinstance(mirrored, dict):
+                command = mirrored.get("command")
+
+    if command:
+        service = _get_action_service()
+
+        def _apply(ack) -> None:
+            _apply_ack(
+                ack,
+                transcript_path=transcript_path,
+                speaker_count=len(speaker_ids),
+            )
+
+        ack_dict = dispatch_workspace_command(
+            command if isinstance(command, dict) else dict(command),
+            service=service,
+            speaker_ids=speaker_ids,
+            current_speaker_idx=speaker_idx,
+            apply_ack=_apply,
+        )
+        if ack_dict is not None:
+            st.session_state[widget_key(transcript_path, "ccv2_last_ack")] = ack_dict
+
+    if profile_ctx.is_managed:
+        with st.expander("Voice suggestions", expanded=False):
+            _render_voice_suggestions(
+                transcript_path=transcript_path,
+                speaker_ids=speaker_ids,
+                ignored=ignored,
+                active_id=active_id,
+                profile_ctx=profile_ctx,
+            )
+
+
 # ── workspace fragment ────────────────────────────────────────────────────────
 
 
@@ -1470,6 +1590,27 @@ def _speaker_id_workspace_fragment(
         if is_ignored
         else (f"✅ **{current_name}**" if current_name.strip() else "❓ unnamed")
     )
+
+    # Theme C: optional CCv2 workspace (feature-flagged; legacy path retained).
+    from transcriptx.web.workspaces.flags import speaker_id_workspace_component_enabled
+
+    if speaker_id_workspace_component_enabled(st.session_state):
+        _render_ccv2_speaker_workspace(
+            transcript_path=transcript_path,
+            controller=controller,
+            speaker_ids=speaker_ids,
+            speaker_idx=speaker_idx,
+            active_id=active_id,
+            speaker_map=speaker_map,
+            ignored=ignored,
+            active_segs=active_segs,
+            current_name=current_name,
+            playback_ctx=playback_ctx,
+            status_badge=status_badge,
+            total_speakers=total_speakers,
+        )
+        return
+
     st.subheader(
         f"Speaker {speaker_idx + 1} / {total_speakers} — `{active_id}` {status_badge}"
     )

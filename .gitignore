@@ -123,3 +123,7 @@ data/transcripts/projects/foo/call1.json
 
 # Hypothesis database / examples
 .hypothesis/
+
+# Theme C CCv2 frontend
+packages/**/node_modules/
+packages/**/frontend/build/.vite/

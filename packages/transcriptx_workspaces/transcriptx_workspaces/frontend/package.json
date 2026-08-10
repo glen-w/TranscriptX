@@ -1,0 +1,30 @@
+{
+  "name": "transcriptx-speaker-id-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20 <23"
+  },
+  "scripts": {
+    "build": "npm run clean && npm run typecheck && npm run build:css && npm run build:frontend:production",
+    "build:css": "node ./scripts/copy-css.mjs",
+    "build:frontend:production": "cross-env NODE_ENV=production vite build",
+    "clean": "rimraf build",
+    "dev": "cross-env NODE_ENV=development vite build --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@streamlit/component-v2-lib": "^0.2.0"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "jsdom": "^26.0.0",
+    "rimraf": "^6.1.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
+  }
+}
