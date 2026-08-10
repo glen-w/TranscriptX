@@ -39,7 +39,9 @@ def test_generate_human_friendly_transcript_redirects_from_transcripts_tree(
     assert Path(result["transcript_file"]).is_file()
     assert Path(result["csv_file"]).is_file()
     assert Path(result["srt_file"]).is_file()
+    assert Path(result["vtt_file"]).is_file()
     assert expected_base in Path(result["transcript_file"]).parents
+    assert "WEBVTT" in Path(result["vtt_file"]).read_text(encoding="utf-8")
 
 
 def test_generate_human_friendly_transcript_redirects_when_outside_outputs(
@@ -63,6 +65,7 @@ def test_generate_human_friendly_transcript_redirects_when_outside_outputs(
     assert (outputs / "session" / "transcripts").exists()
     assert Path(result["transcript_file"]).is_file()
     assert Path(result["srt_file"]).is_file()
+    assert Path(result["vtt_file"]).is_file()
 
 
 def test_generate_human_friendly_transcript_uses_outputs_subdir_when_valid(
@@ -83,7 +86,11 @@ def test_generate_human_friendly_transcript_uses_outputs_subdir_when_valid(
     assert result["status"] == "success"
     out_txt = Path(result["transcript_file"])
     out_srt = Path(result["srt_file"])
+    out_vtt = Path(result["vtt_file"])
     assert "transcripts" in out_txt.parts
     assert run_dir in out_txt.parents
     assert out_srt.is_file()
+    assert out_vtt.is_file()
     assert run_dir in out_srt.parents
+    assert run_dir in out_vtt.parents
+    assert out_vtt.name.endswith("-transcript.vtt")

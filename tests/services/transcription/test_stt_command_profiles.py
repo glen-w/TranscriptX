@@ -120,3 +120,19 @@ def test_cannot_save_virtual_default(tmp_path: Path) -> None:
         output_dir="/b",
     )
     assert not save_profile("default", params, profiles_dir=tmp_path)
+
+
+@pytest.mark.unit
+def test_saved_profile_json_has_no_secret_keys(tmp_path: Path) -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.WHISPERMLX_MISSING,
+        input_path="/audio",
+        output_dir="/out",
+        env_file="whisperx.env",
+    )
+    assert save_profile("safe", params, profiles_dir=tmp_path)
+    raw = (tmp_path / "stt_commands" / "safe.json").read_text(encoding="utf-8")
+    assert "HF_TOKEN" not in raw
+    assert "hf_token" not in raw
+    assert "api_key" not in raw
+    assert '"env_file": "whisperx.env"' in raw

@@ -31,6 +31,8 @@ We intentionally removed in-app transcription forms and `subprocess` orchestrati
 5. Run the command on the appropriate host (macOS for whispermlx; Docker host for WhisperX / Whisper-WebUI).
 6. Open **Import Transcript** and upload the result (WhisperX/whispermlx JSON, or Whisper-WebUI SRT/VTT; optionally attach the source recording; same-stem audio in the mounted recordings folder will be linked).
 
+**Saved presets:** use **Saved presets** on the same page to save/load/delete command-gen form fields (tool, paths, model, language, diarize, tool-specific knobs) under `.transcriptx/profiles/stt_commands/`. Presets store host paths and flags only — never `HF_TOKEN` (tokens stay in `whisperx.env`).
+
 ### Non-technical corpus path (short)
 
 | Step | Action |
