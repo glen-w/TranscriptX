@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "source": {
+    "type": "manual",
+    "original_path": "planning_review.json",
+    "imported_at": "2026-08-10T00:00:00Z",
+    "notes": "Synthetic authored fixture for TranscriptX workflow walkthroughs. Not derived from a real recording. Licence: CC0-1.0 equivalent public domain dedication for this text content."
+  },
+  "metadata": {
+    "title": "Launch planning review (docs walkthrough)",
+    "language": "en",
+    "transcript_uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "duration_seconds": 312.0,
+    "segment_count": 36,
+    "speaker_count": 3,
+    "description": "Three-speaker planning meeting with timeline-versus-scope disagreement, clear themes, and actionable commitments. Intended for documentation screenshots and walkthroughs."
+  },
+  "segments": [
+    {
+      "speaker": "SPEAKER_00",
+      "text": "Thanks for joining. Today is the launch planning review for Northwind Notes.",
+      "start": 0.0,
+      "end": 6.2
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "text": "Good. I want to settle the date and the feature cut before we leave.",
+      "start": 6.5,
+      "end": 12.0
+    },
+    {
+      "speaker": "SPEAKER_02",
+      "text": "Same here. Support is already getting questions from early access users.",
+      "start": 12.3,
+      "end": 17.8
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "Proposal: ship the public beta on the twelfth of September.",
+      "start": 18.2,
+      "end": 23.5
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "text": "That date is too aggressive. Shared folders and offline sync are both unfinished.",
+      "start": 23.9,
+      "end": 30.4
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "We can cut offline sync from the beta and keep shared folders only.",
+      "start": 30.8,
+      "end": 36.6
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "text": "I disagree. Shipping shared folders without offline sync will create a support mess.",
+      "start": 37.0,
+      "end": 43.5
+    },
+    {
+      "speaker": "SPEAKER_02",
+      "text": "From support, I agree with that risk. Users already assume offline works on trains.",
+      "start": 43.9,
+      "end": 50.2
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "Marketing has already printed the twelfth on the partner brief. Moving it is costly.",
+      "start": 50.6,
+      "end": 57.1
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "text": "Then we should move the date, not ship a half-finished collaboration story.",
+      "start": 57.5,
+      "end": 63.8
+    },
+    {
+      "speaker": "SPEAKER_02",
+      "text": "Could we keep the twelfth for a private beta and announce public on the twenty-sixth?",
+      "start": 64.2,
+      "end": 71.0
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "That compromise might work if engineering can finish offline sync by the twenty-sixth.",
+      "start": 71.4,
+      "end": 78.0
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "text": "Twenty-sixth is realistic for offline sync if we freeze new features after Friday.",
+      "start": 78.4,
+      "end": 85.0
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "All right. Private beta on the twelfth, public launch on the twenty-sixth.",
+      "start": 85.4,
+      "end": 91.2
+    },
+    {
+      "speaker": "SPEAKER_02",
+      "text": "I will draft the support playbook for shared folders this week.",
+      "start": 91.6,
+      "end": 96.8
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "text": "I will own the offline sync milestone and report blockers every Monday.",
+      "start": 97.2,
+      "end": 103.0
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "I will update the partner brief and tell marketing the public date moved.",
+      "start": 103.4,
+      "end": 109.2
+    },
+    {
+      "speaker": "SPEAKER_02",
+      "text": "One more issue: the onboarding tour still mentions the old pricing tiers.",
+      "start": 109.6,
+      "end": 115.4
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "Yes. We must replace that copy before private beta or reviewers will be confused.",
+      "start": 115.8,
+      "end": 122.0
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "text": "I can patch the tour strings tomorrow morning if product sends final wording today.",
+      "start": 122.4,
+      "end": 128.6
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "I will send final onboarding wording by end of day.",
+      "start": 129.0,
+      "end": 133.5
+    },
+    {
+      "speaker": "SPEAKER_02",
+      "text": "Should we also warn early access users that offline sync arrives with public launch?",
+      "start": 133.9,
+      "end": 140.2
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "text": "Yes. Be explicit. Ambiguous promises are worse than a delayed feature.",
+      "start": 140.6,
+      "end": 146.4
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "Agreed. Put that warning in the private beta email and the in-app banner.",
+      "start": 146.8,
+      "end": 152.5
+    },
+    {
+      "speaker": "SPEAKER_02",
+      "text": "I will write the banner text and send it for review by Thursday.",
+      "start": 152.9,
+      "end": 158.0
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "text": "We still disagree about analytics dashboards. I do not want them in private beta.",
+      "start": 158.4,
+      "end": 164.8
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "Sales wants a simple usage chart. It does not need to be polished.",
+      "start": 165.2,
+      "end": 170.6
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "text": "Even a simple chart pulls engineers off offline sync. That is the wrong trade-off.",
+      "start": 171.0,
+      "end": 177.5
+    },
+    {
+      "speaker": "SPEAKER_02",
+      "text": "Support does not need analytics yet. Shared folders and sync matter more.",
+      "start": 177.9,
+      "end": 183.6
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "Fine. Analytics stays out of beta. We revisit after the twenty-sixth.",
+      "start": 184.0,
+      "end": 189.5
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "text": "Good. That keeps the risk focused on one collaboration story.",
+      "start": 189.9,
+      "end": 194.8
+    },
+    {
+      "speaker": "SPEAKER_02",
+      "text": "Summary from my notes: private twelfth, public twenty-sixth, no analytics in beta.",
+      "start": 195.2,
+      "end": 201.5
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "Correct. Also final tour copy today, support playbook this week, banner by Thursday.",
+      "start": 201.9,
+      "end": 208.4
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "text": "I will post the offline sync checklist in the engineering channel after this call.",
+      "start": 208.8,
+      "end": 214.6
+    },
+    {
+      "speaker": "SPEAKER_02",
+      "text": "Thanks. I will close the early access FAQ once the banner text is approved.",
+      "start": 215.0,
+      "end": 220.6
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "text": "Perfect. We have a plan. Let's reconvene next Monday with progress.",
+      "start": 221.0,
+      "end": 226.5
+    }
+  ]
+}

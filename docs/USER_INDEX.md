@@ -19,6 +19,7 @@ Curated entry points for people using TranscriptX (not repository historians).
 | [NOTICE](../NOTICE) | Third-party model / dataset notice |
 | [Known limitations](known_limitations.md) | User-facing limits (experimental, optional stacks, AI, privacy, EPUB) |
 | [Export (ZIP / HTML / EPUB)](runtime/export.md) | Overview artifact export packages |
+| [Using TranscriptX: five workflows](workflows/index.md) | Outcome-focused walkthroughs with screenshots |
 
 ## Reference
 

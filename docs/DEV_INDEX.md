@@ -13,6 +13,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [script_inventory_1_0.md](dev/script_inventory_1_0.md) | Script support-status matrix |
 | [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) | 0.9.x → 1.0 programme plan |
 | [local_scratch.md](dev/local_scratch.md) | `.local/` ignored scratch convention |
+| [workflow_media_capture.md](dev/workflow_media_capture.md) | Regenerating workflow walkthrough screenshots/GIFs |
 | [schema_epoch_inventory.md](dev/schema_epoch_inventory.md) | Schema epoch inventory + transition UX (sign-off before wipe) |
 | [release_severity_triage_1_0.md](dev/release_severity_triage_1_0.md) | 1.0 hardening severity rules |
 | [install_profiles_matrix.md](dev/install_profiles_matrix.md) | Install-profile planning matrix |

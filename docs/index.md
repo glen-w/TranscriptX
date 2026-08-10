@@ -21,6 +21,18 @@ runtime/export
 
 ```{toctree}
 :maxdepth: 2
+:caption: Workflow walkthroughs
+
+workflows/index
+workflows/first-analysis
+workflows/speaker-trust
+workflows/investigate-evidence
+workflows/local-ai-synthesis
+workflows/export-results
+```
+
+```{toctree}
+:maxdepth: 2
 :caption: Reference
 
 runtime/models
