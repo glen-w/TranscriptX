@@ -15,6 +15,7 @@ from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
 from transcriptx.core.utils.artifact_writer import write_csv, write_json, write_text
 from transcriptx.io.srt_writer import write_srt_file
+from transcriptx.io.vtt_writer import write_vtt_file
 
 logger = get_logger()
 
@@ -166,9 +167,9 @@ def write_transcript_files(
     base_name: str = "",
     out_dir: str = "",
     format_time_func: Callable[[float], str] | None = None,
-) -> tuple[str, str, str]:
+) -> tuple[str, str, str, str]:
     """
-    Write transcript files in TXT, CSV, and SRT formats.
+    Write transcript files in TXT, CSV, SRT, and WebVTT formats.
 
     Uses segment-based speaker identification. The speaker field in segments
     should already contain the display name. speaker_map parameter is deprecated
@@ -182,7 +183,8 @@ def write_transcript_files(
         format_time_func: Function to format timestamps
 
     Returns:
-        Tuple of (transcript_txt_path, transcript_csv_path, transcript_srt_path)
+        Tuple of (transcript_txt_path, transcript_csv_path, transcript_srt_path,
+        transcript_vtt_path)
     """
     if format_time_func is None:
         from transcriptx.utils.text_utils import format_time
@@ -192,6 +194,7 @@ def write_transcript_files(
     transcript_path = os.path.join(out_dir, f"{base_name}-transcript.txt")
     csv_path = os.path.join(out_dir, f"{base_name}-transcript.csv")
     srt_path = os.path.join(out_dir, f"{base_name}-transcript.srt")
+    vtt_path = os.path.join(out_dir, f"{base_name}-transcript.vtt")
 
     rows: List[List[str]] = [["Speaker", "Timestamp", "Text"]]
     prev_speaker = None
@@ -227,16 +230,25 @@ def write_transcript_files(
         text_lines.extend(buffer)
         text_lines.append("\n")
 
+    def _resolve_speaker(seg: Mapping[str, Any]) -> str:
+        return _resolve_segment_speaker_name(seg, segments, speaker_map)
+
     write_csv(csv_path, rows[1:], header=rows[0])
     write_text(transcript_path, "".join(text_lines))
     write_srt_file(
         segments,
         srt_path,
         speaker_map=speaker_map,
-        resolve_speaker=lambda seg: _resolve_segment_speaker_name(
-            seg, segments, speaker_map
-        ),
+        resolve_speaker=_resolve_speaker,
+    )
+    write_vtt_file(
+        segments,
+        vtt_path,
+        speaker_map=speaker_map,
+        resolve_speaker=_resolve_speaker,
     )
 
-    logger.debug(f"Saved transcript files: {transcript_path}, {csv_path}, {srt_path}")
-    return transcript_path, csv_path, srt_path
+    logger.debug(
+        f"Saved transcript files: {transcript_path}, {csv_path}, {srt_path}, {vtt_path}"
+    )
+    return transcript_path, csv_path, srt_path, vtt_path

@@ -69,7 +69,7 @@ def generate_human_friendly_transcript(
         # Generate the transcript files to the transcripts subdirectory
         transcripts_dir = str(Path(transcript_dir) / "transcripts")
         Path(transcripts_dir).mkdir(parents=True, exist_ok=True)
-        txt_path, csv_path, srt_path = write_transcript_files(
+        txt_path, csv_path, srt_path, vtt_path = write_transcript_files(
             segments, None, base_name, transcripts_dir, format_time
         )
 
@@ -89,6 +89,7 @@ def generate_human_friendly_transcript(
             "transcript_file": txt_path,
             "csv_file": csv_path,
             "srt_file": srt_path,
+            "vtt_file": vtt_path,
             "total_segments": derived.segment_count,
             "speakers": speaker_names,
             "duration_minutes": derived.duration_seconds / 60.0,
@@ -106,6 +107,7 @@ def generate_human_friendly_transcript(
             "transcript_file": txt_path,
             "csv_file": csv_path,
             "srt_file": srt_path,
+            "vtt_file": vtt_path,
             "summary": summary_data,
         }
 

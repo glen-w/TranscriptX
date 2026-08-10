@@ -24,7 +24,7 @@ def render_download_row(
     transcript_data: dict[str, Any],
     selected_session: str,
 ) -> None:
-    """Render TXT/CSV/SRT/JSON download links in the shared icon/text style."""
+    """Render TXT/CSV/SRT/VTT/JSON download links in the shared icon/text style."""
     items: list[tuple[str, bytes, str, str, str]] = []
 
     if artifacts.txt_file and artifacts.txt_file.exists():
@@ -55,6 +55,16 @@ def render_download_row(
                 artifacts.srt_file.name,
                 "application/x-subrip",
                 "download_srt",
+            )
+        )
+    if artifacts.vtt_file and artifacts.vtt_file.exists():
+        items.append(
+            (
+                "VTT",
+                _read_bytes(artifacts.vtt_file),
+                artifacts.vtt_file.name,
+                "text/vtt",
+                "download_vtt",
             )
         )
     if artifacts.json_file and artifacts.json_file.exists():

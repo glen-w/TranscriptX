@@ -62,6 +62,101 @@ ELIGIBLE_STATUSES = frozenset(
     }
 )
 
+# Short label + user help for Import Transcript preview (enum values unchanged).
+STATUS_PRESENTATION: dict[CandidateStatus, tuple[str, str]] = {
+    CandidateStatus.NEW: (
+        "New",
+        "Not in the library yet — eligible to import.",
+    ),
+    CandidateStatus.ALREADY_MANAGED: (
+        "Already managed",
+        "Canonical JSON + sidecar already exist — skip.",
+    ),
+    CandidateStatus.NEEDS_REGISTRATION: (
+        "Needs registration",
+        "Managed files exist but library registration is missing — eligible.",
+    ),
+    CandidateStatus.INCOMPLETE_REPAIRABLE: (
+        "Incomplete (repairable)",
+        "Partial managed state with safe provenance — eligible to repair.",
+    ),
+    CandidateStatus.INCOMPLETE_UNREPAIRABLE: (
+        "Incomplete (blocked)",
+        "Partial managed state without safe repair path — skip.",
+    ),
+    CandidateStatus.INCONSISTENT: (
+        "Inconsistent",
+        "Managed artifacts disagree — resolve manually before import.",
+    ),
+    CandidateStatus.STEM_CONFLICT: (
+        "Stem conflict",
+        "Multiple files share this stem — resolve duplicates first.",
+    ),
+    CandidateStatus.TOO_LARGE: (
+        "Too large",
+        "File exceeds the import size limit.",
+    ),
+    CandidateStatus.UNREADABLE: (
+        "Unreadable",
+        "Could not read or sanitize this file.",
+    ),
+    CandidateStatus.SYMLINK: (
+        "Symlink",
+        "Symlinks are not imported.",
+    ),
+    CandidateStatus.SPECIAL_FILE: (
+        "Special file",
+        "Non-regular files are not imported.",
+    ),
+    CandidateStatus.MANAGED_STORAGE: (
+        "Managed storage",
+        "Path resolves into managed transcripts storage — not an inbox.",
+    ),
+}
+
+
+def status_label(status: CandidateStatus) -> str:
+    label, _help = STATUS_PRESENTATION.get(status, (status.value, ""))
+    return label
+
+
+def status_help(status: CandidateStatus) -> str:
+    _label, help_text = STATUS_PRESENTATION.get(status, (status.value, ""))
+    return help_text
+
+
+def is_eligible_status(status: CandidateStatus) -> bool:
+    return status in ELIGIBLE_STATUSES
+
+
+def same_stem_audio_hint(display_stem: str) -> str:
+    """Read-only companion audio probe under approved recordings roots."""
+    stem = (display_stem or "").strip()
+    if not stem:
+        return "none"
+    try:
+        from transcriptx.core.audio.types import SUPPORTED_AUDIO_EXTENSIONS
+        from transcriptx.core.utils.rename.audio_association import (
+            approved_recordings_roots,
+        )
+    except Exception:
+        return "none"
+
+    for root in approved_recordings_roots():
+        try:
+            if not root.exists():
+                continue
+        except OSError:
+            continue
+        for ext in sorted(SUPPORTED_AUDIO_EXTENSIONS):
+            candidate = root / f"{stem}{ext}"
+            try:
+                if candidate.is_file():
+                    return f"found: {candidate.name}"
+            except OSError:
+                continue
+    return "none"
+
 
 @dataclass(frozen=True)
 class FolderImportCandidate:
@@ -71,6 +166,7 @@ class FolderImportCandidate:
     conflict_key: str
     status: CandidateStatus
     secondary_detail: str = ""
+    audio_hint: str = "none"
     st_dev: int | None = None
     st_ino: int | None = None
     size: int | None = None
@@ -124,6 +220,7 @@ class ScanHandle:
                     conflict_key=str(c["conflict_key"]),
                     status=_coerce_candidate_status(c["status"]),
                     secondary_detail=str(c.get("secondary_detail") or ""),
+                    audio_hint=str(c.get("audio_hint") or "none"),
                     st_dev=c.get("st_dev"),
                     st_ino=c.get("st_ino"),
                     size=c.get("size"),
@@ -347,6 +444,7 @@ def scan_folder_for_import(
                     conflict_key=normalize_conflict_stem(Path(path.name).stem),
                     status=CandidateStatus.UNREADABLE,
                     secondary_detail=str(exc),
+                    audio_hint=same_stem_audio_hint(Path(path.name).stem),
                     st_dev=getattr(st, "st_dev", None) if st else None,
                     st_ino=getattr(st, "st_ino", None) if st else None,
                     size=getattr(st, "st_size", None) if st else None,
@@ -416,6 +514,7 @@ def scan_folder_for_import(
                 conflict_key=target.conflict_key,
                 status=status,
                 secondary_detail=secondary,
+                audio_hint=same_stem_audio_hint(target.display_stem),
                 st_dev=st.st_dev if st is not None else None,
                 st_ino=st.st_ino if st is not None else None,
                 size=size,
@@ -451,6 +550,7 @@ def scan_folder_for_import(
                 conflict_key=old.conflict_key,
                 status=CandidateStatus.STEM_CONFLICT,
                 secondary_detail=secondary,
+                audio_hint=old.audio_hint,
                 st_dev=old.st_dev,
                 st_ino=old.st_ino,
                 size=old.size,

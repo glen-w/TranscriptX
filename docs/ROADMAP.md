@@ -247,6 +247,8 @@ Automatically notice new recordings (and/or transcript files) in a monitored fol
 
 Until/beside theme **H**, keep improving **copyable host commands** on Transcribe Audio: whispermlx / whispermlx-missing (Apple MLX), WhisperX Docker, Whisper-WebUI, plus further CUDA Linux / CPU CLIs as needed. Still copy/run-on-host only (no in-container MLX; no silent orchestration). Import remains the GUI admission gate for BYO files.
 
+**Saved presets:** Transcribe Audio can save/load/delete command-gen form presets under `.transcriptx/profiles/stt_commands/` (host paths and flags only — never `HF_TOKEN`; tokens stay in `whisperx.env`).
+
 ---
 
 ### L. Polish & onboarding extras
