@@ -38,6 +38,8 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [ADR-IMPORT-ORCHESTRATION.md](ADR-IMPORT-ORCHESTRATION.md) | Import orchestration ADR |
 | [PRODUCT.md](PRODUCT.md) | Product definition |
 | [ROADMAP.md](ROADMAP.md) | Product roadmap (0.9.x → 1.0 → 2.0) |
+| [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md) | Theme C CCv2 workspaces design (Speaker ID / Corrections) |
+| [theme_c_invest_narrow_defer.md](dev/theme_c_invest_narrow_defer.md) | Theme C invest/narrow/defer decision |
 | [release_governance.md](dev/release_governance.md) | Release evidence checklist |
 | [stocktake_2026-07-17.md](dev/stocktake_2026-07-17.md) | Living decision foundation (0.9→1.0) |
 | [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md) | Module backlog (0.9.x freeze) |

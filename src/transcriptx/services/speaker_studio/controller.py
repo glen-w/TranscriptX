@@ -17,7 +17,9 @@ from transcriptx.services.speaker_studio.segment_index import (
     SegmentInfo,
 )
 from transcriptx.services.speaker_studio.clip_service import (
+    CachedClipStatus,
     ClipService,
+    EnqueueClipResult,
     WarmClipsResult,
 )
 from transcriptx.services.speaker_studio.mapping_service import (
@@ -209,6 +211,67 @@ class SpeakerStudioController:
                 stopped_reason="audio_missing",
             )
         return self._clip_service.warm_clips(resolved, segments, format=format)
+
+    def cached_clip_status(
+        self,
+        transcript_path: str,
+        start: float,
+        end: float,
+        *,
+        format: str = "mp3",
+        audio_path: Optional[Path] = None,
+    ) -> CachedClipStatus:
+        """Non-blocking clip probe for CCv2 bridges."""
+        if self._closed:
+            return CachedClipStatus(status="unavailable", reason="closed")
+        resolved = audio_path or self._segment_index.get_transcript_audio_path(
+            transcript_path
+        )
+        if not resolved:
+            return CachedClipStatus(status="unavailable", reason="audio_missing")
+        return self._clip_service.cached_clip_status(
+            resolved, start, end, format=format
+        )
+
+    def get_cached_clip_bytes(
+        self,
+        transcript_path: str,
+        start: float,
+        end: float,
+        *,
+        format: str = "mp3",
+        audio_path: Optional[Path] = None,
+    ) -> Optional[bytes]:
+        """Return clip bytes only on cache hit; never cold-generate."""
+        if self._closed:
+            return None
+        resolved = audio_path or self._segment_index.get_transcript_audio_path(
+            transcript_path
+        )
+        if not resolved:
+            return None
+        return self._clip_service.get_cached_clip_bytes(
+            resolved, start, end, format=format
+        )
+
+    def enqueue_clip(
+        self,
+        transcript_path: str,
+        start: float,
+        end: float,
+        *,
+        format: str = "mp3",
+        audio_path: Optional[Path] = None,
+    ) -> EnqueueClipResult:
+        """Non-blocking single-clip enqueue for CCv2 bridges."""
+        if self._closed:
+            return EnqueueClipResult(status="rejected", reason="closed")
+        resolved = audio_path or self._segment_index.get_transcript_audio_path(
+            transcript_path
+        )
+        if not resolved:
+            return EnqueueClipResult(status="rejected", reason="audio_missing")
+        return self._clip_service.enqueue_clip(resolved, start, end, format=format)
 
     def ffmpeg_available(self) -> bool:
         """Return True if ffmpeg is installed and usable."""

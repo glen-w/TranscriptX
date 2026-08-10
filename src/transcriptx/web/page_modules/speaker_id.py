@@ -25,6 +25,14 @@ from typing import Dict, List, Sequence
 import streamlit as st
 
 from transcriptx.app.models.results import RunSummary
+from transcriptx.app.speaker_id import (
+    SpeakerIdActionService,
+    SpeakerIdCommand,
+    mapping_revision_from_state,
+    new_action_id,
+    transcript_revision_from_path,
+)
+from transcriptx.app.speaker_id.effects import apply_speaker_id_ack_effects
 from transcriptx.core.utils.paths import OUTPUTS_DIR
 from transcriptx.io.speaker_map_resolver import (
     is_effective_speaker_name,
@@ -608,6 +616,41 @@ def _next_unnamed_idx(
     return current
 
 
+def _get_action_service() -> SpeakerIdActionService:
+    """Process-scoped action service bound to the shared controller."""
+    controller = get_shared_speaker_studio_controller()
+    return SpeakerIdActionService(
+        controller,
+        # Use the module symbol so tests can monkeypatch the index loader.
+        index_loader=load_speaker_identification_index,
+        profile_context_resolver=_resolve_profile_context,
+    )
+
+
+def _current_speaker_idx(transcript_path: str | Path, speaker_count: int) -> int:
+    idx = sanitize_play_index(
+        st.session_state.get(speaker_idx_key(transcript_path), 0),
+        speaker_count,
+    )
+    return 0 if idx is None else idx
+
+
+def _apply_ack(ack, *, transcript_path: str | Path, speaker_count: int) -> None:
+    """Apply action-service acknowledgement effects to the legacy session."""
+    apply_speaker_id_ack_effects(
+        ack,
+        transcript_path=transcript_path,
+        speaker_count=speaker_count,
+        set_flash=_set_flash,
+        navigate_to_speaker=navigate_to_speaker,
+        sync_jump_widget=sync_jump_widget,
+        invalidate_transcript_summary_for_path=invalidate_transcript_summary_for_path,
+        consume_cache_invalidation_signal=consume_cache_invalidation_signal,
+        rerun_app_for_completion=_rerun_app_for_completion,
+        session_state=st.session_state,
+    )
+
+
 def _apply_mapping_advance(
     *,
     transcript_path: str | Path,
@@ -616,8 +659,10 @@ def _apply_mapping_advance(
     speaker_idx: int,
     summary_sig_before: tuple[int, int, int],
 ) -> None:
-    """Invalidate summary, advance speaker; completion may full-app rerun.
+    """Legacy helper: invalidate summary, advance speaker; completion may full-app rerun.
 
+    Kept for characterisation tests and direct callers. Ordinary Save/Ignore
+    callbacks go through ``SpeakerIdActionService`` instead.
     Does **not** call ``_rerun_ui`` — the natural fragment rerun paints.
     """
     invalidate_transcript_summary_for_path(
@@ -662,7 +707,11 @@ def _validate_callback_identity(
     *,
     expected_speaker_id: str | None = None,
 ) -> tuple[list[str], int, str] | None:
-    """Recompute index + active speaker; return None if identity is stale."""
+    """Recompute index + active speaker; return None if identity is stale.
+
+    Thin legacy helper used by tests and as a pre-check for synthesising
+    action-service commands. Domain rejection also lives in the action service.
+    """
     try:
         index = load_speaker_identification_index(transcript_path)
     except FileNotFoundError:
@@ -695,96 +744,72 @@ def _validate_callback_identity(
     return speaker_ids, idx, active_id
 
 
-# ── module-level callbacks ────────────────────────────────────────────────────
+# ── module-level callbacks (thin adapters over SpeakerIdActionService) ────────
 
 
 def _cb_save_name(transcript_path: str, expected_speaker_id: str) -> None:
+    """Save name / optional profile-link via shared action service."""
     identity = _validate_callback_identity(
         transcript_path, expected_speaker_id=expected_speaker_id
     )
     if identity is None:
         return
     speaker_ids, speaker_idx, active_id = identity
-    name = str(st.session_state.get(name_widget_key(transcript_path, active_id)) or "").strip()
-    if not name:
-        _set_flash(transcript_path, level="warning", message="Enter a name before saving.")
-        return
+    name = str(
+        st.session_state.get(name_widget_key(transcript_path, active_id)) or ""
+    ).strip()
     link_profile = bool(
         st.session_state.get(link_profile_key(transcript_path, active_id), False)
     )
     controller = get_shared_speaker_studio_controller()
-    profile_ctx = _resolve_profile_context(transcript_path)
-    try:
-        summary_sig = transcript_summary_signature(transcript_path)
-        if link_profile and profile_ctx.is_managed:
-            from transcriptx.services.speaker_profiles.create_and_name import (
-                create_profile_link_and_name,
-            )
-
-            partial = create_profile_link_and_name(
-                transcript_path=transcript_path,
-                raw_speaker=active_id,
-                display_name=name,
-                controller=controller,
-                create_profile=True,
-                apply_sidecar_name=True,
-                method="web",
-            )
-            consume_cache_invalidation_signal(partial.effective_signal)
-            if partial.is_partial:
-                _set_flash(
-                    transcript_path,
-                    level="warning",
-                    message=(
-                        "Profile link saved, but local naming failed: "
-                        f"{partial.naming_error}"
-                    ),
-                )
-            new_state = controller.get_mapping_status(transcript_path)
-        else:
-            new_state = controller.apply_mapping_mutation(
-                transcript_path, active_id, name, method="web"
-            )
-        _apply_mapping_advance(
-            transcript_path=transcript_path,
-            speaker_ids=speaker_ids,
-            new_state=new_state,
-            speaker_idx=speaker_idx,
-            summary_sig_before=summary_sig,
+    map_state = controller.get_mapping_status(transcript_path)
+    service = _get_action_service()
+    ack = service.execute(
+        SpeakerIdCommand(
+            action="save_name",
+            transcript_id=str(transcript_path),
+            action_id=new_action_id(),
+            action_seq=int(st.session_state.get("sid_action_seq", 0)) + 1,
+            current_speaker_idx=speaker_idx,
+            expected_speaker_id=expected_speaker_id,
+            transcript_revision=transcript_revision_from_path(transcript_path),
+            expected_mapping_revision=mapping_revision_from_state(
+                map_state.speaker_map, map_state.ignored_speakers
+            ),
+            payload={"display_name": name, "link_profile": link_profile},
         )
-    except Exception as exc:
-        _set_flash(transcript_path, level="error", message=str(exc))
+    )
+    st.session_state["sid_action_seq"] = ack.action_seq
+    _apply_ack(ack, transcript_path=transcript_path, speaker_count=len(speaker_ids))
 
 
 def _cb_ignore_toggle(transcript_path: str, expected_speaker_id: str) -> None:
+    """Ignore / unignore via shared action service."""
     identity = _validate_callback_identity(
         transcript_path, expected_speaker_id=expected_speaker_id
     )
     if identity is None:
         return
-    speaker_ids, speaker_idx, active_id = identity
+    speaker_ids, speaker_idx, _active_id = identity
     controller = get_shared_speaker_studio_controller()
-    try:
-        summary_sig = transcript_summary_signature(transcript_path)
-        map_state = controller.get_mapping_status(transcript_path)
-        ignored = list(getattr(map_state, "ignored_speakers", None) or [])
-        if _is_speaker_ignored(ignored, active_id):
-            new_state = controller.unignore_speaker(
-                transcript_path, active_id, method="web"
-            )
-        else:
-            new_state = controller.ignore_speaker(
-                transcript_path, active_id, method="web"
-            )
-        _apply_mapping_advance(
-            transcript_path=transcript_path,
-            speaker_ids=speaker_ids,
-            new_state=new_state,
-            speaker_idx=speaker_idx,
-            summary_sig_before=summary_sig,
+    map_state = controller.get_mapping_status(transcript_path)
+    service = _get_action_service()
+    ack = service.execute(
+        SpeakerIdCommand(
+            action="ignore_toggle",
+            transcript_id=str(transcript_path),
+            action_id=new_action_id(),
+            action_seq=int(st.session_state.get("sid_action_seq", 0)) + 1,
+            current_speaker_idx=speaker_idx,
+            expected_speaker_id=expected_speaker_id,
+            transcript_revision=transcript_revision_from_path(transcript_path),
+            expected_mapping_revision=mapping_revision_from_state(
+                map_state.speaker_map, map_state.ignored_speakers
+            ),
         )
-    except Exception as exc:
-        _set_flash(transcript_path, level="error", message=str(exc))
+    )
+    st.session_state["sid_action_seq"] = ack.action_seq
+    _apply_ack(ack, transcript_path=transcript_path, speaker_count=len(speaker_ids))
 
 
 def _cb_prev(transcript_path: str, expected_speaker_id: str) -> None:
@@ -794,15 +819,20 @@ def _cb_prev(transcript_path: str, expected_speaker_id: str) -> None:
     if identity is None:
         return
     speaker_ids, speaker_idx, _ = identity
-    if speaker_idx <= 0:
-        return
-    idx = navigate_to_speaker(
-        speaker_idx - 1,
-        transcript_path=transcript_path,
-        speaker_count=len(speaker_ids),
+    service = _get_action_service()
+    ack = service.execute(
+        SpeakerIdCommand(
+            action="navigate_prev",
+            transcript_id=str(transcript_path),
+            action_id=new_action_id(),
+            action_seq=int(st.session_state.get("sid_action_seq", 0)) + 1,
+            current_speaker_idx=speaker_idx,
+            expected_speaker_id=expected_speaker_id,
+            transcript_revision=transcript_revision_from_path(transcript_path),
+        )
     )
-    sync_jump_widget(idx, transcript_path=transcript_path)
-    st.session_state["speaker_id_speaker_idx"] = idx
+    st.session_state["sid_action_seq"] = ack.action_seq
+    _apply_ack(ack, transcript_path=transcript_path, speaker_count=len(speaker_ids))
 
 
 def _cb_next(transcript_path: str, expected_speaker_id: str) -> None:
@@ -812,15 +842,20 @@ def _cb_next(transcript_path: str, expected_speaker_id: str) -> None:
     if identity is None:
         return
     speaker_ids, speaker_idx, _ = identity
-    if speaker_idx >= len(speaker_ids) - 1:
-        return
-    idx = navigate_to_speaker(
-        speaker_idx + 1,
-        transcript_path=transcript_path,
-        speaker_count=len(speaker_ids),
+    service = _get_action_service()
+    ack = service.execute(
+        SpeakerIdCommand(
+            action="navigate_next",
+            transcript_id=str(transcript_path),
+            action_id=new_action_id(),
+            action_seq=int(st.session_state.get("sid_action_seq", 0)) + 1,
+            current_speaker_idx=speaker_idx,
+            expected_speaker_id=expected_speaker_id,
+            transcript_revision=transcript_revision_from_path(transcript_path),
+        )
     )
-    sync_jump_widget(idx, transcript_path=transcript_path)
-    st.session_state["speaker_id_speaker_idx"] = idx
+    st.session_state["sid_action_seq"] = ack.action_seq
+    _apply_ack(ack, transcript_path=transcript_path, speaker_count=len(speaker_ids))
 
 
 def _cb_jump_change(transcript_path: str) -> None:
@@ -838,12 +873,22 @@ def _cb_jump_change(transcript_path: str) -> None:
     )
     if jump is None:
         return
-    navigate_to_speaker(
-        jump,
-        transcript_path=transcript_path,
-        speaker_count=len(speaker_ids),
+    speaker_idx = _current_speaker_idx(transcript_path, len(speaker_ids))
+    service = _get_action_service()
+    ack = service.execute(
+        SpeakerIdCommand(
+            action="navigate_jump",
+            transcript_id=str(transcript_path),
+            action_id=new_action_id(),
+            action_seq=int(st.session_state.get("sid_action_seq", 0)) + 1,
+            current_speaker_idx=speaker_idx,
+            transcript_revision=transcript_revision_from_path(transcript_path),
+            payload={"target_idx": jump},
+        )
     )
-    st.session_state["speaker_id_speaker_idx"] = jump
+    st.session_state["sid_action_seq"] = ack.action_seq
+    # Jump must not rewrite the jump widget key (sync_jump=False on navigate_jump).
+    _apply_ack(ack, transcript_path=transcript_path, speaker_count=len(speaker_ids))
 
 
 def _cb_load_voice(transcript_path: str) -> None:
@@ -1348,6 +1393,126 @@ def _render_voice_suggestions(
         st.warning(f"Voice suggestions unavailable: {exc}")
 
 
+# ── CCv2 workspace mount (Theme C) ────────────────────────────────────────────
+
+
+def _render_ccv2_speaker_workspace(
+    *,
+    transcript_path: str,
+    controller: SpeakerStudioController,
+    speaker_ids: list[str],
+    speaker_idx: int,
+    active_id: str,
+    speaker_map: Dict[str, str],
+    ignored: List[str],
+    active_segs: list,
+    current_name: str,
+    playback_ctx,
+    status_badge: str,
+    total_speakers: int,
+) -> None:
+    """Mount the packaged CCv2 Speaker ID workspace against the action service."""
+    from transcriptx.web.workspaces.speaker_id_bridge import (
+        build_workspace_data,
+        dispatch_workspace_command,
+        stable_workspace_key,
+    )
+
+    try:
+        from transcriptx_workspaces import speaker_id_workspace
+    except Exception as exc:
+        st.error(
+            "Speaker ID workspace component is enabled but could not be imported. "
+            f"Install ``transcriptx-workspaces`` or disable the feature flag. ({exc})"
+        )
+        st.info("Falling back is manual: unset TX_SPEAKER_ID_WORKSPACE_COMPONENT.")
+        return
+
+    profile_ctx = _resolve_profile_context(transcript_path)
+    labels = {
+        sid: _speaker_label(sid, i, speaker_map, ignored)
+        for i, sid in enumerate(speaker_ids)
+    }
+    samples = [
+        {
+            "start": float(s.start),
+            "end": float(s.end),
+            "text": s.text or "",
+        }
+        for s in active_segs[:10]
+    ]
+    last_ack = st.session_state.get(widget_key(transcript_path, "ccv2_last_ack"))
+    data = build_workspace_data(
+        transcript_path=str(transcript_path),
+        speaker_ids=speaker_ids,
+        active_speaker_id=active_id,
+        speaker_labels=labels,
+        speaker_map=speaker_map,
+        ignored_speakers=ignored,
+        samples=samples,
+        controller=controller,
+        audio_path=getattr(playback_ctx, "audio_path", None),
+        link_profile_allowed=profile_ctx.is_managed,
+        draft_name=current_name,
+        ui_status=f"{speaker_idx + 1}/{total_speakers} · {status_badge}",
+        last_ack=last_ack if isinstance(last_ack, dict) else None,
+    )
+
+    result_key = stable_workspace_key(str(Path(transcript_path).resolve()))
+
+    def _on_command() -> None:
+        # Trigger callback: command is available on the component result / session.
+        pass
+
+    result = speaker_id_workspace(
+        data=data,
+        key=result_key,
+        on_command_change=_on_command,
+    )
+    command = None
+    if result is not None:
+        command = getattr(result, "command", None)
+        if command is None and isinstance(result, dict):
+            command = result.get("command")
+    # Also accept session_state mirror when keyed.
+    if command is None:
+        mirrored = st.session_state.get(result_key)
+        if mirrored is not None:
+            command = getattr(mirrored, "command", None)
+            if command is None and isinstance(mirrored, dict):
+                command = mirrored.get("command")
+
+    if command:
+        service = _get_action_service()
+
+        def _apply(ack) -> None:
+            _apply_ack(
+                ack,
+                transcript_path=transcript_path,
+                speaker_count=len(speaker_ids),
+            )
+
+        ack_dict = dispatch_workspace_command(
+            command if isinstance(command, dict) else dict(command),
+            service=service,
+            speaker_ids=speaker_ids,
+            current_speaker_idx=speaker_idx,
+            apply_ack=_apply,
+        )
+        if ack_dict is not None:
+            st.session_state[widget_key(transcript_path, "ccv2_last_ack")] = ack_dict
+
+    if profile_ctx.is_managed:
+        with st.expander("Voice suggestions", expanded=False):
+            _render_voice_suggestions(
+                transcript_path=transcript_path,
+                speaker_ids=speaker_ids,
+                ignored=ignored,
+                active_id=active_id,
+                profile_ctx=profile_ctx,
+            )
+
+
 # ── workspace fragment ────────────────────────────────────────────────────────
 
 
@@ -1425,6 +1590,27 @@ def _speaker_id_workspace_fragment(
         if is_ignored
         else (f"✅ **{current_name}**" if current_name.strip() else "❓ unnamed")
     )
+
+    # Theme C: optional CCv2 workspace (feature-flagged; legacy path retained).
+    from transcriptx.web.workspaces.flags import speaker_id_workspace_component_enabled
+
+    if speaker_id_workspace_component_enabled(st.session_state):
+        _render_ccv2_speaker_workspace(
+            transcript_path=transcript_path,
+            controller=controller,
+            speaker_ids=speaker_ids,
+            speaker_idx=speaker_idx,
+            active_id=active_id,
+            speaker_map=speaker_map,
+            ignored=ignored,
+            active_segs=active_segs,
+            current_name=current_name,
+            playback_ctx=playback_ctx,
+            status_badge=status_badge,
+            total_speakers=total_speakers,
+        )
+        return
+
     st.subheader(
         f"Speaker {speaker_idx + 1} / {total_speakers} — `{active_id}` {status_badge}"
     )

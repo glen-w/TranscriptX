@@ -63,6 +63,9 @@ env/
 .eggs/
 dist/
 build/
+# Theme C: commit packaged CCv2 frontend assets (dist policy)
+!packages/transcriptx_workspaces/transcriptx_workspaces/frontend/build/
+!packages/transcriptx_workspaces/transcriptx_workspaces/frontend/build/**
 
 # Testing and quality
 .pytest_cache/
@@ -123,3 +126,7 @@ data/transcripts/projects/foo/call1.json
 
 # Hypothesis database / examples
 .hypothesis/
+
+# Theme C CCv2 frontend
+packages/**/node_modules/
+packages/**/frontend/build/.vite/

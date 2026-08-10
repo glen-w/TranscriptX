@@ -85,6 +85,12 @@ RUN python -m build
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -c constraints.txt dist/*.whl
 
+# Theme C: install packaged CCv2 workspaces wheel (Speaker ID / future Corrections)
+COPY packages/transcriptx_workspaces ./packages/transcriptx_workspaces
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python -m build packages/transcriptx_workspaces \
+    && pip install packages/transcriptx_workspaces/dist/*.whl
+
 # -----------------------------------------------------------------------------
 # Runtime: copy venv only; no pip, no build tools
 # -----------------------------------------------------------------------------

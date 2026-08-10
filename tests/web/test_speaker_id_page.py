@@ -62,9 +62,11 @@ def test_speaker_id_plain_rerun_whitelist() -> None:
         assert needle in source
         block = source.split(f"def {needle}", 1)[1].split("\ndef ", 1)[0]
         assert "_rerun_ui()" not in block
-    assert "_apply_mapping_advance" in source.split("def _cb_save_name", 1)[1].split(
-        "def _cb_", 1
-    )[0]
+    # Save/Ignore go through the shared action service (Theme C Phase −1).
+    save_cb = source.split("def _cb_save_name", 1)[1].split("def _cb_", 1)[0]
+    assert "SpeakerIdCommand" in save_cb
+    assert "_get_action_service" in save_cb
+    assert "_apply_ack" in save_cb
 
 
 def test_rerun_ui_falls_back_to_app_when_fragment_scope_illegal(
@@ -303,19 +305,28 @@ def test_completion_action_strip_lives_inside_workspace_fragment() -> None:
 
 
 def test_profile_save_mutation_order_commits_before_advance() -> None:
-    """Profile-link path: signal consume then advance from returned/fresh map state."""
+    """Profile-link path lives in SpeakerIdActionService: link then signal then advance."""
+    from transcriptx.app.speaker_id import service as action_mod
+
+    source = Path(action_mod.__file__).read_text(encoding="utf-8")
+    save_block = source.split("def _save_name", 1)[1]
+    save_block = save_block.split("def _ignore_toggle", 1)[0]
+    assert "create_profile_link_and_name" in save_block
+    assert "partial.effective_signal" in save_block or "cache_signal = getattr(partial" in save_block
+    assert save_block.index("create_profile_link_and_name") < save_block.index(
+        "_ack_after_mutation"
+    )
+    assert "get_mapping_status" in save_block
+    assert "_ack_after_mutation" in save_block
+    # Page adapter must still route Save through the action service.
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
-    save_block = source.split("def _cb_save_name", 1)[1]
-    save_block = save_block.split("def _cb_ignore_toggle", 1)[0]
-    assert save_block.index("consume_cache_invalidation_signal") < save_block.index(
-        "_apply_mapping_advance"
-    )
-    assert save_block.index("create_profile_link_and_name") < save_block.index(
-        "consume_cache_invalidation_signal"
-    )
-    assert "controller.get_mapping_status(transcript_path)" in save_block
+    page = Path(mod.__file__).read_text(encoding="utf-8")
+    page_save = page.split("def _cb_save_name", 1)[1].split("def _cb_ignore_toggle", 1)[0]
+    assert "SpeakerIdCommand" in page_save
+    assert 'action="save_name"' in page_save
+    assert "_apply_ack" in page_save
+    assert "_rerun_ui()" not in page_save
 
 
 def test_voice_pending_exception_leaves_pending_cleared(
@@ -1378,6 +1389,11 @@ def test_ordinary_action_callbacks_do_not_call_rerun_ui() -> None:
         assert "_rerun_ui()" not in block, name
     advance = source.split("def _apply_mapping_advance", 1)[1].split("\ndef ", 1)[0]
     assert "_rerun_ui()" not in advance
+    from transcriptx.app.speaker_id import service as action_mod
+
+    action_src = Path(action_mod.__file__).read_text(encoding="utf-8")
+    assert "st.rerun" not in action_src
+    assert "_rerun_ui" not in action_src
 
 
 def test_flash_consume_is_one_shot(

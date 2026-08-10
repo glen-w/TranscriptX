@@ -1,0 +1,3 @@
+recursive-include transcriptx_workspaces/frontend/build *
+include pyproject.toml
+include transcriptx_workspaces/pyproject.toml

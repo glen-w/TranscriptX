@@ -73,6 +73,29 @@ class WarmClipsResult:
         return self.stopped_reason is None and self.accepted == self.requested
 
 
+@dataclass(frozen=True)
+class CachedClipStatus:
+    """Non-blocking clip cache probe (Theme C Phase 0b).
+
+    ``status`` is one of: ``hit``, ``miss``, ``inflight``, ``unavailable``.
+    Never blocks on ffmpeg or joins an in-flight Future.
+    """
+
+    status: str
+    clip_id: str = ""
+    path: Optional[Path] = None
+    reason: str | None = None
+
+
+@dataclass(frozen=True)
+class EnqueueClipResult:
+    """Outcome of a single non-blocking ``enqueue_clip`` call."""
+
+    status: str  # accepted | already_cached | already_inflight | backpressure | rejected
+    clip_id: str = ""
+    reason: str | None = None
+
+
 # ── ffmpeg helpers ────────────────────────────────────────────────────────────
 
 
@@ -436,11 +459,123 @@ class ClipService:
         format: str = DEFAULT_FORMAT,
         pad_ms: int = DEFAULT_PAD_MS,
     ) -> bytes:
-        """Convenience: return bytes of the cached clip (e.g. for st.audio)."""
+        """Convenience: return bytes of the cached clip (e.g. for st.audio).
+
+        Warning: may join an in-flight warm Future (≤30s) then run synchronous
+        ffmpeg. CCv2 bridges must use ``get_cached_clip_bytes`` instead.
+        """
         path = self.get_clip_path(
             audio_path, start_s, end_s, format=format, pad_ms=pad_ms
         )
         return path.read_bytes()
+
+    def cached_clip_status(
+        self,
+        audio_path: Path,
+        start_s: float,
+        end_s: float,
+        *,
+        format: str = DEFAULT_FORMAT,
+        pad_ms: int = DEFAULT_PAD_MS,
+    ) -> CachedClipStatus:
+        """Non-blocking probe: hit / miss / inflight / unavailable.
+
+        Never joins Futures and never runs ffmpeg. Safe for CCv2 bridges.
+        """
+        if self._closed:
+            return CachedClipStatus(status="unavailable", reason="closed")
+        if not self.ffmpeg_available():
+            return CachedClipStatus(status="unavailable", reason="ffmpeg_missing")
+        audio_path = Path(audio_path)
+        if not audio_path.is_file():
+            return CachedClipStatus(status="unavailable", reason="audio_missing")
+        try:
+            _, _, _es, _ed, key, out_path = self._compute_extract_params(
+                audio_path, start_s, end_s, format, pad_ms
+            )
+        except Exception as exc:
+            return CachedClipStatus(status="unavailable", reason=str(exc))
+        if out_path.exists():
+            return CachedClipStatus(status="hit", clip_id=key, path=out_path)
+        with self._lock:
+            existing = self._inflight.get(key)
+            if existing is not None and not existing.done():
+                return CachedClipStatus(status="inflight", clip_id=key, path=out_path)
+        return CachedClipStatus(status="miss", clip_id=key, path=out_path)
+
+    def get_cached_clip_bytes(
+        self,
+        audio_path: Path,
+        start_s: float,
+        end_s: float,
+        *,
+        format: str = DEFAULT_FORMAT,
+        pad_ms: int = DEFAULT_PAD_MS,
+    ) -> Optional[bytes]:
+        """Return clip bytes only on cache hit; never generate or join Futures."""
+        status = self.cached_clip_status(
+            audio_path, start_s, end_s, format=format, pad_ms=pad_ms
+        )
+        if status.status != "hit" or status.path is None:
+            return None
+        try:
+            return status.path.read_bytes()
+        except OSError:
+            return None
+
+    def enqueue_clip(
+        self,
+        audio_path: Path,
+        start_s: float,
+        end_s: float,
+        *,
+        format: str = DEFAULT_FORMAT,
+        pad_ms: int = DEFAULT_PAD_MS,
+    ) -> EnqueueClipResult:
+        """Best-effort enqueue of a single clip; returns immediately.
+
+        Honours the global ``_MAX_INFLIGHT`` backpressure. Never blocks on ffmpeg.
+        """
+        status = self.cached_clip_status(
+            audio_path, start_s, end_s, format=format, pad_ms=pad_ms
+        )
+        if status.status == "hit":
+            return EnqueueClipResult(
+                status="already_cached", clip_id=status.clip_id
+            )
+        if status.status == "inflight":
+            return EnqueueClipResult(
+                status="already_inflight", clip_id=status.clip_id
+            )
+        if status.status == "unavailable":
+            return EnqueueClipResult(
+                status="rejected",
+                clip_id=status.clip_id,
+                reason=status.reason,
+            )
+        # miss → try enqueue
+        warm = self.warm_clips(Path(audio_path), [(start_s, end_s)], format=format)
+        if warm.already_cached:
+            return EnqueueClipResult(
+                status="already_cached", clip_id=status.clip_id
+            )
+        if warm.already_inflight:
+            return EnqueueClipResult(
+                status="already_inflight", clip_id=status.clip_id
+            )
+        if warm.enqueued:
+            return EnqueueClipResult(status="accepted", clip_id=status.clip_id)
+        if warm.stopped_reason == "backpressure":
+            return EnqueueClipResult(
+                status="backpressure",
+                clip_id=status.clip_id,
+                reason="backpressure",
+            )
+        return EnqueueClipResult(
+            status="rejected",
+            clip_id=status.clip_id,
+            reason=warm.stopped_reason or "rejected",
+        )
 
     def warm_clips(
         self,

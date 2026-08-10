@@ -477,3 +477,75 @@ def test_speaker_id_page_uses_render_playback_panel() -> None:
     assert "render_playback_panel_body" in source
     assert "playback_panel" in source
     assert "resolve_playback_context" in source
+
+
+# ── Theme C Phase 0b: non-blocking APIs ───────────────────────────────────────
+
+
+def test_cached_clip_status_miss_without_joining_future(tmp_path: Path) -> None:
+    audio = _make_audio(tmp_path / "a.mp3")
+    svc = ClipService(data_dir=tmp_path)
+    status = svc.cached_clip_status(audio, 0.0, 1.0)
+    assert status.status == "miss"
+    assert status.clip_id
+    assert svc.get_cached_clip_bytes(audio, 0.0, 1.0) is None
+    svc.close()
+
+
+def test_cached_clip_status_hit_returns_bytes(tmp_path: Path) -> None:
+    audio = _make_audio(tmp_path / "a.mp3")
+    svc = ClipService(data_dir=tmp_path)
+    # Seed the cache file directly at the computed path.
+    _, _, _, _, key, out_path = svc._compute_extract_params(
+        audio, 0.0, 1.0, "mp3", 50
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_bytes(b"ID3fakeclip")
+    status = svc.cached_clip_status(audio, 0.0, 1.0)
+    assert status.status == "hit"
+    assert status.clip_id == key
+    assert svc.get_cached_clip_bytes(audio, 0.0, 1.0) == b"ID3fakeclip"
+    svc.close()
+
+
+def test_enqueue_clip_respects_backpressure(tmp_path: Path, monkeypatch) -> None:
+    audio = _make_audio(tmp_path / "a.mp3")
+    svc = ClipService(data_dir=tmp_path)
+    monkeypatch.setattr(svc, "_MAX_INFLIGHT", 0)
+    # With max inflight 0, warm should stop with backpressure on first miss.
+    result = svc.enqueue_clip(audio, 0.0, 1.0)
+    assert result.status in ("backpressure", "rejected", "accepted", "already_inflight")
+    # Crucially: must not call get_clip_path / join.
+    joined = {"n": 0}
+    real_get = svc.get_clip_path
+
+    def _boom(*_a, **_k):
+        joined["n"] += 1
+        return real_get(*_a, **_k)
+
+    monkeypatch.setattr(svc, "get_clip_path", _boom)
+    svc.cached_clip_status(audio, 0.0, 1.0)
+    svc.get_cached_clip_bytes(audio, 0.0, 1.0)
+    svc.enqueue_clip(audio, 1.0, 2.0)
+    assert joined["n"] == 0
+    svc.close()
+
+
+def test_nonblocking_apis_never_call_get_clip_path(
+    tmp_path: Path, monkeypatch
+) -> None:
+    audio = _make_audio(tmp_path / "a.mp3")
+    svc = ClipService(data_dir=tmp_path)
+    calls = {"n": 0}
+
+    def _boom(*_a, **_k):
+        calls["n"] += 1
+        raise AssertionError("get_clip_path must not be used by non-blocking APIs")
+
+    monkeypatch.setattr(svc, "get_clip_path", _boom)
+    monkeypatch.setattr(svc, "get_clip_bytes", _boom)
+    svc.cached_clip_status(audio, 0.0, 1.0)
+    svc.get_cached_clip_bytes(audio, 0.0, 1.0)
+    svc.enqueue_clip(audio, 0.0, 1.0)
+    assert calls["n"] == 0
+    svc.close()
