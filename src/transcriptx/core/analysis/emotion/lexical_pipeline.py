@@ -84,8 +84,11 @@ def build_lexicon_from_nrclex(nrclex_cls: Any) -> dict[str, list[str]]:
     except TypeError:
         probe = nrclex_cls("x")
 
+    # nrclex 4.x stores the map on ``__lexicon__``; older releases used
+    # ``lexicon`` / ``AffectDict`` / ``affect_dict``.
     source = (
         getattr(probe, "lexicon", None)
+        or getattr(probe, "__lexicon__", None)
         or getattr(probe, "AffectDict", None)
         or getattr(nrclex_cls, "AffectDict", None)
         or getattr(probe, "affect_dict", None)
