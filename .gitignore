@@ -63,6 +63,9 @@ env/
 .eggs/
 dist/
 build/
+# Theme C: commit packaged CCv2 frontend assets (dist policy)
+!packages/transcriptx_workspaces/transcriptx_workspaces/frontend/build/
+!packages/transcriptx_workspaces/transcriptx_workspaces/frontend/build/**
 
 # Testing and quality
 .pytest_cache/
