@@ -52,6 +52,8 @@ class CorrectionsAck:
     message: Optional[str] = None
     # Apply/export must remain server-authoritative; never optimistic.
     apply_export_committed: bool = False
+    # Opaque controller return (e.g. export path payload); never used for optimism.
+    result: Any = None
 
 
 def new_corrections_action_id() -> str:
@@ -115,7 +117,19 @@ class CorrectionsActionService:
                     message="apply_and_export unavailable",
                 )
             else:
-                apply(command.session_id, **dict(command.payload))
+                try:
+                    export_result = apply(command.session_id, **dict(command.payload))
+                except Exception as exc:  # noqa: BLE001 — surface as ack error
+                    ack = CorrectionsAck(
+                        action_id=command.action_id,
+                        action_seq=command.action_seq,
+                        status="error",
+                        session_id=command.session_id,
+                        session_revision=command.expected_session_revision,
+                        message=str(exc) or "apply_and_export failed",
+                    )
+                    self._acks[command.action_id] = ack
+                    return ack
                 ack = CorrectionsAck(
                     action_id=command.action_id,
                     action_seq=command.action_seq,
@@ -123,6 +137,7 @@ class CorrectionsActionService:
                     session_id=command.session_id,
                     session_revision=command.expected_session_revision,
                     apply_export_committed=True,
+                    result=export_result,
                 )
             self._acks[command.action_id] = ack
             return ack

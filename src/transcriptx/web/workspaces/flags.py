@@ -5,9 +5,10 @@ from __future__ import annotations
 import os
 from typing import Any
 
-# Phase 5: default-on after browser harness suite. Legacy path retained (Phase 9).
-# Rollback: TX_SPEAKER_ID_WORKSPACE_COMPONENT=0 or session_state override.
-_SPEAKER_ID_WORKSPACE_DEFAULT = True
+# Phase 5 gate: default-off until Docker/web install of transcriptx-workspaces is
+# proven in the running image AND the Streamlit browser suite covers plan gates.
+# Enable with TX_SPEAKER_ID_WORKSPACE_COMPONENT=1 or session override.
+_SPEAKER_ID_WORKSPACE_DEFAULT = False
 
 
 def _truthy(value: str | None) -> bool:
@@ -26,7 +27,7 @@ def speaker_id_workspace_component_enabled(session_state: Any | None = None) -> 
     """Return True when the CCv2 Speaker ID workspace should mount.
 
     Priority: env ``TX_SPEAKER_ID_WORKSPACE_COMPONENT`` → session override →
-    default (on after Phase 5).
+    default (off until Phase 5 install + Streamlit browser gates).
     """
     env = os.environ.get("TX_SPEAKER_ID_WORKSPACE_COMPONENT")
     if env is not None and env.strip() != "":

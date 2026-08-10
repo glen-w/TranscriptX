@@ -17,9 +17,9 @@ from transcriptx.web.workspaces.speaker_id_bridge import (
 )
 
 
-def test_flag_default_on(monkeypatch) -> None:
+def test_flag_default_off_until_install_proven(monkeypatch) -> None:
     monkeypatch.delenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", raising=False)
-    assert speaker_id_workspace_component_enabled({}) is True
+    assert speaker_id_workspace_component_enabled({}) is False
 
 
 def test_flag_env_off_rollback(monkeypatch) -> None:

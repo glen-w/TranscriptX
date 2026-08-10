@@ -80,10 +80,10 @@ Revoke Blob URLs on replacement, transcript switch, and unmount.
 
 | Flag | Default | Meaning |
 |------|---------|---------|
-| `speaker_id_workspace_component` | **`true`** (Phase 5) | CCv2 Speaker ID workspace |
+| `speaker_id_workspace_component` | **`false`** until Docker wheel install + Streamlit browser suite gates pass (Phase 5) | CCv2 Speaker ID workspace |
 | `corrections_workspace_component` | `false` | CCv2 Corrections |
 
-Env override: `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0` forces legacy rollback.
+Env enable: `TX_SPEAKER_ID_WORKSPACE_COMPONENT=1`. Env rollback: `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`.
 
 ## Frontend toolchain
 

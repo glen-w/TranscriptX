@@ -127,7 +127,7 @@ Speaker ID is reaching Streamlit’s architectural edge; TranscriptX as a whole 
 
 **Trajectory:** Streamlit shell + Python domain services + specialised frontend components for workstation-like interactions.
 
-**Implementation status (2026-08):** Phase −1 `SpeakerIdActionService` shared by legacy + CCv2; non-blocking ClipService APIs; packaged `transcriptx-workspaces` CCv2 Speaker ID surface (feature-flagged, default-on with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0` rollback); Corrections revisioned command protocol; PlaybackHost handoff for Theme D; legacy fragment path retained until Phase 9 criteria. Design authority: [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
+**Implementation status (2026-08):** Phase −1 `SpeakerIdActionService` shared by legacy + CCv2; non-blocking ClipService APIs; packaged `transcriptx-workspaces` CCv2 Speaker ID surface (feature-flagged, **default-off** until Docker install + Streamlit browser suite gates; enable with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=1`); Corrections revisioned command protocol wired through `CorrectionsActionService` on the legacy studio page; PlaybackHost handoff for Theme D; legacy fragment path retained until Phase 9 criteria. Design authority: [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
 
 ---
 

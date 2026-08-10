@@ -181,4 +181,12 @@ def dispatch_workspace_command(
         "action_seq": ack.action_seq,
         "status": ack.status,
         "message": ack.message,
+        "transcript_revision": ack.transcript_revision,
+        "mapping_revision": ack.mapping_revision,
+        "active_speaker_id": ack.active_speaker_id,
+        "active_speaker_idx": ack.active_speaker_idx,
+        "requires_app_rerun": bool(ack.effects.requires_app_rerun),
+        "flashes": [
+            {"level": f.level, "message": f.message} for f in ack.effects.flashes
+        ],
     }

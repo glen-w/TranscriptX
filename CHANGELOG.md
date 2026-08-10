@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Theme C (high-interaction workspaces):** shared `SpeakerIdActionService` (revisioned command/ack) used by legacy Speaker ID callbacks; non-blocking ClipService APIs (`cached_clip_status` / `get_cached_clip_bytes` / `enqueue_clip`); packaged Streamlit Components v2 `transcriptx-workspaces` Speaker ID surface (transcript-scoped keys, ClipTransport base64, prefetch budgets); Corrections revisioned command protocol; PlaybackHost handoff for Theme D; Playwright browser harness; design docs under `docs/dev/theme_c_*.md`.
+- **Theme C (high-interaction workspaces):** shared `SpeakerIdActionService` (revisioned command/ack) used by legacy Speaker ID callbacks; non-blocking ClipService APIs (`cached_clip_status` / `get_cached_clip_bytes` / `enqueue_clip`); packaged Streamlit Components v2 `transcriptx-workspaces` Speaker ID surface (transcript-scoped keys, ClipTransport base64, prefetch budgets; **feature flag default-off** until Docker wheel install + Streamlit browser suite gates); Corrections revisioned command protocol on the studio page; PlaybackHost handoff for Theme D; Playwright browser harness; design docs under `docs/dev/theme_c_*.md`.
 
 ### Changed
 

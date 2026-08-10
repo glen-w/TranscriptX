@@ -21,10 +21,15 @@ Date: 2026-08-10
 ### Narrowing
 
 - Do **not** remove the legacy Speaker ID fragment path (Phase 9 criteria).
-- Default flag remains off until the browser suite is green in CI on Streamlit
-  min + current (Phase 5 gate). When flipping default-on, keep flag-off rollback
-  for one release window.
-- Corrections CCv2 UI migration follows Speaker ID default-on; protocol is ready.
+- Default flag remains **off** until the browser suite is green against a real
+  Streamlit app (not only the static HTML harness) on Streamlit min + current
+  **and** `transcriptx-workspaces` is installed in Docker/web images (Phase 5 gate).
+  When flipping default-on, keep flag-off rollback for one release window.
+- Corrections CCv2 UI migration follows Speaker ID default-on; protocol is ready
+  and legacy Corrections Studio decisions already route through
+  `CorrectionsActionService`.
+- Phase 4 voice confirm/reject still use legacy session callbacks/facades
+  (not yet revisioned `SpeakerIdActionService` commands); waived for default-on.
 
 ### Defer / escalate
 

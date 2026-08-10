@@ -47,6 +47,30 @@ def test_duplicate_action_id_does_not_apply_twice() -> None:
     assert ctrl.applied == 1
 
 
+def test_apply_export_returns_controller_result() -> None:
+    ctrl = _Ctrl()
+
+    def _apply(session_id, **payload):
+        ctrl.applied += 1
+        return {"export_path": "/tmp/out.json", "applied_count": 3}
+
+    ctrl.apply_and_export = _apply  # type: ignore[method-assign]
+    svc = CorrectionsActionService(ctrl)
+    ack = svc.execute(
+        CorrectionsCommand(
+            action="apply_export",
+            session_id="sess",
+            action_id=new_corrections_action_id(),
+            action_seq=3,
+            expected_session_revision="s1",
+        )
+    )
+    assert ack.status == "ok"
+    assert ack.apply_export_committed is True
+    assert ack.result == {"export_path": "/tmp/out.json", "applied_count": 3}
+    assert ctrl.applied == 1
+
+
 def test_stale_candidate_revision_rejects() -> None:
     ctrl = _Ctrl()
     svc = CorrectionsActionService(ctrl)

@@ -22,9 +22,108 @@ from transcriptx.services.corrections_studio.schema import (
     StudioReviewStats,
     StudioSessionDocument,
 )
+from transcriptx.app.corrections import (
+    CorrectionsActionService,
+    CorrectionsCommand,
+    new_corrections_action_id,
+)
 from transcriptx.web.navigation import make_session_path_resolver
 from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.web.state import SELECTBOX_PLACEHOLDER_TRANSCRIPT
+
+
+def _session_revision(session: StudioSessionDocument | None, session_id: str) -> str:
+    """Derive a revision token for optimistic corrections commands."""
+    if session is None:
+        return f"sess:{session_id}"
+    updated = getattr(session, "updated_at", None) or getattr(session, "created_at", None)
+    return f"sess:{session_id}:{updated}"
+
+
+def _candidate_revision(candidate: StudioCandidate | None, candidate_id: str) -> str:
+    if candidate is None:
+        return f"cand:{candidate_id}"
+    review_status = getattr(candidate, "review_status", None)
+    status = (
+        review_status.value
+        if hasattr(review_status, "value")
+        else (str(review_status) if review_status is not None else "")
+    )
+    digest = (
+        getattr(candidate, "suggestion_digest", None)
+        or getattr(candidate, "digest", None)
+        or ""
+    )
+    return f"cand:{candidate_id}:{status}:{digest}"
+
+
+def _next_corrections_action_seq() -> int:
+    return int(st.session_state.get("corrections_action_seq", 0)) + 1
+
+
+def _record_decision_via_action_service(
+    controller: CorrectionsStudioController,
+    *,
+    session_id: str,
+    candidate_id: str,
+    action: str,
+    session: StudioSessionDocument | None = None,
+    candidate: StudioCandidate | None = None,
+    **payload,
+) -> bool:
+    """Theme C Phase 6: route review decisions through revisioned command/ack."""
+    # Controller has no built-in revision probes; bind tokens so stale checks work.
+    sess_rev = _session_revision(session, session_id)
+    cand_rev = _candidate_revision(candidate, candidate_id)
+    controller.session_revision = lambda _sid: sess_rev  # type: ignore[attr-defined]
+    controller.candidate_revision = (  # type: ignore[attr-defined]
+        lambda _sid, _cid: cand_rev
+    )
+    svc = CorrectionsActionService(controller)
+    ack = svc.execute(
+        CorrectionsCommand(
+            action=action,  # type: ignore[arg-type]
+            session_id=session_id,
+            action_id=new_corrections_action_id(),
+            action_seq=_next_corrections_action_seq(),
+            expected_session_revision=sess_rev,
+            expected_candidate_revision=cand_rev,
+            candidate_id=candidate_id,
+            payload=payload,
+        )
+    )
+    st.session_state["corrections_action_seq"] = ack.action_seq
+    if ack.status != "ok":
+        st.warning(ack.message or f"Decision not applied ({ack.status})")
+        return False
+    return True
+
+
+def _apply_and_export_via_action_service(
+    controller: CorrectionsStudioController,
+    *,
+    session_id: str,
+    session: StudioSessionDocument | None = None,
+    **payload,
+):
+    """Theme C Phase 6: server-authoritative, duplicate-safe apply/export."""
+    sess_rev = _session_revision(session, session_id)
+    controller.session_revision = lambda _sid: sess_rev  # type: ignore[attr-defined]
+    svc = CorrectionsActionService(controller)
+    ack = svc.execute(
+        CorrectionsCommand(
+            action="apply_export",
+            session_id=session_id,
+            action_id=new_corrections_action_id(),
+            action_seq=_next_corrections_action_seq(),
+            expected_session_revision=sess_rev,
+            payload=payload,
+        )
+    )
+    st.session_state["corrections_action_seq"] = ack.action_seq
+    if ack.status != "ok" or not ack.apply_export_committed:
+        raise RuntimeError(ack.message or f"Export not applied ({ack.status})")
+    return ack.result
 
 
 @st.cache_data(ttl=120, show_spinner=False)
@@ -123,14 +222,16 @@ def _render_candidate_detail(
                 if sk:
                     keys.append(sk)
         review_target = pending[2] if len(pending) > 2 else None
-        controller.record_decision(
-            session_id,
-            candidate_id,
-            "accept",
+        if _record_decision_via_action_service(
+            controller,
+            session_id=session_id,
+            candidate_id=candidate_id,
+            action="accept",
+            candidate=candidate,
             selected_occurrence_keys=keys if keys else None,
             review_target_raw=review_target,
-        )
-        st.rerun()
+        ):
+            st.rerun()
 
     if diff.diffs:
         with st.expander("Occurrences & Diffs", expanded=True):
@@ -173,13 +274,15 @@ def _render_candidate_detail(
     col_accept, col_accept_sel, col_reject, col_skip, col_learn = st.columns(5)
     with col_accept:
         if st.button("Accept all", key=f"accept_{candidate_id}", type="primary"):
-            controller.record_decision(
-                session_id,
-                candidate_id,
-                "accept",
+            if _record_decision_via_action_service(
+                controller,
+                session_id=session_id,
+                candidate_id=candidate_id,
+                action="accept",
+                candidate=candidate,
                 review_target_raw=transient,
-            )
-            st.rerun()
+            ):
+                st.rerun()
     with col_accept_sel:
         if st.button("Accept selected", key=f"accept_sel_{candidate_id}"):
             st.session_state["corrections_studio_pending_accept_selected"] = (
@@ -190,12 +293,24 @@ def _render_candidate_detail(
             st.rerun()
     with col_reject:
         if st.button("Reject", key=f"reject_{candidate_id}"):
-            controller.record_decision(session_id, candidate_id, "reject")
-            st.rerun()
+            if _record_decision_via_action_service(
+                controller,
+                session_id=session_id,
+                candidate_id=candidate_id,
+                action="reject",
+                candidate=candidate,
+            ):
+                st.rerun()
     with col_skip:
         if st.button("Skip", key=f"skip_{candidate_id}"):
-            controller.record_decision(session_id, candidate_id, "skip")
-            st.rerun()
+            if _record_decision_via_action_service(
+                controller,
+                session_id=session_id,
+                candidate_id=candidate_id,
+                action="skip",
+                candidate=candidate,
+            ):
+                st.rerun()
     with col_learn:
         if st.button("Accept & Learn Rule", key=f"learn_{candidate_id}"):
             from transcriptx.core.corrections.models import CorrectionRule
@@ -218,13 +333,15 @@ def _render_candidate_detail(
                 "replacement_text": right,
                 "confidence": candidate.confidence,
             }
-            controller.record_decision(
-                session_id,
-                candidate_id,
-                "accept",
+            if _record_decision_via_action_service(
+                controller,
+                session_id=session_id,
+                candidate_id=candidate_id,
+                action="accept",
+                candidate=candidate,
                 learn_rule_params=learn_params,
-            )
-            st.rerun()
+            ):
+                st.rerun()
 
 
 @st.fragment
@@ -397,7 +514,10 @@ def _corrections_studio_workspace_fragment(
             with confirm_col1:
                 if st.button("Yes, Export", type="primary", key="export_confirm_yes"):
                     try:
-                        result = controller.apply_and_export(session_id)
+                        result = _apply_and_export_via_action_service(
+                            controller,
+                            session_id=session_id,
+                        )
                         st.session_state["corrections_studio_export_success"] = result
                         st.session_state.pop("corrections_studio_session_id", None)
                         st.session_state.pop("corrections_studio_confirm_export", None)
