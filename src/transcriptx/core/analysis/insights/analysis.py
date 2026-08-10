@@ -368,6 +368,46 @@ class InsightsAnalysis(AnalysisModule):
             min_score=min_score,
             topic_boost=topic_boost,
         )
+        # When eligibility is sparse (common on long multi-topic meetings),
+        # prefer strong highlight emblematic phrases over empty abstention.
+        if len(key_themes) < min_themes:
+            emblematic = (
+                ((highlights.get("sections") or {}).get("emblematic_phrases") or {}).get(
+                    "phrases"
+                )
+                or []
+            )
+            if isinstance(emblematic, list) and emblematic:
+                synth_rows = []
+                for row in emblematic:
+                    if not isinstance(row, dict):
+                        continue
+                    phrase = str(row.get("phrase") or "").strip()
+                    if not phrase:
+                        continue
+                    total = float((row.get("score") or {}).get("total", 0.0) or 0.0)
+                    synth_rows.append(
+                        {
+                            "phrase": phrase,
+                            "score": {
+                                "total": max(total, min_score),
+                                "spread": 0.2,
+                                "recurrence": 0.2,
+                                "frequency": total,
+                            },
+                        }
+                    )
+                fallback = _select_themes(
+                    {"content_phrases": synth_rows, "phrase_scores": {}},
+                    highlights=highlights,
+                    topic_modeling=topic_modeling,
+                    limit=theme_limit,
+                    min_score=min_score,
+                    topic_boost=topic_boost,
+                )
+                if len(fallback) > len(key_themes):
+                    key_themes = fallback
+
         recurring_ideas = _select_recurring_ideas(
             eligibility,
             highlights=highlights,

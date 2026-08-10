@@ -280,9 +280,10 @@ def _style_detail_rows(style_markers: dict) -> list[dict[str, Any]]:
 
 
 def _render_insights_payload(
-    insights: Dict[str, Any], *, focus: str = "all"
+    insights: Dict[str, Any], *, focus: str = "all", display_cap: int | None = None
 ) -> None:
     from transcriptx.web.insights_presentation import (
+        FULL_THEME_ROW_CAP,
         GUIDED_RANKED_ROW_CAP,
         MODULE_PLAIN_DESCRIPTIONS,
         is_insights_guided,
@@ -312,11 +313,20 @@ def _render_insights_payload(
 
     status = str(insights.get("status") or "ok")
     try:
-        overview_cap = int(get_config().analysis.insights.counts.overview_theme_cap)
+        insights_cfg = get_config().analysis.insights
+        overview_cap = int(insights_cfg.counts.overview_theme_cap)
+        full_cap = int(insights_cfg.counts.top_themes)
     except Exception:
         overview_cap = 5
-    theme_cap = GUIDED_RANKED_ROW_CAP if guided else overview_cap
-    idea_cap = GUIDED_RANKED_ROW_CAP if guided else overview_cap
+        full_cap = FULL_THEME_ROW_CAP
+    if display_cap is not None:
+        theme_cap = int(display_cap)
+    elif guided:
+        theme_cap = GUIDED_RANKED_ROW_CAP
+    else:
+        # Insights Full default; Overview callers should pass overview_theme_cap.
+        theme_cap = full_cap if full_cap > 0 else overview_cap
+    idea_cap = theme_cap
     show_content = focus in {"all", "content"}
     show_style = focus in {"all", "style"}
 

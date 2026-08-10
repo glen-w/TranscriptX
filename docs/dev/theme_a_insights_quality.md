@@ -28,7 +28,7 @@ Stronger deterministic / hybrid insights: clearer, more useful non-LLM outputs w
 | Layer | Rule |
 |-------|------|
 | Phrase hard rejects | Empty, all-stopwords, discourse formulas, light-verb constructions, tic/discourse mask, pronoun shards, no content token, short shards |
-| Eligibility floor | Default `min_score=0.28`; single-token candidates require `spread > 0` or `recurrence > 0` |
+| Eligibility floor | Default `min_score=0.18`; single-token candidates require `spread > 0` or `recurrence > 0` |
 | Insights compose | Diversity via `select_diverse_themes`; caps from `analysis.insights` config |
 | Confidence bands | `high` if total≥0.55 and (spread≥0.15 or recurrence≥0.2); `medium` if total≥0.35; else `low` (low rows may be dropped by floor) |
 
@@ -73,12 +73,12 @@ Stronger deterministic / hybrid insights: clearer, more useful non-LLM outputs w
 | `top_themes` | 8 | Cap for key themes |
 | `top_recurring_ideas` | 8 | Cap for recurring ideas |
 | `top_notable_moments` | 8 | Cap for notable moments |
-| `min_theme_score` | 0.28 | Compose-time floor (aligned with eligibility) |
+| `min_theme_score` | 0.18 | Compose-time floor (aligned with eligibility) |
 | `min_themes_for_signal` | 2 | Below this → abstain |
 | `overview_theme_cap` | 5 | Suggested UI cap on Overview |
 | `topic_boost` | 0.05 | Soft score boost when topic label overlaps |
 
-Eligibility: `analysis.insight_eligibility.min_score` default `0.28`; `require_spread_or_recurrence_for_singletons` default `true`.
+Eligibility: `analysis.insight_eligibility.min_score` default `0.18`; `require_spread_or_recurrence_for_singletons` default `true`.
 
 ## Acceptance checklist
 
@@ -98,3 +98,14 @@ Eligibility: `analysis.insight_eligibility.min_score` default `0.28`; `require_s
 - SQLite analytics (Theme J)
 - Reintroducing Insights → Analysis tab
 - Full B18 Local-AI insight narratives (follow-on after P2-lite)
+
+
+## Corpus probe notes (deep-test 2026-08-10)
+
+| Run | Transcript | Insights status | Notable themes |
+|-----|------------|-----------------|----------------|
+| mini Python | `data/transcripts/mini_transcript.json` | `ok` | google cloud support, new york stakeholders, market street |
+| large Theme A modules | `_deep_test_large_norm.json` (1007 segs / 13 speakers) | `ok` after log-freq + greeting rejects (was `insufficient_signal` with linear freq + min_score 0.28) | kitchen fairy, cape town, south africa, social media |
+| group | mini + large | member runs green; group finalize `partial` with manifest/run_results present | — |
+
+Hardening during deep-test: log1p frequency scoring; greetings/`et cetera` discourse rejects; eligibility/insights floor `0.18`; emblematic-phrase fallback before abstention; `topic_modeling` optional so insights stays on quick/balanced.

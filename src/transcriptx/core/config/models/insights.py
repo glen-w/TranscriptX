@@ -15,6 +15,6 @@ class InsightsSettingsModel(BaseModel):
 
     enabled: bool = Field(default=True)
     counts: InsightsCountsModel = Field(default_factory=InsightsCountsModel)
-    min_theme_score: float = Field(default=0.28, ge=0.0, le=1.0)
+    min_theme_score: float = Field(default=0.18, ge=0.0, le=1.0)
     min_themes_for_signal: int = Field(default=2, ge=1, le=10)
     topic_boost: float = Field(default=0.05, ge=0.0, le=0.5)

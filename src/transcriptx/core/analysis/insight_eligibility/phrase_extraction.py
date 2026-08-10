@@ -142,7 +142,7 @@ def extract_content_phrases(
     speaker_blocks: List[Dict[str, Any]],
     entities: List[str] | None = None,
     min_frequency: int = 2,
-    min_score: float = 0.28,
+    min_score: float = 0.18,
     require_spread_or_recurrence_for_singletons: bool = True,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, float]]]:
     if not segments:

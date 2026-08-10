@@ -6,7 +6,7 @@
     "top_themes": 8
   },
   "enabled": true,
-  "min_theme_score": 0.28,
+  "min_theme_score": 0.18,
   "min_themes_for_signal": 2,
   "topic_boost": 0.05
 }

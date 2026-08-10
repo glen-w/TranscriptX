@@ -17,7 +17,7 @@
     "advanced": false,
     "category": "analysis",
     "choices": null,
-    "default": 0.28,
+    "default": 0.18,
     "description": "",
     "key": "analysis.insight_eligibility.min_score",
     "max": 1.0,
