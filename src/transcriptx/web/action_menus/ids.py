@@ -25,6 +25,7 @@ class ActionId(str, Enum):
     RUN_SPEAKER_ID = "run_speaker_id"
     RUN_ANALYSIS = "run_analysis"
     CORRECTIONS = "corrections"
+    CORRECT_IN_VIEWER = "correct_in_viewer"
 
 
 class NavStyle(str, Enum):

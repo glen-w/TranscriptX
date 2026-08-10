@@ -83,12 +83,23 @@ ACTIONS: tuple[ActionDef, ...] = (
         ":material/edit_note:",
         "Open Corrections Studio for this transcript (requires a usable corrections workspace).",
     ),
+    ActionDef(
+        ActionId.CORRECT_IN_VIEWER,
+        "Correct in viewer",
+        ":material/spellcheck:",
+        "Open the Transcript viewer in Correct mode to propose word-level fixes while reading.",
+    ),
 )
 
 ACTIONS_BY_ID: dict[ActionId, ActionDef] = {a.id: a for a in ACTIONS}
 
 OPTIONAL_ACTIONS: frozenset[ActionId] = frozenset(
-    {ActionId.OPEN_TRANSCRIPT, ActionId.INSIGHTS, ActionId.CORRECTIONS}
+    {
+        ActionId.OPEN_TRANSCRIPT,
+        ActionId.INSIGHTS,
+        ActionId.CORRECTIONS,
+        ActionId.CORRECT_IN_VIEWER,
+    }
 )
 
 SECTION_ALLOWLISTS: dict[SectionId, tuple[ActionId, ...]] = {
@@ -101,12 +112,14 @@ SECTION_ALLOWLISTS: dict[SectionId, tuple[ActionId, ...]] = {
         ActionId.OPEN_TRANSCRIPT,
         ActionId.INSIGHTS,
         ActionId.CORRECTIONS,
+        ActionId.CORRECT_IN_VIEWER,
     ),
     SectionId.LIBRARY_SELECTED: (
         ActionId.RUN_SPEAKER_ID,
         ActionId.RUN_ANALYSIS,
         ActionId.OPEN_TRANSCRIPT,
         ActionId.CORRECTIONS,
+        ActionId.CORRECT_IN_VIEWER,
     ),
     SectionId.IMPORT_SUCCESS: (
         ActionId.OPEN_LIBRARY,
@@ -114,6 +127,7 @@ SECTION_ALLOWLISTS: dict[SectionId, tuple[ActionId, ...]] = {
         ActionId.RUN_SPEAKER_ID,
         ActionId.OPEN_TRANSCRIPT,
         ActionId.CORRECTIONS,
+        ActionId.CORRECT_IN_VIEWER,
     ),
     SectionId.SPEAKER_ID_COMPLETE: (
         ActionId.OPEN,
@@ -125,6 +139,7 @@ SECTION_ALLOWLISTS: dict[SectionId, tuple[ActionId, ...]] = {
         ActionId.OPEN_TRANSCRIPT,
         ActionId.INSIGHTS,
         ActionId.CORRECTIONS,
+        ActionId.CORRECT_IN_VIEWER,
     ),
     SectionId.RUN_ANALYSIS_COMPLETE: (
         ActionId.OPEN,
@@ -135,6 +150,7 @@ SECTION_ALLOWLISTS: dict[SectionId, tuple[ActionId, ...]] = {
         ActionId.OPEN_TRANSCRIPT,
         ActionId.INSIGHTS,
         ActionId.CORRECTIONS,
+        ActionId.CORRECT_IN_VIEWER,
     ),
 }
 

@@ -66,7 +66,14 @@ def _studio_rule_to_engine(rule: StudioRule) -> CorrectionRule:
 
 
 def _coerce_engine_kind(kind: str) -> str:
-    valid = ("memory_hit", "acronym", "consistency", "fuzzy", "ner_variant")
+    valid = (
+        "memory_hit",
+        "acronym",
+        "consistency",
+        "fuzzy",
+        "ner_variant",
+        "manual",
+    )
     return kind if kind in valid else "consistency"
 
 
@@ -108,11 +115,16 @@ def compile_studio_to_engine_apply(
     transcript_key: str,
     rules_by_id: Optional[Dict[str, CorrectionRule]] = None,
     generation_id: Optional[int] = None,
+    candidate_ids: Optional[List[str]] = None,
+    occurrence_keys: Optional[List[str]] = None,
 ) -> CompiledStudioApply:
     """
     Map studio review state + candidates for one generation to engine Candidate/Decision lists.
 
     Re-grounds every accepted occurrence against live transcript text (fail closed).
+
+    When ``candidate_ids`` is provided, only those candidates are compiled (scoped apply).
+    When ``occurrence_keys`` is also provided, apply_scope is forced to selected for those keys.
     """
     gen = generation_id if generation_id is not None else session.current_generation_id
     diag: Dict[str, Any] = {
@@ -135,12 +147,23 @@ def compile_studio_to_engine_apply(
             rules[er.id] = er
 
     candidates_cur = [c for c in session.candidates if c.generation_id == gen]
+    if candidate_ids is not None:
+        wanted = set(candidate_ids)
+        candidates_cur = [c for c in candidates_cur if c.candidate_id in wanted]
     by_id = {c.candidate_id: c for c in candidates_cur}
 
     reviews_cur = [r for r in session.review_records if r.generation_id == gen]
     latest_by_candidate: Dict[str, StudioReviewRecord] = {}
     for r in sorted(reviews_cur, key=lambda x: x.event_sequence):
         latest_by_candidate[r.candidate_id] = r
+
+    # Scoped apply: only compile the requested candidates (even if others accepted).
+    if candidate_ids is not None:
+        latest_by_candidate = {
+            cid: rec
+            for cid, rec in latest_by_candidate.items()
+            if cid in set(candidate_ids)
+        }
 
     seg_map = _segment_text_by_id(segments, transcript_key)
     engine_candidates: List[Candidate] = []
@@ -194,8 +217,17 @@ def compile_studio_to_engine_apply(
             for k in rec.selected_occurrence_keys
             if (not valid_keys) or k in valid_keys
         ]
-        if rec.apply_scope == ApplyScope.selected:
-            if rec.selected_occurrence_keys and not selected_keys and valid_keys:
+        apply_scope = rec.apply_scope
+        if occurrence_keys is not None and candidate_ids is not None:
+            # Scoped occurrence subset for viewer quick-apply.
+            selected_keys = [k for k in occurrence_keys if (not valid_keys) or k in valid_keys]
+            apply_scope = ApplyScope.selected
+            if occurrence_keys and not selected_keys and valid_keys:
+                diag["dropped_candidates"] += 1
+                continue
+
+        if apply_scope == ApplyScope.selected:
+            if rec.selected_occurrence_keys and not selected_keys and valid_keys and occurrence_keys is None:
                 diag["dropped_candidates"] += 1
                 continue
             if valid_keys:
@@ -241,7 +273,7 @@ def compile_studio_to_engine_apply(
         ):
             new_rule = _studio_rule_to_engine(session.rules[rec.learn_rule_id])
 
-        if rec.apply_scope == ApplyScope.selected and selected_keys:
+        if apply_scope == ApplyScope.selected and selected_keys:
             engine_decisions.append(
                 Decision(
                     candidate_id=cand_id,

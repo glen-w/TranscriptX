@@ -50,7 +50,11 @@ from transcriptx.services.corrections_studio.llm.merge import annotate_engine_ca
 from transcriptx.services.corrections_studio.llm.review_migration import (
     build_review_migration_plan,
 )
+from transcriptx.services.corrections_studio.manual_carry_forward import (
+    carry_forward_manual_candidates,
+)
 from transcriptx.services.corrections_studio.schema import (
+    GenerationOrigin,
     SessionStartedPayload,
     StudioCandidate,
     StudioEventEnvelope,
@@ -122,6 +126,13 @@ class CorrectionsStudioCandidateService:
         )
         self._session.persist(transcript_path, doc, ev0)
 
+    @staticmethod
+    def _has_detector_generation(doc: StudioSessionDocument) -> bool:
+        gen = doc.current_generation
+        if gen is None:
+            return False
+        return gen.generation_origin == GenerationOrigin.detector
+
     def generate_candidates(
         self, session_id: str, force: bool = False
     ) -> GenerateCandidatesResult:
@@ -130,8 +141,15 @@ class CorrectionsStudioCandidateService:
         self._ensure_session_started_event(session_id, doc, transcript_path)
         doc = self._session.load_document(session_id)
 
-        if doc.candidates and not force:
-            return GenerateCandidatesResult(candidates=list(doc.candidates))
+        # H2: gate on detector generation, not mere presence of candidates
+        # (manual-only sessions must still be able to Generate candidates).
+        if self._has_detector_generation(doc) and not force:
+            cur = doc.current_generation_id
+            return GenerateCandidatesResult(
+                candidates=[
+                    c for c in doc.candidates if cur is None or c.generation_id == cur
+                ]
+            )
 
         expected_last = self._session.last_event_sequence(session_id)
         expected_gen = doc.current_generation_id
@@ -255,6 +273,36 @@ class CorrectionsStudioCandidateService:
             new_generation_id=new_gen,
             rules_by_id=doc.rules,
         )
+        # H1: explicit manual carry-forward (independent of detector migration).
+        manual_cands, manual_reviews = carry_forward_manual_candidates(
+            prior_candidates=prior_candidates,
+            prior_reviews=prior_reviews,
+            prior_generation_id=prior_gen_id,
+            new_generation_id=new_gen,
+        )
+        # Avoid duplicating manuals that already appear in the detector set
+        # under the same candidate_id (rare) or semantic identity.
+        detector_ids = {c.candidate_id for c in studio_candidates}
+        detector_sem = {
+            c.semantic_identity_key for c in studio_candidates if c.semantic_identity_key
+        }
+        filtered_manuals = []
+        filtered_manual_reviews = []
+        kept_manual_ids = set()
+        for mc in manual_cands:
+            if mc.candidate_id in detector_ids:
+                continue
+            if mc.semantic_identity_key and mc.semantic_identity_key in detector_sem:
+                continue
+            filtered_manuals.append(mc)
+            kept_manual_ids.add(mc.candidate_id)
+        for mr in manual_reviews:
+            if mr.candidate_id in kept_manual_ids:
+                filtered_manual_reviews.append(mr)
+
+        studio_candidates = list(studio_candidates) + filtered_manuals
+        migration_payloads = list(mig.reviews) + filtered_manual_reviews
+
         if diagnostics.llm is not None:
             diagnostics = diagnostics.model_copy(
                 update={
@@ -263,6 +311,8 @@ class CorrectionsStudioCandidateService:
                     )
                 }
             )
+        # Retain prior-generation candidates for audit; listing defaults to current gen.
+        historical = [c for c in prior_candidates if c.generation_id != new_gen]
         try:
             cands = commit_generation_batch(
                 session_service=self._session,
@@ -274,11 +324,13 @@ class CorrectionsStudioCandidateService:
                 mh=mh,
                 diagnostics=diagnostics,
                 studio_candidates=studio_candidates,
-                migration_payloads=mig.reviews,
+                migration_payloads=migration_payloads,
                 expected_last_event_sequence=expected_last,
                 expected_generation_id=expected_gen,
                 expected_transcript_identity_hash=expected_identity,
                 expected_rules_fp=expected_rules_fp,
+                generation_origin=GenerationOrigin.detector,
+                historical_candidates=historical,
             )
             return GenerateCandidatesResult(candidates=list(cands))
         except GenerationCommitConflict as exc:

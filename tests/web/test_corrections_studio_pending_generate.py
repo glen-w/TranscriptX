@@ -57,7 +57,9 @@ class _StudioStreamlit:
 
     @staticmethod
     def columns(_n):
-        return (DummyColumn(), DummyColumn())
+        if isinstance(_n, int):
+            return tuple(DummyColumn() for _ in range(_n))
+        return tuple(DummyColumn() for _ in _n)
 
     @classmethod
     def button(cls, label, **_kwargs):
@@ -93,7 +95,7 @@ def _patch_studio(monkeypatch, mod, controller: MagicMock) -> None:
 
 
 @pytest.mark.unit
-def test_start_session_defers_generate_with_force_false(monkeypatch) -> None:
+def test_start_session_does_not_auto_generate(monkeypatch) -> None:
     import transcriptx.web.page_modules.corrections_studio as mod
 
     _StudioStreamlit.session_state = {}
@@ -115,11 +117,35 @@ def test_start_session_defers_generate_with_force_false(monkeypatch) -> None:
 
     ss = _StudioStreamlit.session_state
     assert ss["corrections_studio_session_id"] == "sess-1"
-    assert ss["corrections_studio_pending_generate"] is True
-    assert ss["corrections_studio_generate_force"] is False
+    assert ss.get("corrections_studio_pending_generate") is not True
     assert ss["corrections_studio_active_candidate"] is None
     controller.generate_candidates.assert_not_called()
     assert _StudioStreamlit.rerun_calls == 1
+
+
+@pytest.mark.unit
+def test_generate_candidates_defers_with_force_false(monkeypatch) -> None:
+    import transcriptx.web.page_modules.corrections_studio as mod
+
+    _StudioStreamlit.session_state = {
+        "corrections_studio_session_id": "sess-1",
+    }
+    _StudioStreamlit.button_returns = {"Generate Candidates": True}
+    _StudioStreamlit.errors = []
+    _StudioStreamlit.rerun_calls = 0
+    _StudioStreamlit.select_index = 1
+
+    controller = MagicMock()
+    controller.generate_candidates = MagicMock()
+    _patch_studio(monkeypatch, mod, controller)
+
+    with pytest.raises(_RerunCalled):
+        mod.render_corrections_studio()
+
+    ss = _StudioStreamlit.session_state
+    assert ss["corrections_studio_pending_generate"] is True
+    assert ss["corrections_studio_generate_force"] is False
+    controller.generate_candidates.assert_not_called()
 
 
 @pytest.mark.unit

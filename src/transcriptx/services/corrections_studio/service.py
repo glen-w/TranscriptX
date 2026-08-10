@@ -27,6 +27,10 @@ from transcriptx.services.corrections_studio.generation_manifest import (
 from transcriptx.services.corrections_studio.export_service import (
     CorrectionsStudioExportService,
 )
+from transcriptx.services.corrections_studio.manual_propose_service import (
+    CorrectionsStudioManualProposeService,
+    ManualProposeResult,
+)
 from transcriptx.services.corrections_studio.normalize import (
     normalize_cutover_session_blob,
 )
@@ -93,6 +97,7 @@ class CorrectionService:
         self._export_svc = CorrectionsStudioExportService(
             self._session_svc, self._preview_svc
         )
+        self._manual_svc = CorrectionsStudioManualProposeService(self._session_svc)
 
     def start_or_resume_session(self, transcript_path: str) -> StudioSessionDocument:
         normalized = normalize_transcript_path(transcript_path)
@@ -150,9 +155,25 @@ class CorrectionService:
         source_filter: Optional[List[str]] = None,
         offset: int = 0,
         limit: int = 100,
+        *,
+        generation_id: Optional[int] = None,
+        include_historical: bool = False,
     ) -> List[StudioCandidate]:
         doc = self._session_svc.load_document(session_id)
         candidates = list(doc.candidates)
+        # H13: default to current generation only (aligned with compile).
+        if not include_historical:
+            target_gen = (
+                generation_id
+                if generation_id is not None
+                else doc.current_generation_id
+            )
+            if target_gen is None:
+                candidates = []
+            else:
+                candidates = [c for c in candidates if c.generation_id == target_gen]
+        elif generation_id is not None:
+            candidates = [c for c in candidates if c.generation_id == generation_id]
         if status_filter:
             candidates = [
                 c for c in candidates if c.review_status.value == status_filter
@@ -176,6 +197,8 @@ class CorrectionService:
                 )
             if "llm" in wanted:
                 mapped.add("llm_discovery")
+            if "viewer" in wanted or "manual" in wanted:
+                mapped.add("viewer_manual")
             mapped |= wanted
             filtered = []
             for c in candidates:
@@ -195,6 +218,9 @@ class CorrectionService:
         kind_filter: Optional[List[str]] = None,
         confidence_min: Optional[float] = None,
         source_filter: Optional[List[str]] = None,
+        *,
+        generation_id: Optional[int] = None,
+        include_historical: bool = False,
     ) -> int:
         return len(
             self.list_candidates(
@@ -205,6 +231,8 @@ class CorrectionService:
                 source_filter=source_filter,
                 offset=0,
                 limit=10_000,
+                generation_id=generation_id,
+                include_historical=include_historical,
             )
         )
 
@@ -248,6 +276,45 @@ class CorrectionService:
         studio_metrics.increment("exports_completed")
         return result
 
+    def apply_and_export_scoped(
+        self,
+        session_id: str,
+        candidate_ids: List[str],
+        occurrence_keys: Optional[List[str]] = None,
+        export_path: Optional[str] = None,
+    ) -> StudioExportResult:
+        result = self._export_svc.apply_and_export_scoped(
+            session_id,
+            candidate_ids=candidate_ids,
+            occurrence_keys=occurrence_keys,
+            export_path=export_path,
+        )
+        studio_metrics.increment("exports_completed")
+        return result
+
+    def propose_manual_correction(
+        self,
+        session_id: str,
+        *,
+        segment_id: Optional[str] = None,
+        segment_index: Optional[int] = None,
+        span: tuple[int, int],
+        wrong_text: str,
+        right_text: str,
+        auto_accept: bool = False,
+        supersede_existing: bool = False,
+    ) -> ManualProposeResult:
+        return self._manual_svc.propose_manual_correction(
+            session_id,
+            segment_id=segment_id,
+            segment_index=segment_index,
+            span=span,
+            wrong_text=wrong_text,
+            right_text=right_text,
+            auto_accept=auto_accept,
+            supersede_existing=supersede_existing,
+        )
+
     def get_candidate_local_diff(
         self,
         session_id: str,
@@ -255,14 +322,19 @@ class CorrectionService:
         transient_target_raw: Optional[str] = None,
     ) -> CandidateLocalDiffResult:
         doc = self._session_svc.load_document(session_id)
+        gen = doc.current_generation_id
         candidate = next(
-            (c for c in doc.candidates if c.candidate_id == candidate_id),
+            (
+                c
+                for c in doc.candidates
+                if c.candidate_id == candidate_id
+                and (gen is None or c.generation_id == gen)
+            ),
             None,
         )
         if not candidate:
             return CandidateLocalDiffResult()
 
-        gen = doc.current_generation_id
         reviews_cur = [
             r
             for r in doc.review_records
@@ -330,8 +402,11 @@ class CorrectionService:
 
     def get_session_stats(self, session_id: str) -> StudioReviewStats:
         doc = self._session_svc.load_document(session_id)
+        gen = doc.current_generation_id
         pending = accepted = rejected = skipped = 0
         for candidate in doc.candidates:
+            if gen is not None and candidate.generation_id != gen:
+                continue
             status = candidate.review_status.value
             if status == "pending":
                 pending += 1

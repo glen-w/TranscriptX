@@ -145,6 +145,7 @@ def render_plain_segments(
     jump_index: int | None,
     playback: TranscriptPlaybackBinding | None = None,
     accent_context: AccentResolveContext | None = None,
+    correction_ctx: Any | None = None,
 ) -> None:
     """Render transcript segments in plain reading mode."""
     accent_ctx = (
@@ -195,6 +196,16 @@ def render_plain_segments(
                     header_html=header, body_html=body, jump=is_jump_target
                 ),
                 unsafe_allow_html=True,
+            )
+        if correction_ctx is not None:
+            from transcriptx.web.transcript_viewer.corrections_panel import (
+                render_segment_propose_panel,
+            )
+
+            render_segment_propose_panel(
+                ctx=correction_ctx,
+                source_index=segment_index,
+                segment=segment,
             )
     if copy_chunks:
         joined = "\n\n".join(copy_chunks)
@@ -248,6 +259,7 @@ def render_segmented_tab(
     format_key: str,
     playback: TranscriptPlaybackBinding | None = None,
     accent_context: AccentResolveContext | None = None,
+    correction_ctx: Any | None = None,
 ) -> None:
     """Render contiguous speaker turns with a compact name · time header."""
     accent_ctx = (
@@ -275,7 +287,7 @@ def render_segmented_tab(
             ("sentiment" in segment) or ("emotion" in segment)
             for _, segment in group_segments
         )
-        if not has_play and not has_extras:
+        if not has_play and not has_extras and correction_ctx is None:
             st.markdown(
                 _turn_block_html(
                     header_html=header,
@@ -312,3 +324,13 @@ def render_segmented_tab(
                     st.caption(f"Negative: {sentiment.get('neg', 0):.2f}")
             if "emotion" in segment:
                 st.caption(f"Emotion: {segment['emotion']}")
+            if correction_ctx is not None:
+                from transcriptx.web.transcript_viewer.corrections_panel import (
+                    render_segment_propose_panel,
+                )
+
+                render_segment_propose_panel(
+                    ctx=correction_ctx,
+                    source_index=source_index,
+                    segment=segment,
+                )

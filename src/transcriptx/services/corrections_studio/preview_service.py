@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import copy
-from typing import Dict
+from typing import Dict, List, Optional
 
 from transcriptx.core.corrections.apply import apply_corrections
 from transcriptx.core.corrections.memory import load_memory
@@ -27,7 +27,13 @@ class CorrectionsStudioPreviewService:
     def __init__(self, session_service: CorrectionsStudioSessionService) -> None:
         self._session = session_service
 
-    def compute_preview(self, session_id: str) -> StudioPreviewResult:
+    def compute_preview(
+        self,
+        session_id: str,
+        *,
+        candidate_ids: Optional[List[str]] = None,
+        occurrence_keys: Optional[List[str]] = None,
+    ) -> StudioPreviewResult:
         doc = self._session.load_document(session_id)
         transcript_path = doc.transcript_path
         segments = load_segments(transcript_path)
@@ -47,6 +53,8 @@ class CorrectionsStudioPreviewService:
             segments=segments,
             transcript_key=transcript_key,
             rules_by_id=rules_by_id,
+            candidate_ids=candidate_ids,
+            occurrence_keys=occurrence_keys,
         )
         rules_by_id.update(compiled.rules_by_id)
 
@@ -73,6 +81,8 @@ class CorrectionsStudioPreviewService:
         cur = doc.current_generation_id
         if cur is None:
             accept_n = 0
+        elif candidate_ids is not None:
+            accept_n = len(set(candidate_ids))
         else:
             accepted_ids = {
                 r.candidate_id

@@ -108,12 +108,16 @@ Insights and related analysis presentation work for 1.0; do not freeze quality h
 
 ### B. Corrections & transcript editing
 
-Corrections Studio is usable for 1.0 but results are **mixed**; do not treat it as finished.
+Corrections Studio remains the batch / review surface. **Theme B (Early 1.x) viewer propose/apply is implemented:** Transcript viewer Correct mode supports word/span propose, atomic auto-accept, and scoped sidecar apply without silent overwrite of the managed original.
 
-- Free-read the transcript and propose corrections at **word level** (not only current studio flows)
-- Prefer building word-level propose/apply into the **Transcript viewer** (read → select word/span → propose) so correction is part of reading, not a separate dead-end
-- Keep Corrections Studio as the batch / review surface or fold it into viewer workflows after design
-- Honesty: mixed auto/assist quality must stay labelled; no silent overwrite of canonical text without clear apply/review
+- Free-read the transcript and propose corrections at **word level** (not only current studio flows) — **done** (Correct mode)
+- Prefer building word-level propose/apply into the **Transcript viewer** (read → select word/span → propose) so correction is part of reading, not a separate dead-end — **done**
+- Keep Corrections Studio as the batch / review surface or fold it into viewer workflows after design — **Studio retained**; Start/Resume no longer auto-generates
+- Honesty: mixed auto/assist quality must stay labelled; no silent overwrite of canonical text without clear apply/review — **sidecar + provenance; scoped apply**
+
+Follow-ons: Components v2 click-drag selection (theme **C**); karaoke timings honesty already aligned with null timings on edited tokens (theme **D**).
+
+See also [docs/runtime/corrections-viewer.md](runtime/corrections-viewer.md).
 
 ---
 

@@ -81,6 +81,7 @@ class TranscriptControlsState:
     show_timestamps: bool
     format_key: str
     show_unnamed_speakers: bool
+    correct_mode: bool = False
 
 
 def navigate_to_segment(
@@ -217,6 +218,10 @@ def _render_transcript_controls() -> TranscriptControlsState:
     cannot nest widgets inside markdown HTML, so an empty styled div renders as
     a thick white horizontal bar (especially with a light fallback background).
     """
+    from transcriptx.web.transcript_viewer.corrections_panel import (
+        render_correct_mode_toggle,
+    )
+
     search_text = st.text_input("🔍 Search in transcript", key="transcript_search")
     show_timestamps = st.checkbox("Show timestamps", key="show_timestamps")
     show_unnamed_speakers = st.checkbox(
@@ -227,12 +232,14 @@ def _render_transcript_controls() -> TranscriptControlsState:
             "Default comes from dashboard.transcript_exclude_unnamed_speakers."
         ),
     )
+    correct_mode = render_correct_mode_toggle()
     format_key = st.session_state.get("timestamp_format", "seconds")
     return TranscriptControlsState(
         search_text=search_text,
         show_timestamps=show_timestamps,
         format_key=format_key,
         show_unnamed_speakers=show_unnamed_speakers,
+        correct_mode=correct_mode,
     )
 
 
@@ -446,6 +453,7 @@ def _render_transcript_tabs(
     jump_index: int | None,
     playback: TranscriptPlaybackBinding | None,
     chapter_rows: list[Any] | None = None,
+    correction_ctx: Any | None = None,
 ) -> None:
     """Render turns/segments/chapters views for already-filtered display segments."""
     has_chapters = bool(chapter_rows)
@@ -456,6 +464,7 @@ def _render_transcript_tabs(
             show_timestamps=controls.show_timestamps,
             format_key=controls.format_key,
             playback=playback,
+            correction_ctx=correction_ctx if controls.correct_mode else None,
         )
     elif selected == "segments":
         render_plain_segments(
@@ -465,6 +474,7 @@ def _render_transcript_tabs(
             highlight_query=highlight_query,
             jump_index=jump_index,
             playback=playback,
+            correction_ctx=correction_ctx if controls.correct_mode else None,
         )
     elif selected == "chapters":
         _render_chapters_panel(chapter_rows or [])
@@ -606,6 +616,41 @@ def _transcript_interaction_fragment(
         )
 
     chapter_rows = load_chapter_rows(run_root) if run_root is not None else []
+    correction_ctx = None
+    if controls.correct_mode and transcript_path:
+        from transcriptx.web.transcript_viewer.corrections_panel import (
+            build_viewer_correction_context,
+            render_pending_strip,
+        )
+
+        note = st.session_state.get("transcript_viewer_lineage_note")
+        if note:
+            st.info(note)
+        correction_ctx = build_viewer_correction_context(transcript_path, segments)
+        session_id = st.session_state.get("transcript_viewer_corrections_session_id")
+        if session_id is None:
+            # Resume existing session for this path without generating.
+            try:
+                from transcriptx.web.transcript_viewer.corrections_panel import (
+                    ensure_session,
+                )
+
+                session_id = ensure_session(transcript_path)
+            except Exception:
+                session_id = None
+        render_pending_strip(session_id)
+        last_corrected = st.session_state.get("transcript_viewer_last_corrected_path")
+        if last_corrected:
+            from transcriptx.web.transcript_viewer.corrections_panel import (
+                open_corrected_as_subject,
+            )
+
+            if st.button(
+                f"Open last corrected: {Path(last_corrected).name}",
+                key="tx_open_last_corrected",
+            ):
+                open_corrected_as_subject(last_corrected)
+
     _render_transcript_tabs(
         display_segments,
         controls=controls,
@@ -613,6 +658,7 @@ def _transcript_interaction_fragment(
         jump_index=effective_jump,
         playback=binding,
         chapter_rows=chapter_rows,
+        correction_ctx=correction_ctx,
     )
     if should_scroll and effective_jump is not None:
         scroll_jump_target_into_view()

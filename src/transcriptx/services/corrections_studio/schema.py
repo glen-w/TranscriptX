@@ -76,6 +76,14 @@ class CandidateSource(str, Enum):
     detector_consistency = "detector_consistency"
     detector_fuzzy = "detector_fuzzy"
     llm_discovery = "llm_discovery"
+    viewer_manual = "viewer_manual"
+
+
+class GenerationOrigin(str, Enum):
+    """How the current generation was created."""
+
+    detector = "detector"
+    manual_seed = "manual_seed"
 
 
 class EvidenceStrength(str, Enum):
@@ -93,6 +101,7 @@ class EvidenceSignal(str, Enum):
     cross_segment_consistency = "cross_segment_consistency"
     model_suggestion = "model_suggestion"
     homophone_pattern = "homophone_pattern"
+    viewer_edit = "viewer_edit"
 
 
 class CandidateEvidence(BaseModel):
@@ -185,6 +194,7 @@ class DetectorCountsByKind(BaseModel):
     consistency: int = 0
     fuzzy: int = 0
     ner_variant: int = 0
+    manual: int = 0
     other: int = 0
 
 
@@ -215,6 +225,7 @@ class StudioGenerationRecord(BaseModel):
     candidate_ids: List[str] = Field(default_factory=list)
     completed_at: str
     generation_diagnostics: Optional[CandidateGenerationDiagnostics] = None
+    generation_origin: GenerationOrigin = GenerationOrigin.detector
 
 
 class StudioOccurrence(BaseModel):
@@ -470,6 +481,28 @@ class ExportCompletedPayload(BaseModel):
     generation_id: int
     export_paths: List[str] = Field(default_factory=list)
     provenance_path: Optional[str] = None
+    scoped_candidate_ids: List[str] = Field(default_factory=list)
+
+
+class ManualProposedPayload(BaseModel):
+    """Viewer (or API) manual correction proposal for the current generation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    generation_id: int
+    candidate: Dict[str, Any]
+    upsert: bool = False
+    superseded_candidate_id: Optional[str] = None
+
+
+class ManualSeedGenerationPayload(BaseModel):
+    """Created when the first manual propose seeds a generation without detectors."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    generation_id: int
+    generation_origin: GenerationOrigin = GenerationOrigin.manual_seed
+    transcript_identity_hash: str
 
 
 class StudioPreviewStats(BaseModel):
@@ -513,6 +546,8 @@ class StudioEventEnvelope(BaseModel):
         "session_forked",
         "staleness_detected",
         "incompatible_transcript_detected",
+        "manual_proposed",
+        "manual_seed_generation",
     ]
     event_sequence: int
     timestamp: str = Field(default_factory=_utc_z)

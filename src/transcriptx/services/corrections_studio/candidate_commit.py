@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from transcriptx.services.corrections_studio.schema import (
     CandidateGenerationDiagnostics,
     CandidatesGeneratedPayload,
+    GenerationOrigin,
     ReviewStatus,
     StudioCandidate,
     StudioEventEnvelope,
@@ -35,6 +36,8 @@ def commit_generation_batch(
     expected_generation_id: Optional[int],
     expected_transcript_identity_hash: str,
     expected_rules_fp: str,
+    generation_origin: GenerationOrigin = GenerationOrigin.detector,
+    historical_candidates: Optional[List[StudioCandidate]] = None,
 ) -> List[StudioCandidate]:
     from transcriptx.services.corrections_studio.schema import (
         ReviewAction,
@@ -54,6 +57,7 @@ def commit_generation_batch(
         elif action == ReviewAction.reject:
             st = ReviewStatus.rejected
         else:
+            # skip / unknown → pending (legacy migration contract)
             st = ReviewStatus.pending
         status_by_cand[mp.candidate_id] = st
         review_records.append(
@@ -83,6 +87,9 @@ def commit_generation_batch(
         )
         for c in studio_candidates
     ]
+    # Keep prior-generation candidates for audit; current list is cands for new_gen.
+    hist = [c for c in (historical_candidates or []) if c.generation_id != new_gen]
+    all_cands = hist + cands
     doc = prior_doc.model_copy(
         update={
             "current_generation_id": new_gen,
@@ -93,8 +100,9 @@ def commit_generation_batch(
                 candidate_ids=[c.candidate_id for c in cands],
                 completed_at=now,
                 generation_diagnostics=diagnostics,
+                generation_origin=generation_origin,
             ),
-            "candidates": cands,
+            "candidates": all_cands,
             "review_records": review_records,
             "updated_at": now,
             "studio_schema_version": 1,

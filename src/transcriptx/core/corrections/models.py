@@ -77,7 +77,9 @@ class Candidate(BaseModel):
     rule_id: Optional[str] = None
     proposed_wrong: str
     proposed_right: str
-    kind: Literal["memory_hit", "acronym", "consistency", "fuzzy", "ner_variant"]
+    kind: Literal[
+        "memory_hit", "acronym", "consistency", "fuzzy", "ner_variant", "manual"
+    ]
     confidence: float = Field(ge=0.0, le=1.0, default=0.0)
     occurrences: List[Occurrence] = Field(default_factory=list)
 

@@ -138,6 +138,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/run_outcome_contract.md | Run outcome contract | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/run_outcome_contract.md | yes |
 | docs/runtime/STORAGE.md | TranscriptX Storage Policy | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/runtime/STORAGE.md | yes |
 | docs/runtime/corrections-llm.md | Corrections Studio LLM discovery | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | docs/runtime/STORAGE.md | yes |
+| docs/runtime/corrections-viewer.md | Theme B viewer propose/apply | live | user | current | Theme B 1.x | retain | — | USER_INDEX | docs/ROADMAP.md | yes |
 | docs/runtime/docker-efficiency-baseline.md | Docker efficiency baseline | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | runtime/docker.md | yes |
 | docs/runtime/docker.md | Docker | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | runtime/STORAGE.md | yes |
 | docs/runtime/epistemic_markers.md | Epistemic markers (`epistemic_markers`) | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | self | yes |
