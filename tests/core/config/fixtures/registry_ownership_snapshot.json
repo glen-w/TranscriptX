@@ -72,8 +72,10 @@
     "fine_grained_emotion": 5,
     "full_analysis_settings": 12,
     "group_analysis": 9,
-    "highlights": 30,
+    "highlights": 31,
     "input": 6,
+    "insight_eligibility": 3,
+    "insights": 8,
     "keyphrases": 15,
     "llm": 14,
     "llm_action_items_settings": 2,
@@ -104,7 +106,7 @@
     "voice": 18,
     "workflow": 13
   },
-  "pilot_count": 51,
-  "pydantic_owned_keys": 706,
-  "total_registry_keys": 722
+  "pilot_count": 53,
+  "pydantic_owned_keys": 718,
+  "total_registry_keys": 734
 }

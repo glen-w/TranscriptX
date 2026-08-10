@@ -78,6 +78,7 @@ def aggregate_insights_group(
         session_row["notable_moment_count"] = len(
             [row for row in notable_moments if isinstance(row, dict)]
         )
+        session_row["insights_status"] = str(payload.get("status") or "ok")
         session_rows.append(session_row)
 
         source_rel = _artifact_relpath(
@@ -103,6 +104,7 @@ def aggregate_insights_group(
                         "kind": kind,
                         "text": phrase,
                         "score": score,
+                        "confidence": item.get("confidence"),
                         "source_transcript_id": transcript_id,
                         "source_run_relpath": result.output_dir,
                         "source_artifact_relpath": source_rel,

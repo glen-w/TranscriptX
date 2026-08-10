@@ -51,7 +51,7 @@ Authority: ../ARCHITECTURE.md
 | llm_action_items | Extract structured action items via local LLM | medium | None | T2 |
 | llm_custom_qa | Answer custom questions against the transcript via local LLM | medium | None | T2 |
 | chart_descriptions | Per-chart LLM narratives (finalize-phase; after all charts) | medium | None | T2 |
-| insights | Content-first insights layer separated from style markers | light | insight_eligibility, highlights, topic_modeling | T0 |
+| insights | Content-first insights layer separated from style markers | light | insight_eligibility, highlights | T0 |
 | voice_features | Voice feature extraction and caching | heavy | None | T0 |
 | voice_mismatch | Tone–Text mismatch detection (sarcasm/discord moments) | medium | voice_features | T0 |
 | voice_tension | Conversation tension curve from voice | medium | voice_features | T0 |

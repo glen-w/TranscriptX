@@ -24,7 +24,20 @@
     "the thing is",
     "to be honest",
     "to be fair",
-    "on the other hand"
+    "on the other hand",
+    "you know",
+    "i guess",
+    "i suppose",
+    "i think",
+    "we think",
+    "make sure",
+    "going forward",
+    "right now",
+    "real quick",
+    "just wondering",
+    "sounds good",
+    "makes sense",
+    "fair enough"
   ],
   "light_verbs": [
     "need",
@@ -39,7 +52,12 @@
     "supposed",
     "try",
     "trying",
-    "able"
+    "able",
+    "make",
+    "let",
+    "keep",
+    "put",
+    "take"
   ],
   "pronoun_subjects": [
     "i",

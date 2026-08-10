@@ -34,6 +34,8 @@ _NESTED_ANALYSIS_SUBTREES = frozenset(
         "corrections",
         "highlights",
         "summary",
+        "insights",
+        "insight_eligibility",
         "bertopic",
         "pauses",
         "transcript_quality",

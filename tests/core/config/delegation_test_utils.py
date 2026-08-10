@@ -42,7 +42,7 @@ def assert_ownership_invariant_unchanged() -> None:
     reg = build_registry()
     pilot_keys = all_pydantic_field_dotpaths()
     baseline = serialize_non_pydantic_registry_baseline(reg)
-    assert len(PYDANTIC_REGISTRY_PILOTS) == 51
+    assert len(PYDANTIC_REGISTRY_PILOTS) == 53
     assert len(pilot_keys) == 706
     assert len(baseline) == 16
     assert len(reg) == 722

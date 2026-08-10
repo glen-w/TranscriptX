@@ -1,0 +1,44 @@
+{
+  "analysis.insight_eligibility.min_frequency": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 2,
+    "description": "",
+    "key": "analysis.insight_eligibility.min_frequency",
+    "max": 20.0,
+    "min": 1.0,
+    "path": "analysis.insight_eligibility.min_frequency",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.insight_eligibility.min_score": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 0.28,
+    "description": "",
+    "key": "analysis.insight_eligibility.min_score",
+    "max": 1.0,
+    "min": 0.0,
+    "path": "analysis.insight_eligibility.min_score",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "float"
+  },
+  "analysis.insight_eligibility.require_spread_or_recurrence_for_singletons": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": true,
+    "description": "",
+    "key": "analysis.insight_eligibility.require_spread_or_recurrence_for_singletons",
+    "max": null,
+    "min": null,
+    "path": "analysis.insight_eligibility.require_spread_or_recurrence_for_singletons",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  }
+}

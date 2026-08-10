@@ -36,6 +36,7 @@
     "min_gap_seconds": 30.0,
     "min_phrase_frequency": 3,
     "min_phrase_len": 2,
+    "min_quote_chars": 24,
     "min_quote_words": 4
   },
   "weights": {

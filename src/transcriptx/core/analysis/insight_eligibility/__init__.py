@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from transcriptx.core.analysis.base import AnalysisModule
+from transcriptx.core.utils.config import get_config
 
 from .content_filter import filter_segments_for_insights
 from .phrase_extraction import extract_content_phrases
@@ -35,11 +36,17 @@ class InsightEligibilityAnalysis(AnalysisModule):
         )
         windows = build_rolling_windows(filtered_segments, window_size=5, stride=2)
         speaker_blocks = build_speaker_blocks(filtered_segments)
+        elig_cfg = get_config().analysis.insight_eligibility
         phrases, phrase_scores = extract_content_phrases(
             filtered_segments,
             tic_mask=tic_mask,
             windows=windows,
             speaker_blocks=speaker_blocks,
+            min_frequency=int(elig_cfg.min_frequency),
+            min_score=float(elig_cfg.min_score),
+            require_spread_or_recurrence_for_singletons=bool(
+                elig_cfg.require_spread_or_recurrence_for_singletons
+            ),
         )
 
         densities = {
@@ -62,6 +69,13 @@ class InsightEligibilityAnalysis(AnalysisModule):
             "content_phrases": phrases,
             "phrase_scores": phrase_scores,
             "content_densities": densities,
+            "thresholds": {
+                "min_score": float(elig_cfg.min_score),
+                "min_frequency": int(elig_cfg.min_frequency),
+                "require_spread_or_recurrence_for_singletons": bool(
+                    elig_cfg.require_spread_or_recurrence_for_singletons
+                ),
+            },
         }
 
     def _save_results(

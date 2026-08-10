@@ -167,7 +167,10 @@ def test_summary_filters_filler_themes_in_overview_and_key_themes() -> None:
 
     assert "kind of" not in overview
     assert "i think" not in overview
-    assert "budget risk" in overview
+    # Overview focus requires high-tier theme labels; emblematic-only phrases
+    # must not invent a focus clause (Theme A honesty).
+    assert "kind of" not in overview
+    assert "centered on kind of" not in overview
     assert "kind of" not in key_themes
     assert "i think" not in key_themes
     assert "of course" not in key_themes
@@ -298,3 +301,53 @@ def test_commitments_respect_max_per_owner() -> None:
     alice = [i for i in items if i["owner_display"] == "Alice"]
     assert len(alice) <= 1
     assert any(i["owner_display"] == "Bob" for i in items)
+
+
+def test_overview_omits_focus_when_only_filler_phrases() -> None:
+    highlights = {
+        "transcript_key": "unknown",
+        "sections": {
+            "emblematic_phrases": {
+                "phrases": [
+                    {
+                        "phrase": "kind of",
+                        "score": {"total": 0.9},
+                        "tokens": ["kind", "of"],
+                    },
+                    {
+                        "phrase": "of course",
+                        "score": {"total": 0.8},
+                        "tokens": ["of", "course"],
+                    },
+                ]
+            },
+            "conflict_points": {"events": []},
+            "cold_open": {"items": []},
+        },
+    }
+    segments = [_segment(0, "Alice", "kind of of course", 0.0, 30.0)]
+    result = compute_summary(highlights, segments, SummaryConfig())
+    para = result["overview"]["paragraph"].lower()
+    assert "centered on" not in para
+    assert "kind of" not in para
+    assert "of course" not in para
+    assert "named speakers" in para
+
+
+def test_commitment_rejects_light_verb_only_stems() -> None:
+    cfg = SummaryConfig()
+    segments = [
+        _segment(0, "Alice", "We need to.", 0.0, 1.0),
+        _segment(1, "Bob", "We will deliver the migration plan.", 1.0, 2.0),
+    ]
+    highlights = {
+        "sections": {
+            "emblematic_phrases": {"phrases": []},
+            "conflict_points": {"events": []},
+            "cold_open": {"items": []},
+        }
+    }
+    items = compute_summary(highlights, segments, cfg)["commitments"]["items"]
+    actions = [i["action"].lower() for i in items]
+    assert not any(a.strip() in {"we need to", "we need to."} for a in actions)
+    assert any("deliver" in a for a in actions)

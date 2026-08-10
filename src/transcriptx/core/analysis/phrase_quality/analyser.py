@@ -37,7 +37,7 @@ from transcriptx.core.utils.nlp_utils import (
 )
 
 # Bump when analyser semantics change (cache / schema invalidation).
-PHRASE_QUALITY_VERSION = 2
+PHRASE_QUALITY_VERSION = 3
 
 _FUNCTION_POS = frozenset(
     {"PRON", "DET", "ADP", "CCONJ", "SCONJ", "PART", "INTJ", "AUX"}

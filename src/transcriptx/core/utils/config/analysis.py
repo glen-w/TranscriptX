@@ -176,6 +176,7 @@ class HighlightsThresholds:
     conflict_spike_percentile: float = field(init=False, repr=True)
     min_gap_seconds: float = field(init=False, repr=True)
     min_quote_words: int = field(init=False, repr=True)
+    min_quote_chars: int = field(init=False, repr=True)
     max_quote_words: int = field(init=False, repr=True)
     max_consecutive_per_speaker: int = field(init=False, repr=True)
     min_phrase_len: int = field(init=False, repr=True)
@@ -398,6 +399,10 @@ class AnalysisConfig:
     # Highlights and summary settings
     highlights: HighlightsConfig = field(default_factory=HighlightsConfig)
     summary: SummaryConfig = field(default_factory=SummaryConfig)
+    insights: "InsightsConfig" = field(default_factory=lambda: InsightsConfig())
+    insight_eligibility: "InsightEligibilityConfig" = field(
+        default_factory=lambda: InsightEligibilityConfig()
+    )
 
     # Understandability settings
     # Control which readability metrics to calculate
@@ -997,6 +1002,46 @@ class EpistemicMarkersConfig:
         )
 
         _hydrate_dataclass_from_pydantic(self, EpistemicMarkersSettingsModel())
+
+
+@dataclass
+class InsightsCounts:
+    top_themes: int = field(init=False, repr=True)
+    top_recurring_ideas: int = field(init=False, repr=True)
+    top_notable_moments: int = field(init=False, repr=True)
+    overview_theme_cap: int = field(init=False, repr=True)
+
+
+@dataclass
+class InsightsConfig:
+    """Insights composer settings. Defaults owned by InsightsSettingsModel."""
+
+    enabled: bool = field(init=False, repr=True)
+    counts: InsightsCounts = field(init=False, repr=True)
+    min_theme_score: float = field(init=False, repr=True)
+    min_themes_for_signal: int = field(init=False, repr=True)
+    topic_boost: float = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.insights import InsightsSettingsModel
+
+        _hydrate_dataclass_from_pydantic(self, InsightsSettingsModel())
+
+
+@dataclass
+class InsightEligibilityConfig:
+    """Insight eligibility thresholds. Defaults owned by InsightEligibilitySettingsModel."""
+
+    min_score: float = field(init=False, repr=True)
+    min_frequency: int = field(init=False, repr=True)
+    require_spread_or_recurrence_for_singletons: bool = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.insight_eligibility import (
+            InsightEligibilitySettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, InsightEligibilitySettingsModel())
 
 
 @dataclass

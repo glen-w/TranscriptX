@@ -74,27 +74,28 @@ def _build_overview(
     theme_labels = [
         lbl for lbl in theme_labels if lbl and not _label_is_low_information(lbl)
     ]
-
-    phrases = (
-        highlights.get("sections", {}).get("emblematic_phrases", {}).get("phrases", [])
-    )
-    top_phrases = []
-    for phrase in phrases:
-        text = str(phrase.get("phrase") or "").strip()
-        if not text:
+    # Prefer noun-tier labels only for the overview focus clause — never fall
+    # back to emblematic filler phrases when themes are weak.
+    high_tier_labels: List[str] = []
+    mask = build_tic_mask()
+    for lbl in theme_labels:
+        quality = analyse_phrase(
+            annotations_from_surfaces(lbl.split()), tic_mask=mask
+        )
+        decision = theme_label_policy(quality)
+        if not decision.include:
             continue
-        if _label_is_low_information(text):
-            continue
-        top_phrases.append(text)
-        if len(top_phrases) >= 3:
-            break
+        if decision.preference_tier in {
+            TIER_MULTI_CONTENT_NOUN,
+            TIER_ENTITY_PROPN,
+            TIER_STRONG_SINGLE_NOUN,
+        }:
+            high_tier_labels.append(lbl)
 
-    if len(theme_labels) >= 2:
-        focus_text = f"{theme_labels[0]} and {theme_labels[1]}"
-    elif len(theme_labels) == 1:
-        focus_text = theme_labels[0]
-    elif top_phrases:
-        focus_text = ", ".join([str(p) for p in top_phrases[:2]])
+    if len(high_tier_labels) >= 2:
+        focus_text = f"{high_tier_labels[0]} and {high_tier_labels[1]}"
+    elif len(high_tier_labels) == 1:
+        focus_text = high_tier_labels[0]
     else:
         focus_text = ""
 
@@ -233,6 +234,19 @@ def _build_tension_points(highlights: Dict[str, Any], cfg: Any) -> List[Dict[str
     return bullets
 
 
+def _commitment_has_content(span_text: str) -> bool:
+    """Reject light-verb-only stems like 'need to' / 'have to' without an object."""
+    surfaces = [t for t in str(span_text or "").casefold().split() if t.isalpha()]
+    if len(surfaces) < 3:
+        return False
+    quality = analyse_phrase(
+        annotations_from_surfaces(surfaces), tic_mask=build_tic_mask()
+    )
+    if not quality.accepted_for_scoring:
+        return False
+    return quality.features.content_token_count >= 2
+
+
 def _extract_commitments(segments: List[SegmentLite], cfg: Any) -> List[Dict[str, Any]]:
     rules = cfg.commitments.rules or []
     compiled = [re.compile(rule, re.IGNORECASE) for rule in rules]
@@ -250,6 +264,8 @@ def _extract_commitments(segments: List[SegmentLite], cfg: Any) -> List[Dict[str
             if owners_seen.get(owner_display, 0) >= cfg.commitments.max_per_owner:
                 continue
             span_text = match.group(0)
+            if not _commitment_has_content(span_text):
+                continue
             commitment = {
                 "action": span_text,
                 "owner_display": owner_display,

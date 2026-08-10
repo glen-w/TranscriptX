@@ -439,6 +439,9 @@ def compute_highlights(
             continue
         if candidate.word_count > cfg.thresholds.max_quote_words:
             continue
+        min_chars = int(getattr(cfg.thresholds, "min_quote_chars", 24) or 0)
+        if min_chars and len(str(candidate.text or "").strip()) < min_chars:
+            continue
         filtered_candidates.append(candidate)
     candidates = filtered_candidates
 
