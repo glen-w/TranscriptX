@@ -102,9 +102,13 @@ def test_reconcile_golden_multi_generation_with_reviews() -> None:
     assert doc.current_generation is not None
     assert doc.current_generation.generation_manifest_hash == "mh2"
     assert doc.current_generation.generation_id == 2
-    assert len(doc.candidates) == 1
-    assert doc.candidates[0].candidate_id == "c2"
-    assert doc.candidates[0].review_status == ReviewStatus.rejected
+    # Historical gen-1 candidate retained alongside current gen-2 (H13).
+    by_id = {c.candidate_id: c for c in doc.candidates}
+    assert set(by_id) == {"c1", "c2"}
+    assert by_id["c1"].generation_id == 1
+    assert by_id["c1"].review_status == ReviewStatus.accepted
+    assert by_id["c2"].generation_id == 2
+    assert by_id["c2"].review_status == ReviewStatus.rejected
     assert len(doc.review_records) == 2
     assert doc.review_records[0].generation_id == 1
     assert doc.review_records[0].candidate_id == "c1"
@@ -155,8 +159,10 @@ def test_reconcile_two_generations_without_intervening_reviews() -> None:
     )
     doc = reconcile_snapshot_from_events(events=[e1, e2, e3])
     assert doc.current_generation_id == 2
-    assert len(doc.candidates) == 1
-    assert doc.candidates[0].candidate_id == "b"
+    by_id = {c.candidate_id: c for c in doc.candidates}
+    assert set(by_id) == {"a", "b"}
+    assert by_id["a"].generation_id == 1
+    assert by_id["b"].generation_id == 2
     assert doc.review_records == []
 
 

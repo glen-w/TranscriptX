@@ -38,6 +38,19 @@ class TestEmotionNrclexCompatibilityContracts:
         lexicon = build_lexicon_from_nrclex(_ModernFake)
         assert lexicon["joy"] == ["joy", "positive"]
 
+    def test_build_lexicon_nrclex4_private_lexicon_attr(self) -> None:
+        """nrclex 4.x exposes the map on ``__lexicon__`` only."""
+
+        class _Nrclex4Style:
+            def __init__(self) -> None:
+                self.__lexicon__ = {"happy": ["joy", "positive"]}
+
+            def load_raw_text(self, text: str) -> None:
+                return None
+
+        lexicon = build_lexicon_from_nrclex(_Nrclex4Style)
+        assert lexicon["happy"] == ["joy", "positive"]
+
     def test_build_lexicon_empty_source_returns_empty(self) -> None:
         class _Empty:
             def __init__(self, text: str = "") -> None:

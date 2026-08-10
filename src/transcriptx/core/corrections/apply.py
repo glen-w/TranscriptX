@@ -5,10 +5,15 @@ from __future__ import annotations
 import re
 import time
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from transcriptx.core.corrections.detect import resolve_segment_id
 from transcriptx.core.corrections.models import Candidate, CorrectionRule, Decision
+from transcriptx.core.corrections.word_spans import (
+    WordSpan,
+    align_words_to_text,
+    rebuild_untimed_words_from_text,
+)
 from transcriptx.utils.text_utils import is_named_speaker
 
 
@@ -37,10 +42,20 @@ class PlannedReplacement:
     wrong: str
     right: str
     span: Tuple[int, int]
+    occurrence_id: Optional[str] = None
+    source: Optional[str] = None
 
 
 def _candidate_priority(kind: str) -> int:
-    priority = {"memory_hit": 3, "acronym": 2, "consistency": 1, "fuzzy": 0}
+    # manual = highest human authority
+    priority = {
+        "manual": 4,
+        "memory_hit": 3,
+        "acronym": 2,
+        "consistency": 1,
+        "fuzzy": 0,
+        "ner_variant": 1,
+    }
     return priority.get(kind, 0)
 
 
@@ -112,6 +127,74 @@ def _resolve_decision_applications(
         elif decision.decision == "apply_some":
             decision_map[decision.candidate_id] = decision.selected_occurrence_ids or []
     return decision_map
+
+
+def _split_replacement_tokens(right: str) -> List[str]:
+    return [t for t in (right or "").split() if t]
+
+
+def _sync_words_for_segment(
+    segment: Dict[str, Any],
+    text_before: str,
+    text_after: str,
+    selected: List[PlannedReplacement],
+) -> None:
+    """
+    Rebuild ``words[]`` from the original mapping + all accepted spans.
+
+    Untouched tokens keep timings. Replaced/new tokens get null timings.
+    Fail-safe: rebuild untimed words or clear words when alignment fails.
+    """
+    words_raw = segment.get("words")
+    if not isinstance(words_raw, list) or not words_raw:
+        return
+
+    spans, aligned_ok = align_words_to_text(text_before, words_raw)
+    if not aligned_ok or not spans:
+        # Fail safe: never retain stale timed tokens beside changed text.
+        rebuilt = rebuild_untimed_words_from_text(text_after)
+        if rebuilt:
+            segment["words"] = rebuilt
+        else:
+            segment.pop("words", None)
+        return
+
+    # Sort selected by original span start ascending for one-pass rebuild.
+    ordered = sorted(selected, key=lambda r: r.span[0])
+    new_words: List[Dict[str, Any]] = []
+    word_i = 0
+    n_words = len(spans)
+
+    def _emit_original(ws: WordSpan) -> None:
+        raw = words_raw[ws.word_index] if 0 <= ws.word_index < len(words_raw) else {}
+        if not isinstance(raw, dict):
+            raw = {}
+        entry = dict(raw)
+        # Prefer original text key shape
+        if "word" in entry or "word" not in entry and "text" not in entry:
+            entry["word"] = ws.text
+        else:
+            entry["text"] = ws.text
+        new_words.append(entry)
+
+    for rep in ordered:
+        r0, r1 = rep.span
+        # Emit untouched words entirely before this replacement.
+        while word_i < n_words and spans[word_i].char_end <= r0:
+            _emit_original(spans[word_i])
+            word_i += 1
+        # Skip overlapped original words.
+        while word_i < n_words and spans[word_i].char_start < r1:
+            word_i += 1
+        # Insert replacement tokens with cleared timings.
+        for tok in _split_replacement_tokens(rep.right):
+            new_words.append({"word": tok, "start": None, "end": None})
+
+    while word_i < n_words:
+        _emit_original(spans[word_i])
+        word_i += 1
+
+    segment["words"] = new_words
 
 
 def apply_corrections(
@@ -188,13 +271,14 @@ def apply_corrections(
                             PlannedReplacement(
                                 segment_index=idx,
                                 segment_id=segment_id,
-                                candidate_id=candidate.candidate_id,
+                                candidate_id=candidate.candidate_id or "",
                                 rule_id=candidate.rule_id,
                                 kind=candidate.kind,
                                 confidence=candidate.confidence,
                                 wrong=candidate.proposed_wrong,
                                 right=candidate.proposed_right,
                                 span=span,
+                                occurrence_id=occ.occurrence_id,
                             )
                         )
                     continue
@@ -204,13 +288,14 @@ def apply_corrections(
                     PlannedReplacement(
                         segment_index=idx,
                         segment_id=segment_id,
-                        candidate_id=candidate.candidate_id,
+                        candidate_id=candidate.candidate_id or "",
                         rule_id=candidate.rule_id,
                         kind=candidate.kind,
                         confidence=candidate.confidence,
                         wrong=candidate.proposed_wrong,
                         right=candidate.proposed_right,
                         span=span,
+                        occurrence_id=occ.occurrence_id,
                     )
                 )
 
@@ -225,8 +310,12 @@ def apply_corrections(
         speaker = segment.get("speaker")
         if _is_unidentified_speaker(speaker):
             # Skip person-name corrections for unidentified speakers unless explicit rules
+            # Manual corrections are never dropped by this filter.
             filtered: List[PlannedReplacement] = []
             for rep in replacements:
+                if rep.kind == "manual":
+                    filtered.append(rep)
+                    continue
                 rule = rules_by_id.get(rep.rule_id) if rep.rule_id else None
                 # Use is_person_name when set; fallback to is_named_speaker(right) for old rules
                 is_person_rule = False
@@ -271,6 +360,8 @@ def apply_corrections(
                         "timestamp": _now_iso(),
                         "rule_id": rep.rule_id,
                         "candidate_id": rep.candidate_id,
+                        "occurrence_id": rep.occurrence_id,
+                        "kind": rep.kind,
                         "segment_id": rep.segment_id,
                         "speaker": speaker,
                         "time_start": segment.get("start", segment.get("start_time")),
@@ -282,6 +373,7 @@ def apply_corrections(
                             {
                                 "span": orep.span,
                                 "candidate_id": orep.candidate_id,
+                                "occurrence_id": orep.occurrence_id,
                                 "rule_id": orep.rule_id,
                                 "kind": orep.kind,
                                 "confidence": orep.confidence,
@@ -294,6 +386,10 @@ def apply_corrections(
                                 "right": rep.right,
                                 "span_before": rep.span,
                                 "span_after": None,
+                                "candidate_id": rep.candidate_id,
+                                "occurrence_id": rep.occurrence_id,
+                                "kind": rep.kind,
+                                "rule_id": rep.rule_id,
                             }
                         ],
                     }
@@ -305,11 +401,12 @@ def apply_corrections(
         if not selected:
             continue
 
-        # Apply replacements from right to left
-        selected.sort(key=lambda rep: rep.span[0], reverse=True)
+        # Apply replacements from right to left (string assembly only).
+        # Word sync uses original coordinates from ``selected`` (pre-edit plan).
+        selected_rtl = sorted(selected, key=lambda rep: rep.span[0], reverse=True)
         updated_text = text_before
         applied_replacements: List[Dict] = []
-        for rep in selected:
+        for rep in selected_rtl:
             start, end = rep.span
             updated_text = updated_text[:start] + rep.right + updated_text[end:]
             applied_replacements.append(
@@ -318,21 +415,30 @@ def apply_corrections(
                     "right": rep.right,
                     "span_before": (start, end),
                     "span_after": (start, start + len(rep.right)),
+                    "candidate_id": rep.candidate_id,
+                    "occurrence_id": rep.occurrence_id,
+                    "kind": rep.kind,
+                    "rule_id": rep.rule_id,
+                    "source": rep.source,
                 }
             )
 
         segment["text"] = updated_text
+        _sync_words_for_segment(segment, text_before, updated_text, selected)
+
+        # Segment-level summary + per-replacement identities (H10).
         patch_log.append(
             {
                 "timestamp": _now_iso(),
-                "rule_id": selected[0].rule_id,
-                "candidate_id": selected[0].candidate_id,
                 "segment_id": selected[0].segment_id,
                 "speaker": speaker,
                 "time_start": segment.get("start", segment.get("start_time")),
                 "time_end": segment.get("end", segment.get("end_time")),
                 "before": text_before,
                 "after": updated_text,
+                # Deprecated sole identity — prefer replacements[].candidate_id
+                "candidate_id": selected[0].candidate_id,
+                "rule_id": selected[0].rule_id,
                 "replacements": applied_replacements,
             }
         )

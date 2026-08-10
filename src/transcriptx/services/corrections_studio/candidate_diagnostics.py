@@ -22,7 +22,15 @@ logger = get_logger()
 
 
 def detector_counts_sum(d: DetectorCountsByKind) -> int:
-    return d.memory_hit + d.acronym + d.consistency + d.fuzzy + d.ner_variant + d.other
+    return (
+        d.memory_hit
+        + d.acronym
+        + d.consistency
+        + d.fuzzy
+        + d.ner_variant
+        + d.manual
+        + d.other
+    )
 
 
 def detector_counts_from_candidates(
@@ -41,6 +49,8 @@ def detector_counts_from_candidates(
             d.fuzzy += 1
         elif k == "ner_variant":
             d.ner_variant += 1
+        elif k == "manual":
+            d.manual += 1
         else:
             d.other += 1
     return d

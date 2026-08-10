@@ -465,12 +465,79 @@ def test_corrections_studio_selectbox_uses_subject_default_index(
             return kwargs.get("index", 0)
 
         @staticmethod
-        def columns(_n):
-            return (MagicMock(), MagicMock())
+        def columns(n):
+            count = n if isinstance(n, int) else len(n)
+            return tuple(MagicMock() for _ in range(count))
 
         @staticmethod
         def button(*_a, **_k):
             return False
+
+        @staticmethod
+        def spinner(_msg):
+            return MagicMock()
+
+        @staticmethod
+        def rerun():
+            return None
+
+        @staticmethod
+        def error(*_a, **_k):
+            return None
+
+        @staticmethod
+        def warning(*_a, **_k):
+            return None
+
+        @staticmethod
+        def success(*_a, **_k):
+            return None
+
+        @staticmethod
+        def divider():
+            return None
+
+        @staticmethod
+        def progress(*_a, **_k):
+            return None
+
+        @staticmethod
+        def multiselect(*_a, **_k):
+            return []
+
+        @staticmethod
+        def slider(*_a, **_k):
+            return 0.0
+
+        @staticmethod
+        def number_input(*_a, **_k):
+            return 0
+
+        @staticmethod
+        def checkbox(*_a, **_k):
+            return False
+
+        @staticmethod
+        def text_input(*_a, **_k):
+            return ""
+
+        @staticmethod
+        def text_area(*_a, **_k):
+            return ""
+
+        @staticmethod
+        def expander(*_a, **_k):
+            return MagicMock()
+
+        @staticmethod
+        def write(*_a, **_k):
+            return None
+
+        @staticmethod
+        def fragment(fn=None, **_k):
+            if fn is None:
+                return lambda f: f
+            return fn
 
     _St.session_state = {}
     navigate_with_identity(

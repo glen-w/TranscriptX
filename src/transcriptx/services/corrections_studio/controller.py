@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+from transcriptx.services.corrections_studio.manual_propose_service import (
+    ManualProposeResult,
+)
 from transcriptx.services.corrections_studio.schema import (
     CandidateLocalDiffResult,
     StudioCandidate,
@@ -40,6 +43,9 @@ class CorrectionsStudioController:
         source_filter: Optional[List[str]] = None,
         offset: int = 0,
         limit: int = 100,
+        *,
+        generation_id: Optional[int] = None,
+        include_historical: bool = False,
     ) -> List[StudioCandidate]:
         return self._svc.list_candidates(
             session_id,
@@ -49,6 +55,8 @@ class CorrectionsStudioController:
             source_filter=source_filter,
             offset=offset,
             limit=limit,
+            generation_id=generation_id,
+            include_historical=include_historical,
         )
 
     def count_candidates(
@@ -58,6 +66,9 @@ class CorrectionsStudioController:
         kind_filter: Optional[List[str]] = None,
         confidence_min: Optional[float] = None,
         source_filter: Optional[List[str]] = None,
+        *,
+        generation_id: Optional[int] = None,
+        include_historical: bool = False,
     ) -> int:
         return self._svc.count_candidates(
             session_id,
@@ -65,6 +76,8 @@ class CorrectionsStudioController:
             kind_filter=kind_filter,
             confidence_min=confidence_min,
             source_filter=source_filter,
+            generation_id=generation_id,
+            include_historical=include_historical,
         )
 
     def get_generation_diagnostics(self, session_id: str) -> Optional[dict]:
@@ -95,6 +108,43 @@ class CorrectionsStudioController:
         self, session_id: str, export_path: Optional[str] = None
     ) -> StudioExportResult:
         return self._svc.apply_and_export(session_id, export_path=export_path)
+
+    def apply_and_export_scoped(
+        self,
+        session_id: str,
+        candidate_ids: List[str],
+        occurrence_keys: Optional[List[str]] = None,
+        export_path: Optional[str] = None,
+    ) -> StudioExportResult:
+        return self._svc.apply_and_export_scoped(
+            session_id,
+            candidate_ids=candidate_ids,
+            occurrence_keys=occurrence_keys,
+            export_path=export_path,
+        )
+
+    def propose_manual_correction(
+        self,
+        session_id: str,
+        *,
+        segment_id: Optional[str] = None,
+        segment_index: Optional[int] = None,
+        span: Tuple[int, int],
+        wrong_text: str,
+        right_text: str,
+        auto_accept: bool = False,
+        supersede_existing: bool = False,
+    ) -> ManualProposeResult:
+        return self._svc.propose_manual_correction(
+            session_id,
+            segment_id=segment_id,
+            segment_index=segment_index,
+            span=span,
+            wrong_text=wrong_text,
+            right_text=right_text,
+            auto_accept=auto_accept,
+            supersede_existing=supersede_existing,
+        )
 
     def get_session_stats(self, session_id: str) -> StudioReviewStats:
         return self._svc.get_session_stats(session_id)

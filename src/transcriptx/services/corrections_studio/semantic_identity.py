@@ -25,6 +25,7 @@ _KIND_TO_SOURCE = {
     "consistency": CandidateSource.detector_consistency,
     "fuzzy": CandidateSource.detector_fuzzy,
     "ner_variant": CandidateSource.llm_discovery,
+    "manual": CandidateSource.viewer_manual,
 }
 
 
@@ -33,6 +34,13 @@ def sources_from_kind(kind: str) -> List[CandidateSource]:
     if src is None:
         return []
     return [src]
+
+
+def compute_manual_semantic_identity_key(wrong_text: str, right_text: str) -> str:
+    """Identity for viewer_manual candidates (includes manual marker)."""
+    return compute_semantic_identity_key(
+        wrong_text, right_text, condition_sig="viewer_manual"
+    )
 
 
 def merge_sources(

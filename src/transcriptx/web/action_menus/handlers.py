@@ -166,6 +166,22 @@ def _render_corrections(ctx: ActionContext, *, section: SectionId, key: str) -> 
     )
 
 
+def _render_correct_in_viewer(
+    ctx: ActionContext, *, section: SectionId, key: str
+) -> None:
+    def _go() -> None:
+        st.session_state["transcript_viewer_correct_mode"] = True
+        _nav(ctx, PAGE_TRANSCRIPT)
+
+    _button(
+        ctx,
+        action=ActionId.CORRECT_IN_VIEWER,
+        section=section,
+        key=key,
+        on_activate=_go,
+    )
+
+
 def _render_run_analysis(ctx: ActionContext, *, section: SectionId, key: str) -> None:
     _button(
         ctx,
@@ -244,6 +260,9 @@ HANDLERS: dict[ActionId, ActionHandler] = {
     ActionId.RUN_SPEAKER_ID: ActionHandler(_available_workflow, _render_speaker_id),
     ActionId.RUN_ANALYSIS: ActionHandler(_available_workflow, _render_run_analysis),
     ActionId.CORRECTIONS: ActionHandler(_available_corrections, _render_corrections),
+    ActionId.CORRECT_IN_VIEWER: ActionHandler(
+        _available_corrections, _render_correct_in_viewer
+    ),
 }
 
 

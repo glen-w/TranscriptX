@@ -14,6 +14,7 @@ from transcriptx.services.corrections_studio.review_target import (
 from transcriptx.services.corrections_studio.schema import (
     ApplyScope,
     GenerationManifest,
+    GenerationOrigin,
     ReviewAction,
     ReviewStatus,
     RuleLifecycleState,
@@ -77,19 +78,80 @@ def _replay_candidates_generated(state: _ReplayState, env: StudioEventEnvelope) 
             "generation_manifest_hash": payload["generation_manifest_hash"],
             "candidate_ids": list(payload.get("candidate_ids") or []),
             "completed_at": env.timestamp,
+            "generation_origin": GenerationOrigin.detector.value,
         }
         diag = payload.get("diagnostics")
         if isinstance(diag, dict):
             gen_blob["generation_diagnostics"] = diag
         doc["current_generation"] = gen_blob
     raw_cands = payload.get("candidates") or []
-    state.candidates_by_id = {}
+    # Keep historical (non-current-gen) candidates; replace current-gen set.
+    historical = {
+        cid: c
+        for cid, c in state.candidates_by_id.items()
+        if c.generation_id != gen_id
+    }
+    state.candidates_by_id = dict(historical)
     for c in raw_cands:
         if isinstance(c, dict):
             sc = StudioCandidate.model_validate(c)
             state.candidates_by_id[sc.candidate_id] = sc
     doc["candidates"] = list(state.candidates_by_id.values())
     state.reviews = [r for r in state.reviews if r.generation_id != gen_id]
+
+
+def _replay_manual_seed_generation(
+    state: _ReplayState, env: StudioEventEnvelope
+) -> None:
+    doc = state.doc
+    payload = env.payload or {}
+    gen_id = int(payload.get("generation_id", 1))
+    identity = str(
+        payload.get("transcript_identity_hash")
+        or doc.get("recorded_transcript_identity_hash")
+        or ""
+    )
+    man = GenerationManifest(
+        transcript_identity_hash=identity,
+        detector_version="3",
+        context_pack_version="manual_seed",
+    )
+    doc["current_generation_id"] = gen_id
+    doc["current_generation"] = {
+        "generation_id": gen_id,
+        "generation_manifest": man.model_dump(mode="json"),
+        "generation_manifest_hash": "",
+        "candidate_ids": [],
+        "completed_at": env.timestamp,
+        "generation_origin": GenerationOrigin.manual_seed.value,
+    }
+    doc["updated_at"] = env.timestamp
+
+
+def _replay_manual_proposed(state: _ReplayState, env: StudioEventEnvelope) -> None:
+    doc = state.doc
+    payload = env.payload or {}
+    gen_id = int(payload.get("generation_id", doc.get("current_generation_id") or 1))
+    raw = payload.get("candidate")
+    if not isinstance(raw, dict):
+        return
+    sc = StudioCandidate.model_validate(raw)
+    if sc.generation_id != gen_id:
+        sc = sc.model_copy(update={"generation_id": gen_id})
+    superseded = payload.get("superseded_candidate_id")
+    if superseded:
+        state.candidates_by_id.pop(str(superseded), None)
+    state.candidates_by_id[sc.candidate_id] = sc
+    doc["candidates"] = list(state.candidates_by_id.values())
+    gen = doc.get("current_generation")
+    if isinstance(gen, dict) and int(gen.get("generation_id", -1)) == gen_id:
+        gen["candidate_ids"] = [
+            c.candidate_id
+            for c in state.candidates_by_id.values()
+            if c.generation_id == gen_id
+        ]
+        doc["current_generation"] = gen
+    doc["updated_at"] = env.timestamp
 
 
 def _replay_review_recorded(state: _ReplayState, env: StudioEventEnvelope) -> None:
@@ -180,6 +242,8 @@ def _replay_noop(_state: _ReplayState, _env: StudioEventEnvelope) -> None:
 _EVENT_HANDLERS: Dict[str, Callable[[_ReplayState, StudioEventEnvelope], None]] = {
     "session_started": _replay_session_started,
     "candidates_generated": _replay_candidates_generated,
+    "manual_seed_generation": _replay_manual_seed_generation,
+    "manual_proposed": _replay_manual_proposed,
     "review_recorded": _replay_review_recorded,
     "preview_computed": _replay_noop,
     "export_completed": _replay_noop,

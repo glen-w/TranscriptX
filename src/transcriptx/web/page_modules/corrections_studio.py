@@ -138,7 +138,10 @@ def _render_progress_bar(stats: StudioReviewStats) -> None:
     skipped = stats.skipped
     total = pending + accepted + rejected + skipped
     if total == 0:
-        st.caption("No candidates generated yet.")
+        st.caption(
+            "No candidates yet — propose from the Transcript viewer, or click "
+            "**Generate Candidates**."
+        )
         return
     done = accepted + rejected + skipped
     st.progress(done / total if total else 0)
@@ -373,7 +376,14 @@ def _corrections_studio_workspace_fragment(
     st.divider()
 
     # -- Filter controls --
-    kind_options = ["memory_hit", "acronym", "consistency", "fuzzy", "ner_variant"]
+    kind_options = [
+        "memory_hit",
+        "acronym",
+        "consistency",
+        "fuzzy",
+        "ner_variant",
+        "manual",
+    ]
     filter_col1, filter_col2, filter_col3, filter_col4, filter_col5 = st.columns(
         [1, 1, 1, 1, 1]
     )
@@ -395,10 +405,10 @@ def _corrections_studio_workspace_fragment(
     with filter_col3:
         source_filter = st.multiselect(
             "Source",
-            ["memory", "deterministic", "llm"],
+            ["memory", "deterministic", "llm", "viewer"],
             default=[],
             key="corrections_studio_source_filter",
-            help="Leave empty for all sources",
+            help="Leave empty for all sources (viewer = manual propose)",
         )
     with filter_col4:
         confidence_min = st.slider(
@@ -468,6 +478,11 @@ def _corrections_studio_workspace_fragment(
             rt = _candidate_right_text(c)
             suggested_preview = rt[:30] + ("…" if len(rt) > 30 else "")
             label = f"{c.kind} {status_emoji} — {wrong_preview} → {suggested_preview}"
+            if c.kind == "manual" or any(
+                (s.value if hasattr(s, "value") else str(s)) == "viewer_manual"
+                for s in (c.sources or [])
+            ):
+                label = f"[viewer] {label}"
             is_active = active_id == candidate_id
             btn_type = "primary" if is_active else "secondary"
             if st.button(
@@ -605,10 +620,12 @@ def render_corrections_studio() -> None:
         session_resolver=make_session_path_resolver(),
     )
 
-    # -- Start / Resume --
-    col_start, col_regen = st.columns([1, 1])
+    # -- Start / Resume / Generate --
+    col_start, col_gen, col_regen = st.columns([1, 1, 1])
     with col_start:
         start_clicked = st.button("Start / Resume Session", type="primary")
+    with col_gen:
+        generate_clicked = st.button("Generate Candidates")
     with col_regen:
         regen_clicked = st.button("Regenerate Candidates")
 
@@ -623,8 +640,7 @@ def render_corrections_studio() -> None:
                 session_data.candidates_stale
             )
             st.session_state["corrections_studio_active_candidate"] = None
-            st.session_state["corrections_studio_pending_generate"] = True
-            st.session_state["corrections_studio_generate_force"] = False
+            # H3: Start/Resume opens the session only — no automatic generation.
             st.rerun()
         except Exception as e:
             st.error(f"Error starting session: {e}")
@@ -636,6 +652,12 @@ def render_corrections_studio() -> None:
 
     # Defer generation to a follow-up run so st.spinner is painted before long work
     # (button handlers alone only show Streamlit's global fade / running icon).
+    if generate_clicked:
+        st.session_state["corrections_studio_active_candidate"] = None
+        st.session_state["corrections_studio_pending_generate"] = True
+        st.session_state["corrections_studio_generate_force"] = False
+        st.rerun()
+
     if regen_clicked:
         st.session_state["corrections_studio_active_candidate"] = None
         st.session_state["corrections_studio_pending_generate"] = True

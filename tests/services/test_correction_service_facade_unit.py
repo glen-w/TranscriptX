@@ -31,6 +31,7 @@ def test_count_candidates_applies_filters() -> None:
         session_id="s",
         transcript_path="/t.json",
         recorded_transcript_identity_hash="h",
+        current_generation_id=1,
         candidates=[
             StudioCandidate(
                 candidate_id="c1",
@@ -68,6 +69,7 @@ def test_get_session_stats_counts_by_review_status() -> None:
         session_id="s",
         transcript_path="/t.json",
         recorded_transcript_identity_hash="h",
+        current_generation_id=1,
         candidates=[
             StudioCandidate(
                 candidate_id="a",

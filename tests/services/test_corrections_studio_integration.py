@@ -235,8 +235,11 @@ def test_second_candidates_generated_without_manifest_retains_prior_current_gene
     )
     doc = reconcile_snapshot_from_events(events=[e1, e2, e3])
     assert doc.current_generation_id == 2
-    assert len(doc.candidates) == 1
-    assert doc.candidates[0].candidate_id == "b"
+    # Snapshot retains historical gen-1 rows (H13 include_historical); gen-2 is current.
+    by_id = {c.candidate_id: c for c in doc.candidates}
+    assert set(by_id) == {"a", "b"}
+    assert by_id["a"].generation_id == 1
+    assert by_id["b"].generation_id == 2
     assert doc.current_generation is not None
     assert doc.current_generation.generation_id == 1
     assert doc.current_generation.generation_manifest_hash == "mh1"
