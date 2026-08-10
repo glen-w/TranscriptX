@@ -396,3 +396,94 @@ def test_sidecar_lineage_new_session(studio_env, monkeypatch):
     assert child.session_id != session.session_id
     assert child.transcript_path.endswith("corrected.json")
     assert child.recorded_transcript_identity_hash != session.recorded_transcript_identity_hash
+
+
+def test_reconcile_replays_manual_seed_and_propose(studio_env):
+    from transcriptx.services.corrections_studio.reconcile import (
+        parse_events_jsonl,
+        reconcile_snapshot_from_events,
+    )
+    from transcriptx.services.corrections_studio.schema import GenerationOrigin
+
+    svc, session, _, _ = studio_env
+    proposed = svc.propose_manual_correction(
+        session.session_id,
+        segment_index=0,
+        span=(0, 3),
+        wrong_text="teh",
+        right_text="the",
+        auto_accept=True,
+    )
+    lines = svc.repo.read_event_lines(session.session_id)
+    events = parse_events_jsonl(lines)
+    rebuilt = reconcile_snapshot_from_events(events=events)
+    assert rebuilt.current_generation_id == 1
+    assert rebuilt.current_generation is not None
+    assert (
+        rebuilt.current_generation.generation_origin == GenerationOrigin.manual_seed
+        or any(c.kind == "manual" for c in rebuilt.candidates)
+    )
+    manuals = [c for c in rebuilt.candidates if c.kind == "manual"]
+    assert len(manuals) == 1
+    assert manuals[0].candidate_id == proposed.candidate.candidate_id
+    assert manuals[0].review_status.value == "accepted"
+    assert any(
+        r.candidate_id == proposed.candidate.candidate_id
+        and r.review_action.value == "accept"
+        for r in rebuilt.review_records
+    )
+
+
+def test_concurrent_manual_propose_loser_raises(studio_env):
+    """Second writer with stale event sequence must not orphan a candidate."""
+    from transcriptx.core.store.corrections_session_store import GenerationCommitConflict
+    from transcriptx.services.corrections_studio.manual_propose_service import (
+        CorrectionsStudioManualProposeService,
+    )
+    from transcriptx.services.corrections_studio.session_service import (
+        CorrectionsStudioSessionService,
+    )
+
+    svc, session, transcript, _ = studio_env
+    # Seed one propose so session has a generation + events
+    svc.propose_manual_correction(
+        session.session_id,
+        segment_index=0,
+        span=(0, 3),
+        wrong_text="teh",
+        right_text="the",
+    )
+    session_svc = CorrectionsStudioSessionService(svc.repo)
+    # Stale expected sequence simulates concurrent Studio write ahead of viewer
+    real_persist = session_svc.persist_event_batch
+
+    calls = {"n": 0}
+
+    def _wrap(*a, **k):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            # First call: bump sequence by writing a no-op via a real propose path first
+            # Actually force conflict by lying about expected sequence in preconditions
+            pre = k.get("preconditions")
+            if pre is not None:
+                from dataclasses import replace
+
+                # Force stale expected_last
+                object.__setattr__(pre, "expected_last_event_sequence", 0)
+        return real_persist(*a, **k)
+
+    # Simpler: call propose with a patched last_event_sequence returning stale value
+    manual = CorrectionsStudioManualProposeService(session_svc)
+    session_svc.last_event_sequence = lambda _sid: 0  # type: ignore[method-assign]
+    with pytest.raises(GenerationCommitConflict):
+        manual.propose_manual_correction(
+            session.session_id,
+            segment_index=0,
+            span=(4, 9),
+            wrong_text="quick",
+            right_text="QUICK",
+        )
+    # Original candidate still present; no orphan half-write for the failed propose
+    listed = svc.list_candidates(session.session_id, kind_filter=["manual"])
+    assert len(listed) == 1
+    assert listed[0].wrong_text == "teh"

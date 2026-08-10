@@ -26,6 +26,8 @@ Curated entry points for people using TranscriptX (not repository historians).
 |-----|---------|
 | [Models](runtime/models.md) | Analysis models |
 | [LLM (Ollama)](runtime/llm.md) | Optional local AI |
+| [Corrections (viewer)](runtime/corrections-viewer.md) | Theme B: propose/apply while reading |
+| [Corrections Studio LLM](runtime/corrections-llm.md) | Optional Ollama discovery in Studio |
 | [Module catalog](generated/modules.md) | Generated module list |
 | [Web launcher / Python API](generated/cli.md) | Supported entry flags and API |
 | [Terminology](TERMS.md) | Non-authoritative term index |

@@ -405,7 +405,8 @@ class CorrectionService:
         gen = doc.current_generation_id
         pending = accepted = rejected = skipped = 0
         for candidate in doc.candidates:
-            if gen is not None and candidate.generation_id != gen:
+            # H13: stats match listing — no current generation ⇒ empty counts.
+            if gen is None or candidate.generation_id != gen:
                 continue
             status = candidate.review_status.value
             if status == "pending":
