@@ -31,12 +31,14 @@ class TranscriptPlaybackBinding:
     ``targets`` maps original transcript source index → validated SegmentInfo.
     ``play_key`` is the shared session-state key for the active source index.
     ``owner_prefix`` namespaces widget keys (session/run/path identity).
+    ``playing_index`` is the source index currently loaded in the player (if any).
     """
 
     enabled: bool
     targets: Mapping[int, SegmentInfo]
     play_key: str
     owner_prefix: str
+    playing_index: int | None = None
 
 
 def play_button_eligible(
@@ -124,16 +126,25 @@ def _turn_block_html(
     header_html: str,
     body_html: str,
     jump: bool = False,
+    playing: bool = False,
 ) -> str:
     block_class = "tx-turn"
     if jump:
         block_class += " tx-turn--jump"
+    if playing:
+        block_class += " tx-turn--playing"
     return (
         f'<div class="{block_class}">'
         f"{header_html}"
         f'<div class="tx-turn-body">{body_html}</div>'
         f"</div>"
     )
+
+
+def _playing_marker_html(playing: bool) -> str:
+    if not playing:
+        return ""
+    return ' <span class="tx-playing-target">Playing</span>'
 
 
 def render_plain_segments(
@@ -151,6 +162,7 @@ def render_plain_segments(
     accent_ctx = (
         accent_context if accent_context is not None else load_accent_resolve_context()
     )
+    playing_index = playback.playing_index if playback is not None else None
     copy_chunks: list[str] = []
     for segment_index, segment in display_segments:
         speaker = segment.get("speaker_display") or segment.get("speaker", "Unknown")
@@ -160,11 +172,13 @@ def render_plain_segments(
         end = segment.get("end", 0)
         rendered_text = text
         is_jump_target = jump_index is not None and segment_index == jump_index
+        is_playing = playing_index is not None and segment_index == playing_index
         if highlight_query and is_jump_target:
             rendered_text = render_highlight_html(text, highlight_query)
         marker = (
             ' <span class="tx-jump-target">Selected</span>' if is_jump_target else ""
         )
+        marker += _playing_marker_html(is_playing)
         timestamp = None
         if show_timestamps:
             timestamp = _safe_display_timestamp_range(start, end, format_key)
@@ -177,7 +191,12 @@ def render_plain_segments(
         body = rendered_text if rendered_text != text else html.escape(text)
         if play_button_eligible(playback, segment_index):
             st.markdown(
-                _turn_block_html(header_html=header, body_html="", jump=is_jump_target),
+                _turn_block_html(
+                    header_html=header,
+                    body_html="",
+                    jump=is_jump_target,
+                    playing=is_playing,
+                ),
                 unsafe_allow_html=True,
             )
             col_text, col_play = st.columns([20, 1])
@@ -193,7 +212,10 @@ def render_plain_segments(
         else:
             st.markdown(
                 _turn_block_html(
-                    header_html=header, body_html=body, jump=is_jump_target
+                    header_html=header,
+                    body_html=body,
+                    jump=is_jump_target,
+                    playing=is_playing,
                 ),
                 unsafe_allow_html=True,
             )
@@ -218,38 +240,51 @@ def render_plain_segments(
         )
 
 
-def scroll_jump_target_into_view() -> None:
-    """Scroll the main pane to ``.tx-turn--jump`` after a one-shot jump.
+def _scroll_selector_into_view(selector: str) -> None:
+    """Scroll the main pane to the first match for ``selector``.
 
     Retries briefly because Streamlit may still be painting the segment list
     when this component iframe first runs.
     """
     import streamlit.components.v1 as components
 
+    # Keep selector literal and simple (caller-controlled class selectors only).
+    safe = selector.replace("\\", "\\\\").replace("'", "\\'")
     components.html(
-        """
+        f"""
         <script>
-        (function() {
+        (function() {{
           const doc = window.parent.document;
+          const sel = '{safe}';
           let tries = 0;
-          const go = function() {
-            const el = doc.querySelector('.tx-turn--jump');
-            if (el) {
-              el.scrollIntoView({behavior: 'smooth', block: 'center'});
+          const go = function() {{
+            const el = doc.querySelector(sel);
+            if (el) {{
+              el.scrollIntoView({{behavior: 'smooth', block: 'center'}});
               return;
-            }
+            }}
             tries += 1;
-            if (tries < 45) {
+            if (tries < 45) {{
               window.requestAnimationFrame(go);
-            }
-          };
+            }}
+          }};
           window.requestAnimationFrame(go);
-        })();
+        }})();
         </script>
         """,
         height=0,
         width=0,
     )
+
+
+def scroll_jump_target_into_view() -> None:
+    """Scroll the main pane to ``.tx-turn--jump`` after a one-shot jump."""
+    _scroll_selector_into_view(".tx-turn--jump")
+
+
+def scroll_playing_target_into_view() -> None:
+    """Scroll the main pane to the actively playing turn/segment."""
+    _scroll_selector_into_view(".tx-turn--playing")
 
 
 def render_segmented_tab(
@@ -265,6 +300,7 @@ def render_segmented_tab(
     accent_ctx = (
         accent_context if accent_context is not None else load_accent_resolve_context()
     )
+    playing_index = playback.playing_index if playback is not None else None
     speaker_groups = group_segments_by_speaker(display_segments)
     for speaker_name, group_segments in speaker_groups:
         timestamp = None
@@ -272,8 +308,16 @@ def render_segmented_tab(
             bounds = group_timestamp_bounds(group_segments)
             if bounds is not None:
                 timestamp = _format_timestamp_range(bounds[0], bounds[1], format_key)
+        group_playing = any(
+            playing_index is not None and source_index == playing_index
+            for source_index, _ in group_segments
+        )
+        marker = _playing_marker_html(group_playing)
         header = speaker_meta_line_html(
-            speaker_name, timestamp=timestamp, context=accent_ctx
+            speaker_name,
+            timestamp=timestamp,
+            marker_html=marker,
+            context=accent_ctx,
         )
         body_parts = [
             html.escape(str(segment.get("text", ""))) for _, segment in group_segments
@@ -292,17 +336,28 @@ def render_segmented_tab(
                 _turn_block_html(
                     header_html=header,
                     body_html="<br/>".join(body_parts),
+                    playing=group_playing,
                 ),
                 unsafe_allow_html=True,
             )
             continue
 
         st.markdown(
-            _turn_block_html(header_html=header, body_html=""),
+            _turn_block_html(
+                header_html=header,
+                body_html="",
+                playing=group_playing,
+            ),
             unsafe_allow_html=True,
         )
         for source_index, segment in group_segments:
             text = segment.get("text", "")
+            is_playing = playing_index is not None and source_index == playing_index
+            if is_playing:
+                st.markdown(
+                    '<div class="tx-turn-line tx-turn-line--playing"></div>',
+                    unsafe_allow_html=True,
+                )
             if play_button_eligible(playback, source_index):
                 col_text, col_play = st.columns([20, 1])
                 with col_text:

@@ -28,4 +28,4 @@ Opening the corrected file establishes it as a new subject with a **new** transc
 
 - Auto/assist detector and LLM candidates stay labelled in Studio.
 - Low ASR confidence chips in Correct mode are propose affordances only — replacements remain human-entered.
-- Edited / new word tokens get **null timings** (no fabricated proportional timings).
+- Edited / new word tokens get **null timings** (no fabricated proportional timings) so Theme D karaoke can degrade honestly — see [karaoke-playback.md](karaoke-playback.md).
