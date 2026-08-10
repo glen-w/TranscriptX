@@ -211,14 +211,14 @@ def test_render_transcript_karaoke_clip_idle_and_success(
     monkeypatch.setattr(kp.st, "warning", lambda msg: captions.append(f"WARN:{msg}"))
 
     controller = MagicMock()
-    assert (
-        kp.render_transcript_karaoke_clip(controller, "/t.json", None, None) is None
-    )
+    assert kp.render_transcript_karaoke_clip(controller, "/t.json", None, None) is None
     assert idle_calls
     controller.get_clip_bytes.assert_not_called()
 
     controller.get_clip_bytes.return_value = b"mp3bytes"
-    seg = SegmentInfo(index=0, start=10.0, end=14.0, text="Hello world today", speaker="Ada")
+    seg = SegmentInfo(
+        index=0, start=10.0, end=14.0, text="Hello world today", speaker="Ada"
+    )
     segment = {
         "speaker_display": "Ada",
         "start": 10.0,

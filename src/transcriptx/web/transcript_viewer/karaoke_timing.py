@@ -66,7 +66,9 @@ def _speaker_label(segment: Mapping[str, Any]) -> str:
     return "Unknown"
 
 
-def _clip_window(segment_start: float, segment_end: float) -> tuple[float, float, float]:
+def _clip_window(
+    segment_start: float, segment_end: float
+) -> tuple[float, float, float]:
     """Return (clip_start, clip_end, playable_duration) capped like ClipService."""
     start = float(segment_start)
     end = float(segment_end)
