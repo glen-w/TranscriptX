@@ -12,11 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Theme C (high-interaction workspaces):** shared `SpeakerIdActionService` (revisioned command/ack) used by legacy Speaker ID callbacks; non-blocking ClipService APIs (`cached_clip_status` / `get_cached_clip_bytes` / `enqueue_clip`); packaged Streamlit Components v2 `transcriptx-workspaces` Speaker ID surface (transcript-scoped keys, ClipTransport base64, prefetch budgets; **feature flag default-off** until Docker wheel install + Streamlit browser suite gates); Corrections revisioned command protocol on the studio page; PlaybackHost handoff for Theme D; Playwright browser harness; design docs under `docs/dev/theme_c_*.md`.
+- **Theme C (high-interaction workspaces):** shared `SpeakerIdActionService` (revisioned command/ack) used by legacy Speaker ID callbacks; non-blocking ClipService APIs (`cached_clip_status` / `get_cached_clip_bytes` / `enqueue_clip`); packaged Streamlit Components v2 `transcriptx-workspaces` Speaker ID surface (transcript-scoped keys, ClipTransport base64, prefetch budgets; **feature flag default-on**; missing package falls through to classic UI); Corrections revisioned command protocol on the studio page; PlaybackHost handoff for Theme D; Playwright browser harness; design docs under `docs/dev/theme_c_*.md`.
 
 ### Changed
 
-- Speaker ID CCv2 workspace feature flag defaults **on** after browser harness green; rollback with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`. Legacy `@st.fragment` path retained until Phase 9 retirement criteria.
+- Speaker ID CCv2 workspace feature flag defaults **on**; rollback with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`. When `transcriptx-workspaces` is not installed, Speaker ID automatically uses the classic `@st.fragment` path. Legacy path retained until Phase 9 retirement criteria.
 
 ### Added
 

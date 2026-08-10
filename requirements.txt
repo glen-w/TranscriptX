@@ -157,7 +157,8 @@ keybert>=0.8.0
 # Web Framework
 # ============================================================================
 streamlit>=1.55.0
-# Theme C CCv2 workspaces — required for Speaker ID component when flag is on.
+# Theme C CCv2 workspaces — default Speaker ID surface (flag on).
+# Missing package falls through to classic UI. Rollback: TX_SPEAKER_ID_WORKSPACE_COMPONENT=0
 # Native: pip install -e packages/transcriptx_workspaces
 # Docker: built/installed from packages/transcriptx_workspaces in the image (see Dockerfile).
 
