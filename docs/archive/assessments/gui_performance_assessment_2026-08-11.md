@@ -1,3 +1,5 @@
+> **Archived / superseded.** Historical context only. Current authority: [performance_envelopes_1_0.md](../../dev/performance_envelopes_1_0.md). Do not treat as live roadmap or support policy.
+
 Type: PRODUCT
 Authority: self
 
