@@ -27,6 +27,8 @@ __all__ = [
     "extract_date_prefix",
     "extract_date_prefix_from_filename",
     "extract_date_prefix_from_transcript",
+    "resolve_rename_date_prefix",
+    "suggest_rename_base_name",
     "prompt_for_rename",
     "rename_transcript_after_speaker_mapping",
 ]
@@ -66,6 +68,8 @@ _LAZY_EXPORTS: dict[str, tuple[str, str]] = {
         ".date_prefix",
         "extract_date_prefix_from_transcript",
     ),
+    "resolve_rename_date_prefix": (".date_prefix", "resolve_rename_date_prefix"),
+    "suggest_rename_base_name": (".date_prefix", "suggest_rename_base_name"),
     "prompt_for_rename": (".cli", "prompt_for_rename"),
     "rename_transcript_after_speaker_mapping": (
         ".cli",

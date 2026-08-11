@@ -25,11 +25,12 @@ _SETTINGS_TABS = (
     "Interface",
     "Models",
     "Questions",
+    "Corrections",
 )
 
 
-def _seven_tabs():
-    return (_Tabs(), _Tabs(), _Tabs(), _Tabs(), _Tabs(), _Tabs(), _Tabs())
+def _eight_tabs():
+    return tuple(_Tabs() for _ in _SETTINGS_TABS)
 
 
 @pytest.mark.unit
@@ -47,7 +48,7 @@ def test_settings_page_invokes_all_panels(monkeypatch) -> None:
         @staticmethod
         def tabs(_labels):
             assert list(_labels) == list(_SETTINGS_TABS)
-            return _seven_tabs()
+            return _eight_tabs()
 
         @staticmethod
         def error(*_a, **_k):
@@ -80,6 +81,9 @@ def test_settings_page_invokes_all_panels(monkeypatch) -> None:
     monkeypatch.setattr(
         mod, "render_questions_panel", lambda: panel_calls.append(("questions", {}))
     )
+    monkeypatch.setattr(
+        mod, "render_corrections_panel", lambda: panel_calls.append(("corrections", {}))
+    )
 
     mod.render_settings_page()
 
@@ -92,6 +96,7 @@ def test_settings_page_invokes_all_panels(monkeypatch) -> None:
         "interface",
         "models",
         "questions",
+        "corrections",
     ]
     assert panel_calls[0][1]["run_dir"] is None
     assert panel_calls[0][1]["subject_display"] is None
@@ -113,7 +118,7 @@ def test_settings_page_passes_resolved_run_dir(monkeypatch, tmp_path) -> None:
 
         @staticmethod
         def tabs(_labels):
-            return _seven_tabs()
+            return _eight_tabs()
 
     subject = SimpleNamespace(
         scope="transcript",
@@ -136,6 +141,7 @@ def test_settings_page_passes_resolved_run_dir(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(mod, "render_interface_panel", lambda: None)
     monkeypatch.setattr(mod, "render_models_panel", lambda: None)
     monkeypatch.setattr(mod, "render_questions_panel", lambda: None)
+    monkeypatch.setattr(mod, "render_corrections_panel", lambda: None)
 
     mod.render_settings_page()
 
@@ -159,7 +165,7 @@ def test_settings_page_surfaces_panel_errors(monkeypatch) -> None:
 
         @staticmethod
         def tabs(_labels):
-            return _seven_tabs()
+            return _eight_tabs()
 
         @staticmethod
         def error(msg, **_k):
@@ -178,6 +184,7 @@ def test_settings_page_surfaces_panel_errors(monkeypatch) -> None:
     monkeypatch.setattr(mod, "render_interface_panel", lambda: None)
     monkeypatch.setattr(mod, "render_models_panel", lambda: None)
     monkeypatch.setattr(mod, "render_questions_panel", lambda: None)
+    monkeypatch.setattr(mod, "render_corrections_panel", lambda: None)
 
     mod.render_settings_page()
 

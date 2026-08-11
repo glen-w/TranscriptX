@@ -10,6 +10,7 @@ from transcriptx.web.services import RunIndex, SubjectService
 from transcriptx.web.ui.settings import (
     render_analysis_presets_panel,
     render_configuration_panel,
+    render_corrections_panel,
     render_interface_panel,
     render_models_panel,
     render_questions_panel,
@@ -27,6 +28,7 @@ _SETTINGS_TABS: tuple[str, ...] = (
     "Interface",
     "Models",
     "Questions",
+    "Corrections",
 )
 
 
@@ -77,5 +79,7 @@ def render_settings_page() -> None:
                     render_models_panel()
                 elif label == "Questions":
                     render_questions_panel()
+                elif label == "Corrections":
+                    render_corrections_panel()
             except Exception as e:
                 st.error(f"Could not load {label}: {e}")

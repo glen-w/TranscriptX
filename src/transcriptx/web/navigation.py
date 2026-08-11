@@ -82,6 +82,12 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         may_mutate_context=True,
     ),
     _spec(
+        "Rename Transcript",
+        "Rename Transcript",
+        "workflow",
+        may_mutate_context=True,
+    ),
+    _spec(
         "Corrections Studio",
         "Corrections Studio",
         "workflow",
@@ -277,19 +283,26 @@ def consume_transcription_nav_paths(session_state: dict[str, Any]) -> list[str]:
     return [str(p) for p in nav_paths]
 
 
-def navigate_to_library_rename_workflow(
+def navigate_to_rename_transcript(
     session_state: dict[str, Any], transcript_path: str | Path
 ) -> None:
-    """Set session state for Library rename workflow and switch page to Library."""
-    apply_library_rename_navigation(session_state, transcript_path)
-    session_state["page"] = "Library"
+    """Set subject context and open the Rename Transcript workflow page."""
+    from transcriptx.web.state import WORKFLOW_NAV_TRANSCRIPT_PATH
+
+    SubjectService.set_transcript_context_from_path(
+        session_state,
+        transcript_path,
+        session_resolver=make_session_path_resolver(),
+    )
+    session_state[WORKFLOW_NAV_TRANSCRIPT_PATH] = str(transcript_path)
+    session_state["page"] = "Rename Transcript"
 
 
 def apply_library_rename_navigation(
     session_state: dict[str, Any], transcript_path: str | Path
 ) -> None:
     """
-    Prepare session state for Library rename workflow on transcript_path.
+    Prepare session state to open Library focused on transcript_path.
 
     Sets canonical transcript context plus a one-shot preselect consumed by Library.
     """
@@ -309,7 +322,7 @@ def consume_library_transcript_nav(
     *,
     library_select_key: str = "library_transcript_select",
 ) -> None:
-    """Apply one-shot Library transcript preselect from navigation (e.g. Home Rename)."""
+    """Apply one-shot Library transcript preselect from navigation."""
     from transcriptx.web.state import LIBRARY_NAV_TRANSCRIPT_PATH
 
     nav_path = session_state.pop(LIBRARY_NAV_TRANSCRIPT_PATH, None)

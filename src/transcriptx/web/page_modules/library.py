@@ -29,7 +29,6 @@ from transcriptx.web.action_menus.ids import NavStyle, SectionId
 from transcriptx.web.action_menus.render import render_configured_actions
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
-from transcriptx.web.components.rename_form import render_transcript_rename_form
 from transcriptx.web.perf import instrument_cached_call
 from transcriptx.web.state import (
     SELECTBOX_PLACEHOLDER_TRANSCRIPT,
@@ -233,12 +232,6 @@ def _library_browser_fragment(transcripts: list) -> None:
         rename_supported=True,
     )
     render_configured_actions(SectionId.LIBRARY_SELECTED, ctx)
-
-    render_transcript_rename_form(
-        selected.path,
-        form_key="library_rename_form",
-        library_transcripts=transcripts,
-    )
 
 
 def render_library() -> None:

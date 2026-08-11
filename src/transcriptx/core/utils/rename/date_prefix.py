@@ -70,3 +70,65 @@ def extract_date_prefix_from_transcript(transcript_path: str | Path) -> str:
             exception=e,
         )
         return ""
+
+
+def resolve_rename_date_prefix(
+    transcript_path: str | Path,
+    *,
+    audio_path: Path | None = None,
+) -> str:
+    """Resolve ``YYMMDD_`` from linked audio (preferred) then transcript.
+
+    Audio lookup uses ``find_original_audio_file`` when ``audio_path`` is omitted.
+    """
+    transcript = Path(transcript_path)
+    audio = audio_path
+    if audio is None:
+        try:
+            from transcriptx.core.utils.rename.audio_association import (
+                find_original_audio_file,
+            )
+
+            found = find_original_audio_file(str(transcript))
+            if found is not None:
+                audio = found
+        except Exception as e:
+            log_error(
+                "FILE_RENAME",
+                f"Error resolving audio for date prefix ({transcript}): {e}",
+                exception=e,
+            )
+            audio = None
+    if audio is not None:
+        try:
+            if Path(audio).exists():
+                prefix = extract_date_prefix(Path(audio))
+                if prefix:
+                    return prefix
+        except OSError:
+            pass
+    return extract_date_prefix_from_transcript(transcript)
+
+
+def suggest_rename_base_name(
+    transcript_path: str | Path,
+    *,
+    prefill_with_date_prefix: bool = True,
+    audio_path: Path | None = None,
+) -> str:
+    """Suggested rename stem for CLI/web prompts (not a second validation path).
+
+    When prefill is enabled, auto-prefixes the current stem with ``YYMMDD_``
+    unless the stem already starts with that prefix. Submitters must still run
+    ``validate_target_name`` / ``normalize_base_name`` before rename.
+    """
+    transcript = Path(transcript_path)
+    stem = transcript.stem
+    if not prefill_with_date_prefix:
+        return stem
+    prefix = resolve_rename_date_prefix(transcript, audio_path=audio_path)
+    if not prefix:
+        return stem
+    if stem.startswith(prefix):
+        return stem
+    return f"{prefix}{stem}"

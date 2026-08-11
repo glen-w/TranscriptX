@@ -15,7 +15,7 @@ SUBJECT_TYPE_KEY = "subject_type"
 SUBJECT_ID_KEY = "subject_id"
 RUN_ID_KEY = "run_id"
 NAV_REQUEST_KEY = "nav_request"
-# One-shot: Home (etc.) sets this before navigating to Library rename workflow.
+# One-shot: Home (etc.) sets this before navigating to Library focused on a transcript.
 LIBRARY_NAV_TRANSCRIPT_PATH = "_library_nav_transcript_path"
 IMPORT_LAST_TRANSCRIPT_PATH = "import_last_transcript_path"
 # One-shot: action-menu identity navigation → workflow picker pages (Speaker ID, etc.).

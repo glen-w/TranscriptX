@@ -162,10 +162,10 @@ def test_library_detailed_metadata_reuses_audio_resolution(monkeypatch) -> None:
     test_library_detail_toggle_enriches_selected_transcript_only(monkeypatch)
 
 
-def test_library_page_wires_shared_rename_form() -> None:
-    """Library uses shared rename form component."""
+def test_library_page_defers_rename_to_rename_transcript_page() -> None:
+    """Library no longer embeds rename form; Rename lives on its own page."""
     import transcriptx.web.page_modules.library as mod
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
-    assert "library_rename_form" in source
-    assert "render_transcript_rename_form" in source
+    assert "library_rename_form" not in source
+    assert "render_transcript_rename_form" not in source

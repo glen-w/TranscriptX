@@ -55,6 +55,7 @@ LLM discovery does **not** run on page open alone. It runs during **candidate ge
 
 1. **Start / Resume Session** — generates if the session has no candidates yet (spinner: “Generating candidates…”).
 2. **Regenerate Candidates** — force-regenerates (needed after enabling LLM on a session that already has deterministic-only candidates).
+3. **Settings → Corrections** — library-wide **Generate missing** (`force=False`) or **Regenerate all** (`force=True`) using the same studio generation path.
 
 ## Behaviour
 

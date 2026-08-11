@@ -9,6 +9,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from transcriptx.core.utils.rename.date_prefix import suggest_rename_base_name
 from transcriptx.web.services.rename_service import RenameResult, RenameService
 
 _DEFAULT_CAPTION = (
@@ -18,6 +19,69 @@ _DEFAULT_CAPTION = (
 _DEFAULT_HELP = (
     "Use letters, numbers, spaces, hyphens, and underscores. Do not include extension."
 )
+
+
+def _prefill_date_prefix_enabled() -> bool:
+    try:
+        from transcriptx.core.utils.config_provider import get_config
+
+        cfg = get_config()
+        return bool(
+            getattr(
+                getattr(cfg, "input", None), "prefill_rename_with_date_prefix", True
+            )
+        )
+    except Exception:
+        return True
+
+
+def _path_fingerprint(path: Path) -> str:
+    try:
+        return str(path.resolve())
+    except OSError:
+        return str(path)
+
+
+def sticky_suggested_name_keys(form_key: str) -> tuple[str, str, str]:
+    """Return (bound_path_key, target_input_key, last_suggestion_key)."""
+    return (
+        f"{form_key}__bound_path",
+        f"{form_key}__target",
+        f"{form_key}__last_suggestion",
+    )
+
+
+def clear_rename_form_session_keys(form_key: str, session_state=None) -> None:
+    """Drop sticky form bindings (call after rename or transcript switch cleanup)."""
+    ss = st.session_state if session_state is None else session_state
+    for key in sticky_suggested_name_keys(form_key):
+        ss.pop(key, None)
+
+
+def bind_suggested_rename_name(
+    transcript_path: Path | str,
+    *,
+    form_key: str,
+    date_prefix_prefill: bool = False,
+) -> str:
+    """Recompute suggested name only when the selected transcript path changes.
+
+    Returns the current suggested/default name bound into session state.
+    """
+    path = Path(transcript_path)
+    bound_key, target_key, suggestion_key = sticky_suggested_name_keys(form_key)
+    fingerprint = _path_fingerprint(path)
+    if st.session_state.get(bound_key) != fingerprint:
+        if date_prefix_prefill:
+            suggested = suggest_rename_base_name(
+                path, prefill_with_date_prefix=_prefill_date_prefix_enabled()
+            )
+        else:
+            suggested = path.stem
+        st.session_state[bound_key] = fingerprint
+        st.session_state[suggestion_key] = suggested
+        st.session_state[target_key] = suggested
+    return str(st.session_state.get(suggestion_key) or path.stem)
 
 
 def _render_rename_heading(
@@ -90,6 +154,7 @@ def render_transcript_rename_form(
     show_heading: bool = True,
     library_transcripts: list | None = None,
     on_success: Callable[[RenameResult], None] | None = None,
+    date_prefix_prefill: bool = False,
 ) -> None:
     """Render rename form for a transcript path; calls RenameService on submit."""
     path = Path(transcript_path)
@@ -97,14 +162,24 @@ def render_transcript_rename_form(
         return
 
     current_name = path.stem
+    bind_suggested_rename_name(
+        path, form_key=form_key, date_prefix_prefill=date_prefix_prefill
+    )
+    _, target_key, _ = sticky_suggested_name_keys(form_key)
+
     _render_rename_heading(title, as_subheader=as_subheader, show_heading=show_heading)
     if caption:
         st.caption(caption)
+    if date_prefix_prefill:
+        st.caption(
+            "Suggested name is date-prefixed (YYMMDD_) from the recording or "
+            "transcript when available."
+        )
     with st.form(form_key, clear_on_submit=False):
         st.text_input("Current file name", value=current_name, disabled=True)
         target = st.text_input(
             "New file name",
-            value=current_name,
+            key=target_key,
             help=_DEFAULT_HELP,
         )
         submitted = st.form_submit_button(submit_label)

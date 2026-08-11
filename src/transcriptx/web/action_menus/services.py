@@ -10,7 +10,7 @@ import streamlit as st
 from transcriptx.web.action_menus.context import CanonicalIdentity
 from transcriptx.web.navigation import (
     make_session_path_resolver,
-    navigate_to_library_rename_workflow,
+    navigate_to_rename_transcript,
 )
 from transcriptx.web.services.artifact_service import ArtifactService
 from transcriptx.web.services.export_service import ExportService
@@ -31,6 +31,7 @@ PAGE_INSIGHTS = "Insights"
 PAGE_TRANSCRIPT = "Transcript"
 PAGE_LIBRARY = "Library"
 PAGE_SPEAKER_ID = "Speaker ID"
+PAGE_RENAME_TRANSCRIPT = "Rename Transcript"
 PAGE_RUN_ANALYSIS = "Run Analysis"
 PAGE_CORRECTIONS = "Corrections Studio"
 
@@ -41,6 +42,7 @@ PAGE_TRANSCRIPT_PICKER_KEYS: tuple[str, ...] = (
     "run_analysis_transcript",
     "corrections_studio_transcript",
     "library_transcript_select",
+    "rename_transcript_select",
 )
 
 # Action → page label for handlers that call navigate_with_identity.
@@ -191,6 +193,6 @@ def render_export_residuals(identity: CanonicalIdentity, *, download_key: str) -
 
 def go_rename(identity: CanonicalIdentity) -> None:
     if identity.transcript_path is not None:
-        navigate_to_library_rename_workflow(st.session_state, identity.transcript_path)
+        navigate_to_rename_transcript(st.session_state, identity.transcript_path)
     else:
         st.session_state[PAGE_KEY] = PAGE_LIBRARY

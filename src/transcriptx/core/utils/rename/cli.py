@@ -6,16 +6,12 @@ from pathlib import Path
 from typing import Optional
 
 from transcriptx.core.utils.logger import get_logger, log_error
-from transcriptx.core.utils.rename.date_prefix import (
-    extract_date_prefix,
-    extract_date_prefix_from_transcript,
-)
+from transcriptx.core.utils.rename.date_prefix import suggest_rename_base_name
 from transcriptx.core.utils.rename.names import (
     normalize_base_name,
     validate_target_name,
 )
 from transcriptx.core.utils.rename.pipeline import rename_managed_transcript
-from transcriptx.core.utils.rename.audio_association import find_original_audio_file
 
 logger = get_logger()
 
@@ -45,7 +41,7 @@ def prompt_for_rename(transcript_path: str, default_name: str) -> Optional[str]:
         console.print("\n[bold cyan]Rename Transcript[/bold cyan]")
         console.print(f"[dim]Current name: {old_name}[/dim]")
 
-        prefill = default_name if _prefill_enabled() else ""
+        prefill = (default_name or "").strip() if _prefill_enabled() else ""
         prompt_msg = "Enter new name for transcript (or press Enter to skip):"
         kwargs = {}
         if prefill:
@@ -86,18 +82,16 @@ def prompt_for_rename(transcript_path: str, default_name: str) -> Optional[str]:
 def rename_transcript_after_speaker_mapping(transcript_path: str) -> None:
     """Prompt for rename after speaker mapping completes."""
     try:
-        audio_file = find_original_audio_file(transcript_path)
-        date_prefix = ""
-        if audio_file and audio_file.exists():
-            date_prefix = extract_date_prefix(audio_file)
-        if not date_prefix:
-            date_prefix = extract_date_prefix_from_transcript(transcript_path)
-        default_name = date_prefix if date_prefix else ""
-        if not default_name:
+        prefill = _prefill_enabled()
+        default_name = suggest_rename_base_name(
+            transcript_path, prefill_with_date_prefix=prefill
+        )
+        if prefill and default_name == Path(transcript_path).stem:
             logger.info(
-                "No date prefix found for %s; using empty default", transcript_path
+                "No date prefix found for %s; using current stem as default",
+                transcript_path,
             )
-        prompt_for_rename(transcript_path, default_name)
+        prompt_for_rename(transcript_path, default_name if prefill else "")
     except Exception as e:
         log_error(
             "FILE_RENAME",

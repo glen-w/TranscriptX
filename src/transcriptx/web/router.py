@@ -98,6 +98,9 @@ def build_page_renderers(
         "Settings": _lazy_renderer("settings", "render_settings_page"),
         "Profiles": _lazy_renderer("profiles", "render_profiles_page"),
         "Speaker ID": _lazy_renderer("speaker_id", "render_speaker_id_page"),
+        "Rename Transcript": _lazy_renderer(
+            "rename_transcript", "render_rename_transcript_page"
+        ),
         "Batch Ops": _redirect_legacy_batch_ops,
         "Dashboard Builder": _lazy_renderer(
             "dashboard_builder", "render_dashboard_builder"

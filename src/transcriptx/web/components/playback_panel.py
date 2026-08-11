@@ -532,13 +532,131 @@ def render_active_clip(
 def _render_fallback_segment_rows(
     all_segs: List[SegmentInfo],
     lines_shown: int,
+    *,
+    show_speaker_labels: bool = False,
 ) -> None:
     for seg in all_segs[:lines_shown]:
         col_time, col_text = st.columns([1, 5])
         with col_time:
             st.caption(f"{fmt_time(seg.start)} – {fmt_time(seg.end)}")
         with col_text:
-            st.write(seg.text or "_(empty)_")
+            text = seg.text or "_(empty)_"
+            if show_speaker_labels:
+                from transcriptx.web.services.rename_preview_clips import (
+                    effective_rename_speaker_label,
+                )
+
+                label = effective_rename_speaker_label(seg)
+                st.write(f"**{label}** — {text}")
+            else:
+                st.write(text)
+
+
+def render_exact_segment_preview(
+    controller: SpeakerStudioController,
+    transcript_path: str,
+    segments: Sequence[SegmentInfo],
+    *,
+    play_key: str,
+    active_id: str = "rename_preview",
+    autoplay: bool = False,
+    show_speaker_labels: bool = True,
+    playback_context: Optional[PlaybackContext] = None,
+) -> None:
+    """Render an exact preselected segment sequence (no max_lines reselect/slice).
+
+    One clip extraction failure must not prevent remaining rows from rendering.
+    """
+    all_segs = list(segments)
+    ctx = playback_context
+    if ctx is None:
+        ctx = resolve_playback_context(controller, transcript_path)
+    effective_audio = ctx.audio_path
+    ffmpeg_ok = ctx.ffmpeg_available
+
+    if not all_segs:
+        return
+
+    if not effective_audio or not Path(effective_audio).is_file():
+        clear_playback_session_keys(play_key)
+        render_playback_unavailable(PlaybackUnavailableReason.audio_missing)
+        _render_fallback_segment_rows(
+            all_segs, len(all_segs), show_speaker_labels=show_speaker_labels
+        )
+        return
+
+    if not ffmpeg_ok:
+        clear_playback_session_keys(play_key)
+        render_playback_unavailable(PlaybackUnavailableReason.ffmpeg_missing)
+        _render_fallback_segment_rows(
+            all_segs, len(all_segs), show_speaker_labels=show_speaker_labels
+        )
+        return
+
+    play_seg_idx = sanitize_play_index(st.session_state.get(play_key), len(all_segs))
+    if st.session_state.get(play_key) is not None and play_seg_idx is None:
+        st.session_state[play_key] = None
+
+    try:
+        trigger_clip_warm(
+            controller,
+            transcript_path,
+            Path(effective_audio),
+            all_segs,
+            play_seg_idx,
+            active_id,
+            play_key,
+            visible_count=len(all_segs),
+            playback_context=ctx,
+        )
+    except Exception:
+        logger.warning(
+            "Rename preview clip warm failed transcript=%s",
+            transcript_path,
+            exc_info=True,
+        )
+
+    # Active player — failures stay local to this block.
+    seg_to_play = all_segs[play_seg_idx] if play_seg_idx is not None else None
+    try:
+        render_active_clip(
+            controller,
+            transcript_path,
+            seg_to_play,
+            autoplay=autoplay,
+            playback_context=ctx,
+        )
+    except Exception:
+        logger.warning(
+            "Rename preview active clip failed transcript=%s",
+            transcript_path,
+            exc_info=True,
+        )
+        st.warning(_sanitised_clip_warning())
+
+    for i, seg in enumerate(all_segs):
+        col_time, col_text, col_play = st.columns([1, 5, 0.5])
+        with col_time:
+            st.caption(f"{fmt_time(seg.start)} – {fmt_time(seg.end)}")
+        with col_text:
+            text = seg.text or "_(empty)_"
+            if show_speaker_labels:
+                from transcriptx.web.services.rename_preview_clips import (
+                    effective_rename_speaker_label,
+                )
+
+                label = effective_rename_speaker_label(seg)
+                st.write(f"**{label}** — {text}")
+            else:
+                st.write(text)
+        with col_play:
+            st.button(
+                "▶",
+                key=f"{play_key}_btn_{active_id}_{i}",
+                help="Play this clip",
+                on_click=set_active_clip,
+                args=(play_key, i),
+            )
 
 
 def render_playback_panel_body(

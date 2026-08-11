@@ -5,6 +5,10 @@ Used by the Corrections Studio Streamlit page. All business logic is in
 CorrectionService; the controller is a thin DB-session-managing orchestrator.
 """
 
+from transcriptx.services.corrections_studio.bulk_generation import (
+    BulkCorrectionsGenerationService,
+    BulkGenerationMode,
+)
 from transcriptx.services.corrections_studio.compile import (
     CompiledStudioApply,
     compile_studio_to_engine_apply,
@@ -21,6 +25,8 @@ from transcriptx.services.corrections_studio.session_service import (
 )
 
 __all__ = [
+    "BulkCorrectionsGenerationService",
+    "BulkGenerationMode",
     "CompiledStudioApply",
     "CorrectionService",
     "CorrectionsStudioController",

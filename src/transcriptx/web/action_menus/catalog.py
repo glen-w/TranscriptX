@@ -27,7 +27,7 @@ ACTIONS: tuple[ActionDef, ...] = (
         ActionId.OPEN_LIBRARY,
         "Open Library",
         ":material/folder_open:",
-        "Open the Library focused on this transcript (rename workflow when applicable).",
+        "Open the Library focused on this transcript.",
     ),
     ActionDef(
         ActionId.OPEN_TRANSCRIPT,
@@ -63,7 +63,7 @@ ACTIONS: tuple[ActionDef, ...] = (
         ActionId.RENAME,
         "Rename",
         ":material/drive_file_rename_outline:",
-        "Rename the transcript (and linked audio) via the Library rename workflow.",
+        "Rename the transcript (and linked audio) on the Rename Transcript page.",
     ),
     ActionDef(
         ActionId.RUN_SPEAKER_ID,
@@ -120,6 +120,7 @@ SECTION_ALLOWLISTS: dict[SectionId, tuple[ActionId, ...]] = {
         ActionId.OPEN_TRANSCRIPT,
         ActionId.CORRECTIONS,
         ActionId.CORRECT_IN_VIEWER,
+        ActionId.RENAME,
     ),
     SectionId.IMPORT_SUCCESS: (
         ActionId.OPEN_LIBRARY,

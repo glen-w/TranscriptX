@@ -22,6 +22,24 @@ from transcriptx.web.sidebar_state import (
 from transcriptx.web.state import LIBRARY_NAV_TRANSCRIPT_PATH
 
 
+def test_navigate_to_rename_transcript_sets_workflow_nav(monkeypatch, tmp_path) -> None:
+    from transcriptx.web import navigation as nav_mod
+    from transcriptx.web.state import WORKFLOW_NAV_TRANSCRIPT_PATH
+
+    transcript = tmp_path / "interview.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict[str, object] = {}
+    monkeypatch.setattr(
+        nav_mod,
+        "make_session_path_resolver",
+        lambda: (lambda _p: ("slug-1", None)),
+    )
+    nav_mod.navigate_to_rename_transcript(ss, transcript)
+    assert ss["page"] == "Rename Transcript"
+    assert ss[WORKFLOW_NAV_TRANSCRIPT_PATH] == str(transcript)
+    assert ss["subject_id"] == "slug-1"
+
+
 def test_library_rename_navigation_sets_canonical_context_and_one_shot_nav(
     monkeypatch, tmp_path
 ) -> None:

@@ -20,6 +20,7 @@ from transcriptx.web.action_menus.services import (
     PAGE_INSIGHTS,
     PAGE_LIBRARY,
     PAGE_OVERVIEW,
+    PAGE_RENAME_TRANSCRIPT,
     PAGE_RUN_ANALYSIS,
     PAGE_SPEAKER_ID,
     PAGE_TRANSCRIPT,
@@ -296,7 +297,7 @@ def test_open_library_with_path_sets_one_shot_library_preselect(
 
 
 @pytest.mark.unit
-def test_go_rename_uses_library_rename_workflow(
+def test_go_rename_uses_rename_transcript_page(
     monkeypatch: pytest.MonkeyPatch, transcript_env
 ) -> None:
     import transcriptx.web.action_menus.services as services
@@ -306,18 +307,18 @@ def test_go_rename_uses_library_rename_workflow(
 
     def _nav(ss, path):
         called["path"] = Path(path)
-        ss[PAGE_KEY] = PAGE_LIBRARY
-        ss[LIBRARY_NAV_TRANSCRIPT_PATH] = str(Path(path).resolve())
+        ss[PAGE_KEY] = PAGE_RENAME_TRANSCRIPT
+        ss[WORKFLOW_NAV_TRANSCRIPT_PATH] = str(path)
 
-    monkeypatch.setattr(services, "navigate_to_library_rename_workflow", _nav)
+    monkeypatch.setattr(services, "navigate_to_rename_transcript", _nav)
     monkeypatch.setattr(services, "st", SimpleNamespace(session_state=fake_ss))
 
     identity = _transcript_identity(transcript_env.transcript, slug=transcript_env.slug)
     go_rename(identity)
 
     assert called["path"] == transcript_env.transcript
-    assert fake_ss[PAGE_KEY] == PAGE_LIBRARY
-    assert LIBRARY_NAV_TRANSCRIPT_PATH in fake_ss
+    assert fake_ss[PAGE_KEY] == PAGE_RENAME_TRANSCRIPT
+    assert WORKFLOW_NAV_TRANSCRIPT_PATH in fake_ss
 
 
 @pytest.mark.unit

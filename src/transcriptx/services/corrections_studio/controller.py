@@ -4,6 +4,13 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
 
+from transcriptx.services.corrections_studio.bulk_generation import (
+    BulkCorrectionsGenerationService,
+    BulkGenerationMode,
+    BulkGenerationPreview,
+    BulkGenerationResult,
+    ProgressCallback,
+)
 from transcriptx.services.corrections_studio.manual_propose_service import (
     ManualProposeResult,
 )
@@ -24,6 +31,7 @@ class CorrectionsStudioController:
 
     def __init__(self) -> None:
         self._svc = CorrectionService()
+        self._bulk = BulkCorrectionsGenerationService(service=self._svc)
 
     def start_or_resume(self, transcript_path: str) -> StudioSessionDocument:
         return self._svc.start_or_resume_session(transcript_path)
@@ -166,3 +174,18 @@ class CorrectionsStudioController:
     def list_transcripts(self) -> List[StudioTranscriptSummary]:
         """Deprecated alias; prefer list_transcript_summaries_for_studio."""
         return self.list_transcript_summaries_for_studio()
+
+    def preview_bulk_candidate_generation(
+        self, mode: BulkGenerationMode
+    ) -> BulkGenerationPreview:
+        """Inventory + actionable counts for Settings bulk generate/regenerate."""
+        return self._bulk.preview(mode)
+
+    def run_bulk_candidate_generation(
+        self,
+        mode: BulkGenerationMode,
+        *,
+        progress_callback: Optional[ProgressCallback] = None,
+    ) -> BulkGenerationResult:
+        """Generate or regenerate candidates for every managed transcript."""
+        return self._bulk.execute(mode, progress_callback=progress_callback)
