@@ -17,8 +17,10 @@ Fragment rerun semantics (decorated entry):
   some other reason.  Plain st.rerun() defaults to scope="app" and causes a
   full-page rerun, defeating the purpose of the fragment.
 
-Cold foreground generation remains synchronous by design: if a pre-warm job
-has not finished yet, get_clip_bytes() blocks until ffmpeg completes.
+Cold foreground generation remains available via ``get_clip_bytes`` for
+callers that explicitly need it. ``render_active_clip`` is non-blocking:
+cache hit plays immediately; miss/inflight enqueues warm work and keeps an
+idle player mounted so the Streamlit script does not wait on ffmpeg.
 
 Cache is disk-backed and cross-session/process-agnostic.  Session state
 controls only UI behaviour and warm triggers, not clip ownership.
@@ -493,11 +495,15 @@ def render_active_clip(
     playback_context: Optional[PlaybackContext] = None,
 ) -> None:
     """
-    Render ``st.audio`` for one segment, or a sanitised warning on failure.
+    Render ``st.audio`` for one segment, or a preparing / warning state.
 
     When ``segment`` is None, mounts a silent idle clip so the player widget
     stays in the layout. First-play must not insert a new audio block above
     the transcript (Streamlit scrolls that into view).
+
+    Uses cache-or-enqueue only — never joins warm Futures or runs synchronous
+    ffmpeg on the Streamlit script path. Re-click ▶ (or the next fragment
+    interaction after warm completes) plays the clip.
 
     Failures are caught locally so surrounding transcript UI stays usable and
     another segment can be selected without clearing the fragment.
@@ -509,14 +515,26 @@ def render_active_clip(
         resolved_audio = (
             playback_context.audio_path if playback_context is not None else None
         )
-        clip_bytes = controller.get_clip_bytes(
+        clip_bytes = controller.get_cached_clip_bytes(
             transcript_path,
             segment.start,
             segment.end,
             format="mp3",
             audio_path=resolved_audio,
         )
-        st.audio(clip_bytes, format="audio/mpeg", autoplay=autoplay)
+        if clip_bytes:
+            st.audio(clip_bytes, format="audio/mpeg", autoplay=autoplay)
+            return
+        controller.enqueue_clip(
+            transcript_path,
+            segment.start,
+            segment.end,
+            format="mp3",
+            audio_path=resolved_audio,
+        )
+        # Keep layout stable while the clip warms in the background.
+        st.audio(_IDLE_CLIP_MP3, format="audio/mpeg", autoplay=False)
+        st.caption("Preparing clip… click ▶ again in a moment.")
     except Exception:
         logger.warning(
             "Clip generation failed transcript=%s segment_index=%s start=%s end=%s",

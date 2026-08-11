@@ -10,11 +10,13 @@ import pytest
 from transcriptx.core.pipeline.run_schema import MANIFEST_TYPE_RUN
 from transcriptx.web.models.search import NavRequest, SegmentRef, TranscriptRef
 from transcriptx.web.transcript_view_state import (
+    SEGMENTS_PAGE_SIZE,
     consume_nav_request,
     filtered_display_segments,
     resolve_transcript_artifacts,
     segment_has_named_speaker,
     transcript_context_result,
+    window_display_segments,
 )
 
 
@@ -88,6 +90,26 @@ def test_filtered_display_segments_search_skips_unnamed() -> None:
     )
     assert [idx for idx, _ in display] == [0]
     assert caption == "Showing 1 of 2 segments"
+
+
+def test_window_display_segments_truncates_and_captions() -> None:
+    display = [(i, {"text": str(i)}) for i in range(120)]
+    windowed, shown, caption = window_display_segments(
+        display, shown=SEGMENTS_PAGE_SIZE, jump_index=None
+    )
+    assert shown == SEGMENTS_PAGE_SIZE
+    assert len(windowed) == SEGMENTS_PAGE_SIZE
+    assert caption == f"Showing {SEGMENTS_PAGE_SIZE} of 120 segments"
+
+
+def test_window_display_segments_includes_jump_beyond_window() -> None:
+    display = [(i, {"text": str(i)}) for i in range(100)]
+    windowed, shown, caption = window_display_segments(
+        display, shown=SEGMENTS_PAGE_SIZE, jump_index=80
+    )
+    assert shown == 81
+    assert windowed[-1][0] == 80
+    assert caption == "Showing 81 of 100 segments"
 
 
 def test_transcript_context_result_requires_slug_and_run_id() -> None:

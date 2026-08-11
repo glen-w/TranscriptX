@@ -7,7 +7,7 @@ import re
 import streamlit as st
 import yaml
 
-from transcriptx.web.blocks import register_builtin_blocks  # noqa: F401 — side effect
+from transcriptx.web.blocks import register_builtin_blocks
 from transcriptx.web.blocks.availability import check_block_availability
 from transcriptx.web.blocks.composer import render_layout_page
 from transcriptx.web.blocks.layout_picker import render_layout_profile_picker

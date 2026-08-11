@@ -401,14 +401,27 @@ def test_render_active_clip_success_and_failure(
     )
 
     controller = MagicMock()
-    controller.get_clip_bytes.return_value = b"mp3"
+    controller.get_cached_clip_bytes.return_value = b"mp3"
     seg = SegmentInfo(index=2, start=1.0, end=2.0, text="x", speaker="A")
     panel.render_active_clip(controller, "/t.json", seg, autoplay=True)
     assert audio_calls
     assert audio_calls[0][1]["format"] == "audio/mpeg"
     assert audio_calls[0][1]["autoplay"] is True
+    controller.get_clip_bytes.assert_not_called()
+    controller.enqueue_clip.assert_not_called()
 
-    controller.get_clip_bytes.side_effect = FileNotFoundError("/secret/path.wav")
+    audio_calls.clear()
+    captions: list[str] = []
+    monkeypatch.setattr(panel.st, "caption", lambda msg: captions.append(msg))
+    controller.get_cached_clip_bytes.return_value = None
+    panel.render_active_clip(controller, "/t.json", seg, autoplay=True)
+    controller.enqueue_clip.assert_called_once()
+    assert audio_calls
+    assert audio_calls[0][0][0] == panel._IDLE_CLIP_MP3
+    assert any("Preparing clip" in c for c in captions)
+
+    controller.enqueue_clip.side_effect = FileNotFoundError("/secret/path.wav")
+    controller.get_cached_clip_bytes.return_value = None
     panel.render_active_clip(controller, "/t.json", seg, autoplay=True)
     assert warnings
     assert "/secret" not in warnings[0]
@@ -569,7 +582,7 @@ def test_render_active_clip_vanished_audio_after_preflight(
     monkeypatch.setattr(panel.st, "audio", lambda *a, **k: None)
     monkeypatch.setattr(panel.st, "warning", lambda msg: warnings.append(msg))
     controller = MagicMock()
-    controller.get_clip_bytes.side_effect = FileNotFoundError(
+    controller.get_cached_clip_bytes.side_effect = FileNotFoundError(
         "No audio file found for transcript: /secret/t.json"
     )
     seg = SegmentInfo(index=0, start=0.0, end=1.0, text="x", speaker="A")
@@ -577,13 +590,14 @@ def test_render_active_clip_vanished_audio_after_preflight(
     assert warnings
     assert "/secret" not in warnings[0]
     # Selecting another segment still works after failure.
-    controller.get_clip_bytes.side_effect = None
-    controller.get_clip_bytes.return_value = b"ok"
+    controller.get_cached_clip_bytes.side_effect = None
+    controller.get_cached_clip_bytes.return_value = b"ok"
     audio_calls: list[Any] = []
     monkeypatch.setattr(panel.st, "audio", lambda *a, **k: audio_calls.append((a, k)))
     other = SegmentInfo(index=1, start=1.0, end=2.0, text="y", speaker="A")
     panel.render_active_clip(controller, "/t.json", other, autoplay=True)
     assert audio_calls
+    controller.get_clip_bytes.assert_not_called()
 
 
 def test_controller_close_shuts_clip_service(tmp_path: Path) -> None:

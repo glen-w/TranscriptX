@@ -371,7 +371,7 @@ def render_transcript_karaoke_clip(
         resolved_audio = (
             playback_context.audio_path if playback_context is not None else None
         )
-        clip_bytes = controller.get_clip_bytes(
+        clip_bytes = controller.get_cached_clip_bytes(
             transcript_path,
             segment.start,
             segment.end,
@@ -379,7 +379,21 @@ def render_transcript_karaoke_clip(
             audio_path=resolved_audio,
         )
         if not clip_bytes:
-            st.warning(_sanitised_clip_warning())
+            controller.enqueue_clip(
+                transcript_path,
+                segment.start,
+                segment.end,
+                format="mp3",
+                audio_path=resolved_audio,
+            )
+            render_active_clip(
+                controller,
+                transcript_path,
+                None,
+                autoplay=False,
+                playback_context=playback_context,
+            )
+            st.caption("Preparing clip… click ▶ again in a moment.")
             return None
         if model.mode == "segment":
             st.caption(

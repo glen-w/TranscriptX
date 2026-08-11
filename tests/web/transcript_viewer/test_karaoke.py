@@ -213,9 +213,10 @@ def test_render_transcript_karaoke_clip_idle_and_success(
     controller = MagicMock()
     assert kp.render_transcript_karaoke_clip(controller, "/t.json", None, None) is None
     assert idle_calls
+    controller.get_cached_clip_bytes.assert_not_called()
     controller.get_clip_bytes.assert_not_called()
 
-    controller.get_clip_bytes.return_value = b"mp3bytes"
+    controller.get_cached_clip_bytes.return_value = b"mp3bytes"
     seg = SegmentInfo(
         index=0, start=10.0, end=14.0, text="Hello world today", speaker="Ada"
     )
@@ -259,7 +260,7 @@ def test_render_transcript_karaoke_clip_degrades_and_sanitises_errors(
     monkeypatch.setattr(kp.st, "warning", lambda msg: warnings.append(msg))
 
     controller = MagicMock()
-    controller.get_clip_bytes.return_value = b"x"
+    controller.get_cached_clip_bytes.return_value = b"x"
     seg = SegmentInfo(index=1, start=0.0, end=1.0, text="plain", speaker="A")
     model = kp.render_transcript_karaoke_clip(
         controller,
@@ -271,8 +272,30 @@ def test_render_transcript_karaoke_clip_degrades_and_sanitises_errors(
     assert model is not None
     assert model.mode == "segment"
     assert any("Word timings missing" in c for c in captions)
+    controller.get_clip_bytes.assert_not_called()
 
-    controller.get_clip_bytes.side_effect = FileNotFoundError("/secret/path.wav")
+    idle_calls: list[object] = []
+    monkeypatch.setattr(
+        kp,
+        "render_active_clip",
+        lambda *a, **k: idle_calls.append((a, k)),
+    )
+    controller.get_cached_clip_bytes.return_value = None
+    out = kp.render_transcript_karaoke_clip(
+        controller,
+        "/t.json",
+        seg,
+        {"text": "plain", "start": 0.0, "end": 1.0},
+        autoplay=True,
+    )
+    assert out is None
+    controller.enqueue_clip.assert_called()
+    assert idle_calls
+    assert any("Preparing clip" in c for c in captions)
+
+    controller.enqueue_clip.side_effect = FileNotFoundError("/secret/path.wav")
+    controller.get_cached_clip_bytes.return_value = None
+    warnings.clear()
     out = kp.render_transcript_karaoke_clip(
         controller,
         "/t.json",

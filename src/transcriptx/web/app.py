@@ -30,26 +30,13 @@ install_speechbrain_watcher_noise_filter()
 
 import streamlit as st
 
-try:
-    from transcriptx.web.page_modules.corrections_studio import (
-        is_corrections_studio_enabled,
-        render_corrections_studio,
-    )
-
-    _corrections_studio_available = is_corrections_studio_enabled()
-except ImportError:
-    _corrections_studio_available = False
-    render_corrections_studio = None  # type: ignore[misc, assignment]
-
 from transcriptx.core.utils.logger import get_logger
-import transcriptx.web.blocks  # noqa: F401 — register built-in view blocks
 from transcriptx.web.components.context_bar import render_context_bar
 from transcriptx.web.layout import apply_page_layout, page_uses_wide_layout
 from transcriptx.web.navigation import (
     page_requires_workspace_hydration,
     should_show_context_bar,
 )
-from transcriptx.web.page_modules.transcript import navigate_to_segment
 from transcriptx.web.perf import (
     finish_run,
     instrument_cached_call,
@@ -66,6 +53,29 @@ from transcriptx.web.state import PAGE_KEY
 logger = get_logger()
 
 configure_streamlit_page()
+
+
+def navigate_to_segment(*args, **kwargs):
+    """Lazy re-export — avoids importing the Transcript page on cold start."""
+    from transcriptx.web.page_modules.transcript import (
+        navigate_to_segment as _navigate_to_segment,
+    )
+
+    return _navigate_to_segment(*args, **kwargs)
+
+
+def _corrections_studio_gate() -> tuple[bool, object | None]:
+    """Defer Corrections Studio import until sidebar/router need it."""
+    try:
+        from transcriptx.web.page_modules.corrections_studio import (
+            is_corrections_studio_enabled,
+            render_corrections_studio,
+        )
+    except ImportError:
+        return False, None
+    if not is_corrections_studio_enabled():
+        return False, None
+    return True, render_corrections_studio
 
 
 def _init_defaults() -> None:
@@ -144,6 +154,7 @@ def main() -> None:
     # Shell CSS first, then one complete width rule for this rerun.
     inject_global_styles()
     apply_page_layout(wide=page_uses_wide_layout(current_page))
+    corrections_available, render_corrections_studio = _corrections_studio_gate()
     try:
         with section(
             "sidebar.render",
@@ -153,7 +164,7 @@ def main() -> None:
             with st.sidebar:
                 render_sidebar(
                     current_page=current_page,
-                    corrections_studio_available=_corrections_studio_available,
+                    corrections_studio_available=corrections_available,
                     prerequisites=PAGE_PREREQUISITES,
                 )
 
@@ -171,7 +182,7 @@ def main() -> None:
             ):
                 route_current_page(
                     st.session_state,
-                    corrections_studio_available=_corrections_studio_available,
+                    corrections_studio_available=corrections_available,
                     render_corrections_studio=render_corrections_studio,
                 )
         except Exception as exc:
