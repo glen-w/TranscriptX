@@ -12,14 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Theme C (high-interaction workspaces):** shared `SpeakerIdActionService` (revisioned command/ack) used by legacy Speaker ID callbacks; non-blocking ClipService APIs (`cached_clip_status` / `get_cached_clip_bytes` / `enqueue_clip`); packaged Streamlit Components v2 `transcriptx-workspaces` Speaker ID surface (transcript-scoped keys, ClipTransport base64, prefetch budgets; **feature flag default-off** until Docker wheel install + Streamlit browser suite gates); Corrections revisioned command protocol on the studio page; PlaybackHost handoff for Theme D; Playwright browser harness; design docs under `docs/dev/theme_c_*.md`.
-
-### Changed
-
-- Speaker ID CCv2 workspace feature flag defaults **on** after browser harness green; rollback with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`. Legacy `@st.fragment` path retained until Phase 9 retirement criteria.
-
-### Added
-
+- **Theme B (corrections in the Transcript viewer):** Correct mode supports word/span propose, atomic accept-and-apply for the current candidate, and scoped corrected-sidecar writes without overwriting the managed original. Corrections Studio remains the batch/detector/LLM review surface (Start/Resume no longer auto-generates). Guide: [docs/runtime/corrections-viewer.md](docs/runtime/corrections-viewer.md).
+- **Theme C (high-interaction workspaces):** shared `SpeakerIdActionService` (revisioned command/ack) used by legacy Speaker ID callbacks; non-blocking ClipService APIs (`cached_clip_status` / `get_cached_clip_bytes` / `enqueue_clip`); packaged Streamlit Components v2 `transcriptx-workspaces` Speaker ID surface (transcript-scoped keys, ClipTransport base64, prefetch budgets; **feature flag default-off** until Docker wheel install + Streamlit browser suite gates — enable with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=1`, rollback with `=0`); Corrections revisioned command protocol on the studio page; PlaybackHost handoff for Theme D; Playwright browser harness; design docs under `docs/dev/theme_c_*.md`. Legacy `@st.fragment` Speaker ID path retained until Phase 9 retirement criteria.
+- **Workflow walkthroughs:** five outcome-focused Sphinx user guides under [docs/workflows/](docs/workflows/index.md) (import → speaker trust → investigate → optional local AI → export) with screenshots/GIFs and a shared planning-review fixture.
 - Overview artifact ZIP export writes selection-scoped **`index.epub`** beside **`index.html`** when `ebooklib` is available (`[visualization]` / `[full]` / Docker `requirements.txt`). Guide: [docs/runtime/export.md](docs/runtime/export.md); limits: [docs/known_limitations.md](docs/known_limitations.md).
 - Unit coverage for subprocess-isolated BERTopic fit helpers, raw config unwrap/validation messages, and export chart-prep / transcript-meta helpers.
 

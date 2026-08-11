@@ -1,7 +1,8 @@
+Type: PRODUCT
+Authority: self
+
 # Theme C invest / narrow / defer decision
 
-Type: DEVELOPER  
-Authority: self  
 Status: provisional after Phase 3 scaffolding  
 Date: 2026-08-10
 

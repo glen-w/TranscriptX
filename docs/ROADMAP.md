@@ -22,7 +22,7 @@ Authority: self
 - Contracts for storage, run outcomes, outputs, and public surfaces
 - Package on a **0.9.x** stabilisation track toward 1.0
 
-Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**.
+Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Early 1.x: Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **in progress** (default-off). Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
 
 ---
 
@@ -76,8 +76,8 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | Theme | Intent | Suggested timing |
 |-------|--------|------------------|
 | A. Insights & analysis quality | Stronger deterministic/hybrid insights; clearer result UX | Early 1.x |
-| B. Corrections & transcript editing | Word-level propose/apply in the reader; studio as batch/review | Early 1.x |
-| C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections (and later rich edit) | Near-term 1.x — **in progress** (action service + CCv2 kit; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md)) |
+| B. Corrections & transcript editing | Word-level propose/apply in the reader; studio as batch/review | Early 1.x — **done** ([corrections-viewer.md](runtime/corrections-viewer.md)) |
+| C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections (and later rich edit) | Near-term 1.x — **[~] in progress** (default-off; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md)) |
 | D. Playback & reading UX | Karaoke-style word highlight; reader polish that Components unlock | With / after C |
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
 | F. Library & organisation | Transcript tagging; Groups interaction rules | Mid 1.x |

@@ -1,6 +1,11 @@
+Type: GUIDE
+Authority: docs/runtime/STORAGE.md
+
 # Corrections in the Transcript viewer
 
 Theme B adds word/span propose–apply while reading. Corrections Studio remains the batch detector/LLM review surface.
+
+Storage and sidecar layout for corrected transcripts follow the [storage contract](STORAGE.md). This page describes Correct-mode behaviour only.
 
 ## Correct mode
 

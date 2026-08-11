@@ -55,12 +55,17 @@ print(result.success, result.status, result.errors)
 
 More: [generated CLI / API notes](docs/generated/cli.md) · [public surfaces](docs/public_surfaces.md).
 
+### Public surfaces
+
+Supported interfaces are defined only in [docs/public_surfaces.md](docs/public_surfaces.md) (GUI, Python API, managed import, Docker). There is no analysis CLI beyond the Streamlit launcher (`transcriptx` / `python -m transcriptx.web`).
+
 ## What it does today
 
 - Modular, dependency-aware analysis pipeline with structured, traceable outputs
 - Speaker, interaction, sentiment, emotion, NER, topics, similarity, voice/prosody
 - Groups: analyse multiple transcripts together (file-backed); optional local LLM synthesis
 - File-first by default — groups, corrections, speaker maps, and discovery use files/sidecars
+- Transcript viewer **Correct mode** for word/span propose/apply (Corrections Studio for batch/review)
 
 ## Architecture (brief)
 
@@ -68,12 +73,13 @@ More: [generated CLI / API notes](docs/generated/cli.md) · [public surfaces](do
 
 ## Direction
 
-Stabilisation toward a credible **1.0** (schema epoch; Guided/demo trialled in **0.9.6** then removed; automatable harden + public landing **0.9.7**; then unfamiliar-user validation) — not feature-count sprawl. Longer term: personal audio intelligence companion (optional local STT, playback polish, installable shell — see 1.x themes). See [ROADMAP.md](docs/ROADMAP.md) and [pre_release_roadmap_1_0.md](docs/dev/pre_release_roadmap_1_0.md).
+Stabilisation toward a credible **1.0** (schema epoch through **0.9.9** Overview presentation; Guided/demo trialled in **0.9.6** then removed; then unfamiliar-user validation) — not feature-count sprawl. Longer term: personal audio intelligence companion (optional local STT, playback polish, installable shell — see 1.x themes). See [ROADMAP.md](docs/ROADMAP.md) and [pre_release_roadmap_1_0.md](docs/dev/pre_release_roadmap_1_0.md).
 
 ## Links
 
 - [Website](website/index.html) (modest public landing; GitHub Pages workflow)
 - [Comparison](docs/comparison.md) — TranscriptX vs STT, meeting assistants, and CI products
+- [Using TranscriptX: five workflows](docs/workflows/index.md) — screenshot walkthroughs
 - [User docs index](docs/USER_INDEX.md)
 - [Developer docs index](docs/DEV_INDEX.md)
 - [Contract index](docs/CONTRACT_INDEX.md)

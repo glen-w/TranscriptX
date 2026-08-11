@@ -36,7 +36,8 @@ imported = run_managed_import_workflow(
 
 result = run_analysis(AnalysisRequest(
     transcript_path=imported.json_path,
-    mode="quick",            # "quick" or "full"
+    mode="quick",            # pipeline mode: "quick" or "full"
+    analysis_preset="balanced",  # optional UI preset: quick | balanced | thorough | custom
     modules=["stats"],       # None = recommended modules
     include_unidentified_speakers=False,
 ))
