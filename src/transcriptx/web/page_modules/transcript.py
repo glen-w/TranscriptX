@@ -25,6 +25,7 @@ from transcriptx.web.components.playback_panel import (
     consume_scroll_playing,
     render_playback_unavailable,
     resolve_playback_availability,
+    sanitize_lines_shown,
     trigger_clip_warm,
 )
 from transcriptx.web.models.search import NavRequest, SegmentRef
@@ -35,9 +36,12 @@ from transcriptx.web.state import (
     PAGE_KEY,
 )
 from transcriptx.web.transcript_view_state import (
+    SEGMENTS_PAGE_SIZE,
     consume_nav_request,
     filtered_display_segments,
     resolve_transcript_artifacts,
+    segments_shown_session_key,
+    window_display_segments,
 )
 from transcriptx.web.transcript_viewer.downloads import render_download_row
 from transcriptx.web.transcript_viewer.metadata import (
@@ -542,6 +546,37 @@ def _transcript_interaction_fragment(
         size=transcript_size,
         mtime_ns=transcript_mtime_ns,
     )
+    shown_key = segments_shown_session_key(owner)
+    filter_sig = filtered_view_signature(
+        owner_identity=owner,
+        display_segments=display_segments,
+        search_text=controls.search_text,
+        jump_index=effective_jump,
+    )
+    prev_filter_sig = st.session_state.get(f"{shown_key}::filter_sig")
+    if prev_filter_sig != filter_sig:
+        st.session_state[shown_key] = SEGMENTS_PAGE_SIZE
+        st.session_state[f"{shown_key}::filter_sig"] = filter_sig
+    stored_shown = sanitize_lines_shown(
+        st.session_state.get(shown_key, SEGMENTS_PAGE_SIZE),
+        length=len(display_segments),
+        default=SEGMENTS_PAGE_SIZE,
+    )
+    total_filtered = len(display_segments)
+    display_segments, shown_count, window_caption = window_display_segments(
+        display_segments,
+        shown=stored_shown,
+        jump_index=effective_jump,
+    )
+    st.session_state[shown_key] = shown_count
+    if window_caption:
+        st.caption(window_caption)
+    if shown_count < total_filtered and st.button(
+        "Show more segments",
+        key=f"tx_show_more_segments::{owner}",
+    ):
+        st.session_state[shown_key] = shown_count + SEGMENTS_PAGE_SIZE
+        st.rerun(scope="fragment")
     targets = build_playback_targets(display_segments)
     view_sig = filtered_view_signature(
         owner_identity=owner,
@@ -596,6 +631,7 @@ def _transcript_interaction_fragment(
                 warm_pos if warm_pos is not None else None,
                 active_id=_owner_prefix(owner),
                 play_key=_PLAY_KEY,
+                visible_count=len(display_segments),
             )
             active_seg = (
                 targets.get(active_source) if active_source is not None else None

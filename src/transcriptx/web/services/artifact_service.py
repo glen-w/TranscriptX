@@ -236,16 +236,37 @@ class ArtifactService:
 
     @staticmethod
     def load_html_artifact(
-        run_root: Path, artifact: Artifact
+        run_root: Path,
+        artifact: Artifact,
+        *,
+        max_read_bytes: int | None = None,
     ) -> Optional[Dict[str, object]]:
+        """Load dynamic chart HTML, optionally refusing to read oversized files.
+
+        When ``max_read_bytes`` is set and the on-disk size exceeds it, returns
+        ``content=None`` with ``truncated=True`` without calling ``read_text``.
+        Gallery cards should prefer ``stat`` / this gate over inlining Plotly.
+        """
         if artifact.kind != "chart_dynamic":
             return None
         path = ArtifactService.resolve_artifact_source_path(run_root, artifact)
         if path is None or not path.exists():
             return None
         size = path.stat().st_size
+        if max_read_bytes is not None and size > max_read_bytes:
+            return {
+                "content": None,
+                "bytes": size,
+                "path": path,
+                "truncated": True,
+            }
         content = path.read_text(encoding="utf-8", errors="ignore")
-        return {"content": content, "bytes": size, "path": path}
+        return {
+            "content": content,
+            "bytes": size,
+            "path": path,
+            "truncated": False,
+        }
 
     @staticmethod
     def check_run_health(run_root: Path) -> Dict[str, object]:

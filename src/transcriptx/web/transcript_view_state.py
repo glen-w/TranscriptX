@@ -187,3 +187,41 @@ def filtered_display_segments(
             unit = "segment" if hidden == 1 else "segments"
             caption = f"Hiding {hidden} {unit} from unnamed speakers"
     return display_segments, caption
+
+
+# Progressive display window for the Transcript page (parity with Speaker ID lines).
+SEGMENTS_PAGE_SIZE = 50
+_SEGMENTS_SHOWN_KEY = "transcript_segments_shown"
+
+
+def window_display_segments(
+    display_segments: list[tuple[int, dict[str, Any]]],
+    *,
+    shown: int,
+    jump_index: int | None = None,
+) -> tuple[list[tuple[int, dict[str, Any]]], int, str | None]:
+    """Slice ``display_segments`` to a progressive window.
+
+    Ensures ``jump_index`` (source index) is included when present. Returns
+    ``(windowed, effective_shown, caption)``.
+    """
+    total = len(display_segments)
+    if total <= 0:
+        return [], 0, None
+    effective = max(0, int(shown))
+    if jump_index is not None:
+        for pos, (src_idx, _seg) in enumerate(display_segments):
+            if src_idx == jump_index:
+                effective = max(effective, pos + 1)
+                break
+    effective = min(max(effective, 0), total)
+    windowed = display_segments[:effective]
+    caption = None
+    if effective < total:
+        caption = f"Showing {effective} of {total} segments"
+    return windowed, effective, caption
+
+
+def segments_shown_session_key(owner_identity: str) -> str:
+    """Session key for progressive segment window, scoped by playback owner."""
+    return f"{_SEGMENTS_SHOWN_KEY}::{owner_identity}"

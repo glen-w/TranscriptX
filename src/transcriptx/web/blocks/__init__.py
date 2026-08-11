@@ -2,4 +2,4 @@
 
 from transcriptx.web.blocks.builtin import register_builtin_blocks
 
-register_builtin_blocks()
+__all__ = ["register_builtin_blocks"]

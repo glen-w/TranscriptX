@@ -43,7 +43,6 @@ from transcriptx.web.module_option_format import format_module_option
 from transcriptx.web.services import ArtifactService
 from transcriptx.web.services.artifact_service import (
     MAX_FULLSCREEN_HTML_BYTES,
-    MAX_INLINE_HTML_BYTES,
 )
 from transcriptx.core.llm_feedback.models import (
     FeedbackSurface,
@@ -202,17 +201,17 @@ def _render_chart_gallery_card(
             else:
                 st.caption("Thumbnail unavailable")
         else:
+            # Do not auto-iframe Plotly HTML in the gallery (often ~5 MiB JS each).
             st.caption("Dynamic chart (HTML)")
-            html_payload = ArtifactService.load_html_artifact(run_root, chart)
-            if html_payload:
-                size = html_payload["bytes"]
-                if size <= MAX_INLINE_HTML_BYTES:
-                    st.iframe(html_payload["content"], height=400)
-                elif size <= MAX_FULLSCREEN_HTML_BYTES:
-                    st.caption("Too large for inline preview — open full screen.")
+            path = ArtifactService.resolve_artifact_source_path(run_root, chart)
+            if path is not None and path.exists():
+                size = path.stat().st_size
+                mb = size / (1024 * 1024)
+                if size <= MAX_FULLSCREEN_HTML_BYTES:
+                    st.caption(f"{mb:.1f} MB · open full screen to view")
                 else:
                     st.caption(
-                        "Too large to render — use full screen or open artifact on disk."
+                        f"{mb:.1f} MB — too large to render; open artifact on disk."
                     )
             if st.button(
                 "⛶",
@@ -778,17 +777,19 @@ def _charts_filters_and_gallery_fragment(
                 if path and path.exists():
                     st.image(Image.open(path), width="stretch")
             else:
-                html_payload = ArtifactService.load_html_artifact(run_root, selected)
+                html_payload = ArtifactService.load_html_artifact(
+                    run_root,
+                    selected,
+                    max_read_bytes=MAX_FULLSCREEN_HTML_BYTES,
+                )
                 if not html_payload:
                     st.error("Unable to load HTML chart.")
+                elif html_payload.get("truncated") or not html_payload.get("content"):
+                    st.warning(
+                        "HTML chart is too large to render. Download instead."
+                    )
                 else:
-                    size = html_payload["bytes"]
-                    if size > MAX_FULLSCREEN_HTML_BYTES:
-                        st.warning(
-                            "HTML chart is too large to render. Download instead."
-                        )
-                    else:
-                        st.iframe(html_payload["content"], height=700)
+                    st.iframe(html_payload["content"], height=700)
             if show_llm_summary:
                 llm_text = resolve_chart_llm_description(run_root, selected)
                 if llm_text:

@@ -10,11 +10,13 @@ import pytest
 from transcriptx.core.pipeline.run_schema import MANIFEST_TYPE_RUN
 from transcriptx.web.models.search import NavRequest, SegmentRef, TranscriptRef
 from transcriptx.web.transcript_view_state import (
+    SEGMENTS_PAGE_SIZE,
     consume_nav_request,
     filtered_display_segments,
     resolve_transcript_artifacts,
     segment_has_named_speaker,
     transcript_context_result,
+    window_display_segments,
 )
 
 
@@ -88,6 +90,49 @@ def test_filtered_display_segments_search_skips_unnamed() -> None:
     )
     assert [idx for idx, _ in display] == [0]
     assert caption == "Showing 1 of 2 segments"
+
+
+def test_window_display_segments_truncates_and_captions() -> None:
+    display = [(i, {"text": str(i)}) for i in range(120)]
+    windowed, shown, caption = window_display_segments(
+        display, shown=SEGMENTS_PAGE_SIZE, jump_index=None
+    )
+    assert shown == SEGMENTS_PAGE_SIZE
+    assert len(windowed) == SEGMENTS_PAGE_SIZE
+    assert caption == f"Showing {SEGMENTS_PAGE_SIZE} of 120 segments"
+
+
+def test_window_display_segments_includes_jump_beyond_window() -> None:
+    display = [(i, {"text": str(i)}) for i in range(100)]
+    windowed, shown, caption = window_display_segments(
+        display, shown=SEGMENTS_PAGE_SIZE, jump_index=80
+    )
+    assert shown == 81
+    assert windowed[-1][0] == 80
+    assert caption == "Showing 81 of 100 segments"
+
+
+def test_window_display_segments_show_more_increases_cap() -> None:
+    display = [(i, {"text": str(i)}) for i in range(120)]
+    first, shown, _ = window_display_segments(
+        display, shown=SEGMENTS_PAGE_SIZE, jump_index=None
+    )
+    assert len(first) == SEGMENTS_PAGE_SIZE
+    second, shown2, caption = window_display_segments(
+        display, shown=shown + SEGMENTS_PAGE_SIZE, jump_index=None
+    )
+    assert shown2 == SEGMENTS_PAGE_SIZE * 2
+    assert len(second) == SEGMENTS_PAGE_SIZE * 2
+    assert caption == f"Showing {SEGMENTS_PAGE_SIZE * 2} of 120 segments"
+
+
+def test_transcript_page_wires_show_more_and_visible_count() -> None:
+    source = Path("src/transcriptx/web/page_modules/transcript.py").read_text(
+        encoding="utf-8"
+    )
+    assert "Show more segments" in source
+    assert "visible_count=len(display_segments)" in source
+    assert "window_display_segments" in source
 
 
 def test_transcript_context_result_requires_slug_and_run_id() -> None:
