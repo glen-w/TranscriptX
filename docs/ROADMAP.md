@@ -188,9 +188,11 @@ Recorder devices often cut long sessions into chunks. Today:
 
 Automatically notice new recordings (and/or transcript files) in a monitored folder and offer or run admit/transcribe pipelines.
 
-- Today: folder import exists for **transcript** admission candidates — extend carefully toward **audio → STT → import** once theme **H** (or a host STT service) exists
-- Design: watch scope, debounce, size limits, failure surfacing, Docker bind-mount honesty, no silent library corruption
+- **Phase 1 (landed):** default-off watcher service + Settings → Watcher; transcript **New → Import** via `admit_and_register`; audio **offer** queues `queued_transcription` (no STT yet). Ops guide: [runtime/directory_watcher.md](runtime/directory_watcher.md)
+- Today: folder import also exists for **manual** transcript admission — watcher reuses the same admission primitives
+- Design: watch scope, debounce + stability, size limits, failure surfacing, Docker bind-mount honesty, no silent library corruption
 - Prefer explicit user enablement; default-off on shared machines
+- **Next:** audio → host STT → import once theme **H** (or a host STT service) exists; optional host-side watcher helper if in-process lifecycle is insufficient
 
 ---
 
