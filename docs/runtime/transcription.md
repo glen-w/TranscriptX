@@ -20,7 +20,7 @@ We intentionally removed in-app transcription forms and `subprocess` orchestrati
 
 **Why not merge stacks?** Transcription jobs are long-running and toolchain-heavy (ffmpeg, HF tokens, model weights, platform quirks). Keeping engines out of the analysis container avoids bloating the image, avoids coupling releases, and matches how most users already arrive (JSON from an external tool).
 
-**Future (1.x):** optional **in-app / host-orchestrated transcription** (NVIDIA Parakeet/Canary + Whisper-class, CUDA/CPU, YouTube ingest, directory watcher) is a post-1.0 product theme — see [ROADMAP.md](../ROADMAP.md) theme **H**. A **host-side HTTP transcribe service** (same pattern as Ollama via `host.docker.internal`) remains a leading architecture option so the GUI can orchestrate jobs without running heavy STT inside every analysis container. Until that ships, 1.0 stays BYO + command generation.
+**Future (1.x):** optional **in-app / host-orchestrated transcription** (NVIDIA Parakeet/Canary + Whisper-class, CUDA/CPU, YouTube ingest, directory watcher) is a post-1.0 product theme — see [ROADMAP.md](../ROADMAP.md) theme **H**. A **host-side HTTP transcribe service** (same pattern as Ollama via `host.docker.internal`) remains a leading architecture option so the GUI can orchestrate jobs without running heavy STT inside every analysis container. Until that ships, 1.0 stays BYO + command generation. Optional **directory watcher** for transcript auto-import (and audio queue) is theme **G2** — see [directory_watcher.md](directory_watcher.md).
 
 ## Transcribe Audio page (command generator)
 

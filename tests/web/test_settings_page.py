@@ -21,6 +21,7 @@ _SETTINGS_TABS = (
     "Configuration",
     "Analysis",
     "Storage",
+    "Watcher",
     "Speakers",
     "Interface",
     "Models",
@@ -70,6 +71,9 @@ def test_settings_page_invokes_all_panels(monkeypatch) -> None:
         mod, "render_storage_panel", lambda: panel_calls.append(("storage", {}))
     )
     monkeypatch.setattr(
+        mod, "render_watcher_panel", lambda: panel_calls.append(("watcher", {}))
+    )
+    monkeypatch.setattr(
         mod, "render_speakers_panel", lambda: panel_calls.append(("speakers", {}))
     )
     monkeypatch.setattr(
@@ -92,6 +96,7 @@ def test_settings_page_invokes_all_panels(monkeypatch) -> None:
         "configuration",
         "analysis",
         "storage",
+        "watcher",
         "speakers",
         "interface",
         "models",
@@ -137,6 +142,7 @@ def test_settings_page_passes_resolved_run_dir(monkeypatch, tmp_path) -> None:
     )
     monkeypatch.setattr(mod, "render_analysis_presets_panel", lambda: None)
     monkeypatch.setattr(mod, "render_storage_panel", lambda: None)
+    monkeypatch.setattr(mod, "render_watcher_panel", lambda: None)
     monkeypatch.setattr(mod, "render_speakers_panel", lambda: None)
     monkeypatch.setattr(mod, "render_interface_panel", lambda: None)
     monkeypatch.setattr(mod, "render_models_panel", lambda: None)
@@ -180,6 +186,7 @@ def test_settings_page_surfaces_panel_errors(monkeypatch) -> None:
     monkeypatch.setattr(mod, "render_configuration_panel", _boom)
     monkeypatch.setattr(mod, "render_analysis_presets_panel", lambda: None)
     monkeypatch.setattr(mod, "render_storage_panel", lambda: None)
+    monkeypatch.setattr(mod, "render_watcher_panel", lambda: None)
     monkeypatch.setattr(mod, "render_speakers_panel", lambda: None)
     monkeypatch.setattr(mod, "render_interface_panel", lambda: None)
     monkeypatch.setattr(mod, "render_models_panel", lambda: None)

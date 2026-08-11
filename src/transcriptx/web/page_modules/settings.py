@@ -16,6 +16,7 @@ from transcriptx.web.ui.settings import (
     render_questions_panel,
     render_speakers_panel,
     render_storage_panel,
+    render_watcher_panel,
 )
 
 _SETTINGS_TAB_KEY = "settings_hub_selected_tab"
@@ -24,6 +25,7 @@ _SETTINGS_TABS: tuple[str, ...] = (
     "Configuration",
     "Analysis",
     "Storage",
+    "Watcher",
     "Speakers",
     "Interface",
     "Models",
@@ -71,6 +73,8 @@ def render_settings_page() -> None:
                     render_analysis_presets_panel()
                 elif label == "Storage":
                     render_storage_panel()
+                elif label == "Watcher":
+                    render_watcher_panel()
                 elif label == "Speakers":
                     render_speakers_panel()
                 elif label == "Interface":

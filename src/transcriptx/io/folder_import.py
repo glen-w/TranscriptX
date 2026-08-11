@@ -604,6 +604,291 @@ def eligible_candidates(handle: ScanHandle) -> list[FolderImportCandidate]:
     return [c for c in handle.candidates if c.status in ELIGIBLE_STATUSES]
 
 
+def classify_inbox_file(
+    path: Path | str,
+    *,
+    transcripts_dir: str | Path | None = None,
+    expected_dev: int | None = None,
+    expected_ino: int | None = None,
+    expected_size: int | None = None,
+    expected_mtime_ns: int | None = None,
+) -> FolderImportCandidate:
+    """Classify a single inbox path using the same rules as folder scan."""
+    path = Path(path)
+    transcripts_root = resolve_transcripts_root(transcripts_dir)
+    max_bytes = get_max_import_file_bytes()
+
+    try:
+        st = os.lstat(path)
+    except OSError as exc:
+        return FolderImportCandidate(
+            path=str(path),
+            basename=path.name,
+            display_stem=path.stem,
+            conflict_key=normalize_conflict_stem(path.stem),
+            status=CandidateStatus.UNREADABLE,
+            secondary_detail=str(exc),
+        )
+
+    if not extension_is_supported(path.name):
+        return FolderImportCandidate(
+            path=str(path),
+            basename=path.name,
+            display_stem=path.stem,
+            conflict_key=normalize_conflict_stem(path.stem),
+            status=CandidateStatus.UNREADABLE,
+            secondary_detail="Unsupported extension for transcript import.",
+            st_dev=st.st_dev,
+            st_ino=st.st_ino,
+            size=st.st_size,
+            mtime_ns=getattr(st, "st_mtime_ns", int(st.st_mtime * 1_000_000_000)),
+        )
+
+    if stat.S_ISLNK(st.st_mode):
+        return FolderImportCandidate(
+            path=str(path),
+            basename=path.name,
+            display_stem=path.stem,
+            conflict_key=normalize_conflict_stem(path.stem),
+            status=CandidateStatus.SYMLINK,
+            secondary_detail="Symlinks are not imported.",
+            st_dev=st.st_dev,
+            st_ino=st.st_ino,
+            size=st.st_size,
+            mtime_ns=getattr(st, "st_mtime_ns", int(st.st_mtime * 1_000_000_000)),
+        )
+    if not stat.S_ISREG(st.st_mode):
+        return FolderImportCandidate(
+            path=str(path),
+            basename=path.name,
+            display_stem=path.stem,
+            conflict_key=normalize_conflict_stem(path.stem),
+            status=CandidateStatus.SPECIAL_FILE,
+            secondary_detail="Special files are not imported.",
+            st_dev=st.st_dev,
+            st_ino=st.st_ino,
+            size=st.st_size,
+            mtime_ns=getattr(st, "st_mtime_ns", int(st.st_mtime * 1_000_000_000)),
+        )
+
+    if expected_dev is not None and st.st_dev != expected_dev:
+        return FolderImportCandidate(
+            path=str(path),
+            basename=path.name,
+            display_stem=path.stem,
+            conflict_key=normalize_conflict_stem(path.stem),
+            status=CandidateStatus.UNREADABLE,
+            secondary_detail="File identity changed since detection (device mismatch).",
+            st_dev=st.st_dev,
+            st_ino=st.st_ino,
+            size=st.st_size,
+            mtime_ns=getattr(st, "st_mtime_ns", int(st.st_mtime * 1_000_000_000)),
+        )
+    if expected_ino is not None and st.st_ino != expected_ino:
+        return FolderImportCandidate(
+            path=str(path),
+            basename=path.name,
+            display_stem=path.stem,
+            conflict_key=normalize_conflict_stem(path.stem),
+            status=CandidateStatus.UNREADABLE,
+            secondary_detail="File identity changed since detection (inode mismatch).",
+            st_dev=st.st_dev,
+            st_ino=st.st_ino,
+            size=st.st_size,
+            mtime_ns=getattr(st, "st_mtime_ns", int(st.st_mtime * 1_000_000_000)),
+        )
+    if expected_size is not None and st.st_size != expected_size:
+        return FolderImportCandidate(
+            path=str(path),
+            basename=path.name,
+            display_stem=path.stem,
+            conflict_key=normalize_conflict_stem(path.stem),
+            status=CandidateStatus.UNREADABLE,
+            secondary_detail="File size changed since detection.",
+            st_dev=st.st_dev,
+            st_ino=st.st_ino,
+            size=st.st_size,
+            mtime_ns=getattr(st, "st_mtime_ns", int(st.st_mtime * 1_000_000_000)),
+        )
+    mtime_ns = getattr(st, "st_mtime_ns", int(st.st_mtime * 1_000_000_000))
+    if expected_mtime_ns is not None and mtime_ns != expected_mtime_ns:
+        return FolderImportCandidate(
+            path=str(path),
+            basename=path.name,
+            display_stem=path.stem,
+            conflict_key=normalize_conflict_stem(path.stem),
+            status=CandidateStatus.UNREADABLE,
+            secondary_detail="File modification time changed since detection.",
+            st_dev=st.st_dev,
+            st_ino=st.st_ino,
+            size=st.st_size,
+            mtime_ns=mtime_ns,
+        )
+
+    try:
+        resolved = path.resolve(strict=False)
+    except OSError:
+        resolved = path
+    if is_under_directory(resolved, transcripts_root):
+        return FolderImportCandidate(
+            path=str(path),
+            basename=path.name,
+            display_stem=path.stem,
+            conflict_key=normalize_conflict_stem(path.stem),
+            status=CandidateStatus.MANAGED_STORAGE,
+            secondary_detail="Resolved path enters managed transcripts storage.",
+            st_dev=st.st_dev,
+            st_ino=st.st_ino,
+            size=st.st_size,
+            mtime_ns=mtime_ns,
+        )
+
+    try:
+        basename = sanitize_upload_basename(path.name)
+        target = derive_canonical_target(basename, transcripts_dir=transcripts_root)
+    except AdmissionError as exc:
+        return FolderImportCandidate(
+            path=str(path),
+            basename=path.name,
+            display_stem=path.stem,
+            conflict_key=normalize_conflict_stem(path.stem),
+            status=CandidateStatus.UNREADABLE,
+            secondary_detail=str(exc),
+            st_dev=st.st_dev,
+            st_ino=st.st_ino,
+            size=st.st_size,
+            mtime_ns=mtime_ns,
+        )
+
+    status: CandidateStatus | None = None
+    secondary = ""
+    try:
+        assert_within_import_size_limit(st.st_size, max_bytes=max_bytes)
+    except AdmissionError as exc:
+        status = CandidateStatus.TOO_LARGE
+        secondary = str(exc)
+
+    if status is None:
+        inspection = inspect_managed_artifact_state(
+            target.target_json, transcripts_dir=transcripts_root
+        )
+        if inspection.state is ManagedArtifactState.ALREADY_MANAGED:
+            status = CandidateStatus.ALREADY_MANAGED
+            try:
+                from transcriptx.core.utils.canonicalization import (
+                    compute_transcript_identity_hash,
+                )
+                from transcriptx.core.utils.slug_manager import registration_is_valid
+                import json as _json
+
+                with open(target.target_json, "r", encoding="utf-8") as handle:
+                    doc = _json.load(handle)
+                segments = doc.get("segments") if isinstance(doc, dict) else None
+                if isinstance(segments, list) and segments:
+                    identity = compute_transcript_identity_hash(segments)
+                    if not registration_is_valid(target.target_json, identity):
+                        status = CandidateStatus.NEEDS_REGISTRATION
+                        secondary = (
+                            "Managed artifacts exist but registration is missing."
+                        )
+            except Exception:
+                pass
+        elif inspection.state is ManagedArtifactState.INCOMPLETE_REPAIRABLE:
+            status = CandidateStatus.INCOMPLETE_REPAIRABLE
+            secondary = inspection.detail
+        elif inspection.state is ManagedArtifactState.INCOMPLETE_UNREPAIRABLE:
+            status = CandidateStatus.INCOMPLETE_UNREPAIRABLE
+            secondary = inspection.detail
+        elif inspection.state is ManagedArtifactState.INCONSISTENT:
+            status = CandidateStatus.INCONSISTENT
+            secondary = inspection.detail
+        else:
+            status = CandidateStatus.NEW
+
+    return FolderImportCandidate(
+        path=str(path),
+        basename=basename,
+        display_stem=target.display_stem,
+        conflict_key=target.conflict_key,
+        status=status,
+        secondary_detail=secondary,
+        st_dev=st.st_dev,
+        st_ino=st.st_ino,
+        size=st.st_size,
+        mtime_ns=mtime_ns,
+    )
+
+
+def admit_inbox_candidate(cand: FolderImportCandidate) -> AdmitOutcome:
+    """Admit one classified inbox candidate (copy snapshot → admit_and_register)."""
+    if cand.status not in ELIGIBLE_STATUSES:
+        return AdmitOutcome(
+            kind=AdmitOutcomeKind.UNSUPPORTED_OR_INVALID_INPUT,
+            transcript_path=None,
+            slug=None,
+            artifact_committed=False,
+            registration_progressed=False,
+            user_safe_detail=f"{cand.basename}: status {cand.status.value} is not eligible.",
+        )
+
+    path = Path(cand.path)
+    snapshot: Path | None = None
+    try:
+        _fd, content = _open_nofollow_verify(
+            path,
+            expected_dev=cand.st_dev,
+            expected_ino=cand.st_ino,
+            expected_size=cand.size,
+            expected_mtime_ns=cand.mtime_ns,
+        )
+        assert_within_import_size_limit(len(content))
+        snapshot = _write_app_snapshot(cand.basename, content)
+        outcome = admit_and_register(
+            snapshot,
+            logical_basename=cand.basename,
+            staging_cleanup=StagingCleanupPolicy.APP_IMPORTS_ONLY,
+            allow_provenance_backfill=False,
+            expected_size=len(content),
+        )
+        return AdmitOutcome(
+            kind=outcome.kind,
+            transcript_path=outcome.transcript_path,
+            slug=outcome.slug,
+            artifact_committed=outcome.artifact_committed,
+            registration_progressed=outcome.registration_progressed,
+            user_safe_detail=f"{cand.basename}: {outcome.user_safe_detail}",
+        )
+    except AdmissionError as exc:
+        if snapshot is not None:
+            try:
+                snapshot.unlink(missing_ok=True)
+            except OSError:
+                pass
+        return AdmitOutcome(
+            kind=AdmitOutcomeKind.STALE_CANDIDATE,
+            transcript_path=None,
+            slug=None,
+            artifact_committed=False,
+            registration_progressed=False,
+            user_safe_detail=f"{cand.basename}: {exc}",
+        )
+    except Exception as exc:
+        logger.exception("Inbox admit failed for %s", cand.path)
+        if snapshot is not None:
+            try:
+                snapshot.unlink(missing_ok=True)
+            except OSError:
+                pass
+        return AdmitOutcome(
+            kind=AdmitOutcomeKind.UNEXPECTED_FAILURE,
+            transcript_path=None,
+            slug=None,
+            artifact_committed=False,
+            registration_progressed=False,
+            user_safe_detail=f"{cand.basename}: Unexpected failure: {exc}",
+        )
+
+
 def import_folder_candidates(
     handle: ScanHandle,
     *,

@@ -10,6 +10,7 @@ from .models_panel import render_models_panel
 from .questions_panel import render_questions_panel
 from .speakers_panel import render_speakers_panel
 from .storage_panel import render_storage_panel
+from .watcher_panel import render_watcher_panel
 from .widgets import render_field_widget
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "render_questions_panel",
     "render_speakers_panel",
     "render_storage_panel",
+    "render_watcher_panel",
 ]

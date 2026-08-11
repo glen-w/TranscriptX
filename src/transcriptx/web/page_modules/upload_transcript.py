@@ -169,6 +169,22 @@ def _render_folder_import_section() -> None:
         "never deleted or modified."
     )
 
+    try:
+        from transcriptx.services.watcher import get_watcher_service
+
+        watcher_status = get_watcher_service().status()
+        if watcher_status.enabled:
+            paths = ", ".join(watcher_status.watch_paths) or "(no paths)"
+            imported = watcher_status.job_counts.get("imported", 0)
+            queued = watcher_status.job_counts.get("queued_transcription", 0)
+            running = "running" if watcher_status.running else "enabled but not running"
+            st.info(
+                f"Directory watcher {running}: {paths} — "
+                f"{imported} imported, {queued} queued. Configure in Settings → Watcher."
+            )
+    except Exception:
+        pass
+
     path_value = st.text_input(
         "Folder path (absolute)",
         key=_KEY_FOLDER_PATH,

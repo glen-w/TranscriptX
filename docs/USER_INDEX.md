@@ -15,6 +15,7 @@ Curated entry points for people using TranscriptX (not repository historians).
 | [Comparison](comparison.md) | TranscriptX vs STT, meeting assistants, and CI products |
 | [Installation](runtime/installation.md) | Install profiles and configuration |
 | [Transcription](runtime/transcription.md) | External transcription workflows |
+| [Directory watcher](runtime/directory_watcher.md) | Optional inbox watch → import (default-off) |
 | [Docker](runtime/docker.md) | Compose-based runtime |
 | [NOTICE](../NOTICE) | Third-party model / dataset notice |
 | [Known limitations](known_limitations.md) | User-facing limits (experimental, optional stacks, AI, privacy, EPUB, Speaker ID CCv2 rollback) |

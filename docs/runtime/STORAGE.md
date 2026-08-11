@@ -122,6 +122,9 @@ data_dir/                       # app-managed working state
     transcriptx.db
     processing_state.json
     speaker_profiles.lock       # project operation lock for speaker profile mutations
+  watcher/                      # directory watcher (G2) job records + activity; optional
+    jobs/                       # *.json per watched-file job
+    activity.jsonl              # append-only activity log
   backups/
     wav/
     processing_state/
