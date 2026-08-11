@@ -335,6 +335,20 @@
     "sensitivity": "normal",
     "type": "int"
   },
+  "analysis.highlights.thresholds.min_quote_chars": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 24,
+    "description": "",
+    "key": "analysis.highlights.thresholds.min_quote_chars",
+    "max": null,
+    "min": null,
+    "path": "analysis.highlights.thresholds.min_quote_chars",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
   "analysis.highlights.thresholds.min_quote_words": {
     "advanced": false,
     "category": "analysis",

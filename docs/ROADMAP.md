@@ -22,7 +22,7 @@ Authority: self
 - Contracts for storage, run outcomes, outputs, and public surfaces
 - Package on a **0.9.x** stabilisation track toward 1.0
 
-Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Early 1.x: Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **in progress** (default-off). Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
+Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Early 1.x: Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **in progress** (default-on); Theme **D** Transcript karaoke MVP. Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
 
 ---
 
@@ -77,8 +77,8 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 |-------|--------|------------------|
 | A. Insights & analysis quality | Stronger deterministic/hybrid insights; clearer result UX | Early 1.x |
 | B. Corrections & transcript editing | Word-level propose/apply in the reader; studio as batch/review | Early 1.x — **done** ([corrections-viewer.md](runtime/corrections-viewer.md)) |
-| C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections (and later rich edit) | Near-term 1.x — **[~] in progress** (default-off; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md)) |
-| D. Playback & reading UX | Karaoke-style word highlight; reader polish that Components unlock | With / after C |
+| C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections (and later rich edit) | Near-term 1.x — **[~] in progress** (default-on; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md)) |
+| D. Playback & reading UX | Karaoke-style word highlight; reader polish that Components unlock | With / after C — **[~] Transcript karaoke MVP** |
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
 | F. Library & organisation | Transcript tagging; Groups interaction rules | Mid 1.x |
 | G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher | Mid 1.x (merge = former §1.2) |
@@ -97,6 +97,8 @@ Public positioning today: [comparison.md](comparison.md). Analysis backlog: [ana
 ### A. Insights & analysis quality
 
 Insights and related analysis presentation work for 1.0; do not freeze quality here.
+
+Design: [theme_a_insights_quality.md](dev/theme_a_insights_quality.md).
 
 - Stronger **deterministic** outputs (clearer, more useful non-LLM / hybrid insights; less noise)
 - Reassess **GUI layout** for Insights and analysis result surfaces (hierarchy, scannability, what to show first)
@@ -131,7 +133,7 @@ Speaker ID is reaching Streamlit’s architectural edge; TranscriptX as a whole 
 
 **Trajectory:** Streamlit shell + Python domain services + specialised frontend components for workstation-like interactions.
 
-**Implementation status (2026-08):** Phase −1 `SpeakerIdActionService` shared by legacy + CCv2; non-blocking ClipService APIs; packaged `transcriptx-workspaces` CCv2 Speaker ID surface (feature-flagged, **default-off** until Docker install + Streamlit browser suite gates; enable with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=1`); Corrections revisioned command protocol wired through `CorrectionsActionService` on the legacy studio page; PlaybackHost handoff for Theme D; legacy fragment path retained until Phase 9 criteria. Design authority: [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
+**Implementation status (2026-08):** Phase −1 `SpeakerIdActionService` shared by legacy + CCv2; non-blocking ClipService APIs; packaged `transcriptx-workspaces` CCv2 Speaker ID surface (**default-on**; rollback with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`; missing package falls through to legacy); Corrections revisioned command protocol wired through `CorrectionsActionService` on the legacy studio page; PlaybackHost handoff for Theme D; legacy fragment path retained until Phase 9 criteria. Design authority: [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
 
 ---
 
@@ -139,9 +141,11 @@ Speaker ID is reaching Streamlit’s architectural edge; TranscriptX as a whole 
 
 Builds on theme C (and existing playback surfaces). Inspired by polished self-hosted readers (e.g. Scriberr); keep analysis-first — do not become a notes-only app.
 
-- **Karaoke-style playback** — synchronised **word-by-word** (or tight span) highlighting during audio playback; seek-from-text ↔ seek-from-audio. Requires reliable word-level timings in imported or in-app transcripts.
-- Follow-along scrolling, clearer active-segment emphasis, and annotation/highlight affordances that do not fight Streamlit reruns (prefer Components v2 where needed)
-- Honesty: degrade gracefully when word timings are missing (segment-level only); never invent timings
+**Implementation status (2026-08):** Transcript viewer MVP landed — browser-local karaoke clip player with word-by-word highlight when imported `words[]` timings cover the clip; segment-level highlight + honesty caption when timings are missing/edited-null; Playing badge + follow-along scroll; seek-from-word inside the karaoke panel; `TranscriptKaraokeHost` implements the PlaybackHost contract without streaming `current_time` to Python. Continuous full-file karaoke and CCv2-native reader surface remain follow-ons.
+
+- **Karaoke-style playback** — synchronised **word-by-word** (or tight span) highlighting during audio playback; seek-from-text ↔ seek-from-audio. Requires reliable word-level timings in imported or in-app transcripts. **[x] clip-scoped MVP in Transcript** · [ ] continuous media / full-file seek
+- Follow-along scrolling, clearer active-segment emphasis, and annotation/highlight affordances that do not fight Streamlit reruns (prefer Components v2 where needed) — **[~] Playing emphasis + scroll on ▶**; CCv2-native reader polish still open
+- Honesty: degrade gracefully when word timings are missing (segment-level only); never invent timings — **[x]**
 
 ---
 
@@ -246,6 +250,8 @@ Automatically notice new recordings (and/or transcript files) in a monitored fol
 ### K. External STT command generation (bridge)
 
 Until/beside theme **H**, keep improving **copyable host commands** on Transcribe Audio: whispermlx / whispermlx-missing (Apple MLX), WhisperX Docker, Whisper-WebUI, plus further CUDA Linux / CPU CLIs as needed. Still copy/run-on-host only (no in-container MLX; no silent orchestration). Import remains the GUI admission gate for BYO files.
+
+**Saved presets:** Transcribe Audio can save/load/delete command-gen form presets under `.transcriptx/profiles/stt_commands/` (host paths and flags only — never `HF_TOKEN`; tokens stay in `whisperx.env`).
 
 ---
 

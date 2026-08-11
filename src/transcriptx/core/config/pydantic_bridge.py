@@ -17,6 +17,8 @@ from transcriptx.core.utils.config.analysis import (
     EmotionLexicalConfig,
     FineGrainedEmotionConfig,
     HighlightsConfig,
+    InsightEligibilityConfig,
+    InsightsConfig,
     MomentsConfig,
     MomentumConfig,
     PausesConfig,
@@ -99,6 +101,8 @@ from .models.speaker_exemplars import SpeakerExemplarsSettingsModel
 from .models.transcript_quality import TranscriptQualitySettingsModel
 from .models.epistemic_markers import EpistemicMarkersSettingsModel
 from .models.keyphrases import KeyphrasesSettingsModel
+from .models.insights import InsightsSettingsModel
+from .models.insight_eligibility import InsightEligibilitySettingsModel
 from .models.politeness import PolitenessSettingsModel
 from .models.topic_shift import TopicShiftSettingsModel
 from .models.summary import SummarySettingsModel
@@ -321,6 +325,20 @@ PYDANTIC_REGISTRY_PILOTS: tuple[PydanticPilotSpec, ...] = (
         dotpath_prefix="analysis.summary",
         category="analysis",
         dataclass_type=SummaryConfig,
+    ),
+    PydanticPilotSpec(
+        pilot_id="insights",
+        model=InsightsSettingsModel,
+        dotpath_prefix="analysis.insights",
+        category="analysis",
+        dataclass_type=InsightsConfig,
+    ),
+    PydanticPilotSpec(
+        pilot_id="insight_eligibility",
+        model=InsightEligibilitySettingsModel,
+        dotpath_prefix="analysis.insight_eligibility",
+        category="analysis",
+        dataclass_type=InsightEligibilityConfig,
     ),
     PydanticPilotSpec(
         pilot_id="corrections",

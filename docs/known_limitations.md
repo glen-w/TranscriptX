@@ -46,13 +46,13 @@ are excluded from feeding subsequent export resolvers if re-selected.
 
 Charts-only ZIP export remains HTML-only (no EPUB) in this release.
 
-## Speaker ID Components v2 workspace (opt-in)
+## Speaker ID Components v2 workspace
 
 An experimental Streamlit Components v2 Speaker Identification workspace ships in
 the ``transcriptx-workspaces`` package (installed in Docker images; optional for
-native GUI). It stays **default-off**. Enable with
-``TX_SPEAKER_ID_WORKSPACE_COMPONENT=1``; roll back with ``=0``. The legacy
-Speaker ID fragment UI remains the default until Phase 5 gates. See
+native GUI). It is **default-on** when the package is present. Roll back with
+``TX_SPEAKER_ID_WORKSPACE_COMPONENT=0``. If the package is missing, Speaker ID
+falls through to the classic fragment UI automatically. See
 [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
 
 ## Install honesty (Mac MPS)

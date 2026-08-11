@@ -222,7 +222,11 @@ def _render_theme_and_idea_lists(
             st.write(f"- {phrase}")
         else:
             total = float((row.get("score") or {}).get("total", 0.0))
-            st.write(f"- {phrase} ({total:.3f})")
+            confidence = str(row.get("confidence") or "").strip()
+            if confidence:
+                st.write(f"- {phrase} ({total:.3f}, {confidence})")
+            else:
+                st.write(f"- {phrase} ({total:.3f})")
         shown += 1
         if shown >= theme_cap:
             break
@@ -276,13 +280,15 @@ def _style_detail_rows(style_markers: dict) -> list[dict[str, Any]]:
 
 
 def _render_insights_payload(
-    insights: Dict[str, Any], *, focus: str = "all"
+    insights: Dict[str, Any], *, focus: str = "all", display_cap: int | None = None
 ) -> None:
     from transcriptx.web.insights_presentation import (
+        FULL_THEME_ROW_CAP,
         GUIDED_RANKED_ROW_CAP,
         MODULE_PLAIN_DESCRIPTIONS,
         is_insights_guided,
     )
+    from transcriptx.core.utils.config import get_config
 
     guided = is_insights_guided()
     captions = {
@@ -305,10 +311,29 @@ def _render_insights_payload(
     if not isinstance(style_markers, dict):
         style_markers = {}
 
-    theme_cap = GUIDED_RANKED_ROW_CAP if guided else 8
-    idea_cap = GUIDED_RANKED_ROW_CAP if guided else 8
+    status = str(insights.get("status") or "ok")
+    try:
+        insights_cfg = get_config().analysis.insights
+        overview_cap = int(insights_cfg.counts.overview_theme_cap)
+        full_cap = int(insights_cfg.counts.top_themes)
+    except Exception:
+        overview_cap = 5
+        full_cap = FULL_THEME_ROW_CAP
+    if display_cap is not None:
+        theme_cap = int(display_cap)
+    elif guided:
+        theme_cap = GUIDED_RANKED_ROW_CAP
+    else:
+        # Insights Full default; Overview callers should pass overview_theme_cap.
+        theme_cap = full_cap if full_cap > 0 else overview_cap
+    idea_cap = theme_cap
     show_content = focus in {"all", "content"}
     show_style = focus in {"all", "style"}
+
+    if show_content and status == "insufficient_signal":
+        st.info("Not enough clear content themes in this transcript.")
+        key_themes = []
+        recurring_ideas = []
 
     has_themes = any(
         str(row.get("phrase") or "").strip()
@@ -347,7 +372,8 @@ def _render_insights_payload(
     style_empty = show_style and not style_rows
     if (show_content or show_style) and content_empty and style_empty:
         if focus == "content":
-            st.info("No meaningful themes or recurring ideas for this transcript.")
+            if status != "insufficient_signal":
+                st.info("No meaningful themes or recurring ideas for this transcript.")
         elif focus == "style":
             st.info("No meaningful style markers for this transcript.")
         else:
@@ -529,6 +555,30 @@ def render_insights_contract(ctx: BlockContext, placement: BlockPlacement) -> No
             ctx=ctx,
         )
         return
+    if focus in {"all", "content"}:
+        eligibility = _load_analysis_json(
+            loader, "insight_eligibility", "_insight_eligibility.json"
+        )
+        highlights = _load_analysis_json(loader, "highlights", "_highlights.json")
+        if eligibility is None or highlights is None:
+            themes = insights.get("key_themes") or []
+            ideas = insights.get("recurring_ideas") or []
+            has_content = any(
+                isinstance(row, dict) and str(row.get("phrase") or "").strip()
+                for row in list(themes) + list(ideas)
+            )
+            if not has_content:
+                st.info(
+                    "Content themes need Insight eligibility and Highlights in this run."
+                )
+                if focus == "content":
+                    _render_view_raw_file_link(
+                        ctx,
+                        "insights",
+                        "_insights.json",
+                        link_key=f"insights_partial_raw_{focus_key}",
+                    )
+                    return
     _render_insights_payload(insights, focus=focus)
 
 

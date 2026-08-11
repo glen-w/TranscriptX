@@ -18,7 +18,7 @@ This document defines which TranscriptX surfaces are **supported** and which are
   - Managing basic settings exposed in the UI.
 - Use **Artifacts** (Browse / Preview / Export). Overview / Artifacts ZIP export includes selected files plus generated `index.html` and, when `ebooklib` is available, `index.epub` (see [runtime/export.md](runtime/export.md)). Legacy `Data` / `Explorer` (File List) page keys are no longer supported (removed in 0.9.7).
 - Built-in layout profile id `default` is displayed as **Standard** and is immutable; clone via Dashboard Builder.
-- **Optional (opt-in):** Speaker Identification may mount a Streamlit Components v2 workspace when `TX_SPEAKER_ID_WORKSPACE_COMPONENT=1` and `transcriptx-workspaces` is installed. Default remains the legacy fragment UI until Phase 5 gates; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
+- **Optional rollback:** Speaker Identification mounts the Streamlit Components v2 workspace by default when `transcriptx-workspaces` is installed. Roll back to the classic fragment UI with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`; missing package falls through to classic automatically. See [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
 ### 1.2 Python API
 
 - The **Python API** is a supported surface for scripting and automation.

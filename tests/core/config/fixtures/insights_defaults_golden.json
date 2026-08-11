@@ -1,0 +1,12 @@
+{
+  "counts": {
+    "overview_theme_cap": 5,
+    "top_notable_moments": 8,
+    "top_recurring_ideas": 8,
+    "top_themes": 8
+  },
+  "enabled": true,
+  "min_theme_score": 0.18,
+  "min_themes_for_signal": 2,
+  "topic_boost": 0.05
+}

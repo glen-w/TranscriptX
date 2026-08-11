@@ -24,8 +24,11 @@ from transcriptx.io.folder_import import (
     ScanHandle,
     eligible_candidates,
     import_folder_candidates,
+    is_eligible_status,
     scan_folder_for_import,
     scan_handle_still_valid,
+    status_help,
+    status_label,
 )
 from transcriptx.io.import_admission import (
     SUPPORTED_IMPORT_UPLOAD_TYPES,
@@ -159,9 +162,11 @@ def _on_scan_folder() -> None:
 def _render_folder_import_section() -> None:
     st.subheader("2. Import all from folder")
     st.caption(
-        "Scan an absolute local folder for transcript files that are not already "
-        "managed. Docker must mount the host folder into the container. Source files "
-        "are never deleted or modified."
+        "Scan an absolute local folder for supported transcript files. "
+        "Eligible statuses: **new**, **incomplete (repairable)**, and "
+        "**needs registration**. Already-managed stems and conflicts are blocked. "
+        "Docker must mount the host folder into the container. Source files are "
+        "never deleted or modified."
     )
 
     path_value = st.text_input(
@@ -174,10 +179,19 @@ def _render_folder_import_section() -> None:
     )
     _invalidate_scan_if_path_changed(path_value or "")
 
+    existing_handle = ScanHandle.from_session_dict(
+        st.session_state.get(_KEY_SCAN_HANDLE)
+    )
+    scan_label = (
+        "Rescan"
+        if existing_handle and existing_handle.closed_ok
+        else "Scan folder"
+    )
+
     col_scan, col_import = st.columns(2)
     with col_scan:
         st.button(
-            "Scan folder",
+            scan_label,
             key="import_folder_scan_btn",
             on_click=_on_scan_folder,
         )
@@ -206,17 +220,32 @@ def _render_folder_import_section() -> None:
 
     handle = ScanHandle.from_session_dict(st.session_state.get(_KEY_SCAN_HANDLE))
     if handle and handle.closed_ok:
-        counts: dict[str, int] = {}
+        eligible_count = 0
+        blocked_count = 0
+        label_counts: dict[str, int] = {}
         for cand in handle.candidates:
-            counts[cand.status.value] = counts.get(cand.status.value, 0) + 1
+            label = status_label(cand.status)
+            label_counts[label] = label_counts.get(label, 0) + 1
+            if is_eligible_status(cand.status):
+                eligible_count += 1
+            else:
+                blocked_count += 1
         st.write(
-            "Preview — " + ", ".join(f"{k}: {v}" for k, v in sorted(counts.items()))
+            f"Preview — Eligible: {eligible_count}, Blocked: {blocked_count}"
+            + (
+                " · "
+                + ", ".join(f"{k}: {v}" for k, v in sorted(label_counts.items()))
+                if label_counts
+                else ""
+            )
         )
         rows = [
             {
                 "file": c.basename,
-                "status": c.status.value,
-                "detail": c.secondary_detail,
+                "status": status_label(c.status),
+                "eligible": "yes" if is_eligible_status(c.status) else "no",
+                "audio": c.audio_hint or "none",
+                "detail": c.secondary_detail or status_help(c.status),
             }
             for c in handle.candidates
         ]
@@ -250,20 +279,17 @@ def _render_folder_import_section() -> None:
 
         progressed = False
         last_path: Path | None = None
+        success_kinds = {
+            AdmitOutcomeKind.IMPORTED_AND_REGISTERED,
+            AdmitOutcomeKind.PARTIAL_STATE_REPAIRED,
+            AdmitOutcomeKind.REGISTRATION_RECOVERED,
+        }
         for outcome in outcomes:
             if outcome.artifact_committed or outcome.registration_progressed:
                 progressed = True
-            if outcome.transcript_path is not None and outcome.kind in {
-                AdmitOutcomeKind.IMPORTED_AND_REGISTERED,
-                AdmitOutcomeKind.PARTIAL_STATE_REPAIRED,
-                AdmitOutcomeKind.REGISTRATION_RECOVERED,
-            }:
+            if outcome.transcript_path is not None and outcome.kind in success_kinds:
                 last_path = outcome.transcript_path
-            if outcome.kind in {
-                AdmitOutcomeKind.IMPORTED_AND_REGISTERED,
-                AdmitOutcomeKind.PARTIAL_STATE_REPAIRED,
-                AdmitOutcomeKind.REGISTRATION_RECOVERED,
-            }:
+            if outcome.kind in success_kinds:
                 st.success(outcome.user_safe_detail)
             elif outcome.kind in {
                 AdmitOutcomeKind.ALREADY_MANAGED,
@@ -275,8 +301,32 @@ def _render_folder_import_section() -> None:
             else:
                 st.error(outcome.user_safe_detail)
 
+        missing_audio_stems = [
+            cand.display_stem
+            for cand in eligible
+            if (cand.audio_hint or "none") == "none"
+        ]
+        if last_path is not None and missing_audio_stems:
+            stems = ", ".join(sorted(set(missing_audio_stems)))
+            st.info(
+                "No same-stem audio under recordings for: "
+                f"**{stems}**. Upload via section 3 or place "
+                "`{stem}.mp3` (or wav/m4a/…) in the recordings folder for playback linking."
+            )
+
         if progressed:
             _clear_import_caches()
+            # Auto-rescan so preview shows already_managed / updated statuses.
+            if path_value:
+                _on_scan_folder()
+                refreshed = ScanHandle.from_session_dict(
+                    st.session_state.get(_KEY_SCAN_HANDLE)
+                )
+                if refreshed and refreshed.closed_ok:
+                    st.caption(
+                        "Folder rescanned after import — open Rescan or re-render "
+                        "to refresh the preview table if needed."
+                    )
         if last_path is not None:
             st.session_state[_KEY_LAST_IMPORTED_TRANSCRIPT_PATH] = str(last_path)
 

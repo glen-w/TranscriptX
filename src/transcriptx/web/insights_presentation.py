@@ -16,7 +16,8 @@ InsightsDetailMode = Literal["guided", "full"]
 
 ANALYSIS_PAYLOAD_CACHE_KEY = "_insights_analysis_payload_cache"
 
-# Progressive-disclosure caps (legacy Guided; Full uses higher inline limits)
+# Progressive-disclosure caps (legacy Guided residual helpers; Full is default).
+# Overview / Insights content lists prefer analysis.insights.counts.overview_theme_cap.
 GUIDED_ANALYSIS_SECTION_CAP = 4
 GUIDED_RANKED_ROW_CAP = 5
 GUIDED_HIGHLIGHT_CARD_CAP = 5
@@ -24,6 +25,7 @@ GUIDED_SUMMARY_PREVIEW_CHARS = 1800
 GUIDED_METADATA_CHIP_CAP = 4
 GUIDED_MIN_HIGHLIGHT_QUOTE_CHARS = 24
 GUIDED_HIGHLIGHT_OVERLAP_IOU = 0.55
+FULL_THEME_ROW_CAP = 8
 
 # Stable presentation order for language / style / salience blocks
 # (used when grouping former Analysis placements).

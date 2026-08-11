@@ -41,6 +41,7 @@ class HighlightsThresholdsModel(BaseModel):
     conflict_spike_percentile: float = Field(default=95.0)
     min_gap_seconds: float = Field(default=30.0)
     min_quote_words: int = Field(default=4)
+    min_quote_chars: int = Field(default=24)
     max_quote_words: int = Field(default=60)
     max_consecutive_per_speaker: int = Field(default=2)
     min_phrase_len: int = Field(default=2)

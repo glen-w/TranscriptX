@@ -11,7 +11,10 @@ from transcriptx.core.analysis.highlights.core import (
     _dedupe_phrases,
     _select_phrase_examples,
 )
-from transcriptx.core.analysis.insights.analysis import _recurring_ideas, _top_phrases
+from transcriptx.core.analysis.insights.analysis import (
+    _select_recurring_ideas,
+    _select_themes,
+)
 from transcriptx.core.analysis.summary import charts_pdf
 from transcriptx.core.utils.config.analysis import HighlightsConfig
 from transcriptx.core.utils.nlp_utils import build_tic_mask
@@ -91,21 +94,77 @@ def test_dedupe_phrases_overlap_and_containment() -> None:
     assert len(deduped) < len(phrases)
 
 
-def test_top_phrases_and_recurring_ideas_edge_shapes() -> None:
-    assert _top_phrases({"content_phrases": "bad"}) == []
-    assert _top_phrases(
-        {"content_phrases": [1, {"phrase": "ok", "score": {"total": 1}}]}
-    ) == [{"phrase": "ok", "score": {"total": 1}}]
-    assert _recurring_ideas({"phrase_scores": "bad"}) == []
-    assert _recurring_ideas(
+def test_select_themes_and_recurring_ideas_edge_shapes() -> None:
+    empty_hl: dict = {"sections": {"cold_open": {"items": []}}}
+    assert (
+        _select_themes(
+            {"content_phrases": "bad"},
+            highlights=empty_hl,
+            topic_modeling={},
+            limit=8,
+            min_score=0.28,
+            topic_boost=0.05,
+        )
+        == []
+    )
+    selected = _select_themes(
+        {
+            "content_phrases": [
+                1,
+                {
+                    "phrase": "budget risk",
+                    "score": {"total": 0.9, "spread": 0.4, "recurrence": 0.4},
+                },
+                {
+                    "phrase": "launch plan",
+                    "score": {"total": 0.85, "spread": 0.35, "recurrence": 0.3},
+                },
+            ]
+        },
+        highlights=empty_hl,
+        topic_modeling={},
+        limit=8,
+        min_score=0.28,
+        topic_boost=0.05,
+    )
+    phrases = [row["phrase"] for row in selected]
+    assert "budget risk" in phrases
+    assert "launch plan" in phrases
+    assert _select_recurring_ideas(
+        {"phrase_scores": "bad"},
+        highlights=empty_hl,
+        topic_modeling={},
+        limit=8,
+        min_score=0.28,
+        topic_boost=0.05,
+    ) == []
+    recurring = _select_recurring_ideas(
         {
             "phrase_scores": {
                 "a": "x",
-                "b": {"recurrence": 0.0},
-                "c": {"recurrence": 0.5, "total": 1},
+                "b": {"recurrence": 0.0, "total": 0.9, "spread": 0.4},
+                "budget risk": {
+                    "recurrence": 0.5,
+                    "total": 0.9,
+                    "spread": 0.4,
+                },
+                "launch plan": {
+                    "recurrence": 0.4,
+                    "total": 0.85,
+                    "spread": 0.35,
+                },
             }
-        }
-    ) == [{"phrase": "c", "score": {"recurrence": 0.5, "total": 1}}]
+        },
+        highlights=empty_hl,
+        topic_modeling={},
+        limit=8,
+        min_score=0.28,
+        topic_boost=0.05,
+    )
+    rec_phrases = [row["phrase"] for row in recurring]
+    assert "budget risk" in rec_phrases
+    assert "launch plan" in rec_phrases
+    assert "b" not in rec_phrases
 
 
 def test_collect_charts_by_module_groups_and_skips_non_images(tmp_path: Path) -> None:

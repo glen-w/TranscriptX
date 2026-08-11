@@ -20,6 +20,14 @@ from transcriptx.services.transcription.command_gen import (
     generate_transcription_command,
     looks_like_container_install_path,
 )
+from transcriptx.services.transcription.stt_command_profiles import (
+    SttCommandProfileError,
+    apply_params_to_session_state,
+    delete_profile as delete_stt_profile,
+    list_profiles as list_stt_profiles,
+    load_profile as load_stt_profile,
+    save_profile as save_stt_profile,
+)
 from transcriptx.web.navigation import consume_transcription_nav_paths
 from transcriptx.web.state import PAGE_KEY
 
@@ -36,6 +44,112 @@ _TOOL_LABELS = {
 _DEFAULT_WEBUI_IMAGE = "jhj0517/whisper-webui:v1.0.8-4def223"
 _DEFAULT_WHISPERX_IMAGE = "ghcr.io/m-bain/whisperx:latest"
 
+_KEY_PENDING_LOAD = "tx_cmdgen_pending_load"
+_KEY_PRESET_SELECT = "tx_cmdgen_preset_select"
+_KEY_PRESET_SAVE_NAME = "tx_cmdgen_preset_save_name"
+_BLANK_PRESET = "—"
+
+
+def _apply_pending_preset_load() -> None:
+    """Apply a queued preset into widget keys before widgets are created."""
+    pending = st.session_state.pop(_KEY_PENDING_LOAD, None)
+    if not isinstance(pending, str) or not pending.strip():
+        return
+    try:
+        params = load_stt_profile(pending.strip())
+    except SttCommandProfileError as exc:
+        st.session_state["tx_cmdgen_preset_banner"] = ("error", str(exc))
+        return
+    apply_params_to_session_state(params, st.session_state, tool_labels=_TOOL_LABELS)
+    st.session_state["tx_cmdgen_preset_banner"] = (
+        "success",
+        f"Loaded preset “{pending.strip()}”.",
+    )
+
+
+def _render_preset_controls(params: CommandGenParams) -> None:
+    """Save / load / delete STT command presets (Theme K)."""
+    st.subheader("Saved presets")
+    st.caption(
+        "Presets store host paths and form fields only — never tokens. "
+        "HF_TOKEN stays in whisperx.env. Run generated commands on the host, "
+        "not inside the analysis container."
+    )
+    names = list_stt_profiles()
+    options = [_BLANK_PRESET, *names]
+    selected = st.selectbox(
+        "Preset",
+        options=options,
+        key=_KEY_PRESET_SELECT,
+    )
+    col_load, col_delete, col_save = st.columns(3)
+    with col_load:
+        if st.button(
+            "Load",
+            key="tx_cmdgen_preset_load",
+            disabled=selected == _BLANK_PRESET,
+        ):
+            st.session_state[_KEY_PENDING_LOAD] = selected
+            st.rerun()
+    with col_delete:
+        confirm_delete = st.checkbox(
+            "Confirm delete",
+            value=False,
+            key="tx_cmdgen_preset_confirm_delete",
+            disabled=selected == _BLANK_PRESET,
+        )
+        if st.button(
+            "Delete",
+            key="tx_cmdgen_preset_delete",
+            disabled=selected == _BLANK_PRESET or not confirm_delete,
+        ):
+            if delete_stt_profile(selected):
+                st.session_state[_KEY_PRESET_SELECT] = _BLANK_PRESET
+                st.session_state["tx_cmdgen_preset_banner"] = (
+                    "success",
+                    f"Deleted preset “{selected}”.",
+                )
+            else:
+                st.session_state["tx_cmdgen_preset_banner"] = (
+                    "error",
+                    f"Could not delete preset “{selected}”.",
+                )
+            st.rerun()
+    with col_save:
+        save_name = st.text_input(
+            "Save as",
+            value="",
+            key=_KEY_PRESET_SAVE_NAME,
+            placeholder="mac-mlx-meetings",
+        )
+        if st.button("Save", key="tx_cmdgen_preset_save"):
+            name = save_name.strip()
+            if not name or name == "default":
+                st.session_state["tx_cmdgen_preset_banner"] = (
+                    "error",
+                    "Enter a preset name (not “default”).",
+                )
+            elif save_stt_profile(name, params, overwrite=True):
+                st.session_state[_KEY_PRESET_SELECT] = name
+                st.session_state["tx_cmdgen_preset_banner"] = (
+                    "success",
+                    f"Saved preset “{name}”.",
+                )
+            else:
+                st.session_state["tx_cmdgen_preset_banner"] = (
+                    "error",
+                    f"Could not save preset “{name}”.",
+                )
+            st.rerun()
+
+    banner = st.session_state.pop("tx_cmdgen_preset_banner", None)
+    if isinstance(banner, tuple) and len(banner) == 2:
+        kind, message = banner
+        if kind == "error":
+            st.error(message)
+        else:
+            st.success(message)
+
 
 def render_transcribe_audio_page() -> None:
     """Render external transcription command generator (copy-only)."""
@@ -49,6 +163,8 @@ def render_transcribe_audio_page() -> None:
         "(not inside the Linux analysis container for whispermlx), "
         "then open **Import Transcript** to add JSON to your library."
     )
+
+    _apply_pending_preset_load()
 
     hint_paths = consume_transcription_nav_paths(st.session_state)
     default_input = ""
@@ -316,6 +432,8 @@ def render_transcribe_audio_page() -> None:
         webui_clone_dir=webui_clone_dir.strip() or "$HOME/Whisper-WebUI",
         expected_output_format=expected_output_format,
     )
+
+    _render_preset_controls(params)
 
     generated = generate_transcription_command(params)
 

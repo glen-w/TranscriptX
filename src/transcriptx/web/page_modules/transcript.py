@@ -22,7 +22,7 @@ from transcriptx.web.components.playback_panel import (
     PlaybackAvailability,
     PlaybackUnavailableReason,
     clear_playback_session_keys,
-    render_active_clip,
+    consume_scroll_playing,
     render_playback_unavailable,
     resolve_playback_availability,
     trigger_clip_warm,
@@ -503,7 +503,15 @@ def _transcript_interaction_fragment(
         load_chapter_rows,
         sticky_chapter_jump,
     )
-    from transcriptx.web.transcript_viewer.segments import scroll_jump_target_into_view
+    from transcriptx.web.transcript_viewer.segments import (
+        scroll_jump_target_into_view,
+        scroll_playing_target_into_view,
+    )
+    from transcriptx.web.transcript_viewer.karaoke_player import (
+        TranscriptKaraokeHost,
+        render_transcript_karaoke_clip,
+    )
+    from transcriptx.web.transcript_viewer.karaoke_timing import segment_dict_for_source
 
     # Jump/Play deferred widget writes must land before search/tab instantiate.
     apply_deferred_chapter_jump(st.session_state)
@@ -552,6 +560,7 @@ def _transcript_interaction_fragment(
         target = pending.get("jump_index")
         if type(target) is int and target in targets:
             st.session_state[_PLAY_KEY] = target
+            st.session_state[f"{_PLAY_KEY}_scroll_playing"] = True
 
     playback_enabled = bool(
         playback_availability.enabled
@@ -564,6 +573,8 @@ def _transcript_interaction_fragment(
         clear_playback_session_keys(_PLAY_KEY)
         playback_enabled = False
 
+    karaoke_host = TranscriptKaraokeHost()
+    active_source: int | None = None
     if not playback_availability.enabled and playback_availability.reason is not None:
         clear_playback_session_keys(_PLAY_KEY)
         render_playback_unavailable(playback_availability.reason)
@@ -574,9 +585,8 @@ def _transcript_interaction_fragment(
         try:
             controller = get_shared_speaker_studio_controller()
             ordered = ordered_playback_targets(display_segments, targets)
-            active_source = st.session_state.get(_PLAY_KEY)
-            if type(active_source) is not int:
-                active_source = None
+            raw_active = st.session_state.get(_PLAY_KEY)
+            active_source = raw_active if type(raw_active) is int else None
             warm_pos = warm_list_position(ordered, active_source)
             trigger_clip_warm(
                 controller,
@@ -590,12 +600,19 @@ def _transcript_interaction_fragment(
             active_seg = (
                 targets.get(active_source) if active_source is not None else None
             )
-            render_active_clip(
+            seg_dict = (
+                segment_dict_for_source(segments, active_source)
+                if active_source is not None
+                else None
+            )
+            model = render_transcript_karaoke_clip(
                 controller,
                 transcript_path,
                 active_seg,
+                seg_dict,
                 autoplay=True,
             )
+            karaoke_host.bind_model(model)
         except Exception:
             logger.warning(
                 "Playback rendering failed for transcript=%s; continuing text-only",
@@ -605,6 +622,7 @@ def _transcript_interaction_fragment(
             clear_playback_session_keys(_PLAY_KEY)
             render_playback_unavailable(PlaybackUnavailableReason.controller_error)
             playback_enabled = False
+            active_source = None
 
     binding: TranscriptPlaybackBinding | None = None
     if playback_enabled:
@@ -613,6 +631,7 @@ def _transcript_interaction_fragment(
             targets=targets,
             play_key=_PLAY_KEY,
             owner_prefix=_owner_prefix(owner),
+            playing_index=active_source if active_source in targets else None,
         )
 
     chapter_rows = load_chapter_rows(run_root) if run_root is not None else []
@@ -662,6 +681,14 @@ def _transcript_interaction_fragment(
     )
     if should_scroll and effective_jump is not None:
         scroll_jump_target_into_view()
+    elif consume_scroll_playing(_PLAY_KEY, st.session_state) and binding is not None:
+        if binding.playing_index is not None:
+            scroll_playing_target_into_view()
+    # Keep host capabilities discoverable for Theme D tests / future CCv2 bind.
+    st.session_state["_tx_transcript_karaoke_caps"] = {
+        "word_timing_ready": karaoke_host.capabilities().word_timing_ready,
+        "local_clock_only": karaoke_host.capabilities().local_clock_only,
+    }
 
 
 def render_transcript_viewer() -> None:
@@ -670,7 +697,8 @@ def render_transcript_viewer() -> None:
         "Transcript",
         (
             "Read diarized segments for the current run. Search filters the list; "
-            "use Turns for speaker blocks or Segments for line-by-line reading."
+            "use Turns for speaker blocks or Segments for line-by-line reading. "
+            "▶ plays a clip with karaoke word highlight when timings are present."
         ),
         badges=None,
         actions=None,

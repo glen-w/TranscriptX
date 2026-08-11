@@ -53,3 +53,22 @@ class TestRenderNarrativeMarkdown:
         md = _render_narrative_markdown({"narrative": "Text only."})
         assert "---" not in md
         assert "Prompt version" not in md
+
+
+@pytest.mark.unit
+def test_narrative_user_prompt_inherits_empty_summary_findings() -> None:
+    """Theme A: empty deterministic findings must not invent theme structure."""
+    from transcriptx.core.analysis.narrative_summary import _build_narrative_user_prompt
+
+    prompt = _build_narrative_user_prompt(
+        {
+            "overview": {"paragraph": "This session included 2 named speakers."},
+            "key_themes": {"bullets": []},
+            "tension_points": {"bullets": []},
+            "commitments": {"items": []},
+        }
+    )
+    assert "<<<FINDINGS>>>" in prompt
+    assert '"bullets": []' in prompt or '"bullets":[]' in prompt.replace(" ", "")
+    assert "Do not invent" not in prompt  # system prompt owns that rule
+    assert "budget risk" not in prompt.lower()

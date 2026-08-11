@@ -25,7 +25,7 @@ Escape Streamlit’s rerun model for workstation pages (Speaker ID → Correctio
 8. Packaged CCv2 from Streamlit `component-template` v2 layout: component-level `[[tool.streamlit.component.components]]`, assets in wheel/sdist.
 9. Dist policy: **commit built `frontend/build` assets** into the workspaces package (reproducible installs without Node at runtime). CI rebuilds and fails on drift. Lockfile + Node engines pinned.
 10. Shadow DOM = style isolation only. Render text via `textContent`. `asset_dir` is public.
-11. Feature flag default **off** until Phase 5 browser suite green on Streamlit **min (`>=1.55`) + current pin**. Legacy retired only in Phase 9.
+11. Feature flag default **on** (Phase 5). Rollback with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`. Missing `transcriptx-workspaces` falls through to legacy. Legacy retired only in Phase 9.
 
 ## Protocol
 
@@ -70,21 +70,22 @@ Revoke Blob URLs on replacement, transcript switch, and unmount.
 - Prefetch budgets held; multi-session backpressure respected
 - Record p50/p95 trigger→ack for nav/warm in CI artefacts when measured
 
-### Phase 5 (before default-on)
+### Phase 5 (default-on)
 
-- Browser suite green on Streamlit min + current
-- Rerun counts per common journey within documented budgets
-- Payload/Blob memory within budgets
+- Browser harness green (audio identity, transcript switch, keyboard suppression)
+- Docker/web images install `transcriptx-workspaces` wheel
+- Flag defaults **on**; env/session rollback retained for one release window
+- Missing package auto-falls through to legacy (does not brick Speaker ID)
 - Zero duplicate mutations under replayed `action_id`
 
 ## Feature flags
 
 | Flag | Default | Meaning |
 |------|---------|---------|
-| `speaker_id_workspace_component` | **`false`** until Docker wheel install + Streamlit browser suite gates pass (Phase 5) | CCv2 Speaker ID workspace |
+| `speaker_id_workspace_component` | **`true`** (Phase 5); rollback with env `0`/`false`/`off` | CCv2 Speaker ID workspace |
 | `corrections_workspace_component` | `false` | CCv2 Corrections |
 
-Env enable: `TX_SPEAKER_ID_WORKSPACE_COMPONENT=1`. Env rollback: `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`.
+Env enable: `TX_SPEAKER_ID_WORKSPACE_COMPONENT=1` (redundant once default-on). Env rollback: `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`.
 
 ## Frontend toolchain
 

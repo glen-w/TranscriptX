@@ -225,22 +225,23 @@ class TestResolveAnalysisPreset:
 
         quick = resolve_analysis_preset("quick")
         # voice_charts_core / prosody_dashboard depend on heavy voice_features;
-        # insights depends on heavy topic_modeling.
+        # topic_modeling remains hard-heavy. insights only optionally depends on
+        # topic_modeling (Theme A), so it may appear in quick with highlights.
         for mid in (
             "voice_charts_core",
             "prosody_dashboard",
             "voice_features",
-            "insights",
             "topic_modeling",
         ):
             assert mid not in quick.module_ids
+        assert "insights" in quick.module_ids
 
     def test_balanced_excludes_unallowlisted_heavy_dependents(self) -> None:
         from transcriptx.core.analysis.selection import resolve_analysis_preset
 
         balanced = resolve_analysis_preset("balanced")
         assert "topic_modeling" not in balanced.module_ids
-        assert "insights" not in balanced.module_ids
+        assert "insights" in balanced.module_ids
         assert "bertopic" not in balanced.module_ids
         assert "semantic_similarity" in balanced.module_ids
         assert "fine_grained_emotion" not in balanced.module_ids

@@ -32,6 +32,7 @@ class TranscriptArtifactsResult:
     txt_file: Path | None
     csv_file: Path | None
     srt_file: Path | None
+    vtt_file: Path | None
     json_file: Path | None
 
 
@@ -103,20 +104,25 @@ def resolve_transcript_artifacts(
     txt_file = None
     csv_file = None
     srt_file = None
+    vtt_file = None
     if transcripts_dir.exists():
         txt_files = list(transcripts_dir.glob(f"{base_name}-transcript.txt"))
         csv_files = list(transcripts_dir.glob(f"{base_name}-transcript.csv"))
         srt_files = list(transcripts_dir.glob(f"{base_name}-transcript.srt"))
+        vtt_files = list(transcripts_dir.glob(f"{base_name}-transcript.vtt"))
         if txt_files:
             txt_file = txt_files[0]
         if csv_files:
             csv_file = csv_files[0]
         if srt_files:
             srt_file = srt_files[0]
+        if vtt_files:
+            vtt_file = vtt_files[0]
     return TranscriptArtifactsResult(
         txt_file=txt_file,
         csv_file=csv_file,
         srt_file=srt_file,
+        vtt_file=vtt_file,
         json_file=json_file,
     )
 

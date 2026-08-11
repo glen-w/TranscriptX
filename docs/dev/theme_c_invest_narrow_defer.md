@@ -22,10 +22,9 @@ Date: 2026-08-10
 ### Narrowing
 
 - Do **not** remove the legacy Speaker ID fragment path (Phase 9 criteria).
-- Default flag remains **off** until the browser suite is green against a real
-  Streamlit app (not only the static HTML harness) on Streamlit min + current
-  **and** `transcriptx-workspaces` is installed in Docker/web images (Phase 5 gate).
-  When flipping default-on, keep flag-off rollback for one release window.
+- Speaker ID CCv2 flag is **default-on** (Phase 5). Keep flag-off rollback
+  (`TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`) for one release window. When the
+  workspaces package is missing, the page falls through to legacy automatically.
 - Corrections CCv2 UI migration follows Speaker ID default-on; protocol is ready
   and legacy Corrections Studio decisions already route through
   `CorrectionsActionService`.

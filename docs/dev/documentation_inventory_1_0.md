@@ -171,7 +171,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/workflows/local-ai-synthesis.md | Workflow 4 — local AI synthesis | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
 | docs/workflows/export-results.md | Workflow 5 — export results | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
 | docs/dev/workflow_media_capture.md | Regenerating workflow screenshots/GIFs | live | developer | current | — | retain | — | DEV_INDEX | docs/dev/CONTRIBUTING.md | no |
-| docs/dev/theme_c_workspaces_ccv2.md | Theme C CCv2 workspaces design | live | developer | current | 1.x; flag default-off | retain | — | DEV_INDEX, ROADMAP | docs/ROADMAP.md | no |
+| docs/dev/theme_c_workspaces_ccv2.md | Theme C CCv2 workspaces design | live | developer | current | 1.x; flag default-on | retain | — | DEV_INDEX, ROADMAP | docs/ROADMAP.md | no |
 | docs/dev/theme_c_invest_narrow_defer.md | Theme C invest/narrow/defer | live | developer | current | — | retain | — | DEV_INDEX | docs/dev/theme_c_workspaces_ccv2.md | no |
 | docs/dev/ui_presentation_modes.md | Guided / Full (0.9.6 trial) | — | — | — | **removed** — trialled and decided against | deleted | — | pre_release_roadmap §16 | PRODUCT.md | no |
 | docs/dev/demo_project.md | Demo project (0.9.6 trial) | — | — | — | **removed** — trialled and decided against | deleted | — | pre_release_roadmap §16 | PRODUCT.md | no |

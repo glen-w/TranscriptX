@@ -1,14 +1,17 @@
 """PlaybackHost contract for Theme D handoff (Theme C Phase 7).
 
-Persistent player API shared by Speaker ID CCv2 and future karaoke/reader
-surfaces. Does not invent word timings — consumers must check
-``has_word_timestamps`` on canonical transcripts and degrade gracefully.
+Persistent player API shared by Speaker ID CCv2 and karaoke/reader surfaces.
+Does not invent word timings — consumers must check
+``has_word_timestamps`` / karaoke coverage and degrade gracefully.
+
+Concrete Transcript bind: ``TranscriptKaraokeHost`` in
+``transcriptx.web.transcript_viewer.karaoke_player``.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Protocol
+from typing import Protocol
 
 
 @dataclass(frozen=True)

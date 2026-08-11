@@ -131,6 +131,7 @@ def test_resolve_transcript_artifacts_from_manifest_stem(
     (transcripts / "session-a-transcript.txt").write_text("hi", encoding="utf-8")
     (transcripts / "session-a-transcript.csv").write_text("c", encoding="utf-8")
     (transcripts / "session-a-transcript.srt").write_text("1", encoding="utf-8")
+    (transcripts / "session-a-transcript.vtt").write_text("WEBVTT\n", encoding="utf-8")
 
     manifest_dir = run_root / ".transcriptx"
     manifest_dir.mkdir()
@@ -160,6 +161,7 @@ def test_resolve_transcript_artifacts_from_manifest_stem(
     )
     assert arts.csv_file is not None
     assert arts.srt_file is not None
+    assert arts.vtt_file is not None
     assert arts.json_file is not None
     assert arts.json_file.resolve() == managed.resolve()
 

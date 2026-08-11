@@ -40,7 +40,7 @@ import base64
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Sequence
+from typing import Any, List, Optional, Sequence
 
 import streamlit as st
 
@@ -221,6 +221,18 @@ _fmt_time = fmt_time
 def set_active_clip(play_key: str, idx: int) -> None:
     """on_click callback: set play state before the natural fragment rerun."""
     st.session_state[play_key] = idx
+    # One-shot follow-along scroll for Theme D reading UX.
+    st.session_state[f"{play_key}_scroll_playing"] = True
+
+
+def consume_scroll_playing(play_key: str, session_state: Any | None = None) -> bool:
+    """Consume one-shot follow-along scroll request for the active play key."""
+    state = session_state if session_state is not None else st.session_state
+    key = f"{play_key}_scroll_playing"
+    if not state.get(key):
+        return False
+    state[key] = False
+    return True
 
 
 # Backward-compatible alias.
@@ -255,6 +267,8 @@ def clear_playback_session_keys(play_key: str) -> None:
     """Clear active clip and warm signature for a play key."""
     st.session_state[play_key] = None
     st.session_state[f"{play_key}_warm_sig"] = None
+    st.session_state.pop(f"{play_key}_scroll_playing", None)
+    st.session_state.pop(f"{play_key}_warm_pending", None)
 
 
 def resolve_playback_availability(

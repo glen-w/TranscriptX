@@ -1410,8 +1410,12 @@ def _render_ccv2_speaker_workspace(
     playback_ctx,
     status_badge: str,
     total_speakers: int,
-) -> None:
-    """Mount the packaged CCv2 Speaker ID workspace against the action service."""
+) -> bool:
+    """Mount the packaged CCv2 Speaker ID workspace against the action service.
+
+    Returns True when the CCv2 surface mounted. Returns False when the package
+    is unavailable so the caller can fall through to the legacy fragment UI.
+    """
     from transcriptx.web.workspaces.speaker_id_bridge import (
         build_workspace_data,
         dispatch_workspace_command,
@@ -1421,12 +1425,12 @@ def _render_ccv2_speaker_workspace(
     try:
         from transcriptx_workspaces import speaker_id_workspace
     except Exception as exc:
-        st.error(
-            "Speaker ID workspace component is enabled but could not be imported. "
-            f"Install ``transcriptx-workspaces`` or disable the feature flag. ({exc})"
+        st.warning(
+            "Speaker ID workspace component could not be imported; "
+            f"using classic Speaker ID. Install ``transcriptx-workspaces`` "
+            f"or set TX_SPEAKER_ID_WORKSPACE_COMPONENT=0. ({exc})"
         )
-        st.info("Falling back is manual: unset TX_SPEAKER_ID_WORKSPACE_COMPONENT.")
-        return
+        return False
 
     profile_ctx = _resolve_profile_context(transcript_path)
     labels = {
@@ -1511,6 +1515,7 @@ def _render_ccv2_speaker_workspace(
                 active_id=active_id,
                 profile_ctx=profile_ctx,
             )
+    return True
 
 
 # ── workspace fragment ────────────────────────────────────────────────────────
@@ -1591,11 +1596,12 @@ def _speaker_id_workspace_fragment(
         else (f"✅ **{current_name}**" if current_name.strip() else "❓ unnamed")
     )
 
-    # Theme C: optional CCv2 workspace (feature-flagged; legacy path retained).
+    # Theme C: CCv2 workspace is default-on; legacy path retained for rollback
+    # and when transcriptx-workspaces is not installed.
     from transcriptx.web.workspaces.flags import speaker_id_workspace_component_enabled
 
     if speaker_id_workspace_component_enabled(st.session_state):
-        _render_ccv2_speaker_workspace(
+        mounted = _render_ccv2_speaker_workspace(
             transcript_path=transcript_path,
             controller=controller,
             speaker_ids=speaker_ids,
@@ -1609,7 +1615,8 @@ def _speaker_id_workspace_fragment(
             status_badge=status_badge,
             total_speakers=total_speakers,
         )
-        return
+        if mounted:
+            return
 
     st.subheader(
         f"Speaker {speaker_idx + 1} / {total_speakers} — `{active_id}` {status_badge}"

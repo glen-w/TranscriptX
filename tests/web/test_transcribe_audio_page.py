@@ -40,6 +40,10 @@ def test_transcribe_audio_page_is_instruction_only():
     assert "looks_like_container_install_path" in source
     assert "/opt/venv" in source
     assert "Env file (host)" in source
+    assert "Saved presets" in source
+    assert "stt_command_profiles" in source
+    assert "tx_cmdgen_preset_save" in source
+    assert "HF_TOKEN stays in whisperx.env" in source
 
 
 @pytest.mark.unit

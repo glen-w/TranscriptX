@@ -39,6 +39,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [ADR-IMPORT-ORCHESTRATION.md](ADR-IMPORT-ORCHESTRATION.md) | Import orchestration ADR |
 | [PRODUCT.md](PRODUCT.md) | Product definition |
 | [ROADMAP.md](ROADMAP.md) | Product roadmap (0.9.x → 1.0 → 2.0) |
+| [theme_a_insights_quality.md](dev/theme_a_insights_quality.md) | Theme A insights quality (deterministic/hybrid, less noise) |
 | [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md) | Theme C CCv2 workspaces design (Speaker ID / Corrections) |
 | [theme_c_invest_narrow_defer.md](dev/theme_c_invest_narrow_defer.md) | Theme C invest/narrow/defer decision |
 | [release_governance.md](dev/release_governance.md) | Release evidence checklist |

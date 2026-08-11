@@ -105,7 +105,8 @@ def build_summary_module_definitions(
         },
         "insights": {
             "description": "Content-first insights layer separated from style markers",
-            "dependencies": ["insight_eligibility", "highlights", "topic_modeling"],
+            "dependencies": ["insight_eligibility", "highlights"],
+            "optional_dependencies": ["topic_modeling"],
             "category": "light",
             "determinism_tier": "T0",
             "requirements": [

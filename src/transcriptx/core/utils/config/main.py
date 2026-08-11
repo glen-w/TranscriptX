@@ -318,6 +318,10 @@ class TranscriptXConfig:
                 "corrections": self._config_to_dict(self.analysis.corrections),
                 "highlights": self._config_to_dict(self.analysis.highlights),
                 "summary": self._config_to_dict(self.analysis.summary),
+                "insights": self._config_to_dict(self.analysis.insights),
+                "insight_eligibility": self._config_to_dict(
+                    self.analysis.insight_eligibility
+                ),
                 "bertopic": self._config_to_dict(self.analysis.bertopic),
                 "pauses": self._config_to_dict(self.analysis.pauses),
                 "transcript_quality": self._config_to_dict(

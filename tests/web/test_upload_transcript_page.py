@@ -192,6 +192,17 @@ def test_import_page_renders_post_import_action_links() -> None:
     assert "Select it from **Library**" not in source
 
 
+def test_import_page_folder_section_has_rescan_and_labels() -> None:
+    import transcriptx.web.page_modules.upload_transcript as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "Rescan" in source
+    assert "status_label" in source
+    assert "Eligible:" in source
+    assert '"audio"' in source or "'audio'" in source
+    assert "_on_scan_folder()" in source  # post-import auto-rescan
+
+
 def test_app_workflow_menu_order_under_workflow() -> None:
     from transcriptx.web.navigation import pages_in_section
 
