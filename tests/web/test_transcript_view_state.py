@@ -112,6 +112,29 @@ def test_window_display_segments_includes_jump_beyond_window() -> None:
     assert caption == "Showing 81 of 100 segments"
 
 
+def test_window_display_segments_show_more_increases_cap() -> None:
+    display = [(i, {"text": str(i)}) for i in range(120)]
+    first, shown, _ = window_display_segments(
+        display, shown=SEGMENTS_PAGE_SIZE, jump_index=None
+    )
+    assert len(first) == SEGMENTS_PAGE_SIZE
+    second, shown2, caption = window_display_segments(
+        display, shown=shown + SEGMENTS_PAGE_SIZE, jump_index=None
+    )
+    assert shown2 == SEGMENTS_PAGE_SIZE * 2
+    assert len(second) == SEGMENTS_PAGE_SIZE * 2
+    assert caption == f"Showing {SEGMENTS_PAGE_SIZE * 2} of 120 segments"
+
+
+def test_transcript_page_wires_show_more_and_visible_count() -> None:
+    source = Path("src/transcriptx/web/page_modules/transcript.py").read_text(
+        encoding="utf-8"
+    )
+    assert "Show more segments" in source
+    assert "visible_count=len(display_segments)" in source
+    assert "window_display_segments" in source
+
+
 def test_transcript_context_result_requires_slug_and_run_id() -> None:
     both = transcript_context_result(ok=True, session_slug="meet", run_id="r1")
     assert both.selected_session == "meet/r1"

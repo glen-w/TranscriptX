@@ -61,3 +61,11 @@ def test_charts_gallery_card_source_avoids_iframe_for_dynamic() -> None:
     assert "st.iframe" not in card_body
     assert "load_html_artifact" not in card_body
     assert "open full screen to view" in card_body
+
+
+def test_charts_fullscreen_uses_max_read_bytes_gate() -> None:
+    source = Path(
+        "src/transcriptx/web/page_modules/charts.py"
+    ).read_text(encoding="utf-8")
+    assert "max_read_bytes=MAX_FULLSCREEN_HTML_BYTES" in source
+    assert 'html_payload.get("truncated")' in source
