@@ -57,11 +57,30 @@ On **group** runs, content blocks show:
 
 Overview **module metrics** use summary extractors under `web/summary_extractors/`. Zip export summaries for LLM prose/list modules are resolved in `transcriptx.export.resolve`.
 
+## Layout preset catalog
+
+Built-in YAML lives under `web/layouts/presets/`. The generated `all` layout is not a YAML file.
+
+| Id | Title | Intent |
+|----|-------|--------|
+| `default` | Standard | Everyday curated Overview + sectioned Insights (product default) |
+| `executive` | Executive | Metrics / health / export Overview; summary + actions + highlights |
+| `meeting_followup` | Meeting follow-up | Post-meeting extracts, commitments, highlights |
+| `speaker_focus` | Speakers | Speaker cards + linguistic Insights stack |
+| `minimal` | Minimal | Hero + glance + status; lean Insights (summary + highlights) |
+| `developer_debug` | Developer debug | Inspection / layout testing |
+| `all` | All | Every registered block, alphabetical (generated) |
+
+Curated Insights placements should set `section:` (`summary` | `speakers` | `actions` | `highlights`) so Insights local navigation stays coherent. Public envelope is **schema_version 1** only.
+
 ## Adding a layout
 
-1. Copy `presets/default.yaml` to `data/profiles/ui_layouts/my_layout.yaml` (or add a new preset).
-2. Validate via Dashboard Builder **Schema** mode or `LayoutProfileStore.validate_layout_dict`.
+1. Copy `presets/default.yaml` (or another curated preset) to `data/profiles/ui_layouts/my_layout.yaml`, **or** add a new built-in under `presets/` and register the id in `BUILTIN_LAYOUT_IDS` + layout picker labels.
+2. Validate via Dashboard Builder **Schema** mode or `LayoutProfileStore.validate_layout_dict` / `validate_layout`.
 3. Set `active_layout_profile_id` in session state or use the Dashboard Builder selector.
+4. Prefer **Save as custom layout** in Dashboard Builder for user clones (overwrite confirmation + delete support).
+
+See [dashboard_builder.md](dashboard_builder.md) for Schema / Preview / save / delete workflows.
 
 ## BlockContext
 

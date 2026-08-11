@@ -20,12 +20,15 @@ pages:
     blocks:
       - placement_id: exec_summary
         block_id: executive_summary
+        section: summary
         visible: true
       - placement_id: exec_commitments
         block_id: commitments_table
+        section: actions
         visible: true
       - placement_id: exec_action_items
         block_id: llm_action_items_block
+        section: actions
         visible: true
         params:
           title: Meeting extracts
@@ -33,4 +36,14 @@ pages:
           empty_hint: Run the `llm_action_items` module (with LLM enabled) to populate this view.
       - placement_id: exec_highlights
         block_id: highlights
+        section: highlights
+        visible: true
+  charts:
+    page_id: charts
+    blocks:
+      - placement_id: exec_charts_overview
+        block_id: chart_overview_slots
+        visible: true
+      - placement_id: exec_charts_gallery
+        block_id: chart_gallery
         visible: true

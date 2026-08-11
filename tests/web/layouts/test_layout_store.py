@@ -8,7 +8,21 @@ import pytest
 
 from transcriptx.web.blocks.builtin import register_builtin_blocks
 from transcriptx.web.blocks.registry import clear_registry_for_tests
-from transcriptx.web.layouts.store import LayoutProfileStore, LayoutValidationError
+from transcriptx.web.layouts.store import (
+    BUILTIN_LAYOUT_IDS,
+    LayoutProfileStore,
+    LayoutValidationError,
+    slugify_layout_id,
+)
+
+_CURATED_PRESETS = (
+    "default",
+    "executive",
+    "meeting_followup",
+    "speaker_focus",
+    "minimal",
+    "developer_debug",
+)
 
 
 @pytest.fixture(autouse=True)
@@ -20,16 +34,113 @@ def _registry():
 
 
 def test_preset_layout_yaml_loads() -> None:
-    for layout_id in ("default", "executive", "developer_debug", "all"):
+    for layout_id in (*_CURATED_PRESETS, "all"):
         spec = LayoutProfileStore.load_layout(layout_id)
         assert spec.id == layout_id
-        assert spec.schema_version in (1, 2)
+        assert spec.schema_version == 1
+        assert LayoutProfileStore.is_builtin(layout_id)
     default = LayoutProfileStore.load_layout("default")
     assert default.title == "Standard"
-    assert default.schema_version == 1
     overview_ids = [b.block_id for b in default.pages["overview"].blocks]
     assert overview_ids[0] == "transcript_summary_hero"
     assert "export_panel" not in overview_ids
+
+
+def test_builtin_layout_ids_match_presets() -> None:
+    assert BUILTIN_LAYOUT_IDS == frozenset(
+        {
+            "default",
+            "executive",
+            "meeting_followup",
+            "speaker_focus",
+            "minimal",
+            "developer_debug",
+            "all",
+        }
+    )
+    listed = LayoutProfileStore.list_layouts()
+    for layout_id in BUILTIN_LAYOUT_IDS:
+        assert layout_id in listed
+
+
+def test_curated_presets_insights_sections_are_set() -> None:
+    """Shipped YAML presets (except developer_debug / all) tag Insights sections."""
+    for layout_id in (
+        "default",
+        "executive",
+        "meeting_followup",
+        "speaker_focus",
+        "minimal",
+    ):
+        layout = LayoutProfileStore.load_layout(layout_id)
+        insights = layout.pages["insights"].blocks
+        assert insights, layout_id
+        assert all(b.section for b in insights), layout_id
+        assert "charts" in layout.pages
+
+
+def test_meeting_followup_preset_structure() -> None:
+    layout = LayoutProfileStore.load_layout("meeting_followup")
+    assert layout.title == "Meeting follow-up"
+    overview = [b.block_id for b in layout.pages["overview"].blocks]
+    assert overview == [
+        "transcript_summary_hero",
+        "action_items_compact",
+        "highlights_compact",
+        "at_a_glance",
+        "run_status_compact",
+    ]
+    insights = layout.pages["insights"].blocks
+    assert [b.block_id for b in insights if b.section == "actions"] == [
+        "llm_action_items_block",
+        "commitments_table",
+    ]
+
+
+def test_speaker_focus_preset_structure() -> None:
+    layout = LayoutProfileStore.load_layout("speaker_focus")
+    assert layout.title == "Speakers"
+    overview = [b.block_id for b in layout.pages["overview"].blocks]
+    assert overview[0] == "transcript_summary_hero"
+    assert "speaker_summary_cards" in overview
+    assert "action_items_compact" not in overview
+    speaker_ids = [
+        b.block_id
+        for b in layout.pages["insights"].blocks
+        if b.section == "speakers"
+    ]
+    assert speaker_ids == [
+        "llm_speaker_summary_block",
+        "lexical_diversity_block",
+        "epistemic_markers_block",
+        "politeness_block",
+        "insights_contract",
+    ]
+
+
+def test_minimal_preset_structure() -> None:
+    layout = LayoutProfileStore.load_layout("minimal")
+    assert layout.title == "Minimal"
+    overview = [b.block_id for b in layout.pages["overview"].blocks]
+    assert overview == [
+        "transcript_summary_hero",
+        "at_a_glance",
+        "run_status_compact",
+    ]
+    insights = [b.block_id for b in layout.pages["insights"].blocks]
+    assert insights == ["insights_summary_panel", "highlights"]
+    charts = [b.block_id for b in layout.pages["charts"].blocks]
+    assert charts == ["chart_overview_slots"]
+
+
+def test_executive_insights_have_sections() -> None:
+    layout = LayoutProfileStore.load_layout("executive")
+    by_id = {b.placement_id: b for b in layout.pages["insights"].blocks}
+    assert by_id["exec_summary"].section == "summary"
+    assert by_id["exec_commitments"].section == "actions"
+    assert by_id["exec_action_items"].section == "actions"
+    assert by_id["exec_highlights"].section == "highlights"
+    assert "charts" in layout.pages
 
 
 def test_all_layout_includes_every_block_alphabetically() -> None:
@@ -120,6 +231,40 @@ def test_unsupported_param_fails() -> None:
         LayoutProfileStore.validate_layout_dict(bad)
 
 
+def test_param_type_mismatch_fails() -> None:
+    bad = {
+        "schema_version": 1,
+        "id": "param_types",
+        "title": "Param types",
+        "pages": {
+            "insights": {
+                "page_id": "insights",
+                "blocks": [
+                    {
+                        "placement_id": "llm1",
+                        "block_id": "llm_summary_block",
+                        "visible": True,
+                        "params": {"title": 42},
+                    }
+                ],
+            }
+        },
+    }
+    with pytest.raises(LayoutValidationError, match="must be type 'string'"):
+        LayoutProfileStore.validate_layout_dict(bad)
+
+
+def test_slugify_layout_id() -> None:
+    assert slugify_layout_id("My Layout!") == "My_Layout"
+    assert slugify_layout_id("  ok-id_1  ") == "ok-id_1"
+    with pytest.raises(LayoutValidationError, match="non-empty"):
+        slugify_layout_id("   ")
+    with pytest.raises(LayoutValidationError, match="path separators"):
+        slugify_layout_id("../escape")
+    with pytest.raises(LayoutValidationError, match="path separators"):
+        slugify_layout_id("a/b")
+
+
 def test_save_and_load_roundtrip(tmp_path: Path) -> None:
     spec = LayoutProfileStore.load_layout("default")
     path = LayoutProfileStore.save_as_custom(
@@ -129,6 +274,38 @@ def test_save_and_load_roundtrip(tmp_path: Path) -> None:
     loaded = LayoutProfileStore.load_layout("my_custom", base=tmp_path)
     assert loaded.id == "my_custom"
     assert "overview" in loaded.pages
+
+
+def test_save_as_custom_overwrite_guard(tmp_path: Path) -> None:
+    spec = LayoutProfileStore.load_layout("minimal")
+    LayoutProfileStore.save_as_custom(spec, "guarded", base=tmp_path)
+    with pytest.raises(LayoutValidationError, match="already exists"):
+        LayoutProfileStore.save_as_custom(
+            spec, "guarded", base=tmp_path, overwrite=False
+        )
+    path = LayoutProfileStore.save_as_custom(
+        spec, "guarded", title="Replaced", base=tmp_path, overwrite=True
+    )
+    assert path.exists()
+    loaded = LayoutProfileStore.load_layout("guarded", base=tmp_path)
+    assert loaded.title == "Replaced"
+
+
+def test_delete_custom_layout(tmp_path: Path) -> None:
+    spec = LayoutProfileStore.load_layout("default")
+    LayoutProfileStore.save_as_custom(spec, "to_delete", base=tmp_path)
+    path = LayoutProfileStore.delete_custom("to_delete", base=tmp_path)
+    assert not path.exists()
+    with pytest.raises(FileNotFoundError):
+        LayoutProfileStore.delete_custom("to_delete", base=tmp_path)
+    with pytest.raises(LayoutValidationError, match="cannot be deleted"):
+        LayoutProfileStore.delete_custom("default", base=tmp_path)
+
+
+def test_cannot_save_as_builtin_id(tmp_path: Path) -> None:
+    spec = LayoutProfileStore.load_layout("default")
+    with pytest.raises(LayoutValidationError, match="built-in id"):
+        LayoutProfileStore.save_as_custom(spec, "meeting_followup", base=tmp_path)
 
 
 def test_builtin_layout_cannot_be_overwritten(tmp_path: Path) -> None:
