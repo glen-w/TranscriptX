@@ -49,6 +49,6 @@ Docker / `requirements.txt` images include `ebooklib` with the visualization sta
 
 ## Pipeline vs export
 
-Human-readable **TXT / CSV / SRT** from the `transcript_output` module are ordinary run artifacts. Full HTML/EPUB packages are produced at **export time** from the completed run’s selected artifacts — not as an early pipeline writer that claims summaries/charts before they exist.
+Human-readable **TXT / CSV / SRT / WebVTT** from the `transcript_output` module are ordinary run artifacts. Full HTML/EPUB packages are produced at **export time** from the completed run’s selected artifacts — not as an early pipeline writer that claims summaries/charts before they exist.
 
 Persistent per-run `.epub` registration on disk (outside ZIP export) is not shipped in this release.

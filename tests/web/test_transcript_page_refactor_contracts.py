@@ -153,7 +153,7 @@ def test_render_transcript_viewer_does_not_consume_nav_request_on_empty_segments
         mod,
         "resolve_transcript_artifacts",
         lambda **_k: __import__("types").SimpleNamespace(
-            txt_file=None, csv_file=None, srt_file=None, json_file=None
+            txt_file=None, csv_file=None, srt_file=None, vtt_file=None, json_file=None
         ),
     )
     monkeypatch.setattr(

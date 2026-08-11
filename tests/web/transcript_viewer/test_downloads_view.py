@@ -13,6 +13,7 @@ class _Artifacts:
     txt_file: Path | None = None
     csv_file: Path | None = None
     srt_file: Path | None = None
+    vtt_file: Path | None = None
     json_file: Path | None = None
 
 
@@ -76,3 +77,37 @@ def test_render_download_row_includes_srt_when_present(
     assert srt_links[0]["mime"] == "application/x-subrip"
     assert srt_links[0]["icon"] == ":material/download:"
     assert {item.get("key") for item in captured} == {"download_srt", "download_json"}
+
+
+def test_render_download_row_includes_vtt_when_present(
+    tmp_path: Path, monkeypatch
+) -> None:
+    captured: list[dict] = []
+    vtt_path = tmp_path / "demo-transcript.vtt"
+    vtt_path.write_text(
+        "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\n<v Alice>Hello\n\n",
+        encoding="utf-8",
+    )
+
+    class _DummySt:
+        @staticmethod
+        def columns(spec, **_kwargs):
+            return tuple(_DummyCol() for _ in range(int(spec)))
+
+    def _capture_download_link(label, **kwargs):
+        captured.append({"label": label, **kwargs})
+        return False
+
+    monkeypatch.setattr(mod, "st", _DummySt)
+    monkeypatch.setattr(mod, "render_download_link", _capture_download_link)
+    mod.render_download_row(
+        _Artifacts(vtt_file=vtt_path),
+        {"segments": []},
+        "slug/run1",
+    )
+    vtt_links = [item for item in captured if item.get("key") == "download_vtt"]
+    assert len(vtt_links) == 1
+    assert vtt_links[0]["label"] == "VTT"
+    assert vtt_links[0]["file_name"] == "demo-transcript.vtt"
+    assert vtt_links[0]["mime"] == "text/vtt"
+    assert {item.get("key") for item in captured} == {"download_vtt", "download_json"}

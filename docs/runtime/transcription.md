@@ -31,6 +31,8 @@ We intentionally removed in-app transcription forms and `subprocess` orchestrati
 5. Run the command on the appropriate host (macOS for whispermlx; Docker host for WhisperX / Whisper-WebUI).
 6. Open **Import Transcript** and upload the result (WhisperX/whispermlx JSON, or Whisper-WebUI SRT/VTT; optionally attach the source recording; same-stem audio in the mounted recordings folder will be linked).
 
+**Saved presets:** use **Saved presets** on the same page to save/load/delete command-gen form fields (tool, paths, model, language, diarize, tool-specific knobs) under `.transcriptx/profiles/stt_commands/`. Presets store host paths and flags only — never `HF_TOKEN` (tokens stay in `whisperx.env`).
+
 ### Non-technical corpus path (short)
 
 | Step | Action |
@@ -275,11 +277,13 @@ Import alternate-language versions of an existing transcript using a flat filena
 On **Import Transcript**, section **Import all from folder** scans an **absolute** local directory (Docker: mount the host folder into the container — typically `HOST_TRANSCRIPT_INBOX_DIR` → `/mnt/transcript-inbox`; do not scan `/mnt/transcripts` or its subdirs) and imports only eligible files:
 
 - Supported extensions: `.json`, `.srt`, `.vtt`, `.txt`, `.html`, `.htm` (case-insensitive).
+- **Eligible** statuses: new, incomplete (repairable), needs registration. Already-managed stems, stem conflicts, size/symlink/special-file failures, and unrepairable incompletes are blocked (preview uses human labels).
 - Skips stems that are already managed (canonical JSON + import sidecar). Incomplete JSON without a safe `originals/` provenance is **not** treated as a new import.
 - Duplicate stems in the folder (including case variants) are all marked conflict — none are imported.
 - Source files in the scanned folder are **never** deleted or modified; the app copies into `transcripts/imports/` then runs managed admission.
 - Defaults: **100 MiB** per file (`TRANSCRIPTX_FOLDER_IMPORT_MAX_FILE_BYTES`) and **500** candidates (`TRANSCRIPTX_FOLDER_IMPORT_MAX_CANDIDATES`). Exceeding the candidate limit fails the scan closed (Import eligible stays disabled).
-- Preview is invalidated if the path, transcripts root, limits, or admission policy change.
+- Preview is invalidated if the path, transcripts root, limits, or admission policy change. Use **Rescan** (same control as Scan once a preview exists); a successful folder import auto-rescans so statuses refresh.
+- Preview includes a read-only **audio** column: same-stem companions under approved recordings roots (`found: stem.mp3` / `none`). No automatic copy — upload via section 3 or place matching audio for playback linking.
 
 Programmatic admission with registration under one lock: `transcriptx.io.admit_and_register.admit_and_register`.
 

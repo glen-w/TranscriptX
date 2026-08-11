@@ -291,16 +291,18 @@ class TestWriteTranscriptFiles:
         def format_time(seconds):
             return f"{int(seconds)}s"
 
-        txt_path, csv_path, srt_path = write_transcript_files(
+        txt_path, csv_path, srt_path, vtt_path = write_transcript_files(
             segments, speaker_map, base_name, out_dir, format_time
         )
 
         assert Path(txt_path).exists()
         assert Path(csv_path).exists()
         assert Path(srt_path).exists()
+        assert Path(vtt_path).exists()
         assert "test-transcript.txt" in txt_path
         assert "test-transcript.csv" in csv_path
         assert "test-transcript.srt" in srt_path
+        assert "test-transcript.vtt" in vtt_path
 
     def test_csv_has_correct_format(self, tmp_path):
         """Test that CSV file has correct format."""
@@ -315,7 +317,7 @@ class TestWriteTranscriptFiles:
         def format_time(seconds):
             return f"{int(seconds)}s"
 
-        txt_path, csv_path, srt_path = write_transcript_files(
+        txt_path, csv_path, srt_path, vtt_path = write_transcript_files(
             segments, speaker_map, base_name, out_dir, format_time
         )
 
@@ -333,6 +335,13 @@ class TestWriteTranscriptFiles:
         assert "Alice: Hello" in srt_content
         assert "Bob: World" in srt_content
 
+        with open(vtt_path, encoding="utf-8") as f:
+            vtt_content = f.read()
+
+        assert vtt_content.startswith("WEBVTT")
+        assert "<v Alice>Hello" in vtt_content
+        assert "<v Bob>World" in vtt_content
+
     def test_handles_speaker_changes(self, tmp_path):
         """Test that speaker changes are handled correctly in TXT."""
         segments = [
@@ -346,7 +355,7 @@ class TestWriteTranscriptFiles:
         def format_time(seconds):
             return f"{int(seconds)}s"
 
-        txt_path, csv_path, srt_path = write_transcript_files(
+        txt_path, csv_path, srt_path, vtt_path = write_transcript_files(
             segments, speaker_map, base_name, out_dir, format_time
         )
 
@@ -363,6 +372,12 @@ class TestWriteTranscriptFiles:
 
         assert "Alice: First" in srt_content
         assert "Bob: Second" in srt_content
+
+        with open(vtt_path, encoding="utf-8") as f:
+            vtt_content = f.read()
+
+        assert "<v Alice>First" in vtt_content
+        assert "<v Bob>Second" in vtt_content
 
     def test_handles_pauses(self, tmp_path):
         """Test that pauses are included in TXT output."""
@@ -382,7 +397,7 @@ class TestWriteTranscriptFiles:
         def format_time(seconds):
             return f"{int(seconds)}s"
 
-        txt_path, csv_path, srt_path = write_transcript_files(
+        txt_path, csv_path, srt_path, vtt_path = write_transcript_files(
             segments, speaker_map, base_name, out_dir, format_time
         )
 
@@ -395,6 +410,11 @@ class TestWriteTranscriptFiles:
             srt_content = f.read()
 
         assert "pause" not in srt_content.lower()
+
+        with open(vtt_path, encoding="utf-8") as f:
+            vtt_content = f.read()
+
+        assert "pause" not in vtt_content.lower()
 
     def test_handles_missing_speaker_in_map(self, tmp_path):
         """Test that missing speakers in map use speaker ID."""
@@ -409,7 +429,7 @@ class TestWriteTranscriptFiles:
         def format_time(seconds):
             return f"{int(seconds)}s"
 
-        txt_path, csv_path, srt_path = write_transcript_files(
+        txt_path, csv_path, srt_path, vtt_path = write_transcript_files(
             segments, speaker_map, base_name, out_dir, format_time
         )
 
@@ -424,3 +444,8 @@ class TestWriteTranscriptFiles:
             srt_content = f.read()
 
         assert "SPEAKER_99: World" in srt_content
+
+        with open(vtt_path, encoding="utf-8") as f:
+            vtt_content = f.read()
+
+        assert "<v SPEAKER_99>World" in vtt_content

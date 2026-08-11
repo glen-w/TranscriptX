@@ -19,6 +19,7 @@ from transcriptx.io.import_admission import (
 )
 from transcriptx.io.folder_import import (
     CandidateStatus,
+    FolderImportCandidate,
     ScanHandle,
     eligible_candidates,
     scan_folder_for_import,
@@ -388,3 +389,64 @@ def test_handle_invalidated_on_policy_version_mismatch(
     assert not scan_handle_still_valid(
         mutated, path_input=str(inbox), transcripts_dir=root
     )
+
+
+def test_status_presentation_covers_all_statuses() -> None:
+    from transcriptx.io.folder_import import STATUS_PRESENTATION, status_label
+
+    for status in CandidateStatus:
+        assert status in STATUS_PRESENTATION
+        assert status_label(status)
+
+
+def test_scan_includes_same_stem_audio_hint(monkeypatch, tmp_path: Path) -> None:
+    from transcriptx.io.folder_import import same_stem_audio_hint
+
+    root = tmp_path / "transcripts"
+    _patch_roots(monkeypatch, root)
+    recordings = tmp_path / "recordings"
+    recordings.mkdir()
+    (recordings / "meeting.mp3").write_bytes(b"fake")
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.audio_association.approved_recordings_roots",
+        lambda: (recordings,),
+    )
+
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    (inbox / "meeting.srt").write_text(
+        "1\n00:00:00,000 --> 00:00:01,000\nHi\n", encoding="utf-8"
+    )
+    handle = scan_folder_for_import(str(inbox), transcripts_dir=root)
+    assert handle.closed_ok
+    assert len(handle.candidates) == 1
+    assert handle.candidates[0].audio_hint == "found: meeting.mp3"
+    assert same_stem_audio_hint("meeting") == "found: meeting.mp3"
+    assert same_stem_audio_hint("other") == "none"
+
+
+def test_session_roundtrip_preserves_audio_hint() -> None:
+    cand = FolderImportCandidate(
+        path="/tmp/a.json",
+        basename="a.json",
+        display_stem="a",
+        conflict_key="a",
+        status=CandidateStatus.NEW,
+        audio_hint="found: a.mp3",
+    )
+    handle = ScanHandle(
+        schema_version=1,
+        admission_policy_version=1,
+        resolved_folder="/tmp",
+        resolved_transcripts_root="/tx",
+        max_file_bytes=10,
+        max_candidates=10,
+        scan_id="id",
+        scanned_at="t",
+        closed_ok=True,
+        error=None,
+        candidates=(cand,),
+    )
+    restored = ScanHandle.from_session_dict(handle.to_session_dict())
+    assert restored is not None
+    assert restored.candidates[0].audio_hint == "found: a.mp3"
