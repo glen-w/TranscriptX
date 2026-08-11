@@ -59,6 +59,8 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/contracts/speaker_profiles_v1.md | Speaker profiles v1 (Phase 1) | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/contracts/speaker_profiles_v1.md | yes |
 | docs/contracts/speaker_profiles_voice_v1.md | Speaker profiles — voice phase v1 (R2) | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/contracts/speaker_profiles_voice_v1.md | yes |
 | docs/dev/COMPLEXITY_GATES.md | Complexity and performance gates (pipeline / reporting) | live | developer | current | — | retain | — | DEV_INDEX | self | no |
+| docs/dev/config_architecture.md | Config / settings dual-stack architecture | live | developer | current | Settings/knobs clarity programme | retain | — | DEV_INDEX | docs/runtime/STORAGE.md | no |
+| docs/dev/settings_knobs_assessment.md | Settings/knobs assessment and hardening backlog | live | developer | current | Settings/knobs clarity programme | retain | — | DEV_INDEX | docs/dev/config_architecture.md | no |
 | docs/dev/CONTRIBUTING.md | Contributing to TranscriptX | live | developer | current | — | retain | — | DEV_INDEX | ARCHITECTURE.md | no |
 | docs/dev/analysis_module_backlog_2026-07-17.md | Analysis module backlog (ranked) — 2026-07-17 | live | developer | dated | Retarget in 0B | retain | — | DEV_INDEX | self | no |
 | docs/dev/analysis_run_performance_assessment_2026-07-19.md | Assessing analysis-run performance (low custom code) | stale | historical | superseded | See inventory destination | archive | docs/archive/assessments/analysis_run_performance_assessment_2026-07-19.md | Update inbound links | docs/dev/run_performance.md | archive-only |
@@ -144,6 +146,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/runtime/epistemic_markers.md | Epistemic markers (`epistemic_markers`) | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | self | yes |
 | docs/runtime/install_verification_matrix.md | Install verification matrix | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | docs/runtime/STORAGE.md | yes |
 | docs/runtime/installation.md | Installation & Configuration | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | runtime/STORAGE.md | yes |
+| docs/runtime/settings.md | Settings, profiles, and analysis knobs | live | user | current | Settings/knobs clarity programme | retain | — | USER_INDEX | runtime/STORAGE.md | yes |
 | docs/runtime/keyphrases.md | Keyphrases (`keyphrases`) | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | self | yes |
 | docs/runtime/lexical_diversity.md | Lexical diversity analysis | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | runtime/STORAGE.md | yes |
 | docs/runtime/llm.md | Local LLM integration (Ollama) | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | runtime/docker.md | yes |

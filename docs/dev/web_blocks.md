@@ -59,7 +59,7 @@ Overview **module metrics** use summary extractors under `web/summary_extractors
 
 ## Adding a layout
 
-1. Copy `presets/default.yaml` to `data/profiles/ui_layouts/my_layout.yaml` (or add a new preset).
+1. Copy `presets/default.yaml` to `{config_dir}/profiles/ui_layouts/my_layout.yaml` (runtime `PROFILES_DIR/ui_layouts/`; not repo `data/profiles/`) or add a new preset.
 2. Validate via Dashboard Builder **Schema** mode or `LayoutProfileStore.validate_layout_dict`.
 3. Set `active_layout_profile_id` in session state or use the Dashboard Builder selector.
 

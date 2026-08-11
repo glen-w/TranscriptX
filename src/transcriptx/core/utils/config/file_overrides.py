@@ -204,7 +204,11 @@ def _commit_candidate(live: Any, candidate: Any) -> None:
 
 
 def _validate_candidate(candidate: Any) -> None:
-    """Validate complete candidate; raise on failure without touching live config."""
+    """Validate complete candidate; raise on failure without touching live config.
+
+    Dual path (intentional until H1): object-level ``utils.config_validator`` for
+    facade invariants, then canonical leaf/pilot ``core.config.validate_config``.
+    """
     from transcriptx.core.config import validate_config as validate_config_dict
     from transcriptx.core.utils.config import TranscriptXConfig
 

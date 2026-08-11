@@ -14,6 +14,7 @@ Curated entry points for people using TranscriptX (not repository historians).
 | [PRODUCT.md](PRODUCT.md) | Product definition |
 | [Comparison](comparison.md) | TranscriptX vs STT, meeting assistants, and CI products |
 | [Installation](runtime/installation.md) | Install profiles and configuration |
+| [Settings & knobs](runtime/settings.md) | GUI scopes, Common vs Advanced, profile taxonomy |
 | [Transcription](runtime/transcription.md) | External transcription workflows |
 | [Directory watcher](runtime/directory_watcher.md) | Optional inbox watch → import (default-off) |
 | [Docker](runtime/docker.md) | Compose-based runtime |

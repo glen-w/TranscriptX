@@ -14,6 +14,7 @@ comparison
 USER_INDEX
 known_limitations
 runtime/installation
+runtime/settings
 runtime/transcription
 runtime/docker
 runtime/export

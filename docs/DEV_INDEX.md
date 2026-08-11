@@ -50,6 +50,8 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 
 | Doc | Purpose |
 |-----|---------|
+| [config_architecture.md](dev/config_architecture.md) | Config / settings dual-stack architecture |
+| [settings_knobs_assessment.md](dev/settings_knobs_assessment.md) | Settings/knobs assessment and hardening backlog |
 | [pipeline_contracts.md](dev/pipeline_contracts.md) | Pipeline layering contracts |
 | [output_conventions.md](dev/output_conventions.md) | Output conventions guide |
 | [export.md](runtime/export.md) | Overview ZIP / HTML / EPUB export guide |

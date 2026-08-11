@@ -18,7 +18,7 @@ Transcript → Overview → Insights → Charts → Artifacts
 
 - Built-in presets (`default`, `executive`, `developer_debug`, `all`) are **immutable**.
   - `all` is generated from the block registry (every block, alphabetical) — not a YAML preset.
-- Dashboard Builder can **Save as custom layout** under `data/profiles/ui_layouts/`.
+- Dashboard Builder can **Save as custom layout** under `{config_dir}/profiles/ui_layouts/` (`PROFILES_DIR/ui_layouts`).
 - Schema version **2** adds optional placement `section` for Insights local navigation; v1 layouts still load.
 
 ## Deep links

@@ -4,37 +4,37 @@
 [[paths]]
 path = "data/profiles/acts/default.json"
 owner = "config"
-purpose = "Default acts analysis profile fixture"
+purpose = "Tracked fixture sample only — not auto-seeded into PROFILES_DIR; ProfileManager virtual default is code defaults"
 
 [[paths]]
 path = "data/profiles/qa_analysis/default.json"
 owner = "config"
-purpose = "Default QA analysis profile fixture"
+purpose = "Tracked fixture sample only — not auto-seeded into PROFILES_DIR; ProfileManager virtual default is code defaults"
 
 [[paths]]
 path = "data/profiles/tag_extraction/default.json"
 owner = "config"
-purpose = "Default tag extraction profile fixture"
+purpose = "Tracked fixture sample only — not auto-seeded into PROFILES_DIR; ProfileManager virtual default is code defaults"
 
 [[paths]]
 path = "data/profiles/temporal_dynamics/default.json"
 owner = "config"
-purpose = "Default temporal dynamics profile fixture"
+purpose = "Tracked fixture sample only — not auto-seeded into PROFILES_DIR; ProfileManager virtual default is code defaults"
 
 [[paths]]
 path = "data/profiles/topic_modeling/default.json"
 owner = "config"
-purpose = "Default topic modeling profile fixture"
+purpose = "Tracked fixture sample only — not auto-seeded into PROFILES_DIR; ProfileManager virtual default is code defaults"
 
 [[paths]]
 path = "data/profiles/vectorization/default.json"
 owner = "config"
-purpose = "Default vectorization profile fixture"
+purpose = "Tracked fixture sample only — not auto-seeded into PROFILES_DIR; ProfileManager virtual default is code defaults"
 
 [[paths]]
 path = "data/profiles/workflow/default.json"
 owner = "config"
-purpose = "Default workflow profile fixture"
+purpose = "Tracked fixture sample only — not auto-seeded into PROFILES_DIR; ProfileManager virtual default is code defaults"
 
 [[paths]]
 path = "data/test_write"

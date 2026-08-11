@@ -324,6 +324,12 @@ def render_configuration_panel(
         }
         surface_keys = common_keys - activation_keys
         st.markdown("**Common Settings**")
+        st.caption(
+            "Curated guided knobs (`COMMON_SETTINGS_SCHEMA`). "
+            "Advanced toggle below exposes the full registry; "
+            "registry `advanced` metadata is not yet used to partition this form. "
+            "See docs/runtime/settings.md."
+        )
         for category in categories:
             fields = [meta for meta in registry.values() if meta.category == category]
             if not fields:
