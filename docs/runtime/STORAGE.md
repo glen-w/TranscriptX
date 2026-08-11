@@ -27,6 +27,14 @@ Implications:
   - Defaults
 - Current resolver provenance labels intentionally report draft overrides under
   the run-layer source model (`source: run`) to preserve existing semantics.
+- User-facing Settings scopes, Common vs Advanced knobs, and the overloaded
+  “profile” taxonomy (install vs module/workflow vs analysis UI presets vs
+  speaker profiles) are documented in [settings.md](settings.md).
+- Runtime module/workflow profile JSON lives under `config_dir/profiles/`
+  (override with `TRANSCRIPTX_PROFILES_DIR`). Tracked repo paths under
+  `data/profiles/*/default.json` are allowlisted fixtures only — they are not
+  auto-seeded into `PROFILES_DIR`, and ProfileManager treats disk name
+  `default` as virtual (code defaults), not a loadable preset file.
 
 ---
 
@@ -97,7 +105,9 @@ transcripts_dir/                # user library (mountable)
   readable/                     # derived transcripts
 
 config_dir/                     # configuration
-  profiles/                     # analysis presets
+  profiles/                     # module/workflow/STT/UI-layout named presets (not speaker profiles)
+  install_profile               # optional marker: core | full
+  config.json                   # project settings bag
 
 data_dir/                       # app-managed working state
   groups/                       # group definition manifests (*.group.json); local user data — not tracked

@@ -38,7 +38,8 @@ src/transcriptx/
 │   ├── analysis/ — Analysis modules (primary extension surface)  
 │   ├── pipeline/ — DAG construction & execution  
 │   ├── output/ — Artifact writing & manifest tracking  
-│   ├── config/ — Configuration resolution  
+│   ├── config/ — Registry, Pydantic pilots, Settings resolution  
+│   ├── utils/config/ — Runtime TranscriptXConfig facade  
 │   └── domain/ — Canonical transcript and group structures  
 ├── web/ — Streamlit GUI (analysis, speaker ID, batch ops, browsing)  
 ├── app/ — App-layer workflows (AnalysisRequest, run_analysis, etc.)  
@@ -86,7 +87,7 @@ Each run produces a directory containing configuration snapshots, a manifest, an
 
 ## 6. Configuration & conventions
 
-TranscriptX uses env-first configuration. Unknown speakers are excluded from most per-speaker analyses by default to avoid misleading outputs.
+TranscriptX uses a dual-stack config system (runtime facade + Pydantic registry/pilots). Effective Settings/runs merge **defaults &lt; project &lt; draft/run &lt; env** (env wins). Facade construction applies **file → module profiles → env**. See [config_architecture.md](dev/config_architecture.md) and the user guide [settings.md](runtime/settings.md). Unknown speakers are excluded from most per-speaker analyses by default to avoid misleading outputs.
 
 ## 7. Performance & dependencies
 
