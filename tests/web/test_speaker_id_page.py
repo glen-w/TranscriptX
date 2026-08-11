@@ -1506,3 +1506,384 @@ def test_voice_unmounted_until_loaded_contract() -> None:
     assert "ActivationBarrier" not in early
     assert "SpeakerIdVoiceFacade" not in early
     assert "SpeakerProfileService" not in early
+
+
+def test_ccv2_is_default_mount_path_contract() -> None:
+    """Fragment prefers CCv2 when enabled; falls through to legacy when mount fails."""
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    frag = source.split("def _speaker_id_workspace_fragment", 1)[1]
+    frag = frag.split("def render_speaker_id_page", 1)[0]
+    assert "speaker_id_workspace_component_enabled" in frag
+    assert "_render_ccv2_speaker_workspace" in frag
+    assert "if mounted:" in frag
+    assert "return True" in source.split("def _render_ccv2_speaker_workspace", 1)[1]
+    assert "return False" in source.split("def _render_ccv2_speaker_workspace", 1)[1]
+    # Classic widgets remain for rollback / missing-package path.
+    assert "render_playback_panel_body" in frag
+    assert "on_click=_cb_save_name" in frag
+
+
+def test_render_ccv2_returns_false_when_package_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Default-on must not brick Speaker ID when transcriptx-workspaces is absent."""
+    import builtins
+    import transcriptx.web.page_modules.speaker_id as mod
+    from types import SimpleNamespace
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict = {}
+    warnings: list[str] = []
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    monkeypatch.setattr(mod.st, "warning", lambda msg: warnings.append(str(msg)))
+
+    real_import = builtins.__import__
+
+    def _import(name, *args, **kwargs):
+        if name == "transcriptx_workspaces" or name.startswith(
+            "transcriptx_workspaces."
+        ):
+            raise ImportError("forced missing workspaces package")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", _import)
+
+    ok = mod._render_ccv2_speaker_workspace(
+        transcript_path=str(transcript),
+        controller=SimpleNamespace(),
+        speaker_ids=["SPEAKER_00"],
+        speaker_idx=0,
+        active_id="SPEAKER_00",
+        speaker_map={},
+        ignored=[],
+        active_segs=[],
+        current_name="",
+        playback_ctx=SimpleNamespace(audio_path=None),
+        status_badge="unnamed",
+        total_speakers=1,
+    )
+    assert ok is False
+    assert warnings
+    assert "classic Speaker ID" in warnings[0]
+
+
+def test_render_ccv2_mounts_and_dispatches_command(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Happy path: build data, mount component, dispatch save_name, store ack."""
+    import sys
+    from types import ModuleType, SimpleNamespace
+
+    import transcriptx.web.page_modules.speaker_id as mod
+    from transcriptx.app.speaker_id import (
+        SpeakerIdAck,
+        SpeakerIdEffects,
+        SpeakerIdFlash,
+    )
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict = {}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    monkeypatch.setattr(
+        mod,
+        "_resolve_profile_context",
+        lambda *_a, **_k: mod.TranscriptProfileContext(is_managed=False),
+    )
+
+    class _Ctrl:
+        def cached_clip_status(self, *_a, **_k):
+            return SimpleNamespace(status="miss", clip_id="c1", path=None, reason=None)
+
+        def get_cached_clip_bytes(self, *_a, **_k):
+            return None
+
+        def enqueue_clip(self, *_a, **_k):
+            return SimpleNamespace(status="accepted", clip_id="c1")
+
+        def ffmpeg_available(self) -> bool:
+            return True
+
+    mounts: list[dict] = []
+
+    def _fake_workspace(*, data, key, on_command_change=None, **_kw):
+        mounts.append({"data": data, "key": key})
+        return {
+            "command": {
+                "action": "save_name",
+                "action_id": "aid-ccv2",
+                "action_seq": 1,
+                "protocol_version": "1",
+                "frontend_build_id": "legacy",
+                "transcript_id": str(transcript),
+                "expected_speaker_id": "SPEAKER_00",
+                "payload": {"name": "Alice"},
+            }
+        }
+
+    fake_pkg = ModuleType("transcriptx_workspaces")
+    fake_pkg.speaker_id_workspace = _fake_workspace  # type: ignore[attr-defined]
+    fake_pkg.FRONTEND_BUILD_ID = "tx-workspaces-0.1.0"  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "transcriptx_workspaces", fake_pkg)
+
+    applied: list = []
+
+    class _Svc:
+        _expected_builds = set()
+
+        def execute(self, command):
+            return SpeakerIdAck(
+                action_id=command.action_id,
+                action_seq=command.action_seq,
+                status="ok",
+                transcript_id=command.transcript_id,
+                transcript_revision="tr1",
+                mapping_revision="mr1",
+                active_speaker_id="SPEAKER_00",
+                active_speaker_idx=0,
+                effects=SpeakerIdEffects(
+                    flashes=(SpeakerIdFlash(level="info", message="saved"),),
+                ),
+            )
+
+    monkeypatch.setattr(mod, "_get_action_service", lambda: _Svc())
+    monkeypatch.setattr(
+        mod,
+        "_apply_ack",
+        lambda ack, **_k: applied.append(ack),
+    )
+
+    segs = [SimpleNamespace(start=0.0, end=1.0, text="hello", speaker="SPEAKER_00")]
+    ok = mod._render_ccv2_speaker_workspace(
+        transcript_path=str(transcript),
+        controller=_Ctrl(),
+        speaker_ids=["SPEAKER_00"],
+        speaker_idx=0,
+        active_id="SPEAKER_00",
+        speaker_map={},
+        ignored=[],
+        active_segs=segs,
+        current_name="",
+        playback_ctx=SimpleNamespace(audio_path=None),
+        status_badge="❓ unnamed",
+        total_speakers=1,
+    )
+    assert ok is True
+    assert len(mounts) == 1
+    assert mounts[0]["key"].startswith("speaker_id_ws:")
+    assert mounts[0]["data"]["active_speaker_id"] == "SPEAKER_00"
+    assert mounts[0]["data"]["samples"][0]["clip_status"] == "pending"
+    assert len(applied) == 1
+    ack_key = mod.widget_key(transcript, "ccv2_last_ack")
+    assert ss[ack_key]["status"] == "ok"
+    assert ss[ack_key]["action_id"] == "aid-ccv2"
+
+
+class _CtxCol:
+    """Minimal Streamlit column stub that supports ``with col:``."""
+
+    def metric(self, *_a, **_k):
+        return None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_exc):
+        return False
+
+
+def _stub_fragment_chrome(monkeypatch: pytest.MonkeyPatch, mod) -> None:
+    def _columns(spec):
+        n = len(spec) if isinstance(spec, (list, tuple)) else int(spec)
+        return [_CtxCol() for _ in range(n)]
+
+    monkeypatch.setattr(mod.st, "metric", lambda *_a, **_k: None)
+    monkeypatch.setattr(mod.st, "columns", _columns)
+    monkeypatch.setattr(mod.st, "divider", lambda: None)
+    monkeypatch.setattr(mod.st, "success", lambda *_a, **_k: None)
+    monkeypatch.setattr(mod.st, "caption", lambda *_a, **_k: None)
+    monkeypatch.setattr(mod.st, "text_input", lambda *_a, **_k: "")
+    monkeypatch.setattr(mod.st, "checkbox", lambda *_a, **_k: False)
+    monkeypatch.setattr(mod.st, "button", lambda *_a, **_k: False)
+    monkeypatch.setattr(mod.st, "number_input", lambda *_a, **_k: 0)
+    monkeypatch.setattr(mod, "_consume_flash", lambda *_a, **_k: None)
+
+
+def test_workspace_fragment_prefers_ccv2_when_enabled(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Fragment returns after successful CCv2 mount (skips legacy widgets)."""
+    from types import SimpleNamespace
+
+    import transcriptx.web.page_modules.speaker_id as mod
+    import transcriptx.web.workspaces.flags as flags_mod
+    from transcriptx.web.cache_helpers import SpeakerIdentificationIndex
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict = {}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    _stub_fragment_chrome(monkeypatch, mod)
+    monkeypatch.setattr(
+        mod,
+        "load_speaker_identification_index",
+        lambda *_a, **_k: SpeakerIdentificationIndex(
+            segments_by_speaker={"SPEAKER_00": ()},
+            ordered_speaker_ids=("SPEAKER_00",),
+            segment_counts=(0,),
+            durations=(0.0,),
+        ),
+    )
+    monkeypatch.setattr(
+        mod,
+        "resolve_playback_context",
+        lambda *_a, **_k: SimpleNamespace(audio_path=None),
+    )
+
+    class _Ctrl:
+        def get_mapping_status(self, *_a, **_k):
+            return SimpleNamespace(speaker_map={}, ignored_speakers=[])
+
+    called: list[bool] = []
+
+    def _mount(**_k):
+        called.append(True)
+        return True
+
+    monkeypatch.setattr(mod, "_render_ccv2_speaker_workspace", _mount)
+    monkeypatch.setattr(
+        flags_mod, "speaker_id_workspace_component_enabled", lambda *_a, **_k: True
+    )
+
+    legacy: list[str] = []
+    monkeypatch.setattr(mod.st, "subheader", lambda msg: legacy.append(str(msg)))
+
+    # Call through @st.fragment wrapper — body lives on __wrapped__.
+    mod._speaker_id_workspace_fragment.__wrapped__(str(transcript), _Ctrl())
+    assert called == [True]
+    assert legacy == []
+
+
+def test_workspace_fragment_uses_legacy_when_flag_off(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Env/session rollback must keep the classic fragment widgets."""
+    from types import SimpleNamespace
+
+    import transcriptx.web.page_modules.speaker_id as mod
+    import transcriptx.web.workspaces.flags as flags_mod
+    from transcriptx.web.cache_helpers import SpeakerIdentificationIndex
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict = {
+        mod.speaker_idx_key(transcript): 0,
+        mod.jump_key(transcript): 0,
+        mod.lines_key(transcript): 5,
+        mod.play_key(transcript): 0,
+    }
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    _stub_fragment_chrome(monkeypatch, mod)
+    monkeypatch.setattr(
+        mod,
+        "load_speaker_identification_index",
+        lambda *_a, **_k: SpeakerIdentificationIndex(
+            segments_by_speaker={"SPEAKER_00": ()},
+            ordered_speaker_ids=("SPEAKER_00",),
+            segment_counts=(0,),
+            durations=(0.0,),
+        ),
+    )
+    monkeypatch.setattr(
+        mod,
+        "resolve_playback_context",
+        lambda *_a, **_k: SimpleNamespace(audio_path=None),
+    )
+    monkeypatch.setattr(mod, "render_playback_panel_body", lambda **_k: None)
+    monkeypatch.setattr(
+        mod,
+        "_resolve_profile_context",
+        lambda *_a, **_k: mod.TranscriptProfileContext(is_managed=False),
+    )
+
+    class _Ctrl:
+        def get_mapping_status(self, *_a, **_k):
+            return SimpleNamespace(speaker_map={}, ignored_speakers=[])
+
+    monkeypatch.setattr(
+        flags_mod, "speaker_id_workspace_component_enabled", lambda *_a, **_k: False
+    )
+    monkeypatch.setattr(
+        mod,
+        "_render_ccv2_speaker_workspace",
+        lambda **_k: (_ for _ in ()).throw(AssertionError("ccv2 must not mount")),
+    )
+
+    headers: list[str] = []
+    monkeypatch.setattr(mod.st, "subheader", lambda msg: headers.append(str(msg)))
+
+    mod._speaker_id_workspace_fragment.__wrapped__(str(transcript), _Ctrl())
+    assert headers
+    assert "SPEAKER_00" in headers[0]
+
+
+def test_workspace_fragment_falls_through_when_ccv2_unavailable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Flag on + mount False → classic UI (missing package / import failure)."""
+    from types import SimpleNamespace
+
+    import transcriptx.web.page_modules.speaker_id as mod
+    import transcriptx.web.workspaces.flags as flags_mod
+    from transcriptx.web.cache_helpers import SpeakerIdentificationIndex
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict = {
+        mod.speaker_idx_key(transcript): 0,
+        mod.jump_key(transcript): 0,
+        mod.lines_key(transcript): 5,
+        mod.play_key(transcript): 0,
+    }
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    _stub_fragment_chrome(monkeypatch, mod)
+    monkeypatch.setattr(
+        mod,
+        "load_speaker_identification_index",
+        lambda *_a, **_k: SpeakerIdentificationIndex(
+            segments_by_speaker={"SPEAKER_00": ()},
+            ordered_speaker_ids=("SPEAKER_00",),
+            segment_counts=(0,),
+            durations=(0.0,),
+        ),
+    )
+    monkeypatch.setattr(
+        mod,
+        "resolve_playback_context",
+        lambda *_a, **_k: SimpleNamespace(audio_path=None),
+    )
+    monkeypatch.setattr(mod, "render_playback_panel_body", lambda **_k: None)
+    monkeypatch.setattr(
+        mod,
+        "_resolve_profile_context",
+        lambda *_a, **_k: mod.TranscriptProfileContext(is_managed=False),
+    )
+
+    class _Ctrl:
+        def get_mapping_status(self, *_a, **_k):
+            return SimpleNamespace(speaker_map={}, ignored_speakers=[])
+
+    monkeypatch.setattr(
+        flags_mod, "speaker_id_workspace_component_enabled", lambda *_a, **_k: True
+    )
+    monkeypatch.setattr(mod, "_render_ccv2_speaker_workspace", lambda **_k: False)
+
+    headers: list[str] = []
+    monkeypatch.setattr(mod.st, "subheader", lambda msg: headers.append(str(msg)))
+
+    mod._speaker_id_workspace_fragment.__wrapped__(str(transcript), _Ctrl())
+    assert headers
+    assert "SPEAKER_00" in headers[0]
