@@ -126,6 +126,12 @@ has eligible enrolled embeddings, Speakers “Find voice match” / analyse will
 not propose a profile — check for `voice/embeddings/*.voice_embedding.json`
 (and matching vectors) before debugging thresholds or SpeechBrain.
 
+Settings → Speakers (when privacy is enabled) also exposes explicit library-wide
+batch controls: **Enrol trusted voice for all profiles** (active persisted
+profiles with confirmed links) and **Pre-load voice suggestions** (analyse every
+non-ignored managed occurrence into `.cache/voice`). Neither runs automatically
+on opt-in.
+
 ---
 
 ## Evidence enrolment (Stage 3)

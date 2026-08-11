@@ -466,6 +466,13 @@ def test_speakers_panel_wires_voice_privacy_knobs() -> None:
         "Save enrol link cap",
         "operator.voice_settings.json",
         "VoiceOperatorService",
+        "Library voice batch",
+        "BulkVoiceOpsService",
+        "Enrol trusted voice for all profiles",
+        "Pre-load voice suggestions",
+        "voice_bulk_enrol_all_btn",
+        "voice_bulk_preload_btn",
+        "_render_bulk_voice_ops",
     ):
         assert needle in src, needle
 
