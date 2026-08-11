@@ -164,7 +164,9 @@ def test_save_as_custom_requires_overwrite_confirm(monkeypatch, tmp_path) -> Non
         staticmethod(lambda layout_id, base=None: layout_id == "taken"),
     )
 
-    def _save_as_custom(source_layout, new_id, *, title=None, base=None, overwrite=True):
+    def _save_as_custom(
+        source_layout, new_id, *, title=None, base=None, overwrite=True
+    ):
         if not overwrite:
             raise LayoutValidationError(
                 f"Custom layout '{new_id}' already exists. Pass overwrite=True to replace it."
@@ -172,7 +174,9 @@ def test_save_as_custom_requires_overwrite_confirm(monkeypatch, tmp_path) -> Non
         saved.append(new_id)
         return tmp_path / f"{new_id}.yaml"
 
-    monkeypatch.setattr(LayoutProfileStore, "save_as_custom", staticmethod(_save_as_custom))
+    monkeypatch.setattr(
+        LayoutProfileStore, "save_as_custom", staticmethod(_save_as_custom)
+    )
 
     mod.render_dashboard_builder()
     assert saved == []
