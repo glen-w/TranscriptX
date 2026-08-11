@@ -1,9 +1,10 @@
+Type: PRODUCT
+Authority: self
+
 # Theme C — High-interaction workspaces (Components v2)
 
-Type: DEVELOPER  
-Authority: self  
 Status: active (1.x)  
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 
 **Roadmap home:** [docs/ROADMAP.md](../ROADMAP.md) §C  
 **Product constraint:** Streamlit shell + Python domain; specialised CCv2 workspaces only.

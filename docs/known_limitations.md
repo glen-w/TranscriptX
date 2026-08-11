@@ -46,6 +46,15 @@ are excluded from feeding subsequent export resolvers if re-selected.
 
 Charts-only ZIP export remains HTML-only (no EPUB) in this release.
 
+## Speaker ID Components v2 workspace
+
+An experimental Streamlit Components v2 Speaker Identification workspace ships in
+the ``transcriptx-workspaces`` package (installed in Docker images; optional for
+native GUI). It is **default-on** when the package is present. Roll back with
+``TX_SPEAKER_ID_WORKSPACE_COMPONENT=0``. If the package is missing, Speaker ID
+falls through to the classic fragment UI automatically. See
+[theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
+
 ## Install honesty (Mac MPS)
 
 Native **Apple MPS** is **supported-with-caveats**, not universally validated for every optional model. Prefer **Docker CPU** for predictable installs. If MPS initialisation or model execution fails, use `TRANSCRIPTX_FORCE_CPU=1` (documented in [installation.md](runtime/installation.md)). Do not assume every optional model runs reliably on MPS.

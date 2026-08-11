@@ -22,7 +22,7 @@ Approachable to any thoughtful user with transcripts. Researchers and analysts a
 | Transcription | External for **1.0** (in-app **command-generation** handoff). Optional local in-app STT is a **1.x** theme — see [ROADMAP.md](ROADMAP.md) |
 | Operational | Docker Compose; modest `website/` (GitHub Pages); hosted docs pending RTD go-live |
 
-First-run experience relies on **task documentation** and a **clear, complete GUI** — not Guided/Full presentation modes, in-app checklists, or a bundled demo project (those were trialled in **0.9.6** and removed; see [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) §16). Surfaces: [public surfaces](public_surfaces.md).
+First-run experience relies on **task documentation** (including [five workflow walkthroughs](workflows/index.md)) and a **clear, complete GUI** — not Guided/Full presentation modes, in-app checklists, or a bundled demo project (those were trialled in **0.9.6** and removed; see [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) §16). Surfaces: [public surfaces](public_surfaces.md).
 
 ## AI position
 

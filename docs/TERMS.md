@@ -40,5 +40,6 @@ Where you need the actual definition or invariant, always read the linked CONTRA
 
 - **Public surface / supported surface**  
   - See public surfaces contract: `docs/public_surfaces.md`.
+  - Viewer Correct mode (behaviour guide): `docs/runtime/corrections-viewer.md`.
 
 This index may grow as new terms are introduced in CONTRACT docs, but each term here must always **delegate meaning** to those documents rather than redefining it.

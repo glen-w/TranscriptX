@@ -54,6 +54,11 @@ Audio is optional for this workflow; sample text lines are enough.
 
 7. Re-run or refresh analysis views that depend on named speakers when you care about per-speaker summaries. A prior run may still reflect old labels until modules that key on speaker identity are run again.
 
+> **Note:** Speaker Identification uses the Components v2 workspace by default
+> when `transcriptx-workspaces` is installed. Roll back to the classic UI with
+> `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`. Naming controls for this walkthrough
+> remain the same either way. See [known limitations](../known_limitations.md).
+
 ## What to notice
 
 - Speaker identity is part of analysis trust, not a cosmetic rename.

@@ -17,7 +17,7 @@ Curated entry points for people using TranscriptX (not repository historians).
 | [Transcription](runtime/transcription.md) | External transcription workflows |
 | [Docker](runtime/docker.md) | Compose-based runtime |
 | [NOTICE](../NOTICE) | Third-party model / dataset notice |
-| [Known limitations](known_limitations.md) | User-facing limits (experimental, optional stacks, AI, privacy, EPUB) |
+| [Known limitations](known_limitations.md) | User-facing limits (experimental, optional stacks, AI, privacy, EPUB, Speaker ID CCv2 rollback) |
 | [Export (ZIP / HTML / EPUB)](runtime/export.md) | Overview artifact export packages |
 | [Using TranscriptX: five workflows](workflows/index.md) | Outcome-focused walkthroughs with screenshots |
 

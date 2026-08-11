@@ -14,9 +14,11 @@ This document defines which TranscriptX surfaces are **supported** and which are
   - Importing transcripts into managed storage (managed import workflow).
   - Running analysis on individual transcripts and groups.
   - Viewing results via **Transcript → Overview → Insights → Charts → Artifacts**.
+  - **Correct mode** on Transcript for word/span propose/apply (see [runtime/corrections-viewer.md](runtime/corrections-viewer.md)); Corrections Studio for batch/detector/LLM review.
   - Managing basic settings exposed in the UI.
 - Use **Artifacts** (Browse / Preview / Export). Overview / Artifacts ZIP export includes selected files plus generated `index.html` and, when `ebooklib` is available, `index.epub` (see [runtime/export.md](runtime/export.md)). Legacy `Data` / `Explorer` (File List) page keys are no longer supported (removed in 0.9.7).
 - Built-in layout profile id `default` is displayed as **Standard** and is immutable; clone via Dashboard Builder.
+- **Optional rollback:** Speaker Identification mounts the Streamlit Components v2 workspace by default when `transcriptx-workspaces` is installed. Roll back to the classic fragment UI with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`; missing package falls through to classic automatically. See [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
 ### 1.2 Python API
 
 - The **Python API** is a supported surface for scripting and automation.

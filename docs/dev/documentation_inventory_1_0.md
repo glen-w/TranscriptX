@@ -18,7 +18,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | archive | 29 |
 | delete | 2 |
 | move | 0 |
-| retain | 99 |
+| retain | 109 |
 | rewrite | 1 |
 
 ## High-priority authority conflicts
@@ -163,11 +163,21 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/dev/analysis_quality_audit_scaffold.md | Generated quality-audit registry rows | live | developer | current | Regen via `make docs-gen` | retain | — | analysis_quality_audit.md | analysis_quality_audit.md | no |
 | docs/dev/analysis_quality_audit_judgements.md | Provisional Recommendation / Severity overlay (**0.9.7**) | live | developer | current | Owner sign-off open | retain | — | analysis_quality_audit.md, release_severity | analysis_quality_audit.md | no |
 | docs/dev/rtd_go_live_checklist.md | RTD go-live flip steps | live | developer | current | Hostname denylist until slug | retain | — | docs_architecture | docs_architecture_1_0.md | no |
+| docs/runtime/export.md | Overview ZIP / HTML / EPUB export | live | user | current | Guide; selection-scoped indexes | retain | — | USER_INDEX, known_limitations | docs/contracts/output-contract-v1.md | yes |
+| docs/workflows/index.md | Five workflow walkthroughs landing | live | user | current | Screenshot guides (**2026-08**) | retain | — | USER_INDEX, index.md | docs/PRODUCT.md | yes |
+| docs/workflows/first-analysis.md | Workflow 1 — first analysis | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
+| docs/workflows/speaker-trust.md | Workflow 2 — speaker trust | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
+| docs/workflows/investigate-evidence.md | Workflow 3 — investigate with evidence | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
+| docs/workflows/local-ai-synthesis.md | Workflow 4 — local AI synthesis | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
+| docs/workflows/export-results.md | Workflow 5 — export results | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
+| docs/dev/workflow_media_capture.md | Regenerating workflow screenshots/GIFs | live | developer | current | — | retain | — | DEV_INDEX | docs/dev/CONTRIBUTING.md | no |
+| docs/dev/theme_c_workspaces_ccv2.md | Theme C CCv2 workspaces design | live | developer | current | 1.x; flag default-on | retain | — | DEV_INDEX, ROADMAP | docs/ROADMAP.md | no |
+| docs/dev/theme_c_invest_narrow_defer.md | Theme C invest/narrow/defer | live | developer | current | — | retain | — | DEV_INDEX | docs/dev/theme_c_workspaces_ccv2.md | no |
 | docs/dev/ui_presentation_modes.md | Guided / Full (0.9.6 trial) | — | — | — | **removed** — trialled and decided against | deleted | — | pre_release_roadmap §16 | PRODUCT.md | no |
 | docs/dev/demo_project.md | Demo project (0.9.6 trial) | — | — | — | **removed** — trialled and decided against | deleted | — | pre_release_roadmap §16 | PRODUCT.md | no |
 | docs/dev/manual_acceptance_1_0.md | Human acceptance checklist skeleton | live | product | current | Human-testing wave | retain | — | pre_release_roadmap | release_severity_triage_1_0.md | no |
 | docs/dev/overview_presentation_0_9_9.md | 0.9.9 Overview/results presentation polish backlog | live | product | current | After maintainer; before unfamiliar-user | retain | — | pre_release_roadmap, ROADMAP | manual_acceptance_1_0.md | no |
-| website/ | Modest public landing + Pages | live | entry | current | Marketing; Ko-fi live | retain | — | README, ROADMAP | PRODUCT.md | no |
+| website/ | Modest public landing + Pages | live | entry | current | Marketing; Ko-fi live; series **0.9.9** | retain | — | README, ROADMAP | PRODUCT.md | no |
 | NOTICE | Third-party model/dataset notice | live | entry | current | Hub-card residual dropped 2026-08-07 | retain | — | trust_privacy, README | trust_privacy_model_governance_1_0.md | no |
 | docs/requirements.txt | Sphinx/RTD install pins | live | developer | current | Mirrors `[docs]` extras | retain | — | .readthedocs.yml | docs_architecture_1_0.md | no |
 | .readthedocs.yml | RTD build scaffold | live | developer | current | Hostname denylist until go-live | retain | — | docs_architecture | docs_architecture_1_0.md | no |

@@ -538,7 +538,7 @@ Focus: operational tolerance, trust, docs surfaces — split across further 0.9.
 - [ ] Prompt/model-output tuning; failure-state improvements (only severity-justified leftovers)
 - [x] Performance and resource envelope **recipe** + corpus sizes documented (**0.9.7**; Medium Balanced + Large-library UI measured **2026-08-07**; Thorough named-speaker + `qwen2.5:7b` measured **2026-08-07**; final Thorough stress pass tx+groups **2026-08-08**)
 - [x] Trust / privacy / model-governance gate (**0.9.7**; Hub-card residual **dropped** 2026-08-07)
-- [ ] First screenshot-based user guides
+- [x] First screenshot-based user guides — five workflow walkthroughs ([docs/workflows/](../workflows/index.md); media capture [workflow_media_capture.md](workflow_media_capture.md))
 - [ ] RTD navigation polish (usable docs required; polish not a hard blocker) — go-live owner-gated
 - [x] Initial `website/` + GitHub Pages — credible landing (**0.9.7**; modest)
 - [x] User-facing known-limitations page + maintainer/unfamiliar-user kits (**0.9.8**; measured evidence still open)
@@ -553,7 +553,7 @@ RC **only when gates pass** — not when a patch number is exhausted.
 - [ ] AppTest + manual journey passes (incl. a11y / browser)
 - [ ] Unfamiliar-user validation evidence reviewed; blockers triaged
 - [ ] Regenerated version-matched demo data
-- [x] Docs Sphinx build in CI (**0.9.5**); website polish + final screenshots as capacity allows
+- [x] Docs Sphinx build in CI (**0.9.5**); website polish + workflow screenshots landed (**2026-08**; further polish as capacity allows)
 - [ ] Schema/compatibility freeze; published known limitations under severity rules ([known_limitations.md](../known_limitations.md) drafted **0.9.8**; publish/sign-off still RC)
 - [ ] Performance envelopes and trust gate signed off
 - [ ] Release-ops / support policy published
