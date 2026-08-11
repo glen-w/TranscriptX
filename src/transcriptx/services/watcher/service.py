@@ -234,6 +234,12 @@ def get_watcher_service() -> DirectoryWatcherService:
         if _SERVICE is None:
             _SERVICE = DirectoryWatcherService()
             atexit.register(_shutdown_watcher_service)
+            # Resume watching when persisted/env settings already enable it.
+            try:
+                if _SERVICE.settings.enabled:
+                    _SERVICE.start()
+            except Exception:
+                logger.exception("Failed to auto-start directory watcher from settings")
         return _SERVICE
 
 

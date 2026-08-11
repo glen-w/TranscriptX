@@ -304,3 +304,122 @@ def test_job_store_activity(tmp_path: Path) -> None:
     assert activity[0]["state"] == "imported"
     counts = store.counts_by_state()
     assert counts.get("imported") == 1
+
+
+def test_pipeline_cancel_during_stabilize(tmp_path: Path, monkeypatch) -> None:
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    src = inbox / "meeting.srt"
+    src.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello\n", encoding="utf-8")
+
+    def _slow_stable(*_a, **_k):
+        time.sleep(0.2)
+        from transcriptx.services.watcher.stability import FileIdentity
+
+        return FileIdentity.from_lstat(src)
+
+    monkeypatch.setattr(
+        "transcriptx.services.watcher.pipeline.wait_until_stable", _slow_stable
+    )
+    settings = DirectoryWatcherSettings(
+        enabled=True,
+        watch_paths=[str(inbox)],
+        stability_checks=1,
+        stability_interval_ms=50,
+    )
+    store = JobStore(tmp_path / "watcher" / "jobs")
+    cancelled = {"flag": False}
+
+    def _cancel() -> bool:
+        return cancelled["flag"]
+
+    import threading
+
+    result: dict[str, object] = {}
+
+    def _run() -> None:
+        result["job"] = process_watched_path(
+            src, settings=settings, store=store, cancel_check=_cancel
+        )
+
+    thread = threading.Thread(target=_run, daemon=True)
+    thread.start()
+    time.sleep(0.05)
+    cancelled["flag"] = True
+    thread.join(timeout=5.0)
+    job = result.get("job")
+    assert job is not None
+    assert job.state is JobState.CANCELLED  # type: ignore[union-attr]
+
+
+def test_observer_debounce_fires_once(tmp_path: Path) -> None:
+    from transcriptx.services.watcher.observer import _DebouncedHandler
+    from transcriptx.services.watcher.settings import DirectoryWatcherSettings
+
+    settings = DirectoryWatcherSettings(
+        enabled=True,
+        watch_paths=[str(tmp_path)],
+        debounce_ms=100,
+    )
+    hits: list[str] = []
+
+    def _on(path):
+        hits.append(str(path))
+
+    handler = _DebouncedHandler(settings=settings, on_path=_on)
+    target = tmp_path / "a.srt"
+    target.write_text("x", encoding="utf-8")
+
+    class _Evt:
+        is_directory = False
+        src_path = str(target)
+
+    handler.on_created(_Evt())
+    handler.on_modified(_Evt())
+    time.sleep(0.25)
+    assert hits == [str(target)]
+    handler.cancel_all()
+
+
+def test_classify_inbox_file_new_status(tmp_path: Path, monkeypatch) -> None:
+    root = tmp_path / "transcripts"
+    _patch_import_roots(monkeypatch, root, tmp_path / "outputs")
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    src = inbox / "fresh.srt"
+    src.write_text("1\n00:00:00,000 --> 00:00:01,000\nHi\n", encoding="utf-8")
+    cand = classify_inbox_file(src, transcripts_dir=root)
+    assert cand.status is CandidateStatus.NEW
+
+
+def test_get_watcher_service_autostarts_when_enabled(
+    tmp_path: Path, monkeypatch
+) -> None:
+    reset_watcher_service_for_tests()
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    settings = DirectoryWatcherSettings(
+        enabled=True,
+        watch_paths=[str(inbox)],
+        stability_checks=1,
+        stability_interval_ms=50,
+    )
+    save_watcher_settings(settings, config_dir=config_dir)
+    monkeypatch.setenv("TRANSCRIPTX_CONFIG_DIR", str(config_dir))
+    # Force settings loader to use our config dir via load path in service.
+    monkeypatch.setattr(
+        "transcriptx.services.watcher.service.load_watcher_settings",
+        lambda: load_watcher_settings(config_dir=config_dir),
+    )
+    from transcriptx.services.watcher.service import get_watcher_service
+
+    service = get_watcher_service()
+    try:
+        status = service.status()
+        assert status.enabled is True
+        assert status.running is True or status.observer_alive is True
+    finally:
+        service.stop()
+        reset_watcher_service_for_tests()
