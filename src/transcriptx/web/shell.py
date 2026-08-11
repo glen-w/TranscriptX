@@ -887,6 +887,31 @@ def inject_global_styles() -> None:
         background: rgba(31, 119, 180, 0.06);
         border-radius: 0 0.35rem 0.35rem 0;
     }
+    .tx-turn--playing {
+        border-left: 3px solid rgba(240, 193, 74, 0.75);
+        padding-left: 0.55rem;
+        background: linear-gradient(
+            90deg,
+            rgba(240, 193, 74, 0.12) 0%,
+            rgba(240, 193, 74, 0.03) 55%,
+            transparent 100%
+        );
+        border-radius: 0 0.35rem 0.35rem 0;
+    }
+    .tx-turn--jump.tx-turn--playing {
+        border-left-color: rgba(240, 193, 74, 0.85);
+        background: linear-gradient(
+            90deg,
+            rgba(240, 193, 74, 0.14) 0%,
+            rgba(31, 119, 180, 0.06) 60%,
+            transparent 100%
+        );
+    }
+    .tx-turn-line--playing {
+        height: 0;
+        margin: 0;
+        border-top: 2px solid rgba(240, 193, 74, 0.55);
+    }
     /* Collapse Streamlit markdown chrome around compact turns */
     [data-testid="stMarkdownContainer"]:has(.tx-turn) p {
         margin: 0 !important;
@@ -911,6 +936,16 @@ def inject_global_styles() -> None:
         background: rgba(31, 119, 180, 0.12);
         color: #8eb7e8;
         border: 1px solid rgba(31, 119, 180, 0.25);
+    }
+    span.tx-playing-target {
+        display: inline-block;
+        padding: 0.1rem 0.4rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        background: rgba(240, 193, 74, 0.16);
+        color: #e6c56a;
+        border: 1px solid rgba(240, 193, 74, 0.35);
     }
     /* Avoid browser scroll-anchoring jumps when the player updates in-place. */
     [data-testid="stMain"] {

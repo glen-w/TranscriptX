@@ -78,7 +78,7 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | A. Insights & analysis quality | Stronger deterministic/hybrid insights; clearer result UX | Early 1.x |
 | B. Corrections & transcript editing | Word-level propose/apply in the reader; studio as batch/review | Early 1.x |
 | C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections (and later rich edit) | Near-term 1.x — **in progress** (action service + CCv2 kit; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md)) |
-| D. Playback & reading UX | Karaoke-style word highlight; reader polish that Components unlock | With / after C |
+| D. Playback & reading UX | Karaoke-style word highlight; reader polish that Components unlock | With / after C — **[~] Transcript karaoke MVP** |
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
 | F. Library & organisation | Transcript tagging; Groups interaction rules | Mid 1.x |
 | G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher | Mid 1.x (merge = former §1.2) |
@@ -139,9 +139,11 @@ Speaker ID is reaching Streamlit’s architectural edge; TranscriptX as a whole 
 
 Builds on theme C (and existing playback surfaces). Inspired by polished self-hosted readers (e.g. Scriberr); keep analysis-first — do not become a notes-only app.
 
-- **Karaoke-style playback** — synchronised **word-by-word** (or tight span) highlighting during audio playback; seek-from-text ↔ seek-from-audio. Requires reliable word-level timings in imported or in-app transcripts.
-- Follow-along scrolling, clearer active-segment emphasis, and annotation/highlight affordances that do not fight Streamlit reruns (prefer Components v2 where needed)
-- Honesty: degrade gracefully when word timings are missing (segment-level only); never invent timings
+**Implementation status (2026-08):** Transcript viewer MVP landed — browser-local karaoke clip player with word-by-word highlight when imported `words[]` timings cover the clip; segment-level highlight + honesty caption when timings are missing/edited-null; Playing badge + follow-along scroll; seek-from-word inside the karaoke panel; `TranscriptKaraokeHost` implements the PlaybackHost contract without streaming `current_time` to Python. Continuous full-file karaoke and CCv2-native reader surface remain follow-ons.
+
+- **Karaoke-style playback** — synchronised **word-by-word** (or tight span) highlighting during audio playback; seek-from-text ↔ seek-from-audio. Requires reliable word-level timings in imported or in-app transcripts. **[x] clip-scoped MVP in Transcript** · [ ] continuous media / full-file seek
+- Follow-along scrolling, clearer active-segment emphasis, and annotation/highlight affordances that do not fight Streamlit reruns (prefer Components v2 where needed) — **[~] Playing emphasis + scroll on ▶**; CCv2-native reader polish still open
+- Honesty: degrade gracefully when word timings are missing (segment-level only); never invent timings — **[x]**
 
 ---
 
