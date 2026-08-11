@@ -1,8 +1,13 @@
 """
-Centralized configuration validation layer.
+Object-level configuration validation (legacy facade path).
 
-This module provides comprehensive validation for TranscriptX configuration,
-ensuring that all settings are valid before use.
+Canonical leaf / pilot validation for Settings UI and run configuration is
+``transcriptx.core.config.validation.validate_config``. This module remains in
+production only via ``file_overrides._validate_candidate``, which still runs
+**both** object-level checks here and leaf validation on ``to_dict()``.
+
+Do not add new call sites. Prefer ``core.config.validate_config``. Unification
+is tracked in ``docs/dev/settings_knobs_assessment.md`` (hardening track H1).
 """
 
 from dataclasses import dataclass

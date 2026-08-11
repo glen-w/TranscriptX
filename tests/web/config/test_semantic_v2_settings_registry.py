@@ -46,14 +46,16 @@ def test_registry_contains_all_v2_keys_with_descriptions() -> None:
         assert reg[key].description
 
 
-def test_common_settings_schema_groups_semantic_v2() -> None:
+def test_common_settings_schema_groups_semantic_similarity() -> None:
     keys = {f.key for f in COMMON_SETTINGS_SCHEMA}
     for k in _v2_keys():
         assert k in keys, k
     for f in COMMON_SETTINGS_SCHEMA:
         if not f.key.startswith("analysis.semantic_similarity."):
             continue
-        assert f.group.startswith("Semantic Similarity v2 /")
+        assert f.group.startswith("Semantic Similarity /")
+        assert "v2" not in f.group.lower()
+        assert "v2" not in f.label.lower()
 
 
 def test_advanced_flags_on_performance_and_filtering() -> None:
@@ -70,7 +72,18 @@ def test_advanced_flags_on_performance_and_filtering() -> None:
         assert reg[k].advanced is True, k
 
 
-def test_profile_target_semantic_v2_contract() -> None:
+def test_profile_target_semantic_similarity_contract() -> None:
     c = PROFILE_TARGET_CONTRACTS["semantic_similarity"]
     assert c.support.config_path == ("analysis", "semantic_similarity")
     assert "enabled" in c.edit_support.guided_fields
+    for motif_field in (
+        "motif_min_cluster_size",
+        "cross_session_match_threshold",
+        "min_sessions_for_recurring",
+        "max_motifs_per_session",
+        "max_motifs_per_group",
+        "max_centroid_bytes",
+        "cluster_eps",
+        "cluster_min_samples",
+    ):
+        assert motif_field in c.edit_support.guided_fields, motif_field

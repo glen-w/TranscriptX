@@ -75,7 +75,7 @@ Curated Insights placements should set `section:` (`summary` | `speakers` | `act
 
 ## Adding a layout
 
-1. Copy `presets/default.yaml` (or another curated preset) to `data/profiles/ui_layouts/my_layout.yaml`, **or** add a new built-in under `presets/` and register the id in `BUILTIN_LAYOUT_IDS` + layout picker labels.
+1. Copy `presets/default.yaml` (or another curated preset) to `{config_dir}/profiles/ui_layouts/my_layout.yaml` (runtime `PROFILES_DIR/ui_layouts/`; not repo `data/profiles/`), **or** add a new built-in under `presets/` and register the id in `BUILTIN_LAYOUT_IDS` + layout picker labels.
 2. Validate via Dashboard Builder **Schema** mode or `LayoutProfileStore.validate_layout_dict` / `validate_layout`.
 3. Set `active_layout_profile_id` in session state or use the Dashboard Builder selector.
 4. Prefer **Save as custom layout** in Dashboard Builder for user clones (overwrite confirmation + delete support).

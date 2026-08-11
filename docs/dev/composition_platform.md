@@ -30,7 +30,7 @@ Built-in presets are **immutable**:
 | `developer_debug` | Developer debug | Inspection layout (shown after visiting Dashboard Builder) |
 | `all` | All | Generated from the block registry (every block, alphabetical) — not a YAML file |
 
-Dashboard Builder can **Save as custom layout** under `data/profiles/ui_layouts/` and **delete** custom layouts. See [dashboard_builder.md](dashboard_builder.md).
+Dashboard Builder can **Save as custom layout** under `{config_dir}/profiles/ui_layouts/` (`PROFILES_DIR/ui_layouts`) and **delete** custom layouts. See [dashboard_builder.md](dashboard_builder.md).
 
 ## Deep links
 

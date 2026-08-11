@@ -30,7 +30,7 @@ Built-ins cannot be overwritten or deleted. Clone with **Save as custom layout**
 
 ## Custom layouts
 
-- Path: `data/profiles/ui_layouts/{id}.yaml` (under the project profiles directory)
+- Path: `{config_dir}/profiles/ui_layouts/{id}.yaml` (runtime `PROFILES_DIR/ui_layouts/`; not repo `data/profiles/`)
 - Ids are slugified to `[a-zA-Z0-9_-]+` (must start with a letter or digit); path segments and `..` are rejected
 - Saving over an existing custom id requires an explicit overwrite confirmation in the UI (`overwrite=False` at the store rejects silently replacing)
 - Delete requires a confirmation checkbox; if the deleted layout was active, the active id resets to `default`

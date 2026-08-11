@@ -41,35 +41,34 @@ class TranscriptXConfig:
     """
     Main configuration class for TranscriptX.
 
-    This is the central configuration class that manages all settings for the
-    TranscriptX system. It combines configuration from multiple sources:
-    - Default values
-    - Environment variables
-    - Configuration files
+    Central facade for analysis, I/O, LLM, workflow, and related settings.
+    Nested section objects expose attribute access used by pipeline modules
+    (``get_config().analysis.*``). Registry / Pydantic pilots live under
+    ``transcriptx.core.config`` and feed defaults, validation, and the Settings UI.
 
-    The configuration is organized into logical sections:
-    - analysis: Settings for all analysis modules
-    - output: Settings for file output and organization
-    - logging: Settings for logging system
-
-    Configuration can be loaded from JSON files and environment variables,
-    with environment variables taking precedence over file settings.
+    Configuration sections include analysis, input/output, logging, llm,
+    audio_preprocessing, workflow, group_analysis, dashboard, and metadata.
     """
 
     def __init__(self, config_file: str | None = None):
         """
-        Initialize configuration with default values and optional file loading.
+        Initialize configuration with defaults, then optional overrides.
 
         Args:
-            config_file: Path to configuration file (JSON format). If provided,
-                        the file will be loaded after setting defaults and
-                        environment variables.
+            config_file: Optional JSON path loaded after defaults and before
+                active module/workflow profiles and environment overrides.
 
         Note:
-            Configuration loading order (highest to lowest priority):
-            1. Environment variables
-            2. Configuration file (if provided)
-            3. Default values
+            Facade load order (lowest to highest priority):
+
+            1. Built-in defaults (section constructors / Pydantic hydrate)
+            2. Configuration file (if ``config_file`` is provided)
+            3. Active module / workflow profiles
+            4. Environment variables (``TRANSCRIPTX_*`` — wins)
+
+            Effective Settings/run resolution (project/draft/run layers) is
+            separate — see ``resolve_effective_config`` and
+            ``docs/runtime/STORAGE.md`` / ``docs/runtime/settings.md``.
         """
         # Initialize all configuration sections with default values
         self.analysis = AnalysisConfig()
