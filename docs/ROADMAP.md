@@ -98,6 +98,8 @@ Public positioning today: [comparison.md](comparison.md). Analysis backlog: [ana
 
 Insights and related analysis presentation work for 1.0; do not freeze quality here.
 
+Design: [theme_a_insights_quality.md](dev/theme_a_insights_quality.md).
+
 - Stronger **deterministic** outputs (clearer, more useful non-LLM / hybrid insights; less noise)
 - Reassess **GUI layout** for Insights and analysis result surfaces (hierarchy, scannability, what to show first)
 - Align with Overview presentation polish from **0.9.9** where patterns overlap; keep LLM insights honestly labelled

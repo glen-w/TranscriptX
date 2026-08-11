@@ -205,6 +205,7 @@
       "min_gap_seconds": 30.0,
       "min_phrase_frequency": 3,
       "min_phrase_len": 2,
+      "min_quote_chars": 24,
       "min_quote_words": 4
     },
     "weights": {
@@ -216,6 +217,23 @@
     }
   },
   "include_legacy_modules": false,
+  "insight_eligibility": {
+    "min_frequency": 2,
+    "min_score": 0.18,
+    "require_spread_or_recurrence_for_singletons": true
+  },
+  "insights": {
+    "counts": {
+      "overview_theme_cap": 5,
+      "top_notable_moments": 8,
+      "top_recurring_ideas": 8,
+      "top_themes": 8
+    },
+    "enabled": true,
+    "min_theme_score": 0.18,
+    "min_themes_for_signal": 2,
+    "topic_boost": 0.05
+  },
   "interaction_include_overlaps": true,
   "interaction_include_responses": true,
   "interaction_min_gap": 0.1,

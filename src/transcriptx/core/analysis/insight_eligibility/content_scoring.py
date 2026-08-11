@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
@@ -70,9 +71,11 @@ def score_content_phrases(
     total_windows = max(1, len(windows))
     total_blocks = max(1, len(speaker_blocks))
     max_count = max(counts.values(), default=1)
+    # Log scaling avoids one greeting/formula crushing every other phrase to ~0.
+    log_max = math.log1p(float(max_count))
     scores: Dict[str, Dict[str, float]] = {}
     for phrase, count in counts.items():
-        frequency = float(count) / float(max_count)
+        frequency = math.log1p(float(count)) / log_max if log_max > 0 else 0.0
         spread = float(window_hits.get(phrase, 0)) / float(total_windows)
         recurrence = float(block_hits.get(phrase, 0)) / float(total_blocks)
         entity_linkage = 1.0 if phrase in entity_set else 0.0

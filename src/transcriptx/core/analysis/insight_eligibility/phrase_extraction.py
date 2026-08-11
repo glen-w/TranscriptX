@@ -142,8 +142,11 @@ def extract_content_phrases(
     speaker_blocks: List[Dict[str, Any]],
     entities: List[str] | None = None,
     min_frequency: int = 2,
-    min_score: float = 0.2,
+    min_score: float = 0.18,
+    require_spread_or_recurrence_for_singletons: bool = True,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, float]]]:
+    if not segments:
+        return [], {}
     noun_chunks = _extract_noun_chunks(segments, tic_mask)
     ngrams = _extract_ngrams(segments, tic_mask, min_frequency=min_frequency)
     phrase_candidates = noun_chunks + ngrams
@@ -161,6 +164,12 @@ def extract_content_phrases(
     for phrase, metrics in scores.items():
         if metrics["total"] < min_score:
             continue
+        token_count = len([t for t in str(phrase).split() if t])
+        if require_spread_or_recurrence_for_singletons and token_count <= 1:
+            if float(metrics.get("spread", 0.0) or 0.0) <= 0.0 and float(
+                metrics.get("recurrence", 0.0) or 0.0
+            ) <= 0.0:
+                continue
         rows.append({"phrase": phrase, "score": metrics})
 
     rows.sort(key=lambda row: (-row["score"]["total"], row["phrase"]))
