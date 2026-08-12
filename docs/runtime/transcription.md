@@ -120,9 +120,11 @@ It processes MP3s in a source folder that lack matching JSON in a transcripts ou
 
 **`whisperx.env`** is used only for the whispermlx **subprocess** environment (`HF_TOKEN`, etc.), not for resolving config paths. Repo `.env` is loaded early (without overriding existing shell env) for `TRANSCRIPTX_*` path overrides — same pattern as Docker/native TranscriptX.
 
-### Audio prep / merge helpers (non-core)
+### Audio prep / merge (System → Tools)
 
-Optional host-side helpers for recordings **before** external transcription. Not part of the core GUI (removed from the Tools nav) and candidates for removal under 1.x theme **G1** (audio/transcript merge decision) — see [ROADMAP.md](../ROADMAP.md).
+Interactive GUI under **System → Tools** (tabs: **Preprocessing**, **Merge**) for recordings **before** external transcription. Requires host `ffmpeg` and `pydub`. Theme **G1** still covers optional transcript-part stitching vs remove — see [ROADMAP.md](../ROADMAP.md).
+
+CLI helpers remain for automation:
 
 **Assess / preprocess** (`scripts/audio_preprocess.py`):
 

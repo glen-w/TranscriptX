@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **System → Tools** hub: audio **Preprocessing** and **Merge** tabs restored under the renamed System sidebar section (formerly Settings), with dependency checks, guided assess/apply-suggested flow, serial-group one-click fill, and handoffs to Transcribe Audio. CLI scripts remain for automation.
 - Dashboard Builder / layout presets: three curated built-ins — **Meeting follow-up** (`meeting_followup`), **Speakers** (`speaker_focus`), **Minimal** (`minimal`) — plus Schema overwrite confirmation, delete-custom, layout-id slug hardening, and param type checks. Guide: [docs/dev/dashboard_builder.md](docs/dev/dashboard_builder.md).
 - **Theme B (corrections in the Transcript viewer):** Correct mode supports word/span propose, atomic accept-and-apply for the current candidate, and scoped corrected-sidecar writes without overwriting the managed original. Corrections Studio remains the batch/detector/LLM review surface (Start/Resume no longer auto-generates). Guide: [docs/runtime/corrections-viewer.md](docs/runtime/corrections-viewer.md).
 - **Theme C (high-interaction workspaces):** shared `SpeakerIdActionService` (revisioned command/ack) used by legacy Speaker ID callbacks; non-blocking ClipService APIs (`cached_clip_status` / `get_cached_clip_bytes` / `enqueue_clip`); packaged Streamlit Components v2 `transcriptx-workspaces` Speaker ID surface (transcript-scoped keys, ClipTransport base64, prefetch budgets; **feature flag default-on**; missing package falls through to classic UI); Corrections revisioned command protocol on the studio page; PlaybackHost handoff for Theme D; Playwright browser harness; design docs under `docs/dev/theme_c_*.md`.
@@ -21,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Sidebar section **Settings** renamed to **System** (page keys unchanged: Settings, Tools, Profiles, Dashboard Builder, Diagnostics).
+- Legacy bookmarks **Audio Prep** / **Audio Merge** redirect to **Tools** (Preprocessing / Merge tabs) instead of Transcribe Audio.
 - Executive layout preset now tags Insights `section:` values and includes a Charts page for consistent section nav / Builder preview.
 - Composition docs: layout envelope is schema_version **1** only (optional `section` on placements); preset catalog expanded in composition / web_blocks docs.
 - Speaker ID CCv2 workspace feature flag defaults **on**; rollback with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`. When `transcriptx-workspaces` is not installed, Speaker ID automatically uses the classic `@st.fragment` path. Legacy path retained until Phase 9 retirement criteria.

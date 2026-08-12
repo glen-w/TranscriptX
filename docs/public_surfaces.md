@@ -55,7 +55,7 @@ This document defines which TranscriptX surfaces are **supported** and which are
 - Generating shell/CLI commands for **external** transcription tools (whispermlx, whispermlx-missing, WhisperX Docker, Whisper-WebUI Gradio deploy) is a shipped **GUI capability** (**0.9.4**+): copyable only; Streamlit does not execute transcription. Whisper-WebUI is an **optional interoperability recipe** only — ownership disclaimer and smoke-test limits: [recipes/whisper-webui/README.md](recipes/whisper-webui/README.md).
 - Supported product path remains: external transcript → managed import → analysis.
 - Corpus helpers such as `scripts/whispermlx-missing.py` are documented user-facing scripts when referenced from runtime docs; they are not a replacement for managed import.
-- Audio **preprocess** / **merge** helpers (`scripts/audio_preprocess.py`, `scripts/audio_merge.py`) are **non-core** host utilities (GUI pages removed). Documented in transcription docs; 1.x theme **G1** decides invest in inline audio±transcript merge vs remove helpers ([ROADMAP.md](ROADMAP.md)).
+- Audio **preprocess** / **merge** are available in the GUI under **System → Tools** (Preprocessing and Merge tabs), with CLI helpers `scripts/audio_preprocess.py` / `scripts/audio_merge.py` for automation. Documented in transcription docs; 1.x theme **G1** still decides invest in transcript-part stitching vs remove helpers ([ROADMAP.md](ROADMAP.md)).
 
 ## 2. Not supported surfaces / patterns
 

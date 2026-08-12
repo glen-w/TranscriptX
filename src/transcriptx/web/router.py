@@ -8,6 +8,8 @@ from typing import Any, Callable
 import streamlit as st
 
 from transcriptx.web.navigation import (
+    TOOLS_HUB_FORCE_TAB_KEY,
+    TOOLS_HUB_TAB_KEY,
     PagePrerequisite,
     build_prerequisites,
     context_readiness,
@@ -96,6 +98,7 @@ def build_page_renderers(
             "upload_transcript", "render_upload_transcript_page"
         ),
         "Settings": _lazy_renderer("settings", "render_settings_page"),
+        "Tools": _lazy_renderer("tools", "render_tools_page"),
         "Profiles": _lazy_renderer("profiles", "render_profiles_page"),
         "Speaker ID": _lazy_renderer("speaker_id", "render_speaker_id_page"),
         "Rename Transcript": _lazy_renderer(
@@ -123,11 +126,15 @@ def route_current_page(
 ) -> None:
     # Redirect legacy routes before prerequisite evaluation.
     raw_page = session_state.get(PAGE_KEY, "Home")
-    migrated, artifacts_section = migrate_legacy_page_key(raw_page)
+    migrated, section_hint = migrate_legacy_page_key(raw_page)
     if migrated != raw_page:
         session_state[PAGE_KEY] = migrated
-        if artifacts_section:
-            session_state[ARTIFACTS_KEY_SECTION] = artifacts_section
+        if section_hint:
+            if migrated == "Tools":
+                session_state[TOOLS_HUB_TAB_KEY] = section_hint
+                session_state[TOOLS_HUB_FORCE_TAB_KEY] = section_hint
+            else:
+                session_state[ARTIFACTS_KEY_SECTION] = section_hint
 
     readiness = context_readiness(session_state)
     current = session_state.get(PAGE_KEY, "Home")

@@ -86,6 +86,60 @@ def test_redirect_legacy_batch_ops_presets_batch_target(monkeypatch) -> None:
 
 
 @pytest.mark.unit
+def test_build_page_renderers_includes_tools() -> None:
+    renderers = build_page_renderers(
+        corrections_studio_available=False,
+        render_corrections_studio=None,
+    )
+    assert "Tools" in renderers
+    assert "Tools" in PAGE_PREREQUISITES
+
+
+@pytest.mark.unit
+def test_legacy_audio_prep_redirect_sets_tools_tab(monkeypatch) -> None:
+    import transcriptx.web.router as router
+    from transcriptx.web.navigation import (
+        TOOLS_HUB_FORCE_TAB_KEY,
+        TOOLS_HUB_TAB_KEY,
+    )
+
+    ss: dict = {PAGE_KEY: "Audio Merge"}
+    rendered: list[str] = []
+
+    class _St:
+        session_state = ss
+        warning = staticmethod(lambda *_a, **_k: None)
+
+    monkeypatch.setattr(router, "st", _St)
+    monkeypatch.setattr(
+        router,
+        "build_page_renderers",
+        lambda **_k: {"Tools": lambda: rendered.append("tools")},
+    )
+    monkeypatch.setattr(
+        router,
+        "context_readiness",
+        lambda *_a, **_k: MagicMock(),
+    )
+    monkeypatch.setattr(
+        router,
+        "evaluate_page_access",
+        lambda *_a, **_k: MagicMock(allowed=True),
+    )
+
+    router.route_current_page(
+        ss,
+        corrections_studio_available=False,
+        render_corrections_studio=None,
+    )
+
+    assert ss[PAGE_KEY] == "Tools"
+    assert ss[TOOLS_HUB_TAB_KEY] == "Merge"
+    assert ss[TOOLS_HUB_FORCE_TAB_KEY] == "Merge"
+    assert rendered == ["tools"]
+
+
+@pytest.mark.unit
 def test_run_analysis_batch_ops_import_cycle_safe() -> None:
     """batch_ops must not import run_analysis; router may import run_analysis locally."""
     import transcriptx.web.page_modules.batch_ops as batch_ops

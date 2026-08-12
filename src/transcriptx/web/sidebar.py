@@ -37,7 +37,7 @@ _SECTION_TITLES: dict[NavSection, str] = {
     "workflow": "Workflow",
     "view": "View",
     "tools": "Tools",
-    "settings": "Settings",
+    "settings": "System",
 }
 
 _SUBJECT_TYPE_OPTIONS = ("Transcript", "Group")

@@ -1,4 +1,4 @@
-"""Tests for serial group UI helpers (Audio Merge page removed)."""
+"""Tests for serial group UI helpers and Tools merge navigation."""
 
 from __future__ import annotations
 
@@ -24,11 +24,11 @@ class TestNavigationHelpers:
         assert consume_transcription_nav_paths(session) == ["/tmp/merged.mp3"]
         assert TRANSCRIPTION_NAV_PATHS_KEY not in session
 
-    def test_legacy_audio_pages_redirect_to_transcribe(self) -> None:
+    def test_legacy_audio_pages_redirect_to_tools(self) -> None:
         from transcriptx.web.navigation import migrate_legacy_page_key
 
-        assert migrate_legacy_page_key("Audio Prep") == ("Transcribe Audio", None)
-        assert migrate_legacy_page_key("Audio Merge") == ("Transcribe Audio", None)
+        assert migrate_legacy_page_key("Audio Prep") == ("Tools", "Preprocessing")
+        assert migrate_legacy_page_key("Audio Merge") == ("Tools", "Merge")
 
 
 class TestSerialDetectionIntegration:
@@ -56,11 +56,11 @@ class TestPageIntegrationPresence:
         assert "Import Transcript" in source
         assert "consume_transcription_nav_paths" in source
 
-    def test_serial_group_prompt_points_at_merge_helper(self) -> None:
+    def test_serial_group_prompt_points_at_tools_merge(self) -> None:
         import transcriptx.web.components.serial_group_prompt as mod
 
         source = Path(mod.__file__).read_text(encoding="utf-8")
         assert "render_serial_group_prompt" in source
-        assert "scripts/audio_merge.py" in source
+        assert "System → Tools → Merge" in source
         assert "Transcribe these files separately anyway" in source
-        assert "Audio Merge" not in source
+        assert "Open Tools → Merge" in source
