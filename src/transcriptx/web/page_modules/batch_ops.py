@@ -26,6 +26,7 @@ from transcriptx.web.cache_helpers import (
     clear_run_listing_caches,
     get_cached_list_transcript_picker_options,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.components.analysis_preset_controls import (
     apply_custom_qa_to_plan,
     render_analysis_preset_selector,
@@ -73,7 +74,7 @@ def _batch_ops_selection_fragment(
         default=[],
         format_func=_format_option,
         key="batch_transcripts",
-        help="Choose one or more transcripts from the library.",
+        help=widget_help("Choose one or more transcripts from the library."),
     )
 
 

@@ -12,6 +12,7 @@ import streamlit as st
 
 from transcriptx.app.controllers.profile_controller import ProfileController
 from transcriptx.core.config import get_profile_target_adapter
+from transcriptx.web.components.info_tooltip import widget_help
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -104,6 +105,10 @@ def render_profiles_page() -> None:
                 else f"{(get_profile_target_adapter(t).type_badge if get_profile_target_adapter(t) else 'Profile')} · {t}"
             ),
             key="profiles_target",
+            help=widget_help((
+                "Module profiles tune one analysis module; workflow profiles tune "
+                "cross-cutting pipeline defaults. Activation is set under Settings → Configuration."
+            )),
         )
         if not target_choice:
             st.info("Select a supported profile target to manage profiles.")

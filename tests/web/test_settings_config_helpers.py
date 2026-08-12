@@ -30,14 +30,82 @@ def test_render_field_widget_bool_checkbox(monkeypatch) -> None:
 
     class _St:
         @staticmethod
-        def checkbox(label, value=False, key=None):
-            calls.append((label, value, key))
+        def checkbox(label, value=False, key=None, help=None):
+            calls.append((label, value, key, help))
             return True
 
     monkeypatch.setattr(mod, "st", _St)
-    out = render_field_widget(_meta(type=bool), False, "k1")
+    monkeypatch.setattr(
+        "transcriptx.web.components.info_tooltip.info_tooltips_enabled",
+        lambda: True,
+    )
+    out = render_field_widget(
+        _meta(type=bool, description="Toggle the flag"), False, "k1"
+    )
     assert out is True
     assert calls[0][0] == "analysis.flag"
+    assert calls[0][3] == "Toggle the flag"
+
+
+@pytest.mark.unit
+def test_render_field_widget_passes_description_as_help(monkeypatch) -> None:
+    import transcriptx.web.ui.settings.widgets as mod
+
+    captured: dict = {}
+
+    class _St:
+        @staticmethod
+        def text_input(label, value="", key=None, help=None):
+            captured.update(label=label, help=help, value=value, key=key)
+            return value
+
+    monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(
+        "transcriptx.web.components.info_tooltip.info_tooltips_enabled",
+        lambda: True,
+    )
+    render_field_widget(
+        _meta(type=str, key="analysis.model", path="analysis.model", description="  "),
+        "m",
+        "k",
+    )
+    assert captured["help"] is None
+    render_field_widget(
+        _meta(
+            type=str,
+            key="analysis.model",
+            path="analysis.model",
+            description="Model id for embeddings.",
+        ),
+        "m",
+        "k2",
+    )
+    assert captured["help"] == "Model id for embeddings."
+
+
+@pytest.mark.unit
+def test_render_field_widget_suppresses_help_when_tips_disabled(monkeypatch) -> None:
+    import transcriptx.web.ui.settings.widgets as mod
+
+    captured: dict = {}
+
+    class _St:
+        @staticmethod
+        def checkbox(label, value=False, key=None, help=None):
+            captured["help"] = help
+            return value
+
+    monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(
+        "transcriptx.web.components.info_tooltip.info_tooltips_enabled",
+        lambda: False,
+    )
+    render_field_widget(
+        _meta(type=bool, description="Toggle the flag"),
+        False,
+        "k_off",
+    )
+    assert captured["help"] is None
 
 
 @pytest.mark.unit
@@ -46,7 +114,7 @@ def test_render_field_widget_choices_selectbox(monkeypatch) -> None:
 
     class _St:
         @staticmethod
-        def selectbox(_label, options, index=0, key=None):
+        def selectbox(_label, options, index=0, key=None, help=None):
             return options[index]
 
     monkeypatch.setattr(mod, "st", _St)
@@ -64,7 +132,7 @@ def test_render_field_widget_multiselect_for_list_choices(monkeypatch) -> None:
 
     class _St:
         @staticmethod
-        def multiselect(_label, options, default=None, key=None):
+        def multiselect(_label, options, default=None, key=None, help=None):
             return list(default or [])
 
     monkeypatch.setattr(mod, "st", _St)

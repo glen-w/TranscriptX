@@ -36,6 +36,7 @@ from transcriptx.io.import_admission import (
 )
 from transcriptx.io.managed_import_workflow import StagingCleanupPolicy
 from transcriptx.web.cache_helpers import clear_transcript_listing_caches
+from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.action_menus.context import ActionContext, build_canonical_identity
 from transcriptx.web.action_menus.ids import NavStyle, SectionId
 from transcriptx.web.action_menus.render import render_configured_actions
@@ -277,10 +278,10 @@ def _render_folder_import_section() -> None:
     path_value = st.text_input(
         "Folder path (absolute)",
         key=_KEY_FOLDER_PATH,
-        help=(
+        help=widget_help((
             "Example: /Users/you/Documents/whisper-out. "
             "Must be absolute. Relative paths are rejected."
-        ),
+        )),
     )
     _invalidate_scan_if_path_changed(path_value or "")
 
@@ -453,10 +454,10 @@ def render_upload_transcript_page() -> None:
             "Choose a transcript file",
             type=list(SUPPORTED_IMPORT_UPLOAD_TYPES),
             accept_multiple_files=True,
-            help=(
+            help=widget_help((
                 "JSON (TranscriptX, Whisper, Sembly), SRT, VTT, HTML "
                 "(e.g. Sembly export), or other supported formats."
-            ),
+            )),
             key="upload_transcript_file",
         )
         import_submitted = st.form_submit_button(
@@ -508,10 +509,10 @@ def render_upload_transcript_page() -> None:
             "Upload recording (optional)",
             type=_AUDIO_UPLOAD_TYPES,
             accept_multiple_files=False,
-            help=(
+            help=widget_help((
                 "This stores audio for speaker identification and voice/audio "
                 "feature modules. It does not generate transcript text."
-            ),
+            )),
             key="upload_optional_recording_file",
         )
         recording_submitted = st.form_submit_button("Upload Recording")

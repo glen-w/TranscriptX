@@ -47,6 +47,7 @@ from transcriptx.web.summary_precedence import (
     resolve_primary_summary,
     quiet_unavailable_message,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 
 
 def _loader(ctx: BlockContext):
@@ -290,6 +291,7 @@ def render_insights_summary_panel(
                 options=labels,
                 default=st.session_state[state_key],
                 key=f"{state_key}_control",
+                help=widget_help("Switch between available Overview summary variants for this run."),
             )
         except Exception:
             choice = st.radio(
@@ -298,6 +300,7 @@ def render_insights_summary_panel(
                 index=labels.index(st.session_state[state_key]),
                 horizontal=True,
                 key=f"{state_key}_radio",
+                help=widget_help("Switch between available Overview summary variants for this run."),
             )
         if choice in by_label:
             st.session_state[state_key] = choice

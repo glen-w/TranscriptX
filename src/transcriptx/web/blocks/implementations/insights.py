@@ -48,6 +48,7 @@ from transcriptx.web.navigation import (
     navigate_highlight_to_transcript,
     navigate_to_data_artifact,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 
 
 def _loader(ctx: BlockContext):
@@ -903,11 +904,13 @@ def _highlights_browser_fragment(
             "Section",
             options=["All"] + sections_available,
             key="highlights_section_filter",
+            help=widget_help("Limit highlights to one Insights section bucket."),
         )
         st.multiselect(
             "Speakers",
             options=speakers_available,
             key="highlights_speaker_filter",
+            help=widget_help("Show only highlights involving the selected speakers."),
         )
         st.slider(
             "Minimum score",
@@ -915,6 +918,7 @@ def _highlights_browser_fragment(
             max_value=1.0,
             step=0.05,
             key="highlights_min_score",
+            help=widget_help("Hide highlights ranked below this score."),
         )
 
     section_filter = st.session_state.get("highlights_section_filter", "All")

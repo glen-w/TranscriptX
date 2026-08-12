@@ -41,6 +41,7 @@ from transcriptx.io.speaker_map_resolver import (
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
 from transcriptx.web.action_menus.context import ActionContext, build_canonical_identity
+from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.action_menus.ids import NavStyle, SectionId
 from transcriptx.web.action_menus.render import render_configured_actions
 from transcriptx.web.components.playback_panel import (
@@ -1194,7 +1195,7 @@ def _render_voice_suggestions(
             key=widget_key(path_str, f"voice_load_{active_id}"),
             on_click=_cb_load_voice,
             args=(path_str,),
-            help="Prepare local voice matching controls for this transcript.",
+            help=widget_help("Prepare local voice matching controls for this transcript."),
         )
         return
 
@@ -1230,17 +1231,17 @@ def _render_voice_suggestions(
     btn_one.button(
         "Analyse voice",
         key=widget_key(path_str, f"voice_analyse_{active_id}"),
-        help="Embed this speaker and rank local profile suggestions.",
+        help=widget_help("Embed this speaker and rank local profile suggestions."),
         on_click=_cb_voice_analyse_one,
         args=(path_str, active_id),
     )
     btn_all.button(
         "Analyse all speakers",
         key=widget_key(path_str, "voice_analyse_all"),
-        help=(
+        help=widget_help((
             "Run voice matching for every non-ignored speaker so "
             "suggestions are ready as you step through the list."
-        ),
+        )),
         on_click=_cb_voice_analyse_all,
         args=(path_str,),
     )
@@ -1670,16 +1671,17 @@ def _speaker_id_workspace_fragment(
             key=name_widget_key(transcript_path, active_id),
             placeholder="Type speaker name…",
             label_visibility="collapsed",
+            help=widget_help("Local display name for this diarization speaker key in the transcript map."),
         )
     if is_managed_for_profiles:
         st.checkbox(
             "Also link to longitudinal speaker profile",
             value=True,
             key=link_profile_key(transcript_path, active_id),
-            help=(
+            help=widget_help((
                 "Creates a durable cross-transcript profile link for this managed "
                 "library speaker. Ad-hoc / run-output JSON supports local naming only."
-            ),
+            )),
         )
     else:
         st.caption(

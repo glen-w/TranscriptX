@@ -9,6 +9,7 @@ from pathlib import Path
 import streamlit as st
 
 from transcriptx.web.blocks.implementations.data import render_artifact_file_preview
+from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.export_panel import render_export_panel_ui
 from transcriptx.web.components.page_shell import render_page_shell
@@ -149,6 +150,12 @@ def _render_browse(ctx: RunScopedPageContext) -> None:
         "Source",
         source_options,
         key=ARTIFACTS_KEY_SOURCE_FILTER,
+        help=widget_help((
+            "For group runs: Group aggregate = pooled artifacts; "
+            "Member sessions = per-transcript outputs."
+            if is_group
+            else "Filter browse list by artifact provenance when available."
+        )),
     )
     source_filter = ArtifactSourceFilter.ALL
     if source_label == "Group aggregate":
@@ -227,7 +234,11 @@ def _render_browse(ctx: RunScopedPageContext) -> None:
 
     with st.expander("On disk but not in manifest", expanded=False):
         st.caption("Advanced: scans the run directory for orphan files.")
-        if st.checkbox("Scan for orphan files", key="artifacts_orphan_scan"):
+        if st.checkbox(
+            "Scan for orphan files",
+            key="artifacts_orphan_scan",
+            help=widget_help("List files under the run directory that are not in the artifact manifest."),
+        ):
             _render_orphan_files(ctx.run_root, index.artifacts())
 
 

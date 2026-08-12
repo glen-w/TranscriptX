@@ -18,6 +18,7 @@ from transcriptx.app.progress import make_initial_snapshot
 from transcriptx.core.domain.group import Group
 from transcriptx.core.utils.config import get_config
 from transcriptx.web.action_menus.context import ActionContext, build_canonical_identity
+from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.action_menus.ids import NavStyle, SectionId
 from transcriptx.web.action_menus.render import render_configured_actions
 from transcriptx.web.cache_helpers import (
@@ -605,6 +606,10 @@ def render_run_analysis_page() -> None:
         "Target",
         options=target_options,
         key=_RUN_ANALYSIS_TARGET_KEY,
+        help=widget_help((
+            "Transcript: one managed file. Group: pooled multi-transcript run. "
+            "Batch: queue many transcripts with the same preset."
+        )),
     )
     if target_type is None:
         target_type = st.session_state.get(_RUN_ANALYSIS_TARGET_KEY, "Transcript")

@@ -17,6 +17,16 @@ def test_build_run_id_info_html_escapes_and_is_accessible():
     assert "aria-describedby" in html_out
 
 
+def test_build_run_id_info_html_ignores_instructional_tip_prefs(monkeypatch):
+    monkeypatch.setattr(
+        "transcriptx.web.components.info_tooltip.info_tooltips_enabled",
+        lambda: False,
+    )
+    html_out = run_id_info.build_run_id_info_html("run_abc", control_id="tip-on")
+    assert "ⓘ" in html_out
+    assert "run_abc" in html_out
+
+
 def test_render_run_id_info_control_skips_empty_and_does_not_mutate(monkeypatch):
     calls: list[str] = []
     state: dict = {"kept": 1}

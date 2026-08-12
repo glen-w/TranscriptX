@@ -13,6 +13,7 @@ from transcriptx.services.corrections_studio.bulk_generation import (
 from transcriptx.services.corrections_studio.controller import (
     CorrectionsStudioController,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 
 _MODE_KEY = "_corrections_bulk_mode"
 _PREVIEW_KEY = "_corrections_bulk_preview"
@@ -86,10 +87,10 @@ def render_corrections_panel() -> None:
         options=["Generate missing", "Regenerate all"],
         horizontal=True,
         key="_corrections_bulk_mode_radio",
-        help=(
+        help=widget_help((
             "Generate missing: create candidates only where none exist. "
             "Regenerate all: re-run detectors (and optional LLM discovery) for every transcript."
-        ),
+        )),
     )
     mode = (
         BulkGenerationMode.REGENERATE_ALL
@@ -152,13 +153,14 @@ def render_corrections_panel() -> None:
         ack = st.checkbox(
             "I understand this regenerates candidates for all transcripts",
             key=_ACK_KEY,
+            help=widget_help("Required acknowledgment before regenerate-all can run."),
         )
         phrase_ok = False
         if ack:
             typed = st.text_input(
                 f"Type {CONFIRM_REGENERATE_ALL} to confirm",
                 key=_PHRASE_KEY,
-                help="Exact match required (case-sensitive, no trimming).",
+                help=widget_help("Exact match required (case-sensitive, no trimming)."),
             )
             phrase_ok = typed == CONFIRM_REGENERATE_ALL
             if typed and not phrase_ok:

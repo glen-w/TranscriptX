@@ -16,6 +16,7 @@ How to change TranscriptX behaviour from the GUI, env, and config files — with
 | Full registry of knobs | **Settings → Configuration** → enable **Show advanced/raw settings editor** |
 | Named module/workflow presets (disk JSON) | **Profiles** page (sidebar) — activate from Configuration for Project / Run |
 | Paths, watcher, speakers, LLM models, questions | Other **Settings** tabs (Storage, Watcher, Speakers, Interface, Models, Questions, Corrections) |
+| Show/hide instructional ⓘ tips (widget help + Speakers methodology notes) | **Settings → Interface** → Help / info tips (`show_info_tooltips` in `interface_menus.json`; run-id ⓘ stays on) |
 | Install capability (`core` vs `full`) | Env / install marker — see [installation.md](installation.md); **not** the Profiles page |
 
 Speaker identity/voice stores are a separate subsystem (Settings → Speakers). See [speaker_profiles_v1](../contracts/speaker_profiles_v1.md) and [STORAGE.md](STORAGE.md).

@@ -19,6 +19,7 @@ from transcriptx.core.analysis.llm_custom_qa.resolve import (
 )
 from transcriptx.core.config.persistence import patch_project_config_keys
 from transcriptx.core.utils.config import get_config
+from transcriptx.web.components.info_tooltip import widget_help
 
 _SCOPE_OPTIONS = (
     "Global",
@@ -124,6 +125,7 @@ def render_custom_qa_picker(
                 default=[],
                 key=saved_key,
                 max_selections=max_per_run,
+                help=widget_help("Pick saved questions from Settings → Questions for this run."),
             )
         else:
             st.caption("No saved questions yet — add some in Settings → Questions.")
@@ -155,6 +157,7 @@ def render_custom_qa_picker(
                     options=list(_SCOPE_OPTIONS),
                     key=scope_key,
                     label_visibility="collapsed",
+                    help=widget_help("Global = once per transcript/group; Per speaker = once per linked speaker."),
                 )
                 g, ps = _scope_from_label(str(chosen))
                 row["global"] = g

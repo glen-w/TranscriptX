@@ -81,6 +81,7 @@ def _draft(*, recovery: bool = False) -> SimpleNamespace:
         standard_menu_mode="built_in",
         standard_menu=[],
         sections={},
+        show_info_tooltips=True,
     )
     return SimpleNamespace(
         prefs=prefs,
@@ -245,3 +246,29 @@ def test_interface_panel_reload_from_disk(monkeypatch) -> None:
 
     assert reload_calls
     assert _IfaceStreamlit.rerun_calls == 1
+
+
+@pytest.mark.unit
+def test_interface_panel_sync_and_pull_show_info_tooltips(monkeypatch) -> None:
+    import transcriptx.web.ui.settings.interface_panel as mod
+    from transcriptx.web.action_menus.prefs import built_in_prefs
+
+    _IfaceStreamlit.reset()
+    prefs = built_in_prefs()
+    prefs.show_info_tooltips = False
+    draft = SimpleNamespace(
+        prefs=prefs,
+        recovery=False,
+        recovery_message=None,
+    )
+    _IfaceStreamlit.session_state[DRAFT_SESSION_KEY] = draft
+    monkeypatch.setattr(mod, "st", _IfaceStreamlit)
+    monkeypatch.setattr(mod, "SECTION_ORDER", ())
+    monkeypatch.setattr(mod, "ACTIONS", ())
+
+    mod._sync_widgets_from_draft()
+    assert _IfaceStreamlit.session_state["iface_show_info_tooltips"] is False
+
+    _IfaceStreamlit.session_state["iface_show_info_tooltips"] = True
+    mod._pull_widgets_into_draft()
+    assert draft.prefs.show_info_tooltips is True

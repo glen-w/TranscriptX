@@ -9,6 +9,7 @@ from transcriptx.services.watcher import (
     get_watcher_service,
     load_watcher_settings,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 
 
 def render_watcher_panel() -> None:
@@ -29,17 +30,17 @@ def render_watcher_panel() -> None:
         "Enable directory watcher",
         value=bool(current.enabled),
         key="watcher_enabled",
-        help="Explicit opt-in. Leave off on shared machines unless you intend auto-import.",
+        help=widget_help("Explicit opt-in. Leave off on shared machines unless you intend auto-import."),
     )
     paths_text = st.text_area(
         "Watch paths (one absolute path per line)",
         value="\n".join(current.watch_paths),
         key="watcher_paths",
-        help=(
+        help=widget_help((
             "Example: /mnt/transcript-inbox (Docker) or "
             "/Users/you/Documents/transcripts-inbox. "
             "Must not be under the managed transcripts library."
-        ),
+        )),
     )
     col_a, col_b = st.columns(2)
     with col_a:
@@ -48,6 +49,10 @@ def render_watcher_panel() -> None:
             options=["auto_import", "offer", "ignore"],
             index=["auto_import", "offer", "ignore"].index(current.transcript_mode),
             key="watcher_transcript_mode",
+            help=widget_help((
+                "auto_import: admit new transcript files into the library. "
+                "offer: queue for review. ignore: skip transcript files."
+            )),
         )
     with col_b:
         audio_mode = st.selectbox(
@@ -57,13 +62,14 @@ def render_watcher_panel() -> None:
             if current.audio_mode in {"offer", "ignore", "auto_transcribe"}
             else 0,
             key="watcher_audio_mode",
-            help="auto_transcribe requires a host STT provider (theme H) and is rejected for now.",
+            help=widget_help("auto_transcribe requires a host STT provider (theme H) and is rejected for now."),
         )
 
     recursive = st.checkbox(
         "Watch subdirectories",
         value=bool(current.recursive),
         key="watcher_recursive",
+        help=widget_help("When on, files in nested folders under each watch path are also considered."),
     )
     debounce_ms = st.number_input(
         "Debounce (ms)",
@@ -72,6 +78,7 @@ def render_watcher_panel() -> None:
         value=int(current.debounce_ms),
         step=100,
         key="watcher_debounce_ms",
+        help=widget_help("Wait this long after the last write before treating a file as complete."),
     )
 
     if st.button("Save watcher settings", type="primary", key="watcher_save_btn"):

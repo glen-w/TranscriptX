@@ -8,7 +8,6 @@ mutations still call full ``st.rerun()`` so the snapshot refreshes.
 from __future__ import annotations
 
 import hashlib
-import html
 import json
 from math import floor
 from typing import Any, Mapping, Sequence
@@ -59,6 +58,11 @@ from transcriptx.core.speaker_profiles.time_series import (
     build_directory_activity_chart,
 )
 from transcriptx.utils.html_utils import wrap_tooltip_text
+from transcriptx.web.components.info_tooltip import (
+    build_info_tooltip_html,
+    build_section_heading_with_info_html,
+)
+from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.core.utils.paths import PATHS
 from transcriptx.core.utils.speaker import parse_speaker_name
 from transcriptx.web.components.empty_state import render_empty_state
@@ -131,20 +135,11 @@ def _info_tooltip_html(
     test_id: str = "tx-info-tooltip",
 ) -> str:
     """Build an ⓘ tooltip for multi-line help / notes."""
-    if not lines:
-        return ""
-    tip_body = "<br>".join(html.escape(line) for line in lines)
-    tip_id = html.escape(control_id, quote=True)
-    aria = html.escape(aria_label, quote=True)
-    test = html.escape(test_id, quote=True)
-    return (
-        f'<span class="tx-run-id-info tx-methodology-info" '
-        f'data-testid="{test}">'
-        f'<button type="button" class="tx-run-id-info-btn" tabindex="0" '
-        f'aria-label="{aria}" aria-describedby="{tip_id}">ⓘ</button>'
-        f'<span id="{tip_id}" class="tx-run-id-info-tip tx-methodology-info-tip" '
-        f'role="tooltip">{tip_body}</span>'
-        f"</span>"
+    return build_info_tooltip_html(
+        lines,
+        control_id=control_id,
+        aria_label=aria_label,
+        test_id=test_id,
     )
 
 
@@ -163,12 +158,7 @@ def _methodology_info_html(
 
 
 def _section_heading_with_info_html(title: str, tip_html: str) -> str:
-    return (
-        '<div class="tx-section-info-heading">'
-        f"<h4>{html.escape(title)}</h4>"
-        f"{tip_html}"
-        "</div>"
-    )
+    return build_section_heading_with_info_html(title, tip_html)
 
 
 _SPEAKERS_DESCRIPTION = (
@@ -569,28 +559,28 @@ def _render_profile_detail(
     m1.metric(
         "Words",
         f"{agg.headline_words:,}",
-        help=f"Total words spoken across eligible appearances. {eligibility_help}",
+        help=widget_help(f"Total words spoken across eligible appearances. {eligibility_help}"),
     )
     m2.metric(
         "Turns",
         f"{agg.headline_turns:,}",
-        help=f"Total speaking turns across eligible appearances. {eligibility_help}",
+        help=widget_help(f"Total speaking turns across eligible appearances. {eligibility_help}"),
     )
     m3.metric(
         "Duration (h)",
         f"{agg.headline_duration_seconds / 3600:,.1f}",
-        help=(
+        help=widget_help((
             "Total speaking duration across eligible appearances, in hours. "
             f"{eligibility_help}"
-        ),
+        )),
     )
     m4.metric(
         "Appearances",
         f"{agg.headline_appearance_count:,}",
-        help=(
+        help=widget_help((
             "Linked appearances included in the word, turn, and duration totals. "
             f"{eligibility_help} The header count includes all linked appearances."
-        ),
+        )),
     )
 
     if (
@@ -703,11 +693,11 @@ def _render_voice_controls(
         if st.button(
             "Enrol trusted voice from confirmed links",
             key=f"spk_voice_bootstrap_{profile.profile_id}",
-            help=(
+            help=widget_help((
                 "Explicit bootstrap: extracts and embeds voice from this profile's "
                 "confirmed links (up to the Settings → Speakers enrol link cap). "
                 "Privacy opt-in alone does not enrol anything."
-            ),
+            )),
         ):
             try:
                 from transcriptx.services.speaker_profiles.voice_facade import (
@@ -1563,7 +1553,7 @@ def _render_edit_form(profile: SpeakerProfileV1, *, root) -> None:
             "Auto from name (clear stored accent)",
             value=False,
             key=f"{form_prefix}_clear_accent",
-            help="Clears accent_color so display falls back to the name-hash palette.",
+            help=widget_help("Clears accent_color so display falls back to the name-hash palette."),
         )
         default_accent = profile.accent_color or SPEAKER_ACCENTS[0]
         chosen_accent: str | None = None
@@ -1585,7 +1575,7 @@ def _render_edit_form(profile: SpeakerProfileV1, *, root) -> None:
                     if st.button(
                         accent,
                         key=f"{form_prefix}_chip_{accent}",
-                        help=accent,
+                        help=widget_help(accent),
                         disabled=clear_accent,
                     ):
                         st.session_state[f"{form_prefix}_color_picker"] = accent
@@ -1601,7 +1591,7 @@ def _render_edit_form(profile: SpeakerProfileV1, *, root) -> None:
             "Remove photo",
             value=False,
             key=f"{form_prefix}_clear_avatar",
-            help="Clears the stored avatar; chip falls back to initials + accent.",
+            help=widget_help("Clears the stored avatar; chip falls back to initials + accent."),
         )
         if st.button(
             "Save photo changes",

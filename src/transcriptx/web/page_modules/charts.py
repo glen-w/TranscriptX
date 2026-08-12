@@ -13,6 +13,7 @@ from PIL import Image
 from transcriptx.core.config import resolve_effective_config
 from transcriptx.export import ChartsExportResult
 from transcriptx.web.blocks.filters.subview_slice import render_subview_slice_filter
+from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.charts_filter_state import (
     chart_text_flags,
     charts_filters_are_dirty,
@@ -216,7 +217,7 @@ def _render_chart_gallery_card(
             if st.button(
                 "⛶",
                 key=button_key,
-                help="Open full screen",
+                help=widget_help("Open full screen"),
                 type="secondary",
             ):
                 st.session_state[CHARTS_KEY_FULL_SCREEN] = chart.id
@@ -461,6 +462,7 @@ def _render_view_options_popover(visible_module_ids: list[str]) -> None:
             "Chart text",
             options=list(_CHART_TEXT_OPTIONS),
             key=CHARTS_KEY_CHART_TEXT,
+            help=widget_help("How much caption/description text to show under each chart."),
         )
         expand_col, collapse_col = st.columns(2)
         with expand_col:
@@ -509,7 +511,7 @@ def _render_export_under_badges(
         "Export visible",
         key="charts_export_visible",
         icon=":material/folder_zip:",
-        help="Zip the charts matching the current filters",
+        help=widget_help("Zip the charts matching the current filters"),
     ):
         _run_export_visible(run_root, filtered_charts)
         stored_result = st.session_state.get(CHARTS_KEY_EXPORT_RESULT)
@@ -678,7 +680,11 @@ def _charts_filters_and_gallery_fragment(
         extra=lambda: _render_export_under_badges(run_root, view.filtered_charts),
     )
 
-    st.text_input("Search charts…", key=CHARTS_KEY_SEARCH)
+    st.text_input(
+        "Search charts…",
+        key=CHARTS_KEY_SEARCH,
+        help=widget_help("Filter by chart title, module, or tag text."),
+    )
 
     scope_options = ["All"] + list(scopes)
     current_scope = st.session_state.get(CHARTS_KEY_FILTER_SCOPE, "All")
@@ -691,13 +697,14 @@ def _charts_filters_and_gallery_fragment(
             "Source",
             options=["All", "Group aggregate", "Member sessions"],
             key=CHARTS_KEY_SOURCE_PRESET,
-            help=_SOURCE_HELP,
+            help=widget_help(_SOURCE_HELP),
         )
     with row1b:
         st.segmented_control(
             "Scope",
             options=scope_options,
             key=CHARTS_KEY_FILTER_SCOPE,
+            help=widget_help("Narrow charts to a UI scope band (All shows every scope)."),
         )
     with row1c:
         st.pills(
@@ -705,6 +712,7 @@ def _charts_filters_and_gallery_fragment(
             options=[CHARTS_KIND_STATIC, CHARTS_KIND_DYNAMIC],
             selection_mode="multi",
             key=CHARTS_KEY_KIND_PILLS,
+            help=widget_help("Static = saved images; Dynamic = interactive/HTML charts."),
         )
         sync_kind_toggles_from_pills(st.session_state)
 
@@ -720,10 +728,16 @@ def _charts_filters_and_gallery_fragment(
                 SELECTBOX_PLACEHOLDER_MODULE if m is None else format_module_option(m)
             ),
             key=CHARTS_KEY_FILTER_MODULE,
+            help=widget_help("Show charts produced by one analysis module."),
         )
     with row2b:
         if chart_source == "All":
-            st.multiselect("Tags", tags, key=CHARTS_KEY_TAGS_MULTI)
+            st.multiselect(
+                "Tags",
+                tags,
+                key=CHARTS_KEY_TAGS_MULTI,
+                help=widget_help("AND-filter by chart tags (leave empty for all tags)."),
+            )
             st.session_state[CHARTS_KEY_FILTER_TAGS] = list(
                 st.session_state.get(CHARTS_KEY_TAGS_MULTI) or []
             )
@@ -738,6 +752,7 @@ def _charts_filters_and_gallery_fragment(
                 tag_options,
                 disabled=True,
                 key=locked_key,
+                help=widget_help("Tags are locked while Source is Group aggregate or Member sessions."),
             )
 
     if subviews:

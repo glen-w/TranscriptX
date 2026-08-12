@@ -29,6 +29,7 @@ from transcriptx.web.ui.tools.shared import (
     render_empty_recordings_hint,
     render_upload_and_refresh,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 
 _KEY_RUN_IN_PROGRESS = "audio_prep_run_in_progress"
 _KEY_RESULT = "audio_prep_run_result"
@@ -93,10 +94,10 @@ def _selection_fragment(
         default=[p for p in prev_selected if p in paths_str] or [paths_str[0]],
         format_func=lambda p: recordings_path_label(Path(p)),
         key="audio_prep_file_select",
-        help=(
+        help=widget_help((
             "After uploading, your new file appears here — select it to process. "
             "Multiple files use per-file auto steps."
-        ),
+        )),
     )
     if not selected_paths_str:
         st.warning("Select at least one file to continue.")
@@ -281,11 +282,11 @@ def _render_configure(
             index=default_ix,
             horizontal=True,
             key="audio_prep_how",
-            help=(
+            help=widget_help((
                 "Apply suggested: run assessment-recommended steps (safe for clean audio). "
                 "Custom steps: pick DSP steps manually. "
                 "Assess only: no output file."
-            ),
+            )),
         )
         if choice == "Assess only":
             mode = "off"
@@ -326,12 +327,14 @@ def _render_configure(
             value=-18.0,
             step=0.5,
             key="audio_prep_lufs",
+            help=widget_help("Integrated loudness target for normalization (broadcast-style LUFS)."),
         )
         denoise_strength = st.selectbox(
             "Denoise strength",
             options=["low", "medium", "high"],
             index=1,
             key="audio_prep_denoise_strength",
+            help=widget_help("Higher removes more noise but can soften speech."),
         )
         highpass_cutoff = st.slider(
             "High-pass cutoff (Hz)",
@@ -340,6 +343,7 @@ def _render_configure(
             value=80,
             step=5,
             key="audio_prep_highpass_cutoff",
+            help=widget_help("Remove rumble below this frequency before transcription."),
         )
 
     st.markdown("**Output**")
@@ -353,6 +357,7 @@ def _render_configure(
         }[d],
         horizontal=True,
         key="audio_prep_output_dest",
+        help=widget_help("Where preprocessed audio files are written relative to the input or app data."),
     )
     output_format = st.radio(
         "Output format",
@@ -360,9 +365,13 @@ def _render_configure(
         format_func=str.upper,
         horizontal=True,
         key="audio_prep_output_format",
+        help=widget_help("WAV preserves quality for STT; MP3 is smaller for sharing."),
     )
     overwrite = st.checkbox(
-        "Overwrite existing file", value=False, key="audio_prep_overwrite"
+        "Overwrite existing file",
+        value=False,
+        key="audio_prep_overwrite",
+        help=widget_help("Replace an existing preprocessed file at the resolved output path."),
     )
 
     first_path = audio_paths[0]

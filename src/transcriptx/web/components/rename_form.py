@@ -17,6 +17,7 @@ from transcriptx.core.utils.rename.smart_name import (
     suggest_smart_rename_base_name,
 )
 from transcriptx.web.services.rename_service import RenameResult, RenameService
+from transcriptx.web.components.info_tooltip import widget_help
 
 _DEFAULT_CAPTION = (
     "Renames the transcript and linked working-copy audio, when present. "
@@ -286,7 +287,7 @@ def render_transcript_rename_form(
         target = st.text_input(
             "New file name",
             key=target_key,
-            help=_DEFAULT_HELP,
+            help=widget_help(_DEFAULT_HELP),
         )
         submitted = st.form_submit_button(submit_label)
     if not submitted:
@@ -335,7 +336,7 @@ def render_audio_linked_rename_form(
         target = st.text_input(
             "New file name",
             value=current_name,
-            help="Do not include extension. Linked transcript and working-copy audio will share this name.",
+            help=widget_help("Do not include extension. Linked transcript and working-copy audio will share this name."),
         )
         submitted = st.form_submit_button(submit_label)
     if not submitted:

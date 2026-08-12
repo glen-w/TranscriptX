@@ -10,6 +10,7 @@ import streamlit as st
 from transcriptx.core.audio.tools import PYDUB_AVAILABLE, check_ffmpeg_available
 from transcriptx.core.utils.paths import RECORDINGS_DIR, RECORDINGS_IMPORTS_DIR
 from transcriptx.web.services.recordings_service import RecordingsService
+from transcriptx.web.components.info_tooltip import widget_help
 
 _AUDIO_UPLOAD_TYPES = ["mp3", "wav", "m4a", "flac", "ogg", "aac"]
 
@@ -78,10 +79,10 @@ def render_upload_and_refresh(
         "Upload audio file(s)",
         type=_AUDIO_UPLOAD_TYPES,
         accept_multiple_files=True,
-        help=(
+        help=widget_help((
             "Uploaded files are saved to the recordings imports folder and appear "
             "in the list below. Limit 500 MB per file when STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500."
-        ),
+        )),
         key=uploader_key,
     )
     if uploaded_list:

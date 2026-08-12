@@ -12,6 +12,7 @@ from typing import Optional
 import streamlit as st
 
 from transcriptx.core.audio.serial_groups import SerialGroup
+from transcriptx.web.components.info_tooltip import widget_help
 
 DurationLookup = Callable[[Path], Optional[float]]
 
@@ -96,10 +97,10 @@ def render_serial_group_prompt(
         "Transcribe these files separately anyway",
         value=st.session_state.get(separate_ok_key, False),
         key=separate_ok_key,
-        help=(
+        help=widget_help((
             "Split recorder files are normally merged before transcription. "
             "Merge may apply existing preprocessing/conversion defaults."
-        ),
+        )),
     )
 
     return SerialGroupPromptState(
