@@ -161,10 +161,14 @@ def test_sidebar_selection_result_updates_context() -> None:
 
 
 def test_page_hydration_gate_follows_required_context_only() -> None:
+    from transcriptx.web.navigation import should_show_context_bar
+
     assert page_requires_workspace_hydration("Home") is False
     assert page_requires_workspace_hydration("Library") is False
     assert page_requires_workspace_hydration("Search") is False
     assert page_requires_workspace_hydration("Settings") is False
+    assert page_requires_workspace_hydration("Tools") is False
+    assert should_show_context_bar("Tools") is False
     assert page_requires_workspace_hydration("Charts") is True
     assert page_requires_workspace_hydration("Overview") is True
     assert page_requires_workspace_hydration("Transcript") is True

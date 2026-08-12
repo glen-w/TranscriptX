@@ -57,6 +57,12 @@ def test_sidebar_uses_segmented_control_not_radio() -> None:
     assert _LABEL_TO_CANONICAL == {"Transcript": "transcript", "Group": "group"}
 
 
+def test_sidebar_section_title_settings_is_system() -> None:
+    from transcriptx.web.sidebar import _SECTION_TITLES
+
+    assert _SECTION_TITLES["settings"] == "System"
+
+
 def test_all_page_specs_remain_reachable_in_section_order() -> None:
     ordered: list[str] = []
     for section in ("primary", "workflow", "view", "tools", "settings"):

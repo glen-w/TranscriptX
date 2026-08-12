@@ -174,15 +174,15 @@ Beyond 1.0 resource envelopes: help users plan and choose runs on *their* machin
 
 Recorder devices often cut long sessions into chunks. Today:
 
-- Host helper `scripts/audio_merge.py` concatenates parts → one MP3 (ffmpeg; documented in [transcription.md](runtime/transcription.md))
-- `scripts/audio_preprocess.py` remains a separate pre-transcribe helper
-- GUI merge/preprocess pages were removed (not core); Library/serial-group copy still points people at the merge script **before** transcription
+- GUI **System → Tools → Merge** concatenates parts → one MP3 (ffmpeg); **Preprocessing** assesses/applies DSP before external transcription
+- Host helpers `scripts/audio_merge.py` / `scripts/audio_preprocess.py` remain for CLI/automation (documented in [transcription.md](runtime/transcription.md))
+- Serial-group prompts point operators at **System → Tools → Merge** before transcription
 
 **Desired direction (design before build):** inline merge that (1) merges **audio** parts in order into one managed recording, and (2) optionally **stitches transcripts** (timestamp rebase, segment continuity, canonical + sidecars) when parts were already transcribed separately.
 
 **Hard parts:** ordered part selection UX; ffmpeg/path honesty under Docker vs host; backup/overwrite; partial failure; duration vs transcript times; speaker-id continuity; managed-library admission; pre- vs post-transcription merge. Do not ship a half-merge that corrupts library identity.
 
-**Decision fork:** **Invest** (first-class library/import workflow) · **Defer / remove** (delete helpers; document merge-outside-TX). Until decided: helpers stay **non-core**.
+**Decision fork:** **Invest** (first-class library/import workflow including transcript stitch) · **Defer / remove** (drop helpers). Audio-only GUI + CLI helpers are restored; transcript stitching remains undecided.
 
 #### G2. Directory watcher
 

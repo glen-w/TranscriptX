@@ -146,9 +146,8 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         subsection="legacy",
         may_mutate_context=False,
     ),
-    # Audio Prep / Audio Merge removed from GUI nav — helper scripts only
-    # (scripts/audio_preprocess.py, scripts/audio_merge.py). See ROADMAP 1.2.
     _spec("Settings", "Settings", "settings"),
+    _spec("Tools", "Tools", "settings"),
     _spec("Profiles", "Profiles", "settings"),
     _spec(
         "Dashboard Builder",
@@ -205,13 +204,19 @@ def pages_in_section(section: NavSection) -> list[PageSpec]:
 
 
 LEGACY_PAGE_REDIRECTS: dict[str, tuple[str, str | None]] = {
-    # page_key -> (target_page, artifacts_section or None)
+    # page_key -> (target_page, section_hint or None)
+    # section_hint is Artifacts section when target is Artifacts, or Tools hub tab
+    # when target is Tools.
     # Data / Explorer aliases removed in 0.9.7 — use Artifacts Preview / Browse.
     "Statistics": ("Home", None),
-    # Audio tools moved to helper scripts (not core GUI).
-    "Audio Prep": ("Transcribe Audio", None),
-    "Audio Merge": ("Transcribe Audio", None),
+    "Audio Prep": ("Tools", "Preprocessing"),
+    "Audio Merge": ("Tools", "Merge"),
 }
+
+TOOLS_HUB_TAB_KEY = "tools_hub_selected_tab"
+TOOLS_HUB_FORCE_TAB_KEY = "tools_hub_force_tab"
+TOOLS_HUB_TABS: tuple[str, ...] = ("Preprocessing", "Merge")
+PREPROCESS_SELECTED_FILES_KEY = "audio_prep_selected_files"
 
 
 def migrate_legacy_page_key(page: str | None) -> tuple[str, str | None]:
@@ -221,6 +226,24 @@ def migrate_legacy_page_key(page: str | None) -> tuple[str, str | None]:
     if page in LEGACY_PAGE_REDIRECTS:
         return LEGACY_PAGE_REDIRECTS[page]
     return page, None
+
+
+def navigate_to_tools_tab(
+    session_state: dict[str, Any],
+    tab: str,
+    *,
+    preprocess_paths: list[Path | str] | None = None,
+) -> None:
+    """Open System → Tools on the given hub tab, optionally preselecting prep files."""
+    if tab not in TOOLS_HUB_TABS:
+        tab = TOOLS_HUB_TABS[0]
+    session_state["page"] = "Tools"
+    session_state[TOOLS_HUB_TAB_KEY] = tab
+    session_state[TOOLS_HUB_FORCE_TAB_KEY] = tab
+    if preprocess_paths is not None:
+        session_state[PREPROCESS_SELECTED_FILES_KEY] = [
+            str(p) for p in preprocess_paths
+        ]
 
 
 def build_prerequisites() -> dict[str, PagePrerequisite]:
