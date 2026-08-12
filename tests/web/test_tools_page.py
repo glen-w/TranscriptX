@@ -314,3 +314,124 @@ def test_navigate_to_tools_tab_sets_force_and_paths() -> None:
     assert session[TOOLS_HUB_TAB_KEY] == "Preprocessing"
     assert session[TOOLS_HUB_FORCE_TAB_KEY] == "Preprocessing"
     assert session[PREPROCESS_SELECTED_FILES_KEY] == ["/tmp/out.mp3"]
+
+
+@pytest.mark.unit
+def test_navigate_to_tools_tab_rejects_unknown_tab() -> None:
+    from transcriptx.web.navigation import (
+        TOOLS_HUB_TAB_KEY,
+        TOOLS_HUB_TABS,
+        navigate_to_tools_tab,
+    )
+
+    session: dict = {}
+    navigate_to_tools_tab(session, "NotATab")
+    assert session[TOOLS_HUB_TAB_KEY] == TOOLS_HUB_TABS[0]
+
+
+@pytest.mark.unit
+def test_list_available_recordings_merges_imports(monkeypatch, tmp_path) -> None:
+    import transcriptx.web.ui.tools.shared as shared
+
+    recordings = tmp_path / "recordings"
+    imports = tmp_path / "imports_alt"
+    recordings.mkdir()
+    imports.mkdir()
+    a = recordings / "a.wav"
+    b = imports / "b.wav"
+    a.write_bytes(b"x")
+    b.write_bytes(b"y")
+
+    monkeypatch.setattr(shared, "RECORDINGS_DIR", recordings)
+    monkeypatch.setattr(shared, "RECORDINGS_IMPORTS_DIR", imports)
+    monkeypatch.setattr(
+        shared.RecordingsService,
+        "list_recordings",
+        lambda root: [a] if root == recordings else [b] if root == imports else [],
+    )
+
+    listed = shared.list_available_recordings()
+    assert a in listed
+    assert b in listed
+
+
+@pytest.mark.unit
+def test_tools_deps_ready_when_available(monkeypatch) -> None:
+    import transcriptx.web.ui.tools.shared as shared
+
+    monkeypatch.setattr(shared, "check_ffmpeg_available", lambda: (True, None))
+    monkeypatch.setattr(shared, "PYDUB_AVAILABLE", True)
+    ready, missing = shared.tools_deps_ready()
+    assert ready is True
+    assert missing == []
+
+
+@pytest.mark.unit
+def test_merge_serial_group_use_fills_order(monkeypatch, tmp_path) -> None:
+    import transcriptx.web.ui.tools.merge_panel as mod
+    from transcriptx.core.audio.serial_groups import SerialGroup
+
+    DummyHomeStreamlit.session_state = {}
+    p1 = tmp_path / "20250101120000_1.wav"
+    p2 = tmp_path / "20250101120000_2.wav"
+    p1.write_bytes(b"x")
+    p2.write_bytes(b"y")
+    group = SerialGroup(
+        base_key="20250101120000",
+        ordered_paths=(p1, p2),
+        matched_rule="underscore_index",
+        confidence="high",
+        warnings=(),
+    )
+
+    class _St(DummyHomeStreamlit):
+        @staticmethod
+        def button(label, **kwargs):
+            return "Use this group" in str(label)
+
+        @staticmethod
+        def container(*_a, **_k):
+            return DummyHomeStreamlit.expander()
+
+        @staticmethod
+        def rerun(*_a, **_k):
+            raise RuntimeError("rerun")
+
+        @staticmethod
+        def caption(*_a, **_k):
+            return None
+
+        @staticmethod
+        def markdown(*_a, **_k):
+            return None
+
+        @staticmethod
+        def text(*_a, **_k):
+            return None
+
+        @staticmethod
+        def subheader(*_a, **_k):
+            return None
+
+    monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(mod, "detect_serial_audio_groups", lambda *_a, **_k: [group])
+    monkeypatch.setattr(mod, "get_audio_duration", lambda *_a, **_k: 1.0)
+
+    with pytest.raises(RuntimeError, match="rerun"):
+        mod._render_detected_serial_groups([p1, p2])
+
+    assert DummyHomeStreamlit.session_state[mod._KEY_ORDERED_PATHS] == [
+        str(p1),
+        str(p2),
+    ]
+
+
+@pytest.mark.unit
+def test_tools_page_spec_in_settings_section() -> None:
+    from transcriptx.web.navigation import get_page_spec, pages_in_section
+
+    spec = get_page_spec("Tools")
+    assert spec.section == "settings"
+    assert spec.required_context == "none"
+    keys = [s.key for s in pages_in_section("settings")]
+    assert keys.index("Settings") < keys.index("Tools")
