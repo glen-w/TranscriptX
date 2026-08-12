@@ -349,6 +349,20 @@ def test_merge_missing_sections() -> None:
     assert set(merged.sections) == set(SECTION_ORDER)
 
 
+def test_merge_show_info_tooltips_defaults_true_and_round_trips() -> None:
+    assert merge_prefs({"sections": {}}).show_info_tooltips is True
+    assert (
+        merge_prefs({"show_info_tooltips": False, "sections": {}}).show_info_tooltips
+        is False
+    )
+    assert (
+        merge_prefs({"show_info_tooltips": "nope", "sections": {}}).show_info_tooltips
+        is True
+    )
+    built = built_in_prefs()
+    assert built.show_info_tooltips is True
+
+
 def test_export_key_suffix_differs_across_subjects(tmp_path: Path) -> None:
     run_a = tmp_path / "slug-a" / "run-1"
     run_b = tmp_path / "slug-b" / "run-1"

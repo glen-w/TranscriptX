@@ -23,6 +23,7 @@ from transcriptx.core.llm_feedback.models import (
     reasons_for_rating,
 )
 from transcriptx.core.llm_feedback.service import LlmFeedbackService
+from transcriptx.web.components.info_tooltip import widget_help
 
 _NOTE_HELP = (
     "Optional. Do not include sensitive information (names, secrets, private details)."
@@ -116,7 +117,7 @@ def render_llm_feedback_thumbs(
             if st.button(
                 ":material/thumb_up:",
                 key=f"llm_fb_up_{key_base}",
-                help="Rate this model output helpful",
+                help=widget_help("Rate this model output helpful"),
                 type="tertiary",
             ):
                 st.session_state[rating_key] = FeedbackRating.UP.value
@@ -127,7 +128,7 @@ def render_llm_feedback_thumbs(
             if st.button(
                 ":material/thumb_down:",
                 key=f"llm_fb_down_{key_base}",
-                help="Rate this model output not helpful",
+                help=widget_help("Rate this model output not helpful"),
                 type="tertiary",
             ):
                 st.session_state[rating_key] = FeedbackRating.DOWN.value
@@ -211,7 +212,7 @@ def render_llm_feedback_form(
         note = st.text_area(
             "Note (optional)",
             key=note_key,
-            help=_NOTE_HELP,
+            help=widget_help(_NOTE_HELP),
             height=80,
             max_chars=2000,
         )

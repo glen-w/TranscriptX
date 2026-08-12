@@ -11,6 +11,7 @@ from transcriptx.core.utils.chart_registry import (
     get_default_overview_charts,
     iter_chart_definitions,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 
 OVERVIEW_CHARTS_KEY = "dashboard.overview_charts"
 OVERVIEW_MAX_ITEMS_KEY = "dashboard.overview_max_items"
@@ -159,7 +160,7 @@ def render_charts_overview_selector(
                 checked = st.checkbox(
                     label,
                     key=key,
-                    help=desc or viz_id,
+                    help=widget_help(desc or viz_id),
                 )
                 if checked != (viz_id in selected_set):
                     selected = toggle_overview_chart(
@@ -178,7 +179,7 @@ def render_charts_overview_selector(
             value=int(max_items) if isinstance(max_items, int) and max_items > 0 else 0,
             step=1,
             key=f"{scope_key}_ov_max_items",
-            help="0 means no limit.",
+            help=widget_help("0 means no limit."),
         )
         draft_dot[OVERVIEW_MAX_ITEMS_KEY] = int(new_max) if int(new_max) > 0 else None
         draft_dot[OVERVIEW_MISSING_KEY] = st.selectbox(
@@ -186,7 +187,7 @@ def render_charts_overview_selector(
             options=["skip", "show_placeholder"],
             index=0 if missing != "show_placeholder" else 1,
             key=f"{scope_key}_ov_missing",
-            help="skip hides missing charts; show_placeholder reserves a slot with a notice.",
+            help=widget_help("skip hides missing charts; show_placeholder reserves a slot with a notice."),
         )
 
     return {

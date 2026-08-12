@@ -50,6 +50,7 @@ from transcriptx.core.utils.logger import get_logger
 from transcriptx.services.speaker_studio.clip_service import WarmClipsResult
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
+from transcriptx.web.components.info_tooltip import widget_help
 
 logger = get_logger()
 
@@ -671,7 +672,7 @@ def render_exact_segment_preview(
             st.button(
                 "▶",
                 key=f"{play_key}_btn_{active_id}_{i}",
-                help="Play this clip",
+                help=widget_help("Play this clip"),
                 on_click=set_active_clip,
                 args=(play_key, i),
             )
@@ -778,7 +779,7 @@ def render_playback_panel_body(
             st.button(
                 "▶",
                 key=f"{play_key}_btn_{active_id}_{i}",
-                help="Play this clip",
+                help=widget_help("Play this clip"),
                 on_click=set_active_clip,
                 args=(play_key, i),
             )

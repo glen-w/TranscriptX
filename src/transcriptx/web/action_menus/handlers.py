@@ -28,6 +28,7 @@ from transcriptx.web.action_menus.services import (
 from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.navigation import apply_library_rename_navigation
 from transcriptx.web.state import PAGE_KEY
+from transcriptx.web.components.info_tooltip import widget_help
 
 
 @dataclass(frozen=True)
@@ -98,10 +99,10 @@ def _button(
         # callback is a no-op and surfaces a client warning.
         # Fragment-hosted strips must use NavStyle.CLICK_RERUN instead.
         render_action_link(
-            label, key=key, icon=icon, help=help_text, on_click=on_activate
+            label, key=key, icon=icon, help=widget_help(help_text), on_click=on_activate
         )
     else:
-        if render_action_link(label, key=key, icon=icon, help=help_text):
+        if render_action_link(label, key=key, icon=icon, help=widget_help(help_text)):
             on_activate()
             st.rerun()
 
@@ -239,7 +240,7 @@ def _render_export(ctx: ActionContext, *, section: SectionId, key: str) -> None:
         label,
         key=key,
         icon=icon_for(ActionId.EXPORT_ZIP),
-        help=help_for(ActionId.EXPORT_ZIP),
+        help=widget_help(help_for(ActionId.EXPORT_ZIP)),
     ):
         prepare_run_export(ctx.identity)
 

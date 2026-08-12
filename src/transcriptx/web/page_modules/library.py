@@ -24,6 +24,7 @@ from transcriptx.web.cache_helpers import (
     get_cached_light_transcript_metadata,
     get_cached_transcript_metadata,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.action_menus.context import ActionContext, build_canonical_identity
 from transcriptx.web.action_menus.ids import NavStyle, SectionId
 from transcriptx.web.action_menus.render import render_configured_actions
@@ -148,13 +149,13 @@ def _library_browser_fragment(transcripts: list) -> None:
         "Show path column",
         value=False,
         key="library_show_path",
-        help="Include the on-disk managed path in the library table.",
+        help=widget_help("Include the on-disk managed path in the library table."),
     )
     show_detailed_metadata = st.toggle(
         "Show detailed metadata",
         value=False,
         key="library_show_detailed_metadata",
-        help="After selection, show richer sidecars (speaker map, recording link, etc.).",
+        help=widget_help("After selection, show richer sidecars (speaker map, recording link, etc.)."),
     )
     display_df = df if show_path_col else df.drop(columns=["Path"])
     if show_detailed_metadata:

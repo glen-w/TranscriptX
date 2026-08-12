@@ -20,6 +20,7 @@ from transcriptx.core.utils.audio_availability import has_resolvable_audio
 from transcriptx.web.module_option_format import format_module_option
 from transcriptx.web.module_registry import build_module_label
 from transcriptx.web.module_ui_groups import MODULE_UI_GROUPS, TECHNICAL_OTHER_TITLE
+from transcriptx.web.components.info_tooltip import widget_help
 
 _PRESET_LABELS: dict[AnalysisPreset, str] = {
     "quick": "Quick",
@@ -174,7 +175,7 @@ def render_analysis_preset_selector(
         "Analysis preset",
         options=options,
         key=preset_key,
-        help=_PRESET_HELP,
+        help=widget_help(_PRESET_HELP),
     )
     if label is None:
         label = st.session_state.get(preset_key) or "Balanced"
@@ -230,7 +231,7 @@ def render_analysis_preset_selector(
             options=picker_options,
             format_func=format_module_option,
             key=widget_key,
-            help="Custom preset: exact module set for this launch (dependencies still resolve).",
+            help=widget_help("Custom preset: exact module set for this launch (dependencies still resolve)."),
         )
         st.session_state[custom_key] = list(selected)
         custom_modules = selected
@@ -337,7 +338,7 @@ def _render_review_module_row(
         if st.button(
             "✕",
             key=f"{key_prefix}_review_rm_{module_id}",
-            help=f"Remove from run: {label}",
+            help=widget_help(f"Remove from run: {label}"),
             type="tertiary",
         ):
             if apply_review_module_removal(

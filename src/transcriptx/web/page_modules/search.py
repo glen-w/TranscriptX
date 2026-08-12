@@ -13,6 +13,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 import streamlit as st
 
 from transcriptx.web.components.action_links import render_action_link
+from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.models.search import SearchFilters, SearchResult
@@ -137,7 +138,7 @@ def _search_interaction_fragment() -> None:
         "Search transcripts",
         key="global_search_query",
         placeholder="Type to search…",
-        help="Searches segment text across the managed library (or the current transcript).",
+        help=widget_help("Searches segment text across the managed library (or the current transcript)."),
     )
 
     # Track query changes for debouncing
@@ -157,19 +158,19 @@ def _search_interaction_fragment() -> None:
         ["All transcripts", "Current transcript"],
         horizontal=True,
         key="global_search_scope",
-        help="Current transcript uses the sidebar selection; All searches the managed library.",
+        help=widget_help("Current transcript uses the sidebar selection; All searches the managed library."),
     )
     enable_fuzzy = st.checkbox(
         "Enable fuzzy matching",
         value=True,
         key="global_search_fuzzy",
-        help="Allow near-matches (typos / small spelling variants). Exact matching is stricter.",
+        help=widget_help("Allow near-matches (typos / small spelling variants). Exact matching is stricter."),
     )
     show_first_match_only = st.checkbox(
         "Show only first match per segment",
         value=True,
         key="global_search_first_match_only",
-        help="Collapse multiple hits inside one segment into a single result row.",
+        help=widget_help("Collapse multiple hits inside one segment into a single result row."),
     )
 
     speaker_keys: List[str] = []
@@ -187,7 +188,7 @@ def _search_interaction_fragment() -> None:
             speaker_options,
             index=0,
             key="global_search_speaker",
-            help="Limit hits to segments attributed to one speaker (after name resolution).",
+            help=widget_help("Limit hits to segments attributed to one speaker (after name resolution)."),
         )
         if selected != "All speakers":
             speaker_keys = [selected]

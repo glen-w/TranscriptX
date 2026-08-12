@@ -23,6 +23,7 @@ from transcriptx.web.cache_helpers import (
     clear_group_workspace_cache,
     get_cached_list_transcript_picker_options,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.services.group_service import GroupService
 from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.empty_state import render_empty_state
@@ -60,7 +61,7 @@ def _render_create_group_transcripts_fragment(
         options=transcript_options,
         format_func=lambda p: transcript_labels.get(p, Path(p).name),
         key="create_group_transcripts",
-        help="Members of the new group. Membership is file-backed and can be edited later.",
+        help=widget_help("Members of the new group. Membership is file-backed and can be edited later."),
     )
     if st.button("Create group", type="primary", key="create_group_submit"):
         if not selected_paths:

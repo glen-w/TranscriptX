@@ -30,6 +30,7 @@ from transcriptx.web.ui.tools.shared import (
     render_empty_recordings_hint,
     render_upload_and_refresh,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 
 _KEY_ORDERED_PATHS = "audio_merge_ordered_paths"
 _KEY_RUN_IN_PROGRESS = "audio_merge_run_in_progress"
@@ -138,7 +139,7 @@ def _render_section_select(recordings: List[Path], *, deps_ready: bool) -> None:
         options=[recordings_path_label(p) for p in recordings],
         default=selected_labels,
         key="audio_merge_multiselect",
-        help="Select 2 or more files. Adjust order with the buttons below.",
+        help=widget_help("Select 2 or more files. Adjust order with the buttons below."),
     )
 
     label_to_path = {recordings_path_label(p): str(p) for p in recordings}
@@ -166,7 +167,7 @@ def _render_section_select(recordings: List[Path], *, deps_ready: bool) -> None:
             meta_str = _format_merge_row_meta(Path(path_str))
             st.markdown(f"{i + 1}. **{label}**{meta_str}")
         with col_up:
-            if i > 0 and st.button("↑", key=f"merge_up_{i}", help="Move up"):
+            if i > 0 and st.button("↑", key=f"merge_up_{i}", help=widget_help("Move up")):
                 merged_order[i], merged_order[i - 1] = (
                     merged_order[i - 1],
                     merged_order[i],
@@ -178,7 +179,7 @@ def _render_section_select(recordings: List[Path], *, deps_ready: bool) -> None:
                     st.rerun()
         with col_down:
             if i < len(merged_order) - 1 and st.button(
-                "↓", key=f"merge_down_{i}", help="Move down"
+                "↓", key=f"merge_down_{i}", help=widget_help("Move down")
             ):
                 merged_order[i], merged_order[i + 1] = (
                     merged_order[i + 1],
@@ -235,10 +236,10 @@ def _render_output_and_run(ordered_paths: List[Path], *, deps_ready: bool) -> No
         "Output filename",
         value=st.session_state.get("audio_merge_output_filename", default_filename),
         key="audio_merge_output_filename",
-        help=(
+        help=widget_help((
             "Date prefix is taken from the first file in the merge order. "
             "The .mp3 extension is added automatically if omitted."
-        ),
+        )),
     )
 
     col_backup, col_overwrite = st.columns(2)
@@ -247,17 +248,17 @@ def _render_output_and_run(ordered_paths: List[Path], *, deps_ready: bool) -> No
             "Backup originals to storage before merging",
             value=st.session_state.get("audio_merge_backup", True),
             key="audio_merge_backup",
-            help=(
+            help=widget_help((
                 "Copies each source file to the WAV storage directory "
                 "and deletes the original before merging."
-            ),
+            )),
         )
     with col_overwrite:
         overwrite = st.checkbox(
             "Overwrite output if it already exists",
             value=st.session_state.get("audio_merge_overwrite", False),
             key="audio_merge_overwrite",
-            help="Replace an existing merged file at the output path.",
+            help=widget_help("Replace an existing merged file at the output path."),
         )
 
     st.subheader("3. Run")

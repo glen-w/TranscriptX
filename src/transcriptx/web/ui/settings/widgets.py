@@ -18,8 +18,10 @@ def _json_text(value: Any) -> str:
 
 def _help_text(field_meta: FieldMetadata) -> str | None:
     """Streamlit adjacent ⓘ from FieldMetadata.description when present."""
+    from transcriptx.web.components.info_tooltip import widget_help
+
     text = (field_meta.description or "").strip()
-    return text or None
+    return widget_help(text or None)
 
 
 def render_field_widget(field_meta: FieldMetadata, current_value: Any, key: str) -> Any:

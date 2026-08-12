@@ -6,6 +6,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 import streamlit as st
+from transcriptx.web.components.info_tooltip import widget_help
 
 # Streamlit exposes widget keys as ``st-key-<key>`` CSS classes; this prefix
 # scopes shared action-link styling in shell.py.
@@ -41,7 +42,7 @@ def render_action_link(
             args=tuple(args) if args is not None else (),
             kwargs=kwargs or {},
             disabled=disabled,
-            help=help,
+            help=widget_help(help),
         )
     )
 
@@ -68,7 +69,7 @@ def render_download_link(
             type="tertiary",
             width="content",
             icon=icon,
-            help=help,
+            help=widget_help(help),
             disabled=disabled,
         )
     )

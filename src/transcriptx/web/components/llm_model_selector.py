@@ -36,6 +36,7 @@ from transcriptx.core.llm.thinking_models import (
     selection_uses_thinking_for_json,
 )
 from transcriptx.core.utils.config import get_config
+from transcriptx.web.components.info_tooltip import widget_help
 
 _CUSTOM_PROFILE = "Custom (this run)"
 _PROJECT_DEFAULT_LABEL = "Project default (active)"
@@ -645,7 +646,7 @@ def _render_assignment_widgets(
         ["Same model for all", "Select per module"],
         horizontal=True,
         key=_key(key_prefix, "mode"),
-        help="Same model applies one Ollama tag to every selected LLM module; per-module lets you mix.",
+        help=widget_help("Same model applies one Ollama tag to every selected LLM module; per-module lets you mix."),
     )
     shared_key = _key(key_prefix, "shared_model")
     json_consumers = _selected_json_consumers(
@@ -811,10 +812,10 @@ def render_compact_llm_setup(
             "Model preset",
             options=profile_options,
             key=profile_key,
-            help=(
+            help=widget_help((
                 f"{_PROJECT_DEFAULT_LABEL} loads the project-active pack. "
                 f"{_CUSTOM_PROFILE} keeps this run's widgets."
-            ),
+            )),
         )
         _apply_profile_to_session(
             key_prefix, selected_profile, installed, applied_key=applied_key
@@ -925,7 +926,7 @@ def render_llm_models_settings_panel() -> None:
     name = st.text_input(
         "Preset name",
         key=_key(key_prefix, "save_name"),
-        help="Cannot be 'default'. Use overwrite to replace an existing name.",
+        help=widget_help("Cannot be 'default'. Use overwrite to replace an existing name."),
     )
     description = st.text_input(
         "Description (optional)",

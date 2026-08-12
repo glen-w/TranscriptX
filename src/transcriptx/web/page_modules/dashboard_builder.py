@@ -23,6 +23,7 @@ from transcriptx.web.layouts.store import (
     slugify_layout_id,
 )
 from transcriptx.web.ui.dashboard_builder.layout_editor import render_layout_editor
+from transcriptx.web.components.info_tooltip import widget_help
 
 _BUILDER_HELP_PREREQ = (
     "**Dashboard Builder** chooses which panels appear on **Overview** and **Insights** "
@@ -81,7 +82,7 @@ def _render_schema_mode(layout_id: str) -> None:
         "New layout id",
         value=f"{layout_id}_custom" if builtin else f"{layout_id}_copy",
         key="dashboard_builder_save_as_id",
-        help="Slug for the custom layout file (letters, digits, underscores).",
+        help=widget_help("Slug for the custom layout file (letters, digits, underscores)."),
     )
     new_title = st.text_input(
         "Title",

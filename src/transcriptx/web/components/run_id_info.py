@@ -23,6 +23,8 @@ def build_run_id_info_html(raw_run_id: str, *, control_id: str | None = None) ->
         test_id="tx-run-id-info",
         tip_extra_class="",
         wrap_extra_class="",
+        # Identity disclosure — not gated by instructional tip prefs.
+        respect_prefs=False,
     )
 
 

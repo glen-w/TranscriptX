@@ -22,6 +22,7 @@ from transcriptx.web.transcript_viewer.playback_targets import (
     format_safe_timestamp_range,
     group_timestamp_bounds,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 
 
 @dataclass(frozen=True)
@@ -115,7 +116,7 @@ def _render_play_button(
     st.button(
         "▶",
         key=play_button_key(binding, tab, source_index),
-        help="Play this clip",
+        help=widget_help("Play this clip"),
         on_click=set_active_clip,
         args=(binding.play_key, source_index),
     )

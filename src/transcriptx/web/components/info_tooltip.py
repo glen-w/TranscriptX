@@ -1,6 +1,8 @@
 """Accessible adjacent ⓘ tooltip helpers for non-widget labels and headings.
 
-Streamlit widgets should prefer the built-in ``help=`` parameter (native ⓘ).
+Streamlit widgets should prefer the built-in ``help=`` parameter (native ⓘ),
+wrapped with :func:`widget_help` so Settings → Interface can turn tips off.
+
 Use this module when help must sit beside a markdown heading, metric label,
 or other non-widget touchpoint.
 """
@@ -11,6 +13,29 @@ import html
 from collections.abc import Sequence
 
 
+def info_tooltips_enabled() -> bool:
+    """Return whether instructional ⓘ / Streamlit help tips are enabled."""
+    from transcriptx.web.action_menus.prefs import get_cached_runtime_prefs
+
+    return bool(get_cached_runtime_prefs().show_info_tooltips)
+
+
+def widget_help(text: str | None) -> str | None:
+    """Pass-through for Streamlit ``help=`` that respects Interface prefs.
+
+    Returns ``None`` when tips are disabled or ``text`` is empty, which hides
+    Streamlit's native ⓘ icon.
+    """
+    if text is None:
+        return None
+    cleaned = str(text).strip()
+    if not cleaned:
+        return None
+    if not info_tooltips_enabled():
+        return None
+    return cleaned
+
+
 def build_info_tooltip_html(
     lines: Sequence[str] | str,
     *,
@@ -19,11 +44,16 @@ def build_info_tooltip_html(
     test_id: str = "tx-info-tooltip",
     tip_extra_class: str = "tx-methodology-info-tip",
     wrap_extra_class: str = "tx-methodology-info",
+    respect_prefs: bool = True,
 ) -> str:
     """Build an ⓘ button + tooltip for one or more help lines.
 
-    Returns an empty string when there is no tip body.
+    Returns an empty string when there is no tip body, or when instructional
+    tips are disabled and ``respect_prefs`` is True (default). Pass
+    ``respect_prefs=False`` for identity disclosure controls such as run-id.
     """
+    if respect_prefs and not info_tooltips_enabled():
+        return ""
     if isinstance(lines, str):
         body_lines = [lines] if lines.strip() else []
     else:

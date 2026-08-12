@@ -18,6 +18,7 @@ from transcriptx.web.layouts.store import (
     LayoutValidationError,
     slugify_layout_id,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 
 EDITABLE_PAGES = ("overview", "insights")
 _INSIGHTS_SECTION_ORDER = ("summary", "speakers", "actions", "highlights")
@@ -199,7 +200,7 @@ def render_layout_editor(layout_id: str) -> None:
         options=list(EDITABLE_PAGES),
         format_func=lambda p: p.title(),
         key="dashboard_builder_edit_page",
-        help="Choose which layout page (Overview or Insights) to edit.",
+        help=widget_help("Choose which layout page (Overview or Insights) to edit."),
     )
     section: str | None = None
     if page_id == "insights":
@@ -208,7 +209,7 @@ def render_layout_editor(layout_id: str) -> None:
             options=list(_INSIGHTS_SECTION_ORDER),
             horizontal=True,
             key="dashboard_builder_edit_section",
-            help="Insights placements are grouped into these section buckets.",
+            help=widget_help("Insights placements are grouped into these section buckets."),
         )
 
     rows = list(edited.get(page_id, []))
@@ -228,7 +229,7 @@ def render_layout_editor(layout_id: str) -> None:
                 value=row.visible,
                 key=f"dashboard_builder_vis_{layout_id}_{row.placement_id}",
                 disabled=builtin,
-                help="Hide without removing the placement from the layout.",
+                help=widget_help("Hide without removing the placement from the layout."),
             )
             if not builtin and visible != row.visible:
                 rows[global_ix] = EditedPlacement(
@@ -294,7 +295,7 @@ def render_layout_editor(layout_id: str) -> None:
         default=[],
         key=f"dashboard_builder_add_{page_id}_{section or 'all'}",
         disabled=builtin,
-        help="Recommended blocks for this page/section.",
+        help=widget_help("Recommended blocks for this page/section."),
     )
     if other_specs:
         with st.expander("All other blocks", expanded=False):
@@ -305,7 +306,7 @@ def render_layout_editor(layout_id: str) -> None:
                 default=[],
                 key=f"dashboard_builder_add_other_{page_id}_{section or 'all'}",
                 disabled=builtin,
-                help="Additional registered blocks that can be placed here.",
+                help=widget_help("Additional registered blocks that can be placed here."),
             )
             for label in more:
                 options[label] = other_opts[label]
@@ -338,7 +339,7 @@ def render_layout_editor(layout_id: str) -> None:
             "New layout id",
             value=f"{layout_id}_custom",
             key="dashboard_builder_edit_save_as_id",
-            help="Slug for the custom layout file (letters, digits, underscores).",
+            help=widget_help("Slug for the custom layout file (letters, digits, underscores)."),
         )
         new_title = st.text_input(
             "Title",

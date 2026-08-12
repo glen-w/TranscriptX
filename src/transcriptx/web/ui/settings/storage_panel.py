@@ -20,6 +20,7 @@ from transcriptx.web.services.run_cleanup import (
 from transcriptx.web.services.run_cleanup.session_clear import (
     clear_session_selections_for_removed_runs,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 
 _SESSION_ID_KEY = "_cleanup_ui_session_id"
 _HANDLE_KEY = "_cleanup_plan_handle"
@@ -180,10 +181,10 @@ def _render_cleanup_section() -> None:
         options=["Delete all runs", "Delete old runs"],
         horizontal=True,
         key="_cleanup_mode_radio",
-        help=(
+        help=widget_help((
             "Delete all: remove every eligible analysis run. "
             "Delete old: keep the newest run per transcript and per group."
-        ),
+        )),
     )
     mode = (
         CleanupMode.DELETE_ALL
@@ -282,7 +283,7 @@ def _render_cleanup_section() -> None:
         typed = st.text_input(
             f"Type {confirm_phrase} to confirm",
             key=_PHRASE_KEY,
-            help="Exact match required (case-sensitive, no trimming).",
+            help=widget_help("Exact match required (case-sensitive, no trimming)."),
         )
         # Service validates untrimmed; UI must not strip before submit.
         phrase_ok = typed == confirm_phrase

@@ -32,6 +32,7 @@ from transcriptx.web.state import (
     SUBJECT_TYPE_KEY,
     SUBJECT_TYPE_SELECTOR_KEY,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 
 _SECTION_TITLES: dict[NavSection, str] = {
     "workflow": "Workflow",
@@ -267,9 +268,9 @@ def render_sidebar(
                 width="stretch",
                 type="secondary",
                 disabled=True,
-                help=help,
+                help=widget_help(help),
             )
-        elif st.button(text, key=btn_key, width="stretch", type=btn_type, help=help):
+        elif st.button(text, key=btn_key, width="stretch", type=btn_type, help=widget_help(help)):
             _apply_navigation(page_key)
 
     def _render_nav_spec(spec: PageSpec, *, key_suffix: str = "") -> None:

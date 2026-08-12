@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Protocol, Sequence
 
 import streamlit as st
+from transcriptx.web.components.info_tooltip import widget_help
 
 
 class _SubviewArtifact(Protocol):
@@ -48,7 +49,7 @@ def render_subview_slice_filter(
         index=0,
         horizontal=True,
         key=subview_key,
-        help="Group rollup vs per-session/per-speaker chart families when both exist.",
+        help=widget_help("Group rollup vs per-session/per-speaker chart families when both exist."),
     )
     subview = None if tab == "All" else tab
     slice_id: str | None = None
@@ -60,7 +61,7 @@ def render_subview_slice_filter(
                 ["All"] + slice_ids,
                 index=0,
                 key=slice_key,
-                help="Focus one session or speaker slice within the selected subview.",
+                help=widget_help("Focus one session or speaker slice within the selected subview."),
             )
             slice_id = None if slice_choice == "All" else slice_choice
     return SubviewSliceState(subview=subview, slice_id=slice_id)

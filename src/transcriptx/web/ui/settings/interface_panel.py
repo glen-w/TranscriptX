@@ -33,6 +33,7 @@ from transcriptx.web.action_menus.prefs import (
     save_interface_prefs,
     validate_draft_for_save,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 
 _MODE_LABELS = {
     "use_standard": "Use standard menu",
@@ -49,6 +50,7 @@ def _sync_widgets_from_draft() -> None:
     """Push draft model into Streamlit widget keys (controlled hydrate)."""
     draft = st.session_state[DRAFT_SESSION_KEY]
     prefs = draft.prefs
+    st.session_state["iface_show_info_tooltips"] = bool(prefs.show_info_tooltips)
     st.session_state["iface_std_mode"] = (
         "Built-in" if prefs.standard_menu_mode == "built_in" else "Custom"
     )
@@ -75,6 +77,9 @@ def _request_widget_sync() -> None:
 def _pull_widgets_into_draft() -> None:
     draft = st.session_state[DRAFT_SESSION_KEY]
     prefs = draft.prefs
+    prefs.show_info_tooltips = bool(
+        st.session_state.get("iface_show_info_tooltips", True)
+    )
     std_mode = st.session_state.get("iface_std_mode", "Built-in")
     prefs.standard_menu_mode = "built_in" if std_mode == "Built-in" else "custom"
     selected_std: list[ActionId] = []
@@ -105,6 +110,17 @@ def render_interface_panel() -> None:
     pending_sync = bool(st.session_state.pop(_PENDING_WIDGET_SYNC_KEY, False))
     if first or pending_sync:
         _sync_widgets_from_draft()
+
+    st.subheader("Help / info tips")
+    st.caption(
+        "Show or hide instructional ⓘ tips on widgets and Speakers methodology notes. "
+        "Run-id identity ⓘ in the context bar stays available either way."
+    )
+    st.checkbox(
+        "Show info tooltips",
+        key="iface_show_info_tooltips",
+        disabled=draft.recovery,
+    )
 
     st.subheader("Action menus")
     st.caption(
@@ -139,7 +155,9 @@ def render_interface_panel() -> None:
         options=["Built-in", "Custom"],
         key="iface_std_mode",
         horizontal=True,
-        help="Built-in is the Home-style Open · Charts · Artifacts · Export ZIP · Rename strip.",
+        help=widget_help(
+            "Built-in is the Home-style Open · Charts · Artifacts · Export ZIP · Rename strip."
+        ),
         disabled=draft.recovery,
     )
     if st.session_state.get("iface_std_mode") == "Custom":
@@ -147,7 +165,7 @@ def render_interface_panel() -> None:
             st.checkbox(
                 action.label,
                 key=f"iface_std_{action.id.value}",
-                help=action.help,
+                help=widget_help(action.help),
                 disabled=draft.recovery,
             )
 
@@ -157,7 +175,9 @@ def render_interface_panel() -> None:
             show = st.checkbox(
                 "Show menu",
                 key=f"iface_show_{sid.value}",
-                help="When off, this section renders no action links. Mode and selections are kept.",
+                help=widget_help(
+                    "When off, this section renders no action links. Mode and selections are kept."
+                ),
                 disabled=draft.recovery,
             )
             default_preview = " · ".join(
@@ -192,7 +212,7 @@ def render_interface_panel() -> None:
                 format_func=lambda m: _MODE_LABELS[m],
                 key=f"iface_mode_{sid.value}",
                 disabled=draft.recovery or not show,
-                help=(
+                help=widget_help(
                     "Built-in: default actions for this section. "
                     "Manual: pick which actions appear."
                 ),
@@ -204,7 +224,7 @@ def render_interface_panel() -> None:
                     st.checkbox(
                         action.label,
                         key=f"iface_sel_{sid.value}_{action_id.value}",
-                        help=action.help,
+                        help=widget_help(action.help),
                     )
             elif not show:
                 st.caption(

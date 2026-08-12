@@ -9,6 +9,7 @@ from transcriptx.web.speaker_profile_signals import (
     SHOW_ARCHIVED_SESSION_KEY,
     SHOW_MERGED_SESSION_KEY,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 
 _ENROL_PREVIEW_KEY = "_voice_bulk_enrol_preview"
 _ENROL_RESULT_KEY = "_voice_bulk_enrol_last_result"
@@ -155,10 +156,10 @@ def _render_bulk_voice_ops() -> None:
                 "Enrol trusted voice for all profiles",
                 type="primary",
                 key="voice_bulk_enrol_all_btn",
-                help=(
+                help=widget_help((
                     "Explicit bootstrap for every active profile with confirmed "
                     "links. Privacy opt-in alone does not enrol anything."
-                ),
+                )),
             ):
                 try:
                     progress = st.progress(0.0, text="Starting…")
@@ -237,10 +238,10 @@ def _render_bulk_voice_ops() -> None:
         "Pre-load voice suggestions",
         type="primary",
         key="voice_bulk_preload_btn",
-        help=(
+        help=widget_help((
             "Warm local voice suggestion caches for Speaker Identification "
             "across the managed library."
-        ),
+        )),
     ):
         try:
             progress = st.progress(0.0, text="Starting…")
@@ -269,29 +270,29 @@ def render_speakers_panel() -> None:
         "Include ignored appearances in headline totals",
         value=False,
         key=INCLUDE_IGNORED_SESSION_KEY,
-        help=(
+        help=widget_help((
             "When enabled, Speakers directory and profile headline totals include "
             "appearances flagged as ignored. Default excludes them along with "
             "needs-review, missing-source, and collision appearances."
-        ),
+        )),
     )
     st.checkbox(
         "Show archived profiles",
         value=False,
         key=SHOW_ARCHIVED_SESSION_KEY,
-        help=(
+        help=widget_help((
             "When enabled, Speakers lists archived profiles and shows an "
             "Archived count card."
-        ),
+        )),
     )
     st.checkbox(
         "Show merged profiles",
         value=False,
         key=SHOW_MERGED_SESSION_KEY,
-        help=(
+        help=widget_help((
             "When enabled, Speakers lists merged profiles and shows a "
             "Merged count card."
-        ),
+        )),
     )
 
     st.subheader("Local voice matching")
@@ -385,13 +386,13 @@ def render_speakers_panel() -> None:
                 max_value=BOOTSTRAP_MAX_LINKS_MAX,
                 step=1,
                 key="voice_bootstrap_max_links",
-                help=(
+                help=widget_help((
                     "Speakers → Enrol trusted voice walks confirmed links in "
                     f"deterministic order up to this cap (default "
                     f"{DEFAULT_BOOTSTRAP_MAX_LINKS}). Stored in "
                     "operator.voice_settings.json; survives privacy revoke. "
                     "Match-time still caps references per link separately."
-                ),
+                )),
             )
             save_cap_key = ensure_idempotency_key(
                 st.session_state, "voice_operator_bootstrap_max_links"
@@ -428,12 +429,12 @@ def render_speakers_panel() -> None:
                     disabled=not st.session_state.get(
                         "voice_privacy_revoke_confirm", False
                     ),
-                    help=(
+                    help=widget_help((
                         "Disables voice matching and runs a bounded wipe of "
                         "speaker_profiles/voice evidence. Does not delete "
                         "profiles or confirmed links. Docker image rebuild "
                         "does not wipe voice data — this button does."
-                    ),
+                    )),
                 ):
                     try:
                         VoicePrivacyService().revoke(

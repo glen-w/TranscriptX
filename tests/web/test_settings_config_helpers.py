@@ -35,6 +35,10 @@ def test_render_field_widget_bool_checkbox(monkeypatch) -> None:
             return True
 
     monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(
+        "transcriptx.web.components.info_tooltip.info_tooltips_enabled",
+        lambda: True,
+    )
     out = render_field_widget(
         _meta(type=bool, description="Toggle the flag"), False, "k1"
     )
@@ -56,6 +60,10 @@ def test_render_field_widget_passes_description_as_help(monkeypatch) -> None:
             return value
 
     monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(
+        "transcriptx.web.components.info_tooltip.info_tooltips_enabled",
+        lambda: True,
+    )
     render_field_widget(
         _meta(type=str, key="analysis.model", path="analysis.model", description="  "),
         "m",
@@ -73,6 +81,31 @@ def test_render_field_widget_passes_description_as_help(monkeypatch) -> None:
         "k2",
     )
     assert captured["help"] == "Model id for embeddings."
+
+
+@pytest.mark.unit
+def test_render_field_widget_suppresses_help_when_tips_disabled(monkeypatch) -> None:
+    import transcriptx.web.ui.settings.widgets as mod
+
+    captured: dict = {}
+
+    class _St:
+        @staticmethod
+        def checkbox(label, value=False, key=None, help=None):
+            captured["help"] = help
+            return value
+
+    monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(
+        "transcriptx.web.components.info_tooltip.info_tooltips_enabled",
+        lambda: False,
+    )
+    render_field_widget(
+        _meta(type=bool, description="Toggle the flag"),
+        False,
+        "k_off",
+    )
+    assert captured["help"] is None
 
 
 @pytest.mark.unit

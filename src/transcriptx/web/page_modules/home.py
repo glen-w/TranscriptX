@@ -15,6 +15,7 @@ from transcriptx.web.cache_helpers import (
     cached_list_recent_runs,
     get_cached_home_light_summary,
 )
+from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.components.recent_run_row import render_recent_run_row
@@ -52,13 +53,13 @@ def _render_transcript_overview() -> bool:
         st.metric(
             "Transcripts",
             library_count,
-            help="Registered transcripts in the library index",
+            help=widget_help("Registered transcripts in the library index"),
         )
     with col2:
         st.metric(
             "Analysed transcripts",
             analysed_count,
-            help="Unique transcripts with at least one viewable analysis run",
+            help=widget_help("Unique transcripts with at least one viewable analysis run"),
         )
     with col3:
         st.metric("Sessions", session_count)
@@ -73,7 +74,7 @@ def _render_detailed_statistics() -> None:
         st.metric(
             "Total duration",
             format_duration_display_from_config(stats.get("total_duration_seconds", 0)),
-            help="Sum of unique analysed transcript durations",
+            help=widget_help("Sum of unique analysed transcript durations"),
         )
     with col2:
         st.metric("Total words", f"{stats.get('total_word_count', 0):,}")
@@ -83,13 +84,13 @@ def _render_detailed_statistics() -> None:
         st.metric(
             "Analysis completion",
             f"{stats.get('average_completion', 0):.0f}%",
-            help="Average analysis completion across analysed transcripts",
+            help=widget_help("Average analysis completion across analysed transcripts"),
         )
     with col5:
         st.metric(
             "Size on disk",
             format_bytes_display(stats.get("total_artifact_bytes", 0)),
-            help="Total size of produced analysis artifacts across all runs",
+            help=widget_help("Total size of produced analysis artifacts across all runs"),
         )
 
 

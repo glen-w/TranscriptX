@@ -28,6 +28,7 @@ from transcriptx.app.corrections import (
     new_corrections_action_id,
 )
 from transcriptx.web.navigation import make_session_path_resolver
+from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.web.state import SELECTBOX_PLACEHOLDER_TRANSCRIPT
 
@@ -250,7 +251,7 @@ def _render_candidate_detail(
                         "Apply",
                         value=True,
                         key=f"occ_sel_{candidate_id}_{i}",
-                        help="Apply this correction at this occurrence",
+                        help=widget_help("Apply this correction at this occurrence"),
                     )
                 with row2:
                     segment_label = d.segment_index if d.segment_index >= 0 else "?"
@@ -393,7 +394,7 @@ def _corrections_studio_workspace_fragment(
             "Filter by status",
             status_options,
             key="corrections_studio_status_filter",
-            help="Review workflow state for each candidate (pending until you accept/reject/skip).",
+            help=widget_help("Review workflow state for each candidate (pending until you accept/reject/skip)."),
         )
     with filter_col2:
         kind_filter = st.multiselect(
@@ -401,7 +402,7 @@ def _corrections_studio_workspace_fragment(
             kind_options,
             default=[],
             key="corrections_studio_kind_filter",
-            help="Leave empty for all kinds",
+            help=widget_help("Leave empty for all kinds"),
         )
     with filter_col3:
         source_filter = st.multiselect(
@@ -409,7 +410,7 @@ def _corrections_studio_workspace_fragment(
             ["memory", "deterministic", "llm", "viewer"],
             default=[],
             key="corrections_studio_source_filter",
-            help="Leave empty for all sources (viewer = manual propose)",
+            help=widget_help("Leave empty for all sources (viewer = manual propose)"),
         )
     with filter_col4:
         confidence_min = st.slider(
@@ -419,7 +420,7 @@ def _corrections_studio_workspace_fragment(
             value=0.0,
             step=0.05,
             key="corrections_studio_confidence_min",
-            help="Hide candidates below this ranking score (0 = show all).",
+            help=widget_help("Hide candidates below this ranking score (0 = show all)."),
         )
     with filter_col5:
         page_size = 50

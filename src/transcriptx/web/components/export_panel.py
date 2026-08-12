@@ -13,6 +13,7 @@ from transcriptx.web.module_option_format import format_module_option
 from transcriptx.web.module_ui_groups import order_module_ids
 from transcriptx.web.services import ArtifactService
 from transcriptx.web.services.export_service import ExportService
+from transcriptx.web.components.info_tooltip import widget_help
 
 WARN_BYTES = 500 * 1024 * 1024
 
@@ -75,11 +76,11 @@ def render_export_panel_ui(
         "Export Options",
         modes,
         key=f"{key_prefix}_mode",
-        help=(
+        help=widget_help((
             "All / Module / Speaker slice the run artifact index. "
             "Charts/Data modes filter by artifact kind. "
             "Custom Selection picks individual paths."
-        ),
+        )),
     )
     module_choice = None
     speaker_choice = None

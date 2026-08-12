@@ -21,7 +21,11 @@ def test_methodology_lines_skip_partners():
     ]
 
 
-def test_methodology_info_html_escapes_and_is_accessible():
+def test_methodology_info_html_escapes_and_is_accessible(monkeypatch):
+    monkeypatch.setattr(
+        "transcriptx.web.components.info_tooltip.info_tooltips_enabled",
+        lambda: True,
+    )
     html_out = speakers._methodology_info_html(
         ["Grouped by appearance date.", 'Line with <script>"x"'],
         control_id="spk-meth-1",
@@ -38,11 +42,33 @@ def test_methodology_info_html_escapes_and_is_accessible():
     assert html_out.count("<br>") == 1
 
 
-def test_methodology_info_html_empty_when_no_lines():
+def test_methodology_info_html_empty_when_no_lines(monkeypatch):
+    monkeypatch.setattr(
+        "transcriptx.web.components.info_tooltip.info_tooltips_enabled",
+        lambda: True,
+    )
     assert speakers._methodology_info_html([], control_id="x") == ""
 
 
-def test_partners_info_tooltip_is_methodology_only():
+def test_methodology_info_html_suppressed_when_tips_disabled(monkeypatch):
+    monkeypatch.setattr(
+        "transcriptx.web.components.info_tooltip.info_tooltips_enabled",
+        lambda: False,
+    )
+    assert (
+        speakers._methodology_info_html(
+            ["Grouped by appearance date."],
+            control_id="spk-meth-off",
+        )
+        == ""
+    )
+
+
+def test_partners_info_tooltip_is_methodology_only(monkeypatch):
+    monkeypatch.setattr(
+        "transcriptx.web.components.info_tooltip.info_tooltips_enabled",
+        lambda: True,
+    )
     html_out = speakers._info_tooltip_html(
         [
             "Partners are co-appearances in shared sessions, not interaction proof.",
@@ -58,7 +84,11 @@ def test_partners_info_tooltip_is_methodology_only():
     assert "merged_owner_link" not in html_out
 
 
-def test_section_heading_with_info_escapes_title():
+def test_section_heading_with_info_escapes_title(monkeypatch):
+    monkeypatch.setattr(
+        "transcriptx.web.components.info_tooltip.info_tooltips_enabled",
+        lambda: True,
+    )
     tip = speakers._info_tooltip_html(
         ["note"],
         control_id="t1",

@@ -35,6 +35,7 @@ from transcriptx.web.ui.settings.charts_overview_selector import (
 )
 from transcriptx.web.ui.settings.diff_view import render_config_diff
 from transcriptx.web.ui.settings.forms import render_config_form
+from transcriptx.web.components.info_tooltip import widget_help
 
 _SCOPE_KEYS = ("Default", "Project", "Draft override", "Run override")
 _SCOPE_WIDGET_KEY = "settings_config_scope_ix"
@@ -260,10 +261,10 @@ def render_configuration_panel(
         options=list(range(4)),
         format_func=lambda i: labels[i],
         key=_SCOPE_WIDGET_KEY,
-        help=(
+        help=widget_help((
             "Choose which config layer you are editing. "
             "Effective configuration above still follows full precedence."
-        ),
+        )),
     )
     scope = _scope_name_from_index(int(scope_ix))
 
@@ -311,13 +312,13 @@ def render_configuration_panel(
         "Edit mode",
         value=False,
         key="settings_config_edit_mode",
-        help="Unlock widgets for the selected editing scope. Default scope stays read-only.",
+        help=widget_help("Unlock widgets for the selected editing scope. Default scope stays read-only."),
     )
     show_only_changed = st.toggle(
         "Show only changed settings",
         value=False,
         key="settings_config_changed_only",
-        help="Hide knobs whose draft value still matches the scope baseline.",
+        help=widget_help("Hide knobs whose draft value still matches the scope baseline."),
     )
 
     if scope == "Default":
@@ -383,7 +384,7 @@ def render_configuration_panel(
             "Show advanced/raw settings editor",
             value=False,
             key="settings_config_show_advanced_editor",
-            help="Expose the full config registry beyond curated Common Settings.",
+            help=widget_help("Expose the full config registry beyond curated Common Settings."),
         )
         if show_advanced:
             st.caption("Advanced editor exposes all registered keys. Use with care.")

@@ -11,6 +11,7 @@ from pathlib import Path
 import streamlit as st
 
 from transcriptx.web.action_menus.catalog import help_for, icon_for, label_for
+from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.action_menus.context import (
     CanonicalIdentity,
     IdentityError,
@@ -90,7 +91,7 @@ def render_module_required_hint(
         label,
         key=f"mod_req_{key}",
         icon=icon,
-        help=help_text,
+        help=widget_help(help_text),
     ):
         identity = identity_for_run_analysis(ctx)
         if identity is not None:
