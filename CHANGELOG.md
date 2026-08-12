@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Dashboard Builder **Edit** mode: select and ↑↓ reorder Overview/Insights blocks; save custom layouts in place. Charts Overview strip selector (checkboxes + order) under **Settings → Configuration**. Guides: [dashboard_builder.md](docs/dev/dashboard_builder.md), [settings.md](docs/runtime/settings.md).
 - **System → Tools** hub: audio **Preprocessing** and **Merge** tabs restored under the renamed System sidebar section (formerly Settings), with dependency checks, guided assess/apply-suggested flow, serial-group one-click fill, and handoffs to Transcribe Audio. CLI scripts remain for automation.
 - Dashboard Builder / layout presets: three curated built-ins — **Meeting follow-up** (`meeting_followup`), **Speakers** (`speaker_focus`), **Minimal** (`minimal`) — plus Schema overwrite confirmation, delete-custom, layout-id slug hardening, and param type checks. Guide: [docs/dev/dashboard_builder.md](docs/dev/dashboard_builder.md).
 - **Theme B (corrections in the Transcript viewer):** Correct mode supports word/span propose, atomic accept-and-apply for the current candidate, and scoped corrected-sidecar writes without overwriting the managed original. Corrections Studio remains the batch/detector/LLM review surface (Start/Resume no longer auto-generates). Guide: [docs/runtime/corrections-viewer.md](docs/runtime/corrections-viewer.md).

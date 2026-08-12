@@ -1,4 +1,4 @@
-"""Dashboard Builder — schema inspection, preview, and Save as custom layout."""
+"""Dashboard Builder — layout edit, schema inspection, preview, and custom clones."""
 
 from __future__ import annotations
 
@@ -22,10 +22,13 @@ from transcriptx.web.layouts.store import (
     LayoutValidationError,
     slugify_layout_id,
 )
+from transcriptx.web.ui.dashboard_builder.layout_editor import render_layout_editor
 
 _BUILDER_HELP_PREREQ = (
-    "**Dashboard Builder** inspects registered view blocks and layout profiles. "
-    "Built-in presets are previewable but immutable — use **Save as custom layout**. "
+    "**Dashboard Builder** chooses which panels appear on **Overview** and **Insights** "
+    "(layout profiles). It does **not** pick Charts overview charts — use "
+    "**Settings → Configuration → Charts overview**. "
+    "Built-in presets are immutable; clone with **Save as custom layout**. "
     "Visiting this page enables the **Developer debug** layout in the picker for the session."
 )
 
@@ -182,7 +185,7 @@ def render_dashboard_builder() -> None:
     st.session_state["show_debug_layouts"] = True
     render_page_shell(
         "Dashboard Builder",
-        "Inspect blocks, validate layouts, preview pages, and clone built-ins.",
+        "Edit Overview/Insights layouts, validate YAML, preview pages, and clone built-ins.",
         badges=None,
         actions=None,
     )
@@ -202,12 +205,14 @@ def render_dashboard_builder() -> None:
 
     mode = st.radio(
         "Mode",
-        ["Schema", "Preview"],
+        ["Edit", "Schema", "Preview"],
         horizontal=True,
         key="dashboard_builder_mode",
     )
 
-    if mode == "Schema":
+    if mode == "Edit":
+        render_layout_editor(chosen)
+    elif mode == "Schema":
         _render_schema_mode(chosen)
     else:
         _render_preview_mode(chosen)

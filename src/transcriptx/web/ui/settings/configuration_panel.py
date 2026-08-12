@@ -30,6 +30,9 @@ from transcriptx.core.config import (
     strip_activation_keys_from_flat_map,
     strip_activation_keys_from_nested_map,
 )
+from transcriptx.web.ui.settings.charts_overview_selector import (
+    render_charts_overview_selector,
+)
 from transcriptx.web.ui.settings.diff_view import render_config_diff
 from transcriptx.web.ui.settings.forms import render_config_form
 
@@ -323,6 +326,14 @@ def render_configuration_panel(
             key for key in registry.keys() if key not in activation_keys
         }
         surface_keys = common_keys - activation_keys
+
+        overview_updates = render_charts_overview_selector(
+            draft_dot,
+            scope_key=form_scope_key,
+        )
+        draft_dot.update(overview_updates)
+
+        st.divider()
         st.markdown("**Common Settings**")
         st.caption(
             "Curated guided knobs (`COMMON_SETTINGS_SCHEMA`). "

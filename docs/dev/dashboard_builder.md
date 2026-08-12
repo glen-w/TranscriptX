@@ -3,16 +3,19 @@ Authority: docs/dev/composition_platform.md
 
 # Dashboard Builder
 
-Settings → **Dashboard Builder** inspects the composition platform: registered view blocks, layout profile YAML, validation, Preview against a selected run, and clone/delete of **custom** layouts.
+Settings → **Dashboard Builder** edits **layout profiles**: which panels (blocks) appear on **Overview** and **Insights**, and in what order.
+
+It does **not** choose which charts appear in the Charts page Overview strip — that is **Settings → Configuration → Charts overview** (`dashboard.overview_charts`).
 
 ## Modes
 
 | Mode | Needs run? | What it does |
 |------|------------|--------------|
-| **Schema** | No | Lists registered blocks (availability without a run), dumps active layout YAML, validates, **Save as custom layout**, **Delete custom layout** |
-| **Preview** | Yes (subject + run in sidebar) | Block availability for the current run; renders a chosen page (`overview` / `insights` / `charts`) via the order-based composer |
+| **Edit** | No | Add / remove / reorder Overview & Insights blocks (↑↓); save custom layouts in place; clone built-ins |
+| **Schema** | No | Lists registered blocks, dumps active layout YAML, validates, Save as custom / Delete custom |
+| **Preview** | Yes (subject + run) | Renders a chosen page via the order-based composer |
 
-Visiting Dashboard Builder sets `show_debug_layouts=True` for the session so **Developer debug** appears in the layout picker. Built-in **All** remains listed regardless.
+Visiting Dashboard Builder sets `show_debug_layouts=True` so **Developer debug** appears in the layout picker.
 
 ## Built-in presets (immutable)
 
@@ -26,37 +29,28 @@ Visiting Dashboard Builder sets `show_debug_layouts=True` for the session so **D
 | `developer_debug` | Developer debug | Layout/block inspection |
 | `all` | All | Every registered block (generated; not YAML) |
 
-Built-ins cannot be overwritten or deleted. Clone with **Save as custom layout**.
+Built-ins cannot be overwritten or deleted. Clone with **Save as custom layout**, then edit the custom copy.
 
 ## Custom layouts
 
-- Path: `{config_dir}/profiles/ui_layouts/{id}.yaml` (runtime `PROFILES_DIR/ui_layouts/`; not repo `data/profiles/`)
-- Ids are slugified to `[a-zA-Z0-9_-]+` (must start with a letter or digit); path segments and `..` are rejected
-- Saving over an existing custom id requires an explicit overwrite confirmation in the UI (`overwrite=False` at the store rejects silently replacing)
-- Delete requires a confirmation checkbox; if the deleted layout was active, the active id resets to `default`
-
-Validate programmatically:
-
-```python
-from transcriptx.web.layouts.store import LayoutProfileStore
-
-spec = LayoutProfileStore.load_layout("meeting_followup")
-LayoutProfileStore.validate_layout(spec)
-```
+- Path: `{config_dir}/profiles/ui_layouts/{id}.yaml` (`PROFILES_DIR/ui_layouts/`)
+- Edit mode saves in place via `LayoutProfileStore.save_layout(..., overwrite=True)`
+- Ids are slugified to `[a-zA-Z0-9_-]+`; path segments and `..` are rejected
+- Delete requires confirmation; if the deleted layout was active, active id resets to `default`
 
 ## Troubleshooting
 
 | Symptom | Check |
-|---------|--------|
-| Preview empty / info banner | Select a subject and analysis run in the sidebar |
-| Validation failed | Unknown `block_id`, duplicate `placement_id`, unsupported / mistyped `params` for blocks that declare `params_schema` |
-| Cannot save | Id collides with a built-in, or overwrite not confirmed |
-| Cannot delete | Target is a built-in id |
-| Insights sections missing | Curated presets should set `section:` on Insights placements (`summary` / `speakers` / `actions` / `highlights`) |
+|---------|-------|
+| Preview empty | Select a subject and analysis run in the sidebar |
+| Cannot save in Edit | Built-in selected — clone first |
+| Validation failed | Unknown `block_id`, duplicate `placement_id`, bad `params` / `section` |
+| Insights sections missing | Set `section:` on Insights placements (`summary` / `speakers` / `actions` / `highlights`) |
 
 ## Related
 
 - [composition_platform.md](composition_platform.md) — architecture
 - [web_blocks.md](web_blocks.md) — adding blocks and layouts
-- Store: `src/transcriptx/web/layouts/store.py`
+- [settings.md](../runtime/settings.md) — Charts overview selector
 - Page: `src/transcriptx/web/page_modules/dashboard_builder.py`
+- Editor: `src/transcriptx/web/ui/dashboard_builder/layout_editor.py`

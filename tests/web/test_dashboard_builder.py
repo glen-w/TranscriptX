@@ -287,3 +287,39 @@ def test_preview_mode_loads_selected_layout(monkeypatch) -> None:
     assert "meeting_followup" in loaded
     assert rendered
     assert all(layout_id == "meeting_followup" for _page, layout_id in rendered)
+
+
+def test_edit_mode_renders_layout_editor(monkeypatch) -> None:
+    register_builtin_blocks()
+    editor_calls: list[str] = []
+
+    class _DummySt:
+        session_state = {"active_layout_profile_id": "default"}
+
+        @staticmethod
+        def selectbox(label, options, **kwargs):
+            return options[0] if options else ""
+
+        @staticmethod
+        def radio(label, options, **kwargs):
+            return "Edit"
+
+        @staticmethod
+        def info(msg):
+            return None
+
+        @staticmethod
+        def error(msg):
+            return None
+
+    monkeypatch.setattr(mod, "st", _DummySt)
+    monkeypatch.setattr(mod, "render_page_shell", lambda *a, **k: None)
+    monkeypatch.setattr(mod, "render_layout_profile_picker", lambda **k: None)
+    monkeypatch.setattr(
+        mod,
+        "render_layout_editor",
+        lambda layout_id: editor_calls.append(layout_id),
+    )
+
+    mod.render_dashboard_builder()
+    assert editor_calls == ["default"]

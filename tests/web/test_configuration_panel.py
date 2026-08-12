@@ -39,6 +39,18 @@ class _ConfigSt(DummyHomeStreamlit):
 
     @classmethod
     def selectbox(cls, *_a, **_k):
+        options = _k.get("options")
+        if options is None and len(_a) >= 2:
+            options = _a[1]
+        if options is not None:
+            opts = list(options)
+            if cls.select_ix in opts:
+                return cls.select_ix
+            if opts:
+                index = int(_k.get("index", 0) or 0)
+                if 0 <= index < len(opts):
+                    return opts[index]
+                return opts[0]
         return cls.select_ix
 
     @classmethod
@@ -60,6 +72,16 @@ class _ConfigSt(DummyHomeStreamlit):
         return bool(cls.button_returns.get(label, False))
 
     @classmethod
+    def checkbox(cls, _label, value=False, key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            return bool(cls.session_state[key])
+        return value
+
+    @classmethod
+    def number_input(cls, _label, min_value=0, value=0, **_kwargs):
+        return value
+
+    @classmethod
     def info(cls, msg, **_k):
         cls.infos.append(str(msg))
 
@@ -74,6 +96,10 @@ class _ConfigSt(DummyHomeStreamlit):
     @classmethod
     def subheader(cls, text, **_k):
         cls.subheaders.append(str(text))
+
+    @classmethod
+    def markdown(cls, text, **_k):
+        cls.captions.append(str(text))
 
     @staticmethod
     def expander(*_a, **_k):
@@ -101,6 +127,14 @@ class _ConfigSt(DummyHomeStreamlit):
 
     @staticmethod
     def error(*_a, **_k):
+        return None
+
+    @staticmethod
+    def warning(*_a, **_k):
+        return None
+
+    @staticmethod
+    def json(*_a, **_k):
         return None
 
     @classmethod
@@ -139,6 +173,9 @@ def _patch_config_loads(monkeypatch, mod, *, defaults=None, project=None, draft=
     monkeypatch.setattr(mod, "render_config_diff", lambda *_a, **_k: None)
     monkeypatch.setattr(mod, "render_config_form", lambda **_k: {})
     monkeypatch.setattr(mod, "_render_active_profile_selectors", lambda **_k: None)
+    import transcriptx.web.ui.settings.charts_overview_selector as ov_mod
+
+    monkeypatch.setattr(ov_mod, "st", _ConfigSt)
 
 
 @pytest.mark.unit
@@ -406,3 +443,16 @@ def test_profile_selector_writes_activation_in_project_scope(monkeypatch) -> Non
         form_scope_key="project",
     )
     assert draft_dot["active_workflow_profile"] == "default"
+
+
+@pytest.mark.unit
+def test_configuration_panel_edit_mode_shows_charts_overview(monkeypatch) -> None:
+    import transcriptx.web.ui.settings.configuration_panel as mod
+
+    _ConfigSt.reset()
+    _ConfigSt.select_ix = 1
+    _ConfigSt.edit_mode = True
+    monkeypatch.setattr(mod, "st", _ConfigSt)
+    _patch_config_loads(monkeypatch, mod)
+    mod.render_configuration_panel(run_dir=None, subject_display=None, run_display=None)
+    assert any("Charts overview" in c for c in _ConfigSt.captions)

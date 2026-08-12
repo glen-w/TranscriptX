@@ -10,6 +10,8 @@ How to change TranscriptX behaviour from the GUI, env, and config files — with
 | Goal | Where |
 |------|--------|
 | Everyday analysis depth (which modules run) | **Run Analysis** preset: Quick / Balanced / Thorough / Custom — edit policies under **Settings → Analysis** |
+| Charts page **Overview** strip (which charts, order) | **Settings → Configuration** → **Charts overview** (`dashboard.overview_charts`) — not Dashboard Builder |
+| Overview / Insights **page panels** (layout profiles) | **Settings → Dashboard Builder** — see [dashboard_builder.md](../dev/dashboard_builder.md) |
 | Common model and similarity knobs | **Settings → Configuration** → Common Settings |
 | Full registry of knobs | **Settings → Configuration** → enable **Show advanced/raw settings editor** |
 | Named module/workflow presets (disk JSON) | **Profiles** page (sidebar) — activate from Configuration for Project / Run |
@@ -42,6 +44,7 @@ Draft overrides are reported with run-layer provenance (`source: run`) by design
 
 ## Common vs advanced knobs
 
+- **Charts overview** (Configuration, edit mode): checkbox + ordered list for `dashboard.overview_charts`. Empty list → registry defaults for the run kind (transcript vs group). See [group_charts_default_overview.md](../groups/group_charts_default_overview.md).
 - **Common Settings** are a curated allowlist (`COMMON_SETTINGS_SCHEMA`): models, semantic similarity, a few workflow/output/display keys.
 - **Advanced/raw** exposes every registered config leaf (except profile activation keys). Registry fields may mark `advanced=True` for documentation; the GUI does not yet use that flag to partition the form — the toggle is the partition.
 - Prefer Common or Analysis presets unless you know why a leaf matters.
@@ -54,7 +57,8 @@ Draft overrides are reported with run-layer provenance (`source: run`) by design
 | **Analysis UI preset** | Quick / Balanced / Thorough module sets | Run Analysis + Settings → Analysis |
 | **Module / workflow profile** | Named JSON under `{config_dir}/profiles/<target>/` | Profiles page + Active Profiles in Configuration |
 | **In-config semantic profiles** | Mapping `analysis.semantic_similarity_profiles` (`fast` / `balanced` / `deep`) | Advanced config / code — shares activation key naming with disk profiles; different store |
-| **STT command / UI layout profiles** | Other named JSON under `profiles/` | Transcribe Audio / layout store |
+| **UI layout profiles** | Ordered blocks for Overview / Insights | Settings → Dashboard Builder (`profiles/ui_layouts/`) — not Charts overview |
+| **STT command profiles** | Named JSON under `profiles/` | Transcribe Audio |
 | **Speaker profile** | Longitudinal identity (+ optional voice) | Settings → Speakers — **out of scope** for knob docs |
 
 Tracked files under repo `data/profiles/*/default.json` are **fixtures / allowlisted samples**. Runtime defaults are virtual (dataclass/Pydantic); ProfileManager does not treat disk `default` as loadable user presets. Runtime profiles live under `{config_dir}/profiles/` (override with `TRANSCRIPTX_PROFILES_DIR`).
