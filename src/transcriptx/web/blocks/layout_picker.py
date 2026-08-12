@@ -13,6 +13,9 @@ from transcriptx.web.layouts.store import LayoutProfileStore
 _LAYOUT_LABELS = {
     "default": "Standard",
     "executive": "Executive",
+    "meeting_followup": "Meeting follow-up",
+    "speaker_focus": "Speakers",
+    "minimal": "Minimal",
     "developer_debug": "Developer debug",
     "all": "All",
 }

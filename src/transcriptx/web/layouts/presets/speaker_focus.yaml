@@ -1,0 +1,71 @@
+schema_version: 1
+id: speaker_focus
+title: Speakers
+description: Who spoke and how they talk — speaker cards and linguistic Insights.
+pages:
+  overview:
+    page_id: overview
+    blocks:
+      - placement_id: speakers_summary_hero
+        block_id: transcript_summary_hero
+        visible: true
+      - placement_id: speakers_cards
+        block_id: speaker_summary_cards
+        visible: true
+      - placement_id: speakers_at_a_glance
+        block_id: at_a_glance
+        visible: true
+      - placement_id: speakers_run_status
+        block_id: run_status_compact
+        visible: true
+  insights:
+    page_id: insights
+    blocks:
+      - placement_id: speakers_primary_summary
+        block_id: insights_summary_panel
+        section: summary
+        visible: true
+      - placement_id: speakers_llm_speaker_summary
+        block_id: llm_speaker_summary_block
+        section: speakers
+        visible: true
+        params:
+          title: Per-Speaker LLM Summaries
+          empty_hint: Run the `llm_speaker_summary` module (with LLM enabled and named speakers) to populate this view.
+      - placement_id: speakers_lexical_diversity
+        block_id: lexical_diversity_block
+        section: speakers
+        visible: true
+        params:
+          title: Lexical Diversity
+          empty_hint: Run the `lexical_diversity` module to populate this view.
+      - placement_id: speakers_epistemic_markers
+        block_id: epistemic_markers_block
+        section: speakers
+        visible: true
+        params:
+          title: Epistemic Markers
+          empty_hint: Run the `epistemic_markers` module to populate this view.
+      - placement_id: speakers_politeness
+        block_id: politeness_block
+        section: speakers
+        visible: true
+        params:
+          title: Politeness Markers
+          empty_hint: Run the `politeness` module to populate this view.
+      - placement_id: speakers_style_markers
+        block_id: insights_contract
+        section: speakers
+        visible: true
+        params:
+          focus: style
+          title: Style markers
+  charts:
+    page_id: charts
+    blocks:
+      - placement_id: speakers_charts_overview
+        block_id: chart_overview_slots
+        visible: true
+      - placement_id: speakers_charts_gallery
+        block_id: chart_gallery
+        visible: true

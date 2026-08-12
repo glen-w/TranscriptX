@@ -59,6 +59,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [run_performance.md](dev/run_performance.md) | Analysis-run performance telemetry |
 | [COMPLEXITY_GATES.md](dev/COMPLEXITY_GATES.md) | Complexity / performance gates |
 | [composition_platform.md](dev/composition_platform.md) | Composition platform |
+| [dashboard_builder.md](dev/dashboard_builder.md) | Dashboard Builder workflows |
 | [web_blocks.md](dev/web_blocks.md) | Web block architecture |
 | [dependency_audit.md](dev/dependency_audit.md) | Dependency / CVE waiver policy |
 | [bertopic_optional_module.md](dev/bertopic_optional_module.md) | BERTopic optional module |

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -22,12 +23,59 @@ UI_LAYOUTS_DIR = PROFILES_DIR / "ui_layouts"
 PRESETS_DIR = Path(__file__).resolve().parent / "presets"
 ALL_LAYOUT_ID = "all"
 BUILTIN_LAYOUT_IDS = frozenset(
-    {"default", "executive", "developer_debug", ALL_LAYOUT_ID}
+    {
+        "default",
+        "executive",
+        "developer_debug",
+        "meeting_followup",
+        "speaker_focus",
+        "minimal",
+        ALL_LAYOUT_ID,
+    }
 )
+
+_LAYOUT_ID_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_-]*$")
 
 
 class LayoutValidationError(ValueError):
     """Developer-facing layout validation failure."""
+
+
+def slugify_layout_id(raw: str) -> str:
+    """Normalize a layout id to a safe filesystem stem.
+
+    Raises LayoutValidationError when the result is empty or unsafe.
+    """
+    text = (raw or "").strip()
+    if not text:
+        raise LayoutValidationError("Layout id must be non-empty.")
+    if "/" in text or "\\" in text or ".." in text:
+        raise LayoutValidationError(
+            "Layout id must not contain path separators or '..'."
+        )
+    slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", text).strip("_")
+    if not slug or not _LAYOUT_ID_RE.match(slug):
+        raise LayoutValidationError(
+            "Layout id must start with a letter or digit and contain only "
+            "letters, digits, underscores, or hyphens."
+        )
+    return slug
+
+
+def _param_type_ok(value: Any, expected: str) -> bool:
+    if expected == "string":
+        return isinstance(value, str)
+    if expected == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
+    if expected == "number":
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    if expected == "boolean":
+        return isinstance(value, bool)
+    if expected == "object":
+        return isinstance(value, dict)
+    if expected == "array":
+        return isinstance(value, list)
+    return True
 
 
 def _default_layouts_dir() -> Path:
@@ -71,6 +119,18 @@ class LayoutProfileStore:
         return layout_id in BUILTIN_LAYOUT_IDS
 
     @staticmethod
+    def custom_layout_path(layout_id: str, base: Path | None = None) -> Path:
+        slug = slugify_layout_id(layout_id)
+        return LayoutProfileStore.layouts_dir(base) / f"{slug}.yaml"
+
+    @staticmethod
+    def custom_layout_exists(layout_id: str, base: Path | None = None) -> bool:
+        try:
+            return LayoutProfileStore.custom_layout_path(layout_id, base).exists()
+        except LayoutValidationError:
+            return False
+
+    @staticmethod
     def list_layouts(base: Path | None = None) -> list[str]:
         ids: set[str] = {ALL_LAYOUT_ID}
         root = LayoutProfileStore.layouts_dir(base)
@@ -100,15 +160,29 @@ class LayoutProfileStore:
         return LayoutProfileStore.validate_layout_dict(raw)
 
     @staticmethod
-    def save_layout(spec: LayoutSpec, base: Path | None = None) -> Path:
-        if LayoutProfileStore.is_builtin(spec.id):
+    def save_layout(
+        spec: LayoutSpec,
+        base: Path | None = None,
+        *,
+        overwrite: bool = True,
+    ) -> Path:
+        slug = slugify_layout_id(spec.id)
+        if LayoutProfileStore.is_builtin(slug):
             raise LayoutValidationError(
-                f"Built-in layout '{spec.id}' is immutable. Save as a custom layout id."
+                f"Built-in layout '{slug}' is immutable. Save as a custom layout id."
+            )
+        if slug != spec.id:
+            raise LayoutValidationError(
+                f"Layout id '{spec.id}' is not a valid slug; use '{slug}'."
             )
         LayoutProfileStore.validate_layout(spec)
         root = LayoutProfileStore.layouts_dir(base)
         root.mkdir(parents=True, exist_ok=True)
-        path = root / f"{spec.id}.yaml"
+        path = root / f"{slug}.yaml"
+        if path.exists() and not overwrite:
+            raise LayoutValidationError(
+                f"Custom layout '{slug}' already exists. Pass overwrite=True to replace it."
+            )
         payload = spec.model_dump(mode="json")
         path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
         return path
@@ -120,20 +194,36 @@ class LayoutProfileStore:
         *,
         title: str | None = None,
         base: Path | None = None,
+        overwrite: bool = True,
     ) -> Path:
         """Clone a layout (including builtins) into a custom user layout."""
-        if LayoutProfileStore.is_builtin(new_id):
+        slug = slugify_layout_id(new_id)
+        if LayoutProfileStore.is_builtin(slug):
             raise LayoutValidationError(
-                f"Cannot use built-in id '{new_id}' for a custom layout."
+                f"Cannot use built-in id '{slug}' for a custom layout."
             )
         cloned = source.model_copy(
             update={
-                "id": new_id,
-                "title": title or new_id,
+                "id": slug,
+                "title": title or slug,
                 "schema_version": CURRENT_LAYOUT_SCHEMA_VERSION,
             }
         )
-        return LayoutProfileStore.save_layout(cloned, base=base)
+        return LayoutProfileStore.save_layout(cloned, base=base, overwrite=overwrite)
+
+    @staticmethod
+    def delete_custom(layout_id: str, base: Path | None = None) -> Path:
+        """Delete a custom layout YAML. Built-ins cannot be deleted."""
+        slug = slugify_layout_id(layout_id)
+        if LayoutProfileStore.is_builtin(slug):
+            raise LayoutValidationError(
+                f"Built-in layout '{slug}' cannot be deleted."
+            )
+        path = LayoutProfileStore.custom_layout_path(slug, base)
+        if not path.exists():
+            raise FileNotFoundError(f"Custom layout not found: {slug}")
+        path.unlink()
+        return path
 
     @staticmethod
     def validate_layout_dict(data: dict[str, Any]) -> LayoutSpec:
@@ -190,9 +280,21 @@ class LayoutProfileStore:
                             f"Block '{placement.block_id}' placement "
                             f"'{placement.placement_id}' missing required param '{key}'"
                         )
-                for key in placement.params:
+                for key, value in placement.params.items():
                     if key not in properties and properties:
                         raise LayoutValidationError(
                             f"Block '{placement.block_id}' placement "
                             f"'{placement.placement_id}' unsupported param '{key}'"
+                        )
+                    prop = properties.get(key) if properties else None
+                    if not isinstance(prop, dict):
+                        continue
+                    expected = prop.get("type")
+                    if isinstance(expected, str) and not _param_type_ok(
+                        value, expected
+                    ):
+                        raise LayoutValidationError(
+                            f"Block '{placement.block_id}' placement "
+                            f"'{placement.placement_id}' param '{key}' "
+                            f"must be type '{expected}'"
                         )

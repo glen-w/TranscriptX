@@ -16,10 +16,21 @@ Transcript → Overview → Insights → Charts → Artifacts
 
 ## Layout profiles
 
-- Built-in presets (`default`, `executive`, `developer_debug`, `all`) are **immutable**.
-  - `all` is generated from the block registry (every block, alphabetical) — not a YAML preset.
-- Dashboard Builder can **Save as custom layout** under `{config_dir}/profiles/ui_layouts/` (`PROFILES_DIR/ui_layouts`).
-- Schema version **2** adds optional placement `section` for Insights local navigation; v1 layouts still load.
+Public layout envelope is **schema_version 1** only (`CURRENT_LAYOUT_SCHEMA_VERSION = 1`). Placement `section` is optional on v1 and drives Insights local navigation (`summary` | `speakers` | `actions` | `highlights`).
+
+Built-in presets are **immutable**:
+
+| Id | Title | Role |
+|----|-------|------|
+| `default` | Standard | Curated everyday Overview + sectioned Insights |
+| `executive` | Executive | Metrics / health / export Overview; summary + actions + highlights |
+| `meeting_followup` | Meeting follow-up | Extracts, commitments, and highlights first |
+| `speaker_focus` | Speakers | Speaker cards + linguistic Insights |
+| `minimal` | Minimal | Fast scan: hero, glance, quiet status |
+| `developer_debug` | Developer debug | Inspection layout (shown after visiting Dashboard Builder) |
+| `all` | All | Generated from the block registry (every block, alphabetical) — not a YAML file |
+
+Dashboard Builder can **Save as custom layout** under `{config_dir}/profiles/ui_layouts/` (`PROFILES_DIR/ui_layouts`) and **delete** custom layouts. See [dashboard_builder.md](dashboard_builder.md).
 
 ## Deep links
 
@@ -38,4 +49,4 @@ Single source: `web/module_ui_groups.py` (Summary & Synthesis first). Artifact B
 - Dashboard Builder: `src/transcriptx/web/page_modules/dashboard_builder.py`
 - Artifact index: `src/transcriptx/web/services/artifact_index.py`
 
-See [web_blocks.md](web_blocks.md) for how to add a block or layout.
+See [web_blocks.md](web_blocks.md) for how to add a block or layout, and [dashboard_builder.md](dashboard_builder.md) for Builder workflows.

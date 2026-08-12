@@ -1,0 +1,34 @@
+schema_version: 1
+id: minimal
+title: Minimal
+description: Fast scan — summary hero, glance metrics, and quiet run status.
+pages:
+  overview:
+    page_id: overview
+    blocks:
+      - placement_id: minimal_summary_hero
+        block_id: transcript_summary_hero
+        visible: true
+      - placement_id: minimal_at_a_glance
+        block_id: at_a_glance
+        visible: true
+      - placement_id: minimal_run_status
+        block_id: run_status_compact
+        visible: true
+  insights:
+    page_id: insights
+    blocks:
+      - placement_id: minimal_primary_summary
+        block_id: insights_summary_panel
+        section: summary
+        visible: true
+      - placement_id: minimal_highlights
+        block_id: highlights
+        section: highlights
+        visible: true
+  charts:
+    page_id: charts
+    blocks:
+      - placement_id: minimal_charts_overview
+        block_id: chart_overview_slots
+        visible: true
