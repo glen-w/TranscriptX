@@ -290,6 +290,7 @@ def render_insights_summary_panel(
                 options=labels,
                 default=st.session_state[state_key],
                 key=f"{state_key}_control",
+                help="Switch between available Overview summary variants for this run.",
             )
         except Exception:
             choice = st.radio(
@@ -298,6 +299,7 @@ def render_insights_summary_panel(
                 index=labels.index(st.session_state[state_key]),
                 horizontal=True,
                 key=f"{state_key}_radio",
+                help="Switch between available Overview summary variants for this run.",
             )
         if choice in by_label:
             st.session_state[state_key] = choice

@@ -93,6 +93,7 @@ def _render_preset_editor(
         "Allow LLM modules",
         value=bool(draft.get("allow_llm")),
         key=f"{prefix}_allow_llm",
+        help="When off, modules marked requires_llm are excluded from this preset.",
     )
     if draft["allow_llm"]:
         draft["llm_module_ids"] = st.multiselect(
@@ -103,6 +104,7 @@ def _render_preset_editor(
             ],
             format_func=format_module_option,
             key=f"{prefix}_llm_ids",
+            help="Leave empty to allow every LLM module; otherwise only the listed ones run.",
         )
     else:
         draft["llm_module_ids"] = list(draft.get("llm_module_ids") or [])
@@ -122,6 +124,7 @@ def _render_preset_editor(
             ],
             format_func=format_module_option,
             key=f"{prefix}_heavy_ids",
+            help="Leave empty to allow every heavy module; otherwise only the listed ones run.",
         )
     else:
         draft["heavy_module_ids"] = list(draft.get("heavy_module_ids") or [])
@@ -130,6 +133,7 @@ def _render_preset_editor(
         "Include exclude-from-default modules",
         value=bool(draft.get("include_excluded_from_default")),
         key=f"{prefix}_excl",
+        help="Opt in registry modules marked exclude_from_default (usually experimental).",
     )
 
     use_override = st.checkbox(
@@ -146,6 +150,7 @@ def _render_preset_editor(
             default=[m for m in current if m in catalogue],
             format_func=format_module_option,
             key=f"{prefix}_override",
+            help="Exact module set for this preset when override is enabled.",
         )
     else:
         draft["module_ids"] = None

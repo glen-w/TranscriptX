@@ -1670,6 +1670,7 @@ def _speaker_id_workspace_fragment(
             key=name_widget_key(transcript_path, active_id),
             placeholder="Type speaker name…",
             label_visibility="collapsed",
+            help="Local display name for this diarization speaker key in the transcript map.",
         )
     if is_managed_for_profiles:
         st.checkbox(

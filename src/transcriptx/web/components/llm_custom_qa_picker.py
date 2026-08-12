@@ -124,6 +124,7 @@ def render_custom_qa_picker(
                 default=[],
                 key=saved_key,
                 max_selections=max_per_run,
+                help="Pick saved questions from Settings → Questions for this run.",
             )
         else:
             st.caption("No saved questions yet — add some in Settings → Questions.")
@@ -155,6 +156,7 @@ def render_custom_qa_picker(
                     options=list(_SCOPE_OPTIONS),
                     key=scope_key,
                     label_visibility="collapsed",
+                    help="Global = once per transcript/group; Per speaker = once per linked speaker.",
                 )
                 g, ps = _scope_from_label(str(chosen))
                 row["global"] = g

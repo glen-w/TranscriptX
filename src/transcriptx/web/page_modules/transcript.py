@@ -226,8 +226,16 @@ def _render_transcript_controls() -> TranscriptControlsState:
         render_correct_mode_toggle,
     )
 
-    search_text = st.text_input("🔍 Search in transcript", key="transcript_search")
-    show_timestamps = st.checkbox("Show timestamps", key="show_timestamps")
+    search_text = st.text_input(
+        "🔍 Search in transcript",
+        key="transcript_search",
+        help="Filter visible segments by text (case-insensitive substring).",
+    )
+    show_timestamps = st.checkbox(
+        "Show timestamps",
+        key="show_timestamps",
+        help="Show segment start times beside each turn (format follows timestamp setting).",
+    )
     show_unnamed_speakers = st.checkbox(
         "Show unnamed speakers",
         key="show_unnamed_speakers",

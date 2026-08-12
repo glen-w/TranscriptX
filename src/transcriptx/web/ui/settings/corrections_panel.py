@@ -152,6 +152,7 @@ def render_corrections_panel() -> None:
         ack = st.checkbox(
             "I understand this regenerates candidates for all transcripts",
             key=_ACK_KEY,
+            help="Required acknowledgment before regenerate-all can run.",
         )
         phrase_ok = False
         if ack:

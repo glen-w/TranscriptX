@@ -16,13 +16,23 @@ def _json_text(value: Any) -> str:
         return str(value)
 
 
+def _help_text(field_meta: FieldMetadata) -> str | None:
+    """Streamlit adjacent ⓘ from FieldMetadata.description when present."""
+    text = (field_meta.description or "").strip()
+    return text or None
+
+
 def render_field_widget(field_meta: FieldMetadata, current_value: Any, key: str) -> Any:
     """Render a Streamlit widget for a field and return updated value."""
     if field_meta.sensitivity == "hidden":
         return current_value
 
+    help_text = _help_text(field_meta)
+
     if field_meta.type is bool:
-        return st.checkbox(field_meta.key, value=bool(current_value), key=key)
+        return st.checkbox(
+            field_meta.key, value=bool(current_value), key=key, help=help_text
+        )
     if field_meta.choices is not None:
         options = list(field_meta.choices)
         if field_meta.type in (list, tuple):
@@ -34,6 +44,7 @@ def render_field_widget(field_meta: FieldMetadata, current_value: Any, key: str)
                 options=options,
                 default=[v for v in current_list if v in options],
                 key=key,
+                help=help_text,
             )
         current = (
             current_value
@@ -41,7 +52,11 @@ def render_field_widget(field_meta: FieldMetadata, current_value: Any, key: str)
             else (options[0] if options else "")
         )
         return st.selectbox(
-            field_meta.key, options=options, index=options.index(current), key=key
+            field_meta.key,
+            options=options,
+            index=options.index(current),
+            key=key,
+            help=help_text,
         )
     if field_meta.type is int:
         return st.number_input(
@@ -51,6 +66,7 @@ def render_field_widget(field_meta: FieldMetadata, current_value: Any, key: str)
             max_value=int(field_meta.max) if field_meta.max is not None else None,
             step=1,
             key=key,
+            help=help_text,
         )
     if field_meta.type is float:
         return st.number_input(
@@ -59,6 +75,7 @@ def render_field_widget(field_meta: FieldMetadata, current_value: Any, key: str)
             min_value=float(field_meta.min) if field_meta.min is not None else None,
             max_value=float(field_meta.max) if field_meta.max is not None else None,
             key=key,
+            help=help_text,
         )
     if field_meta.type in (list, dict):
         raw = st.text_area(
@@ -66,6 +83,7 @@ def render_field_widget(field_meta: FieldMetadata, current_value: Any, key: str)
             value=_json_text(current_value) if current_value is not None else "",
             key=key,
             height=120,
+            help=help_text,
         )
         try:
             parsed = json.loads(raw) if raw else current_value
@@ -76,4 +94,5 @@ def render_field_widget(field_meta: FieldMetadata, current_value: Any, key: str)
         field_meta.key,
         value=str(current_value) if current_value is not None else "",
         key=key,
+        help=help_text,
     )

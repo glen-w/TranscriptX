@@ -186,6 +186,7 @@ def render_charts_overview_selector(
             options=["skip", "show_placeholder"],
             index=0 if missing != "show_placeholder" else 1,
             key=f"{scope_key}_ov_missing",
+            help="skip hides missing charts; show_placeholder reserves a slot with a notice.",
         )
 
     return {

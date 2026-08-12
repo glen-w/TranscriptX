@@ -605,6 +605,10 @@ def render_run_analysis_page() -> None:
         "Target",
         options=target_options,
         key=_RUN_ANALYSIS_TARGET_KEY,
+        help=(
+            "Transcript: one managed file. Group: pooled multi-transcript run. "
+            "Batch: queue many transcripts with the same preset."
+        ),
     )
     if target_type is None:
         target_type = st.session_state.get(_RUN_ANALYSIS_TARGET_KEY, "Transcript")

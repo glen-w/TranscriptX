@@ -326,12 +326,14 @@ def _render_configure(
             value=-18.0,
             step=0.5,
             key="audio_prep_lufs",
+            help="Integrated loudness target for normalization (broadcast-style LUFS).",
         )
         denoise_strength = st.selectbox(
             "Denoise strength",
             options=["low", "medium", "high"],
             index=1,
             key="audio_prep_denoise_strength",
+            help="Higher removes more noise but can soften speech.",
         )
         highpass_cutoff = st.slider(
             "High-pass cutoff (Hz)",
@@ -340,6 +342,7 @@ def _render_configure(
             value=80,
             step=5,
             key="audio_prep_highpass_cutoff",
+            help="Remove rumble below this frequency before transcription.",
         )
 
     st.markdown("**Output**")
@@ -353,6 +356,7 @@ def _render_configure(
         }[d],
         horizontal=True,
         key="audio_prep_output_dest",
+        help="Where preprocessed audio files are written relative to the input or app data.",
     )
     output_format = st.radio(
         "Output format",
@@ -360,9 +364,13 @@ def _render_configure(
         format_func=str.upper,
         horizontal=True,
         key="audio_prep_output_format",
+        help="WAV preserves quality for STT; MP3 is smaller for sharing.",
     )
     overwrite = st.checkbox(
-        "Overwrite existing file", value=False, key="audio_prep_overwrite"
+        "Overwrite existing file",
+        value=False,
+        key="audio_prep_overwrite",
+        help="Replace an existing preprocessed file at the resolved output path.",
     )
 
     first_path = audio_paths[0]

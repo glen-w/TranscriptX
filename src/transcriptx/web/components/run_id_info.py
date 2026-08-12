@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import html
 import uuid
 
 import streamlit as st
+
+from transcriptx.web.components.info_tooltip import build_info_tooltip_html
 
 
 def build_run_id_info_html(raw_run_id: str, *, control_id: str | None = None) -> str:
@@ -14,16 +15,14 @@ def build_run_id_info_html(raw_run_id: str, *, control_id: str | None = None) ->
     Uses a custom hover/focus tooltip (not title-attribute-only).
     Does not mutate application state.
     """
-    escaped_id = html.escape(str(raw_run_id), quote=True)
     tip_id = control_id or f"tx-run-tip-{uuid.uuid4().hex[:12]}"
-    aria = html.escape(f"Full run identifier: {raw_run_id}", quote=True)
-    return (
-        f'<span class="tx-run-id-info" data-testid="tx-run-id-info">'
-        f'<button type="button" class="tx-run-id-info-btn" tabindex="0" '
-        f'aria-label="{aria}" aria-describedby="{tip_id}">ⓘ</button>'
-        f'<span id="{tip_id}" class="tx-run-id-info-tip" role="tooltip">'
-        f"{escaped_id}</span>"
-        f"</span>"
+    return build_info_tooltip_html(
+        str(raw_run_id),
+        control_id=tip_id,
+        aria_label=f"Full run identifier: {raw_run_id}",
+        test_id="tx-run-id-info",
+        tip_extra_class="",
+        wrap_extra_class="",
     )
 
 

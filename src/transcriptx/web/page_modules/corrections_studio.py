@@ -393,6 +393,7 @@ def _corrections_studio_workspace_fragment(
             "Filter by status",
             status_options,
             key="corrections_studio_status_filter",
+            help="Review workflow state for each candidate (pending until you accept/reject/skip).",
         )
     with filter_col2:
         kind_filter = st.multiselect(
@@ -418,6 +419,7 @@ def _corrections_studio_workspace_fragment(
             value=0.0,
             step=0.05,
             key="corrections_studio_confidence_min",
+            help="Hide candidates below this ranking score (0 = show all).",
         )
     with filter_col5:
         page_size = 50

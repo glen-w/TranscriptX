@@ -192,6 +192,10 @@ def render_interface_panel() -> None:
                 format_func=lambda m: _MODE_LABELS[m],
                 key=f"iface_mode_{sid.value}",
                 disabled=draft.recovery or not show,
+                help=(
+                    "Built-in: default actions for this section. "
+                    "Manual: pick which actions appear."
+                ),
             )
             mode = st.session_state.get(f"iface_mode_{sid.value}")
             if mode == "manual" and show and not draft.recovery:

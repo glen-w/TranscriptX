@@ -903,11 +903,13 @@ def _highlights_browser_fragment(
             "Section",
             options=["All"] + sections_available,
             key="highlights_section_filter",
+            help="Limit highlights to one Insights section bucket.",
         )
         st.multiselect(
             "Speakers",
             options=speakers_available,
             key="highlights_speaker_filter",
+            help="Show only highlights involving the selected speakers.",
         )
         st.slider(
             "Minimum score",
@@ -915,6 +917,7 @@ def _highlights_browser_fragment(
             max_value=1.0,
             step=0.05,
             key="highlights_min_score",
+            help="Hide highlights ranked below this score.",
         )
 
     section_filter = st.session_state.get("highlights_section_filter", "All")

@@ -134,7 +134,10 @@ def _search_interaction_fragment() -> None:
         st.session_state["global_search_cached_filters"] = None
 
     query = st.text_input(
-        "Search transcripts", key="global_search_query", placeholder="Type to search…"
+        "Search transcripts",
+        key="global_search_query",
+        placeholder="Type to search…",
+        help="Searches segment text across the managed library (or the current transcript).",
     )
 
     # Track query changes for debouncing
@@ -154,16 +157,19 @@ def _search_interaction_fragment() -> None:
         ["All transcripts", "Current transcript"],
         horizontal=True,
         key="global_search_scope",
+        help="Current transcript uses the sidebar selection; All searches the managed library.",
     )
     enable_fuzzy = st.checkbox(
         "Enable fuzzy matching",
         value=True,
         key="global_search_fuzzy",
+        help="Allow near-matches (typos / small spelling variants). Exact matching is stricter.",
     )
     show_first_match_only = st.checkbox(
         "Show only first match per segment",
         value=True,
         key="global_search_first_match_only",
+        help="Collapse multiple hits inside one segment into a single result row.",
     )
 
     speaker_keys: List[str] = []
@@ -181,6 +187,7 @@ def _search_interaction_fragment() -> None:
             speaker_options,
             index=0,
             key="global_search_speaker",
+            help="Limit hits to segments attributed to one speaker (after name resolution).",
         )
         if selected != "All speakers":
             speaker_keys = [selected]

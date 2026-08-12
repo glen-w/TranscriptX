@@ -63,12 +63,14 @@ def render_questions_panel() -> None:
                 "Global",
                 value=bool(row.get("global", True)),
                 key=f"settings_qa_global_{i}",
+                help="Ask once for the whole transcript/group.",
             )
         with c3:
             row["per_speaker"] = st.checkbox(
                 "Per speaker",
                 value=bool(row.get("per_speaker", False)),
                 key=f"settings_qa_ps_{i}",
+                help="Ask separately for each linked speaker profile.",
             )
         with c4:
             if st.button("✕", key=f"settings_qa_rm_{i}"):
@@ -83,11 +85,13 @@ def render_questions_panel() -> None:
         "Include transcript",
         value=bool(getattr(cfg, "include_transcript", True)),
         key="settings_qa_include_transcript",
+        help="Pass transcript text into the custom-QA evidence pack when answering.",
     )
     routing_enabled = st.checkbox(
         "Enable evidence routing",
         value=bool(getattr(cfg, "routing_enabled", True)),
         key="settings_qa_routing",
+        help="Route each question to the most relevant evidence packs instead of dumping everything.",
     )
     current_packs = getattr(cfg, "evidence_pack_ids", None)
     use_all = current_packs is None
@@ -95,6 +99,7 @@ def render_questions_panel() -> None:
         "All current catalog packs (default)",
         value=use_all,
         key="settings_qa_all_packs",
+        help="When on, newly added catalog packs are included automatically.",
     )
     selected_packs: list[str] = []
     if not all_packs:
@@ -104,6 +109,7 @@ def render_questions_panel() -> None:
             options=_EVIDENCE_PACK_OPTIONS,
             default=[p for p in default_sel if p in _EVIDENCE_PACK_OPTIONS],
             key="settings_qa_packs",
+            help="Pin a fixed set of evidence packs for custom QA.",
         )
 
     st.caption(

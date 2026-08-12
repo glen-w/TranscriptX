@@ -230,6 +230,7 @@ def render_analysis_preset_selector(
             options=picker_options,
             format_func=format_module_option,
             key=widget_key,
+            help="Custom preset: exact module set for this launch (dependencies still resolve).",
         )
         st.session_state[custom_key] = list(selected)
         custom_modules = selected

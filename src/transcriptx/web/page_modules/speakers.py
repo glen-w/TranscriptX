@@ -8,7 +8,6 @@ mutations still call full ``st.rerun()`` so the snapshot refreshes.
 from __future__ import annotations
 
 import hashlib
-import html
 import json
 from math import floor
 from typing import Any, Mapping, Sequence
@@ -59,6 +58,10 @@ from transcriptx.core.speaker_profiles.time_series import (
     build_directory_activity_chart,
 )
 from transcriptx.utils.html_utils import wrap_tooltip_text
+from transcriptx.web.components.info_tooltip import (
+    build_info_tooltip_html,
+    build_section_heading_with_info_html,
+)
 from transcriptx.core.utils.paths import PATHS
 from transcriptx.core.utils.speaker import parse_speaker_name
 from transcriptx.web.components.empty_state import render_empty_state
@@ -131,20 +134,11 @@ def _info_tooltip_html(
     test_id: str = "tx-info-tooltip",
 ) -> str:
     """Build an ⓘ tooltip for multi-line help / notes."""
-    if not lines:
-        return ""
-    tip_body = "<br>".join(html.escape(line) for line in lines)
-    tip_id = html.escape(control_id, quote=True)
-    aria = html.escape(aria_label, quote=True)
-    test = html.escape(test_id, quote=True)
-    return (
-        f'<span class="tx-run-id-info tx-methodology-info" '
-        f'data-testid="{test}">'
-        f'<button type="button" class="tx-run-id-info-btn" tabindex="0" '
-        f'aria-label="{aria}" aria-describedby="{tip_id}">ⓘ</button>'
-        f'<span id="{tip_id}" class="tx-run-id-info-tip tx-methodology-info-tip" '
-        f'role="tooltip">{tip_body}</span>'
-        f"</span>"
+    return build_info_tooltip_html(
+        lines,
+        control_id=control_id,
+        aria_label=aria_label,
+        test_id=test_id,
     )
 
 
@@ -163,12 +157,7 @@ def _methodology_info_html(
 
 
 def _section_heading_with_info_html(title: str, tip_html: str) -> str:
-    return (
-        '<div class="tx-section-info-heading">'
-        f"<h4>{html.escape(title)}</h4>"
-        f"{tip_html}"
-        "</div>"
-    )
+    return build_section_heading_with_info_html(title, tip_html)
 
 
 _SPEAKERS_DESCRIPTION = (

@@ -645,6 +645,7 @@ def _render_assignment_widgets(
         ["Same model for all", "Select per module"],
         horizontal=True,
         key=_key(key_prefix, "mode"),
+        help="Same model applies one Ollama tag to every selected LLM module; per-module lets you mix.",
     )
     shared_key = _key(key_prefix, "shared_model")
     json_consumers = _selected_json_consumers(

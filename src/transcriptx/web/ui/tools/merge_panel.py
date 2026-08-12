@@ -257,6 +257,7 @@ def _render_output_and_run(ordered_paths: List[Path], *, deps_ready: bool) -> No
             "Overwrite output if it already exists",
             value=st.session_state.get("audio_merge_overwrite", False),
             key="audio_merge_overwrite",
+            help="Replace an existing merged file at the output path.",
         )
 
     st.subheader("3. Run")

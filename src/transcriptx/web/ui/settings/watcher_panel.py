@@ -48,6 +48,10 @@ def render_watcher_panel() -> None:
             options=["auto_import", "offer", "ignore"],
             index=["auto_import", "offer", "ignore"].index(current.transcript_mode),
             key="watcher_transcript_mode",
+            help=(
+                "auto_import: admit new transcript files into the library. "
+                "offer: queue for review. ignore: skip transcript files."
+            ),
         )
     with col_b:
         audio_mode = st.selectbox(
@@ -64,6 +68,7 @@ def render_watcher_panel() -> None:
         "Watch subdirectories",
         value=bool(current.recursive),
         key="watcher_recursive",
+        help="When on, files in nested folders under each watch path are also considered.",
     )
     debounce_ms = st.number_input(
         "Debounce (ms)",
@@ -72,6 +77,7 @@ def render_watcher_panel() -> None:
         value=int(current.debounce_ms),
         step=100,
         key="watcher_debounce_ms",
+        help="Wait this long after the last write before treating a file as complete.",
     )
 
     if st.button("Save watcher settings", type="primary", key="watcher_save_btn"):

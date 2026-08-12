@@ -81,6 +81,7 @@ def _render_schema_mode(layout_id: str) -> None:
         "New layout id",
         value=f"{layout_id}_custom" if builtin else f"{layout_id}_copy",
         key="dashboard_builder_save_as_id",
+        help="Slug for the custom layout file (letters, digits, underscores).",
     )
     new_title = st.text_input(
         "Title",
