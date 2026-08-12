@@ -33,6 +33,9 @@ class DummyColumn:
     def button(self, *_args, **_kwargs):
         return False
 
+    def checkbox(self, *_args, **_kwargs):
+        return False
+
     def dataframe(self, *_args, **_kwargs):
         return None
 

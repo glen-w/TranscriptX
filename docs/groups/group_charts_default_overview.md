@@ -32,10 +32,15 @@ Examples operators should expect **only in the gallery** unless you deliberately
 - **Prosody temporal** (`group.prosody.temporal_overlay.global`) — gallery-visible by default, **not** on the default strip.  
 - **Pooled** charts whose `viz_id` contains `.pooled.` — default strip uses **`POOLED_GROUP_OVERVIEW_ALLOWLIST`**; leave it minimal unless product wants more pooled tiles up front.
 
+## Config override (`dashboard.overview_charts`)
+
+A non-empty `dashboard.overview_charts` list (Settings → Configuration → **Charts overview**, or advanced config) **overrides** the overview strip for **both** transcript and group runs. Clear the list to fall back to registry defaults (`DEFAULT_OVERVIEW_VIZ_IDS` or `DEFAULT_GROUP_OVERVIEW_VIZ_IDS` by run kind).
+
 ## Where allowlists and overrides live
 
 | What you want to change | Where |
 | --- | --- |
+| Operator UI for the strip | **Settings → Configuration → Charts overview** |
 | Default **group** overview strip | `DEFAULT_GROUP_OVERVIEW_VIZ_IDS` in [`chart_registry.py`](../src/transcriptx/core/utils/chart_registry.py) |
 | Which **temporal** overlays are in that strip (CI sync) | `in_default_group_overview` in [`test_chart_registry.py`](../tests/core/utils/test_chart_registry.py) — must match the temporal family policy you intend |
 | Allow a **cross-session speaker** chart onto the default strip | Add its exact `viz_id` to **`CROSS_SESSION_SPEAKER_OVERVIEW_ALLOWLIST`** in `chart_registry.py` **and** add that `viz_id` to `DEFAULT_GROUP_OVERVIEW_VIZ_IDS`; tests require both |
