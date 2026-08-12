@@ -73,7 +73,7 @@
     "full_analysis_settings": 12,
     "group_analysis": 9,
     "highlights": 31,
-    "input": 6,
+    "input": 8,
     "insight_eligibility": 3,
     "insights": 8,
     "keyphrases": 15,
@@ -107,6 +107,6 @@
     "workflow": 13
   },
   "pilot_count": 53,
-  "pydantic_owned_keys": 718,
-  "total_registry_keys": 734
+  "pydantic_owned_keys": 720,
+  "total_registry_keys": 736
 }

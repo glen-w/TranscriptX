@@ -344,6 +344,12 @@ class TranscriptXConfig:
                 "prefill_rename_with_date_prefix": getattr(
                     self.input, "prefill_rename_with_date_prefix", True
                 ),
+                "smart_rename_mode": getattr(
+                    self.input, "smart_rename_mode", "suggest_import"
+                ),
+                "smart_rename_pattern": getattr(
+                    self.input, "smart_rename_pattern", "{yymmdd}_{period}_{n}"
+                ),
                 "file_selection_mode": getattr(
                     self.input, "file_selection_mode", "prompt"
                 ),

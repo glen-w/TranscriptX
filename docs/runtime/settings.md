@@ -46,6 +46,20 @@ Draft overrides are reported with run-layer provenance (`source: run`) by design
 - **Advanced/raw** exposes every registered config leaf (except profile activation keys). Registry fields may mark `advanced=True` for documentation; the GUI does not yet use that flag to partition the form — the toggle is the partition.
 - Prefer Common or Analysis presets unless you know why a leaf matters.
 
+## Smart rename (device filenames)
+
+Settings → Configuration → **Rename** (also under Advanced as `input.*`):
+
+| Knob | Default | Meaning |
+|------|---------|---------|
+| `input.smart_rename_mode` | `suggest_import` | `auto_import` / `suggest_import` / `suggest_rename_only` / `off` |
+| `input.smart_rename_pattern` | `{yymmdd}_{period}_{n}` | Deterministic template rendered from the recording datetime |
+| `input.prefill_rename_with_date_prefix` | `true` | Legacy YYMMDD_ + stem prefill when smart mode is `off` |
+
+Supported pattern tokens: `{yymmdd}`, `{yyyymmdd}`, `{yyyy}`, `{yy}`, `{mm}`, `{dd}`, `{hhmmss}`, `{hhmm}`, `{hh}`, `{period}` (`morning`/`afternoon`/`evening`/`night`), `{n}` (collision sequence), `{stem}`.
+
+Device stems understood include `RYYYYMMDD-HHMMSS`, `YYYYMMDDHHMMSS`, and `YYMMDD-HHMMSS`. In rename forms, the date root is prefilled and other tokens appear as clickable append buttons.
+
 ## “Profile” taxonomy (do not conflate)
 
 | Name | Meaning | Surface |

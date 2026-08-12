@@ -64,7 +64,7 @@
     "category": "input",
     "choices": null,
     "default": [
-      "/Users/89298/Documents/transcriptx/data/recordings"
+      "/workspace/data/recordings"
     ],
     "description": "",
     "key": "input.recordings_folders",
@@ -74,6 +74,39 @@
     "scope": "project",
     "sensitivity": "normal",
     "type": "list"
+  },
+  "input.smart_rename_mode": {
+    "advanced": false,
+    "category": "input",
+    "choices": [
+      "auto_import",
+      "suggest_import",
+      "suggest_rename_only",
+      "off"
+    ],
+    "default": "suggest_import",
+    "description": "",
+    "key": "input.smart_rename_mode",
+    "max": null,
+    "min": null,
+    "path": "input.smart_rename_mode",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "input.smart_rename_pattern": {
+    "advanced": false,
+    "category": "input",
+    "choices": null,
+    "default": "{yymmdd}_{period}_{n}",
+    "description": "",
+    "key": "input.smart_rename_pattern",
+    "max": null,
+    "min": null,
+    "path": "input.smart_rename_pattern",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
   },
   "input.wav_folders": {
     "advanced": false,

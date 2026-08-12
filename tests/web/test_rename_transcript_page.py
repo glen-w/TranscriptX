@@ -113,6 +113,11 @@ def test_sticky_suggested_name_survives_rerun_until_path_changes(
     ss: dict = {}
     monkeypatch.setattr(form_mod, "st", SimpleNamespace(session_state=ss))
     monkeypatch.setattr(form_mod, "_prefill_date_prefix_enabled", lambda: True)
+    monkeypatch.setattr(
+        form_mod,
+        "_input_rename_settings",
+        lambda: ("off", "{yymmdd}_{period}_{n}", True),
+    )
 
     form_key = "test_rename_form"
     suggested = bind_suggested_rename_name(a, form_key=form_key, date_prefix_prefill=True)
@@ -131,6 +136,34 @@ def test_sticky_suggested_name_survives_rerun_until_path_changes(
     assert "plain" in next_name
     assert ss[target_key] == next_name
     assert ss[target_key] != "251230_alpha_edited"
+
+
+@pytest.mark.unit
+def test_sticky_smart_rename_prefills_date_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.components.rename_form as form_mod
+    from transcriptx.web.components.rename_form import sticky_smart_rename_keys
+
+    path = tmp_path / "R20260810-173237.json"
+    path.write_text("{}", encoding="utf-8")
+    ss: dict = {}
+    monkeypatch.setattr(form_mod, "st", SimpleNamespace(session_state=ss))
+    monkeypatch.setattr(
+        form_mod,
+        "_input_rename_settings",
+        lambda: ("suggest_rename_only", "{yymmdd}_{period}_{n}", True),
+    )
+
+    form_key = "smart_rename_form"
+    suggested = bind_suggested_rename_name(
+        path, form_key=form_key, date_prefix_prefill=True, enable_smart=True
+    )
+    assert suggested == "260810_"
+    bubbles_key, date_root_key = sticky_smart_rename_keys(form_key)
+    assert ss[date_root_key] == "260810_"
+    assert "evening" in ss[bubbles_key]
+    assert "1" in ss[bubbles_key]
 
 @pytest.mark.unit
 def test_post_rename_clears_old_path_and_binds_new(
@@ -165,6 +198,10 @@ def test_post_rename_clears_old_path_and_binds_new(
     monkeypatch.setattr(
         "transcriptx.web.components.rename_form._prefill_date_prefix_enabled",
         lambda: True,
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.components.rename_form._input_rename_settings",
+        lambda: ("off", "{yymmdd}_{period}_{n}", True),
     )
 
     result = RenameResult(
@@ -262,6 +299,10 @@ def test_library_rename_action_to_preview_rename_smoke(
     monkeypatch.setattr(
         "transcriptx.web.components.rename_form._prefill_date_prefix_enabled",
         lambda: True,
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.components.rename_form._input_rename_settings",
+        lambda: ("off", "{yymmdd}_{period}_{n}", True),
     )
 
     nav_path = ss.pop(WORKFLOW_NAV_TRANSCRIPT_PATH)
