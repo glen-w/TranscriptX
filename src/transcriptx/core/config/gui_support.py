@@ -62,6 +62,16 @@ class ProfileTargetContract:
 
 COMMON_SETTINGS_SCHEMA: tuple[CommonSettingField, ...] = (
     CommonSettingField(
+        key="input.smart_rename_mode",
+        group="Rename",
+        label="Smart rename mode",
+    ),
+    CommonSettingField(
+        key="input.smart_rename_pattern",
+        group="Rename",
+        label="Smart rename pattern",
+    ),
+    CommonSettingField(
         key="analysis.semantic_model_name",
         group="Models",
         label="Semantic model name",

@@ -118,7 +118,94 @@ def _render_post_import_actions(transcript_path: Path) -> None:
     render_configured_actions(SectionId.IMPORT_SUCCESS, ctx)
 
 
+def _smart_rename_mode() -> str:
+    try:
+        from transcriptx.core.utils.config_provider import get_config
+
+        cfg = get_config()
+        return str(
+            getattr(getattr(cfg, "input", None), "smart_rename_mode", "suggest_import")
+            or "suggest_import"
+        )
+    except Exception:
+        return "suggest_import"
+
+
+def _smart_rename_pattern() -> str:
+    try:
+        from transcriptx.core.utils.config_provider import get_config
+
+        cfg = get_config()
+        return str(
+            getattr(
+                getattr(cfg, "input", None),
+                "smart_rename_pattern",
+                "{yymmdd}_{period}_{n}",
+            )
+            or "{yymmdd}_{period}_{n}"
+        )
+    except Exception:
+        return "{yymmdd}_{period}_{n}"
+
+
+def _maybe_auto_rename_imported(transcript_path: Path) -> Path:
+    """When mode is auto_import, rename using the smart pattern. Returns current path."""
+    from transcriptx.core.utils.rename.smart_name import (
+        smart_rename_auto_on_import,
+        suggest_smart_rename_base_name,
+    )
+    from transcriptx.web.services.rename_service import RenameService
+
+    mode = _smart_rename_mode()
+    if not smart_rename_auto_on_import(mode):
+        return transcript_path
+
+    processed_key = "import_auto_rename_processed_path"
+    current_key = str(transcript_path)
+    if st.session_state.get(processed_key) == current_key:
+        return transcript_path
+
+    suggestion = suggest_smart_rename_base_name(
+        transcript_path,
+        mode=mode,
+        pattern=_smart_rename_pattern(),
+    )
+    if suggestion is None or not suggestion.full:
+        st.session_state[processed_key] = current_key
+        st.warning(
+            "Auto-rename skipped: could not derive a date/time from the imported "
+            "filename."
+        )
+        return transcript_path
+    if suggestion.full == transcript_path.stem:
+        st.session_state[processed_key] = current_key
+        return transcript_path
+
+    result = RenameService.rename_transcript_and_audio(
+        transcript_path, suggestion.full
+    )
+    if result.ok and result.new_transcript_path:
+        st.success(
+            f"Auto-renamed to `{result.new_base_name}` "
+            f"(pattern `{suggestion.pattern_used}`)."
+        )
+        new_path = Path(result.new_transcript_path)
+        st.session_state[_KEY_LAST_IMPORTED_TRANSCRIPT_PATH] = str(new_path)
+        st.session_state[processed_key] = str(new_path)
+        _clear_import_caches()
+        return new_path
+    st.session_state[processed_key] = current_key
+    st.warning(
+        f"Auto-rename to `{suggestion.full}` failed: {result.message}. "
+        "You can rename manually below."
+    )
+    return transcript_path
+
+
 def _render_import_rename_form(transcript_path: Path) -> None:
+    mode = _smart_rename_mode()
+    # suggest_rename_only / off: still offer a manual rename form without smart UX.
+    enable_smart = mode in {"suggest_import", "auto_import"}
     render_transcript_rename_form(
         transcript_path,
         form_key="import_rename_form",
@@ -129,6 +216,8 @@ def _render_import_rename_form(transcript_path: Path) -> None:
         ),
         submit_label="Rename files",
         as_subheader=True,
+        date_prefix_prefill=enable_smart,
+        enable_smart=enable_smart,
     )
 
 
@@ -402,8 +491,9 @@ def render_upload_transcript_page() -> None:
 
     imported_path = st.session_state.get(_KEY_LAST_IMPORTED_TRANSCRIPT_PATH)
     if imported_path:
-        _render_post_import_actions(Path(imported_path))
-        _render_import_rename_form(Path(imported_path))
+        current = _maybe_auto_rename_imported(Path(imported_path))
+        _render_post_import_actions(current)
+        _render_import_rename_form(current)
 
     _render_folder_import_section()
 
