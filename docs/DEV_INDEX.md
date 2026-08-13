@@ -79,6 +79,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | Doc | Purpose |
 |-----|---------|
 | [tests/README.md](../tests/README.md) | How to run tests |
+| [test_suite_review_2026-08-12.md](dev/test_suite_review_2026-08-12.md) | Living suite review (metrics, CI gaps, P0–P2 backlog) |
 | [tests/contracts/README.md](../tests/contracts/README.md) | Contract tests |
 | [tests/quarantine/README.md](../tests/quarantine/README.md) | Quarantined tests |
 
