@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Iterable, Literal
 
 from transcriptx.core.utils.logger import get_logger
+from transcriptx.core.utils._path_core import strip_duplicate_filename_suffix
 
 logger = get_logger()
 
@@ -52,6 +53,89 @@ _RE_YYMMDD_HHMMSS = re.compile(
 _RE_LEADING_YYYYMMDD = re.compile(r"^(?P<y>\d{4})(?P<m>\d{2})(?P<d>\d{2})")
 _RE_LEADING_YYMMDD = re.compile(r"^(?P<y>\d{2})(?P<m>\d{2})(?P<d>\d{2})")
 
+# Messaging-app voice downloads (family + datetime). First match wins.
+# WhatsApp Desktop / iOS share sheet: "WhatsApp Audio 2026-08-12 at 13.11.09"
+_RE_VOICE_NOTE_AT = re.compile(
+    r"^(?P<family>WhatsApp(?:\s+(?:Audio|PTT|Voice\s+Notes?))?|"
+    r"Voice\s+Notes?|Voice\s+Memos?|Voice\s+Messages?)"
+    r"\s+(?P<y>\d{4})-(?P<m>\d{2})-(?P<d>\d{2})"
+    r"\s+at\s+(?P<H>\d{1,2})[.:](?P<M>\d{2})[.:](?P<S>\d{2})$",
+    re.IGNORECASE,
+)
+# Telegram Desktop Save As: audio_2018-08-22_08-35-11[.suffix]
+_RE_TELEGRAM_AUDIO = re.compile(
+    r"^audio_(?P<y>\d{4})-(?P<m>\d{2})-(?P<d>\d{2})"
+    r"_(?P<H>\d{2})-(?P<M>\d{2})-(?P<S>\d{2})"
+    r"(?:_[0-9a-fA-F]+)?$",
+    re.IGNORECASE,
+)
+# Signal Android/Desktop: signal-2025-05-30-152753 or signal-2025-05-30-15-27-53[-88]
+_RE_SIGNAL = re.compile(
+    r"^signal(?:-attachment)?-(?P<y>\d{4})-(?P<m>\d{2})-(?P<d>\d{2})-"
+    r"(?:"
+    r"(?P<H1>\d{2})(?P<M1>\d{2})(?P<S1>\d{2})"
+    r"|"
+    r"(?P<H2>\d{2})-(?P<M2>\d{2})-(?P<S2>\d{2})(?:-\d{1,3})?"
+    r")$",
+    re.IGNORECASE,
+)
+# WhatsApp Android media: PTT-20240301-WA0001 / AUD-20240301-WA0002
+_RE_WHATSAPP_ANDROID = re.compile(
+    r"^(?P<kind>PTT|AUD)-(?P<y>\d{4})(?P<m>\d{2})(?P<d>\d{2})"
+    r"-WA(?P<seq>\d{3,5})$",
+    re.IGNORECASE,
+)
+# Third-party Instagram/Messenger helpers: Instagram-audio-2026-08-12 13-11-09
+_RE_INSTAGRAM_AUDIO = re.compile(
+    r"^(?P<family>Instagram(?:\s|-)?audio|Messenger(?:\s|-)?audio)"
+    r"[-\s]+(?P<y>\d{4})-(?P<m>\d{2})-(?P<d>\d{2})"
+    r"[-\s]+(?P<H>\d{1,2})[.:\-](?P<M>\d{2})[.:\-](?P<S>\d{2})"
+    r"(?:\s+GMT[+\-]?\d+)?$",
+    re.IGNORECASE,
+)
+# Generic "Voice Message YYYY-MM-DD HH-MM-SS" (Viber / misc exports)
+_RE_VOICE_MESSAGE_GENERIC = re.compile(
+    r"^(?P<family>Voice\s+Messages?|Viber\s+Voice(?:\s+Message)?)"
+    r"\s+(?P<y>\d{4})-(?P<m>\d{2})-(?P<d>\d{2})"
+    r"[ T_\-](?P<H>\d{1,2})[.:\-](?P<M>\d{2})[.:\-](?P<S>\d{2})$",
+    re.IGNORECASE,
+)
+# Zoom Handy DATE mode: 240115-092530
+_RE_ZOOM_DATETIME = re.compile(
+    r"^(?P<y>\d{2})(?P<m>\d{2})(?P<d>\d{2})-(?P<H>\d{2})(?P<M>\d{2})(?P<S>\d{2})$"
+)
+# Zoom DEFAULT mode: ZOOM0001
+_RE_ZOOM_SEQ = re.compile(r"^ZOOM(?P<seq>\d{3,5})$", re.IGNORECASE)
+# Philips VoiceTracer / similar pens: VOICE001, VOICE0001
+_RE_PHILIPS_SEQ = re.compile(
+    r"^(?P<kind>VOICE|PHILIPS)(?P<seq>\d{2,5})$",
+    re.IGNORECASE,
+)
+# Android Voice Recorder / Easy Voice Recorder style
+_RE_ANDROID_RECORDING = re.compile(
+    r"^(?P<label>Recording|RECORDING|Voice|VOICE|Record|REC)"
+    r"[_\-\s]+(?P<y>\d{4})(?P<m>\d{2})(?P<d>\d{2})"
+    r"[_\-\s]+(?P<H>\d{2})(?P<M>\d{2})(?P<S>\d{2})(?P<ms>\d{0,3})$",
+    re.IGNORECASE,
+)
+# LineageOS / AOSP Sound Recorder: "Sound record (yyyy-MM-dd HH:mm:ss)"
+_RE_SOUND_RECORD_PAREN = re.compile(
+    r"^Sound\s+records?\s*\(\s*"
+    r"(?P<y>\d{4})-(?P<m>\d{2})-(?P<d>\d{2})\s+"
+    r"(?P<H>\d{1,2}):(?P<M>\d{2}):(?P<S>\d{2})\s*\)$",
+    re.IGNORECASE,
+)
+# Sony ICD: 161010_0706 (date_HHMM)
+_RE_SONY_ICD = re.compile(
+    r"^(?P<y>\d{2})(?P<m>\d{2})(?P<d>\d{2})_(?P<H>\d{2})(?P<M>\d{2})$"
+)
+# Device stems already known in rename: RYYYYMMDD-HHMMSS
+_RE_DEVICE_R_PREFIX = re.compile(
+    r"^R(?P<y>\d{4})(?P<m>\d{2})(?P<d>\d{2})-(?P<H>\d{2})(?P<M>\d{2})(?P<S>\d{2})$"
+)
+# Tascam DR mass-storage exports: TASCAM_0001
+_RE_TASCAM_SEQ = re.compile(r"^TASCAM[_-](?P<seq>\d{3,5})$", re.IGNORECASE)
+
 
 @dataclass(frozen=True)
 class SmartRenameSuggestion:
@@ -93,11 +177,246 @@ def _century_year(yy: int) -> int:
     return 2000 + yy if yy <= 68 else 1900 + yy
 
 
+def _canonical_voice_note_family(raw: str) -> str:
+    compact = " ".join(raw.replace("-", " ").split())
+    lower = compact.lower()
+    if lower.startswith("whatsapp"):
+        rest = compact[8:].strip()
+        if not rest:
+            return "WhatsApp Audio"
+        titled = rest.title().replace("Ptt", "PTT")
+        return f"WhatsApp {titled}"
+    if lower in {"ptt", "aud"}:
+        return "WhatsApp Voice Notes" if lower == "ptt" else "WhatsApp Audio"
+    if lower.startswith("instagram"):
+        return "Instagram Audio"
+    if lower.startswith("messenger"):
+        return "Messenger Audio"
+    if lower.startswith("viber"):
+        return "Viber Voice"
+    if lower.startswith("voice message"):
+        return "Voice Message"
+    if lower in {"recording", "record", "voice", "rec"}:
+        return "Android Recorder"
+    return compact.title()
+
+
+def _datetime_from_ymd_hms(
+    y: int, mo: int, d: int, hour: int, minute: int, second: int
+) -> datetime | None:
+    if not _valid_ymd(y, mo, d) or not _valid_hms(hour, minute, second):
+        return None
+    return datetime(y, mo, d, hour, minute, second)
+
+
+def parse_voice_note_stem(
+    stem: str,
+) -> tuple[str, datetime | None, int | None] | None:
+    """Parse messaging-app and field-recorder stems for run detection.
+
+    Returns ``(family, recorded_at, sequence)``.
+    ``recorded_at`` may be ``None`` for sequence-only device names (``ZOOM0001``).
+    ``sequence`` is set for date+index or sequence-only patterns.
+
+    Messaging apps (timestamped unless noted):
+    - WhatsApp Desktop/iOS: ``WhatsApp Audio YYYY-MM-DD at HH.MM.SS``
+    - WhatsApp Android: ``PTT-YYYYMMDD-WA####`` / ``AUD-…`` (date + seq)
+    - Telegram Desktop: ``audio_YYYY-MM-DD_HH-MM-SS``
+    - Signal: ``signal-YYYY-MM-DD-HHmmss`` / dashed variants
+    - Instagram/Messenger helpers, Viber / Voice Message exports
+
+    Field recorders:
+    - Zoom DATE: ``YYMMDD-HHMMSS``; Zoom DEFAULT: ``ZOOM0001`` (seq)
+    - Android Voice Recorder: ``Recording_YYYYMMDD_HHMMSS``
+    - AOSP/Lineage: ``Sound record (yyyy-MM-dd HH:mm:ss)``
+    - Philips VoiceTracer: ``VOICE001`` (seq)
+    - Sony ICD: ``YYMMDD_HHMM``
+    - Device ``R`` prefix: ``RYYYYMMDD-HHMMSS``
+    - Tascam: ``TASCAM_0001`` (seq)
+    """
+    s = strip_duplicate_filename_suffix((stem or "").strip())
+    if not s:
+        return None
+
+    match = _RE_VOICE_NOTE_AT.match(s)
+    if match:
+        dt = _datetime_from_ymd_hms(
+            int(match["y"]),
+            int(match["m"]),
+            int(match["d"]),
+            int(match["H"]),
+            int(match["M"]),
+            int(match["S"]),
+        )
+        if dt is None:
+            return None
+        return _canonical_voice_note_family(match["family"]), dt, None
+
+    match = _RE_TELEGRAM_AUDIO.match(s)
+    if match:
+        dt = _datetime_from_ymd_hms(
+            int(match["y"]),
+            int(match["m"]),
+            int(match["d"]),
+            int(match["H"]),
+            int(match["M"]),
+            int(match["S"]),
+        )
+        if dt is None:
+            return None
+        return "Telegram Audio", dt, None
+
+    match = _RE_SIGNAL.match(s)
+    if match:
+        if match["H1"] is not None:
+            hour, minute, second = int(match["H1"]), int(match["M1"]), int(match["S1"])
+        else:
+            hour, minute, second = int(match["H2"]), int(match["M2"]), int(match["S2"])
+        dt = _datetime_from_ymd_hms(
+            int(match["y"]),
+            int(match["m"]),
+            int(match["d"]),
+            hour,
+            minute,
+            second,
+        )
+        if dt is None:
+            return None
+        return "Signal", dt, None
+
+    match = _RE_INSTAGRAM_AUDIO.match(s)
+    if match:
+        dt = _datetime_from_ymd_hms(
+            int(match["y"]),
+            int(match["m"]),
+            int(match["d"]),
+            int(match["H"]),
+            int(match["M"]),
+            int(match["S"]),
+        )
+        if dt is None:
+            return None
+        return _canonical_voice_note_family(match["family"]), dt, None
+
+    match = _RE_VOICE_MESSAGE_GENERIC.match(s)
+    if match:
+        dt = _datetime_from_ymd_hms(
+            int(match["y"]),
+            int(match["m"]),
+            int(match["d"]),
+            int(match["H"]),
+            int(match["M"]),
+            int(match["S"]),
+        )
+        if dt is None:
+            return None
+        return _canonical_voice_note_family(match["family"]), dt, None
+
+    match = _RE_WHATSAPP_ANDROID.match(s)
+    if match:
+        y, mo, d = int(match["y"]), int(match["m"]), int(match["d"])
+        if not _valid_ymd(y, mo, d):
+            return None
+        return _canonical_voice_note_family(match["kind"]), datetime(y, mo, d), int(
+            match["seq"]
+        )
+
+    match = _RE_SOUND_RECORD_PAREN.match(s)
+    if match:
+        dt = _datetime_from_ymd_hms(
+            int(match["y"]),
+            int(match["m"]),
+            int(match["d"]),
+            int(match["H"]),
+            int(match["M"]),
+            int(match["S"]),
+        )
+        if dt is None:
+            return None
+        return "Android Recorder", dt, None
+
+    match = _RE_ANDROID_RECORDING.match(s)
+    if match:
+        dt = _datetime_from_ymd_hms(
+            int(match["y"]),
+            int(match["m"]),
+            int(match["d"]),
+            int(match["H"]),
+            int(match["M"]),
+            int(match["S"]),
+        )
+        if dt is None:
+            return None
+        return "Android Recorder", dt, None
+
+    match = _RE_DEVICE_R_PREFIX.match(s)
+    if match:
+        dt = _datetime_from_ymd_hms(
+            int(match["y"]),
+            int(match["m"]),
+            int(match["d"]),
+            int(match["H"]),
+            int(match["M"]),
+            int(match["S"]),
+        )
+        if dt is None:
+            return None
+        return "Device Recorder", dt, None
+
+    match = _RE_ZOOM_DATETIME.match(s)
+    if match:
+        y = _century_year(int(match["y"]))
+        dt = _datetime_from_ymd_hms(
+            y,
+            int(match["m"]),
+            int(match["d"]),
+            int(match["H"]),
+            int(match["M"]),
+            int(match["S"]),
+        )
+        if dt is None:
+            return None
+        return "Zoom Recorder", dt, None
+
+    match = _RE_SONY_ICD.match(s)
+    if match:
+        y = _century_year(int(match["y"]))
+        dt = _datetime_from_ymd_hms(
+            y,
+            int(match["m"]),
+            int(match["d"]),
+            int(match["H"]),
+            int(match["M"]),
+            0,
+        )
+        if dt is None:
+            return None
+        return "Sony ICD", dt, None
+
+    match = _RE_ZOOM_SEQ.match(s)
+    if match:
+        return "Zoom Recorder", None, int(match["seq"])
+
+    match = _RE_PHILIPS_SEQ.match(s)
+    if match:
+        return "Philips VoiceTracer", None, int(match["seq"])
+
+    match = _RE_TASCAM_SEQ.match(s)
+    if match:
+        return "Tascam", None, int(match["seq"])
+
+    return None
+
+
 def parse_recording_datetime_from_stem(stem: str) -> datetime | None:
     """Parse recording datetime from a device filename stem."""
     s = (stem or "").strip()
     if not s:
         return None
+
+    voice_note = parse_voice_note_stem(s)
+    if voice_note is not None:
+        return voice_note[1]
 
     m = _RE_R_YYYYMMDD_HHMMSS.match(s)
     if m:

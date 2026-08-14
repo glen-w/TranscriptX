@@ -83,6 +83,8 @@ class MergeResult:
     success: bool
     output_path: Optional[Path] = None
     files_merged: int = 0
+    files_deleted: int = 0
+    transcripts_deleted: int = 0
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 

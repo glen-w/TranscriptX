@@ -72,6 +72,19 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Overwrite existing output",
     )
+    parser.add_argument(
+        "--delete-originals",
+        action="store_true",
+        help="Delete source files and any linked part transcripts after a successful merge",
+    )
+    parser.add_argument(
+        "--preprocess",
+        action="store_true",
+        help=(
+            "Apply current preprocessing defaults to each file before concatenating "
+            "(off by default; otherwise run scripts/audio_preprocess.py separately)"
+        ),
+    )
     args = parser.parse_args(argv)
 
     file_paths = _paths_from_args(args)
@@ -96,6 +109,8 @@ def main(argv: list[str] | None = None) -> int:
             output_filename=output_filename,
             backup_wavs=not args.no_backup,
             overwrite=args.overwrite,
+            delete_originals=args.delete_originals,
+            apply_preprocessing=args.preprocess,
         )
     )
     if not result.success:

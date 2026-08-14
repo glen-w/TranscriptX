@@ -208,6 +208,7 @@ def test_app_workflow_menu_order_under_workflow() -> None:
 
     workflow_keys = [spec.key for spec in pages_in_section("workflow")]
     assert workflow_keys == [
+        "Tools",
         "Transcribe Audio",
         "Import Transcript",
         "Speaker ID",

@@ -10,6 +10,11 @@ from transcriptx.web.navigation import (
     consume_transcription_nav_paths,
     navigate_to_transcribe_with_paths,
 )
+from transcriptx.web.ui.tools.merge_panel import (
+    hide_serial_group_in_session,
+    hidden_serial_keys_from_session,
+    restore_serial_group_in_session,
+)
 
 
 class TestNavigationHelpers:
@@ -47,6 +52,26 @@ class TestSerialDetectionIntegration:
         assert detect_serial_audio_groups(paths) == []
 
 
+class TestSerialGroupHideRestore:
+    def test_hide_and_restore_round_trip(self) -> None:
+        session: dict = {}
+        key = "numeric_index:260223_team_facilitation"
+        hide_serial_group_in_session(session, key)
+        hide_serial_group_in_session(session, key)
+        assert hidden_serial_keys_from_session(session) == [key]
+        restore_serial_group_in_session(session, key)
+        assert hidden_serial_keys_from_session(session) == []
+
+    def test_merge_panel_has_hide_and_restore_controls(self) -> None:
+        import transcriptx.web.ui.tools.merge_panel as mod
+
+        source = Path(mod.__file__).read_text(encoding="utf-8")
+        assert '"Hide"' in source
+        assert "audio_merge_hide_group_" in source
+        assert "Hidden suggestions" in source
+        assert "audio_merge_restore_group_" in source
+
+
 class TestPageIntegrationPresence:
     def test_transcribe_audio_is_external_instructions(self) -> None:
         import transcriptx.web.page_modules.transcribe_audio as mod
@@ -61,6 +86,6 @@ class TestPageIntegrationPresence:
 
         source = Path(mod.__file__).read_text(encoding="utf-8")
         assert "render_serial_group_prompt" in source
-        assert "System → Tools → Merge" in source
+        assert "Workflow → Audio Preprocessing → Merge" in source
         assert "Transcribe these files separately anyway" in source
-        assert "Open Tools → Merge" in source
+        assert "Open Audio Preprocessing → Merge" in source

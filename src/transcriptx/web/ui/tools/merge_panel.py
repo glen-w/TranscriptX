@@ -10,7 +10,11 @@ import streamlit as st
 from transcriptx.app.controllers.merge_controller import MergeController
 from transcriptx.app.models.requests import MergeRequest
 from transcriptx.app.progress import make_initial_snapshot
-from transcriptx.core.audio.serial_groups import detect_serial_audio_groups
+from transcriptx.core.audio.serial_groups import (
+    SerialGroup,
+    detect_serial_audio_groups,
+    partition_dismissed_serial_groups,
+)
 from transcriptx.core.audio.utils import get_audio_duration
 from transcriptx.core.utils.paths import RECORDINGS_DIR
 from transcriptx.core.utils.rename.date_prefix import extract_date_prefix
@@ -33,16 +37,41 @@ from transcriptx.web.ui.tools.shared import (
 from transcriptx.web.components.info_tooltip import widget_help
 
 _KEY_ORDERED_PATHS = "audio_merge_ordered_paths"
+_KEY_HIDDEN_SERIAL = "audio_merge_hidden_serial_keys"
 _KEY_RUN_IN_PROGRESS = "audio_merge_run_in_progress"
 _KEY_RESULT = "audio_merge_result"
 _STAGE_COUNT = 4
+
+
+def hidden_serial_keys_from_session(session: dict) -> list[str]:
+    """Return dismissed serial-group keys stored on the Streamlit session."""
+    raw = session.get(_KEY_HIDDEN_SERIAL, [])
+    if not isinstance(raw, list):
+        return []
+    return [str(key) for key in raw]
+
+
+def hide_serial_group_in_session(session: dict, key: str) -> None:
+    keys = hidden_serial_keys_from_session(session)
+    if key not in keys:
+        keys.append(key)
+    session[_KEY_HIDDEN_SERIAL] = keys
+
+
+def restore_serial_group_in_session(session: dict, key: str) -> None:
+    session[_KEY_HIDDEN_SERIAL] = [
+        existing
+        for existing in hidden_serial_keys_from_session(session)
+        if existing != key
+    ]
 
 
 def render_merge_panel(*, deps_ready: bool = True) -> None:
     """Render the Merge tool tab."""
     st.caption(
         "Merge multiple audio files into a single MP3. "
-        "Supports WAV, MP3, OGG, M4A, FLAC, AAC, and WMA."
+        "Supports WAV, MP3, OGG, M4A, FLAC, AAC, and WMA. "
+        "Preprocessing is optional and off by default."
     )
 
     recordings = render_upload_and_refresh(uploader_key="audio_merge_uploader")
@@ -81,40 +110,92 @@ def _render_detected_serial_groups(recordings: List[Path]) -> None:
     if not groups:
         return
 
-    st.subheader("Detected serial recordings")
-    st.caption(
-        "These files look like parts of one recording based on filename patterns. "
-        "Use a suggested group to pre-fill merge order, or select files manually below."
+    visible, hidden = partition_dismissed_serial_groups(
+        groups, hidden_serial_keys_from_session(st.session_state)
     )
+    if not visible and not hidden:
+        return
 
-    for idx, group in enumerate(groups):
-        extension = group.ordered_paths[0].suffix.lower() if group.ordered_paths else ""
-        total_duration = 0.0
-        duration_known = True
-        for path in group.ordered_paths:
-            dur = get_audio_duration(path)
-            if dur is None:
-                duration_known = False
-                break
-            total_duration += dur
+    if visible:
+        st.subheader("Detected serial recordings")
+        st.caption(
+            "These files look like parts of one recording or a burst of voice notes. "
+            "Use a suggested group to pre-fill merge order, hide false matches, "
+            "or select files manually below."
+        )
+        for group in visible:
+            _render_serial_group_card(group)
 
-        with st.container(border=True):
-            st.markdown(
-                f"**{group.base_key}** · {len(group.ordered_paths)} files · "
-                f"`{extension}` · {group.matched_rule} · {group.confidence}"
+    if hidden:
+        with st.expander(f"Hidden suggestions ({len(hidden)})", expanded=False):
+            st.caption(
+                "Hidden for this session. Restore a suggestion if you hid it by mistake."
             )
-            if duration_known:
-                st.caption(
-                    f"Combined duration: {RecordingsService.format_duration(total_duration)}"
-                )
-            for path in group.ordered_paths:
-                st.text(path.name)
-            for warning in group.warnings:
-                st.caption(f"⚠ {warning}")
-            if st.button("Use this group", key=f"audio_merge_use_group_{idx}"):
+            for group in hidden:
+                col_label, col_restore = st.columns([8, 2])
+                with col_label:
+                    st.text(
+                        f"{group.base_key} · {len(group.ordered_paths)} files · "
+                        f"{group.matched_rule}"
+                    )
+                with col_restore:
+                    if st.button(
+                        "Restore",
+                        key=f"audio_merge_restore_group_{group.dismissal_key}",
+                        help=widget_help("Show this suggestion again."),
+                    ):
+                        restore_serial_group_in_session(
+                            st.session_state, group.dismissal_key
+                        )
+                        st.rerun()
+
+
+def _render_serial_group_card(group: SerialGroup) -> None:
+    extension = group.ordered_paths[0].suffix.lower() if group.ordered_paths else ""
+    total_duration = 0.0
+    duration_known = True
+    for path in group.ordered_paths:
+        dur = get_audio_duration(path)
+        if dur is None:
+            duration_known = False
+            break
+        total_duration += dur
+
+    with st.container(border=True):
+        st.markdown(
+            f"**{group.base_key}** · {len(group.ordered_paths)} files · "
+            f"`{extension}` · {group.rule_label} · {group.confidence}"
+        )
+        if duration_known:
+            st.caption(
+                f"Combined duration: {RecordingsService.format_duration(total_duration)}"
+            )
+        for path in group.ordered_paths:
+            st.text(path.name)
+        for warning in group.warnings:
+            st.caption(f"⚠ {warning}")
+        col_use, col_hide = st.columns(2)
+        with col_use:
+            if st.button(
+                "Use this group",
+                key=f"audio_merge_use_group_{group.dismissal_key}",
+            ):
                 st.session_state[_KEY_ORDERED_PATHS] = [
                     str(p) for p in group.ordered_paths
                 ]
+                st.rerun()
+        with col_hide:
+            if st.button(
+                "Hide",
+                key=f"audio_merge_hide_group_{group.dismissal_key}",
+                help=widget_help(
+                    "Hide this suggestion. Use when these files are separate "
+                    "sessions, not parts of one recording."
+                ),
+            ):
+                hide_serial_group_in_session(
+                    st.session_state, group.dismissal_key
+                )
                 st.rerun()
 
 
@@ -250,7 +331,7 @@ def _render_output_and_run(ordered_paths: List[Path], *, deps_ready: bool) -> No
             key="audio_merge_backup",
             help=widget_help((
                 "Copies each source file to the WAV storage directory "
-                "and deletes the original before merging."
+                "before merging."
             )),
         )
     with col_overwrite:
@@ -259,6 +340,35 @@ def _render_output_and_run(ordered_paths: List[Path], *, deps_ready: bool) -> No
             value=st.session_state.get("audio_merge_overwrite", False),
             key="audio_merge_overwrite",
             help=widget_help("Replace an existing merged file at the output path."),
+        )
+
+    apply_preprocessing = st.checkbox(
+        "Preprocess files while merging",
+        value=st.session_state.get("audio_merge_preprocess", False),
+        key="audio_merge_preprocess",
+        help=widget_help((
+            "Apply current preprocessing defaults (mono, resample, denoise, "
+            "normalize, and so on) to each file before concatenating. "
+            "Off by default — you can also run Preprocessing separately "
+            "after the merge."
+        )),
+    )
+
+    delete_originals = st.checkbox(
+        "Delete originals once merge is complete",
+        value=st.session_state.get("audio_merge_delete_originals", False),
+        key="audio_merge_delete_originals",
+        help=widget_help((
+            "Permanently remove the source files after a successful merge, "
+            "including any transcripts already linked to those parts. "
+            "The merged output is kept. Prefer leaving Backup enabled so "
+            "copies remain in storage."
+        )),
+    )
+    if delete_originals and not backup_wavs:
+        st.warning(
+            "Originals will be deleted with no storage backup. "
+            "Enable backup above unless you are sure you do not need the parts."
         )
 
     st.subheader("3. Run")
@@ -280,6 +390,8 @@ def _render_output_and_run(ordered_paths: List[Path], *, deps_ready: bool) -> No
                 output_filename,
                 backup_wavs,
                 overwrite,
+                delete_originals,
+                apply_preprocessing,
                 deps_ready=deps_ready,
             )
     else:
@@ -288,6 +400,8 @@ def _render_output_and_run(ordered_paths: List[Path], *, deps_ready: bool) -> No
             output_filename,
             backup_wavs,
             overwrite,
+            delete_originals,
+            apply_preprocessing,
             deps_ready=deps_ready,
         )
 
@@ -297,6 +411,8 @@ def _render_run_button(
     output_filename: str,
     backup_wavs: bool,
     overwrite: bool,
+    delete_originals: bool,
+    apply_preprocessing: bool,
     *,
     deps_ready: bool,
 ) -> None:
@@ -316,6 +432,8 @@ def _render_run_button(
             output_filename=output_filename or None,
             backup_wavs=backup_wavs,
             overwrite=overwrite,
+            delete_originals=delete_originals,
+            apply_preprocessing=apply_preprocessing,
         )
 
         st.session_state[MERGE_SNAPSHOT_KEY] = make_initial_snapshot(total=_STAGE_COUNT)
@@ -355,6 +473,13 @@ def _render_result(result: object) -> None:
             if r.output_path
             else f"Merged {r.files_merged} file(s) successfully."
         )
+        if r.files_deleted or r.transcripts_deleted:
+            parts = []
+            if r.files_deleted:
+                parts.append(f"{r.files_deleted} original file(s)")
+            if r.transcripts_deleted:
+                parts.append(f"{r.transcripts_deleted} linked transcript(s)")
+            st.caption("Deleted " + " and ".join(parts) + ".")
 
         if r.warnings:
             for w in r.warnings:

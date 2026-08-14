@@ -84,6 +84,20 @@ def test_filename_extraction_contract() -> None:
     assert extract_date_prefix_from_filename("251230_meeting.wav") == "251230_"
     assert extract_date_prefix_from_filename("R20260810-173237.wav") == "260810_"
     assert extract_date_prefix_from_filename("260725-164140.wav") == "260725_"
+    assert (
+        extract_date_prefix_from_filename(
+            "WhatsApp Audio 2026-08-12 at 13.11.09.mp3"
+        )
+        == "260812_"
+    )
+    assert extract_date_prefix_from_filename("audio_2026-08-12_13-11-09.ogg") == "260812_"
+    assert extract_date_prefix_from_filename("signal-2026-08-12-131109.aac") == "260812_"
+    assert extract_date_prefix_from_filename("PTT-20260812-WA0001.opus") == "260812_"
+    assert extract_date_prefix_from_filename("Recording_20260812_131109.m4a") == "260812_"
+    assert extract_date_prefix_from_filename("240115-092530.WAV") == "240115_"
+    assert extract_date_prefix_from_filename("161010_0706.mp3") == "161010_"
+    assert extract_date_prefix_from_filename("ZOOM0001.WAV") == ""
+    assert extract_date_prefix_from_filename("VOICE001.mp3") == ""
 
 
 @pytest.mark.unit

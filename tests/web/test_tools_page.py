@@ -274,6 +274,41 @@ def test_merge_with_recordings_renders_section(monkeypatch, tmp_path: Path) -> N
 
 
 @pytest.mark.unit
+def test_merge_panel_has_delete_originals_option() -> None:
+    import transcriptx.web.ui.tools.merge_panel as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "Delete originals once merge is complete" in source
+    assert "delete_originals=delete_originals" in source
+
+
+@pytest.mark.unit
+def test_merge_panel_preprocessing_is_opt_in() -> None:
+    import inspect
+
+    import transcriptx.web.ui.tools.merge_panel as mod
+    from transcriptx.app.models.requests import MergeRequest
+    from transcriptx.core.audio.conversion import merge_audio_files, merge_wav_files
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "Preprocess files while merging" in source
+    assert "apply_preprocessing=apply_preprocessing" in source
+    assert MergeRequest.__dataclass_fields__["apply_preprocessing"].default is False
+    assert (
+        inspect.signature(merge_audio_files)
+        .parameters["apply_preprocessing_steps"]
+        .default
+        is False
+    )
+    assert (
+        inspect.signature(merge_wav_files)
+        .parameters["apply_preprocessing_steps"]
+        .default
+        is False
+    )
+
+
+@pytest.mark.unit
 def test_dependency_banner_reports_missing(monkeypatch) -> None:
     import transcriptx.web.ui.tools.shared as shared
 

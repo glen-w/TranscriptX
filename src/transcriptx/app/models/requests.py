@@ -107,6 +107,9 @@ class MergeRequest:
     and have a supported audio extension.  Default output naming uses the
     first file in the list for the date prefix (e.g. extract_date_prefix on
     file_paths[0]).
+
+    ``apply_preprocessing`` is opt-in. Merge concatenates only unless the
+    caller sets it True (GUI checkbox / CLI ``--preprocess``).
     """
 
     file_paths: list[Path]
@@ -114,6 +117,8 @@ class MergeRequest:
     output_filename: Optional[str] = None
     backup_wavs: bool = True
     overwrite: bool = False
+    delete_originals: bool = False
+    apply_preprocessing: bool = False
 
 
 @dataclass

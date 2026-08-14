@@ -137,9 +137,12 @@ uv run python scripts/audio_preprocess.py run recording.wav \
 
 **Merge split parts** (`scripts/audio_merge.py`):
 
+Concatenates files into one MP3. Does **not** preprocess unless you pass `--preprocess` (or enable the Merge-form checkbox). Run **Preprocessing** separately when you want DSP without assuming it.
+
 ```bash
 uv run python scripts/audio_merge.py part_1.wav part_2.wav -o merged.mp3
 uv run python scripts/audio_merge.py --list paths.txt --no-backup --overwrite
+uv run python scripts/audio_merge.py part_1.wav part_2.wav --preprocess -o merged.mp3
 ```
 
 Requires `ffmpeg` (and typically `pydub` via the project install). Transcribe the resulting files externally, then use **Import Transcript**.

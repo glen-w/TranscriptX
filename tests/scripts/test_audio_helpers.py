@@ -68,6 +68,8 @@ def test_merge_list_file(merge_mod, tmp_path: Path, monkeypatch) -> None:
     def fake_run_merge(request, progress=None):
         captured["paths"] = list(request.file_paths)
         captured["backup"] = request.backup_wavs
+        captured["delete_originals"] = request.delete_originals
+        captured["apply_preprocessing"] = request.apply_preprocessing
         return MergeResult(
             success=True,
             output_path=tmp_path / "out.mp3",
@@ -79,3 +81,51 @@ def test_merge_list_file(merge_mod, tmp_path: Path, monkeypatch) -> None:
     assert code == 0
     assert captured["paths"] == [a.resolve(), b.resolve()]
     assert captured["backup"] is False
+    assert captured["delete_originals"] is False
+    assert captured["apply_preprocessing"] is False
+
+
+@pytest.mark.unit
+def test_merge_delete_originals_flag(merge_mod, tmp_path: Path, monkeypatch) -> None:
+    a = tmp_path / "a.wav"
+    b = tmp_path / "b.wav"
+    a.write_bytes(b"x")
+    b.write_bytes(b"y")
+
+    captured: dict = {}
+
+    def fake_run_merge(request, progress=None):
+        from transcriptx.app.models.results import MergeResult
+
+        captured["delete_originals"] = request.delete_originals
+        return MergeResult(success=True, files_merged=2)
+
+    monkeypatch.setattr(merge_mod, "run_merge", fake_run_merge)
+    code = merge_mod.main(
+        [str(a), str(b), "--no-backup", "--delete-originals", "-o", str(tmp_path / "out.mp3")]
+    )
+    assert code == 0
+    assert captured["delete_originals"] is True
+
+
+@pytest.mark.unit
+def test_merge_preprocess_flag(merge_mod, tmp_path: Path, monkeypatch) -> None:
+    a = tmp_path / "a.wav"
+    b = tmp_path / "b.wav"
+    a.write_bytes(b"x")
+    b.write_bytes(b"y")
+
+    captured: dict = {}
+
+    def fake_run_merge(request, progress=None):
+        from transcriptx.app.models.results import MergeResult
+
+        captured["apply_preprocessing"] = request.apply_preprocessing
+        return MergeResult(success=True, files_merged=2)
+
+    monkeypatch.setattr(merge_mod, "run_merge", fake_run_merge)
+    code = merge_mod.main(
+        [str(a), str(b), "--no-backup", "--preprocess", "-o", str(tmp_path / "out.mp3")]
+    )
+    assert code == 0
+    assert captured["apply_preprocessing"] is True

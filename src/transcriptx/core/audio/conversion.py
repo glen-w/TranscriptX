@@ -101,19 +101,23 @@ def merge_audio_files(
     output_path: Path,
     progress_callback: Optional[Callable[[int, int, str], None]] = None,
     bitrate: str = "192k",
-    apply_preprocessing_steps: bool = True,
+    apply_preprocessing_steps: bool = False,
     config: Any = None,
 ) -> Path:
     """
     Merge multiple audio files (WAV, MP3, OGG, etc.) into a single MP3 file.
+
+    Concatenates only unless ``apply_preprocessing_steps`` is True. Preprocessing
+    is a separate Tools step by default (Workflow → Audio Preprocessing → Preprocessing).
 
     Args:
         audio_paths: List of paths to audio files to merge, in order.
         output_path: Destination path for the output MP3 file.
         progress_callback: Optional callback(current, total, message).
         bitrate: MP3 bitrate (default "192k").
-        apply_preprocessing_steps: Whether to run preprocessing on each segment.
-        config: Optional AudioPreprocessingConfig.
+        apply_preprocessing_steps: If True, run current preprocessing defaults
+            on each segment before concatenating. Off by default.
+        config: Optional AudioPreprocessingConfig (used only when preprocessing).
 
     Returns:
         Path to the created merged MP3 file.
@@ -199,7 +203,7 @@ def merge_wav_files(
     output_path: Path,
     progress_callback: Optional[Callable[[int, int, str], None]] = None,
     bitrate: str = "192k",
-    apply_preprocessing_steps: bool = True,
+    apply_preprocessing_steps: bool = False,
     config: Any = None,
 ) -> Path:
     """Merge multiple WAV files into a single MP3. Delegates to merge_audio_files."""

@@ -1,4 +1,4 @@
-"""Shared helpers for System → Tools audio panels."""
+"""Shared helpers for Workflow → Audio Preprocessing panels."""
 
 from __future__ import annotations
 

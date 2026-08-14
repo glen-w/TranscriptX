@@ -71,6 +71,7 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
     _spec("Search", "Search", "primary"),
     _spec("Speakers", "Speakers", "primary", may_mutate_context=True),
     _spec("Groups", "Groups", "primary", may_mutate_context=True),
+    _spec("Tools", "Audio Preprocessing", "workflow"),
     _spec("Transcribe Audio", "Transcribe Audio", "workflow", may_mutate_context=True),
     _spec(
         "Import Transcript", "Import Transcript", "workflow", may_mutate_context=True
@@ -147,7 +148,6 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         may_mutate_context=False,
     ),
     _spec("Settings", "Settings", "settings"),
-    _spec("Tools", "Tools", "settings"),
     _spec("Profiles", "Profiles", "settings"),
     _spec(
         "Dashboard Builder",
@@ -177,7 +177,7 @@ def get_page_spec(page: str | None) -> PageSpec:
 
 # Pages where the sticky context line adds noise (launch/setup/settings).
 _CONTEXT_BAR_HIDDEN_KEYS: frozenset[str] = frozenset(
-    {"Home", "Transcribe Audio", "Import Transcript"}
+    {"Home", "Tools", "Transcribe Audio", "Import Transcript"}
 )
 _CONTEXT_BAR_HIDDEN_SECTIONS: frozenset[NavSection] = frozenset({"tools", "settings"})
 
@@ -234,7 +234,7 @@ def navigate_to_tools_tab(
     *,
     preprocess_paths: list[Path | str] | None = None,
 ) -> None:
-    """Open System → Tools on the given hub tab, optionally preselecting prep files."""
+    """Open Workflow → Audio Preprocessing on the given hub tab, optionally preselecting prep files."""
     if tab not in TOOLS_HUB_TABS:
         tab = TOOLS_HUB_TABS[0]
     session_state["page"] = "Tools"

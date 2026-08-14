@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Audio **Merge** concatenates only by default. Optional **Preprocess files while merging** checkbox (CLI `--preprocess`) applies current preprocessing defaults in the same pass; otherwise run Preprocessing separately.
 - Sidebar section **Settings** renamed to **System** (page keys unchanged: Settings, Tools, Profiles, Dashboard Builder, Diagnostics).
 - Legacy bookmarks **Audio Prep** / **Audio Merge** redirect to **Tools** (Preprocessing / Merge tabs) instead of Transcribe Audio.
 - Executive layout preset now tags Insights `section:` values and includes a Charts page for consistent section nav / Builder preview.

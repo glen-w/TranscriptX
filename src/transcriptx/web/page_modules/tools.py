@@ -1,5 +1,5 @@
 """
-Tools hub — System → Tools (audio preprocessing and merge).
+Tools hub — Workflow → Audio Preprocessing (preprocess and merge).
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from transcriptx.web.ui.tools import (
 def render_tools_page() -> None:
     """Render the Tools page (hub with per-tool tabs)."""
     st.markdown(
-        '<div class="main-header">Tools</div>',
+        '<div class="main-header">Audio Preprocessing</div>',
         unsafe_allow_html=True,
     )
     st.caption(

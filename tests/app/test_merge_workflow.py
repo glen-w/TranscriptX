@@ -233,6 +233,29 @@ class TestMergeHappyPath:
         assert result.output_path == expected_out
         assert result.files_merged == 3
         assert result.errors == []
+        assert mock_merge.call_args.kwargs["apply_preprocessing_steps"] is False
+
+    @patch(
+        "transcriptx.app.workflows.merge.check_ffmpeg_available",
+        return_value=_FFMPEG_OK,
+    )
+    @patch("transcriptx.app.workflows.merge.merge_audio_files")
+    def test_preprocessing_opt_in_is_forwarded(
+        self, mock_merge, _mock_ffmpeg, tmp_path
+    ):
+        files = _make_files(tmp_path, 2)
+        expected_out = tmp_path / "result.mp3"
+        mock_merge.return_value = expected_out
+        req = MergeRequest(
+            file_paths=files,
+            output_dir=tmp_path,
+            output_filename="result.mp3",
+            backup_wavs=False,
+            apply_preprocessing=True,
+        )
+        result = run_merge(req)
+        assert result.success
+        assert mock_merge.call_args.kwargs["apply_preprocessing_steps"] is True
 
     @patch(
         "transcriptx.app.workflows.merge.check_ffmpeg_available",
@@ -349,6 +372,121 @@ class TestMergeBackup:
         assert result.success
         assert any("backup" in w.lower() for w in result.warnings)
         mock_merge.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Delete originals after merge
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestMergeDeleteOriginals:
+    @patch(
+        "transcriptx.app.workflows.merge.check_ffmpeg_available",
+        return_value=_FFMPEG_OK,
+    )
+    @patch("transcriptx.app.workflows.merge.merge_audio_files")
+    @patch(
+        "transcriptx.app.workflows.merge.delete_linked_transcripts_for_audio",
+        return_value=(1, []),
+    )
+    def test_deletes_sources_after_successful_merge(
+        self, mock_tx_delete, mock_merge, _mock_ffmpeg, tmp_path
+    ):
+        files = _make_files(tmp_path, 2)
+        expected_out = tmp_path / "out.mp3"
+
+        def _write_output(paths, output_path, progress_callback=None, **_kwargs):
+            output_path.write_bytes(b"merged")
+            return output_path
+
+        mock_merge.side_effect = _write_output
+        req = MergeRequest(
+            file_paths=files,
+            output_dir=tmp_path,
+            output_filename="out.mp3",
+            backup_wavs=False,
+            delete_originals=True,
+        )
+        result = run_merge(req)
+        assert result.success
+        assert result.files_deleted == 2
+        assert result.transcripts_deleted == 2
+        assert all(not p.exists() for p in files)
+        assert expected_out.exists()
+        assert mock_tx_delete.call_count == 2
+
+    @patch(
+        "transcriptx.app.workflows.merge.check_ffmpeg_available",
+        return_value=_FFMPEG_OK,
+    )
+    @patch("transcriptx.app.workflows.merge.merge_audio_files")
+    def test_does_not_delete_on_merge_failure(
+        self, mock_merge, _mock_ffmpeg, tmp_path
+    ):
+        files = _make_files(tmp_path, 2)
+        mock_merge.side_effect = RuntimeError("codec error")
+        req = MergeRequest(
+            file_paths=files,
+            output_dir=tmp_path,
+            output_filename="out.mp3",
+            backup_wavs=False,
+            delete_originals=True,
+        )
+        result = run_merge(req)
+        assert not result.success
+        assert result.files_deleted == 0
+        assert all(p.exists() for p in files)
+
+    @patch(
+        "transcriptx.app.workflows.merge.check_ffmpeg_available",
+        return_value=_FFMPEG_OK,
+    )
+    @patch("transcriptx.app.workflows.merge.merge_audio_files")
+    def test_skips_delete_when_output_missing(
+        self, mock_merge, _mock_ffmpeg, tmp_path
+    ):
+        files = _make_files(tmp_path, 2)
+        missing_out = tmp_path / "out.mp3"
+        mock_merge.return_value = missing_out
+        req = MergeRequest(
+            file_paths=files,
+            output_dir=tmp_path,
+            output_filename="out.mp3",
+            backup_wavs=False,
+            delete_originals=True,
+        )
+        result = run_merge(req)
+        assert result.success
+        assert result.files_deleted == 0
+        assert all(p.exists() for p in files)
+        assert any("missing or empty" in w.lower() for w in result.warnings)
+
+    @patch(
+        "transcriptx.app.workflows.merge.check_ffmpeg_available",
+        return_value=_FFMPEG_OK,
+    )
+    @patch("transcriptx.app.workflows.merge.merge_audio_files")
+    def test_default_keeps_originals(self, mock_merge, _mock_ffmpeg, tmp_path):
+        files = _make_files(tmp_path, 2)
+        expected_out = tmp_path / "out.mp3"
+
+        def _write_output(paths, output_path, progress_callback=None, **_kwargs):
+            output_path.write_bytes(b"merged")
+            return output_path
+
+        mock_merge.side_effect = _write_output
+        req = MergeRequest(
+            file_paths=files,
+            output_dir=tmp_path,
+            output_filename="out.mp3",
+            backup_wavs=False,
+        )
+        result = run_merge(req)
+        assert result.success
+        assert result.files_deleted == 0
+        assert all(p.exists() for p in files)
+        assert expected_out.exists()
 
 
 # ---------------------------------------------------------------------------

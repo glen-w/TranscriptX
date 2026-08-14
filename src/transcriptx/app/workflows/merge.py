@@ -5,7 +5,8 @@ Progress uses four stages (always, for a consistent UI mental model):
     validating → backing_up → merging → completed
 
 When backup is disabled, the backing_up stage is skipped via on_stage_progress
-and the workflow advances immediately to merging.
+and the workflow advances immediately to merging. Original deletion, when
+requested, runs in the completed stage and only after a non-empty output exists.
 """
 
 from __future__ import annotations
@@ -19,6 +20,9 @@ from transcriptx.app.models.results import MergeResult
 from transcriptx.app.progress import NullProgress, ProgressCallback
 from transcriptx.core.audio.backup import backup_audio_files_to_storage
 from transcriptx.core.audio.conversion import merge_audio_files
+from transcriptx.core.audio.linked_transcripts import (
+    delete_linked_transcripts_for_audio,
+)
 from transcriptx.core.audio.tools import check_ffmpeg_available
 from transcriptx.core.utils.rename.date_prefix import extract_date_prefix
 from transcriptx.core.utils.logger import get_logger
@@ -34,6 +38,40 @@ _SUPPORTED_EXTENSIONS = frozenset(
 _TOTAL_STAGES = 4
 
 
+def _delete_merge_originals(
+    sources: list[Path],
+    output_path: Path,
+) -> tuple[int, int, list[str]]:
+    """Delete source audio and linked part transcripts. Never touches the output."""
+    audio_deleted = 0
+    transcripts_deleted = 0
+    warnings: list[str] = []
+    try:
+        output_resolved = output_path.resolve()
+    except OSError:
+        output_resolved = output_path
+
+    for src in sources:
+        try:
+            resolved = src.resolve()
+        except OSError:
+            resolved = src
+        if resolved == output_resolved:
+            continue
+        tx_count, tx_warnings = delete_linked_transcripts_for_audio(src)
+        transcripts_deleted += tx_count
+        warnings.extend(tx_warnings)
+        if not src.is_file():
+            continue
+        try:
+            src.unlink()
+            audio_deleted += 1
+            logger.info("Deleted merge original: %s", src)
+        except OSError as exc:
+            warnings.append(f"Could not delete original {src.name}: {exc}")
+    return audio_deleted, transcripts_deleted, warnings
+
+
 def run_merge(
     request: MergeRequest,
     progress: ProgressCallback | None = None,
@@ -45,7 +83,7 @@ def run_merge(
         1. validating
         2. backing_up   (skipped when request.backup_wavs is False)
         3. merging
-        4. completed
+        4. completed    (deletes originals here when request.delete_originals)
 
     Returns a MergeResult on both success and handled failure so callers
     never need to catch expected errors.  Unexpected exceptions propagate
@@ -188,6 +226,8 @@ def run_merge(
     # ------------------------------------------------------------------
     progress.on_stage_start("merging")
     progress.on_log(f"Merging {len(merge_files)} files → {output_filename}")
+    if request.apply_preprocessing:
+        progress.on_log("Preprocessing enabled for this merge pass")
 
     t0 = time.time()
 
@@ -203,6 +243,7 @@ def run_merge(
             merge_files,
             output_path,
             progress_callback=_progress_cb,
+            apply_preprocessing_steps=request.apply_preprocessing,
         )
     except Exception as exc:
         progress.on_stage_complete("merging")
@@ -219,14 +260,39 @@ def run_merge(
     progress.on_stage_complete("merging")
 
     # ------------------------------------------------------------------
-    # Stage 4: Completed
+    # Stage 4: Completed (optional original deletion)
     # ------------------------------------------------------------------
     progress.on_stage_start("completed")
+    files_deleted = 0
+    transcripts_deleted = 0
+    if request.delete_originals:
+        output_ok = (
+            result_path.exists()
+            and result_path.is_file()
+            and result_path.stat().st_size > 0
+        )
+        if not output_ok:
+            warnings.append(
+                "Skipped deleting originals because the merge output is missing or empty."
+            )
+            progress.on_log("Original deletion skipped (output missing or empty)")
+        else:
+            progress.on_stage_progress("Deleting original source files…")
+            files_deleted, transcripts_deleted, delete_warnings = (
+                _delete_merge_originals(file_paths, result_path)
+            )
+            warnings.extend(delete_warnings)
+            progress.on_log(
+                f"Deleted {files_deleted} original file(s) and "
+                f"{transcripts_deleted} linked transcript(s)"
+            )
     progress.on_stage_complete("completed")
 
     return MergeResult(
         success=True,
         output_path=result_path,
         files_merged=total_files,
+        files_deleted=files_deleted,
+        transcripts_deleted=transcripts_deleted,
         warnings=warnings,
     )
