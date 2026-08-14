@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Audio **Merge** source profiles (`CONFIG_DIR/audio_merge_profiles.json`): per-source day / time-gap sliders, custom regex profiles, and **Auto-merge selected groups**. Builtin defaults keep the 20-minute voice-note gap; users can retune (e.g. WhatsApp same day within 2 hours).
 - Dashboard Builder **Edit** mode: select and ↑↓ reorder Overview/Insights blocks; save custom layouts in place. Charts Overview strip selector (checkboxes + order) under **Settings → Configuration**. Guides: [dashboard_builder.md](docs/dev/dashboard_builder.md), [settings.md](docs/runtime/settings.md).
 - **System → Tools** hub: audio **Preprocessing** and **Merge** tabs restored under the renamed System sidebar section (formerly Settings), with dependency checks, guided assess/apply-suggested flow, serial-group one-click fill, and handoffs to Transcribe Audio. CLI scripts remain for automation.
 - Dashboard Builder / layout presets: three curated built-ins — **Meeting follow-up** (`meeting_followup`), **Speakers** (`speaker_focus`), **Minimal** (`minimal`) — plus Schema overwrite confirmation, delete-custom, layout-id slug hardening, and param type checks. Guide: [docs/dev/dashboard_builder.md](docs/dev/dashboard_builder.md).
