@@ -87,10 +87,65 @@ def render_merge_panel(*, deps_ready: bool = True) -> None:
         render_empty_recordings_hint()
         return
 
+    options = _render_shared_merge_options()
     _render_detected_serial_groups(
-        recordings, profiles=profiles, deps_ready=deps_ready
+        recordings,
+        profiles=profiles,
+        deps_ready=deps_ready,
+        options=options,
     )
-    _render_section_select(recordings, deps_ready=deps_ready)
+    _render_section_select(
+        recordings, deps_ready=deps_ready, options=options
+    )
+
+
+def _render_shared_merge_options() -> dict[str, bool]:
+    """Single set of merge flags shared by auto-merge and manual merge."""
+    st.subheader("Merge options")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        backup_wavs = st.checkbox(
+            "Backup originals to storage before merging",
+            value=bool(st.session_state.get("audio_merge_backup", True)),
+            key="audio_merge_backup",
+            help=widget_help(
+                "Copies each source file to the WAV storage directory before merging."
+            ),
+        )
+        apply_preprocessing = st.checkbox(
+            "Preprocess files while merging",
+            value=bool(st.session_state.get("audio_merge_preprocess", False)),
+            key="audio_merge_preprocess",
+            help=widget_help(
+                "Apply current preprocessing defaults before concatenating. Off by default."
+            ),
+        )
+    with col_b:
+        overwrite = st.checkbox(
+            "Overwrite output if it already exists",
+            value=bool(st.session_state.get("audio_merge_overwrite", False)),
+            key="audio_merge_overwrite",
+            help=widget_help("Replace an existing merged file at the output path."),
+        )
+        delete_originals = st.checkbox(
+            "Delete originals once merge is complete",
+            value=bool(st.session_state.get("audio_merge_delete_originals", False)),
+            key="audio_merge_delete_originals",
+            help=widget_help(
+                "Permanently remove source files and linked part transcripts after success."
+            ),
+        )
+    if delete_originals and not backup_wavs:
+        st.warning(
+            "Originals will be deleted with no storage backup. "
+            "Enable backup above unless you are sure you do not need the parts."
+        )
+    return {
+        "backup_wavs": backup_wavs,
+        "overwrite": overwrite,
+        "delete_originals": delete_originals,
+        "apply_preprocessing": apply_preprocessing,
+    }
 
 
 def _format_merge_row_meta(path: Path) -> str:
@@ -150,6 +205,7 @@ def _render_detected_serial_groups(
     *,
     profiles: list[MergeSourceProfile],
     deps_ready: bool,
+    options: dict[str, bool],
 ) -> None:
     groups = detect_merge_groups(recordings, profiles=profiles)
     if not groups:
@@ -169,7 +225,8 @@ def _render_detected_serial_groups(
         st.subheader("Detected groups")
         st.caption(
             "These files look like parts of one recording or a burst of voice notes. "
-            "Tune grouping under Merge source profiles. "
+            "Tune grouping under Merge source profiles (draft applies immediately; "
+            "Save persists). "
             "Use a suggested group to pre-fill merge order, auto-merge selected "
             "groups, hide false matches, or select files manually below."
         )
@@ -179,31 +236,21 @@ def _render_detected_serial_groups(
             if checked:
                 selected.append(group)
 
-        backup_wavs = bool(st.session_state.get("audio_merge_backup", True))
-        overwrite = bool(st.session_state.get("audio_merge_overwrite", False))
-        delete_originals = bool(
-            st.session_state.get("audio_merge_delete_originals", False)
-        )
-        apply_preprocessing = bool(
-            st.session_state.get("audio_merge_preprocess", False)
-        )
-
         if st.button(
             f"Auto-merge selected groups ({len(selected)})",
             type="primary",
             key="audio_merge_auto_run",
             disabled=not deps_ready or not selected,
             help=widget_help(
-                "Merge each checked group with the current backup / overwrite / "
-                "preprocess / delete-originals options from the manual merge form."
+                "Merge each checked group using the Merge options above."
             ),
         ):
             _run_auto_merge(
                 selected,
-                backup_wavs=backup_wavs,
-                overwrite=overwrite,
-                delete_originals=delete_originals,
-                apply_preprocessing=apply_preprocessing,
+                backup_wavs=options["backup_wavs"],
+                overwrite=options["overwrite"],
+                delete_originals=options["delete_originals"],
+                apply_preprocessing=options["apply_preprocessing"],
             )
 
     if hidden:
@@ -386,7 +433,12 @@ def _render_auto_merge_results(results: list[dict]) -> None:
 
 
 @st.fragment
-def _render_section_select(recordings: List[Path], *, deps_ready: bool) -> None:
+def _render_section_select(
+    recordings: List[Path],
+    *,
+    deps_ready: bool,
+    options: dict[str, bool],
+) -> None:
     st.subheader("1. Select and order files")
     st.caption(
         "Choose files below, then use ↑ / ↓ to set merge order. "
@@ -469,7 +521,9 @@ def _render_section_select(recordings: List[Path], *, deps_ready: bool) -> None:
         return
 
     _render_output_and_run(
-        [Path(p) for p in merged_order], deps_ready=deps_ready
+        [Path(p) for p in merged_order],
+        deps_ready=deps_ready,
+        options=options,
     )
 
 
@@ -493,7 +547,12 @@ def _render_rename_section(merged_order: List[str], all_labels: dict[str, str]) 
         )
 
 
-def _render_output_and_run(ordered_paths: List[Path], *, deps_ready: bool) -> None:
+def _render_output_and_run(
+    ordered_paths: List[Path],
+    *,
+    deps_ready: bool,
+    options: dict[str, bool],
+) -> None:
     st.subheader("2. Output options")
 
     date_prefix = extract_date_prefix(ordered_paths[0])
@@ -508,54 +567,14 @@ def _render_output_and_run(ordered_paths: List[Path], *, deps_ready: bool) -> No
             "The .mp3 extension is added automatically if omitted."
         )),
     )
-
-    col_backup, col_overwrite = st.columns(2)
-    with col_backup:
-        backup_wavs = st.checkbox(
-            "Backup originals to storage before merging",
-            value=st.session_state.get("audio_merge_backup", True),
-            key="audio_merge_backup",
-            help=widget_help((
-                "Copies each source file to the WAV storage directory "
-                "before merging."
-            )),
-        )
-    with col_overwrite:
-        overwrite = st.checkbox(
-            "Overwrite output if it already exists",
-            value=st.session_state.get("audio_merge_overwrite", False),
-            key="audio_merge_overwrite",
-            help=widget_help("Replace an existing merged file at the output path."),
-        )
-
-    apply_preprocessing = st.checkbox(
-        "Preprocess files while merging",
-        value=st.session_state.get("audio_merge_preprocess", False),
-        key="audio_merge_preprocess",
-        help=widget_help((
-            "Apply current preprocessing defaults (mono, resample, denoise, "
-            "normalize, and so on) to each file before concatenating. "
-            "Off by default — you can also run Preprocessing separately "
-            "after the merge."
-        )),
+    st.caption(
+        "Backup / overwrite / preprocess / delete-originals use the Merge options above."
     )
 
-    delete_originals = st.checkbox(
-        "Delete originals once merge is complete",
-        value=st.session_state.get("audio_merge_delete_originals", False),
-        key="audio_merge_delete_originals",
-        help=widget_help((
-            "Permanently remove the source files after a successful merge, "
-            "including any transcripts already linked to those parts. "
-            "The merged output is kept. Prefer leaving Backup enabled so "
-            "copies remain in storage."
-        )),
-    )
-    if delete_originals and not backup_wavs:
-        st.warning(
-            "Originals will be deleted with no storage backup. "
-            "Enable backup above unless you are sure you do not need the parts."
-        )
+    backup_wavs = options["backup_wavs"]
+    overwrite = options["overwrite"]
+    delete_originals = options["delete_originals"]
+    apply_preprocessing = options["apply_preprocessing"]
 
     st.subheader("3. Run")
 

@@ -219,6 +219,16 @@ def test_merge_empty_recordings_shows_info(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(
         mod, "render_merge_profiles_editor", lambda: []
     )
+    monkeypatch.setattr(
+        mod,
+        "_render_shared_merge_options",
+        lambda: {
+            "backup_wavs": True,
+            "overwrite": False,
+            "delete_originals": False,
+            "apply_preprocessing": False,
+        },
+    )
 
     mod.render_merge_panel(deps_ready=True)
 
@@ -270,6 +280,16 @@ def test_merge_with_recordings_renders_section(monkeypatch, tmp_path: Path) -> N
     )
     monkeypatch.setattr(mod, "_render_detected_serial_groups", lambda *_a, **_k: None)
     monkeypatch.setattr(mod, "render_merge_profiles_editor", lambda: [])
+    monkeypatch.setattr(
+        mod,
+        "_render_shared_merge_options",
+        lambda: {
+            "backup_wavs": True,
+            "overwrite": False,
+            "delete_originals": False,
+            "apply_preprocessing": False,
+        },
+    )
 
     mod.render_merge_panel(deps_ready=True)
 
@@ -298,7 +318,9 @@ def test_merge_panel_exposes_profiles_and_auto_merge() -> None:
     assert "_run_auto_merge" in merge_src
     assert "Merge source profiles" in editor_src
     assert "Day window" in editor_src
-    assert "Within time period (hours)" in editor_src
+    assert "Within time period (minutes)" in editor_src
+    assert "Merge options" in merge_src
+    assert "_render_shared_merge_options" in merge_src
 
 
 @pytest.mark.unit
@@ -312,7 +334,15 @@ def test_auto_merge_invokes_controller_per_group(monkeypatch, tmp_path: Path) ->
 
     class _Ctrl:
         def run_merge(self, request, progress=None):
-            calls.append(list(request.file_paths))
+            calls.append(
+                {
+                    "paths": list(request.file_paths),
+                    "delete_originals": request.delete_originals,
+                    "apply_preprocessing": request.apply_preprocessing,
+                    "overwrite": request.overwrite,
+                    "backup_wavs": request.backup_wavs,
+                }
+            )
             return MergeResult(
                 success=True,
                 output_path=tmp_path / f"out_{len(calls)}.mp3",
@@ -370,15 +400,19 @@ def test_auto_merge_invokes_controller_per_group(monkeypatch, tmp_path: Path) ->
 
     mod._run_auto_merge(
         groups,
-        backup_wavs=True,
-        overwrite=False,
-        delete_originals=False,
-        apply_preprocessing=False,
+        backup_wavs=False,
+        overwrite=True,
+        delete_originals=True,
+        apply_preprocessing=True,
     )
 
     assert len(calls) == 2
-    assert calls[0] == [a1, a2]
-    assert calls[1] == [b1, b2]
+    assert calls[0]["paths"] == [a1, a2]
+    assert calls[1]["paths"] == [b1, b2]
+    assert calls[0]["delete_originals"] is True
+    assert calls[0]["apply_preprocessing"] is True
+    assert calls[0]["overwrite"] is True
+    assert calls[0]["backup_wavs"] is False
     assert DummyHomeStreamlit.session_state.get(mod._KEY_AUTO_RESULTS)
 
 

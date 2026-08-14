@@ -157,6 +157,58 @@ class TestConfigurableWindows:
         ]
 
 
+class TestSafeguardsAndPriority:
+    def test_skips_merged_outputs(self) -> None:
+        paths = [
+            _p("20251230160235_1.wav"),
+            _p("20251230160235_2.wav"),
+            _p("20251230160235_merged.mp3"),
+            _p("WhatsApp Audio 2026-08-12 at 13.11.09_merged.mp3"),
+        ]
+        groups = detect_merge_groups(paths)
+        assert len(groups) == 1
+        assert all("_merged" not in p.name for g in groups for p in g.ordered_paths)
+
+    def test_profile_priority_serial_before_regex(self) -> None:
+        paths = [
+            _p("meeting_part1.mp3"),
+            _p("meeting_part2.mp3"),
+        ]
+        serial = next(p for p in builtin_merge_source_profiles() if p.id == "serial_parts")
+        regex = MergeSourceProfile(
+            id="meeting_regex",
+            name="Meeting regex",
+            enabled=True,
+            builtin=False,
+            match=MatchSpec(kind="filename_regex", patterns=(r"meeting",)),
+            grouping=GroupingSpec(
+                mode="time_window", same_day_days=0, max_gap_hours=0.0
+            ),
+            priority=1,  # higher priority number loses; lower wins — set lower than serial? serial is 10
+        )
+        # Give regex lower priority number so it would win if it produced a group,
+        # but serial rule confidence/order should still claim part suffixes.
+        regex = replace(regex, priority=5)
+        groups = detect_merge_groups(paths, profiles=[serial, regex])
+        assert len(groups) == 1
+        assert groups[0].matched_rule == "part_suffix"
+        assert groups[0].profile_id == "serial_parts"
+
+    def test_same_day_days_multi_day_window(self) -> None:
+        paths = [
+            _p("WhatsApp Audio 2026-08-12 at 13.11.09.mp3"),
+            _p("WhatsApp Audio 2026-08-13 at 13.15.00.mp3"),
+        ]
+        # same day only → no group (different days, 20 min wouldn't matter across days for gap alone
+        # but consecutive gap across days is large anyway)
+        assert detect_merge_groups(paths) == []
+
+        profile = _whatsapp_profile(same_day_days=2, max_gap_hours=48.0)
+        groups = detect_merge_groups(paths, profiles=[profile])
+        assert len(groups) == 1
+        assert len(groups[0].ordered_paths) == 2
+
+
 class TestPersistence:
     def test_save_load_round_trip(self, tmp_path: Path) -> None:
         path = tmp_path / "audio_merge_profiles.json"

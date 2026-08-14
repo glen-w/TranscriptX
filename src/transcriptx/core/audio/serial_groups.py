@@ -13,7 +13,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, Literal
+from typing import Any, Iterable, Literal
 
 from transcriptx.core.utils._path_core import strip_duplicate_filename_suffix
 from transcriptx.core.utils.rename.smart_name import (

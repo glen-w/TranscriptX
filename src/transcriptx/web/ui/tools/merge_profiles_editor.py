@@ -79,7 +79,11 @@ def _draft_to_profiles(rows: list[dict]) -> list[MergeSourceProfile]:
                 "grouping": {
                     "mode": str(row.get("grouping_mode") or "time_window"),
                     "same_day_days": int(row.get("same_day_days") or 0),
-                    "max_gap_hours": float(row.get("max_gap_hours") or 0.0),
+                    "max_gap_hours": (
+                        float(row["max_gap_hours"])
+                        if row.get("max_gap_hours") is not None
+                        else (20.0 / 60.0)
+                    ),
                 },
                 "priority": int(row.get("priority") or 100),
             }
@@ -100,10 +104,12 @@ def render_merge_profiles_editor() -> list[MergeSourceProfile]:
     with st.expander("Merge source profiles", expanded=False):
         st.caption(
             "Configure how recordings are grouped for suggestions and auto-merge. "
-            "Day and hours sliders apply to time-window profiles "
-            "(0 hours = unlimited gap). Serial parts always merge by filename index. "
-            "Examples: WhatsApp same day within 2 hours; Zoom full day; "
-            "Telegram same day within 6 hours."
+            "Edits apply to detection immediately; Save writes "
+            "`audio_merge_profiles.json`. "
+            "Day and minutes sliders apply to time-window profiles "
+            "(0 minutes = unlimited gap). Serial parts always merge by filename index. "
+            "Examples of user settings: WhatsApp same day within 2 hours; "
+            "Zoom full day; Telegram same day within 6 hours."
         )
 
         to_remove: list[int] = []
@@ -184,18 +190,26 @@ def render_merge_profiles_editor() -> list[MergeSourceProfile]:
                             ),
                         )
                     with hcol:
-                        row["max_gap_hours"] = st.slider(
-                            "Within time period (hours)",
-                            min_value=0.0,
-                            max_value=24.0,
-                            value=float(row.get("max_gap_hours") or 0.0),
-                            step=0.25,
-                            key=f"{prefix}_hours",
+                        # Edit as minutes so the 20-minute builtin default is exact.
+                        raw_hours = row.get("max_gap_hours")
+                        if raw_hours is None:
+                            default_minutes = 20
+                        else:
+                            default_minutes = int(round(float(raw_hours) * 60))
+                        minutes = st.slider(
+                            "Within time period (minutes)",
+                            min_value=0,
+                            max_value=24 * 60,
+                            value=max(0, min(24 * 60, default_minutes)),
+                            step=1,
+                            key=f"{prefix}_minutes",
                             help=widget_help(
                                 "Max gap between consecutive files. "
-                                "0 = unlimited (full day when day window is set)."
+                                "0 = unlimited (full day when day window is set). "
+                                "Builtin voice-note default is 20 minutes."
                             ),
                         )
+                        row["max_gap_hours"] = float(minutes) / 60.0
                 row["priority"] = int(
                     st.number_input(
                         "Priority (lower wins)",
