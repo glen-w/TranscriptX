@@ -1,7 +1,7 @@
 # TranscriptX Makefile
 # Main targets for documentation and development
 
-.PHONY: docs-gen docs docs-clean help test-smoke test-smoke-nlp test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance test-workspaces test-theme-c-browser workspaces-build docker-smoke run clean-test-artifacts perf-envelopes
+.PHONY: docs-gen docs docs-clean help test-smoke test-smoke-nlp test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance test-gui-e2e test-workspaces test-theme-c-browser workspaces-build docker-smoke run clean-test-artifacts perf-envelopes
 
 help:
 	@echo "TranscriptX Makefile"
@@ -33,6 +33,7 @@ help:
 	@echo "  test-config-coverage  Config package coverage gate (≥85% on core.config + utils.config)"
 	@echo "  test-release-only  Run release-only packaging/install smoke"
 	@echo "  test-gui-acceptance  Streamlit AppTest GUI acceptance journeys (heavy)"
+	@echo "  test-gui-e2e     Playwright live-Streamlit GUI E2E (workflows 1–3; heavy)"
 	@echo "  docker-smoke     Run Docker web launcher smoke test (build + --help)"
 	@echo ""
 	@echo "Maintenance:"
@@ -76,11 +77,15 @@ test-smoke-nlp:
 
 test-fast:
 	@echo "Running fast core tests (Gate B)..."
-	@pytest -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow and not gui_acceptance"
+	@pytest -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow and not gui_acceptance and not gui_e2e"
 
 test-gui-acceptance:
 	@echo "Running Streamlit AppTest GUI acceptance journeys..."
 	@pytest --override-ini addopts="-ra --strict-markers --strict-config --import-mode=importlib --verbose --tb=short --timeout=300 --timeout-method=thread" -m "gui_acceptance and not quarantined"
+
+test-gui-e2e:
+	@echo "Running Playwright live-Streamlit GUI E2E (workflows 1–3)..."
+	@pytest --override-ini addopts="-ra --strict-markers --strict-config --import-mode=importlib --verbose --tb=short --timeout=600 --timeout-method=thread" tests/e2e_gui -m "gui_e2e and not quarantined"
 
 test-heavy:
 	@echo "Running heavy profile (excluding quarantined)..."
@@ -113,7 +118,7 @@ test-all:
 test-coverage:
 	@echo "Running default-marker suite with coverage (see .coveragerc fail_under)..."
 	@pytest --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -q \
-		-m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow and not gui_acceptance"
+		-m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow and not gui_acceptance and not gui_e2e"
 
 test-config-coverage:
 	@echo "Running config-scoped coverage gate (≥85% on transcriptx.core.config + utils.config)..."

@@ -7,7 +7,8 @@ Authority: tests/README.md
 **Not a dumping ground:** only AppTest-blind items. Navigation, validation text, stubbed service success/error, and library/group/profile persistence are covered by AppTest.
 
 **Automated lane:** `make test-gui-acceptance` (marker `gui_acceptance`, also selected by `make test-heavy`).  
-**Policy:** No Playwright for the Streamlit GUI before 1.0; reconsider post-1.0 if this list stays release-critical or repeatedly catches regressions.
+**Browser E2E lane (opt-in):** `make test-gui-e2e` (marker `gui_e2e`) drives the live Streamlit GUI with Playwright for documented workflows 1–3. AppTest remains the primary structural acceptance suite; Playwright complements AppTest-blind browser behaviour (e.g. real file uploader).  
+**Policy:** Playwright GUI E2E is an **opt-in heavy lane**, not part of PR smoke/fast gates. Theme C CCv2 browser checks remain under `make test-theme-c-browser`.
 
 ---
 
@@ -23,7 +24,7 @@ Authority: tests/README.md
 
 | # | Item | Pass criteria |
 |---|------|----------------|
-| R1 | **Import file picker** | OS / Streamlit uploader chooses a real file; admit succeeds; Library shows the new transcript |
+| R1 | **Import file picker** | OS / Streamlit uploader chooses a real file; admit succeeds; Library shows the new transcript. Partially covered by `make test-gui-e2e` workflow 1 (`test_first_analysis_import_run_overview`). |
 | R2 | **Export browser download** | Create Export → browser download / save dialog yields a usable zip (not only in-app download widget presence) |
 | R3 | **Export open-on-disk / `file://`** (if offered) | Opening the zip or index from the UI lands in the expected viewer without a broken path |
 | R4 | **Hover / focus reveal** | Sidebar / context-bar / action-menu hover or focus reveals match the intended labels (no clipped tooltips) |
@@ -39,5 +40,5 @@ Authority: tests/README.md
 
 - Full visual regression / accessibility snapshots
 - Real ML / Ollama / heavy model runs (core/integration lanes)
-- Playwright / Selenium GUI automation (deferred until post-1.0 reconsideration)
+- PR-gate Playwright / Selenium GUI automation (opt-in via `make test-gui-e2e` only)
 - Anything already asserted by `tests/web/gui_acceptance/`
