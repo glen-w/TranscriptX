@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import List
 
@@ -9,10 +10,12 @@ import streamlit as st
 
 from transcriptx.app.controllers.merge_controller import MergeController
 from transcriptx.app.models.requests import MergeRequest
+from transcriptx.app.models.results import MergeResult
 from transcriptx.app.progress import make_initial_snapshot
+from transcriptx.core.audio.merge_profiles import MergeSourceProfile
 from transcriptx.core.audio.serial_groups import (
     SerialGroup,
-    detect_serial_audio_groups,
+    detect_merge_groups,
     partition_dismissed_serial_groups,
 )
 from transcriptx.core.audio.utils import get_audio_duration
@@ -29,6 +32,7 @@ from transcriptx.web.navigation import (
     navigate_to_transcribe_with_paths,
 )
 from transcriptx.web.services.recordings_service import RecordingsService
+from transcriptx.web.ui.tools.merge_profiles_editor import render_merge_profiles_editor
 from transcriptx.web.ui.tools.shared import (
     recordings_path_label,
     render_empty_recordings_hint,
@@ -40,7 +44,9 @@ _KEY_ORDERED_PATHS = "audio_merge_ordered_paths"
 _KEY_HIDDEN_SERIAL = "audio_merge_hidden_serial_keys"
 _KEY_RUN_IN_PROGRESS = "audio_merge_run_in_progress"
 _KEY_RESULT = "audio_merge_result"
+_KEY_AUTO_RESULTS = "audio_merge_auto_results"
 _STAGE_COUNT = 4
+_SAFE_NAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
 def hidden_serial_keys_from_session(session: dict) -> list[str]:
@@ -74,12 +80,16 @@ def render_merge_panel(*, deps_ready: bool = True) -> None:
         "Preprocessing is optional and off by default."
     )
 
+    profiles = render_merge_profiles_editor()
+
     recordings = render_upload_and_refresh(uploader_key="audio_merge_uploader")
     if not recordings:
         render_empty_recordings_hint()
         return
 
-    _render_detected_serial_groups(recordings)
+    _render_detected_serial_groups(
+        recordings, profiles=profiles, deps_ready=deps_ready
+    )
     _render_section_select(recordings, deps_ready=deps_ready)
 
 
@@ -105,8 +115,43 @@ def _format_merge_row_meta(path: Path) -> str:
     return "  " + " · ".join(parts) if parts else ""
 
 
-def _render_detected_serial_groups(recordings: List[Path]) -> None:
-    groups = detect_serial_audio_groups(recordings)
+def _safe_filename_piece(value: str) -> str:
+    cleaned = _SAFE_NAME_RE.sub("_", (value or "").strip()).strip("._")
+    return cleaned[:80] or "group"
+
+
+def _group_output_filename(group: SerialGroup) -> str:
+    date_prefix = extract_date_prefix(group.ordered_paths[0])
+    profile_bit = _safe_filename_piece(group.profile_id or group.profile_name)
+    base_bit = _safe_filename_piece(group.base_key)
+    stem = f"{profile_bit}_{base_bit}_merged" if profile_bit else f"{base_bit}_merged"
+    if date_prefix and not stem.startswith(date_prefix):
+        return f"{date_prefix}{stem}.mp3"
+    return f"{stem}.mp3"
+
+
+def _unique_output_filename(desired: str, used: set[str]) -> str:
+    name = desired if desired.endswith(".mp3") else f"{desired}.mp3"
+    if name not in used and not (Path(RECORDINGS_DIR) / name).exists():
+        used.add(name)
+        return name
+    stem = Path(name).stem
+    n = 2
+    while True:
+        candidate = f"{stem}_{n}.mp3"
+        if candidate not in used and not (Path(RECORDINGS_DIR) / candidate).exists():
+            used.add(candidate)
+            return candidate
+        n += 1
+
+
+def _render_detected_serial_groups(
+    recordings: List[Path],
+    *,
+    profiles: list[MergeSourceProfile],
+    deps_ready: bool,
+) -> None:
+    groups = detect_merge_groups(recordings, profiles=profiles)
     if not groups:
         return
 
@@ -116,15 +161,50 @@ def _render_detected_serial_groups(recordings: List[Path]) -> None:
     if not visible and not hidden:
         return
 
+    auto_results = st.session_state.get(_KEY_AUTO_RESULTS)
+    if auto_results:
+        _render_auto_merge_results(auto_results)
+
     if visible:
-        st.subheader("Detected serial recordings")
+        st.subheader("Detected groups")
         st.caption(
             "These files look like parts of one recording or a burst of voice notes. "
-            "Use a suggested group to pre-fill merge order, hide false matches, "
-            "or select files manually below."
+            "Tune grouping under Merge source profiles. "
+            "Use a suggested group to pre-fill merge order, auto-merge selected "
+            "groups, hide false matches, or select files manually below."
         )
+        selected: list[SerialGroup] = []
         for group in visible:
-            _render_serial_group_card(group)
+            checked = _render_serial_group_card(group)
+            if checked:
+                selected.append(group)
+
+        backup_wavs = bool(st.session_state.get("audio_merge_backup", True))
+        overwrite = bool(st.session_state.get("audio_merge_overwrite", False))
+        delete_originals = bool(
+            st.session_state.get("audio_merge_delete_originals", False)
+        )
+        apply_preprocessing = bool(
+            st.session_state.get("audio_merge_preprocess", False)
+        )
+
+        if st.button(
+            f"Auto-merge selected groups ({len(selected)})",
+            type="primary",
+            key="audio_merge_auto_run",
+            disabled=not deps_ready or not selected,
+            help=widget_help(
+                "Merge each checked group with the current backup / overwrite / "
+                "preprocess / delete-originals options from the manual merge form."
+            ),
+        ):
+            _run_auto_merge(
+                selected,
+                backup_wavs=backup_wavs,
+                overwrite=overwrite,
+                delete_originals=delete_originals,
+                apply_preprocessing=apply_preprocessing,
+            )
 
     if hidden:
         with st.expander(f"Hidden suggestions ({len(hidden)})", expanded=False):
@@ -134,9 +214,10 @@ def _render_detected_serial_groups(recordings: List[Path]) -> None:
             for group in hidden:
                 col_label, col_restore = st.columns([8, 2])
                 with col_label:
+                    label = group.profile_name or group.matched_rule
                     st.text(
                         f"{group.base_key} · {len(group.ordered_paths)} files · "
-                        f"{group.matched_rule}"
+                        f"{label}"
                     )
                 with col_restore:
                     if st.button(
@@ -150,7 +231,7 @@ def _render_detected_serial_groups(recordings: List[Path]) -> None:
                         st.rerun()
 
 
-def _render_serial_group_card(group: SerialGroup) -> None:
+def _render_serial_group_card(group: SerialGroup) -> bool:
     extension = group.ordered_paths[0].suffix.lower() if group.ordered_paths else ""
     total_duration = 0.0
     duration_known = True
@@ -161,10 +242,16 @@ def _render_serial_group_card(group: SerialGroup) -> None:
             break
         total_duration += dur
 
+    profile_label = group.profile_name or "Profile"
     with st.container(border=True):
+        selected = st.checkbox(
+            f"Include in auto-merge · {profile_label}",
+            value=True,
+            key=f"audio_merge_select_group_{group.dismissal_key}",
+        )
         st.markdown(
             f"**{group.base_key}** · {len(group.ordered_paths)} files · "
-            f"`{extension}` · {group.rule_label} · {group.confidence}"
+            f"`{extension}` · {profile_label} · {group.rule_label} · {group.confidence}"
         )
         if duration_known:
             st.caption(
@@ -197,6 +284,105 @@ def _render_serial_group_card(group: SerialGroup) -> None:
                     st.session_state, group.dismissal_key
                 )
                 st.rerun()
+        return selected
+
+
+def _run_auto_merge(
+    groups: list[SerialGroup],
+    *,
+    backup_wavs: bool,
+    overwrite: bool,
+    delete_originals: bool,
+    apply_preprocessing: bool,
+) -> None:
+    ctrl = MergeController()
+    used_names: set[str] = set()
+    results: list[dict] = []
+    deleted_paths: set[Path] = set()
+
+    st.session_state[_KEY_RUN_IN_PROGRESS] = True
+    st.session_state.pop(_KEY_RESULT, None)
+    try:
+        with st.status(
+            f"Auto-merging {len(groups)} group(s)…", expanded=True
+        ) as status_widget:
+            for group in groups:
+                remaining = [
+                    path
+                    for path in group.ordered_paths
+                    if path not in deleted_paths and path.exists()
+                ]
+                if len(remaining) < 2:
+                    results.append(
+                        {
+                            "group": group.base_key,
+                            "result": MergeResult(
+                                success=False,
+                                errors=[
+                                    "Skipped: fewer than 2 source files remain "
+                                    "(earlier delete-originals may have removed them)."
+                                ],
+                            ),
+                        }
+                    )
+                    continue
+
+                output_name = _unique_output_filename(
+                    _group_output_filename(group), used_names
+                )
+                request = MergeRequest(
+                    file_paths=remaining,
+                    output_dir=Path(RECORDINGS_DIR),
+                    output_filename=output_name,
+                    backup_wavs=backup_wavs,
+                    overwrite=overwrite,
+                    delete_originals=delete_originals,
+                    apply_preprocessing=apply_preprocessing,
+                )
+                try:
+                    result = ctrl.run_merge(request)
+                except Exception as exc:
+                    result = MergeResult(success=False, errors=[str(exc)])
+                results.append({"group": group.base_key, "result": result})
+                if result.success and delete_originals:
+                    for path in remaining:
+                        deleted_paths.add(path)
+            ok = sum(1 for item in results if item["result"].success)
+            status_widget.update(
+                label=f"Auto-merge finished ({ok}/{len(results)} succeeded)",
+                state="complete" if ok else "error",
+            )
+    finally:
+        st.session_state[_KEY_RUN_IN_PROGRESS] = False
+
+    st.session_state[_KEY_AUTO_RESULTS] = results
+    st.rerun()
+
+
+def _render_auto_merge_results(results: list[dict]) -> None:
+    st.subheader("Auto-merge results")
+    for item in results:
+        result: MergeResult = item["result"]
+        label = item.get("group") or "group"
+        if result.success:
+            name = result.output_path.name if result.output_path else "merged output"
+            st.success(f"**{label}** → {name} ({result.files_merged} files)")
+            if result.files_deleted or result.transcripts_deleted:
+                parts = []
+                if result.files_deleted:
+                    parts.append(f"{result.files_deleted} original(s)")
+                if result.transcripts_deleted:
+                    parts.append(f"{result.transcripts_deleted} transcript(s)")
+                st.caption("Deleted " + " and ".join(parts) + ".")
+            for warning in result.warnings:
+                st.warning(warning)
+        else:
+            st.error(f"**{label}** failed")
+            for err in result.errors:
+                st.error(err)
+    if st.button("Clear auto-merge results", key="audio_merge_clear_auto"):
+        st.session_state.pop(_KEY_AUTO_RESULTS, None)
+        st.rerun()
 
 
 @st.fragment

@@ -74,6 +74,7 @@ Device stems understood include `RYYYYMMDD-HHMMSS`, `YYYYMMDDHHMMSS`, and `YYMMD
 | **In-config semantic profiles** | Mapping `analysis.semantic_similarity_profiles` (`fast` / `balanced` / `deep`) | Advanced config / code — shares activation key naming with disk profiles; different store |
 | **UI layout profiles** | Ordered blocks for Overview / Insights | Settings → Dashboard Builder (`profiles/ui_layouts/`) — not Charts overview |
 | **STT command profiles** | Named JSON under `profiles/` | Transcribe Audio |
+| **Merge source profile** | Match + day/gap rules for Tools → Merge suggestions / auto-merge | Merge tab expander; `{config_dir}/audio_merge_profiles.json` |
 | **Speaker profile** | Longitudinal identity (+ optional voice) | Settings → Speakers — **out of scope** for knob docs |
 
 Tracked files under repo `data/profiles/*/default.json` are **fixtures / allowlisted samples**. Runtime defaults are virtual (dataclass/Pydantic); ProfileManager does not treat disk `default` as loadable user presets. Runtime profiles live under `{config_dir}/profiles/` (override with `TRANSCRIPTX_PROFILES_DIR`).

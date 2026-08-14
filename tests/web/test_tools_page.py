@@ -216,6 +216,9 @@ def test_merge_empty_recordings_shows_info(monkeypatch, tmp_path: Path) -> None:
         mod, "_render_section_select", lambda *_a, **_k: section_calls.append(True)
     )
     monkeypatch.setattr(mod, "_render_detected_serial_groups", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        mod, "render_merge_profiles_editor", lambda: []
+    )
 
     mod.render_merge_panel(deps_ready=True)
 
@@ -266,6 +269,7 @@ def test_merge_with_recordings_renders_section(monkeypatch, tmp_path: Path) -> N
         lambda recs, **_k: section_calls.append(list(recs)),
     )
     monkeypatch.setattr(mod, "_render_detected_serial_groups", lambda *_a, **_k: None)
+    monkeypatch.setattr(mod, "render_merge_profiles_editor", lambda: [])
 
     mod.render_merge_panel(deps_ready=True)
 
@@ -280,6 +284,102 @@ def test_merge_panel_has_delete_originals_option() -> None:
     source = Path(mod.__file__).read_text(encoding="utf-8")
     assert "Delete originals once merge is complete" in source
     assert "delete_originals=delete_originals" in source
+
+
+@pytest.mark.unit
+def test_merge_panel_exposes_profiles_and_auto_merge() -> None:
+    import transcriptx.web.ui.tools.merge_panel as mod
+    import transcriptx.web.ui.tools.merge_profiles_editor as editor
+
+    merge_src = Path(mod.__file__).read_text(encoding="utf-8")
+    editor_src = Path(editor.__file__).read_text(encoding="utf-8")
+    assert "render_merge_profiles_editor" in merge_src
+    assert "Auto-merge selected groups" in merge_src
+    assert "_run_auto_merge" in merge_src
+    assert "Merge source profiles" in editor_src
+    assert "Day window" in editor_src
+    assert "Within time period (hours)" in editor_src
+
+
+@pytest.mark.unit
+def test_auto_merge_invokes_controller_per_group(monkeypatch, tmp_path: Path) -> None:
+    import transcriptx.web.ui.tools.merge_panel as mod
+    from transcriptx.app.models.results import MergeResult
+    from transcriptx.core.audio.serial_groups import SerialGroup
+
+    DummyHomeStreamlit.session_state = {}
+    calls: list = []
+
+    class _Ctrl:
+        def run_merge(self, request, progress=None):
+            calls.append(list(request.file_paths))
+            return MergeResult(
+                success=True,
+                output_path=tmp_path / f"out_{len(calls)}.mp3",
+                files_merged=len(request.file_paths),
+            )
+
+    class _Status:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+        def update(self, **_k):
+            return None
+
+    class _St(DummyHomeStreamlit):
+        @staticmethod
+        def status(*_a, **_k):
+            return _Status()
+
+        @staticmethod
+        def rerun(*_a, **_k):
+            return None
+
+    a1 = tmp_path / "a1.wav"
+    a2 = tmp_path / "a2.wav"
+    b1 = tmp_path / "b1.wav"
+    b2 = tmp_path / "b2.wav"
+    for path in (a1, a2, b1, b2):
+        path.write_bytes(b"x")
+
+    groups = [
+        SerialGroup(
+            base_key="A",
+            ordered_paths=(a1, a2),
+            confidence="high",
+            matched_rule="timestamp_suffix",
+            profile_id="serial_parts",
+            profile_name="Serial parts",
+        ),
+        SerialGroup(
+            base_key="B",
+            ordered_paths=(b1, b2),
+            confidence="medium",
+            matched_rule="voice_note_run",
+            profile_id="whatsapp",
+            profile_name="WhatsApp",
+        ),
+    ]
+
+    monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(mod, "MergeController", lambda: _Ctrl())
+    monkeypatch.setattr(mod, "RECORDINGS_DIR", tmp_path)
+
+    mod._run_auto_merge(
+        groups,
+        backup_wavs=True,
+        overwrite=False,
+        delete_originals=False,
+        apply_preprocessing=False,
+    )
+
+    assert len(calls) == 2
+    assert calls[0] == [a1, a2]
+    assert calls[1] == [b1, b2]
+    assert DummyHomeStreamlit.session_state.get(mod._KEY_AUTO_RESULTS)
 
 
 @pytest.mark.unit
