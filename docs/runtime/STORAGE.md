@@ -147,6 +147,10 @@ This model separates:
 - **Application state and cache**: data_dir (outputs, preprocessing, cache, state).
 - **Backups and reproducibility artefacts**: under data_dir/backups/.
 
+### Full-workspace backup
+
+Operators can pack and restore the authoritative workspace (transcripts, config, durable data) as a portable ZIP with role-root remapping. Normative rules: [contracts/workspace-backup.md](../contracts/workspace-backup.md). Operator guide: [backup_and_restore.md](../backup_and_restore.md). Default archives live under `data_dir/backups/workspace/`.
+
 ---
 
 ## Renames

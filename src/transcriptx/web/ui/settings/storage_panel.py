@@ -1,13 +1,21 @@
-"""Settings storage roots + bulk analysis-run cleanup UI."""
+"""Settings storage roots + workspace backup + bulk analysis-run cleanup UI."""
 
 from __future__ import annotations
 
 import uuid
 from collections import defaultdict
+from pathlib import Path
 
 import streamlit as st
 
 from transcriptx.app.controllers.settings_controller import SettingsController
+from transcriptx.app.models.errors import BackupError
+from transcriptx.core.utils.paths import PATHS
+from transcriptx.services.workspace_backup import (
+    BackupOptions,
+    WorkspaceBackupService,
+    default_backup_dest,
+)
 from transcriptx.web.services.run_cleanup import (
     CONFIRM_DELETE_ALL,
     CONFIRM_DELETE_OLD,
@@ -320,14 +328,140 @@ def _render_cleanup_section() -> None:
         st.rerun()
 
 
+def _render_workspace_backup_section() -> None:
+    st.subheader("Workspace backup")
+    st.caption(
+        "Full-workspace ZIP (transcripts + durable data + config). "
+        "Writes under `data/backups/workspace/`. Restore **replaces** the current workspace. "
+        "Large archives: prefer `scripts/workspace_backup.py`. "
+        "Guide: docs/backup_and_restore.md. Archives may contain PII and voice evidence."
+    )
+    include_recordings = st.checkbox(
+        "Include recordings",
+        value=False,
+        key="workspace_backup_include_recordings",
+        help=widget_help("Also pack TRANSCRIPTX_RECORDINGS_DIR (skips imports/ staging)."),
+    )
+    include_outputs = st.checkbox(
+        "Include outputs",
+        value=False,
+        key="workspace_backup_include_outputs",
+        help=widget_help("Also pack TRANSCRIPTX_OUTPUT_DIR (rebuildable analysis runs)."),
+    )
+    if st.button("Create backup", key="workspace_backup_create"):
+        try:
+            dest = default_backup_dest(PATHS)
+            result = WorkspaceBackupService().create_backup(
+                PATHS,
+                dest,
+                BackupOptions(
+                    include_recordings=bool(include_recordings),
+                    include_outputs=bool(include_outputs),
+                ),
+            )
+            counts = result.manifest.get("counts") or {}
+            st.success(
+                f"Backup written to `{result.archive_path}` "
+                f"(transcripts={counts.get('transcripts')}, files={counts.get('files')})."
+            )
+        except BackupError as exc:
+            st.error(str(exc))
+
+    st.markdown("##### Restore")
+    st.caption(
+        "Provide a path to a workspace backup ZIP on this machine. "
+        "Verify or dry-run first. A real restore writes a safety ZIP, then **replaces** "
+        "transcripts, durable data, and config. After restore, check System → Diagnostics."
+    )
+    restore_path = st.text_input(
+        "Backup archive path",
+        value="",
+        key="workspace_backup_restore_path",
+        placeholder=str(
+            PATHS.data_dir / "backups" / "workspace" / "transcriptx-workspace-….zip"
+        ),
+    )
+    verify_col, dry_col = st.columns(2)
+    with verify_col:
+        if st.button("Verify archive", key="workspace_backup_verify"):
+            if not restore_path.strip():
+                st.error("Enter the path to a backup ZIP.")
+            else:
+                try:
+                    result = WorkspaceBackupService().verify_backup(
+                        Path(restore_path.strip())
+                    )
+                    counts = result.manifest.get("counts") or {}
+                    st.success(
+                        "Archive verified "
+                        f"(transcripts={counts.get('transcripts')}, "
+                        f"files={counts.get('files')})."
+                    )
+                    for message in result.messages:
+                        st.caption(message)
+                except BackupError as exc:
+                    st.error(str(exc))
+    with dry_col:
+        if st.button("Dry-run restore", key="workspace_backup_dry_run"):
+            if not restore_path.strip():
+                st.error("Enter the path to a backup ZIP.")
+            else:
+                try:
+                    result = WorkspaceBackupService().restore_backup(
+                        PATHS,
+                        Path(restore_path.strip()),
+                        safety=False,
+                        dry_run=True,
+                    )
+                    st.info("Dry-run complete — no changes written.")
+                    for message in result.messages:
+                        st.caption(message)
+                except BackupError as exc:
+                    st.error(str(exc))
+    restore_confirm = st.checkbox(
+        "I understand this replaces transcripts, durable data, and config",
+        value=False,
+        key="workspace_backup_restore_confirm",
+    )
+    if st.button("Restore from backup", key="workspace_backup_restore"):
+        if not restore_confirm:
+            st.error("Confirm the replace checkbox before restoring.")
+        elif not restore_path.strip():
+            st.error("Enter the path to a backup ZIP.")
+        else:
+            try:
+                result = WorkspaceBackupService().restore_backup(
+                    PATHS,
+                    Path(restore_path.strip()),
+                    safety=True,
+                    dry_run=False,
+                )
+                for message in result.messages:
+                    st.caption(message)
+                if result.safety_archive is not None:
+                    st.info(f"Safety backup: `{result.safety_archive}`")
+                if result.ok:
+                    st.success(
+                        "Restore finished. Open System → Diagnostics to review status."
+                    )
+                else:
+                    st.error(
+                        "Restore finished with integrity issues — see messages above."
+                    )
+            except BackupError as exc:
+                st.error(str(exc))
+
+
 def render_storage_panel() -> None:
-    """Show configured storage root paths and cleanup controls."""
+    """Show configured storage root paths, workspace backup, and cleanup controls."""
     st.subheader("Storage roots")
     ctrl = SettingsController()
     roots = ctrl.get_storage_roots()
     for name, path in roots.items():
         st.text(f"{name}: {path}")
 
+    st.divider()
+    _render_workspace_backup_section()
     st.divider()
     _render_cleanup_section()
     st.divider()
