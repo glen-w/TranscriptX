@@ -43,3 +43,9 @@ class ArtifactReadError(AppError):
     """Failed to read or parse an artifact."""
 
     pass
+
+
+class BackupError(AppError):
+    """Workspace backup / restore failed or was refused."""
+
+    pass

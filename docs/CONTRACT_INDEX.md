@@ -13,6 +13,7 @@ Authority: contracts
 Concept → Authority:
 
 - **Storage** → `docs/runtime/STORAGE.md`
+- **Workspace backup / restore** → `docs/contracts/workspace-backup.md`
 - **Speaker profiles (longitudinal)** → `docs/contracts/speaker_profiles_v1.md`
 - **Speaker profiles voice phase (local matching)** → `docs/contracts/speaker_profiles_voice_v1.md`
 - **Speaker voice match index gate (Stage 9)** → `docs/dev/speaker_voice_match_index_gate.md`

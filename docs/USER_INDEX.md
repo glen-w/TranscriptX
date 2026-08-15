@@ -21,6 +21,7 @@ Curated entry points for people using TranscriptX (not repository historians).
 | [NOTICE](../NOTICE) | Third-party model / dataset notice |
 | [Known limitations](known_limitations.md) | User-facing limits (experimental, optional stacks, AI, privacy, EPUB, Speaker ID CCv2 rollback) |
 | [Export (ZIP / HTML / EPUB)](runtime/export.md) | Overview artifact export packages |
+| [Workspace backup / restore](backup_and_restore.md) | Full-workspace ZIP create / verify / restore |
 | [Using TranscriptX: five workflows](workflows/index.md) | Outcome-focused walkthroughs with screenshots |
 
 ## Reference
@@ -44,6 +45,7 @@ Prefer the [Contract index](CONTRACT_INDEX.md) for invariants. Key user-visible 
 
 - [Public surfaces](public_surfaces.md)
 - [Storage](runtime/STORAGE.md)
+- [Workspace backup](contracts/workspace-backup.md)
 - [Run outcomes](run_outcome_contract.md)
 - [Output layout](contracts/output-contract-v1.md)
 

@@ -56,6 +56,7 @@ This document defines which TranscriptX surfaces are **supported** and which are
 - Supported product path remains: external transcript → managed import → analysis.
 - Corpus helpers such as `scripts/whispermlx-missing.py` are documented user-facing scripts when referenced from runtime docs; they are not a replacement for managed import.
 - Audio **preprocess** / **merge** are available in the GUI under **System → Tools** (Preprocessing and Merge tabs), with CLI helpers `scripts/audio_preprocess.py` / `scripts/audio_merge.py` for automation. Documented in transcription docs; 1.x theme **G1** still decides invest in transcript-part stitching vs remove helpers ([ROADMAP.md](ROADMAP.md)).
+- **Workspace backup / restore** is available in the GUI under **Settings → Storage**, with helper script `scripts/workspace_backup.py` and Python API `transcriptx.services.workspace_backup` for large corpora. Normative rules: [contracts/workspace-backup.md](contracts/workspace-backup.md). This is **not** a `transcriptx <subcommand>` CLI.
 
 ## 2. Not supported surfaces / patterns
 
