@@ -150,7 +150,7 @@ jobs:
         run: bash scripts/secrets_check.sh
       - name: Stale refs + TODO gate
         run: bash scripts/release/stale_refs.sh
-      - name: Repo hygiene (strict subset: root allowlist + archive banners)
+      - name: "Repo hygiene (strict subset: root allowlist + archive banners)"
         run: python3 scripts/release/repo_hygiene_audit.py --strict --checks root_md,archive_banners
       - name: Repo hygiene audit (full warn mode)
         continue-on-error: true
