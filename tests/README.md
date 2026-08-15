@@ -1,14 +1,14 @@
 # TranscriptX tests: how to run locally
 
-**Streamlit GUI test assessment:** see [`docs/archive/assessments/../docs/archive/assessments/streamlit_ui_test_assessment_2026-07-18.md`](../docs/archive/assessments/../docs/archive/assessments/streamlit_ui_test_assessment_2026-07-18.md) for the surface coverage matrix, doubles-first L1–L3 strategy, heavy-gated AppTest acceptance for seven primary journeys (`make test-gui-acceptance`), residual manual checklist, and the optional `web/` coverage gap-finder (§11). **AppTest remains the primary GUI acceptance lane.** Playwright live-Streamlit E2E is an **opt-in heavy lane** (`make test-gui-e2e`) covering documented workflows 1–3 (import→analyse→Overview, speaker trust, investigate with evidence); it is not part of the PR fast/smoke gates.
+**Streamlit GUI test assessment:** see [`docs/archive/assessments/../docs/archive/assessments/streamlit_ui_test_assessment_2026-07-18.md`](../docs/archive/assessments/../docs/archive/assessments/streamlit_ui_test_assessment_2026-07-18.md) for the surface coverage matrix, doubles-first L1–L3 strategy, heavy-gated AppTest acceptance for seven primary journeys (`make test-gui-acceptance`), residual manual checklist, and the optional `web/` coverage gap-finder (§11). **AppTest remains the structural GUI acceptance lane.** Playwright live-Streamlit E2E (`tests/e2e_gui/`, marker `gui_e2e`) covers documented workflows 1–5 plus Charts and is **included in the default `pytest` / `make test-fast` suite** (skips cleanly when Playwright/Chromium is unavailable). Dedicated runner: `make test-gui-e2e`.
 
 ## Quick commands (single source of truth)
 
-- `pytest` (or `make test-fast`) — **default**: fast lane only (excludes smoke, release_only, integration, integration_core, integration_extended, slow, `gui_acceptance`, `gui_e2e`, and requires_* capability markers)
+- `pytest` (or `make test-fast`) — **default**: fast lane (excludes smoke, release_only, integration, integration_core, integration_extended, slow, `gui_acceptance`, and requires_* capability markers). **Includes** Playwright `gui_e2e` when Chromium is installed.
 - `make test-smoke` — CI gate (smoke tests only)
-- `make test-fast` — same as default `pytest` (fast core)
+- `make test-fast` — same as default `pytest` (fast core + Playwright GUI E2E)
 - `make test-gui-acceptance` — Streamlit AppTest GUI acceptance journeys (seven primary flows; heavy)
-- `make test-gui-e2e` — Playwright live Streamlit GUI E2E (workflows 1–3; heavy; requires Chromium: `playwright install chromium`)
+- `make test-gui-e2e` — Playwright live Streamlit GUI E2E only (`tests/e2e_gui`; requires Chromium: `playwright install chromium`)
 - `make test-heavy` — heavy profile, excludes quarantined by default
 - `make test-heavy-all` — heavy profile including quarantined
 - `make test-contracts` — offline contract tests (output shape only)
@@ -49,7 +49,7 @@ Default `pytest` behavior remains the source of truth for the fast local profile
 - `unit` — unit tests for individual functions/classes
 - `heavy` — excluded from fast local profile due to runtime cost, setup burden, or dependency surface
 - `gui_acceptance` — Streamlit AppTest acceptance journeys; excluded from fast; run via `make test-gui-acceptance` (also selected by `make test-heavy` when marked `heavy`)
-- `gui_e2e` — Playwright live-Streamlit GUI E2E; excluded from fast; run via `make test-gui-e2e` (also selected by `make test-heavy` when marked `heavy`)
+- `gui_e2e` — Playwright live-Streamlit GUI E2E under `tests/e2e_gui/`; **included in default pytest**; dedicated runner `make test-gui-e2e`
 - `integration` — workflow/pipeline integration tests
 - `integration_core` — stable integration subset for nightly
 - `integration_extended` — extended integration suite (nightly/manual)
@@ -74,9 +74,9 @@ Default `pytest` behavior remains the source of truth for the fast local profile
 
 ## Marker policy matrix
 
-- **Fast default (`pytest` / `make test-fast`)**: excludes `quarantined`, `smoke`, `release_only`, `integration`, `integration_core`, `integration_extended`, `requires_ffmpeg`, `requires_docker`, `requires_models`, `requires_api`, `slow`, `gui_acceptance`, `gui_e2e`.
+- **Fast default (`pytest` / `make test-fast`)**: excludes `quarantined`, `smoke`, `release_only`, `integration`, `integration_core`, `integration_extended`, `requires_ffmpeg`, `requires_docker`, `requires_models`, `requires_api`, `slow`, `gui_acceptance`. Includes `gui_e2e` (Playwright live Streamlit).
 - **GUI acceptance (`make test-gui-acceptance`)**: `gui_acceptance` marker; residual manual items in [`docs/dev/gui_acceptance_residual_checklist.md`](../docs/dev/gui_acceptance_residual_checklist.md).
-- **GUI E2E (`make test-gui-e2e`)**: `gui_e2e` marker; live Streamlit + Playwright Chromium for workflows 1–3 under `tests/e2e_gui/`. Requires `playwright` + `playwright install chromium` (Playwright ships with `[maps]` / `[full]` extras).
+- **GUI E2E (`make test-gui-e2e` or default pytest)**: `gui_e2e` marker; live Streamlit + Playwright Chromium for documented workflows under `tests/e2e_gui/`. Requires `playwright` + `playwright install chromium` (Playwright ships with `[maps]` / `[full]` extras); tests skip when Chromium is unavailable.
 - **Smoke lane (`make test-smoke`)**: `tests/smoke` only, requires `smoke` marker, excludes `release_only` and external-capability markers.
 - **Integration lane (`make test-integration`)**: `tests/integration` only, includes `integration` or `integration_core` or `integration_extended`, excludes `release_only` and external-capability markers.
 - **Release-only lane (`make test-release-only`)**: `tests/release` only, includes `release_only`.

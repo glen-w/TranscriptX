@@ -27,8 +27,29 @@ _PLANNING = fixture_planning_review()
 def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line(
         "markers",
-        "gui_e2e: Playwright E2E against live Streamlit GUI (opt-in heavy lane)",
+        "gui_e2e: Playwright E2E against live Streamlit GUI (tests/e2e_gui; included in default pytest)",
     )
+
+
+def pytest_report_header(config: pytest.Config) -> list[str]:
+    """Surface Playwright GUI E2E scope in pytest session logs."""
+    return [
+        "Playwright GUI E2E (gui_e2e): tests/e2e_gui — workflows "
+        "first-analysis, speaker-trust, investigate-evidence, "
+        "local-ai-synthesis surface, export-results, charts-view; "
+        "included in default pytest (skips without Chromium)",
+    ]
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    e2e_items = [i for i in items if i.get_closest_marker("gui_e2e")]
+    if e2e_items:
+        terminal = config.pluginmanager.get_plugin("terminalreporter")
+        if terminal is not None:
+            terminal.write_line(
+                f"Playwright gui_e2e collected: {len(e2e_items)} test(s) "
+                f"under tests/e2e_gui (default suite)"
+            )
 
 
 def _free_port() -> int:
@@ -423,7 +444,10 @@ def page(pytestconfig):
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        try:
+            browser = p.chromium.launch(headless=True)
+        except Exception as exc:  # noqa: BLE001 — environment capability gate
+            pytest.skip(f"Playwright Chromium unavailable: {exc}")
         context = browser.new_context(viewport=DEFAULT_VIEWPORT)
         pg = context.new_page()
         yield pg

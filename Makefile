@@ -33,7 +33,7 @@ help:
 	@echo "  test-config-coverage  Config package coverage gate (≥85% on core.config + utils.config)"
 	@echo "  test-release-only  Run release-only packaging/install smoke"
 	@echo "  test-gui-acceptance  Streamlit AppTest GUI acceptance journeys (heavy)"
-	@echo "  test-gui-e2e     Playwright live-Streamlit GUI E2E (workflows 1–3; heavy)"
+	@echo "  test-gui-e2e     Playwright live-Streamlit GUI E2E (also in default pytest)"
 	@echo "  docker-smoke     Run Docker web launcher smoke test (build + --help)"
 	@echo ""
 	@echo "Maintenance:"
@@ -77,14 +77,14 @@ test-smoke-nlp:
 
 test-fast:
 	@echo "Running fast core tests (Gate B)..."
-	@pytest -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow and not gui_acceptance and not gui_e2e"
+	@pytest -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow and not gui_acceptance"
 
 test-gui-acceptance:
 	@echo "Running Streamlit AppTest GUI acceptance journeys..."
 	@pytest --override-ini addopts="-ra --strict-markers --strict-config --import-mode=importlib --verbose --tb=short --timeout=300 --timeout-method=thread" -m "gui_acceptance and not quarantined"
 
 test-gui-e2e:
-	@echo "Running Playwright live-Streamlit GUI E2E (workflows 1–3)..."
+	@echo "Running Playwright live-Streamlit GUI E2E (documented workflows)..."
 	@pytest --override-ini addopts="-ra --strict-markers --strict-config --import-mode=importlib --verbose --tb=short --timeout=600 --timeout-method=thread" tests/e2e_gui -m "gui_e2e and not quarantined"
 
 test-heavy:
@@ -118,7 +118,7 @@ test-all:
 test-coverage:
 	@echo "Running default-marker suite with coverage (see .coveragerc fail_under)..."
 	@pytest --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -q \
-		-m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow and not gui_acceptance and not gui_e2e"
+		-m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow and not gui_acceptance"
 
 test-config-coverage:
 	@echo "Running config-scoped coverage gate (≥85% on transcriptx.core.config + utils.config)..."
