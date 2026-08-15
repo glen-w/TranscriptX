@@ -36,7 +36,37 @@ def _normalize_for_json(value: Any) -> Any:
         return {k: _normalize_for_json(v) for k, v in value.items()}
     if isinstance(value, list):
         return [_normalize_for_json(v) for v in value]
+    if isinstance(value, str):
+        return _normalize_pathish(value)
     return value
+
+
+def _normalize_pathish(value: str) -> str:
+    """Collapse host-/container-absolute data-root paths for golden comparisons."""
+    # Defaults embed RECORDINGS_DIR / similar absolute roots; goldens are written
+    # in Docker (/workspace/...) while host runs use the clone path.
+    markers = (
+        "/data/recordings",
+        "/data/transcripts",
+        "/data/outputs",
+        "/data/backups",
+        "/data/.transcriptx",
+    )
+    for marker in markers:
+        idx = value.find(marker)
+        if idx >= 0:
+            return "<REPO>" + value[idx:]
+    return value
+
+
+def _normalize_metadata(meta: dict[str, Any]) -> dict[str, Any]:
+    out = dict(meta)
+    default = out.get("default")
+    if isinstance(default, list):
+        out["default"] = [_normalize_for_json(v) for v in default]
+    else:
+        out["default"] = _normalize_for_json(default)
+    return out
 
 
 def _walk_config_path(root: object, path: tuple[str, ...]) -> object:
@@ -108,8 +138,9 @@ def test_pydantic_pilot_registry_matches_golden_fixtures() -> None:
             golden = json.loads(fixture.read_text())
             for key, expected in golden.items():
                 assert key in reg, key
-                actual = serialize_field_metadata(reg[key])
-                assert actual == expected, f"{key}: {actual!r} != {expected!r}"
+                actual = _normalize_metadata(serialize_field_metadata(reg[key]))
+                expected_n = _normalize_metadata(expected)
+                assert actual == expected_n, f"{key}: {actual!r} != {expected_n!r}"
 
 
 def test_non_pydantic_registry_matches_baseline() -> None:
@@ -174,6 +205,6 @@ def test_pydantic_pilot_defaults_match_golden_fixtures() -> None:
     with without_transcriptx_env():
         for spec in PYDANTIC_REGISTRY_PILOTS:
             fixture = FIXTURES / f"{spec.pilot_id}_defaults_golden.json"
-            golden = json.loads(fixture.read_text())
+            golden = _normalize_for_json(json.loads(fixture.read_text()))
             actual = _normalize_for_json(_pilot_defaults_subtree(spec))
             assert actual == golden, f"{spec.pilot_id}: defaults drift"

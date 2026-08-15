@@ -11,7 +11,7 @@ Documentation-first alignment of TranscriptX as a local-first personal transcrip
 
 Before rewriting live product docs, an early **repository hygiene and knowledge-consolidation** workstream classifies documentation and scripts so the public project is coherent: intentional navigation, preserved historical detail, clear script support status, and no abandoned utilities mistaken for product capabilities.
 
-**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch **`0.9.3`**, install + transcription **`0.9.4`**, hosted docs + harden scaffolds **`0.9.5`**, Guided/Full + demo project **`0.9.6`**, automatable harden + public surfaces **`0.9.7`**, hygiene + honesty + human-pass prep **`0.9.8`**, then **maintainer acceptance** → **`0.9.9` Overview/results presentation polish** → unfamiliar-user → RC → public **1.0**. Do not combine unrelated risky changes merely because a draft once shared a patch label.
+**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch **`0.9.3`**, install + transcription **`0.9.4`**, hosted docs + harden scaffolds **`0.9.5`**, Guided/Full + demo project **`0.9.6`**, automatable harden + public surfaces **`0.9.7`**, hygiene + honesty + human-pass prep **`0.9.8`**, then **maintainer acceptance** → **`0.9.9` Overview/results presentation polish** → interim **`0.9.9.5`** (post-0.9.9 wave) → unfamiliar-user → RC → public **1.0**. Do not combine unrelated risky changes merely because a draft once shared a patch label.
 
 ## Programme checklist
 
@@ -30,8 +30,19 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **Maintainer acceptance pass** — kit journeys closed **2026-08-07** ([manual_acceptance_1_0.md](manual_acceptance_1_0.md), incl. §3.12 Medium Balanced + Large-library); severity-justified fixes only if residual findings remain
 - [x] **Final Thorough stress pass (speaker-complete)** — Thorough + `qwen2.5:7b` on **all** speaker-complete transcripts **and** qualifying groups **pass** 2026-08-08 (2 tx + 2 groups, corpus wall **68.7 min**, 0 failures) → `artifacts/roadmap_1_0_llm_analysis/stress_pass_20260808/`
 - [x] **0.9.9 — Overview / results presentation polish** — Insights **Analysis** tab retired/redistributed; selection-scoped Overview EPUB; batch progress labels (**cut as 0.9.9**). Overview hierarchy polish + Charts catalogue remain deferred residuals — [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md)
+- [x] **Post-0.9.9 shipped wave → interim `0.9.9.5`** — Early 1.x themes B/C/D + A, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, workflows/assessments, backup/restore, unnamed-speaker ungate, Playwright GUI E2E, CI/docs hygiene — summary below; detail [post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md); **cut as 0.9.9.5** (2026-08-15)
 - [ ] **Unfamiliar-user validation** — Clean-room round (2–5 people, ≥1 non-technical); kit in [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); mandatory before 1.0
 - [ ] **RC → 1.0** — Severity triage clear; gates pass; release ops/support policy published; governance evidence on exact commit
+
+---
+
+## Post-0.9.9 shipped wave → 0.9.9.5 (summary)
+
+After the **0.9.9** cut (`45a235d`), capacity before unfamiliar-user validation pulled **early 1.x work** onto the 0.9.9 line. That wave is now an **interim version cut `0.9.9.5`** (not a new programme theme — still pre-unfamiliar-user). Full narrative: [post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md). Theme status authority: [docs/ROADMAP.md](../ROADMAP.md).
+
+**Landed clusters:** Theme **B** viewer Correct mode; Theme **C** Speaker ID CCv2 default-on; Theme **D** Transcript karaoke MVP; Theme **A** quieter deterministic insights; **System → Tools** (Preprocess/Merge) + Merge profiles / serial / cleanup / auto-merge; **G2 Phase 1** directory watcher; smart rename + Rename Transcript workflow; Dashboard Builder presets/Edit + Charts overview selector; GUI performance upgrades; Settings bulk corrections / voice enrol / ⓘ tooltips; WebVTT + STT presets; five workflow walkthroughs; full-workspace backup/restore; unnamed-speaker ungate; Playwright GUI E2E; CI lint/nightly + Sphinx-on-push; GUI-perf and test-suite assessments.
+
+**Does not change the gate:** unfamiliar-user clean-room evidence remains mandatory; module freeze held; Overview hierarchy + Charts catalogue residuals from 0.9.9 remain deferred unless severity says otherwise.
 
 ---
 
@@ -82,7 +93,7 @@ A perfect historical archive taxonomy is **not** required for 1.0. A simple, doc
 - Elaborate website effects; exhaustive RTD autodoc; a highly polished first public site — provided usable docs and a credible landing exist.
 
 **Safe to defer to 1.1+**
-- Elaborate coach-mark tours or reintroduction of Guided/Full / demo-project / Getting started checklist UX; sophisticated interactive website effects; large bundled completed analysis runs; any mode system that duplicates page logic; multilingual routing beyond a small reliable subset; B4 ConvoKit-family methods; **in-app / orchestrated transcription** (NVIDIA Parakeet/Canary + Whisper, CUDA/CPU, YouTube ingest, directory watcher) — tracked as 1.x theme **H** / **G2** in [docs/ROADMAP.md](docs/ROADMAP.md) (not a 1.0 gate; 1.0 stays BYO + command gen); **PWA / installable shell** — theme **I**; **karaoke-style playback** — theme **D**; elaborate archive taxonomy refinements beyond a clear current-vs-historical split; aesthetic refactors; experimental analyses; specialist convenience and non-supported configurations; **transcript tagging** for library visibility/kind labels (meeting, voice note, lone speaker, …) — theme **F**; **SQLite / DB-backed speaker analytics** — theme **J** (~1.5); **High-interaction workspaces (Speaker ID / Corrections Studio) via Streamlit Components v2** — theme **C** (stop endless fragment surgery pre-1.0; prototype Components v2 after 1.0).
+- Elaborate coach-mark tours or reintroduction of Guided/Full / demo-project / Getting started checklist UX; sophisticated interactive website effects; large bundled completed analysis runs; any mode system that duplicates page logic; multilingual routing beyond a small reliable subset; B4 ConvoKit-family methods; **in-app / orchestrated transcription** (NVIDIA Parakeet/Canary + Whisper, CUDA/CPU, YouTube ingest) — tracked as 1.x theme **H** in [docs/ROADMAP.md](docs/ROADMAP.md) (not a 1.0 gate; 1.0 stays BYO + command gen); **watcher → host STT** and transcript-stitch merge remain G/G2 follow-ons (**G2 Phase 1** inbox watcher already landed — see [post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md)); **PWA / installable shell** — theme **I**; elaborate archive taxonomy refinements beyond a clear current-vs-historical split; aesthetic refactors; experimental analyses; specialist convenience and non-supported configurations; **transcript tagging** for library visibility/kind labels (meeting, voice note, lone speaker, …) — theme **F**; **SQLite / DB-backed speaker analytics** — theme **J** (~1.5). Themes **B** (viewer Correct), **C** (CCv2 Speaker ID default-on), and **D** (Transcript karaoke MVP) were pulled forward post-0.9.9 — treat ROADMAP theme status as current; remaining C/D depth is not a 1.0 gate unless severity says otherwise.
 
 ---
 
@@ -1024,5 +1035,6 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 12. [x] Execute **0.9.x hygiene + honesty + human-pass prep** theme (**0.9.8**) ← **landed** (BMC closed; Hub-card residual dropped; Large-library measured; RTD slug + cohort remain owner residuals)
 13. [x] **Maintainer acceptance pass** — kit journeys closed **2026-08-07** ([manual_acceptance_1_0.md](manual_acceptance_1_0.md)); severity-justified fixes only if residual findings remain
 14. [x] **0.9.9 Overview / results presentation polish** — cut **0.9.9**; Analysis IA + EPUB + batch progress landed; Charts/Overview hierarchy residuals deferred ([overview_presentation_0_9_9.md](overview_presentation_0_9_9.md))
-15. [ ] **Unfamiliar-user round** — [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); blockers/must-fix prevent RC
-16. [ ] **Final gate review** → RC rehearsal → RC → public **1.0**
+15. [x] **Post-0.9.9 shipped wave → `0.9.9.5`** — early 1.x + operator UX interim cut ([post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md)); does not substitute unfamiliar-user evidence
+16. [ ] **Unfamiliar-user round** — [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); blockers/must-fix prevent RC
+17. [ ] **Final gate review** → RC rehearsal → RC → public **1.0**

@@ -213,13 +213,15 @@ def test_should_show_context_bar_hides_home_ingest_tools_settings() -> None:
     from transcriptx.web.navigation import PAGE_SPECS, should_show_context_bar
 
     assert should_show_context_bar("Home") is False
+    assert should_show_context_bar("Tools") is False
     assert should_show_context_bar("Transcribe Audio") is False
     assert should_show_context_bar("Import Transcript") is False
     assert should_show_context_bar(None) is False
 
+    hidden_keys = {"Home", "Tools", "Transcribe Audio", "Import Transcript"}
     for spec in PAGE_SPECS:
         shown = should_show_context_bar(spec.key)
-        if spec.key in {"Home", "Transcribe Audio", "Import Transcript"}:
+        if spec.key in hidden_keys:
             assert shown is False
         elif spec.section in {"tools", "settings"}:
             assert shown is False

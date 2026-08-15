@@ -162,7 +162,6 @@
       "description": "Quote/Echo/Paraphrase Detection",
       "determinism_tier": "T1",
       "enhancements": [],
-      "gate_on_turn_taking_speakers": true,
       "requirements": [
         "segments",
         "speaker_labels"
@@ -206,7 +205,6 @@
       "description": "Hedging / certainty / epistemic markers",
       "determinism_tier": "T0",
       "enhancements": [],
-      "gate_on_turn_taking_speakers": true,
       "requirements": [
         "segments",
         "speaker_labels"
@@ -305,7 +303,6 @@
       "description": "Lexical diversity metrics (TTR, MTLD, hapax rate)",
       "determinism_tier": "T0",
       "enhancements": [],
-      "gate_on_turn_taking_speakers": true,
       "requirements": [
         "segments",
         "speaker_labels"
@@ -431,7 +428,6 @@
       "description": "Politeness / formality / directiveness markers",
       "determinism_tier": "T0",
       "enhancements": [],
-      "gate_on_turn_taking_speakers": true,
       "requirements": [
         "segments",
         "speaker_labels"
@@ -605,7 +601,6 @@
       "description": "Understandability Analysis",
       "determinism_tier": "T0",
       "enhancements": [],
-      "gate_on_turn_taking_speakers": true,
       "requirements": [
         "segments",
         "speaker_labels"

@@ -22,7 +22,7 @@ Authority: self
 - Contracts for storage, run outcomes, outputs, and public surfaces
 - Package on a **0.9.x** stabilisation track toward 1.0
 
-Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Early 1.x: Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **in progress** (default-on); Theme **D** Transcript karaoke MVP. Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
+Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Post-0.9.9 wave cut as interim **`0.9.9.5`**: early 1.x Themes **A–D**, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, backup/restore — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md). Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **in progress** (default-on); Theme **D** Transcript karaoke MVP. Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
 
 ---
 
@@ -43,6 +43,7 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Hygiene + honesty + human-pass prep | Epoch/deps cleanup; BERTopic-out-of-base; Balanced emotion honesty; known-limitations; acceptance kits | **0.9.8** |
 | Maintainer acceptance | Manual acceptance + a11y/browser; severity-justified fixes | **done** 2026-08-07 (kit journeys closed; see [manual_acceptance_1_0.md](dev/manual_acceptance_1_0.md)) |
 | Overview / results presentation | Retire Insights Analysis tab; redistribute into Summary / Speakers / Actions / Highlights — [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | **0.9.9** (Charts/Overview hierarchy residuals deferred) |
+| Post-0.9.9 wave (interim) | Early 1.x A–D + operator UX — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md) | **0.9.9.5** (pre-unfamiliar-user) |
 | Unfamiliar-user → RC | Clean-room validation; clean-env soak; RTD slug (owner) | next (pre-RC) |
 
 **Module freeze:** no new analysis modules in 0.9.x unless required to complete or repair the 1.0 journey. Backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).

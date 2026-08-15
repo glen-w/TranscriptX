@@ -304,6 +304,10 @@ def test_merge_panel_has_delete_originals_option() -> None:
     source = Path(mod.__file__).read_text(encoding="utf-8")
     assert "Delete originals once merge is complete" in source
     assert "delete_originals=delete_originals" in source
+    assert "delete_originals and not backup_wavs" in source
+    assert "Originals will be deleted with no storage backup" in source
+    assert "hide_serial_group_in_session" in source
+    assert "Hidden suggestions" in source
 
 
 @pytest.mark.unit

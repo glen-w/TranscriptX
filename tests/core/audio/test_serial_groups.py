@@ -446,6 +446,40 @@ class TestVoiceNoteRunGrouping:
         ]
         assert detect_serial_audio_groups(paths) == []
 
+    def test_clusters_tascam_sequence(self) -> None:
+        paths = [
+            _p("TASCAM_0001.wav"),
+            _p("TASCAM_0002.wav"),
+            _p("TASCAM_0004.wav"),
+        ]
+        groups = detect_serial_audio_groups(paths)
+        assert len(groups) == 1
+        assert groups[0].matched_rule == "voice_note_run"
+        assert groups[0].base_key == "Tascam 1"
+        assert [p.name for p in groups[0].ordered_paths] == [
+            "TASCAM_0001.wav",
+            "TASCAM_0002.wav",
+            "TASCAM_0004.wav",
+        ]
+
+    def test_voice_note_rule_wins_over_numeric_false_serial(self) -> None:
+        """Zoom/device stems must not fall through as generic numeric_index groups."""
+        paths = [
+            _p("ZOOM0001.WAV"),
+            _p("ZOOM0002.WAV"),
+            _p("260223_team_facilitation_10.mp3"),
+            _p("260223_team_facilitation_11.mp3"),
+        ]
+        groups = detect_serial_audio_groups(paths)
+        by_rule = {g.matched_rule: g for g in groups}
+        assert set(by_rule) == {"voice_note_run", "numeric_index"}
+        assert by_rule["voice_note_run"].base_key == "Zoom Recorder 1"
+        assert [p.name for p in by_rule["voice_note_run"].ordered_paths] == [
+            "ZOOM0001.WAV",
+            "ZOOM0002.WAV",
+        ]
+        assert by_rule["numeric_index"].base_key == "260223_team_facilitation"
+
 
 class TestDismissalPartition:
     def test_dismissal_key_is_rule_and_stem(self) -> None:

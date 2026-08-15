@@ -12,6 +12,7 @@ from transcriptx.core.utils.rename.smart_name import (
     build_rename_tokens,
     next_sequence_number,
     parse_recording_datetime_from_stem,
+    parse_voice_note_stem,
     period_for_hour,
     render_smart_rename,
     resolve_smart_rename_pattern,
@@ -145,3 +146,35 @@ def test_suggest_off_returns_none(tmp_path: Path) -> None:
         suggest_smart_rename_base_name(path, mode="off", transcripts_dir=tmp_path)
         is None
     )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("stem", "family", "has_dt", "sequence"),
+    [
+        ("WhatsApp Audio 2026-08-12 at 13.11.09", "WhatsApp Audio", True, None),
+        ("PTT-20260812-WA0001", "WhatsApp Voice Notes", True, 1),
+        ("audio_2026-08-12_13-11-09", "Telegram Audio", True, None),
+        ("signal-2026-08-12-131109", "Signal", True, None),
+        ("ZOOM0001", "Zoom Recorder", False, 1),
+        ("VOICE002", "Philips VoiceTracer", False, 2),
+        ("TASCAM_0003", "Tascam", False, 3),
+        ("R20260812-131109", "Device Recorder", True, None),
+        ("Recording_20260812_131109", "Android Recorder", True, None),
+    ],
+)
+def test_parse_voice_note_stem_families(
+    stem: str, family: str, has_dt: bool, sequence: int | None
+) -> None:
+    parsed = parse_voice_note_stem(stem)
+    assert parsed is not None
+    assert parsed[0] == family
+    assert (parsed[1] is not None) is has_dt
+    assert parsed[2] == sequence
+
+
+@pytest.mark.unit
+def test_parse_voice_note_stem_rejects_generic_meeting_names() -> None:
+    assert parse_voice_note_stem("meeting_01") is None
+    assert parse_voice_note_stem("260223_team_facilitation_10") is None
+    assert parse_voice_note_stem("plain_name") is None

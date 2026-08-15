@@ -28,6 +28,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [rtd_go_live_checklist.md](dev/rtd_go_live_checklist.md) | Read the Docs go-live flip steps |
 | [unfamiliar_user_validation_1_0.md](dev/unfamiliar_user_validation_1_0.md) | Unfamiliar-user validation protocol |
 | [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | 0.9.9 Overview/results presentation polish (post-maintainer, pre-unfamiliar-user) |
+| [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md) | Post-0.9.9 wave cut as interim **0.9.9.5** (early 1.x + operator UX before unfamiliar-user) |
 
 ## Orientation
 

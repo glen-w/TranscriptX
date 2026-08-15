@@ -40,6 +40,7 @@
     "window_seconds": null,
     "window_segments": 5
   },
+  "allow_unnamed_speakers": false,
   "analysis_mode": "quick",
   "bertopic": {
     "calculate_probabilities": false,

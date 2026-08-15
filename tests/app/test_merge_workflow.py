@@ -417,6 +417,33 @@ class TestMergeDeleteOriginals:
         assert mock_tx_delete.call_count == 2
 
     @patch(
+        "transcriptx.app.workflows.merge.delete_linked_transcripts_for_audio",
+        return_value=(0, []),
+    )
+    def test_delete_helper_never_unlinks_merge_output(
+        self, mock_tx_delete, tmp_path
+    ):
+        """_delete_merge_originals skips the merge output even if listed among sources."""
+        from transcriptx.app.workflows.merge import _delete_merge_originals
+
+        sources = _make_files(tmp_path, 2)
+        output = tmp_path / "merged.mp3"
+        output.write_bytes(b"merged")
+        # Pathologically include the output among sources.
+        files_deleted, transcripts_deleted, warnings = _delete_merge_originals(
+            [*sources, output], output
+        )
+        assert files_deleted == 2
+        assert transcripts_deleted == 0
+        assert warnings == []
+        assert output.exists()
+        assert output.read_bytes() == b"merged"
+        assert all(not p.exists() for p in sources)
+        assert mock_tx_delete.call_count == 2
+        called_paths = {call.args[0] for call in mock_tx_delete.call_args_list}
+        assert called_paths == set(sources)
+
+    @patch(
         "transcriptx.app.workflows.merge.check_ffmpeg_available",
         return_value=_FFMPEG_OK,
     )

@@ -59,6 +59,7 @@
     "analysis_legacy_semantic": 25,
     "analysis_ner": 6,
     "analysis_sentiment": 8,
+    "analysis_speakers": 1,
     "analysis_wordcloud": 5,
     "audio_preprocessing": 18,
     "bertopic": 7,
@@ -106,7 +107,7 @@
     "voice": 18,
     "workflow": 13
   },
-  "pilot_count": 53,
-  "pydantic_owned_keys": 720,
-  "total_registry_keys": 736
+  "pilot_count": 54,
+  "pydantic_owned_keys": 721,
+  "total_registry_keys": 737
 }

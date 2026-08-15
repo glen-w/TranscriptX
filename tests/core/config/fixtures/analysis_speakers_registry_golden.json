@@ -1,0 +1,16 @@
+{
+  "analysis.allow_unnamed_speakers": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": false,
+    "description": "When True, analysis modules treat diarized labels (SPEAKER_00, \u2026) as eligible speakers instead of skipping until human names exist.",
+    "key": "analysis.allow_unnamed_speakers",
+    "max": null,
+    "min": null,
+    "path": "analysis.allow_unnamed_speakers",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  }
+}

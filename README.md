@@ -3,9 +3,9 @@ Authority: docs/PRODUCT.md
 
 # TranscriptX
 
-**TranscriptX** is a local-first personal transcript analysis workbench for people who want to think with transcripts.
+TranscriptX is a local-first workbench for people who want to think with transcripts.
 
-Import and organise transcripts on your machine; explore language, themes, speakers, interactions, emotion, voice and conversational dynamics; use structured analyses and optional local AI to find useful patterns; compare over time; inspect and export machine-readable results — without sending your corpus to a cloud analysis SaaS.
+Import and organise transcripts on your machine; explore language, themes, speakers, interactions, emotion, voice and conversational dynamics; use structured analyses and optional local AI to find useful patterns; compare over time; inspect and export machine-readable results — without sending your corpus to a cloud analysis service.
 
 Product definition (authoritative): [docs/PRODUCT.md](docs/PRODUCT.md).  
 How it compares to transcription tools, meeting assistants, and conversation intelligence: [docs/comparison.md](docs/comparison.md).

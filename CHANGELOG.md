@@ -10,8 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.9.5] - 2026-08-15
+
+Interim cut of the post-**0.9.9** wave before unfamiliar-user validation. Programme narrative: [post_0_9_9_shipped_overview.md](docs/dev/post_0_9_9_shipped_overview.md); checklist: [pre_release_roadmap_1_0.md](docs/dev/pre_release_roadmap_1_0.md).
+
 ### Added
 
+- Full-workspace **backup / verify / replace-restore** (Settings → Storage + `scripts/workspace_backup.py`); guides: [backup_and_restore.md](docs/backup_and_restore.md), [workspace-backup.md](docs/contracts/workspace-backup.md).
+- Analysis **unnamed-speaker ungate**: named speakers required by default; global `analysis.allow_unnamed_speakers` and per-run flag treat diarized labels as valid speakers when enabled.
+- Playwright **GUI E2E** lane (`tests/e2e_gui/`, `make test-gui-e2e`) for workflows 1–3; complementary to AppTest (not a PR gate).
 - GitHub Actions **nightly** workflow (`.github/workflows/nightly.yml`): scheduled + manual `make test-integration-core`.
 - CI **lint** job: ruff critical/unused gate on `src/transcriptx` (`E9,F63,F7,F82,F401,F841`).
 - Audio **Merge** source profiles (`CONFIG_DIR/audio_merge_profiles.json`): per-source day / time-gap sliders, custom regex profiles, and **Auto-merge selected groups**. Builtin defaults keep the 20-minute voice-note gap; users can retune (e.g. WhatsApp same day within 2 hours).
@@ -20,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard Builder / layout presets: three curated built-ins — **Meeting follow-up** (`meeting_followup`), **Speakers** (`speaker_focus`), **Minimal** (`minimal`) — plus Schema overwrite confirmation, delete-custom, layout-id slug hardening, and param type checks. Guide: [docs/dev/dashboard_builder.md](docs/dev/dashboard_builder.md).
 - **Theme B (corrections in the Transcript viewer):** Correct mode supports word/span propose, atomic accept-and-apply for the current candidate, and scoped corrected-sidecar writes without overwriting the managed original. Corrections Studio remains the batch/detector/LLM review surface (Start/Resume no longer auto-generates). Guide: [docs/runtime/corrections-viewer.md](docs/runtime/corrections-viewer.md).
 - **Theme C (high-interaction workspaces):** shared `SpeakerIdActionService` (revisioned command/ack) used by legacy Speaker ID callbacks; non-blocking ClipService APIs (`cached_clip_status` / `get_cached_clip_bytes` / `enqueue_clip`); packaged Streamlit Components v2 `transcriptx-workspaces` Speaker ID surface (transcript-scoped keys, ClipTransport base64, prefetch budgets; **feature flag default-on**; missing package falls through to classic UI); Corrections revisioned command protocol on the studio page; PlaybackHost handoff for Theme D; Playwright browser harness; design docs under `docs/dev/theme_c_*.md`.
-- **Workflow walkthroughs:** five outcome-focused Sphinx user guides under [docs/workflows/](docs/workflows/index.md) (import → speaker trust → investigate → optional local AI → export) with screenshots/GIFs and a shared planning-review fixture.
+- **Workflow walkthroughs:** five outcome-focused Sphinx user guides under [docs/workflows/](docs/workflows/index.md) (import → speaker identification → investigate → optional local AI → export) with screenshots/GIFs and a shared planning-review fixture.
 - Overview artifact ZIP export writes selection-scoped **`index.epub`** beside **`index.html`** when `ebooklib` is available (`[visualization]` / `[full]` / Docker `requirements.txt`). Guide: [docs/runtime/export.md](docs/runtime/export.md); limits: [docs/known_limitations.md](docs/known_limitations.md).
 - Unit coverage for subprocess-isolated BERTopic fit helpers, raw config unwrap/validation messages, and export chart-prep / transcript-meta helpers.
 
@@ -28,8 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - CI `tests` / `tests-nlp` install `.[dev,web]` / `.[dev,nlp,web]` so Streamlit web modules collect under contracts/fast (fixes missing-`streamlit` collection failures).
 - Dev extra includes `hypothesis` (fast-lane property tests); `tests/e2e_gui/helpers.py` soft-imports Playwright so Core+dev collection no longer hard-fails.
+- Sphinx / Pages assemble keeps hosted docs current with `docs/` on every push.
+- [PRODUCT.md](docs/PRODUCT.md) reframed for continuous long-term development alongside the 1.0 programme gate.
 - Workflow walkthrough 2 renamed from “speaker trust” to [Identify and name speakers](docs/workflows/speaker-identification.md) — wording now emphasizes naming diarized speakers for readable transcripts, not analysis “trust”.
-- Audio **Merge** concatenates only by default. Optional **Preprocess files while merging** checkbox (CLI `--preprocess`) applies current preprocessing defaults in the same pass; otherwise run Preprocessing separately.
+- Audio **Merge** concatenates only by default. Optional **Preprocess files while merging** checkbox (CLI `--preprocess`) applies current preprocessing defaults in the same pass; otherwise run Preprocessing separately. Serial detection and optional post-merge cleanup for messaging / field-recorder runs.
 - Sidebar section **Settings** renamed to **System** (page keys unchanged: Settings, Tools, Profiles, Dashboard Builder, Diagnostics).
 - Legacy bookmarks **Audio Prep** / **Audio Merge** redirect to **Tools** (Preprocessing / Merge tabs) instead of Transcribe Audio.
 - Executive layout preset now tags Insights `section:` values and includes a Charts page for consistent section nav / Builder preview.
@@ -39,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Run Analysis **Batch** progress panel now keeps showing the current transcript (`N/M · name`) while nested module events update the bar and latest-event line.
+
+## [0.9.9] - 2026-08-09
 
 ### Changed
 

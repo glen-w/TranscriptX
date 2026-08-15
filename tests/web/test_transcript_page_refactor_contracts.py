@@ -64,8 +64,9 @@ def test_render_transcript_controls_contract(monkeypatch) -> None:
             markdown_calls.append(text)
 
         @staticmethod
-        def text_input(_label, key):
+        def text_input(_label, key, help=None):
             assert key == "transcript_search"
+            assert help is None or isinstance(help, str)
             return "needle"
 
         @staticmethod
