@@ -170,7 +170,9 @@ def _apply_env_overrides(data: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def load_watcher_settings(*, config_dir: Path | None = None) -> DirectoryWatcherSettings:
+def load_watcher_settings(
+    *, config_dir: Path | None = None
+) -> DirectoryWatcherSettings:
     """Load settings: defaults ← watcher.json ← env."""
     path = watcher_settings_path(config_dir=config_dir)
     data: dict[str, Any] = {}
@@ -195,7 +197,9 @@ def save_watcher_settings(
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = settings.model_dump()
     tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    tmp.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     tmp.replace(path)
     return path
 

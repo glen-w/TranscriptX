@@ -81,8 +81,7 @@ _RE_SIGNAL = re.compile(
 )
 # WhatsApp Android media: PTT-20240301-WA0001 / AUD-20240301-WA0002
 _RE_WHATSAPP_ANDROID = re.compile(
-    r"^(?P<kind>PTT|AUD)-(?P<y>\d{4})(?P<m>\d{2})(?P<d>\d{2})"
-    r"-WA(?P<seq>\d{3,5})$",
+    r"^(?P<kind>PTT|AUD)-(?P<y>\d{4})(?P<m>\d{2})(?P<d>\d{2})" r"-WA(?P<seq>\d{3,5})$",
     re.IGNORECASE,
 )
 # Third-party Instagram/Messenger helpers: Instagram-audio-2026-08-12 13-11-09
@@ -317,8 +316,10 @@ def parse_voice_note_stem(
         y, mo, d = int(match["y"]), int(match["m"]), int(match["d"])
         if not _valid_ymd(y, mo, d):
             return None
-        return _canonical_voice_note_family(match["kind"]), datetime(y, mo, d), int(
-            match["seq"]
+        return (
+            _canonical_voice_note_family(match["kind"]),
+            datetime(y, mo, d),
+            int(match["seq"]),
         )
 
     match = _RE_SOUND_RECORD_PAREN.match(s)
@@ -465,7 +466,9 @@ def parse_recording_datetime(
     path = Path(stem_or_path)
     stem = path.stem if path.suffix else path.name
     # Prefer raw stem when caller passed a bare name without path separators.
-    if isinstance(stem_or_path, str) and ("/" not in stem_or_path and "\\" not in stem_or_path):
+    if isinstance(stem_or_path, str) and (
+        "/" not in stem_or_path and "\\" not in stem_or_path
+    ):
         stem = Path(stem_or_path).stem
 
     parsed = parse_recording_datetime_from_stem(stem)
@@ -581,9 +584,7 @@ def next_sequence_number(
             n += 1
         return n
 
-    pattern = re.compile(
-        r"^" + re.escape(prefix) + r"(\d+)(?:$|[^0-9])"
-    )
+    pattern = re.compile(r"^" + re.escape(prefix) + r"(\d+)(?:$|[^0-9])")
     used: set[int] = set()
     for stem in existing_stems:
         m = pattern.match(stem)

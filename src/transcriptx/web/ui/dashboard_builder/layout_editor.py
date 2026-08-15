@@ -82,7 +82,9 @@ def apply_page_placements(
     return layout.model_copy(update={"pages": pages})
 
 
-def new_placement_id(page_id: str, block_id: str, existing: list[EditedPlacement]) -> str:
+def new_placement_id(
+    page_id: str, block_id: str, existing: list[EditedPlacement]
+) -> str:
     base = f"{page_id}_{block_id}"
     taken = {row.placement_id for row in existing}
     if base not in taken:
@@ -122,7 +124,9 @@ def placements_for_view(
     return out
 
 
-def move_placement(rows: list[EditedPlacement], index: int, delta: int) -> list[EditedPlacement]:
+def move_placement(
+    rows: list[EditedPlacement], index: int, delta: int
+) -> list[EditedPlacement]:
     """Move a placement within the full page list by delta (-1 / +1)."""
     if not rows or index < 0 or index >= len(rows):
         return list(rows)
@@ -209,7 +213,9 @@ def render_layout_editor(layout_id: str) -> None:
             options=list(_INSIGHTS_SECTION_ORDER),
             horizontal=True,
             key="dashboard_builder_edit_section",
-            help=widget_help("Insights placements are grouped into these section buckets."),
+            help=widget_help(
+                "Insights placements are grouped into these section buckets."
+            ),
         )
 
     rows = list(edited.get(page_id, []))
@@ -229,7 +235,9 @@ def render_layout_editor(layout_id: str) -> None:
                 value=row.visible,
                 key=f"dashboard_builder_vis_{layout_id}_{row.placement_id}",
                 disabled=builtin,
-                help=widget_help("Hide without removing the placement from the layout."),
+                help=widget_help(
+                    "Hide without removing the placement from the layout."
+                ),
             )
             if not builtin and visible != row.visible:
                 rows[global_ix] = EditedPlacement(
@@ -288,7 +296,9 @@ def render_layout_editor(layout_id: str) -> None:
     suggested = suggest_blocks_for_page(page_id)
     options = {f"{spec.title} (`{spec.id}`)": spec.id for spec in suggested}
     # Also allow other groups via expander
-    other_specs = [s for s in list_blocks() if s.id not in {spec.id for spec in suggested}]
+    other_specs = [
+        s for s in list_blocks() if s.id not in {spec.id for spec in suggested}
+    ]
     pick = st.multiselect(
         "Suggested blocks",
         options=list(options.keys()),
@@ -299,14 +309,19 @@ def render_layout_editor(layout_id: str) -> None:
     )
     if other_specs:
         with st.expander("All other blocks", expanded=False):
-            other_opts = {f"{spec.title} (`{spec.id}`) [{spec.group}]": spec.id for spec in other_specs}
+            other_opts = {
+                f"{spec.title} (`{spec.id}`) [{spec.group}]": spec.id
+                for spec in other_specs
+            }
             more = st.multiselect(
                 "Other blocks",
                 options=list(other_opts.keys()),
                 default=[],
                 key=f"dashboard_builder_add_other_{page_id}_{section or 'all'}",
                 disabled=builtin,
-                help=widget_help("Additional registered blocks that can be placed here."),
+                help=widget_help(
+                    "Additional registered blocks that can be placed here."
+                ),
             )
             for label in more:
                 options[label] = other_opts[label]
@@ -339,7 +354,9 @@ def render_layout_editor(layout_id: str) -> None:
             "New layout id",
             value=f"{layout_id}_custom",
             key="dashboard_builder_edit_save_as_id",
-            help=widget_help("Slug for the custom layout file (letters, digits, underscores)."),
+            help=widget_help(
+                "Slug for the custom layout file (letters, digits, underscores)."
+            ),
         )
         new_title = st.text_input(
             "Title",
@@ -379,7 +396,9 @@ def render_layout_editor(layout_id: str) -> None:
                         title=new_title or slug,
                         overwrite=True,
                     )
-                    from transcriptx.web.blocks.session_context import set_active_layout_id
+                    from transcriptx.web.blocks.session_context import (
+                        set_active_layout_id,
+                    )
 
                     set_active_layout_id(slug)
                     st.session_state.pop(_EDIT_STATE_KEY, None)

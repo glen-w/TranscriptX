@@ -2,6 +2,12 @@
 
 from typing import Any
 
+import pytest
+
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.analysis.aggregation.wordclouds import (  # type: ignore[import]
     aggregate_wordclouds_group,
 )

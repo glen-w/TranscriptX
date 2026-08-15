@@ -52,7 +52,9 @@ def format_transcript_meta_bits(meta: TranscriptExportMeta) -> list[str]:
     ]
     if meta.duration_seconds:
         try:
-            bits.append(f"Duration {format_time_detailed(float(meta.duration_seconds))}")
+            bits.append(
+                f"Duration {format_time_detailed(float(meta.duration_seconds))}"
+            )
         except (TypeError, ValueError):
             pass
     if meta.language:

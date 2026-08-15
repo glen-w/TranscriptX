@@ -251,7 +251,9 @@ def test_speaker_count_from_overview_prefers_named_then_list() -> None:
 @pytest.mark.unit
 def test_speaker_fourth_stat_priority_order() -> None:
     assert oc._speaker_fourth_stat({"tic_rate": 0.05}) == ("Tics", "5%")
-    assert oc._speaker_fourth_stat({"tic_rate": 0.01, "sentiment": {"compound": 0.4}}) == (
+    assert oc._speaker_fourth_stat(
+        {"tic_rate": 0.01, "sentiment": {"compound": 0.4}}
+    ) == (
         "Tone",
         "+0.40",
     )

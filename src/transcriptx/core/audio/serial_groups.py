@@ -264,9 +264,7 @@ def _build_voice_note_run_candidates(
     else:
         # Explicit None means unlimited consecutive gap.
         max_gap = max_gap_seconds  # type: ignore[assignment]
-    max_seq_gap = (
-        config.max_index_gap if config.max_index_gap is not None else 3
-    )
+    max_seq_gap = config.max_index_gap if config.max_index_gap is not None else 3
     candidates: list[_CandidateGroup] = []
     cluster: list[tuple[datetime | None, int | None, Path]] = []
     cluster_family = ""
@@ -438,9 +436,10 @@ def _build_filename_regex_candidates(
                 same_day_days=same_day_days, start=start, candidate=dt
             ):
                 flush()
-            elif max_gap_seconds is not None and (
-                dt - prev_dt
-            ).total_seconds() > max_gap_seconds:
+            elif (
+                max_gap_seconds is not None
+                and (dt - prev_dt).total_seconds() > max_gap_seconds
+            ):
                 flush()
         cluster.append((dt, path))
     flush()
@@ -601,9 +600,7 @@ def detect_serial_audio_groups(
     try:
         from transcriptx.core.audio.merge_profiles import builtin_merge_source_profiles
 
-        return detect_merge_groups(
-            paths, profiles=builtin_merge_source_profiles()
-        )
+        return detect_merge_groups(paths, profiles=builtin_merge_source_profiles())
     except Exception:
         return _detect_with_legacy_config(paths, SerialDetectionConfig())
 

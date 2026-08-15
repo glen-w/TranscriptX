@@ -55,6 +55,6 @@ def test_local_ai_synthesis_surface(seeded_run_app, page) -> None:
         "Models",
         "provider",
     )
-    assert any(s in body for s in llm_signals), (
-        f"Expected LLM/Local AI readiness copy on Run Analysis; got head={body[:800]!r}"
-    )
+    assert any(
+        s in body for s in llm_signals
+    ), f"Expected LLM/Local AI readiness copy on Run Analysis; got head={body[:800]!r}"

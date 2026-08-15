@@ -85,7 +85,11 @@ def _render_answer_card(
     q = _csv_safe(str(row.get("question") or ""))
     status = str(row.get("status") or "")
     raw_idx = row.get("question_index")
-    display_n = raw_idx + 1 if isinstance(raw_idx, int) else (raw_idx if raw_idx is not None else "?")
+    display_n = (
+        raw_idx + 1
+        if isinstance(raw_idx, int)
+        else (raw_idx if raw_idx is not None else "?")
+    )
     st.markdown(
         f"**Q{display_n}:** {_escape(q)}",
         unsafe_allow_html=True,

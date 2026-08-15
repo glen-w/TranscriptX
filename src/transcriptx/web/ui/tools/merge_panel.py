@@ -94,9 +94,7 @@ def render_merge_panel(*, deps_ready: bool = True) -> None:
         deps_ready=deps_ready,
         options=options,
     )
-    _render_section_select(
-        recordings, deps_ready=deps_ready, options=options
-    )
+    _render_section_select(recordings, deps_ready=deps_ready, options=options)
 
 
 def _render_shared_merge_options() -> dict[str, bool]:
@@ -241,9 +239,7 @@ def _render_detected_serial_groups(
             type="primary",
             key="audio_merge_auto_run",
             disabled=not deps_ready or not selected,
-            help=widget_help(
-                "Merge each checked group using the Merge options above."
-            ),
+            help=widget_help("Merge each checked group using the Merge options above."),
         ):
             _run_auto_merge(
                 selected,
@@ -327,9 +323,7 @@ def _render_serial_group_card(group: SerialGroup) -> bool:
                     "sessions, not parts of one recording."
                 ),
             ):
-                hide_serial_group_in_session(
-                    st.session_state, group.dismissal_key
-                )
+                hide_serial_group_in_session(st.session_state, group.dismissal_key)
                 st.rerun()
         return selected
 
@@ -458,7 +452,9 @@ def _render_section_select(
         options=[recordings_path_label(p) for p in recordings],
         default=selected_labels,
         key="audio_merge_multiselect",
-        help=widget_help("Select 2 or more files. Adjust order with the buttons below."),
+        help=widget_help(
+            "Select 2 or more files. Adjust order with the buttons below."
+        ),
     )
 
     label_to_path = {recordings_path_label(p): str(p) for p in recordings}
@@ -486,7 +482,9 @@ def _render_section_select(
             meta_str = _format_merge_row_meta(Path(path_str))
             st.markdown(f"{i + 1}. **{label}**{meta_str}")
         with col_up:
-            if i > 0 and st.button("↑", key=f"merge_up_{i}", help=widget_help("Move up")):
+            if i > 0 and st.button(
+                "↑", key=f"merge_up_{i}", help=widget_help("Move up")
+            ):
                 merged_order[i], merged_order[i - 1] = (
                     merged_order[i - 1],
                     merged_order[i],
@@ -562,10 +560,12 @@ def _render_output_and_run(
         "Output filename",
         value=st.session_state.get("audio_merge_output_filename", default_filename),
         key="audio_merge_output_filename",
-        help=widget_help((
-            "Date prefix is taken from the first file in the merge order. "
-            "The .mp3 extension is added automatically if omitted."
-        )),
+        help=widget_help(
+            (
+                "Date prefix is taken from the first file in the merge order. "
+                "The .mp3 extension is added automatically if omitted."
+            )
+        ),
     )
     st.caption(
         "Backup / overwrite / preprocess / delete-originals use the Merge options above."
@@ -714,9 +714,7 @@ def _render_result(result: object) -> None:
                     type="primary",
                     key="audio_merge_transcribe_result",
                 ):
-                    navigate_to_transcribe_with_paths(
-                        st.session_state, [r.output_path]
-                    )
+                    navigate_to_transcribe_with_paths(st.session_state, [r.output_path])
                     st.rerun()
     else:
         st.error("Merge failed.")

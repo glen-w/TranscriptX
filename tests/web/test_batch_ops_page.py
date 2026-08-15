@@ -81,7 +81,11 @@ def test_batch_panel_renders_processed_runs_with_action_links(monkeypatch) -> No
         runs=[run],
     )
 
-    monkeypatch.setattr(mod, "get_cached_list_transcript_picker_options", lambda: [SimpleNamespace(path="/tmp/alice.json", label="alice")])
+    monkeypatch.setattr(
+        mod,
+        "get_cached_list_transcript_picker_options",
+        lambda: [SimpleNamespace(path="/tmp/alice.json", label="alice")],
+    )
     monkeypatch.setattr(mod, "cached_get_module_info_list", lambda: [])
     monkeypatch.setattr(mod, "BatchController", lambda: SimpleNamespace())
 

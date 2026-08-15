@@ -28,9 +28,7 @@ from transcriptx.io.speaker_map_resolver import speaker_map_sidecar_candidates
 
 logger = get_logger()
 
-_AUDIO_SUFFIXES = frozenset(
-    {".wav", ".mp3", ".ogg", ".m4a", ".flac", ".aac", ".wma"}
-)
+_AUDIO_SUFFIXES = frozenset({".wav", ".mp3", ".ogg", ".m4a", ".flac", ".aac", ".wma"})
 _AUDIO_STATE_FIELDS = (
     "audio_path",
     "mp3_path",

@@ -162,6 +162,14 @@ def _strip_pointer(obj: Any, tokens: Sequence[str]) -> None:
             _strip_pointer(obj[head], rest)
 
 
+def _strip_runtime_library_versions(data: dict[str, Any]) -> None:
+    """Drop installed-package version strings; not part of characterization contract."""
+    meta = data.get("runtime_metadata")
+    if isinstance(meta, dict):
+        meta.pop("torch_version", None)
+        meta.pop("transformers_version", None)
+
+
 def normalize_for_deep_eq(serialized: Mapping[str, Any]) -> dict[str, Any]:
     """Deep-eq shape: strip allowlisted attempt-id embeddings only."""
     data = copy.deepcopy(dict(serialized))
@@ -172,6 +180,7 @@ def normalize_for_deep_eq(serialized: Mapping[str, Any]) -> dict[str, Any]:
     # by also stripping /inference_generation_id from deep-eq — relationship
     # asserts cover both keys separately.
     data.pop("inference_generation_id", None)
+    _strip_runtime_library_versions(data)
     return data
 
 
@@ -214,7 +223,7 @@ def assert_matches_golden(name: str, serialized: Mapping[str, Any]) -> None:
     path = FIXTURES_DIR / f"{name}.json"
     if UPDATE_GOLDENS or not path.exists():
         write_golden(name, normalized)
-    expected = load_golden(name)
+    expected = normalize_for_deep_eq(load_golden(name))
     assert normalized == expected, f"characterization drift for {name}"
 
 

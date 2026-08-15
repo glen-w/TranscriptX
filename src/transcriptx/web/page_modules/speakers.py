@@ -559,28 +559,36 @@ def _render_profile_detail(
     m1.metric(
         "Words",
         f"{agg.headline_words:,}",
-        help=widget_help(f"Total words spoken across eligible appearances. {eligibility_help}"),
+        help=widget_help(
+            f"Total words spoken across eligible appearances. {eligibility_help}"
+        ),
     )
     m2.metric(
         "Turns",
         f"{agg.headline_turns:,}",
-        help=widget_help(f"Total speaking turns across eligible appearances. {eligibility_help}"),
+        help=widget_help(
+            f"Total speaking turns across eligible appearances. {eligibility_help}"
+        ),
     )
     m3.metric(
         "Duration (h)",
         f"{agg.headline_duration_seconds / 3600:,.1f}",
-        help=widget_help((
-            "Total speaking duration across eligible appearances, in hours. "
-            f"{eligibility_help}"
-        )),
+        help=widget_help(
+            (
+                "Total speaking duration across eligible appearances, in hours. "
+                f"{eligibility_help}"
+            )
+        ),
     )
     m4.metric(
         "Appearances",
         f"{agg.headline_appearance_count:,}",
-        help=widget_help((
-            "Linked appearances included in the word, turn, and duration totals. "
-            f"{eligibility_help} The header count includes all linked appearances."
-        )),
+        help=widget_help(
+            (
+                "Linked appearances included in the word, turn, and duration totals. "
+                f"{eligibility_help} The header count includes all linked appearances."
+            )
+        ),
     )
 
     if (
@@ -693,11 +701,13 @@ def _render_voice_controls(
         if st.button(
             "Enrol trusted voice from confirmed links",
             key=f"spk_voice_bootstrap_{profile.profile_id}",
-            help=widget_help((
-                "Explicit bootstrap: extracts and embeds voice from this profile's "
-                "confirmed links (up to the Settings → Speakers enrol link cap). "
-                "Privacy opt-in alone does not enrol anything."
-            )),
+            help=widget_help(
+                (
+                    "Explicit bootstrap: extracts and embeds voice from this profile's "
+                    "confirmed links (up to the Settings → Speakers enrol link cap). "
+                    "Privacy opt-in alone does not enrol anything."
+                )
+            ),
         ):
             try:
                 from transcriptx.services.speaker_profiles.voice_facade import (
@@ -1553,7 +1563,9 @@ def _render_edit_form(profile: SpeakerProfileV1, *, root) -> None:
             "Auto from name (clear stored accent)",
             value=False,
             key=f"{form_prefix}_clear_accent",
-            help=widget_help("Clears accent_color so display falls back to the name-hash palette."),
+            help=widget_help(
+                "Clears accent_color so display falls back to the name-hash palette."
+            ),
         )
         default_accent = profile.accent_color or SPEAKER_ACCENTS[0]
         chosen_accent: str | None = None
@@ -1591,7 +1603,9 @@ def _render_edit_form(profile: SpeakerProfileV1, *, root) -> None:
             "Remove photo",
             value=False,
             key=f"{form_prefix}_clear_avatar",
-            help=widget_help("Clears the stored avatar; chip falls back to initials + accent."),
+            help=widget_help(
+                "Clears the stored avatar; chip falls back to initials + accent."
+            ),
         )
         if st.button(
             "Save photo changes",

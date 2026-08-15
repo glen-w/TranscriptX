@@ -6,7 +6,6 @@ import pytest
 
 from transcriptx.core.analysis.selection import resolve_analysis_preset
 
-
 pytestmark = [pytest.mark.unit]
 
 

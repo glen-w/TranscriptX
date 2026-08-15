@@ -27,8 +27,7 @@ def test_layout_to_edited_pages_and_apply_roundtrip() -> None:
         (b.placement_id, b.block_id, b.visible)
         for b in rebuilt.pages["overview"].blocks
     ] == [
-        (b.placement_id, b.block_id, b.visible)
-        for b in layout.pages["overview"].blocks
+        (b.placement_id, b.block_id, b.visible) for b in layout.pages["overview"].blocks
     ]
 
 

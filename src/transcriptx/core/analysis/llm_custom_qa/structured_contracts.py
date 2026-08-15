@@ -123,9 +123,7 @@ class ArtifactAnswerRow(BaseModel):
     confidence: Optional[float] = None
     citations: list[CitationModel] = Field(default_factory=list)
     evidence_used: EvidenceUsed = Field(default_factory=EvidenceUsed)
-    grounding: RowGroundingDiagnostics = Field(
-        default_factory=RowGroundingDiagnostics
-    )
+    grounding: RowGroundingDiagnostics = Field(default_factory=RowGroundingDiagnostics)
 
     @model_validator(mode="after")
     def _status_fields(self) -> "ArtifactAnswerRow":

@@ -79,7 +79,11 @@ def generate_human_friendly_transcript(
 
         unique_speakers = get_unique_speakers(segments)
         speaker_names = sorted(
-            [name for name in set(unique_speakers.values()) if is_analysis_speaker_label(name)]
+            [
+                name
+                for name in set(unique_speakers.values())
+                if is_analysis_speaker_label(name)
+            ]
         )
 
         from transcriptx.io.transcript_schema import compute_metadata_from_segments

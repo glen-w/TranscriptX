@@ -7,6 +7,10 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.analysis.topic_modeling import utils as tm_utils
 
 

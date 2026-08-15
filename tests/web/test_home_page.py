@@ -250,9 +250,9 @@ def test_home_sessions_expander_independent_of_detailed_statistics(monkeypatch) 
     monkeypatch.setattr(
         mod,
         "instrument_cached_call",
-        lambda name, fn, *args, **kwargs: []
-        if name == "cached_list_recent_runs"
-        else fn(*args, **kwargs),
+        lambda name, fn, *args, **kwargs: (
+            [] if name == "cached_list_recent_runs" else fn(*args, **kwargs)
+        ),
     )
     monkeypatch.setattr(
         mod,
@@ -297,6 +297,7 @@ def test_home_sessions_expander_independent_of_detailed_statistics(monkeypatch) 
     assert "Total duration" not in metrics
     assert frames
     assert list(frames[0]["Session"]) == ["session-b"]
+
 
 def test_home_export_zip_prepares_download(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
@@ -576,7 +577,9 @@ def test_home_recent_runs_perf_boundary_no_expensive_calls(monkeypatch) -> None:
     mod.render_home()
 
 
-def test_cached_home_light_summary_skips_missing_paths(monkeypatch, tmp_path: Path) -> None:
+def test_cached_home_light_summary_skips_missing_paths(
+    monkeypatch, tmp_path: Path
+) -> None:
     import transcriptx.web.cache_helpers as mod
 
     present = tmp_path / "ok.json"

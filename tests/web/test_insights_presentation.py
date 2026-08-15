@@ -85,10 +85,15 @@ def test_analysis_payload_has_user_content_gates() -> None:
     )
     assert analysis_payload_has_user_content(
         "insights",
-        {"key_themes": [{"phrase": "roadmap"}], "recurring_ideas": [], "style_markers": {}},
+        {
+            "key_themes": [{"phrase": "roadmap"}],
+            "recurring_ideas": [],
+            "style_markers": {},
+        },
     )
     assert not analysis_payload_has_user_content(
-        "keyphrases", {"usable": True, "global_by_method": {"noun_chunks": {"phrases": []}}}
+        "keyphrases",
+        {"usable": True, "global_by_method": {"noun_chunks": {"phrases": []}}},
     )
     assert analysis_payload_has_user_content(
         "keyphrases",
@@ -100,7 +105,8 @@ def test_analysis_payload_has_user_content_gates() -> None:
         },
     )
     assert not analysis_payload_has_user_content(
-        "epistemic_markers", {"usable": False, "global_stats": {"hits_per_100_tokens": 1}}
+        "epistemic_markers",
+        {"usable": False, "global_stats": {"hits_per_100_tokens": 1}},
     )
 
 
@@ -124,8 +130,12 @@ def test_load_cached_analysis_json_loads_once(monkeypatch) -> None:
             return {"global_stats": {"ttr": 0.1}}
 
     loader = Loader()
-    a = ip.load_cached_analysis_json(loader, "lexical_diversity", "_lexical_diversity.json")
-    b = ip.load_cached_analysis_json(loader, "lexical_diversity", "_lexical_diversity.json")
+    a = ip.load_cached_analysis_json(
+        loader, "lexical_diversity", "_lexical_diversity.json"
+    )
+    b = ip.load_cached_analysis_json(
+        loader, "lexical_diversity", "_lexical_diversity.json"
+    )
     assert a == b
     assert calls["n"] == 1
 
@@ -134,7 +144,9 @@ def test_load_cached_analysis_json_loads_once(monkeypatch) -> None:
 def test_highlight_quote_eligibility() -> None:
     assert not highlight_quote_eligible("hi")
     assert not highlight_quote_eligible("{'a': 1}")
-    assert highlight_quote_eligible("This is a usable transcript excerpt for a highlight.")
+    assert highlight_quote_eligible(
+        "This is a usable transcript excerpt for a highlight."
+    )
 
 
 @pytest.mark.unit

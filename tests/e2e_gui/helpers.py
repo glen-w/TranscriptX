@@ -113,9 +113,9 @@ def library_option_labels(page: Page) -> list[str]:
 def assert_library_lists_transcript(page: Page, needle: str = "planning") -> None:
     opts = library_option_labels(page)
     joined = "\n".join(opts)
-    assert any(needle.lower() in o.lower() for o in opts), (
-        f"Expected Library option containing {needle!r}; options={opts!r}"
-    )
+    assert any(
+        needle.lower() in o.lower() for o in opts
+    ), f"Expected Library option containing {needle!r}; options={opts!r}"
     assert "No transcripts found" not in page_text(page)
 
 

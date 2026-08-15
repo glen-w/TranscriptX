@@ -205,12 +205,16 @@ def _render_metadata_metrics(
             format_duration_display_from_config(metadata.get("duration_seconds", 0)),
         )
     with col2:
-        st.metric("Speakers", metadata.get("speaker_count", 0), help=widget_help(speaker_help))
+        st.metric(
+            "Speakers", metadata.get("speaker_count", 0), help=widget_help(speaker_help)
+        )
     with col3:
         st.metric(
             "Segments",
             seg_count,
-            help=widget_help(f"Total words: {total_words:,}\nAverage words/segment: {avg_words:.1f}"),
+            help=widget_help(
+                f"Total words: {total_words:,}\nAverage words/segment: {avg_words:.1f}"
+            ),
         )
     with col4:
         st.metric("Language", metadata.get("language", "Unknown"))
@@ -230,20 +234,26 @@ def _render_transcript_controls() -> TranscriptControlsState:
     search_text = st.text_input(
         "🔍 Search in transcript",
         key="transcript_search",
-        help=widget_help("Filter visible segments by text (case-insensitive substring)."),
+        help=widget_help(
+            "Filter visible segments by text (case-insensitive substring)."
+        ),
     )
     show_timestamps = st.checkbox(
         "Show timestamps",
         key="show_timestamps",
-        help=widget_help("Show segment start times beside each turn (format follows timestamp setting)."),
+        help=widget_help(
+            "Show segment start times beside each turn (format follows timestamp setting)."
+        ),
     )
     show_unnamed_speakers = st.checkbox(
         "Show unnamed speakers",
         key="show_unnamed_speakers",
-        help=widget_help((
-            "Include diarization placeholders such as SPEAKER_02. "
-            "Default comes from dashboard.transcript_exclude_unnamed_speakers."
-        )),
+        help=widget_help(
+            (
+                "Include diarization placeholders such as SPEAKER_02. "
+                "Default comes from dashboard.transcript_exclude_unnamed_speakers."
+            )
+        ),
     )
     correct_mode = render_correct_mode_toggle()
     format_key = st.session_state.get("timestamp_format", "seconds")
@@ -750,9 +760,7 @@ def render_transcript_viewer() -> None:
     )
     st.session_state.setdefault("show_timestamps", True)
     st.session_state.setdefault("timestamp_format", "seconds")
-    exclude_unnamed = bool(
-        get_config().dashboard.transcript_exclude_unnamed_speakers
-    )
+    exclude_unnamed = bool(get_config().dashboard.transcript_exclude_unnamed_speakers)
     st.session_state.setdefault("show_unnamed_speakers", not exclude_unnamed)
     if st.session_state.get("timestamp_format") == "real_time":
         st.session_state["timestamp_format"] = "seconds"

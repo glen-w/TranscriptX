@@ -284,7 +284,9 @@ def profile_from_model(model: MergeSourceProfileModel) -> MergeSourceProfile:
     )
 
 
-def validate_profiles_payload(payload: dict[str, Any] | list[Any]) -> list[MergeSourceProfile]:
+def validate_profiles_payload(
+    payload: dict[str, Any] | list[Any],
+) -> list[MergeSourceProfile]:
     """Validate a file payload or bare profile list; return runtime profiles."""
     if isinstance(payload, list):
         envelope = {"schema_version": SCHEMA_VERSION, "profiles": payload}
@@ -305,8 +307,10 @@ def family_matches(family: str, configured: Iterable[str]) -> bool:
         target = (raw or "").strip().lower()
         if not target:
             continue
-        if needle == target or needle.startswith(target + " ") or target.startswith(
-            needle
+        if (
+            needle == target
+            or needle.startswith(target + " ")
+            or target.startswith(needle)
         ):
             return True
     return False

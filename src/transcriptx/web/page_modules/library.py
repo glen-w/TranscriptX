@@ -155,7 +155,9 @@ def _library_browser_fragment(transcripts: list) -> None:
         "Show detailed metadata",
         value=False,
         key="library_show_detailed_metadata",
-        help=widget_help("After selection, show richer sidecars (speaker map, recording link, etc.)."),
+        help=widget_help(
+            "After selection, show richer sidecars (speaker map, recording link, etc.)."
+        ),
     )
     display_df = df if show_path_col else df.drop(columns=["Path"])
     if show_detailed_metadata:

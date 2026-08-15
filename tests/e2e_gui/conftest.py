@@ -41,7 +41,9 @@ def pytest_report_header(config: pytest.Config) -> list[str]:
     ]
 
 
-def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
     e2e_items = [i for i in items if i.get_closest_marker("gui_e2e")]
     if e2e_items:
         terminal = config.pluginmanager.get_plugin("terminalreporter")
@@ -268,9 +270,7 @@ def seed_planning_transcript(ws: E2EWorkspace) -> E2EWorkspace:
     _apply_paths_for_seeding(ws)
     from transcriptx.io.admit_and_register import AdmitOutcomeKind, admit_and_register
 
-    staging = (
-        ws.transcripts_dir / "imports" / f"{uuid4().hex}_planning_review.json"
-    )
+    staging = ws.transcripts_dir / "imports" / f"{uuid4().hex}_planning_review.json"
     staging.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(_PLANNING, staging)
     outcome = admit_and_register(

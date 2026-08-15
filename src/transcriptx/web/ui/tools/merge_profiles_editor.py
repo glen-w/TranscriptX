@@ -57,7 +57,12 @@ def _draft_to_profiles(rows: list[dict]) -> list[MergeSourceProfile]:
             for part in str(row.get("builtin_rules") or "").split(",")
             if part.strip()
         ]
-        match: dict = {"kind": kind, "families": [], "patterns": [], "builtin_rules": []}
+        match: dict = {
+            "kind": kind,
+            "families": [],
+            "patterns": [],
+            "builtin_rules": [],
+        }
         if kind == "voice_note_family":
             match["families"] = families
         elif kind == "filename_regex":
@@ -135,9 +140,11 @@ def render_merge_profiles_editor() -> list[MergeSourceProfile]:
                 row["match_kind"] = st.selectbox(
                     "Match",
                     options=["voice_note_family", "filename_regex", "builtin_serial"],
-                    index=["voice_note_family", "filename_regex", "builtin_serial"].index(
-                        row.get("match_kind") or "voice_note_family"
-                    ),
+                    index=[
+                        "voice_note_family",
+                        "filename_regex",
+                        "builtin_serial",
+                    ].index(row.get("match_kind") or "voice_note_family"),
                     key=f"{prefix}_kind",
                     help=widget_help(
                         "voice_note_family uses built-in brand parsers; "

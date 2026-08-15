@@ -189,10 +189,12 @@ def _render_cleanup_section() -> None:
         options=["Delete all runs", "Delete old runs"],
         horizontal=True,
         key="_cleanup_mode_radio",
-        help=widget_help((
-            "Delete all: remove every eligible analysis run. "
-            "Delete old: keep the newest run per transcript and per group."
-        )),
+        help=widget_help(
+            (
+                "Delete all: remove every eligible analysis run. "
+                "Delete old: keep the newest run per transcript and per group."
+            )
+        ),
     )
     mode = (
         CleanupMode.DELETE_ALL
@@ -340,13 +342,17 @@ def _render_workspace_backup_section() -> None:
         "Include recordings",
         value=False,
         key="workspace_backup_include_recordings",
-        help=widget_help("Also pack TRANSCRIPTX_RECORDINGS_DIR (skips imports/ staging)."),
+        help=widget_help(
+            "Also pack TRANSCRIPTX_RECORDINGS_DIR (skips imports/ staging)."
+        ),
     )
     include_outputs = st.checkbox(
         "Include outputs",
         value=False,
         key="workspace_backup_include_outputs",
-        help=widget_help("Also pack TRANSCRIPTX_OUTPUT_DIR (rebuildable analysis runs)."),
+        help=widget_help(
+            "Also pack TRANSCRIPTX_OUTPUT_DIR (rebuildable analysis runs)."
+        ),
     )
     if st.button("Create backup", key="workspace_backup_create"):
         try:

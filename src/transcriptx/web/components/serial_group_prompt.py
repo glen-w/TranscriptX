@@ -97,11 +97,13 @@ def render_serial_group_prompt(
         "Transcribe these files separately anyway",
         value=st.session_state.get(separate_ok_key, False),
         key=separate_ok_key,
-        help=widget_help((
-            "Split recorder files are normally merged before transcription. "
-            "Merge concatenates only unless you enable preprocessing on the "
-            "Merge form."
-        )),
+        help=widget_help(
+            (
+                "Split recorder files are normally merged before transcription. "
+                "Merge concatenates only unless you enable preprocessing on the "
+                "Merge form."
+            )
+        ),
     )
 
     return SerialGroupPromptState(

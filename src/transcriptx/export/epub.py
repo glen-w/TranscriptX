@@ -245,7 +245,9 @@ def plan_export_epub(
     summary_items = [s for s in (text_summaries or ()) if s.get("body")]
     for summary in summary_items:
         try:
-            preferred = str(summary.get("section_id") or summary.get("title") or "summary")
+            preferred = str(
+                summary.get("section_id") or summary.get("title") or "summary"
+            )
             chap_id = ids.allocate(preferred, fallback="summary")
             title = str(summary.get("title") or "Summary")
             body_md = str(summary.get("body") or "")
@@ -295,9 +297,7 @@ def plan_export_epub(
                             )
                             href = f"images/{fname}"
                             images.append(
-                                EpubImageAsset(
-                                    internal_href=href, mime=mime, data=data
-                                )
+                                EpubImageAsset(internal_href=href, mime=mime, data=data)
                             )
                             parts.append(
                                 f'<p><img src="{xml_escape(href)}" '
@@ -439,4 +439,3 @@ def build_export_epub(
     except Exception as exc:
         logger.warning("EPUB build failed: %s", exc)
         return None
-

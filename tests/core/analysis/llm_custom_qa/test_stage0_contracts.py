@@ -6,7 +6,9 @@ import pytest
 
 import transcriptx.core.analysis.llm_custom_qa.constants as custom_qa_constants
 import transcriptx.core.analysis.llm_custom_qa.versioning as custom_qa_versioning
-from transcriptx.core.analysis.llm_custom_qa.structured_contracts import compute_structured_outcome
+from transcriptx.core.analysis.llm_custom_qa.structured_contracts import (
+    compute_structured_outcome,
+)
 from transcriptx.core.analysis.llm_custom_qa.errors import (
     CustomQAQuestionsValidationError,
 )

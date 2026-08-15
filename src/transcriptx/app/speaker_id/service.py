@@ -501,12 +501,18 @@ class SpeakerIdActionService:
         ignored: Optional[list] = None,
         flash_level: str = "warning",
     ) -> SpeakerIdAck:
-        level = "error" if status == "error" and flash_level == "warning" else flash_level
-        if status == "error" and flash_level == "warning" and message.startswith(
-            "Enter a name"
+        level = (
+            "error" if status == "error" and flash_level == "warning" else flash_level
+        )
+        if (
+            status == "error"
+            and flash_level == "warning"
+            and message.startswith("Enter a name")
         ):
             level = "warning"
-        flash_level_lit: str = level if level in ("info", "warning", "error", "success") else "warning"
+        flash_level_lit: str = (
+            level if level in ("info", "warning", "error", "success") else "warning"
+        )
         return SpeakerIdAck(
             action_id=command.action_id,
             action_seq=command.action_seq,
@@ -535,7 +541,9 @@ class SpeakerIdActionService:
     @staticmethod
     def _default_is_managed(path: str) -> bool:
         try:
-            from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
+            from transcriptx.core.speaker_profiles.resolver import (
+                ManagedTranscriptResolver,
+            )
 
             return ManagedTranscriptResolver().is_managed_path(path)
         except Exception:

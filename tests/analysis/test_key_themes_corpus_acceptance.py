@@ -4,6 +4,12 @@ from __future__ import annotations
 
 import time
 
+import pytest
+
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.analysis.highlights.core import (
     SegmentLite,
     _compute_emblematic_phrases,

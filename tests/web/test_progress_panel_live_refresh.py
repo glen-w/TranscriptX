@@ -63,9 +63,10 @@ def test_streamlit_progress_callback_refreshes_render_slot(monkeypatch) -> None:
 
     assert len(paints) >= 2
     assert paints[-1]["completed"] == 1
-    assert paints[-1]["current_module"] == "stats" or paints[0][
-        "current_module"
-    ] == "stats"
+    assert (
+        paints[-1]["current_module"] == "stats"
+        or paints[0]["current_module"] == "stats"
+    )
     assert session[SNAPSHOT_KEY]["completed"] == 1
 
 

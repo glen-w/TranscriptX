@@ -72,7 +72,12 @@ class ActivationBarrier:
 
         try:
             settings = self._privacy.read()
-        except (ValidationError, SpeakerProfileContractError, ValueError, OSError) as exc:
+        except (
+            ValidationError,
+            SpeakerProfileContractError,
+            ValueError,
+            OSError,
+        ) as exc:
             # Refuse pre-epoch / corrupt privacy docs; do not crash Speakers UX.
             return ActivationStatus(
                 allowed=False,
@@ -137,9 +142,7 @@ class ActivationBarrier:
         if status.block_reason == "privacy_consent_required":
             raise PrivacyConsentRequired(status.detail or "re-consent required")
         if status.block_reason == "privacy_settings_invalid":
-            raise VoiceFeatureDisabled(
-                status.detail or "privacy settings incompatible"
-            )
+            raise VoiceFeatureDisabled(status.detail or "privacy settings incompatible")
         raise VoiceFeatureDisabled(status.detail or "voice matching disabled")
 
     def assert_settings_enablement_allowed(self) -> None:

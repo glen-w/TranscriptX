@@ -110,7 +110,9 @@ def generate_group_acts_temporal_overlay(
             return title
         return f"{title_prefix} — {title}"
 
-    speakers = sorted([s for s in act_counts_per_speaker.keys() if is_analysis_speaker_label(s)])
+    speakers = sorted(
+        [s for s in act_counts_per_speaker.keys() if is_analysis_speaker_label(s)]
+    )
     if not act_counts_global or not speakers:
         return
 

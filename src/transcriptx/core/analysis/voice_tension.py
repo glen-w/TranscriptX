@@ -112,7 +112,9 @@ class VoiceTensionAnalysis(AnalysisModule):
 
             if not include_unnamed and "speaker" in df.columns:
                 df = df[
-                    df["speaker"].apply(lambda s: bool(s) and is_analysis_speaker_label(str(s)))
+                    df["speaker"].apply(
+                        lambda s: bool(s) and is_analysis_speaker_label(str(s))
+                    )
                 ]
 
             curve_rows = compute_tension_curve(

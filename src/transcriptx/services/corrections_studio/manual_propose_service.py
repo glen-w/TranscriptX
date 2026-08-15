@@ -108,9 +108,7 @@ def _find_segment(
         return segment_index, seg, sid
 
     if not segment_id:
-        raise ManualProposeValidationError(
-            "segment_id or segment_index is required"
-        )
+        raise ManualProposeValidationError("segment_id or segment_index is required")
     for i, seg in enumerate(segments):
         if not isinstance(seg, dict):
             continue
@@ -197,7 +195,9 @@ class CorrectionsStudioManualProposeService:
 
         gen_id = doc.current_generation_id
         current_cands = [
-            c for c in doc.candidates if gen_id is not None and c.generation_id == gen_id
+            c
+            for c in doc.candidates
+            if gen_id is not None and c.generation_id == gen_id
         ]
 
         # Duplicate semantics (H7)
@@ -205,8 +205,7 @@ class CorrectionsStudioManualProposeService:
         conflicting: Optional[StudioCandidate] = None
         for c in current_cands:
             if not (
-                c.kind == "manual"
-                or CandidateSource.viewer_manual in (c.sources or [])
+                c.kind == "manual" or CandidateSource.viewer_manual in (c.sources or [])
             ):
                 continue
             for occ in c.occurrences:
@@ -342,7 +341,9 @@ class CorrectionsStudioManualProposeService:
             review_records = [
                 r
                 for r in review_records
-                if not (r.candidate_id == cand.candidate_id and r.generation_id == gen_id)
+                if not (
+                    r.candidate_id == cand.candidate_id and r.generation_id == gen_id
+                )
             ]
             review_records.append(
                 StudioReviewRecord(
@@ -361,7 +362,11 @@ class CorrectionsStudioManualProposeService:
             cand = cand.model_copy(update={"review_status": ReviewStatus.accepted})
             # Replace cand in new_candidates
             new_candidates = [
-                cand if c.candidate_id == cand.candidate_id and c.generation_id == gen_id else c
+                (
+                    cand
+                    if c.candidate_id == cand.candidate_id and c.generation_id == gen_id
+                    else c
+                )
                 for c in new_candidates
             ]
 

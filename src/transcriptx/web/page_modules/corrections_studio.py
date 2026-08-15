@@ -37,7 +37,9 @@ def _session_revision(session: StudioSessionDocument | None, session_id: str) ->
     """Derive a revision token for optimistic corrections commands."""
     if session is None:
         return f"sess:{session_id}"
-    updated = getattr(session, "updated_at", None) or getattr(session, "created_at", None)
+    updated = getattr(session, "updated_at", None) or getattr(
+        session, "created_at", None
+    )
     return f"sess:{session_id}:{updated}"
 
 
@@ -394,7 +396,9 @@ def _corrections_studio_workspace_fragment(
             "Filter by status",
             status_options,
             key="corrections_studio_status_filter",
-            help=widget_help("Review workflow state for each candidate (pending until you accept/reject/skip)."),
+            help=widget_help(
+                "Review workflow state for each candidate (pending until you accept/reject/skip)."
+            ),
         )
     with filter_col2:
         kind_filter = st.multiselect(
@@ -420,7 +424,9 @@ def _corrections_studio_workspace_fragment(
             value=0.0,
             step=0.05,
             key="corrections_studio_confidence_min",
-            help=widget_help("Hide candidates below this ranking score (0 = show all)."),
+            help=widget_help(
+                "Hide candidates below this ranking score (0 = show all)."
+            ),
         )
     with filter_col5:
         page_size = 50

@@ -232,9 +232,7 @@ def _insights_summary_candidates(ctx: BlockContext) -> list:
     return ordered
 
 
-def render_insights_summary_panel(
-    ctx: BlockContext, placement: BlockPlacement
-) -> None:
+def render_insights_summary_panel(ctx: BlockContext, placement: BlockPlacement) -> None:
     """Insights Summary: one selectable summary body (Full controls)."""
     from transcriptx.web.insights_presentation import (
         SUMMARY_TYPE_LABELS,
@@ -265,9 +263,7 @@ def render_insights_summary_panel(
         render_global_custom_qa_under_summary(ctx.run_root)
         return
 
-    labels = [
-        SUMMARY_TYPE_LABELS.get(c.kind, c.title) for c in candidates
-    ]
+    labels = [SUMMARY_TYPE_LABELS.get(c.kind, c.title) for c in candidates]
     by_label = {SUMMARY_TYPE_LABELS.get(c.kind, c.title): c for c in candidates}
     # Prefer Transcript Summary when present; else first available.
     default_label = labels[0]
@@ -291,7 +287,9 @@ def render_insights_summary_panel(
                 options=labels,
                 default=st.session_state[state_key],
                 key=f"{state_key}_control",
-                help=widget_help("Switch between available Overview summary variants for this run."),
+                help=widget_help(
+                    "Switch between available Overview summary variants for this run."
+                ),
             )
         except Exception:
             choice = st.radio(
@@ -300,7 +298,9 @@ def render_insights_summary_panel(
                 index=labels.index(st.session_state[state_key]),
                 horizontal=True,
                 key=f"{state_key}_radio",
-                help=widget_help("Switch between available Overview summary variants for this run."),
+                help=widget_help(
+                    "Switch between available Overview summary variants for this run."
+                ),
             )
         if choice in by_label:
             st.session_state[state_key] = choice
@@ -333,9 +333,7 @@ def render_insights_summary_panel(
     if loader is not None:
         rel = resolve_artifact_rel_path(
             loader, module, f"{stem}.md"
-        ) or resolve_artifact_rel_path(
-            loader, module, f"{stem}.json", kind="data_json"
-        )
+        ) or resolve_artifact_rel_path(loader, module, f"{stem}.json", kind="data_json")
 
     if selected.kind in {"llm_summary", "narrative_summary"} and rated and rel:
         render_badge_row_with_feedback(

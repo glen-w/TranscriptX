@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -57,12 +56,17 @@ def test_try_install_success_path(monkeypatch: pytest.MonkeyPatch) -> None:
 
     ok_result = MagicMock(returncode=0, stderr="", stdout="ok")
     with (
-        patch.object(importlib, "import_module", side_effect=_import),
+        patch(
+            "transcriptx.core.utils.lazy_imports.importlib.import_module",
+            side_effect=_import,
+        ),
         patch(
             "transcriptx.core.utils.lazy_imports.subprocess.run",
             return_value=ok_result,
         ),
-        patch.object(importlib, "invalidate_caches"),
+        patch(
+            "transcriptx.core.utils.lazy_imports.importlib.invalidate_caches",
+        ),
     ):
         ok, err = li._try_install_package(
             "installed_pkg_xyz", "installed_pkg_xyz", "testing"
@@ -87,9 +91,14 @@ def test_try_install_extra_fallback_to_package() -> None:
         return MagicMock(returncode=0, stderr="", stdout="")
 
     with (
-        patch.object(importlib, "import_module", side_effect=_import),
+        patch(
+            "transcriptx.core.utils.lazy_imports.importlib.import_module",
+            side_effect=_import,
+        ),
         patch("transcriptx.core.utils.lazy_imports.subprocess.run", side_effect=_run),
-        patch.object(importlib, "invalidate_caches"),
+        patch(
+            "transcriptx.core.utils.lazy_imports.importlib.invalidate_caches",
+        ),
     ):
         ok, err = li._try_install_package(
             "pkg_name", "pkg_name", "testing", extra="viz"
@@ -102,7 +111,10 @@ def test_try_install_extra_fallback_to_package() -> None:
 @pytest.mark.unit
 def test_try_install_timeout_and_exception() -> None:
     with (
-        patch.object(importlib, "import_module", side_effect=ImportError("x")),
+        patch(
+            "transcriptx.core.utils.lazy_imports.importlib.import_module",
+            side_effect=ImportError("x"),
+        ),
         patch(
             "transcriptx.core.utils.lazy_imports.subprocess.run",
             side_effect=li.subprocess.TimeoutExpired(cmd="pip", timeout=1),
@@ -113,7 +125,10 @@ def test_try_install_timeout_and_exception() -> None:
     assert "timed out" in err
 
     with (
-        patch.object(importlib, "import_module", side_effect=ImportError("x")),
+        patch(
+            "transcriptx.core.utils.lazy_imports.importlib.import_module",
+            side_effect=ImportError("x"),
+        ),
         patch(
             "transcriptx.core.utils.lazy_imports.subprocess.run",
             side_effect=OSError("boom"),
@@ -251,31 +266,13 @@ def test_ensure_pdf_ready_branches(monkeypatch: pytest.MonkeyPatch, capsys) -> N
 
 @pytest.mark.unit
 def test_playwright_check_and_ensure_paths() -> None:
-    # import missing
-    with patch.dict("sys.modules", {"playwright": None, "playwright.sync_api": None}):
-        with patch(
-            "builtins.__import__",
-            side_effect=ImportError("no playwright"),
-        ):
-            # call helpers with ImportError from their internal imports
-            pass
-
-    with patch.object(li, "_check_playwright_browser_installed", return_value=False):
-        with patch(
-            "playwright.sync_api.sync_playwright",
-            create=True,
-        ):
-            # Simulate ImportError in ensure when playwright unavailable
-            with patch.dict("sys.modules", {}):
-                pass
-
-    # Direct unit coverage of check when sync_playwright raises ImportError
+    """Cover import-missing branches without requiring playwright installed."""
     import builtins
 
     real_import = builtins.__import__
 
     def _selective(name, *a, **k):
-        if name.startswith("playwright"):
+        if name == "playwright" or str(name).startswith("playwright."):
             raise ImportError("missing playwright")
         return real_import(name, *a, **k)
 

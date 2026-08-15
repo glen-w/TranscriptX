@@ -268,7 +268,9 @@ class NERAnalysis(AnalysisModule):
                 output_service.save_chart(spec, chart_type="entity_types")
 
         # Create global entity types chart only when more than one identified speaker
-        named_speakers = [s for s in entity_counts_per_speaker if is_analysis_speaker_label(s)]
+        named_speakers = [
+            s for s in entity_counts_per_speaker if is_analysis_speaker_label(s)
+        ]
         if all_label_counter and len(named_speakers) > 1:
             labels = Counter(all_label_counter)
             spec = BarCategoricalSpec(

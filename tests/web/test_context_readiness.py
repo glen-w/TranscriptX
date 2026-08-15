@@ -8,7 +8,6 @@ import pytest
 
 from transcriptx.web.navigation import context_readiness, evaluate_page_access
 
-
 pytestmark = [pytest.mark.unit]
 
 

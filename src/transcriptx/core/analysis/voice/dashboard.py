@@ -202,7 +202,9 @@ def _prepare_data(context: Any, locator: Dict[str, Any]) -> _ProsodyData:
         df_hover = df.copy()
         df_hover["text_snippet"] = None
 
-    df_named = df[df["speaker"].apply(lambda s: bool(s) and is_analysis_speaker_label(str(s)))]
+    df_named = df[
+        df["speaker"].apply(lambda s: bool(s) and is_analysis_speaker_label(str(s)))
+    ]
     return _ProsodyData(df=df, df_named=df_named, df_hover=df_hover)
 
 

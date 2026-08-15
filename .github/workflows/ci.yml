@@ -125,6 +125,8 @@ jobs:
         run: make test-smoke-nlp
       - name: Contracts (nlp)
         run: make test-contracts
+      - name: NLP unit tests
+        run: make test-nlp-unit
 
   docs:
     runs-on: ubuntu-latest

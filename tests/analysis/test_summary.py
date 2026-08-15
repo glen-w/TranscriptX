@@ -1,5 +1,11 @@
 """Tests for summary."""
 
+import pytest
+
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.analysis.highlights.core import (  # type: ignore[import-untyped]
     SegmentLite,
 )

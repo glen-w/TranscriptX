@@ -185,7 +185,7 @@ def test_run_analysis_page_renders_post_success_action_links() -> None:
     post_actions = source.index("_render_post_analysis_actions()", shell_call)
     target_ctrl = source.index('st.segmented_control(\n        "Target"', shell_call)
     assert shell_call < post_actions < target_ctrl
-    assert '_RUN_ANALYSIS_TARGET_KEY) != "Batch"' in source
+    assert "_RUN_ANALYSIS_TARGET_KEY" in source and ') != "Batch"' in source
     assert 'analysis_run_in_progress", False)' in source
     assert "st.session_state.pop(_KEY_LAST_SUCCESS, None)" in source
 

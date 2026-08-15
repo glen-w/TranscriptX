@@ -91,7 +91,9 @@ class CachedClipStatus:
 class EnqueueClipResult:
     """Outcome of a single non-blocking ``enqueue_clip`` call."""
 
-    status: str  # accepted | already_cached | already_inflight | backpressure | rejected
+    status: (
+        str  # accepted | already_cached | already_inflight | backpressure | rejected
+    )
     clip_id: str = ""
     reason: str | None = None
 
@@ -540,13 +542,9 @@ class ClipService:
             audio_path, start_s, end_s, format=format, pad_ms=pad_ms
         )
         if status.status == "hit":
-            return EnqueueClipResult(
-                status="already_cached", clip_id=status.clip_id
-            )
+            return EnqueueClipResult(status="already_cached", clip_id=status.clip_id)
         if status.status == "inflight":
-            return EnqueueClipResult(
-                status="already_inflight", clip_id=status.clip_id
-            )
+            return EnqueueClipResult(status="already_inflight", clip_id=status.clip_id)
         if status.status == "unavailable":
             return EnqueueClipResult(
                 status="rejected",
@@ -556,13 +554,9 @@ class ClipService:
         # miss → try enqueue
         warm = self.warm_clips(Path(audio_path), [(start_s, end_s)], format=format)
         if warm.already_cached:
-            return EnqueueClipResult(
-                status="already_cached", clip_id=status.clip_id
-            )
+            return EnqueueClipResult(status="already_cached", clip_id=status.clip_id)
         if warm.already_inflight:
-            return EnqueueClipResult(
-                status="already_inflight", clip_id=status.clip_id
-            )
+            return EnqueueClipResult(status="already_inflight", clip_id=status.clip_id)
         if warm.enqueued:
             return EnqueueClipResult(status="accepted", clip_id=status.clip_id)
         if warm.stopped_reason == "backpressure":

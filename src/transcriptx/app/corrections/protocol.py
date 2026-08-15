@@ -90,7 +90,9 @@ class CorrectionsActionService:
 
         # Revision checks are enforced against controller-reported facts when available.
         current_session_rev = getattr(
-            self._controller, "session_revision", lambda _s: command.expected_session_revision
+            self._controller,
+            "session_revision",
+            lambda _s: command.expected_session_revision,
         )(command.session_id)
         if current_session_rev != command.expected_session_revision:
             ack = CorrectionsAck(

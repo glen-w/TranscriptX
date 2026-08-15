@@ -68,7 +68,9 @@ def generate_acts_charts(
         get_speaker_display_name,
     )
 
-    speakers = sorted([s for s in act_counts_per_speaker.keys() if is_analysis_speaker_label(s)])
+    speakers = sorted(
+        [s for s in act_counts_per_speaker.keys() if is_analysis_speaker_label(s)]
+    )
 
     # Per-speaker pie + bar charts
     for speaker, counter in act_counts_per_speaker.items():

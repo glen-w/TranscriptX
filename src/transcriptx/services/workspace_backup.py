@@ -73,7 +73,9 @@ class RestoreResult:
 
 def default_backup_dest(paths: PathSettings, *, stamp: str | None = None) -> Path:
     when = stamp or datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    return paths.data_dir / "backups" / "workspace" / f"transcriptx-workspace-{when}.zip"
+    return (
+        paths.data_dir / "backups" / "workspace" / f"transcriptx-workspace-{when}.zip"
+    )
 
 
 def default_safety_dest(paths: PathSettings, *, stamp: str | None = None) -> Path:
@@ -438,7 +440,11 @@ class WorkspaceBackupService:
             f"mapped onto transcripts={paths.transcripts_dir} "
             f"config={paths.config_dir} data={paths.data_dir} "
             f"speaker_profiles={paths.speaker_profiles_dir}"
-            + (f" recordings={paths.recordings_dir}" if includes.get("recordings") else "")
+            + (
+                f" recordings={paths.recordings_dir}"
+                if includes.get("recordings")
+                else ""
+            )
             + (f" outputs={paths.outputs_dir}" if includes.get("outputs") else "")
         )
         messages.append(
@@ -482,7 +488,8 @@ class WorkspaceBackupService:
                 members = [
                     info
                     for info in zf.infolist()
-                    if not info.filename.endswith("/") and info.filename != MANIFEST_NAME
+                    if not info.filename.endswith("/")
+                    and info.filename != MANIFEST_NAME
                 ]
                 for info in members:
                     self._assert_safe_member(info.filename)
@@ -707,7 +714,9 @@ class WorkspaceBackupService:
             except OSError:
                 continue
             # Skip files under any skipped directory (e.g. workspace backups dir).
-            if any(_is_relative_to(resolved, sp) for sp in skip_resolved if sp.is_dir()):
+            if any(
+                _is_relative_to(resolved, sp) for sp in skip_resolved if sp.is_dir()
+            ):
                 continue
             if resolved in skip_resolved:
                 continue
@@ -717,7 +726,8 @@ class WorkspaceBackupService:
             if skip_rel_prefixes and (
                 rel in skip_rel_prefixes
                 or any(
-                    rel == p.rstrip("/") or rel.startswith(p if p.endswith("/") else p + "/")
+                    rel == p.rstrip("/")
+                    or rel.startswith(p if p.endswith("/") else p + "/")
                     for p in skip_rel_prefixes
                 )
             ):

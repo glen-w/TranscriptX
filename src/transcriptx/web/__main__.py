@@ -21,10 +21,11 @@ bootstrap()
 
 # Pin BLAS/OpenMP/Numba before Streamlit imports analysis extras (BERTopic/UMAP).
 # Pool size is process-sticky; late caps cannot undo macOS segfaults.
-from transcriptx.core.utils.native_threads import ensure_native_thread_env_defaults
+from transcriptx.core.utils.native_threads import (  # noqa: E402
+    ensure_native_thread_env_defaults,
+)
 
 ensure_native_thread_env_defaults()
-
 
 
 def _find_streamlit_app() -> Path | None:

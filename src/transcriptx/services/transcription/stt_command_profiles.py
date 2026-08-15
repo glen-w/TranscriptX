@@ -82,9 +82,7 @@ def command_gen_params_from_dict(data: dict[str, Any]) -> CommandGenParams:
         raise SttCommandProfileError("Profile config must be an object")
     for key in _SECRET_KEYS:
         if key in data:
-            raise SttCommandProfileError(
-                f"Profile must not contain secret key {key!r}"
-            )
+            raise SttCommandProfileError(f"Profile must not contain secret key {key!r}")
     version = data.get("schema_version", SCHEMA_VERSION)
     try:
         version_int = int(version)
@@ -125,9 +123,7 @@ def command_gen_params_from_dict(data: dict[str, Any]) -> CommandGenParams:
         batch_size=int(data.get("batch_size") or 16),
         min_speakers=min_speakers,
         max_speakers=max_speakers,
-        docker_image=str(
-            data.get("docker_image") or "ghcr.io/m-bain/whisperx:latest"
-        ),
+        docker_image=str(data.get("docker_image") or "ghcr.io/m-bain/whisperx:latest"),
         webui_port=int(data.get("webui_port") or 7860),
         webui_clone_dir=str(data.get("webui_clone_dir") or "$HOME/Whisper-WebUI"),
         expected_output_format=str(

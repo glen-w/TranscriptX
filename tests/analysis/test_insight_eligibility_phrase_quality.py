@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+import pytest
+
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.analysis.insight_eligibility.content_scoring import (
     score_content_phrases,
 )

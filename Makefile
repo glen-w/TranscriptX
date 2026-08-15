@@ -1,7 +1,7 @@
 # TranscriptX Makefile
 # Main targets for documentation and development
 
-.PHONY: docs-gen docs docs-clean pages-site help test-smoke test-smoke-nlp test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance test-gui-e2e test-workspaces test-theme-c-browser workspaces-build docker-smoke run clean-test-artifacts perf-envelopes
+.PHONY: docs-gen docs docs-clean pages-site help test-smoke test-smoke-nlp test-nlp-unit test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance test-gui-e2e test-workspaces test-theme-c-browser workspaces-build docker-smoke run clean-test-artifacts perf-envelopes
 
 help:
 	@echo "TranscriptX Makefile"
@@ -24,6 +24,7 @@ help:
 	@echo "Testing targets:"
 	@echo "  test-smoke       Run CI smoke gate (Core+dev; spaCy-gated modules skip without [nlp])"
 	@echo "  test-smoke-nlp   Run smoke with [nlp] + en_core_web_md available"
+	@echo "  test-nlp-unit    Run spaCy-gated unit tests (requires [nlp])"
 	@echo "  test-fast        Run fast core (Gate B)"
 	@echo "  test-heavy       Run explicit heavy profile (excludes quarantined)"
 	@echo "  test-heavy-all   Run explicit heavy profile (includes quarantined)"
@@ -79,9 +80,13 @@ test-smoke-nlp:
 	@python -c "import spacy; spacy.load('en_core_web_md'); print('spaCy en_core_web_md ready')"
 	@$(MAKE) test-smoke
 
+test-nlp-unit:
+	@echo "Running spaCy-gated unit tests..."
+	@pytest -q -m "requires_nlp and not quarantined" --tb=short
+
 test-fast:
 	@echo "Running fast core tests (Gate B)..."
-	@pytest -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow and not gui_acceptance"
+	@pytest -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not requires_nlp and not slow and not legacy and not semantic_v2_slow and not gui_acceptance and not gui_e2e and not browser"
 
 test-gui-acceptance:
 	@echo "Running Streamlit AppTest GUI acceptance journeys..."

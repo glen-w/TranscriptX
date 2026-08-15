@@ -77,7 +77,9 @@ def test_merge_list_file(merge_mod, tmp_path: Path, monkeypatch) -> None:
         )
 
     monkeypatch.setattr(merge_mod, "run_merge", fake_run_merge)
-    code = merge_mod.main(["--list", str(listing), "--no-backup", "-o", str(tmp_path / "out.mp3")])
+    code = merge_mod.main(
+        ["--list", str(listing), "--no-backup", "-o", str(tmp_path / "out.mp3")]
+    )
     assert code == 0
     assert captured["paths"] == [a.resolve(), b.resolve()]
     assert captured["backup"] is False
@@ -102,7 +104,14 @@ def test_merge_delete_originals_flag(merge_mod, tmp_path: Path, monkeypatch) -> 
 
     monkeypatch.setattr(merge_mod, "run_merge", fake_run_merge)
     code = merge_mod.main(
-        [str(a), str(b), "--no-backup", "--delete-originals", "-o", str(tmp_path / "out.mp3")]
+        [
+            str(a),
+            str(b),
+            "--no-backup",
+            "--delete-originals",
+            "-o",
+            str(tmp_path / "out.mp3"),
+        ]
     )
     assert code == 0
     assert captured["delete_originals"] is True

@@ -82,7 +82,9 @@ def _render_preset_controls(params: CommandGenParams) -> None:
         "Preset",
         options=options,
         key=_KEY_PRESET_SELECT,
-        help=widget_help("Saved STT command form fields (host paths). Does not store secrets."),
+        help=widget_help(
+            "Saved STT command form fields (host paths). Does not store secrets."
+        ),
     )
     col_load, col_delete, col_save = st.columns(3)
     with col_load:
@@ -187,7 +189,9 @@ def render_transcribe_audio_page() -> None:
         options=list(_TOOL_LABELS.values()),
         index=1 if not default_input else 0,
         key="tx_cmdgen_tool",
-        help=widget_help("External STT recipe to generate a host command for (TranscriptX does not run it)."),
+        help=widget_help(
+            "External STT recipe to generate a host command for (TranscriptX does not run it)."
+        ),
     )
     tool = next(t for t, label in _TOOL_LABELS.items() if label == tool_label)
     if tool is TranscriptionTool.WHISPERMLX_MISSING:
@@ -232,7 +236,9 @@ def render_transcribe_audio_page() -> None:
             output_label,
             value="/path/to/transcript/output",
             key="tx_cmdgen_output",
-            help=widget_help("Directory where the STT tool should write transcript outputs."),
+            help=widget_help(
+                "Directory where the STT tool should write transcript outputs."
+            ),
         )
         env_file = _ENV_FILE_DEFAULT
         if tool is not TranscriptionTool.WHISPER_WEBUI_DOCKER:
@@ -246,11 +252,13 @@ def render_transcribe_audio_page() -> None:
                 "Env file (host)",
                 value=_ENV_FILE_DEFAULT,
                 key="tx_cmdgen_env",
-                help=widget_help((
-                    "Host path to repo-root whisperx.env for the Mac terminal command. "
-                    "Do not use container paths under /opt/venv — those do not exist on the host. "
-                    "Relative whisperx.env works when you run the command from the git clone."
-                )),
+                help=widget_help(
+                    (
+                        "Host path to repo-root whisperx.env for the Mac terminal command. "
+                        "Do not use container paths under /opt/venv — those do not exist on the host. "
+                        "Relative whisperx.env works when you run the command from the git clone."
+                    )
+                ),
             )
             if looks_like_container_install_path(env_file):
                 st.warning(
@@ -262,7 +270,9 @@ def render_transcribe_audio_page() -> None:
             value="*.mp3",
             key="tx_cmdgen_glob",
             disabled=tool is not TranscriptionTool.WHISPERMLX_SINGLE,
-            help=widget_help("Filename pattern when Input is a folder (whispermlx single-folder loop)."),
+            help=widget_help(
+                "Filename pattern when Input is a folder (whispermlx single-folder loop)."
+            ),
         )
     with col_b:
         model_help = (
@@ -286,13 +296,17 @@ def render_transcribe_audio_page() -> None:
             "Language",
             value="en",
             key="tx_cmdgen_language",
-            help=widget_help("ISO language code passed to the STT tool (e.g. en, es). Empty may mean auto-detect."),
+            help=widget_help(
+                "ISO language code passed to the STT tool (e.g. en, es). Empty may mean auto-detect."
+            ),
         )
         diarize = st.checkbox(
             "Diarize",
             value=True,
             key="tx_cmdgen_diarize",
-            help=widget_help("Split speakers (SPEAKER_00, …). Needed for Speaker ID and most speaker analytics."),
+            help=widget_help(
+                "Split speakers (SPEAKER_00, …). Needed for Speaker ID and most speaker analytics."
+            ),
         )
         dry_run = st.checkbox(
             "Dry-run / preview flags",
@@ -306,14 +320,18 @@ def render_transcribe_audio_page() -> None:
             value=False,
             key="tx_cmdgen_force",
             disabled=tool is not TranscriptionTool.WHISPERMLX_MISSING,
-            help=widget_help("Re-run even when an output JSON already exists (whispermlx-missing --force)."),
+            help=widget_help(
+                "Re-run even when an output JSON already exists (whispermlx-missing --force)."
+            ),
         )
         fuzzy = st.checkbox(
             "Fuzzy JSON match (skip variants)",
             value=False,
             key="tx_cmdgen_fuzzy",
             disabled=tool is not TranscriptionTool.WHISPERMLX_MISSING,
-            help=widget_help("Treat near-matching output names as already done and skip those inputs."),
+            help=widget_help(
+                "Treat near-matching output names as already done and skip those inputs."
+            ),
         )
 
     whispermlx_binary = "whispermlx"
@@ -331,7 +349,9 @@ def render_transcribe_audio_page() -> None:
             "whispermlx binary",
             value="whispermlx",
             key="tx_cmdgen_bin",
-            help=widget_help("PATH name or absolute path. Overridden by WHISPERMLX in the env file when set."),
+            help=widget_help(
+                "PATH name or absolute path. Overridden by WHISPERMLX in the env file when set."
+            ),
         )
     if tool is TranscriptionTool.WHISPERX_DOCKER:
         device = st.selectbox(
@@ -339,14 +359,18 @@ def render_transcribe_audio_page() -> None:
             options=["cpu", "cuda"],
             index=0,
             key="tx_cmdgen_device",
-            help=widget_help("Inference device for WhisperX Docker (cuda needs an NVIDIA GPU + runtime)."),
+            help=widget_help(
+                "Inference device for WhisperX Docker (cuda needs an NVIDIA GPU + runtime)."
+            ),
         )
         compute_type = st.selectbox(
             "Compute type",
             options=["float16", "int8", "float32"],
             index=0 if device == "cuda" else 1,
             key="tx_cmdgen_compute",
-            help=widget_help("Quantization/precision trade-off. int8 is typical on CPU; float16 on GPU."),
+            help=widget_help(
+                "Quantization/precision trade-off. int8 is typical on CPU; float16 on GPU."
+            ),
         )
         batch_size = int(
             st.number_input(
@@ -355,14 +379,18 @@ def render_transcribe_audio_page() -> None:
                 max_value=64,
                 value=16,
                 key="tx_cmdgen_batch",
-                help=widget_help("WhisperX transcription batch size. Higher uses more VRAM/RAM."),
+                help=widget_help(
+                    "WhisperX transcription batch size. Higher uses more VRAM/RAM."
+                ),
             )
         )
         use_speaker_bounds = st.checkbox(
             "Set min/max speakers",
             value=False,
             key="tx_cmdgen_speaker_bounds",
-            help=widget_help("Pass diarization speaker-count bounds when you know the cast size."),
+            help=widget_help(
+                "Pass diarization speaker-count bounds when you know the cast size."
+            ),
         )
         if use_speaker_bounds:
             min_speakers = int(
@@ -391,7 +419,9 @@ def render_transcribe_audio_page() -> None:
             "Docker image",
             value=_DEFAULT_WEBUI_IMAGE,
             key="tx_cmdgen_webui_image",
-            help=widget_help("Pre-built Hub image, or build from the clone with docker compose."),
+            help=widget_help(
+                "Pre-built Hub image, or build from the clone with docker compose."
+            ),
         )
         webui_port = int(
             st.number_input(
@@ -400,14 +430,18 @@ def render_transcribe_audio_page() -> None:
                 max_value=65535,
                 value=7860,
                 key="tx_cmdgen_webui_port",
-                help=widget_help("Local port published for the Gradio Whisper-WebUI container."),
+                help=widget_help(
+                    "Local port published for the Gradio Whisper-WebUI container."
+                ),
             )
         )
         webui_clone_dir = st.text_input(
             "Clone directory (host)",
             value="$HOME/Whisper-WebUI",
             key="tx_cmdgen_webui_clone",
-            help=widget_help("Where to git clone jhj0517/Whisper-WebUI for models/configs volumes."),
+            help=widget_help(
+                "Where to git clone jhj0517/Whisper-WebUI for models/configs volumes."
+            ),
         )
         device = st.selectbox(
             "Device",

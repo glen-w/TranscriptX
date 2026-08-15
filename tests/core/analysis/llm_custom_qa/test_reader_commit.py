@@ -12,7 +12,9 @@ from transcriptx.core.analysis.llm_custom_qa.commit import (
     generation_paths,
     read_active_generation_id,
 )
-from transcriptx.core.analysis.llm_custom_qa.structured_contracts import compute_structured_outcome
+from transcriptx.core.analysis.llm_custom_qa.structured_contracts import (
+    compute_structured_outcome,
+)
 from transcriptx.core.analysis.llm_custom_qa.readers import (
     load_committed_custom_qa_payload,
     resolve_custom_qa_stem,

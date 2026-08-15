@@ -122,9 +122,7 @@ def test_delete_removes_transcript_sidecar_and_state(
     assert leftover.get("processed_files") == {}
 
 
-def test_delete_leaves_unrelated_transcript(
-    transcript_roots, tmp_path: Path
-) -> None:
+def test_delete_leaves_unrelated_transcript(transcript_roots, tmp_path: Path) -> None:
     audio = tmp_path / "part_01.mp3"
     audio.write_bytes(b"a")
     keep = transcript_roots["transcripts"] / "part_02.json"

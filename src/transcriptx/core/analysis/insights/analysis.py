@@ -89,12 +89,9 @@ def _evidence_quote_ids_for_phrase(
             ids = theme.get("quote_ids") or []
             return [str(q) for q in ids if q][:6]
     # Fallback: emblematic phrase examples → stable ids
-    phrases = (
-        (highlights.get("sections") or {})
-        .get("emblematic_phrases", {})
-        .get("phrases", [])
-        or []
-    )
+    phrases = (highlights.get("sections") or {}).get("emblematic_phrases", {}).get(
+        "phrases", []
+    ) or []
     tk = str(highlights.get("transcript_key") or "unknown")
     for row in phrases:
         if not isinstance(row, dict):
@@ -175,7 +172,9 @@ def _select_themes(
             continue
         score = row.get("score")
         if not isinstance(score, dict):
-            score = score_map.get(phrase) if isinstance(score_map.get(phrase), dict) else {}
+            score = (
+                score_map.get(phrase) if isinstance(score_map.get(phrase), dict) else {}
+            )
         score = score or {}
         if float(score.get("total", 0.0) or 0.0) < min_score:
             continue
@@ -372,11 +371,8 @@ class InsightsAnalysis(AnalysisModule):
         # prefer strong highlight emblematic phrases over empty abstention.
         if len(key_themes) < min_themes:
             emblematic = (
-                ((highlights.get("sections") or {}).get("emblematic_phrases") or {}).get(
-                    "phrases"
-                )
-                or []
-            )
+                (highlights.get("sections") or {}).get("emblematic_phrases") or {}
+            ).get("phrases") or []
             if isinstance(emblematic, list) and emblematic:
                 synth_rows = []
                 for row in emblematic:

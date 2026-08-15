@@ -61,7 +61,9 @@ def _render_create_group_transcripts_fragment(
         options=transcript_options,
         format_func=lambda p: transcript_labels.get(p, Path(p).name),
         key="create_group_transcripts",
-        help=widget_help("Members of the new group. Membership is file-backed and can be edited later."),
+        help=widget_help(
+            "Members of the new group. Membership is file-backed and can be edited later."
+        ),
     )
     if st.button("Create group", type="primary", key="create_group_submit"):
         if not selected_paths:

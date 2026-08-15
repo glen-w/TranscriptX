@@ -122,7 +122,9 @@ def compute_understandability_metrics(text: str) -> dict:
 
 def save_understandability_csv(all_scores: dict, output_structure, base_name: str):
     # Only include named speakers
-    filtered_scores = {s: v for s, v in all_scores.items() if is_analysis_speaker_label(s)}
+    filtered_scores = {
+        s: v for s, v in all_scores.items() if is_analysis_speaker_label(s)
+    }
 
     # Check if we have any scores to save
     if not filtered_scores:
@@ -161,7 +163,9 @@ def save_understandability_csv(all_scores: dict, output_structure, base_name: st
 
 def save_understandability_json(all_scores: dict, output_structure, base_name: str):
     # Only include named speakers
-    filtered_scores = {s: v for s, v in all_scores.items() if is_analysis_speaker_label(s)}
+    filtered_scores = {
+        s: v for s, v in all_scores.items() if is_analysis_speaker_label(s)
+    }
     global_path = (
         output_structure.global_data_dir / f"{base_name}_understandability.json"
     )
@@ -204,7 +208,9 @@ def plot_understandability_charts(
         )
 
     # Only include named speakers (consistent with save_understandability_csv)
-    filtered_scores = {s: v for s, v in all_scores.items() if is_analysis_speaker_label(s)}
+    filtered_scores = {
+        s: v for s, v in all_scores.items() if is_analysis_speaker_label(s)
+    }
 
     # Check if we have any scores to plot
     if not filtered_scores:

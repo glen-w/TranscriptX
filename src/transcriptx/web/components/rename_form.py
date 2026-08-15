@@ -35,7 +35,8 @@ def _input_rename_settings() -> tuple[str, str, bool]:
         cfg = get_config()
         input_cfg = getattr(cfg, "input", None)
         mode = str(
-            getattr(input_cfg, "smart_rename_mode", "suggest_import") or "suggest_import"
+            getattr(input_cfg, "smart_rename_mode", "suggest_import")
+            or "suggest_import"
         )
         pattern = str(
             getattr(input_cfg, "smart_rename_pattern", "{yymmdd}_{period}_{n}")
@@ -93,9 +94,7 @@ def _resolve_smart_suggestion(
     if not smart_rename_suggests_in_rename_workflow(mode):
         return None
     try:
-        return suggest_smart_rename_base_name(
-            path, mode=mode, pattern=pattern
-        )
+        return suggest_smart_rename_base_name(path, mode=mode, pattern=pattern)
     except Exception:
         return None
 
@@ -125,8 +124,7 @@ def bind_suggested_rename_name(
             enable_smart
             if enable_smart is not None
             else (
-                date_prefix_prefill
-                and smart_rename_suggests_in_rename_workflow(mode)
+                date_prefix_prefill and smart_rename_suggests_in_rename_workflow(mode)
             )
         )
         suggestion = _resolve_smart_suggestion(path, enable_smart=bool(use_smart))
@@ -336,7 +334,9 @@ def render_audio_linked_rename_form(
         target = st.text_input(
             "New file name",
             value=current_name,
-            help=widget_help("Do not include extension. Linked transcript and working-copy audio will share this name."),
+            help=widget_help(
+                "Do not include extension. Linked transcript and working-copy audio will share this name."
+            ),
         )
         submitted = st.form_submit_button(submit_label)
     if not submitted:

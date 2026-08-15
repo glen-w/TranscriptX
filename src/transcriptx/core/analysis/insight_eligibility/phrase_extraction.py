@@ -166,9 +166,10 @@ def extract_content_phrases(
             continue
         token_count = len([t for t in str(phrase).split() if t])
         if require_spread_or_recurrence_for_singletons and token_count <= 1:
-            if float(metrics.get("spread", 0.0) or 0.0) <= 0.0 and float(
-                metrics.get("recurrence", 0.0) or 0.0
-            ) <= 0.0:
+            if (
+                float(metrics.get("spread", 0.0) or 0.0) <= 0.0
+                and float(metrics.get("recurrence", 0.0) or 0.0) <= 0.0
+            ):
                 continue
         rows.append({"phrase": phrase, "score": metrics})
 

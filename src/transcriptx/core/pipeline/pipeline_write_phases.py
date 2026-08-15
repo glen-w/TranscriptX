@@ -348,9 +348,7 @@ def persist_canonical_results_and_artifacts(
                         index=dag_done + offset + 1,
                         counts=counts,
                         status="skipped",
-                        skip_reason=str(
-                            mres.get("skip_reason") or "finalize_phase"
-                        ),
+                        skip_reason=str(mres.get("skip_reason") or "finalize_phase"),
                     )
                 elif status in {"failed", "error"}:
                     err = mres.get("error")

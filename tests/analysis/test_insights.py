@@ -1,5 +1,11 @@
 """Tests for insights."""
 
+import pytest
+
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.analysis.insights.analysis import InsightsAnalysis
 
 
@@ -70,8 +76,14 @@ def test_insights_ranking_prefers_semantic_phrases_over_conversational_fillers()
                     "phrase": "delivery timeline",
                     "score": {"total": 0.8, "spread": 0.35, "recurrence": 0.45},
                 },
-                {"phrase": "i", "score": {"total": 0.21, "spread": 0.1, "recurrence": 0.2}},
-                {"phrase": "we", "score": {"total": 0.19, "spread": 0.1, "recurrence": 0.1}},
+                {
+                    "phrase": "i",
+                    "score": {"total": 0.21, "spread": 0.1, "recurrence": 0.2},
+                },
+                {
+                    "phrase": "we",
+                    "score": {"total": 0.19, "spread": 0.1, "recurrence": 0.1},
+                },
                 {
                     "phrase": "kind of",
                     "score": {"total": 0.9, "spread": 0.5, "recurrence": 0.5},
@@ -109,7 +121,10 @@ def test_insights_abstains_when_only_weak_phrases() -> None:
     context_payload = {
         "insight_eligibility": {
             "content_phrases": [
-                {"phrase": "i", "score": {"total": 0.5, "spread": 0.2, "recurrence": 0.2}},
+                {
+                    "phrase": "i",
+                    "score": {"total": 0.5, "spread": 0.2, "recurrence": 0.2},
+                },
                 {
                     "phrase": "kind of",
                     "score": {"total": 0.6, "spread": 0.3, "recurrence": 0.3},

@@ -362,7 +362,9 @@ class DummyHomeStreamlit:
         return list(default or [])
 
     @classmethod
-    def slider(cls, _label, min_value=0.0, max_value=1.0, value=None, key=None, **_kwargs):
+    def slider(
+        cls, _label, min_value=0.0, max_value=1.0, value=None, key=None, **_kwargs
+    ):
         if key is not None and key in cls.session_state:
             return cls.session_state[key]
         if value is not None:

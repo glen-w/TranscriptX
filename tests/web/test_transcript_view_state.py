@@ -23,7 +23,9 @@ from transcriptx.web.transcript_view_state import (
 def test_segment_has_named_speaker_rejects_placeholders() -> None:
     assert segment_has_named_speaker({"speaker": "SPEAKER_02"}) is False
     assert segment_has_named_speaker({"speaker_display": "Alice"}) is True
-    assert segment_has_named_speaker({"speaker": "SPEAKER_00", "speaker_display": "Bob"})
+    assert segment_has_named_speaker(
+        {"speaker": "SPEAKER_00", "speaker_display": "Bob"}
+    )
 
 
 def test_filtered_display_segments_excludes_unnamed_by_default() -> None:
@@ -70,9 +72,7 @@ def test_filtered_display_segments_keeps_unnamed_jump_target() -> None:
 
 
 def test_filtered_display_segments_jump_does_not_narrow_list() -> None:
-    segments = [
-        {"speaker": "Alice", "text": f"line {i}"} for i in range(8)
-    ]
+    segments = [{"speaker": "Alice", "text": f"line {i}"} for i in range(8)]
     display, caption = filtered_display_segments(
         segments=segments, search_text="", jump_index=4
     )

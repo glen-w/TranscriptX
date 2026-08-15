@@ -8,6 +8,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.analysis.wordclouds import analysis as wc
 
 

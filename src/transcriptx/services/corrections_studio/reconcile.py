@@ -87,9 +87,7 @@ def _replay_candidates_generated(state: _ReplayState, env: StudioEventEnvelope) 
     raw_cands = payload.get("candidates") or []
     # Keep historical (non-current-gen) candidates; replace current-gen set.
     historical = {
-        cid: c
-        for cid, c in state.candidates_by_id.items()
-        if c.generation_id != gen_id
+        cid: c for cid, c in state.candidates_by_id.items() if c.generation_id != gen_id
     }
     state.candidates_by_id = dict(historical)
     for c in raw_cands:

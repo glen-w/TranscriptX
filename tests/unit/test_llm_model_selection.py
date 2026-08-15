@@ -381,7 +381,9 @@ def test_selection_needs_live_llm_true_for_llm_module():
             "transcriptx.web.components.llm_model_selector._consumer_needs_live_llm",
             return_value=True,
         ):
-            assert selection_needs_live_llm(["llm_summary"], include_group=False) is True
+            assert (
+                selection_needs_live_llm(["llm_summary"], include_group=False) is True
+            )
 
 
 def test_selection_needs_live_llm_false_when_consumer_skips_live_call():

@@ -378,9 +378,7 @@ def test_compact_llm_shown_for_group_synthesis_without_module_llm(monkeypatch) -
             list_profiles=lambda _t: ["default"],
         ),
     )
-    monkeypatch.setattr(
-        mod, "_load_profile_selection", lambda _label: (None, None)
-    )
+    monkeypatch.setattr(mod, "_load_profile_selection", lambda _label: (None, None))
     monkeypatch.setattr(mod, "_apply_selection_to_session", lambda *_a, **_k: [])
     monkeypatch.setattr(mod, "_render_assignment_widgets", lambda **_k: None)
     monkeypatch.setattr(
@@ -437,10 +435,7 @@ def test_compact_llm_degrades_without_ollama(monkeypatch) -> None:
     assert gates
     assert isinstance(label, str)
     fake_st.markdown.assert_called()
-    assert any(
-        "LLM setup" in str(call)
-        for call in fake_st.markdown.call_args_list
-    )
+    assert any("LLM setup" in str(call) for call in fake_st.markdown.call_args_list)
 
 
 @pytest.mark.unit

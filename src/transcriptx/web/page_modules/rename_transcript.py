@@ -81,9 +81,7 @@ def apply_rename_page_post_rename(result: RenameResult) -> None:
             new_t,
             session_resolver=make_session_path_resolver(),
         )
-        bind_suggested_rename_name(
-            new_t, form_key=_FORM_KEY, date_prefix_prefill=True
-        )
+        bind_suggested_rename_name(new_t, form_key=_FORM_KEY, date_prefix_prefill=True)
     else:
         st.session_state.pop(_SELECTED_PATH_KEY, None)
 
@@ -130,9 +128,7 @@ def _bind_picker_index(options: list[Path], default_idx: int) -> None:
     if _PICKER_KEY in st.session_state:
         current = st.session_state.get(_PICKER_KEY)
         if not isinstance(current, int) or current < 0 or current > n:
-            st.session_state[_PICKER_KEY] = (
-                default_idx if 0 <= default_idx <= n else 0
-            )
+            st.session_state[_PICKER_KEY] = default_idx if 0 <= default_idx <= n else 0
             return
         if current == 0 and default_idx > 0:
             st.session_state[_PICKER_KEY] = default_idx

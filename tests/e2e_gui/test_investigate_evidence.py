@@ -26,7 +26,11 @@ def test_investigate_overview_insights_transcript(seeded_run_app, page) -> None:
     wait(page, 3000)
     overview = page_text(page)
     assert "Select a subject" not in overview
-    assert "Overview" in overview or "highlight" in overview.lower() or "run" in overview.lower()
+    assert (
+        "Overview" in overview
+        or "highlight" in overview.lower()
+        or "run" in overview.lower()
+    )
 
     nav(page, "Insights")
     wait(page, 2500)

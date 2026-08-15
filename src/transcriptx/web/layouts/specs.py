@@ -14,9 +14,7 @@ SUPPORTED_LAYOUT_PAGES = frozenset(
 # Public layout envelope is schema epoch-1 (integer 1 only).
 CURRENT_LAYOUT_SCHEMA_VERSION = 1
 
-INSIGHTS_SECTIONS = frozenset(
-    {"summary", "speakers", "actions", "highlights"}
-)
+INSIGHTS_SECTIONS = frozenset({"summary", "speakers", "actions", "highlights"})
 
 LayoutSection = Literal["summary", "speakers", "actions", "highlights"]
 

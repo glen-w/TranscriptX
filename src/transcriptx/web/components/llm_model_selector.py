@@ -452,9 +452,7 @@ def launch_gate_reasons(
     reasons: list[str] = []
     from transcriptx.core.pipeline.module_registry import get_module_info
 
-    if not selection_needs_live_llm(
-        selected_modules, include_group=include_group
-    ):
+    if not selection_needs_live_llm(selected_modules, include_group=include_group):
         return reasons
 
     if not llm_enabled or (provider or "").strip().lower() != "ollama":
@@ -646,7 +644,9 @@ def _render_assignment_widgets(
         ["Same model for all", "Select per module"],
         horizontal=True,
         key=_key(key_prefix, "mode"),
-        help=widget_help("Same model applies one Ollama tag to every selected LLM module; per-module lets you mix."),
+        help=widget_help(
+            "Same model applies one Ollama tag to every selected LLM module; per-module lets you mix."
+        ),
     )
     shared_key = _key(key_prefix, "shared_model")
     json_consumers = _selected_json_consumers(
@@ -742,9 +742,7 @@ def render_compact_llm_setup(
     not need a live LLM. Returns ``(selection_or_none, gate_reasons,
     footer_model_label)``.
     """
-    if not selection_needs_live_llm(
-        selected_modules, include_group=include_group
-    ):
+    if not selection_needs_live_llm(selected_modules, include_group=include_group):
         return None, [], "no LLM modules"
 
     config = get_config()
@@ -812,10 +810,12 @@ def render_compact_llm_setup(
             "Model preset",
             options=profile_options,
             key=profile_key,
-            help=widget_help((
-                f"{_PROJECT_DEFAULT_LABEL} loads the project-active pack. "
-                f"{_CUSTOM_PROFILE} keeps this run's widgets."
-            )),
+            help=widget_help(
+                (
+                    f"{_PROJECT_DEFAULT_LABEL} loads the project-active pack. "
+                    f"{_CUSTOM_PROFILE} keeps this run's widgets."
+                )
+            ),
         )
         _apply_profile_to_session(
             key_prefix, selected_profile, installed, applied_key=applied_key
@@ -926,7 +926,9 @@ def render_llm_models_settings_panel() -> None:
     name = st.text_input(
         "Preset name",
         key=_key(key_prefix, "save_name"),
-        help=widget_help("Cannot be 'default'. Use overwrite to replace an existing name."),
+        help=widget_help(
+            "Cannot be 'default'. Use overwrite to replace an existing name."
+        ),
     )
     description = st.text_input(
         "Description (optional)",

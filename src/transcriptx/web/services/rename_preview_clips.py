@@ -129,7 +129,9 @@ def select_rename_preview_segments(
     accepted: list[SegmentInfo] = []
     accepted_ids: set[int] = set()
     seen_text: set[str] = set()
-    for seg in sorted(primary, key=lambda s: (s.start, speaker_identity_key(s), s.index)):
+    for seg in sorted(
+        primary, key=lambda s: (s.start, speaker_identity_key(s), s.index)
+    ):
         norm = _normalize_text(seg.text)
         if norm in seen_text:
             continue

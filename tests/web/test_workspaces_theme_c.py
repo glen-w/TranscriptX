@@ -42,35 +42,46 @@ def test_flag_env_on(monkeypatch) -> None:
 
 def test_flag_session_override_off(monkeypatch) -> None:
     monkeypatch.delenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", raising=False)
-    assert speaker_id_workspace_component_enabled(
-        {"speaker_id_workspace_component": False}
-    ) is False
+    assert (
+        speaker_id_workspace_component_enabled(
+            {"speaker_id_workspace_component": False}
+        )
+        is False
+    )
 
 
 def test_flag_session_override_on(monkeypatch) -> None:
     monkeypatch.delenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", raising=False)
     # Explicit True still works when someone clears default via other means.
-    assert speaker_id_workspace_component_enabled(
-        {"speaker_id_workspace_component": True}
-    ) is True
+    assert (
+        speaker_id_workspace_component_enabled({"speaker_id_workspace_component": True})
+        is True
+    )
 
 
 def test_flag_env_wins_over_session(monkeypatch) -> None:
     monkeypatch.setenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", "0")
-    assert speaker_id_workspace_component_enabled(
-        {"speaker_id_workspace_component": True}
-    ) is False
+    assert (
+        speaker_id_workspace_component_enabled({"speaker_id_workspace_component": True})
+        is False
+    )
     monkeypatch.setenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", "1")
-    assert speaker_id_workspace_component_enabled(
-        {"speaker_id_workspace_component": False}
-    ) is True
+    assert (
+        speaker_id_workspace_component_enabled(
+            {"speaker_id_workspace_component": False}
+        )
+        is True
+    )
 
 
 def test_flag_blank_env_falls_through_to_session_then_default(monkeypatch) -> None:
     monkeypatch.setenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", "   ")
-    assert speaker_id_workspace_component_enabled(
-        {"speaker_id_workspace_component": False}
-    ) is False
+    assert (
+        speaker_id_workspace_component_enabled(
+            {"speaker_id_workspace_component": False}
+        )
+        is False
+    )
     assert speaker_id_workspace_component_enabled({}) is True
 
 
@@ -136,7 +147,9 @@ def test_build_workspace_data_hit_encodes_clip_within_budget(tmp_path: Path) -> 
 
     class _Ctrl:
         def cached_clip_status(self, *_a, **_k):
-            return SimpleNamespace(status="hit", clip_id="c-hit", path=None, reason=None)
+            return SimpleNamespace(
+                status="hit", clip_id="c-hit", path=None, reason=None
+            )
 
         def get_cached_clip_bytes(self, *_a, **_k):
             return blob

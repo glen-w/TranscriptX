@@ -115,7 +115,7 @@ def test_chapter_id_allocator_collisions() -> None:
 
 
 def test_wrap_epub_xhtml_escapes_title() -> None:
-    doc = wrap_epub_xhtml(title='A & B <C>', body="<p>x</p>")
+    doc = wrap_epub_xhtml(title="A & B <C>", body="<p>x</p>")
     assert "&amp;" in doc
     assert "<C>" not in doc
     assert 'xmlns="http://www.w3.org/1999/xhtml"' in doc
@@ -369,7 +369,10 @@ def test_html_and_epub_share_bundle_content(tmp_path: Path) -> None:
     md.write_text("# Summary\n\nHello **world**.", encoding="utf-8")
 
     copied = [
-        (_artifact(artifact_id="t1", rel_path="t.json", kind="transcript"), Path("t.json")),
+        (
+            _artifact(artifact_id="t1", rel_path="t.json", kind="transcript"),
+            Path("t.json"),
+        ),
         (
             _artifact(
                 artifact_id="c1",
@@ -436,7 +439,10 @@ def test_html_and_epub_share_bundle_content(tmp_path: Path) -> None:
 
 def test_filter_presentation_artifacts() -> None:
     copied = [
-        (_artifact(artifact_id="a", rel_path="t.json", kind="transcript"), Path("t.json")),
+        (
+            _artifact(artifact_id="a", rel_path="t.json", kind="transcript"),
+            Path("t.json"),
+        ),
         (
             _artifact(artifact_id="b", rel_path="index.html", kind="data"),
             Path("index.html"),
@@ -482,9 +488,7 @@ def test_zip_artifacts_includes_index_epub(tmp_path: Path) -> None:
     run_root = tmp_path / "run"
     transcripts = run_root / "transcripts"
     transcripts.mkdir(parents=True)
-    (transcripts / "t.json").write_text(
-        json.dumps(_transcript()), encoding="utf-8"
-    )
+    (transcripts / "t.json").write_text(json.dumps(_transcript()), encoding="utf-8")
     chart = run_root / "sentiment/charts/global/a.png"
     chart.parent.mkdir(parents=True)
     chart.write_bytes(_png_bytes())

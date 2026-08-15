@@ -5,6 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.analysis.phrase_quality.analyser import (
     analyse_phrase,
     annotations_from_surfaces,

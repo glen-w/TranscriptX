@@ -36,8 +36,7 @@ def _render_enrol_all_result(result) -> None:
             return
         for target in result.targets:
             detail = (
-                f"{target.display_name or target.profile_id}: "
-                f"{target.status.value}"
+                f"{target.display_name or target.profile_id}: " f"{target.status.value}"
             )
             if target.links_attempted or target.links_enrolled:
                 detail += (
@@ -88,7 +87,9 @@ def _render_preload_result(result) -> None:
 def _render_bulk_voice_ops() -> None:
     """Library-wide enrol-all and suggestion pre-load (privacy must already be on)."""
     from transcriptx.services.speaker_profiles.bulk_voice_ops import BulkVoiceOpsService
-    from transcriptx.services.speaker_profiles.voice_facade import ensure_idempotency_key
+    from transcriptx.services.speaker_profiles.voice_facade import (
+        ensure_idempotency_key,
+    )
 
     st.subheader("Library voice batch")
     st.caption(
@@ -149,17 +150,17 @@ def _render_bulk_voice_ops() -> None:
         if enrol_preview.actionable_count == 0:
             st.info("No active profiles with confirmed links to enrol.")
         else:
-            enrol_key = ensure_idempotency_key(
-                st.session_state, "voice_bulk_enrol_all"
-            )
+            enrol_key = ensure_idempotency_key(st.session_state, "voice_bulk_enrol_all")
             if st.button(
                 "Enrol trusted voice for all profiles",
                 type="primary",
                 key="voice_bulk_enrol_all_btn",
-                help=widget_help((
-                    "Explicit bootstrap for every active profile with confirmed "
-                    "links. Privacy opt-in alone does not enrol anything."
-                )),
+                help=widget_help(
+                    (
+                        "Explicit bootstrap for every active profile with confirmed "
+                        "links. Privacy opt-in alone does not enrol anything."
+                    )
+                ),
             ):
                 try:
                     progress = st.progress(0.0, text="Starting…")
@@ -211,7 +212,9 @@ def _render_bulk_voice_ops() -> None:
     p1, p2, p3, p4 = st.columns(4)
     p1.metric("Transcripts", preload_preview.transcript_count)
     p2.metric("Occurrences", preload_preview.occurrence_count)
-    p3.metric("Skipped", preload_preview.ignored_count + preload_preview.collision_count)
+    p3.metric(
+        "Skipped", preload_preview.ignored_count + preload_preview.collision_count
+    )
     p4.metric("Actionable", preload_preview.actionable_count)
     with st.expander("Occurrence inventory", expanded=False):
         st.dataframe(
@@ -238,10 +241,12 @@ def _render_bulk_voice_ops() -> None:
         "Pre-load voice suggestions",
         type="primary",
         key="voice_bulk_preload_btn",
-        help=widget_help((
-            "Warm local voice suggestion caches for Speaker Identification "
-            "across the managed library."
-        )),
+        help=widget_help(
+            (
+                "Warm local voice suggestion caches for Speaker Identification "
+                "across the managed library."
+            )
+        ),
     ):
         try:
             progress = st.progress(0.0, text="Starting…")
@@ -270,29 +275,35 @@ def render_speakers_panel() -> None:
         "Include ignored appearances in headline totals",
         value=False,
         key=INCLUDE_IGNORED_SESSION_KEY,
-        help=widget_help((
-            "When enabled, Speakers directory and profile headline totals include "
-            "appearances flagged as ignored. Default excludes them along with "
-            "needs-review, missing-source, and collision appearances."
-        )),
+        help=widget_help(
+            (
+                "When enabled, Speakers directory and profile headline totals include "
+                "appearances flagged as ignored. Default excludes them along with "
+                "needs-review, missing-source, and collision appearances."
+            )
+        ),
     )
     st.checkbox(
         "Show archived profiles",
         value=False,
         key=SHOW_ARCHIVED_SESSION_KEY,
-        help=widget_help((
-            "When enabled, Speakers lists archived profiles and shows an "
-            "Archived count card."
-        )),
+        help=widget_help(
+            (
+                "When enabled, Speakers lists archived profiles and shows an "
+                "Archived count card."
+            )
+        ),
     )
     st.checkbox(
         "Show merged profiles",
         value=False,
         key=SHOW_MERGED_SESSION_KEY,
-        help=widget_help((
-            "When enabled, Speakers lists merged profiles and shows a "
-            "Merged count card."
-        )),
+        help=widget_help(
+            (
+                "When enabled, Speakers lists merged profiles and shows a "
+                "Merged count card."
+            )
+        ),
     )
 
     st.subheader("Local voice matching")
@@ -342,9 +353,7 @@ def render_speakers_panel() -> None:
                 type="primary",
             ):
                 try:
-                    VoicePrivacyService().enable(
-                        operation_idempotency_key=enable_key
-                    )
+                    VoicePrivacyService().enable(operation_idempotency_key=enable_key)
                     st.session_state.pop("voice_privacy_enable_replace", None)
                     st.success("Voice matching enabled with current privacy settings.")
                     st.rerun()
@@ -386,13 +395,15 @@ def render_speakers_panel() -> None:
                 max_value=BOOTSTRAP_MAX_LINKS_MAX,
                 step=1,
                 key="voice_bootstrap_max_links",
-                help=widget_help((
-                    "Speakers → Enrol trusted voice walks confirmed links in "
-                    f"deterministic order up to this cap (default "
-                    f"{DEFAULT_BOOTSTRAP_MAX_LINKS}). Stored in "
-                    "operator.voice_settings.json; survives privacy revoke. "
-                    "Match-time still caps references per link separately."
-                )),
+                help=widget_help(
+                    (
+                        "Speakers → Enrol trusted voice walks confirmed links in "
+                        f"deterministic order up to this cap (default "
+                        f"{DEFAULT_BOOTSTRAP_MAX_LINKS}). Stored in "
+                        "operator.voice_settings.json; survives privacy revoke. "
+                        "Match-time still caps references per link separately."
+                    )
+                ),
             )
             save_cap_key = ensure_idempotency_key(
                 st.session_state, "voice_operator_bootstrap_max_links"
@@ -429,12 +440,14 @@ def render_speakers_panel() -> None:
                     disabled=not st.session_state.get(
                         "voice_privacy_revoke_confirm", False
                     ),
-                    help=widget_help((
-                        "Disables voice matching and runs a bounded wipe of "
-                        "speaker_profiles/voice evidence. Does not delete "
-                        "profiles or confirmed links. Docker image rebuild "
-                        "does not wipe voice data — this button does."
-                    )),
+                    help=widget_help(
+                        (
+                            "Disables voice matching and runs a bounded wipe of "
+                            "speaker_profiles/voice evidence. Does not delete "
+                            "profiles or confirmed links. Docker image rebuild "
+                            "does not wipe voice data — this button does."
+                        )
+                    ),
                 ):
                     try:
                         VoicePrivacyService().revoke(

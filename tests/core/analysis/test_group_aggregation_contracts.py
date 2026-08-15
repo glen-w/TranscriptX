@@ -4,6 +4,10 @@ from typing import Any
 
 import pytest
 
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.analysis.aggregation.emotion import aggregate_emotion_group
 from transcriptx.core.analysis.aggregation.interactions import (
     aggregate_interactions_group,

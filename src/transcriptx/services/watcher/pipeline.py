@@ -98,7 +98,9 @@ def process_watched_path(
 
     if kind is WatchKind.AUDIO:
         if settings.audio_mode == "ignore":
-            return store.update(job, state=JobState.SKIPPED, detail="Audio mode is ignore.")
+            return store.update(
+                job, state=JobState.SKIPPED, detail="Audio mode is ignore."
+            )
         if settings.audio_mode == "auto_transcribe":
             return store.update(
                 job,
@@ -132,7 +134,9 @@ def process_watched_path(
     if _cancelled():
         return store.update(job, state=JobState.CANCELLED, detail="Watcher stopped.")
 
-    store.update(job, state=JobState.IMPORTING, detail="Admitting into managed library.")
+    store.update(
+        job, state=JobState.IMPORTING, detail="Admitting into managed library."
+    )
     candidate = classify_inbox_file(
         target,
         expected_dev=identity.st_dev,
@@ -144,7 +148,9 @@ def process_watched_path(
         return store.update(
             job,
             state=JobState.SKIPPED,
-            detail=f"{candidate.status.value}: {candidate.secondary_detail}".strip(": "),
+            detail=f"{candidate.status.value}: {candidate.secondary_detail}".strip(
+                ": "
+            ),
         )
 
     outcome = admit_inbox_candidate(candidate)
@@ -153,7 +159,9 @@ def process_watched_path(
             job,
             state=JobState.IMPORTED,
             detail=outcome.user_safe_detail,
-            transcript_path=str(outcome.transcript_path) if outcome.transcript_path else None,
+            transcript_path=(
+                str(outcome.transcript_path) if outcome.transcript_path else None
+            ),
             slug=outcome.slug,
         )
     return store.update(

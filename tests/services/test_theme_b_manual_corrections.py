@@ -277,11 +277,15 @@ def test_scoped_apply_excludes_other_accepted(studio_env, monkeypatch):
     texts = [s["text"] for s in data["segments"]]
     # Only fox→FOX applied; teh unchanged
     assert texts[0] == "teh quick brown FOX"
-    assert a.candidate.candidate_id not in (
-        json.loads(Path(result.provenance_path).read_text(encoding="utf-8")).get(
-            "applied_candidate_ids", []
+    assert (
+        a.candidate.candidate_id
+        not in (
+            json.loads(Path(result.provenance_path).read_text(encoding="utf-8")).get(
+                "applied_candidate_ids", []
+            )
         )
-    ) or True  # provenance lists scoped applied ids
+        or True
+    )  # provenance lists scoped applied ids
     prov = json.loads(Path(result.provenance_path).read_text(encoding="utf-8"))
     assert prov["applied_candidate_ids"] == [b.candidate.candidate_id]
 
@@ -395,7 +399,10 @@ def test_sidecar_lineage_new_session(studio_env, monkeypatch):
     child = svc.start_or_resume_session(str(export_path))
     assert child.session_id != session.session_id
     assert child.transcript_path.endswith("corrected.json")
-    assert child.recorded_transcript_identity_hash != session.recorded_transcript_identity_hash
+    assert (
+        child.recorded_transcript_identity_hash
+        != session.recorded_transcript_identity_hash
+    )
 
 
 def test_reconcile_replays_manual_seed_and_propose(studio_env):
@@ -436,7 +443,9 @@ def test_reconcile_replays_manual_seed_and_propose(studio_env):
 
 def test_concurrent_manual_propose_loser_raises(studio_env):
     """Second writer with stale event sequence must not orphan a candidate."""
-    from transcriptx.core.store.corrections_session_store import GenerationCommitConflict
+    from transcriptx.core.store.corrections_session_store import (
+        GenerationCommitConflict,
+    )
     from transcriptx.services.corrections_studio.manual_propose_service import (
         CorrectionsStudioManualProposeService,
     )

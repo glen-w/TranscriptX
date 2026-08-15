@@ -18,6 +18,11 @@ Characterization notes for a future nlp_utils split (no behavior change here):
 
 from unittest.mock import patch
 
+import pytest
+
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
 
 from transcriptx.core.utils.nlp_utils import (
     build_tic_mask,

@@ -105,7 +105,10 @@ def test_try_install_package_returns_false_on_failed_pip() -> None:
         return fake_result
 
     with (
-        patch.object(importlib, "import_module", side_effect=ImportError("nope")),
+        patch(
+            "transcriptx.core.utils.lazy_imports.importlib.import_module",
+            side_effect=ImportError("nope"),
+        ),
         patch(
             "transcriptx.core.utils.lazy_imports.subprocess.run", side_effect=_fake_run
         ),

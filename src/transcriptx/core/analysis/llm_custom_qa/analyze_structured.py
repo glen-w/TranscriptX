@@ -1003,7 +1003,9 @@ def run_structured_from_context(module: Any, context: Any) -> Dict[str, Any]:
         for block in speaker_answers:
             for r in block["answers"]:
                 statuses.append(str(r.get("status")))
-        outcome = compute_structured_outcome(empty_questions=False, scheduled_statuses=statuses)
+        outcome = compute_structured_outcome(
+            empty_questions=False, scheduled_statuses=statuses
+        )
 
         packs_available = [
             pid for pid, snap in unrouted.snapshots.items() if snap.state == "available"

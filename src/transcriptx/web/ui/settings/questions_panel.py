@@ -86,13 +86,17 @@ def render_questions_panel() -> None:
         "Include transcript",
         value=bool(getattr(cfg, "include_transcript", True)),
         key="settings_qa_include_transcript",
-        help=widget_help("Pass transcript text into the custom-QA evidence pack when answering."),
+        help=widget_help(
+            "Pass transcript text into the custom-QA evidence pack when answering."
+        ),
     )
     routing_enabled = st.checkbox(
         "Enable evidence routing",
         value=bool(getattr(cfg, "routing_enabled", True)),
         key="settings_qa_routing",
-        help=widget_help("Route each question to the most relevant evidence packs instead of dumping everything."),
+        help=widget_help(
+            "Route each question to the most relevant evidence packs instead of dumping everything."
+        ),
     )
     current_packs = getattr(cfg, "evidence_pack_ids", None)
     use_all = current_packs is None
@@ -100,7 +104,9 @@ def render_questions_panel() -> None:
         "All current catalog packs (default)",
         value=use_all,
         key="settings_qa_all_packs",
-        help=widget_help("When on, newly added catalog packs are included automatically."),
+        help=widget_help(
+            "When on, newly added catalog packs are included automatically."
+        ),
     )
     selected_packs: list[str] = []
     if not all_packs:

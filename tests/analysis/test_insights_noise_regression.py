@@ -1,8 +1,13 @@
 """Noise regression pack for Theme A deterministic insights."""
 
+import pytest
+
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.analysis.insights.analysis import InsightsAnalysis
 from transcriptx.core.analysis.phrase_quality import PHRASE_QUALITY_VERSION
-
 
 BANNED_FILLERS = (
     "kind of",
@@ -30,10 +35,20 @@ def test_singleton_gate_requires_spread_or_recurrence() -> None:
     metrics = {"total": 0.5, "spread": 0.0, "recurrence": 0.0}
     token_count = 1
     require = True
-    drop = require and token_count <= 1 and metrics["spread"] <= 0.0 and metrics["recurrence"] <= 0.0
+    drop = (
+        require
+        and token_count <= 1
+        and metrics["spread"] <= 0.0
+        and metrics["recurrence"] <= 0.0
+    )
     assert drop is True
     metrics2 = {"total": 0.5, "spread": 0.2, "recurrence": 0.0}
-    drop2 = require and token_count <= 1 and metrics2["spread"] <= 0.0 and metrics2["recurrence"] <= 0.0
+    drop2 = (
+        require
+        and token_count <= 1
+        and metrics2["spread"] <= 0.0
+        and metrics2["recurrence"] <= 0.0
+    )
     assert drop2 is False
 
 

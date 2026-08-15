@@ -9,7 +9,9 @@ from typing import Callable, Optional
 from uuid import uuid4
 
 from transcriptx.core.speaker_profiles.aggregates import list_profiles
-from transcriptx.core.speaker_profiles.discovery import discover_occurrences_for_resolved
+from transcriptx.core.speaker_profiles.discovery import (
+    discover_occurrences_for_resolved,
+)
 from transcriptx.core.speaker_profiles.layout import speaker_profiles_dir
 from transcriptx.core.speaker_profiles.resolver import (
     ManagedTranscriptResolver,
@@ -72,9 +74,7 @@ class BulkEnrolResult:
 
     @property
     def skipped_count(self) -> int:
-        return sum(
-            1 for t in self.targets if t.status is BulkVoiceTargetStatus.SKIPPED
-        )
+        return sum(1 for t in self.targets if t.status is BulkVoiceTargetStatus.SKIPPED)
 
     @property
     def error_count(self) -> int:
@@ -130,9 +130,7 @@ class BulkPreloadResult:
 
     @property
     def skipped_count(self) -> int:
-        return sum(
-            1 for t in self.targets if t.status is BulkVoiceTargetStatus.SKIPPED
-        )
+        return sum(1 for t in self.targets if t.status is BulkVoiceTargetStatus.SKIPPED)
 
     @property
     def error_count(self) -> int:

@@ -53,8 +53,7 @@ def render_dependency_banner() -> bool:
         st.caption("Dependencies: ffmpeg and pydub are available.")
         return True
     st.error(
-        "Audio tools need **ffmpeg** and **pydub** on the host. "
-        + " · ".join(missing)
+        "Audio tools need **ffmpeg** and **pydub** on the host. " + " · ".join(missing)
     )
     st.caption(
         "Install ffmpeg on the host and ensure pydub is in the Python environment, "
@@ -79,10 +78,12 @@ def render_upload_and_refresh(
         "Upload audio file(s)",
         type=_AUDIO_UPLOAD_TYPES,
         accept_multiple_files=True,
-        help=widget_help((
-            "Uploaded files are saved to the recordings imports folder and appear "
-            "in the list below. Limit 500 MB per file when STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500."
-        )),
+        help=widget_help(
+            (
+                "Uploaded files are saved to the recordings imports folder and appear "
+                "in the list below. Limit 500 MB per file when STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500."
+            )
+        ),
         key=uploader_key,
     )
     if uploaded_list:

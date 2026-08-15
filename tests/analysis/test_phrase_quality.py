@@ -7,6 +7,10 @@ from pathlib import Path
 
 import pytest
 
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.analysis.phrase_quality.analyser import (
     analyse_phrase,
     annotations_from_surfaces,

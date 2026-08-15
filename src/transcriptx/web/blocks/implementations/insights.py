@@ -294,12 +294,8 @@ def _render_insights_payload(
     guided = is_insights_guided()
     captions = {
         "all": MODULE_PLAIN_DESCRIPTIONS.get("insights", ""),
-        "content": (
-            "Content themes and recurring ideas from the transcript wording."
-        ),
-        "style": (
-            "Style-of-speech markers kept separate from content themes."
-        ),
+        "content": ("Content themes and recurring ideas from the transcript wording."),
+        "style": ("Style-of-speech markers kept separate from content themes."),
     }
     st.caption(captions.get(focus, captions["all"]))
     key_themes = insights.get("key_themes") or []
@@ -352,7 +348,9 @@ def _render_insights_payload(
             if value is None or value == "" or value == {} or value == []:
                 continue
             if isinstance(value, (int, float)):
-                style_rows.append((str(key).replace("_", " ").title(), f"{float(value):.3f}"))
+                style_rows.append(
+                    (str(key).replace("_", " ").title(), f"{float(value):.3f}")
+                )
             elif isinstance(value, str) and value.strip():
                 style_rows.append((str(key).replace("_", " ").title(), value.strip()))
             elif isinstance(value, dict):
@@ -640,7 +638,9 @@ def _collect_highlight_cards(
         start = float(item.get("start") or 0.0)
         end = float(item.get("end") or start)
         score_obj = item.get("score") or {}
-        score = float(score_obj.get("total") or 0.0) if isinstance(score_obj, dict) else 0.0
+        score = (
+            float(score_obj.get("total") or 0.0) if isinstance(score_obj, dict) else 0.0
+        )
         key = f"quote:{qid}"
         if key in seen_keys:
             continue
@@ -658,7 +658,9 @@ def _collect_highlight_cards(
                 quote=quote,
                 section=str(item.get("section") or "quotes"),
                 score=score,
-                breakdown=(score_obj.get("breakdown") if isinstance(score_obj, dict) else None),
+                breakdown=(
+                    score_obj.get("breakdown") if isinstance(score_obj, dict) else None
+                ),
                 segment_index=_segment_index_from_refs(item),
                 raw_event=item,
             )
@@ -682,9 +684,7 @@ def _collect_highlight_cards(
                 if key in seen_keys:
                     continue
                 # Skip if already represented via theme quote linkage with same event
-                if eid in event_to_theme and any(
-                    c.event_key == key for c in cards
-                ):
+                if eid in event_to_theme and any(c.event_key == key for c in cards):
                     continue
                 seen_keys.add(key)
                 anchor = item.get("anchor_quote") or {}
@@ -721,9 +721,11 @@ def _collect_highlight_cards(
                         section=section_name,
                         score=score_f,
                         breakdown=item.get("score_breakdown") or {},
-                        segment_index=_segment_index_from_refs(anchor)
-                        if isinstance(anchor, dict)
-                        else None,
+                        segment_index=(
+                            _segment_index_from_refs(anchor)
+                            if isinstance(anchor, dict)
+                            else None
+                        ),
                         raw_event=item,
                     )
                 )
@@ -737,10 +739,7 @@ def _collect_highlight_cards(
                 # Skip if an equivalent quote card already exists
                 duplicate = False
                 for existing in cards:
-                    if (
-                        abs(existing.start - start) < 0.05
-                        and existing.quote == quote
-                    ):
+                    if abs(existing.start - start) < 0.05 and existing.quote == quote:
                         duplicate = True
                         break
                 if duplicate or key in seen_keys:
@@ -787,9 +786,7 @@ def _render_highlight_card(
 ) -> None:
     from transcriptx.web.insights_presentation import is_insights_full
 
-    time_range = (
-        f"{format_time_detailed(card.start)}–{format_time_detailed(card.end)}"
-    )
+    time_range = f"{format_time_detailed(card.start)}–{format_time_detailed(card.end)}"
     speakers_html = []
     for sp in card.speakers:
         html = speaker_inline_html(sp, context=accent_ctx)
@@ -874,19 +871,13 @@ def _highlights_browser_fragment(
         return
 
     sections_available = sorted({c.section for c in cards if c.section})
-    speakers_available = sorted(
-        {sp for c in cards for sp in c.speakers if sp}
-    )
+    speakers_available = sorted({sp for c in cards for sp in c.speakers if sp})
 
     # Filters — collapsed unless active
     section_filter = st.session_state.get("highlights_section_filter", "All")
     speaker_filter = st.session_state.get("highlights_speaker_filter") or []
     min_score = float(st.session_state.get("highlights_min_score", 0.0) or 0.0)
-    filters_active = (
-        section_filter != "All"
-        or bool(speaker_filter)
-        or min_score > 0.0
-    )
+    filters_active = section_filter != "All" or bool(speaker_filter) or min_score > 0.0
     filter_summary_parts = []
     if section_filter != "All":
         filter_summary_parts.append(f"section={section_filter}")
@@ -936,9 +927,7 @@ def _highlights_browser_fragment(
         filtered.append(card)
 
     if guided:
-        eligible = [
-            c for c in filtered if highlight_quote_eligible(c.quote)
-        ]
+        eligible = [c for c in filtered if highlight_quote_eligible(c.quote)]
         # Full controls still sees ineligible via unfiltered path when mode flips;
         # Guided promotes only usable excerpts.
         eligible = dedupe_overlapping_highlights(eligible)
@@ -2293,9 +2282,7 @@ def _render_marker_module_block(
         if not payload:
             st.info(member_empty_hint(module))
             return
-        _render_marker_module_payload(
-            payload, share_keys=share_keys, module=module
-        )
+        _render_marker_module_payload(payload, share_keys=share_keys, module=module)
         _render_view_raw_file_link(
             ctx,
             module,
@@ -2318,9 +2305,7 @@ def _render_marker_module_block(
             render_module_required_hint(empty_hint, key=f"{module}_empty", ctx=ctx)
         return
 
-    _render_marker_module_payload(
-        payload, share_keys=share_keys, module=module
-    )
+    _render_marker_module_payload(payload, share_keys=share_keys, module=module)
     _render_view_raw_file_link(ctx, module, json_suffix, link_key=f"{module}_raw")
 
 

@@ -32,9 +32,7 @@ def test_load_html_artifact_skips_read_when_over_max(
 
     monkeypatch.setattr(Path, "read_text", _tracking_read)
 
-    payload = ArtifactService.load_html_artifact(
-        run_root, artifact, max_read_bytes=100
-    )
+    payload = ArtifactService.load_html_artifact(run_root, artifact, max_read_bytes=100)
     assert payload is not None
     assert payload["truncated"] is True
     assert payload["content"] is None
@@ -51,9 +49,9 @@ def test_load_html_artifact_skips_read_when_over_max(
 
 
 def test_charts_gallery_card_source_avoids_iframe_for_dynamic() -> None:
-    source = Path(
-        "src/transcriptx/web/page_modules/charts.py"
-    ).read_text(encoding="utf-8")
+    source = Path("src/transcriptx/web/page_modules/charts.py").read_text(
+        encoding="utf-8"
+    )
     # Gallery path must not load HTML or iframe dynamic charts inline.
     card_fn_start = source.index("def _render_chart_gallery_card")
     card_fn_end = source.index("def _render_chart_card_grid")
@@ -64,8 +62,8 @@ def test_charts_gallery_card_source_avoids_iframe_for_dynamic() -> None:
 
 
 def test_charts_fullscreen_uses_max_read_bytes_gate() -> None:
-    source = Path(
-        "src/transcriptx/web/page_modules/charts.py"
-    ).read_text(encoding="utf-8")
+    source = Path("src/transcriptx/web/page_modules/charts.py").read_text(
+        encoding="utf-8"
+    )
     assert "max_read_bytes=MAX_FULLSCREEN_HTML_BYTES" in source
     assert 'html_payload.get("truncated")' in source

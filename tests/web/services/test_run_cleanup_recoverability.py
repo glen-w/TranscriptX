@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 from typing import Any
@@ -61,6 +62,25 @@ def _svc(tmp_path: Path) -> RunCleanupService:
         data_dir=data,
         config_dir=tmp_path / "config",
     )
+
+
+def _replace_tree_at_path(path: Path, *, content: str = "replaced") -> None:
+    """Replace a directory tree while keeping the same path.
+
+    Linux tmpfs often reuses inode numbers for rmtree+mkdir at the same path;
+    create via a sibling rename so the entry identity reliably changes.
+    """
+    shutil.rmtree(path)
+    swap = path.parent / f".__swap_{path.name}_{os.getpid()}"
+    swap.mkdir(parents=True)
+    (swap / "artifact.txt").write_text(content, encoding="utf-8")
+    swap.rename(path)
+
+
+def _identities_differ(
+    left_dev: int, left_ino: int, right_dev: int, right_ino: int
+) -> bool:
+    return int(left_dev) != int(right_dev) or int(left_ino) != int(right_ino)
 
 
 def _mk_run(root: Path, slug: str, run_id: str, content: str = "x") -> Path:
@@ -456,9 +476,20 @@ class TestRetryReconcileMatrix:
         staging = cleanup_journal.intended_staging_path(svc.outputs_dir, oid, target)
         staging.parent.mkdir(parents=True, exist_ok=True)
         shutil.rmtree(run)
-        # Fresh tree at staging path → different inode than journaled identity.
+        # Fresh tree at staging path — must not match journaled source identity.
         staging.mkdir(parents=True)
         (staging / "artifact.txt").write_text("replacement", encoding="utf-8")
+        staged_st = staging.lstat()
+        if not _identities_differ(
+            staged_st.st_dev,
+            staged_st.st_ino,
+            target.filesystem_dev,
+            target.filesystem_ino,
+        ):
+            pytest.skip(
+                "filesystem reported identical dev/ino for distinct paths; "
+                "cannot assert staging identity mismatch"
+            )
 
         retry = svc.retry_interrupted_staging(oid)
         assert retry.status is CleanupStatus.PARTIAL
@@ -770,10 +801,19 @@ class TestDescriptorRename:
             svc.outputs_dir, "1_abcdefabcdef", target, root
         )
         try:
-            # Replace run directory with a new inode under the same name
-            shutil.rmtree(run)
-            run.mkdir(parents=True)
-            (run / "artifact.txt").write_text("replaced", encoding="utf-8")
+            # Replace run directory with a new inode under the same name.
+            _replace_tree_at_path(run, content="replaced")
+            new_st = run.lstat()
+            if not _identities_differ(
+                new_st.st_dev,
+                new_st.st_ino,
+                target.filesystem_dev,
+                target.filesystem_ino,
+            ):
+                pytest.skip(
+                    "filesystem reused source dev/ino after replace; "
+                    "cannot assert identity mismatch"
+                )
             with pytest.raises(StagingUnsafeError, match="identity changed"):
                 rename_into_staging(
                     run,

@@ -28,7 +28,9 @@ def bootstrap(env_path: Path | None = None) -> None:
         pass
     # Pin BLAS/OpenMP/Numba before analysis extras import natives (pool size is sticky).
     try:
-        from transcriptx.core.utils.native_threads import ensure_native_thread_env_defaults
+        from transcriptx.core.utils.native_threads import (
+            ensure_native_thread_env_defaults,
+        )
 
         ensure_native_thread_env_defaults()
     except Exception:

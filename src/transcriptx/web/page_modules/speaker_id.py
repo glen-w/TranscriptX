@@ -203,9 +203,7 @@ def _voice_display_from_result(result, *, profile_name_lookup) -> dict:
         candidates.append(
             {
                 "profile_id": pid,
-                "display_name": live_name
-                or cand.get("display_name")
-                or pid,
+                "display_name": live_name or cand.get("display_name") or pid,
                 "confidence": cand.get("confidence"),
                 "reference_count": cand.get("reference_count"),
             }
@@ -716,7 +714,9 @@ def _validate_callback_identity(
     try:
         index = load_speaker_identification_index(transcript_path)
     except FileNotFoundError:
-        _set_flash(transcript_path, level="error", message="Transcript file is missing.")
+        _set_flash(
+            transcript_path, level="error", message="Transcript file is missing."
+        )
         return None
     speaker_ids = list(index.ordered_speaker_ids)
     if not speaker_ids:
@@ -740,7 +740,9 @@ def _validate_callback_identity(
     try:
         transcript_segments_signature(transcript_path)
     except FileNotFoundError:
-        _set_flash(transcript_path, level="error", message="Transcript file is missing.")
+        _set_flash(
+            transcript_path, level="error", message="Transcript file is missing."
+        )
         return None
     return speaker_ids, idx, active_id
 
@@ -930,9 +932,7 @@ def _cb_voice_confirm(
         resolver = ManagedTranscriptResolver()
         resolved = resolver.resolve_path(transcript_path)
         lsk = normalize_diarized_id(speaker_id)
-        result_key = voice_session_key(
-            resolved.managed_transcript_id, lsk, "result"
-        )
+        result_key = voice_session_key(resolved.managed_transcript_id, lsk, "result")
         result = st.session_state.get(result_key)
         if result is None or not getattr(result, "candidates_ui", None):
             _set_flash(
@@ -1018,9 +1018,7 @@ def _cb_voice_reject(
         resolver = ManagedTranscriptResolver()
         resolved = resolver.resolve_path(transcript_path)
         lsk = normalize_diarized_id(speaker_id)
-        result_key = voice_session_key(
-            resolved.managed_transcript_id, lsk, "result"
-        )
+        result_key = voice_session_key(resolved.managed_transcript_id, lsk, "result")
         result = st.session_state.get(result_key)
         if result is None or not getattr(result, "candidates_ui", None):
             st.session_state.pop(result_key, None)
@@ -1041,9 +1039,7 @@ def _cb_voice_reject(
             f"reject_{profile_id}",
         )
         facade.reject(
-            operation_idempotency_key=ensure_idempotency_key(
-                st.session_state, rej_key
-            ),
+            operation_idempotency_key=ensure_idempotency_key(st.session_state, rej_key),
             managed_transcript_id=resolved.managed_transcript_id,
             local_speaker_key=lsk,
             occurrence_fingerprint=result.occurrence_fingerprint or "",
@@ -1080,9 +1076,7 @@ def _cb_voice_leave(
         resolver = ManagedTranscriptResolver()
         resolved = resolver.resolve_path(transcript_path)
         lsk = normalize_diarized_id(speaker_id)
-        result_key = voice_session_key(
-            resolved.managed_transcript_id, lsk, "result"
-        )
+        result_key = voice_session_key(resolved.managed_transcript_id, lsk, "result")
         facade = SpeakerIdVoiceFacade()
         facade.acceptance.leave_unlinked()
         st.session_state.pop(result_key, None)
@@ -1195,7 +1189,9 @@ def _render_voice_suggestions(
             key=widget_key(path_str, f"voice_load_{active_id}"),
             on_click=_cb_load_voice,
             args=(path_str,),
-            help=widget_help("Prepare local voice matching controls for this transcript."),
+            help=widget_help(
+                "Prepare local voice matching controls for this transcript."
+            ),
         )
         return
 
@@ -1238,10 +1234,12 @@ def _render_voice_suggestions(
     btn_all.button(
         "Analyse all speakers",
         key=widget_key(path_str, "voice_analyse_all"),
-        help=widget_help((
-            "Run voice matching for every non-ignored speaker so "
-            "suggestions are ready as you step through the list."
-        )),
+        help=widget_help(
+            (
+                "Run voice matching for every non-ignored speaker so "
+                "suggestions are ready as you step through the list."
+            )
+        ),
         on_click=_cb_voice_analyse_all,
         args=(path_str,),
     )
@@ -1270,9 +1268,7 @@ def _render_voice_suggestions(
         resolver = ManagedTranscriptResolver()
         resolved = resolver.resolve_path(transcript_path)
         lsk = normalize_diarized_id(active_id)
-        result_key = voice_session_key(
-            resolved.managed_transcript_id, lsk, "result"
-        )
+        result_key = voice_session_key(resolved.managed_transcript_id, lsk, "result")
 
         pending = st.session_state.pop(pending_key, None)
         pending_path = pending.get("transcript") if pending else None
@@ -1317,9 +1313,7 @@ def _render_voice_suggestions(
                         _consume_flash(path_str)
             elif pending.get("mode") == "all":
                 targets = [
-                    sid
-                    for sid in speaker_ids
-                    if not _is_speaker_ignored(ignored, sid)
+                    sid for sid in speaker_ids if not _is_speaker_ignored(ignored, sid)
                 ]
                 suggestions = 0
                 no_match = 0
@@ -1671,17 +1665,21 @@ def _speaker_id_workspace_fragment(
             key=name_widget_key(transcript_path, active_id),
             placeholder="Type speaker name…",
             label_visibility="collapsed",
-            help=widget_help("Local display name for this diarization speaker key in the transcript map."),
+            help=widget_help(
+                "Local display name for this diarization speaker key in the transcript map."
+            ),
         )
     if is_managed_for_profiles:
         st.checkbox(
             "Also link to longitudinal speaker profile",
             value=True,
             key=link_profile_key(transcript_path, active_id),
-            help=widget_help((
-                "Creates a durable cross-transcript profile link for this managed "
-                "library speaker. Ad-hoc / run-output JSON supports local naming only."
-            )),
+            help=widget_help(
+                (
+                    "Creates a durable cross-transcript profile link for this managed "
+                    "library speaker. Ad-hoc / run-output JSON supports local naming only."
+                )
+            ),
         )
     else:
         st.caption(

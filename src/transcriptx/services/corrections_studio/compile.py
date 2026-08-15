@@ -220,14 +220,21 @@ def compile_studio_to_engine_apply(
         apply_scope = rec.apply_scope
         if occurrence_keys is not None and candidate_ids is not None:
             # Scoped occurrence subset for viewer quick-apply.
-            selected_keys = [k for k in occurrence_keys if (not valid_keys) or k in valid_keys]
+            selected_keys = [
+                k for k in occurrence_keys if (not valid_keys) or k in valid_keys
+            ]
             apply_scope = ApplyScope.selected
             if occurrence_keys and not selected_keys and valid_keys:
                 diag["dropped_candidates"] += 1
                 continue
 
         if apply_scope == ApplyScope.selected:
-            if rec.selected_occurrence_keys and not selected_keys and valid_keys and occurrence_keys is None:
+            if (
+                rec.selected_occurrence_keys
+                and not selected_keys
+                and valid_keys
+                and occurrence_keys is None
+            ):
                 diag["dropped_candidates"] += 1
                 continue
             if valid_keys:

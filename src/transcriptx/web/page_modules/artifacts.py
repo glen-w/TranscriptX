@@ -150,12 +150,14 @@ def _render_browse(ctx: RunScopedPageContext) -> None:
         "Source",
         source_options,
         key=ARTIFACTS_KEY_SOURCE_FILTER,
-        help=widget_help((
-            "For group runs: Group aggregate = pooled artifacts; "
-            "Member sessions = per-transcript outputs."
-            if is_group
-            else "Filter browse list by artifact provenance when available."
-        )),
+        help=widget_help(
+            (
+                "For group runs: Group aggregate = pooled artifacts; "
+                "Member sessions = per-transcript outputs."
+                if is_group
+                else "Filter browse list by artifact provenance when available."
+            )
+        ),
     )
     source_filter = ArtifactSourceFilter.ALL
     if source_label == "Group aggregate":
@@ -237,7 +239,9 @@ def _render_browse(ctx: RunScopedPageContext) -> None:
         if st.checkbox(
             "Scan for orphan files",
             key="artifacts_orphan_scan",
-            help=widget_help("List files under the run directory that are not in the artifact manifest."),
+            help=widget_help(
+                "List files under the run directory that are not in the artifact manifest."
+            ),
         ):
             _render_orphan_files(ctx.run_root, index.artifacts())
 

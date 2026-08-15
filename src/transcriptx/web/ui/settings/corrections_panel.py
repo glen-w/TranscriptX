@@ -87,10 +87,12 @@ def render_corrections_panel() -> None:
         options=["Generate missing", "Regenerate all"],
         horizontal=True,
         key="_corrections_bulk_mode_radio",
-        help=widget_help((
-            "Generate missing: create candidates only where none exist. "
-            "Regenerate all: re-run detectors (and optional LLM discovery) for every transcript."
-        )),
+        help=widget_help(
+            (
+                "Generate missing: create candidates only where none exist. "
+                "Regenerate all: re-run detectors (and optional LLM discovery) for every transcript."
+            )
+        ),
     )
     mode = (
         BulkGenerationMode.REGENERATE_ALL

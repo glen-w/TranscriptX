@@ -10,6 +10,10 @@ from typing import Any
 
 import pytest
 
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.utils.paths import OUTPUTS_DIR
 
 from transcriptx.core.analysis import wordclouds as wordclouds_pkg

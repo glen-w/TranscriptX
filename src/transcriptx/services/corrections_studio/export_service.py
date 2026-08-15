@@ -129,9 +129,11 @@ class CorrectionsStudioExportService:
                 source_doc = {}
             meta = compute_metadata_from_segments(updated_segments)
             export_doc = {
-                "schema_version": source_doc.get("schema_version")
-                if source_doc.get("schema_version") is not None
-                else 1,
+                "schema_version": (
+                    source_doc.get("schema_version")
+                    if source_doc.get("schema_version") is not None
+                    else 1
+                ),
                 "source": dict(source_doc.get("source") or {})
                 or {
                     "type": "manual",

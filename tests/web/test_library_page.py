@@ -95,7 +95,9 @@ def test_library_detail_toggle_enriches_selected_transcript_only(monkeypatch) ->
     ]
 
     monkeypatch.setattr(mod, "st", _DummyStreamlit)
-    monkeypatch.setattr(mod, "get_cached_light_transcript_metadata", lambda: transcripts)
+    monkeypatch.setattr(
+        mod, "get_cached_light_transcript_metadata", lambda: transcripts
+    )
     monkeypatch.setattr(
         mod, "get_cached_transcript_metadata", lambda _p: transcripts[0]
     )

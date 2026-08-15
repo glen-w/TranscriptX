@@ -158,7 +158,9 @@ class HighlightCardModel:
     raw_event: dict[str, Any] | None = None
 
 
-def highlight_quote_eligible(quote: str, *, min_chars: int = GUIDED_MIN_HIGHLIGHT_QUOTE_CHARS) -> bool:
+def highlight_quote_eligible(
+    quote: str, *, min_chars: int = GUIDED_MIN_HIGHLIGHT_QUOTE_CHARS
+) -> bool:
     text = " ".join(str(quote or "").split())
     if len(text) < min_chars:
         return False
@@ -217,7 +219,9 @@ def dedupe_overlapping_highlights(
         if not duplicate:
             kept.append(card)
     # Restore chronological for display after strength ranking for selection
-    kept.sort(key=lambda c: (-(c.score if c.score is not None else 0.0), c.start, c.event_key))
+    kept.sort(
+        key=lambda c: (-(c.score if c.score is not None else 0.0), c.start, c.event_key)
+    )
     return kept
 
 
@@ -228,7 +232,9 @@ def theme_label_for_user(label: str | None, *, is_unthemed: bool = False) -> str
     return raw
 
 
-def truncate_for_preview(text: str, *, limit: int = GUIDED_SUMMARY_PREVIEW_CHARS) -> tuple[str, bool]:
+def truncate_for_preview(
+    text: str, *, limit: int = GUIDED_SUMMARY_PREVIEW_CHARS
+) -> tuple[str, bool]:
     """Return (preview_or_full, was_truncated). Non-destructive — caller keeps full text."""
     body = text or ""
     if len(body) <= limit:
@@ -244,7 +250,9 @@ def truncate_for_preview(text: str, *, limit: int = GUIDED_SUMMARY_PREVIEW_CHARS
     return cut, True
 
 
-def compact_metadata_chips(labels: Sequence[str], *, cap: int = GUIDED_METADATA_CHIP_CAP) -> list[str]:
+def compact_metadata_chips(
+    labels: Sequence[str], *, cap: int = GUIDED_METADATA_CHIP_CAP
+) -> list[str]:
     out: list[str] = []
     for label in labels:
         text = str(label or "").strip()
@@ -280,7 +288,9 @@ def load_cached_analysis_json(
     return payload
 
 
-def analysis_payload_has_user_content(module: str, payload: dict[str, Any] | None) -> bool:
+def analysis_payload_has_user_content(
+    module: str, payload: dict[str, Any] | None
+) -> bool:
     """True when Guided should spend a slot on this optional analysis artifact."""
     if not isinstance(payload, dict) or not payload:
         return False

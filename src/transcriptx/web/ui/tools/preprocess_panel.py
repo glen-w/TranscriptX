@@ -94,10 +94,12 @@ def _selection_fragment(
         default=[p for p in prev_selected if p in paths_str] or [paths_str[0]],
         format_func=lambda p: recordings_path_label(Path(p)),
         key="audio_prep_file_select",
-        help=widget_help((
-            "After uploading, your new file appears here — select it to process. "
-            "Multiple files use per-file auto steps."
-        )),
+        help=widget_help(
+            (
+                "After uploading, your new file appears here — select it to process. "
+                "Multiple files use per-file auto steps."
+            )
+        ),
     )
     if not selected_paths_str:
         st.warning("Select at least one file to continue.")
@@ -110,9 +112,7 @@ def _selection_fragment(
     prev_set = (
         set(prev_result_key)
         if isinstance(prev_result_key, list)
-        else {prev_result_key}
-        if prev_result_key
-        else set()
+        else {prev_result_key} if prev_result_key else set()
     )
     if set(selected_paths_str) != prev_set:
         st.session_state.pop(_KEY_RESULT, None)
@@ -133,9 +133,7 @@ def _selection_fragment(
             (
                 "Mono"
                 if meta["channels"] == 1
-                else f"{meta['channels']}ch"
-                if meta["channels"]
-                else "—"
+                else f"{meta['channels']}ch" if meta["channels"] else "—"
             ),
         )
         col4.metric("Size", f"{meta['file_size_mb']} MB")
@@ -156,9 +154,7 @@ def _selection_fragment(
     _render_assess_and_configure(selected_paths, deps_ready=deps_ready)
 
 
-def _render_assess_and_configure(
-    audio_paths: List[Path], *, deps_ready: bool
-) -> None:
+def _render_assess_and_configure(audio_paths: List[Path], *, deps_ready: bool) -> None:
     st.subheader("2. Assess")
 
     if len(audio_paths) > 1:
@@ -282,11 +278,13 @@ def _render_configure(
             index=default_ix,
             horizontal=True,
             key="audio_prep_how",
-            help=widget_help((
-                "Apply suggested: run assessment-recommended steps (safe for clean audio). "
-                "Custom steps: pick DSP steps manually. "
-                "Assess only: no output file."
-            )),
+            help=widget_help(
+                (
+                    "Apply suggested: run assessment-recommended steps (safe for clean audio). "
+                    "Custom steps: pick DSP steps manually. "
+                    "Assess only: no output file."
+                )
+            ),
         )
         if choice == "Assess only":
             mode = "off"
@@ -327,7 +325,9 @@ def _render_configure(
             value=-18.0,
             step=0.5,
             key="audio_prep_lufs",
-            help=widget_help("Integrated loudness target for normalization (broadcast-style LUFS)."),
+            help=widget_help(
+                "Integrated loudness target for normalization (broadcast-style LUFS)."
+            ),
         )
         denoise_strength = st.selectbox(
             "Denoise strength",
@@ -343,7 +343,9 @@ def _render_configure(
             value=80,
             step=5,
             key="audio_prep_highpass_cutoff",
-            help=widget_help("Remove rumble below this frequency before transcription."),
+            help=widget_help(
+                "Remove rumble below this frequency before transcription."
+            ),
         )
 
     st.markdown("**Output**")
@@ -357,7 +359,9 @@ def _render_configure(
         }[d],
         horizontal=True,
         key="audio_prep_output_dest",
-        help=widget_help("Where preprocessed audio files are written relative to the input or app data."),
+        help=widget_help(
+            "Where preprocessed audio files are written relative to the input or app data."
+        ),
     )
     output_format = st.radio(
         "Output format",
@@ -371,7 +375,9 @@ def _render_configure(
         "Overwrite existing file",
         value=False,
         key="audio_prep_overwrite",
-        help=widget_help("Replace an existing preprocessed file at the resolved output path."),
+        help=widget_help(
+            "Replace an existing preprocessed file at the resolved output path."
+        ),
     )
 
     first_path = audio_paths[0]
@@ -484,9 +490,7 @@ def _render_run_button(
         st.warning("Install ffmpeg and pydub before processing.")
 
     disabled = (not deps_ready) and mode != "off"
-    if st.button(
-        button_label, type="primary", key="audio_prep_run", disabled=disabled
-    ):
+    if st.button(button_label, type="primary", key="audio_prep_run", disabled=disabled):
         st.session_state[PREPROCESS_SNAPSHOT_KEY] = make_initial_snapshot(total=5)
         st.session_state[_KEY_RUN_IN_PROGRESS] = True
         progress = StreamlitProgressCallback(PREPROCESS_SNAPSHOT_KEY)

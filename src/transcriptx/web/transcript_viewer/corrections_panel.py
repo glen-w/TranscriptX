@@ -60,7 +60,9 @@ def render_correct_mode_toggle() -> bool:
         st.checkbox(
             "Correct mode",
             key="transcript_viewer_correct_mode",
-            help=widget_help("Select a word or span and propose a correction while reading."),
+            help=widget_help(
+                "Select a word or span and propose a correction while reading."
+            ),
         )
     )
 
@@ -111,13 +113,17 @@ def _resolve_span_from_ui(
             "From word",
             labels,
             key=correction_widget_key(identity_hash, segment_id, "w0"),
-            help=widget_help("First word of the span to replace (word-timed segments only)."),
+            help=widget_help(
+                "First word of the span to replace (word-timed segments only)."
+            ),
         )
         end_lab = st.selectbox(
             "To word",
             labels,
             key=correction_widget_key(identity_hash, segment_id, "w1"),
-            help=widget_help("Last word of the span (inclusive). Must be at or after From word."),
+            help=widget_help(
+                "Last word of the span (inclusive). Must be at or after From word."
+            ),
         )
         i0 = int(start_lab.split(":", 1)[0])
         i1 = int(end_lab.split(":", 1)[0])
@@ -165,7 +171,9 @@ def render_segment_propose_panel(
         right = st.text_input(
             "Replacement",
             key=correction_widget_key(ctx.transcript_identity_hash, sid, "right"),
-            help=widget_help("Text that should replace the selected span or exact find match."),
+            help=widget_help(
+                "Text that should replace the selected span or exact find match."
+            ),
         )
         c1, c2, c3 = st.columns(3)
         propose = c1.button(

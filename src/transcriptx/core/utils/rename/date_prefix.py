@@ -128,7 +128,10 @@ def _smart_rename_settings() -> tuple[str, str, bool]:
 
         cfg = get_config()
         input_cfg = getattr(cfg, "input", None)
-        mode = str(getattr(input_cfg, "smart_rename_mode", "suggest_import") or "suggest_import")
+        mode = str(
+            getattr(input_cfg, "smart_rename_mode", "suggest_import")
+            or "suggest_import"
+        )
         pattern = str(
             getattr(input_cfg, "smart_rename_pattern", "{yymmdd}_{period}_{n}")
             or "{yymmdd}_{period}_{n}"

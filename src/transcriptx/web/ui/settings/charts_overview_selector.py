@@ -34,7 +34,9 @@ def normalize_overview_selection(raw: Any) -> list[str]:
     return []
 
 
-def toggle_overview_chart(selected: list[str], viz_id: str, *, enabled: bool) -> list[str]:
+def toggle_overview_chart(
+    selected: list[str], viz_id: str, *, enabled: bool
+) -> list[str]:
     """Add or remove viz_id while preserving order of remaining items."""
     current = normalize_overview_selection(selected)
     if enabled:
@@ -59,7 +61,9 @@ def move_overview_chart(selected: list[str], index: int, delta: int) -> list[str
 def charts_by_module() -> dict[str, list[tuple[str, str, str | None]]]:
     """module -> list of (viz_id, label, description)."""
     grouped: dict[str, list[tuple[str, str, str | None]]] = {}
-    for chart in sorted(iter_chart_definitions(), key=lambda c: (c.module, c.rank_default, c.viz_id)):
+    for chart in sorted(
+        iter_chart_definitions(), key=lambda c: (c.module, c.rank_default, c.viz_id)
+    ):
         desc = chart.description.strip() if chart.description else None
         grouped.setdefault(chart.module, []).append((chart.viz_id, chart.label, desc))
     return grouped
@@ -96,7 +100,9 @@ def render_charts_overview_selector(
 
     st.markdown("##### Selected (ordered)")
     if not selected:
-        st.caption("None selected — Charts Overview will use registry defaults for the run kind.")
+        st.caption(
+            "None selected — Charts Overview will use registry defaults for the run kind."
+        )
     else:
         for idx, viz_id in enumerate(selected):
             chart = registry.get(viz_id)
@@ -163,9 +169,7 @@ def render_charts_overview_selector(
                     help=widget_help(desc or viz_id),
                 )
                 if checked != (viz_id in selected_set):
-                    selected = toggle_overview_chart(
-                        selected, viz_id, enabled=checked
-                    )
+                    selected = toggle_overview_chart(selected, viz_id, enabled=checked)
                     draft_dot[OVERVIEW_CHARTS_KEY] = selected
                     _sync_overview_checkbox_keys(scope_key=scope_key, selected=selected)
                     st.rerun()
@@ -187,7 +191,9 @@ def render_charts_overview_selector(
             options=["skip", "show_placeholder"],
             index=0 if missing != "show_placeholder" else 1,
             key=f"{scope_key}_ov_missing",
-            help=widget_help("skip hides missing charts; show_placeholder reserves a slot with a notice."),
+            help=widget_help(
+                "skip hides missing charts; show_placeholder reserves a slot with a notice."
+            ),
         )
 
     return {

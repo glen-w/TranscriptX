@@ -182,9 +182,7 @@ def _maybe_auto_rename_imported(transcript_path: Path) -> Path:
         st.session_state[processed_key] = current_key
         return transcript_path
 
-    result = RenameService.rename_transcript_and_audio(
-        transcript_path, suggestion.full
-    )
+    result = RenameService.rename_transcript_and_audio(transcript_path, suggestion.full)
     if result.ok and result.new_transcript_path:
         st.success(
             f"Auto-renamed to `{result.new_base_name}` "
@@ -278,10 +276,12 @@ def _render_folder_import_section() -> None:
     path_value = st.text_input(
         "Folder path (absolute)",
         key=_KEY_FOLDER_PATH,
-        help=widget_help((
-            "Example: /Users/you/Documents/whisper-out. "
-            "Must be absolute. Relative paths are rejected."
-        )),
+        help=widget_help(
+            (
+                "Example: /Users/you/Documents/whisper-out. "
+                "Must be absolute. Relative paths are rejected."
+            )
+        ),
     )
     _invalidate_scan_if_path_changed(path_value or "")
 
@@ -289,9 +289,7 @@ def _render_folder_import_section() -> None:
         st.session_state.get(_KEY_SCAN_HANDLE)
     )
     scan_label = (
-        "Rescan"
-        if existing_handle and existing_handle.closed_ok
-        else "Scan folder"
+        "Rescan" if existing_handle and existing_handle.closed_ok else "Scan folder"
     )
 
     col_scan, col_import = st.columns(2)
@@ -339,8 +337,7 @@ def _render_folder_import_section() -> None:
         st.write(
             f"Preview — Eligible: {eligible_count}, Blocked: {blocked_count}"
             + (
-                " · "
-                + ", ".join(f"{k}: {v}" for k, v in sorted(label_counts.items()))
+                " · " + ", ".join(f"{k}: {v}" for k, v in sorted(label_counts.items()))
                 if label_counts
                 else ""
             )
@@ -454,10 +451,12 @@ def render_upload_transcript_page() -> None:
             "Choose a transcript file",
             type=list(SUPPORTED_IMPORT_UPLOAD_TYPES),
             accept_multiple_files=True,
-            help=widget_help((
-                "JSON (TranscriptX, Whisper, Sembly), SRT, VTT, HTML "
-                "(e.g. Sembly export), or other supported formats."
-            )),
+            help=widget_help(
+                (
+                    "JSON (TranscriptX, Whisper, Sembly), SRT, VTT, HTML "
+                    "(e.g. Sembly export), or other supported formats."
+                )
+            ),
             key="upload_transcript_file",
         )
         import_submitted = st.form_submit_button(
@@ -509,10 +508,12 @@ def render_upload_transcript_page() -> None:
             "Upload recording (optional)",
             type=_AUDIO_UPLOAD_TYPES,
             accept_multiple_files=False,
-            help=widget_help((
-                "This stores audio for speaker identification and voice/audio "
-                "feature modules. It does not generate transcript text."
-            )),
+            help=widget_help(
+                (
+                    "This stores audio for speaker identification and voice/audio "
+                    "feature modules. It does not generate transcript text."
+                )
+            ),
             key="upload_optional_recording_file",
         )
         recording_submitted = st.form_submit_button("Upload Recording")

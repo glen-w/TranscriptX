@@ -88,7 +88,9 @@ def test_default_host_env_file_avoids_container_install_tree(tmp_path: Path) -> 
     repo = tmp_path / "transcriptx"
     (repo / "scripts").mkdir(parents=True)
     (repo / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
-    (repo / "scripts" / "whispermlx-missing.py").write_text("# stub\n", encoding="utf-8")
+    (repo / "scripts" / "whispermlx-missing.py").write_text(
+        "# stub\n", encoding="utf-8"
+    )
     assert default_host_env_file(repo) == str(repo / "whisperx.env")
     assert default_host_script_ref(repo) == str(
         repo / "scripts" / "whispermlx-missing.py"
@@ -146,7 +148,10 @@ def test_whisper_webui_docker_deploy() -> None:
     assert "medium" in cmd.shell
     assert "fr" in cmd.shell
     assert any("Apple Silicon" in n for n in cmd.notes)
-    assert any("does not own" in n.lower() or "interoperability" in n.lower() for n in cmd.notes)
+    assert any(
+        "does not own" in n.lower() or "interoperability" in n.lower()
+        for n in cmd.notes
+    )
     assert any("SRT" in n or "VTT" in n for n in cmd.notes)
     assert "srt_vtt" in "\n".join(generate_preview_lines(params))
     assert "Import Transcript" in cmd.next_step

@@ -76,11 +76,13 @@ def render_export_panel_ui(
         "Export Options",
         modes,
         key=f"{key_prefix}_mode",
-        help=widget_help((
-            "All / Module / Speaker slice the run artifact index. "
-            "Charts/Data modes filter by artifact kind. "
-            "Custom Selection picks individual paths."
-        )),
+        help=widget_help(
+            (
+                "All / Module / Speaker slice the run artifact index. "
+                "Charts/Data modes filter by artifact kind. "
+                "Custom Selection picks individual paths."
+            )
+        ),
     )
     module_choice = None
     speaker_choice = None

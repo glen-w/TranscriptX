@@ -37,6 +37,16 @@ def _make_audio(path: Path, content: bytes = b"\x00" * 1024) -> Path:
     return path
 
 
+@pytest.fixture(autouse=True)
+def _ffmpeg_present() -> None:
+    """Pretend ffmpeg is installed unless a test patches _find_ffmpeg to None."""
+    with patch(
+        "transcriptx.services.speaker_studio.clip_service._find_ffmpeg",
+        return_value="/usr/bin/ffmpeg",
+    ):
+        yield
+
+
 # ── 1 & 2: cache key stability ────────────────────────────────────────────────
 
 
@@ -496,9 +506,7 @@ def test_cached_clip_status_hit_returns_bytes(tmp_path: Path) -> None:
     audio = _make_audio(tmp_path / "a.mp3")
     svc = ClipService(data_dir=tmp_path)
     # Seed the cache file directly at the computed path.
-    _, _, _, _, key, out_path = svc._compute_extract_params(
-        audio, 0.0, 1.0, "mp3", 50
-    )
+    _, _, _, _, key, out_path = svc._compute_extract_params(audio, 0.0, 1.0, "mp3", 50)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_bytes(b"ID3fakeclip")
     status = svc.cached_clip_status(audio, 0.0, 1.0)
@@ -531,9 +539,7 @@ def test_enqueue_clip_respects_backpressure(tmp_path: Path, monkeypatch) -> None
     svc.close()
 
 
-def test_nonblocking_apis_never_call_get_clip_path(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_nonblocking_apis_never_call_get_clip_path(tmp_path: Path, monkeypatch) -> None:
     audio = _make_audio(tmp_path / "a.mp3")
     svc = ClipService(data_dir=tmp_path)
     calls = {"n": 0}

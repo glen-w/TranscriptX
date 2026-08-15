@@ -208,8 +208,7 @@ def test_insights_summary_generation_details_collapsed(monkeypatch) -> None:
     loader.find_artifact.return_value = None
     oc.render_insights_summary_panel(_ctx(loader=loader), _placement())
     assert any(
-        (args and args[0] == "Generation details")
-        and kwargs.get("expanded") is False
+        (args and args[0] == "Generation details") and kwargs.get("expanded") is False
         for args, kwargs in expanders
     )
 
@@ -313,6 +312,7 @@ def test_lexical_diversity_guided_hides_dataframe_until_details(monkeypatch) -> 
     monkeypatch.setattr(
         "transcriptx.web.insights_presentation.is_insights_guided", lambda: True
     )
+
     # Expander context manager
     class _Exp:
         def __enter__(self):

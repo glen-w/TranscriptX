@@ -291,9 +291,12 @@ class TestVoiceNoteRunGrouping:
             _p("WhatsApp Audio 2026-08-12 at 13.11.09.mp3"),
             _p("WhatsApp Audio 2026-08-12 at 13.41.29.mp3"),
         ]
-        assert detect_serial_audio_groups(
-            paths, config=SerialDetectionConfig(voice_note_max_gap_seconds=60)
-        ) == []
+        assert (
+            detect_serial_audio_groups(
+                paths, config=SerialDetectionConfig(voice_note_max_gap_seconds=60)
+            )
+            == []
+        )
         groups = detect_serial_audio_groups(
             paths, config=SerialDetectionConfig(voice_note_max_gap_seconds=40 * 60)
         )

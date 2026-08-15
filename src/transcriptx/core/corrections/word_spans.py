@@ -118,7 +118,11 @@ def align_words_to_text(
                 char_end=end,
                 start=_coerce_time(raw.get("start")),
                 end=_coerce_time(raw.get("end")),
-                score=raw.get("score") if isinstance(raw.get("score"), (int, float)) else None,
+                score=(
+                    raw.get("score")
+                    if isinstance(raw.get("score"), (int, float))
+                    else None
+                ),
                 aligned=True,
             )
         )
@@ -200,4 +204,7 @@ def find_unique_char_span(text: str, needle: str) -> Tuple[int, int]:
 
 def rebuild_untimed_words_from_text(text: str) -> List[Dict[str, Any]]:
     """Build untimed word dicts from whitespace tokens of ``text``."""
-    return [{"word": tok, "start": None, "end": None} for _, _, tok in _whitespace_spans(text)]
+    return [
+        {"word": tok, "start": None, "end": None}
+        for _, _, tok in _whitespace_spans(text)
+    ]

@@ -216,9 +216,7 @@ class LayoutProfileStore:
         """Delete a custom layout YAML. Built-ins cannot be deleted."""
         slug = slugify_layout_id(layout_id)
         if LayoutProfileStore.is_builtin(slug):
-            raise LayoutValidationError(
-                f"Built-in layout '{slug}' cannot be deleted."
-            )
+            raise LayoutValidationError(f"Built-in layout '{slug}' cannot be deleted.")
         path = LayoutProfileStore.custom_layout_path(slug, base)
         if not path.exists():
             raise FileNotFoundError(f"Custom layout not found: {slug}")

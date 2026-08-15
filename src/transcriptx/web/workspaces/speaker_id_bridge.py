@@ -11,7 +11,10 @@ from transcriptx.app.speaker_id import (
     mapping_revision_from_state,
     transcript_revision_from_path,
 )
-from transcriptx.web.workspaces.clip_transport import encode_clip_b64, within_clip_budget
+from transcriptx.web.workspaces.clip_transport import (
+    encode_clip_b64,
+    within_clip_budget,
+)
 
 try:
     from transcriptx_workspaces import FRONTEND_BUILD_ID

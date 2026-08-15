@@ -79,9 +79,7 @@ def _build_overview(
     high_tier_labels: List[str] = []
     mask = build_tic_mask()
     for lbl in theme_labels:
-        quality = analyse_phrase(
-            annotations_from_surfaces(lbl.split()), tic_mask=mask
-        )
+        quality = analyse_phrase(annotations_from_surfaces(lbl.split()), tic_mask=mask)
         decision = theme_label_policy(quality)
         if not decision.include:
             continue

@@ -1,5 +1,11 @@
 """Tests for insight eligibility."""
 
+import pytest
+
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.analysis.insight_eligibility.content_filter import (
     filter_segments_for_insights,
 )

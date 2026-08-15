@@ -169,9 +169,7 @@ def filtered_display_segments(
         return jump_index is not None and idx == jump_index
 
     display_segments: list[tuple[int, dict[str, Any]]] = [
-        (idx, segment)
-        for idx, segment in enumerate(segments)
-        if _keep(idx, segment)
+        (idx, segment) for idx, segment in enumerate(segments) if _keep(idx, segment)
     ]
     if search_text:
         filtered = [

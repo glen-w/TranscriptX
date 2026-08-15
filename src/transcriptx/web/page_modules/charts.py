@@ -462,7 +462,9 @@ def _render_view_options_popover(visible_module_ids: list[str]) -> None:
             "Chart text",
             options=list(_CHART_TEXT_OPTIONS),
             key=CHARTS_KEY_CHART_TEXT,
-            help=widget_help("How much caption/description text to show under each chart."),
+            help=widget_help(
+                "How much caption/description text to show under each chart."
+            ),
         )
         expand_col, collapse_col = st.columns(2)
         with expand_col:
@@ -704,7 +706,9 @@ def _charts_filters_and_gallery_fragment(
             "Scope",
             options=scope_options,
             key=CHARTS_KEY_FILTER_SCOPE,
-            help=widget_help("Narrow charts to a UI scope band (All shows every scope)."),
+            help=widget_help(
+                "Narrow charts to a UI scope band (All shows every scope)."
+            ),
         )
     with row1c:
         st.pills(
@@ -712,7 +716,9 @@ def _charts_filters_and_gallery_fragment(
             options=[CHARTS_KIND_STATIC, CHARTS_KIND_DYNAMIC],
             selection_mode="multi",
             key=CHARTS_KEY_KIND_PILLS,
-            help=widget_help("Static = saved images; Dynamic = interactive/HTML charts."),
+            help=widget_help(
+                "Static = saved images; Dynamic = interactive/HTML charts."
+            ),
         )
         sync_kind_toggles_from_pills(st.session_state)
 
@@ -736,7 +742,9 @@ def _charts_filters_and_gallery_fragment(
                 "Tags",
                 tags,
                 key=CHARTS_KEY_TAGS_MULTI,
-                help=widget_help("AND-filter by chart tags (leave empty for all tags)."),
+                help=widget_help(
+                    "AND-filter by chart tags (leave empty for all tags)."
+                ),
             )
             st.session_state[CHARTS_KEY_FILTER_TAGS] = list(
                 st.session_state.get(CHARTS_KEY_TAGS_MULTI) or []
@@ -752,7 +760,9 @@ def _charts_filters_and_gallery_fragment(
                 tag_options,
                 disabled=True,
                 key=locked_key,
-                help=widget_help("Tags are locked while Source is Group aggregate or Member sessions."),
+                help=widget_help(
+                    "Tags are locked while Source is Group aggregate or Member sessions."
+                ),
             )
 
     if subviews:
@@ -800,9 +810,7 @@ def _charts_filters_and_gallery_fragment(
                 if not html_payload:
                     st.error("Unable to load HTML chart.")
                 elif html_payload.get("truncated") or not html_payload.get("content"):
-                    st.warning(
-                        "HTML chart is too large to render. Download instead."
-                    )
+                    st.warning("HTML chart is too large to render. Download instead.")
                 else:
                     st.iframe(html_payload["content"], height=700)
             if show_llm_summary:

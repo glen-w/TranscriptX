@@ -80,7 +80,9 @@ class DirectoryWatcherService:
     def store(self) -> JobStore:
         return self._store
 
-    def configure(self, settings: DirectoryWatcherSettings, *, persist: bool = True) -> None:
+    def configure(
+        self, settings: DirectoryWatcherSettings, *, persist: bool = True
+    ) -> None:
         errors = settings.validate_for_enable() if settings.enabled else []
         if settings.enabled and errors:
             raise ValueError("; ".join(errors))
@@ -125,9 +127,7 @@ class DirectoryWatcherService:
 
             self.stop_locked()
             self._stop_event.clear()
-            self._observer = WatchObserver(
-                settings=settings, on_path=self.enqueue_path
-            )
+            self._observer = WatchObserver(settings=settings, on_path=self.enqueue_path)
             path_errors = self._observer.start()
             self._last_errors = list(path_errors)
             if not self._observer.is_alive:
@@ -163,7 +163,11 @@ class DirectoryWatcherService:
         worker = self._worker
         self._worker = None
         self._running = False
-        if worker is not None and worker.is_alive() and worker is not threading.current_thread():
+        if (
+            worker is not None
+            and worker.is_alive()
+            and worker is not threading.current_thread()
+        ):
             worker.join(timeout=5.0)
         with self._lock:
             self._pending.clear()

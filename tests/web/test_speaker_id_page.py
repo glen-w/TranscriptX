@@ -265,7 +265,9 @@ def test_after_ignore_advances_from_persisted_ignored_state(
         l_key: 99,
     }
     monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
-    monkeypatch.setattr(mod, "invalidate_transcript_summary_for_path", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        mod, "invalidate_transcript_summary_for_path", lambda *_a, **_k: None
+    )
     monkeypatch.setattr(mod, "clear_playback_session_keys", lambda *_a, **_k: None)
     reruns: list[str] = []
     monkeypatch.setattr(mod, "_rerun_ui", lambda: reruns.append("fragment"))
@@ -312,7 +314,10 @@ def test_profile_save_mutation_order_commits_before_advance() -> None:
     save_block = source.split("def _save_name", 1)[1]
     save_block = save_block.split("def _ignore_toggle", 1)[0]
     assert "create_profile_link_and_name" in save_block
-    assert "partial.effective_signal" in save_block or "cache_signal = getattr(partial" in save_block
+    assert (
+        "partial.effective_signal" in save_block
+        or "cache_signal = getattr(partial" in save_block
+    )
     assert save_block.index("create_profile_link_and_name") < save_block.index(
         "_ack_after_mutation"
     )
@@ -322,7 +327,9 @@ def test_profile_save_mutation_order_commits_before_advance() -> None:
     import transcriptx.web.page_modules.speaker_id as mod
 
     page = Path(mod.__file__).read_text(encoding="utf-8")
-    page_save = page.split("def _cb_save_name", 1)[1].split("def _cb_ignore_toggle", 1)[0]
+    page_save = page.split("def _cb_save_name", 1)[1].split("def _cb_ignore_toggle", 1)[
+        0
+    ]
     assert "SpeakerIdCommand" in page_save
     assert 'action="save_name"' in page_save
     assert "_apply_ack" in page_save
@@ -370,7 +377,9 @@ def test_partial_profile_link_failure_does_not_skip_unnamed_speaker(
         mod.jump_key(transcript): 0,
     }
     monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
-    monkeypatch.setattr(mod, "invalidate_transcript_summary_for_path", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        mod, "invalidate_transcript_summary_for_path", lambda *_a, **_k: None
+    )
     monkeypatch.setattr(mod, "clear_playback_session_keys", lambda *_a, **_k: None)
     reruns: list[str] = []
     monkeypatch.setattr(mod, "_rerun_ui", lambda: reruns.append("fragment"))
@@ -430,7 +439,9 @@ def test_completion_triggers_one_app_rerun_and_flag_is_consumed(
         mod.jump_key(transcript): 0,
     }
     monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
-    monkeypatch.setattr(mod, "invalidate_transcript_summary_for_path", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        mod, "invalidate_transcript_summary_for_path", lambda *_a, **_k: None
+    )
     monkeypatch.setattr(mod, "clear_playback_session_keys", lambda *_a, **_k: None)
 
     app_calls = {"n": 0}
@@ -441,7 +452,9 @@ def test_completion_triggers_one_app_rerun_and_flag_is_consumed(
         raise RuntimeError("rerun")
 
     monkeypatch.setattr(mod, "_rerun_app_for_completion", _app_rerun)
-    monkeypatch.setattr(mod, "_rerun_ui", lambda: (_ for _ in ()).throw(RuntimeError("frag")))
+    monkeypatch.setattr(
+        mod, "_rerun_ui", lambda: (_ for _ in ()).throw(RuntimeError("frag"))
+    )
 
     new_state = SimpleNamespace(
         speaker_map={"SPEAKER_00": "Alice"},
@@ -1063,9 +1076,7 @@ def test_speaker_id_next_unnamed_idx_stays_when_current_still_unnamed() -> None:
     result = _next_unnamed_idx(speaker_ids, {}, [], current=0)
     assert result == 0
     # Later unnamed speakers must not pull focus away from current.
-    result = _next_unnamed_idx(
-        speaker_ids, {"SPEAKER_01": "Bob"}, [], current=0
-    )
+    result = _next_unnamed_idx(speaker_ids, {"SPEAKER_01": "Bob"}, [], current=0)
     assert result == 0
 
 
@@ -1297,7 +1308,9 @@ def test_speaker_id_named_and_remaining_counts_with_variant_diarized_ids(
     assert transcripts[0].speaker_map_status == "complete"
 
 
-def test_transcript_scoped_keys_isolate_same_speaker_across_paths(tmp_path: Path) -> None:
+def test_transcript_scoped_keys_isolate_same_speaker_across_paths(
+    tmp_path: Path,
+) -> None:
     import transcriptx.web.page_modules.speaker_id as mod
 
     a = tmp_path / "a.json"
@@ -1333,7 +1346,9 @@ def test_jump_callback_does_not_rewrite_jump_key(
         segment_counts=(0, 0, 0),
         durations=(0.0, 0.0, 0.0),
     )
-    monkeypatch.setattr(mod, "load_speaker_identification_index", lambda *_a, **_k: index)
+    monkeypatch.setattr(
+        mod, "load_speaker_identification_index", lambda *_a, **_k: index
+    )
     mod._cb_jump_change(str(transcript))
     assert ss[j_key] == 2  # jump widget key untouched
     assert ss[idx_key] == 2
@@ -1356,7 +1371,9 @@ def test_validate_callback_identity_rejects_stale_speaker(
         segment_counts=(0, 0),
         durations=(0.0, 0.0),
     )
-    monkeypatch.setattr(mod, "load_speaker_identification_index", lambda *_a, **_k: index)
+    monkeypatch.setattr(
+        mod, "load_speaker_identification_index", lambda *_a, **_k: index
+    )
     assert (
         mod._validate_callback_identity(
             str(transcript), expected_speaker_id="SPEAKER_01"
@@ -1422,13 +1439,16 @@ def test_play_hot_path_does_not_construct_voice_services() -> None:
     frag = source.split("def _speaker_id_workspace_fragment", 1)[1]
     frag = frag.split("def render_speaker_id_page", 1)[0]
     # Workspace resolves profile context but must not construct the facade.
-    assert "SpeakerIdVoiceFacade()" not in frag.split("def _render_voice_suggestions", 1)[0]
+    assert (
+        "SpeakerIdVoiceFacade()"
+        not in frag.split("def _render_voice_suggestions", 1)[0]
+    )
     assert "resolve_playback_context" in frag
     voice = source.split("def _render_voice_suggestions", 1)[1]
     assert "voice_display_key" in voice
     assert "Load voice suggestions" in voice
     # Facade only when processing pending analyse work.
-    assert voice.index('if not st.session_state.get(loaded_key)') < voice.index(
+    assert voice.index("if not st.session_state.get(loaded_key)") < voice.index(
         "SpeakerIdVoiceFacade()"
     )
     assert voice.index("pending_peek") < voice.index("SpeakerIdVoiceFacade()")
@@ -1461,7 +1481,9 @@ def test_cb_save_rejects_stale_expected_speaker(
         segment_counts=(0, 0),
         durations=(0.0, 0.0),
     )
-    monkeypatch.setattr(mod, "load_speaker_identification_index", lambda *_a, **_k: index)
+    monkeypatch.setattr(
+        mod, "load_speaker_identification_index", lambda *_a, **_k: index
+    )
     called: list[str] = []
     monkeypatch.setattr(
         mod,

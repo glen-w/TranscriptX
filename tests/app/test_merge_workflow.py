@@ -420,9 +420,7 @@ class TestMergeDeleteOriginals:
         "transcriptx.app.workflows.merge.delete_linked_transcripts_for_audio",
         return_value=(0, []),
     )
-    def test_delete_helper_never_unlinks_merge_output(
-        self, mock_tx_delete, tmp_path
-    ):
+    def test_delete_helper_never_unlinks_merge_output(self, mock_tx_delete, tmp_path):
         """_delete_merge_originals skips the merge output even if listed among sources."""
         from transcriptx.app.workflows.merge import _delete_merge_originals
 
@@ -448,9 +446,7 @@ class TestMergeDeleteOriginals:
         return_value=_FFMPEG_OK,
     )
     @patch("transcriptx.app.workflows.merge.merge_audio_files")
-    def test_does_not_delete_on_merge_failure(
-        self, mock_merge, _mock_ffmpeg, tmp_path
-    ):
+    def test_does_not_delete_on_merge_failure(self, mock_merge, _mock_ffmpeg, tmp_path):
         files = _make_files(tmp_path, 2)
         mock_merge.side_effect = RuntimeError("codec error")
         req = MergeRequest(
@@ -470,9 +466,7 @@ class TestMergeDeleteOriginals:
         return_value=_FFMPEG_OK,
     )
     @patch("transcriptx.app.workflows.merge.merge_audio_files")
-    def test_skips_delete_when_output_missing(
-        self, mock_merge, _mock_ffmpeg, tmp_path
-    ):
+    def test_skips_delete_when_output_missing(self, mock_merge, _mock_ffmpeg, tmp_path):
         files = _make_files(tmp_path, 2)
         missing_out = tmp_path / "out.mp3"
         mock_merge.return_value = missing_out

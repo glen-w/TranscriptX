@@ -481,9 +481,7 @@ def _decode_journal_envelope(
     return data
 
 
-def journal_schema_matches_expected(
-    actual: Any, expected: int | None
-) -> bool:
+def journal_schema_matches_expected(actual: Any, expected: int | None) -> bool:
     """True when ``actual`` satisfies an optional expected schema constraint.
 
     ``expected=JOURNAL_SCHEMA_VERSION`` also accepts the pre-epoch envelope
@@ -494,8 +492,7 @@ def journal_schema_matches_expected(
     if actual == expected:
         return True
     return (
-        expected == JOURNAL_SCHEMA_VERSION
-        and actual == LEGACY_JOURNAL_SCHEMA_VERSION
+        expected == JOURNAL_SCHEMA_VERSION and actual == LEGACY_JOURNAL_SCHEMA_VERSION
     )
 
 
@@ -504,6 +501,7 @@ _JOURNAL_DECODERS: dict[int, Any] = {
     JOURNAL_SCHEMA_VERSION: decode_journal_schema_1,
     LEGACY_JOURNAL_SCHEMA_VERSION: decode_journal_schema_3,
 }
+
 
 def _validate_journal_payload(
     data: dict[str, Any],

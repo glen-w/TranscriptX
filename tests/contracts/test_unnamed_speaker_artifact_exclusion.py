@@ -39,7 +39,8 @@ def test_named_speaker_predicates_split_turn_taking_from_display() -> None:
     assert is_eligible_named_speaker("SPEAKER_03", "SPEAKER_03") is False
     assert is_eligible_named_speaker("Ana", "SPEAKER_00") is True
     assert (
-        is_eligible_named_speaker("SPEAKER_03", "SPEAKER_03", allow_unnamed=True) is True
+        is_eligible_named_speaker("SPEAKER_03", "SPEAKER_03", allow_unnamed=True)
+        is True
     )
 
 

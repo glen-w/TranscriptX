@@ -174,7 +174,9 @@ class TestSafeguardsAndPriority:
             _p("meeting_part1.mp3"),
             _p("meeting_part2.mp3"),
         ]
-        serial = next(p for p in builtin_merge_source_profiles() if p.id == "serial_parts")
+        serial = next(
+            p for p in builtin_merge_source_profiles() if p.id == "serial_parts"
+        )
         regex = MergeSourceProfile(
             id="meeting_regex",
             name="Meeting regex",

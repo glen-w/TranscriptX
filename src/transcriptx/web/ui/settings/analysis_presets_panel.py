@@ -94,7 +94,9 @@ def _render_preset_editor(
         "Allow LLM modules",
         value=bool(draft.get("allow_llm")),
         key=f"{prefix}_allow_llm",
-        help=widget_help("When off, modules marked requires_llm are excluded from this preset."),
+        help=widget_help(
+            "When off, modules marked requires_llm are excluded from this preset."
+        ),
     )
     if draft["allow_llm"]:
         draft["llm_module_ids"] = st.multiselect(
@@ -105,7 +107,9 @@ def _render_preset_editor(
             ],
             format_func=format_module_option,
             key=f"{prefix}_llm_ids",
-            help=widget_help("Leave empty to allow every LLM module; otherwise only the listed ones run."),
+            help=widget_help(
+                "Leave empty to allow every LLM module; otherwise only the listed ones run."
+            ),
         )
     else:
         draft["llm_module_ids"] = list(draft.get("llm_module_ids") or [])
@@ -125,7 +129,9 @@ def _render_preset_editor(
             ],
             format_func=format_module_option,
             key=f"{prefix}_heavy_ids",
-            help=widget_help("Leave empty to allow every heavy module; otherwise only the listed ones run."),
+            help=widget_help(
+                "Leave empty to allow every heavy module; otherwise only the listed ones run."
+            ),
         )
     else:
         draft["heavy_module_ids"] = list(draft.get("heavy_module_ids") or [])
@@ -134,14 +140,18 @@ def _render_preset_editor(
         "Include exclude-from-default modules",
         value=bool(draft.get("include_excluded_from_default")),
         key=f"{prefix}_excl",
-        help=widget_help("Opt in registry modules marked exclude_from_default (usually experimental)."),
+        help=widget_help(
+            "Opt in registry modules marked exclude_from_default (usually experimental)."
+        ),
     )
 
     use_override = st.checkbox(
         "Override with explicit module list",
         value=draft.get("module_ids") is not None,
         key=f"{prefix}_use_override",
-        help=widget_help("When enabled, policy filters are ignored and only this list runs."),
+        help=widget_help(
+            "When enabled, policy filters are ignored and only this list runs."
+        ),
     )
     if use_override:
         current = list(draft.get("module_ids") or [])
@@ -151,7 +161,9 @@ def _render_preset_editor(
             default=[m for m in current if m in catalogue],
             format_func=format_module_option,
             key=f"{prefix}_override",
-            help=widget_help("Exact module set for this preset when override is enabled."),
+            help=widget_help(
+                "Exact module set for this preset when override is enabled."
+            ),
         )
     else:
         draft["module_ids"] = None

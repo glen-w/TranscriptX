@@ -243,7 +243,13 @@ def test_eligible_named_speaker_respects_pipeline_contextvar() -> None:
 @pytest.mark.unit
 @pytest.mark.parametrize(
     "module_name",
-    ["echoes", "understandability", "lexical_diversity", "politeness", "epistemic_markers"],
+    [
+        "echoes",
+        "understandability",
+        "lexical_diversity",
+        "politeness",
+        "epistemic_markers",
+    ],
 )
 def test_former_turn_taking_modules_no_longer_opt_in(module_name: str) -> None:
     info = get_module_info(module_name)

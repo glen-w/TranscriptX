@@ -96,6 +96,7 @@ def test_save_dynamic_chart_branches(tmp_path: Path) -> None:
         assert ch.save_dynamic_chart(MagicMock(), tmp_path / "a.html") is None
         warn.assert_called_once()
 
+    pytest.importorskip("plotly", reason="plotly extra not installed")
     with (
         patch.object(ch, "is_plotly_available", return_value=True),
         patch("plotly.io.write_html") as write_html,

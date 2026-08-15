@@ -65,9 +65,7 @@ def cached_home_light_summary(
                 continue
         library_count += 1
 
-    analysed_slugs = {
-        name.split("/", 1)[0] for name in session_names if "/" in name
-    }
+    analysed_slugs = {name.split("/", 1)[0] for name in session_names if "/" in name}
     session_count = len(session_names)
     return {
         "library_transcript_count": library_count,
@@ -87,6 +85,7 @@ def get_cached_home_light_summary() -> dict[str, int | bool]:
     except OSError:
         index_mtime = None
     return cached_home_light_summary(session_names, index_mtime)
+
 
 def _transcript_metadata_signature(path) -> tuple[float, int, float]:
     """(file mtime, size, speaker-map sidecar mtime) for metadata cache keying."""
@@ -200,9 +199,7 @@ def cached_list_transcript_picker_options(
 ) -> tuple[tuple[str, str], ...]:
     """Cached light picker rows as ``(path, label)`` tuples for Streamlit hashing."""
     mark_cache_miss("cached_list_transcript_picker_options")
-    return tuple(
-        (opt.path, opt.label) for opt in _transcript_picker_options_impl()
-    )
+    return tuple((opt.path, opt.label) for opt in _transcript_picker_options_impl())
 
 
 def get_cached_list_transcript_picker_options() -> list[TranscriptPickerOption]:
@@ -305,9 +302,7 @@ def transcript_segments_signature(path) -> tuple[int, int]:
 
 
 @st.cache_data(ttl=120, show_spinner=False)
-def cached_transcript_summary_for_path(
-    path_str: str, signature: tuple[int, int, int]
-):
+def cached_transcript_summary_for_path(path_str: str, signature: tuple[int, int, int]):
     """Per-transcript picker summary; invalidate with ``.clear(path, sig)``."""
     mark_cache_miss("cached_transcript_summary_for_path")
     from pathlib import Path
@@ -318,9 +313,7 @@ def cached_transcript_summary_for_path(
 
 
 @st.cache_data(ttl=300, max_entries=64, show_spinner=False)
-def cached_speaker_id_segments(
-    path_str: str, signature: tuple[int, int]
-) -> list:
+def cached_speaker_id_segments(path_str: str, signature: tuple[int, int]) -> list:
     """Parse transcript segments without applying the speaker-map sidecar.
 
     Sidecar naming must stay out of this cache so Save/Ignore never force a

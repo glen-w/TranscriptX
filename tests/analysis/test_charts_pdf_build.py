@@ -17,6 +17,7 @@ def _write_png(path: Path, size: tuple[int, int] = (32, 32)) -> None:
 
 @pytest.mark.unit
 def test_build_charts_pdf_with_sentiment_and_summary_pngs(tmp_path: Path) -> None:
+    pytest.importorskip("reportlab", reason="visualization extra not installed")
     run = tmp_path / "run"
     _write_png(run / "sentiment" / "charts" / "global" / "x.png")
     _write_png(run / "summary" / "charts" / "global" / "x.png")

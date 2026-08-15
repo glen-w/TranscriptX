@@ -284,7 +284,9 @@ class CorrectionsStudioCandidateService:
         # under the same candidate_id (rare) or semantic identity.
         detector_ids = {c.candidate_id for c in studio_candidates}
         detector_sem = {
-            c.semantic_identity_key for c in studio_candidates if c.semantic_identity_key
+            c.semantic_identity_key
+            for c in studio_candidates
+            if c.semantic_identity_key
         }
         filtered_manuals = []
         filtered_manual_reviews = []

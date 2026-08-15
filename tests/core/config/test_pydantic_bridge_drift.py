@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from transcriptx.core.config.pydantic_bridge import (
@@ -41,21 +41,77 @@ def _normalize_for_json(value: Any) -> Any:
     return value
 
 
+_REPO = "<REPO>"
+
+# Longest-first Docker/workspace absolute markers under a /data root.
+_DATA_ABSOLUTE_MARKERS = (
+    "/data/transcripts/metadata/speaker_maps",
+    "/data/transcripts/readable",
+    "/data/transcripts/metadata",
+    "/data/transcripts/imports",
+    "/data/transcripts/originals",
+    "/data/backups/processing_state",
+    "/data/backups/wav",
+    "/data/backups",
+    "/data/cache/audio_playback",
+    "/data/cache/voice",
+    "/data/speaker_profiles",
+    "/data/recordings/imports",
+    "/data/recordings",
+    "/data/transcripts",
+    "/data/outputs/groups",
+    "/data/outputs",
+    "/data/preprocessing",
+    "/data/corrections",
+    "/data/state",
+    "/data/groups",
+)
+
+
+def _is_output_root_part(part: str, prev: str | None) -> bool:
+    if part == ".test_outputs":
+        return True
+    if part.startswith("tx-out"):
+        return True
+    return part == "outputs" and prev in {"data", "mnt"}
+
+
+def _is_data_root_part(part: str) -> bool:
+    return part == "data" or "tx-data" in part
+
+
 def _normalize_pathish(value: str) -> str:
-    """Collapse host-/container-absolute data-root paths for golden comparisons."""
-    # Defaults embed RECORDINGS_DIR / similar absolute roots; goldens are written
-    # in Docker (/workspace/...) while host runs use the clone path.
-    markers = (
-        "/data/recordings",
-        "/data/transcripts",
-        "/data/outputs",
-        "/data/backups",
-        "/data/.transcriptx",
-    )
-    for marker in markers:
-        idx = value.find(marker)
+    """Collapse host-/container-/CI-absolute paths to role-based <REPO>/... forms."""
+    if not value.startswith("/"):
+        return value
+
+    path = value.replace("\\", "/").rstrip("/")
+    if path.startswith("/workspace/"):
+        path = path[len("/workspace") :]
+
+    for marker in _DATA_ABSOLUTE_MARKERS:
+        idx = path.find(marker)
         if idx >= 0:
-            return "<REPO>" + value[idx:]
+            return _REPO + path[idx:]
+
+    dot_tx = path.find("/.transcriptx")
+    if dot_tx >= 0:
+        return _REPO + path[dot_tx:]
+
+    parts = PurePosixPath(path).parts
+    for i, part in enumerate(parts):
+        if part == "/":
+            continue
+        prev = parts[i - 1] if i > 0 else None
+        if _is_output_root_part(part, prev):
+            rest = parts[i + 1 :]
+            suffix = ("/" + "/".join(rest)) if rest else ""
+            return f"{_REPO}/.test_outputs{suffix}"
+        if _is_data_root_part(part):
+            rest = parts[i + 1 :]
+            suffix = ("/" + "/".join(rest)) if rest else ""
+            return f"{_REPO}/data{suffix}"
+
     return value
 
 

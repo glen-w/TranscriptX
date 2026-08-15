@@ -377,9 +377,7 @@ def trigger_clip_warm(
     if not ordered_segs:
         return None
 
-    target_count = (
-        _WARM_WINDOW if visible_count is None else max(0, int(visible_count))
-    )
+    target_count = _WARM_WINDOW if visible_count is None else max(0, int(visible_count))
     target_count = min(target_count, len(ordered_segs))
     if target_count <= 0:
         return None
@@ -698,9 +696,7 @@ def render_playback_panel_body(
     not already inside a fragment should use ``render_playback_panel`` instead.
     """
     ctx = playback_context
-    effective_audio = (
-        ctx.audio_path if ctx is not None else audio_path
-    )
+    effective_audio = ctx.audio_path if ctx is not None else audio_path
     ffmpeg_ok = (
         ctx.ffmpeg_available if ctx is not None else controller.ffmpeg_available()
     )

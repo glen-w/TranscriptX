@@ -305,11 +305,7 @@ def _resolve_transcript_selection(
         format_func=lambda i: (
             SELECTBOX_PLACEHOLDER_TRANSCRIPT
             if i == 0
-            else (
-                transcript_labels[i - 1]
-                if i - 1 < len(transcript_labels)
-                else ""
-            )
+            else (transcript_labels[i - 1] if i - 1 < len(transcript_labels) else "")
         ),
         index=default_idx,
         key="run_analysis_transcript",
@@ -360,9 +356,7 @@ def _resolve_group_selection(
         "Group",
         [""] + group_keys,
         format_func=lambda key: (
-            SELECTBOX_PLACEHOLDER_GROUP
-            if key == ""
-            else group_labels.get(key, key)
+            SELECTBOX_PLACEHOLDER_GROUP if key == "" else group_labels.get(key, key)
         ),
         index=default_group_idx,
         key="run_analysis_group",
@@ -414,7 +408,9 @@ def _run_analysis_config_and_launch_fragment(
             for info in cached_get_module_info_list()
             if info.get("supports_group", True)
         }
-        available = [module_id for module_id in available if module_id in group_supported]
+        available = [
+            module_id for module_id in available if module_id in group_supported
+        ]
 
     analysis_target = "group" if target_type == "Group" else "transcript"
 
@@ -600,10 +596,9 @@ def render_run_analysis_page() -> None:
 
     # Post-run strip is for the completed run only — hide while a launch is active
     # so links never point at a stale prior run_id mid-pipeline.
-    if (
-        st.session_state.get(_RUN_ANALYSIS_TARGET_KEY) != "Batch"
-        and not st.session_state.get("analysis_run_in_progress", False)
-    ):
+    if st.session_state.get(
+        _RUN_ANALYSIS_TARGET_KEY
+    ) != "Batch" and not st.session_state.get("analysis_run_in_progress", False):
         _render_post_analysis_actions()
 
     target_options = ["Transcript"]
@@ -620,10 +615,12 @@ def render_run_analysis_page() -> None:
         "Target",
         options=target_options,
         key=_RUN_ANALYSIS_TARGET_KEY,
-        help=widget_help((
-            "Transcript: one managed file. Group: pooled multi-transcript run. "
-            "Batch: queue many transcripts with the same preset."
-        )),
+        help=widget_help(
+            (
+                "Transcript: one managed file. Group: pooled multi-transcript run. "
+                "Batch: queue many transcripts with the same preset."
+            )
+        ),
     )
     if target_type is None:
         target_type = st.session_state.get(_RUN_ANALYSIS_TARGET_KEY, "Transcript")

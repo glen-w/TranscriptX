@@ -179,7 +179,9 @@ def test_highlights_filters_apply_before_guided_cap(monkeypatch) -> None:
         ),
     ]
     monkeypatch.setattr(ib, "_collect_highlight_cards", lambda *_a, **_k: cards)
-    fn = getattr(ib._highlights_browser_fragment, "__wrapped__", ib._highlights_browser_fragment)
+    fn = getattr(
+        ib._highlights_browser_fragment, "__wrapped__", ib._highlights_browser_fragment
+    )
     fn({"sections": {}}, session_slug="s", run_id="r", audio_available=False)
     assert shown_sections == ["peak_moments"]
 

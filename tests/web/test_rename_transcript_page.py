@@ -120,7 +120,9 @@ def test_sticky_suggested_name_survives_rerun_until_path_changes(
     )
 
     form_key = "test_rename_form"
-    suggested = bind_suggested_rename_name(a, form_key=form_key, date_prefix_prefill=True)
+    suggested = bind_suggested_rename_name(
+        a, form_key=form_key, date_prefix_prefill=True
+    )
     assert suggested == "251230_alpha"
     _, target_key, _ = sticky_suggested_name_keys(form_key)
     ss[target_key] = "251230_alpha_edited"
@@ -164,6 +166,7 @@ def test_sticky_smart_rename_prefills_date_root(
     assert ss[date_root_key] == "260810_"
     assert "evening" in ss[bubbles_key]
     assert "1" in ss[bubbles_key]
+
 
 @pytest.mark.unit
 def test_post_rename_clears_old_path_and_binds_new(
@@ -218,7 +221,9 @@ def test_post_rename_clears_old_path_and_binds_new(
     assert WORKFLOW_NAV_TRANSCRIPT_PATH not in ss
     assert page._PICKER_KEY not in ss
     assert ss[page._SELECTED_PATH_KEY] == str(new)
-    assert page.rename_play_key(old) not in ss or ss.get(page.rename_play_key(old)) is None
+    assert (
+        page.rename_play_key(old) not in ss or ss.get(page.rename_play_key(old)) is None
+    )
     bound, target, _ = sticky_suggested_name_keys(page._FORM_KEY)
     assert str(new) in str(ss.get(bound, "")) or Path(ss[bound]).name == new.name
     assert "251230_new" in str(ss.get(target, ""))

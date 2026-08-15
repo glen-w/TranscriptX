@@ -140,7 +140,12 @@ def test_stability_gate_growing_file(tmp_path: Path) -> None:
 
 
 def test_stability_missing_file(tmp_path: Path) -> None:
-    assert wait_until_stable(tmp_path / "missing.srt", checks=1, interval_ms=10, timeout_ms=50) is None
+    assert (
+        wait_until_stable(
+            tmp_path / "missing.srt", checks=1, interval_ms=10, timeout_ms=50
+        )
+        is None
+    )
 
 
 def test_classify_inbox_rejects_symlink(tmp_path: Path, monkeypatch) -> None:
@@ -261,7 +266,11 @@ def test_pipeline_stale_identity_fails_closed(tmp_path: Path, monkeypatch) -> No
     store = JobStore(tmp_path / "watcher" / "jobs")
     job = process_watched_path(src, settings=settings, store=store)
     assert job.state in {JobState.SKIPPED, JobState.FAILED}
-    assert "changed" in job.detail.lower() or "mismatch" in job.detail.lower() or "size" in job.detail.lower()
+    assert (
+        "changed" in job.detail.lower()
+        or "mismatch" in job.detail.lower()
+        or "size" in job.detail.lower()
+    )
 
 
 def test_service_rejects_enable_without_paths(tmp_path: Path) -> None:

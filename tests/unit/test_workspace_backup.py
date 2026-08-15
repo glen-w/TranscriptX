@@ -83,7 +83,9 @@ def _seed_workspace(ps: PathSettings) -> None:
     (ps.transcripts_dir / "imports" / "staging.json").write_text(
         '{"temp": true}\n', encoding="utf-8"
     )
-    (ps.transcripts_dir / ".cache" / "thumb.bin").parent.mkdir(parents=True, exist_ok=True)
+    (ps.transcripts_dir / ".cache" / "thumb.bin").parent.mkdir(
+        parents=True, exist_ok=True
+    )
     (ps.transcripts_dir / ".cache" / "thumb.bin").write_bytes(b"nope")
     (ps.data_dir / "groups" / "demo.group.json").write_text(
         json.dumps({"id": "demo"}), encoding="utf-8"
@@ -101,7 +103,9 @@ def _seed_workspace(ps: PathSettings) -> None:
     )
     (ps.data_dir / "cache" / "audio_playback" / "x.bin").write_bytes(b"cache")
     (ps.recordings_dir / "clip.wav").write_bytes(b"RIFF")
-    (ps.outputs_dir / "old_run" / "manifest.json").parent.mkdir(parents=True, exist_ok=True)
+    (ps.outputs_dir / "old_run" / "manifest.json").parent.mkdir(
+        parents=True, exist_ok=True
+    )
     (ps.outputs_dir / "old_run" / "manifest.json").write_text("{}", encoding="utf-8")
     (ps.wav_backup_dir / "kept.wav").write_bytes(b"wav")
 
@@ -243,17 +247,24 @@ def test_restore_round_trip_replaces_and_clears_cache(tmp_path: Path) -> None:
     service = WorkspaceBackupService()
     service.create_backup(ps, dest)
 
-    (ps.transcripts_dir / "demo.json").write_text('{"mutated": true}\n', encoding="utf-8")
+    (ps.transcripts_dir / "demo.json").write_text(
+        '{"mutated": true}\n', encoding="utf-8"
+    )
     (ps.transcripts_dir / "new_only.json").write_text("{}", encoding="utf-8")
     assert (ps.data_dir / "cache" / "audio_playback" / "x.bin").is_file()
 
     result = service.restore_backup(ps, dest, safety=True, dry_run=False)
     assert result.safety_archive is not None
     assert result.safety_archive.is_file()
-    assert json.loads((ps.transcripts_dir / "demo.json").read_text(encoding="utf-8"))[
-        "schema_version"
-    ] == 1
+    assert (
+        json.loads((ps.transcripts_dir / "demo.json").read_text(encoding="utf-8"))[
+            "schema_version"
+        ]
+        == 1
+    )
     assert not (ps.transcripts_dir / "new_only.json").exists()
     assert not (ps.data_dir / "cache").exists()
-    assert (ps.speaker_profiles_dir / "voice" / "samples" / "a.bin").read_bytes() == b"voice"
+    assert (
+        ps.speaker_profiles_dir / "voice" / "samples" / "a.bin"
+    ).read_bytes() == b"voice"
     assert (ps.config_dir / "config.json").is_file()

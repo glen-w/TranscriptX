@@ -118,9 +118,7 @@ def is_turn_taking_speaker_label(name: str) -> bool:
     return True
 
 
-def is_analysis_speaker_label(
-    name: str, *, allow_unnamed: bool | None = None
-) -> bool:
+def is_analysis_speaker_label(name: str, *, allow_unnamed: bool | None = None) -> bool:
     """
     True when a speaker label is eligible for analysis grouping.
 

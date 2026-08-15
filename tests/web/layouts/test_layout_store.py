@@ -105,9 +105,7 @@ def test_speaker_focus_preset_structure() -> None:
     assert "speaker_summary_cards" in overview
     assert "action_items_compact" not in overview
     speaker_ids = [
-        b.block_id
-        for b in layout.pages["insights"].blocks
-        if b.section == "speakers"
+        b.block_id for b in layout.pages["insights"].blocks if b.section == "speakers"
     ]
     assert speaker_ids == [
         "llm_speaker_summary_block",

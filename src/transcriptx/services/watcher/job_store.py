@@ -184,7 +184,9 @@ class JobStore:
     def list_jobs(self, *, limit: int = 100) -> list[WatcherJob]:
         jobs: list[WatcherJob] = []
         try:
-            paths = sorted(self.root.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+            paths = sorted(
+                self.root.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True
+            )
         except OSError:
             return []
         for path in paths:

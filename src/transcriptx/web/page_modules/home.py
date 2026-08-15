@@ -59,7 +59,9 @@ def _render_transcript_overview() -> bool:
         st.metric(
             "Analysed transcripts",
             analysed_count,
-            help=widget_help("Unique transcripts with at least one viewable analysis run"),
+            help=widget_help(
+                "Unique transcripts with at least one viewable analysis run"
+            ),
         )
     with col3:
         st.metric("Sessions", session_count)
@@ -90,7 +92,9 @@ def _render_detailed_statistics() -> None:
         st.metric(
             "Size on disk",
             format_bytes_display(stats.get("total_artifact_bytes", 0)),
-            help=widget_help("Total size of produced analysis artifacts across all runs"),
+            help=widget_help(
+                "Total size of produced analysis artifacts across all runs"
+            ),
         )
 
 

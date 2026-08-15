@@ -270,7 +270,9 @@ def render_sidebar(
                 disabled=True,
                 help=widget_help(help),
             )
-        elif st.button(text, key=btn_key, width="stretch", type=btn_type, help=widget_help(help)):
+        elif st.button(
+            text, key=btn_key, width="stretch", type=btn_type, help=widget_help(help)
+        ):
             _apply_navigation(page_key)
 
     def _render_nav_spec(spec: PageSpec, *, key_suffix: str = "") -> None:

@@ -38,9 +38,7 @@ def run_sequential_execution_phase(
     after the DAG.
     """
     total_modules = (
-        int(progress_total)
-        if progress_total is not None
-        else len(execution_order)
+        int(progress_total) if progress_total is not None else len(execution_order)
     )
     ev_completed = 0
     ev_skipped = 0

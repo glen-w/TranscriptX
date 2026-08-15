@@ -5,6 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
+pytest.importorskip("spacy")
+
+pytestmark = pytest.mark.requires_nlp
+
 from transcriptx.core.analysis.highlights.core import (
     SegmentLite,
     _compute_emblematic_phrases,
@@ -130,14 +136,17 @@ def test_select_themes_and_recurring_ideas_edge_shapes() -> None:
     phrases = [row["phrase"] for row in selected]
     assert "budget risk" in phrases
     assert "launch plan" in phrases
-    assert _select_recurring_ideas(
-        {"phrase_scores": "bad"},
-        highlights=empty_hl,
-        topic_modeling={},
-        limit=8,
-        min_score=0.28,
-        topic_boost=0.05,
-    ) == []
+    assert (
+        _select_recurring_ideas(
+            {"phrase_scores": "bad"},
+            highlights=empty_hl,
+            topic_modeling={},
+            limit=8,
+            min_score=0.28,
+            topic_boost=0.05,
+        )
+        == []
+    )
     recurring = _select_recurring_ideas(
         {
             "phrase_scores": {

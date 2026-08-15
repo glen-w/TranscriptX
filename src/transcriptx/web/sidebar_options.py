@@ -116,7 +116,5 @@ def clear_transcript_dropdown_caches() -> None:
 def get_transcript_dropdown_options() -> tuple[list[str], Callable[[str], str]]:
     """Return merged transcript options and formatter for selectbox."""
     session_names = tuple(cached_list_viewable_session_names())
-    options, slug_labels = _cached_dropdown_options(
-        session_names, _slug_index_mtime()
-    )
+    options, slug_labels = _cached_dropdown_options(session_names, _slug_index_mtime())
     return options, _make_option_formatter(slug_labels)

@@ -210,12 +210,12 @@ def test_controller_bulk_methods_delegate() -> None:
     bulk.execute.return_value = outcome
     ctrl._bulk = bulk
 
-    assert ctrl.preview_bulk_candidate_generation(
-        BulkGenerationMode.GENERATE_MISSING
-    ) is preview
     assert (
-        ctrl.run_bulk_candidate_generation(BulkGenerationMode.REGENERATE_ALL)
-        is outcome
+        ctrl.preview_bulk_candidate_generation(BulkGenerationMode.GENERATE_MISSING)
+        is preview
+    )
+    assert (
+        ctrl.run_bulk_candidate_generation(BulkGenerationMode.REGENERATE_ALL) is outcome
     )
     bulk.preview.assert_called_once_with(BulkGenerationMode.GENERATE_MISSING)
     bulk.execute.assert_called_once_with(

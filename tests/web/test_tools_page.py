@@ -167,7 +167,9 @@ def test_preprocess_empty_list_shows_info(monkeypatch, tmp_path) -> None:
 
     monkeypatch.setattr(mod, "st", _St)
     monkeypatch.setattr(shared, "st", _St)
-    monkeypatch.setattr(shared.RecordingsService, "list_recordings", lambda *_a, **_k: [])
+    monkeypatch.setattr(
+        shared.RecordingsService, "list_recordings", lambda *_a, **_k: []
+    )
     monkeypatch.setattr(shared, "RECORDINGS_DIR", recordings)
     monkeypatch.setattr(shared, "RECORDINGS_IMPORTS_DIR", recordings / "imports")
 
@@ -210,15 +212,15 @@ def test_merge_empty_recordings_shows_info(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(shared, "st", _St)
     monkeypatch.setattr(shared, "RECORDINGS_DIR", recordings)
     monkeypatch.setattr(shared, "RECORDINGS_IMPORTS_DIR", imports)
-    monkeypatch.setattr(shared.RecordingsService, "list_recordings", lambda *_a, **_k: [])
+    monkeypatch.setattr(
+        shared.RecordingsService, "list_recordings", lambda *_a, **_k: []
+    )
     section_calls: list = []
     monkeypatch.setattr(
         mod, "_render_section_select", lambda *_a, **_k: section_calls.append(True)
     )
     monkeypatch.setattr(mod, "_render_detected_serial_groups", lambda *_a, **_k: None)
-    monkeypatch.setattr(
-        mod, "render_merge_profiles_editor", lambda: []
-    )
+    monkeypatch.setattr(mod, "render_merge_profiles_editor", lambda: [])
     monkeypatch.setattr(
         mod,
         "_render_shared_merge_options",

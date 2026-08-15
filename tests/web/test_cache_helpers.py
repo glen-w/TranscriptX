@@ -35,13 +35,17 @@ def test_segment_signature_excludes_sidecar_summary_includes_it(tmp_path: Path) 
     sidecar = sidecar_path_for(transcript)
     sidecar.parent.mkdir(parents=True, exist_ok=True)
     sidecar.write_text(
-        json.dumps({"speaker_map_schema_version": 1, "speaker_map": {"SPEAKER_00": "A"}}),
+        json.dumps(
+            {"speaker_map_schema_version": 1, "speaker_map": {"SPEAKER_00": "A"}}
+        ),
         encoding="utf-8",
     )
     # Ensure sidecar mtime can differ from the transcript write.
     time.sleep(0.01)
     sidecar.write_text(
-        json.dumps({"speaker_map_schema_version": 1, "speaker_map": {"SPEAKER_00": "B"}}),
+        json.dumps(
+            {"speaker_map_schema_version": 1, "speaker_map": {"SPEAKER_00": "B"}}
+        ),
         encoding="utf-8",
     )
 
@@ -396,7 +400,9 @@ def test_transcript_paths_for_speaker_views_dedupes_managed_and_run_dir(
     monkeypatch.setattr(
         mod,
         "_transcript_picker_options_impl",
-        lambda: [mod.TranscriptPickerOption(path=str(transcript), label=transcript.stem)],
+        lambda: [
+            mod.TranscriptPickerOption(path=str(transcript), label=transcript.stem)
+        ],
     )
     monkeypatch.setattr(mod, "cached_list_available_sessions", lambda: [])
 
@@ -434,9 +440,13 @@ def test_speaker_identification_index_is_mapping_independent(tmp_path: Path) -> 
         encoding="utf-8",
     )
     second = mod.load_speaker_identification_index(transcript)
-    assert first.ordered_speaker_ids == second.ordered_speaker_ids == (
-        "SPEAKER_00",
-        "SPEAKER_01",
+    assert (
+        first.ordered_speaker_ids
+        == second.ordered_speaker_ids
+        == (
+            "SPEAKER_00",
+            "SPEAKER_01",
+        )
     )
     assert first.segment_counts == second.segment_counts == (1, 1)
 
@@ -445,9 +455,7 @@ def test_voice_segment_payload_lazy_and_separate(tmp_path: Path) -> None:
     transcript = tmp_path / "meeting.json"
     transcript.write_text(
         json.dumps(
-            _v1_doc(
-                [{"start": 0.0, "end": 1.0, "speaker": "SPEAKER_00", "text": "hi"}]
-            )
+            _v1_doc([{"start": 0.0, "end": 1.0, "speaker": "SPEAKER_00", "text": "hi"}])
         ),
         encoding="utf-8",
     )
