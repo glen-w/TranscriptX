@@ -11,7 +11,7 @@ You will have named (or deliberately ignored) the diarized speakers on the sampl
 
 ## Starting point
 
-The sample [planning_review.json](fixtures/planning_review.json) is imported (see [First analysis](first-analysis.md)). Speakers still show as `SPEAKER_00`, `SPEAKER_01`, and `SPEAKER_02`.
+The sample [planning_review.json](fixtures/planning_review.json) is [imported](../runtime/transcription.md) (see [First analysis](first-analysis.md)). Speakers still show as `SPEAKER_00`, `SPEAKER_01`, and `SPEAKER_02`.
 
 Audio is optional for this workflow; sample text lines are enough.
 
@@ -27,19 +27,13 @@ Audio is optional for this workflow; sample text lines are enough.
 
 1. From **Library** or the post-import actions, open **Speaker Identification**. Select the planning-review transcript if it is not already selected.
 
-```{image} /_static/workflows/speaker-trust-page.png
-:alt: Speaker Identification page showing sample lines for the active diarized speaker
-:width: 720px
-```
+![Speaker Identification page showing sample lines for the active diarized speaker](../_static/workflows/speaker-trust-page.png)
 
 2. Read the sample lines for the first speaker. Decide who that person is from the dialogue (in this fixture: facilitator / product, engineering, and support roles).
 
 3. Enter a display name and choose **Save name** (or **Assign name**, depending on the control shown). Move on with **Next →**.
 
-```{image} /_static/workflows/speaker-trust-naming.gif
-:alt: Naming one speaker and advancing to the next candidate in Speaker Identification
-:width: 720px
-```
+![Naming one speaker and advancing to the next candidate in Speaker Identification](../_static/workflows/speaker-trust-naming.gif)
 
 4. Repeat for the remaining speakers. Suggested names for this fixture: **Maya** (`SPEAKER_00`), **Jordan** (`SPEAKER_01`), **Sam** (`SPEAKER_02`). Use any stable names you prefer; consistency matters more than the exact strings.
 
@@ -47,10 +41,7 @@ Audio is optional for this workflow; sample text lines are enough.
 
 6. Open **Transcript** and confirm turns now show your chosen names instead of `SPEAKER_00`-style IDs.
 
-```{image} /_static/workflows/speaker-trust-transcript.png
-:alt: Transcript viewer showing named speakers after Speaker Identification
-:width: 720px
-```
+![Transcript viewer showing named speakers after Speaker Identification](../_static/workflows/speaker-trust-transcript.png)
 
 7. Re-run or refresh analysis views that depend on named speakers when you care about per-speaker summaries. A prior run may still reflect old labels until modules that key on speaker identity are run again.
 
@@ -73,5 +64,5 @@ A multi-speaker transcript with stable human-readable names confirmed in the tra
 ## Next
 
 - [Investigate a question and trace it back to evidence](investigate-evidence.md)
-- [First analysis](first-analysis.md) if you still need a Balanced run after renaming
+- [First analysis](first-analysis.md) if you still need a [Balanced](../runtime/installation.md#analysis-presets) run after renaming
 - [Known limitations](../known_limitations.md) for diarization and naming caveats

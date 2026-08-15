@@ -1,10 +1,12 @@
 > **Archived / superseded.** Historical context only. Current authority: [README.md](../../../tests/README.md). Do not treat as live roadmap or support policy.
+>
+> **Playwright policy update (2026-08-15):** The “no Playwright-for-GUI before 1.0” stance below is **rescinded**. Live Streamlit Playwright E2E lives under `tests/e2e_gui/` (`gui_e2e`) and is included in the default pytest suite. See [`tests/README.md`](../../../tests/README.md) and [`docs/dev/pre_release_roadmap_1_0.md`](../../dev/pre_release_roadmap_1_0.md).
 
 # Streamlit UI Testing Assessment
 
 **Date:** 2026-07-18  
 **Scope:** Assess how the Streamlit GUI is tested today; map surfaces to layers; rank residual risk; lock a testing strategy.  
-**Out of scope:** Broad AppTest of every page; Playwright-for-GUI before 1.0; core pipeline correctness outside `web/`.
+**Out of scope (historical):** Broad AppTest of every page; Playwright-for-GUI before 1.0 (rescinded 2026-08-15); core pipeline correctness outside `web/`.
 
 ---
 

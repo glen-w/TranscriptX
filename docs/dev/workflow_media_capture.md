@@ -99,7 +99,13 @@ Committed names expected by the walkthrough pages:
 - `export-download.gif`
 - `export-html-preview.png`
 
-Every image in MyST must include descriptive `:alt:` text. Captions are optional and only when they add information beyond surrounding prose.
+Embed images with GitHub-compatible Markdown so they render in the GitHub file view and in Sphinx/MyST:
+
+```markdown
+![Descriptive alt text](../_static/workflows/example.png)
+```
+
+Paths are relative to `docs/workflows/`. Alt text is required; captions are optional and only when they add information beyond surrounding prose.
 
 ## Rebuild docs
 

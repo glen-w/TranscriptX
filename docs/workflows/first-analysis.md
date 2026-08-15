@@ -7,7 +7,7 @@ The shortest realistic path from importing a transcript to reading your first an
 
 ## Outcome
 
-You will have imported a transcript, completed a **Balanced** analysis run, and identified several useful outputs on **Overview**.
+You will have [imported](../runtime/transcription.md) a transcript, completed a [**Balanced**](../runtime/installation.md#analysis-presets) analysis run, and identified several useful outputs on [**Overview**](../public_surfaces.md).
 
 ## Starting point
 
@@ -27,37 +27,25 @@ Download or copy the sample file [planning_review.json](fixtures/planning_review
 
 1. Open **Import Transcript**. Upload `planning_review.json` and confirm the import. The library should list **Launch planning review (docs walkthrough)** (or the filename stem if the title is shown differently).
 
-```{image} /_static/workflows/first-analysis-import.png
-:alt: Import Transcript page with the planning review JSON selected for upload
-:width: 720px
-```
+![Import Transcript page with the planning review JSON selected for upload](../_static/workflows/first-analysis-import.png)
 
 2. Open **Library**, select the new transcript, then open **Transcript**. Skim a few turns so you know the cast uses diarized labels such as `SPEAKER_00`. Most speaker-aware modules need human-readable names; if Overview looks sparse after the first run, complete [Speaker-aware trust](speaker-trust.md) and re-run.
 
 3. Open **Run Analysis**. Keep the target as **Transcript** and the analysis preset as **Balanced** (the default). Balanced runs a practical core set without requiring local AI for the non-LLM modules.
 
-```{image} /_static/workflows/first-analysis-run-analysis.png
-:alt: Run Analysis page showing the Balanced preset ready to launch
-:width: 720px
-```
+![Run Analysis page showing the Balanced preset ready to launch](../_static/workflows/first-analysis-run-analysis.png)
 
 4. Choose **Run analysis** and wait until the progress panel reports completion. A success message naming the output folder appears when the run finishes.
 
-```{image} /_static/workflows/first-analysis-run-complete.gif
-:alt: Short clip of launching Balanced analysis and seeing the run progress panel advance
-:width: 720px
-```
+![Short clip of launching Balanced analysis and seeing the run progress panel advance](../_static/workflows/first-analysis-run-complete.gif)
 
 5. Open **Overview** for the selected transcript and run. Check **At a glance**, the speaker cards, and the compact highlights strip.
 
-```{image} /_static/workflows/first-analysis-overview.png
-:alt: Overview page after a Balanced run showing at-a-glance metrics and highlights
-:width: 720px
-```
+![Overview page after a Balanced run showing at-a-glance metrics and highlights](../_static/workflows/first-analysis-overview.png)
 
 6. Pick two or three outputs that look useful for this meeting — for example a theme-related highlight, a speaker card, or run status. You do not need every panel yet.
 
-7. From here, either improve speaker names (**Speaker Identification**) or dig into a specific question (**Insights**). Export can wait until you trust the results.
+7. From here, either improve speaker names ([**Speaker Identification**](speaker-trust.md)) or dig into a specific question ([**Insights**](investigate-evidence.md)). [Export](../runtime/export.md) can wait until you trust the results.
 
 ## What to notice
 
