@@ -1,0 +1,23 @@
+=== compose bind ===
+OK [default loopback]: 127.0.0.1:8501:8501
+OK [lan opt-in]: 0.0.0.0:8501:8501
+OK: canonical compose bind assertions passed
+compose_bind:0
+=== tracked data ===
+OK: tracked data allowlist matches (37 paths)
+tracked_data:0
+=== secrets ===
+WARNING: ignored forbidden paths present (7); set TRANSCRIPTX_STRICT_IGNORED_FORBIDDEN=1 to fail
+OK: denylist checks passed
+OK: secrets_check + denylist passed.
+secrets:0
+=== stale refs ===
+OK: no live hits for src/setup.py path refs
+OK: no live hits for hardcoded 0.42 packaging
+OK: no live hits for dead ReadTheDocs
+OK: no live hits for wrong GitHub org URL
+OK: pip install transcriptx mentions are caveated
+OK: no pip install transcriptx[extra] hits
+OK: zero TODO/FIXME under src/
+OK: stale-ref sweep passed
+stale_refs:0

@@ -1,0 +1,61 @@
+=== WORKTREE ===
+ M CHANGELOG.md
+ M README.md
+ M docs/DEV_INDEX.md
+ M docs/ROADMAP.md
+ M docs/dev/pre_release_roadmap_1_0.md
+ M pyproject.toml
+ M src/transcriptx/__init__.py
+ M src/transcriptx/web/__init__.py
+ M tests/app/test_merge_workflow.py
+ M tests/core/audio/test_serial_groups.py
+ M tests/core/config/delegation_test_utils.py
+ M tests/core/config/fixtures/delegation_shape_analysis_pre.json
+ M tests/core/config/fixtures/registry_ownership_snapshot.json
+ M tests/core/config/test_pydantic_bridge_drift.py
+ M tests/core/config/test_registry_ownership.py
+ M tests/core/utils/test_smart_rename.py
+ M tests/fixtures/module_registry/module_definitions_snapshot.json
+ M tests/web/test_navigation_contracts.py
+ M tests/web/test_tools_page.py
+ M tests/web/test_transcript_page_refactor_contracts.py
+?? artifacts/deep_test_20260815_post099/analysis_group.txt
+?? artifacts/deep_test_20260815_post099/analysis_large.txt
+?? artifacts/deep_test_20260815_post099/analysis_mini_docker.txt
+?? artifacts/deep_test_20260815_post099/analysis_mini_py.txt
+?? artifacts/deep_test_20260815_post099/fixes_recheck.txt
+?? artifacts/deep_test_20260815_post099/prerelease/worktree.txt
+?? artifacts/deep_test_20260815_post099/pytest_fast.txt
+?? artifacts/deep_test_20260815_post099/pytest_fast_recheck.txt
+?? artifacts/deep_test_20260815_post099/snapshot_fails.txt
+?? artifacts/deep_test_20260815_post099/surface_deepened.txt
+?? docs/dev/post_0_9_9_shipped_overview.md
+?? tests/core/config/fixtures/analysis_speakers_defaults_golden.json
+?? tests/core/config/fixtures/analysis_speakers_registry_golden.json
+---
+## main...origin/main
+ M CHANGELOG.md
+ M README.md
+ M docs/DEV_INDEX.md
+ M docs/ROADMAP.md
+ M docs/dev/pre_release_roadmap_1_0.md
+ M pyproject.toml
+ M src/transcriptx/__init__.py
+ M src/transcriptx/web/__init__.py
+ M tests/app/test_merge_workflow.py
+ M tests/core/audio/test_serial_groups.py
+ M tests/core/config/delegation_test_utils.py
+ M tests/core/config/fixtures/delegation_shape_analysis_pre.json
+ M tests/core/config/fixtures/registry_ownership_snapshot.json
+ M tests/core/config/test_pydantic_bridge_drift.py
+ M tests/core/config/test_registry_ownership.py
+ M tests/core/utils/test_smart_rename.py
+ M tests/fixtures/module_registry/module_definitions_snapshot.json
+ M tests/web/test_navigation_contracts.py
+ M tests/web/test_tools_page.py
+ M tests/web/test_transcript_page_refactor_contracts.py
+?? artifacts/deep_test_20260815_post099/
+?? docs/dev/post_0_9_9_shipped_overview.md
+?? tests/core/config/fixtures/analysis_speakers_defaults_golden.json
+?? tests/core/config/fixtures/analysis_speakers_registry_golden.json
+Python 3.10.13

@@ -1,0 +1,38 @@
+=== build ===
+adding 'transcriptx/web/ui/settings/configuration_panel.py'
+adding 'transcriptx/web/ui/settings/corrections_panel.py'
+adding 'transcriptx/web/ui/settings/diff_view.py'
+adding 'transcriptx/web/ui/settings/forms.py'
+adding 'transcriptx/web/ui/settings/interface_panel.py'
+adding 'transcriptx/web/ui/settings/models_panel.py'
+adding 'transcriptx/web/ui/settings/questions_panel.py'
+adding 'transcriptx/web/ui/settings/speakers_panel.py'
+adding 'transcriptx/web/ui/settings/storage_panel.py'
+adding 'transcriptx/web/ui/settings/watcher_panel.py'
+adding 'transcriptx/web/ui/settings/widgets.py'
+adding 'transcriptx/web/ui/tools/__init__.py'
+adding 'transcriptx/web/ui/tools/merge_panel.py'
+adding 'transcriptx/web/ui/tools/merge_profiles_editor.py'
+adding 'transcriptx/web/ui/tools/preprocess_panel.py'
+adding 'transcriptx/web/ui/tools/shared.py'
+adding 'transcriptx/web/workspaces/__init__.py'
+adding 'transcriptx/web/workspaces/clip_transport.py'
+adding 'transcriptx/web/workspaces/flags.py'
+adding 'transcriptx/web/workspaces/playback_host.py'
+adding 'transcriptx/web/workspaces/speaker_id_bridge.py'
+adding 'transcriptx-0.9.9.5.dist-info/licenses/LICENSE'
+adding 'transcriptx-0.9.9.5.dist-info/licenses/NOTICE'
+adding 'transcriptx-0.9.9.5.dist-info/METADATA'
+adding 'transcriptx-0.9.9.5.dist-info/WHEEL'
+adding 'transcriptx-0.9.9.5.dist-info/entry_points.txt'
+adding 'transcriptx-0.9.9.5.dist-info/top_level.txt'
+adding 'transcriptx-0.9.9.5.dist-info/RECORD'
+removing build/bdist.macosx-14.6-x86_64/wheel
+Successfully built transcriptx-0.9.9.5.tar.gz and transcriptx-0.9.9.5-py3-none-any.whl
+build:0
+WHEEL=dist/transcriptx-0.9.9.5-py3-none-any.whl
+
+[notice] A new release of pip is available: 25.1.1 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+0.9.9.5
+wheel_import:0

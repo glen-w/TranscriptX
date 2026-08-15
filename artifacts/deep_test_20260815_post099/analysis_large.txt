@@ -1,0 +1,328 @@
+2026-08-15 15:14:29,103 - transcriptx - INFO - Starting analysis pipeline for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json with modules: stats, sentiment, emotion, keyphrases, insight_eligibility, highlights, summary, insights, transcript_output
+2026-08-15 15:14:29,565 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: _deep_test_large_norm.json
+  Outputs:    
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_1
+51429_99669213
+  Modules that will run:
+    • emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • keyphrases
+    • sentiment
+    • stats
+    • summary
+    • tics
+    • transcript_output
+---
+
+2026-08-15 15:14:29,620 - transcriptx - INFO - Starting DAG pipeline for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:14:29,633 - transcriptx - INFO - Execution order: emotion, sentiment, stats, tics, insight_eligibility, highlights, insights, keyphrases, summary, transcript_output
+2026-08-15 15:14:29,633 - transcriptx - INFO - Running emotion analysis
+
+────────────────────────────────────────────────────────────
+😄 EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Emotion-associated vocabulary (NRC lexicon)...
+2026-08-15 15:14:29,635 - transcriptx - INFO - Starting emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:14:29,650 - transcriptx - INFO - Starting emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:14:32,137 - transcriptx - INFO - [EMOTION] lexical v2 complete: scored=1007 skipped=0 empty=0 failed=0 usable=True cache_hit=True
+2026-08-15 15:14:36,791 - transcriptx - INFO - Completed emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Emotion-associated vocabulary (NRC lexicon)
+
+2026-08-15 15:14:36,795 - transcriptx - INFO - Completed emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:14:36,795 - transcriptx - INFO - emotion completed in 7.16s
+2026-08-15 15:14:36,795 - transcriptx - INFO - Running sentiment analysis
+
+────────────────────────────────────────────────────────────
+😊 SENTIMENT
+────────────────────────────────────────────────────────────
+🔍 Running Sentiment Analysis...
+2026-08-15 15:14:36,797 - transcriptx - INFO - Starting sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+Some weights of the model checkpoint at /Users/89298/.cache/huggingface/hub/models--cardiffnlp--twitter-roberta-base-sentiment-latest/snapshots/3216a57f2a0d9c45a2e6c20157c20c49fb4bf9c7 were not used when initializing RobertaForSequenceClassification: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+- This IS expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+Device set to use mps:0
+2026-08-15 15:14:40,639 - transcriptx - INFO - [SENTIMENT] Transformers sentiment model loaded successfully
+2026-08-15 15:14:40,639 - transcriptx - INFO - Starting sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:22,975 - transcriptx - INFO - Completed sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Sentiment Analysis
+
+2026-08-15 15:15:22,983 - transcriptx - INFO - Completed sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:22,983 - transcriptx - INFO - sentiment completed in 46.18s
+2026-08-15 15:15:22,983 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+📊 STATS
+────────────────────────────────────────────────────────────
+🔍 Running Statistical Analysis...
+2026-08-15 15:15:22,984 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:22,994 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:23,303 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Statistical Analysis
+
+2026-08-15 15:15:23,305 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:23,305 - transcriptx - INFO - stats completed in 0.32s
+2026-08-15 15:15:23,305 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+✔️ TICS
+────────────────────────────────────────────────────────────
+🔍 Running Verbal Tics Analysis...
+2026-08-15 15:15:23,307 - transcriptx - INFO - Starting tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:23,308 - transcriptx - INFO - Starting tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:25,200 - transcriptx - INFO - Completed tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Verbal Tics Analysis
+
+2026-08-15 15:15:25,201 - transcriptx - INFO - Completed tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:25,201 - transcriptx - INFO - tics completed in 1.89s
+2026-08-15 15:15:25,201 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+🔍 Running Shared content-vs-style insight eligibility pipeline...
+2026-08-15 15:15:25,202 - transcriptx - INFO - Starting insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:25,216 - transcriptx - INFO - Starting insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:40,791 - transcriptx - INFO - Completed insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-15 15:15:40,793 - transcriptx - INFO - Completed insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:40,793 - transcriptx - INFO - insight_eligibility completed in 15.59s
+2026-08-15 15:15:40,793 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ HIGHLIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Highlights and conflict moments (quote-forward)...
+2026-08-15 15:15:40,795 - transcriptx - INFO - Starting highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:40,805 - transcriptx - INFO - Starting highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:47,259 - transcriptx - INFO - Completed highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-15 15:15:47,260 - transcriptx - INFO - Completed highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:47,260 - transcriptx - INFO - highlights completed in 6.46s
+2026-08-15 15:15:47,260 - transcriptx - INFO - Running insights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Content-first insights layer separated from style markers...
+2026-08-15 15:15:47,261 - transcriptx - INFO - Starting insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:47,262 - transcriptx - INFO - Starting insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:47,267 - transcriptx - INFO - Completed insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Content-first insights layer separated from style markers
+
+2026-08-15 15:15:47,268 - transcriptx - INFO - Completed insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:47,268 - transcriptx - INFO - insights completed in 0.01s
+2026-08-15 15:15:47,268 - transcriptx - INFO - Running keyphrases analysis
+
+────────────────────────────────────────────────────────────
+⚙️ KEYPHRASES
+────────────────────────────────────────────────────────────
+🔍 Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
+2026-08-15 15:15:47,269 - transcriptx - INFO - Starting keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:47,283 - transcriptx - INFO - Starting keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:49,436 - transcriptx - INFO - Completed keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
+
+2026-08-15 15:15:49,436 - transcriptx - INFO - Completed keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:49,436 - transcriptx - INFO - keyphrases completed in 2.17s
+2026-08-15 15:15:49,437 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+⚙️ SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Executive brief summary derived from highlights...
+2026-08-15 15:15:49,437 - transcriptx - INFO - Starting summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:49,439 - transcriptx - INFO - Starting summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:52,713 - transcriptx - INFO - Saved all-charts PDF to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_151429_99669213/summary/all_charts.pdf (3 modules, 25 charts)
+2026-08-15 15:15:52,714 - transcriptx - INFO - Completed summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Executive brief summary derived from highlights
+
+2026-08-15 15:15:52,715 - transcriptx - INFO - Completed summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:52,715 - transcriptx - INFO - summary completed in 3.28s
+2026-08-15 15:15:52,715 - transcriptx - INFO - Running transcript_output analysis
+
+────────────────────────────────────────────────────────────
+📃 TRANSCRIPT OUTPUT
+────────────────────────────────────────────────────────────
+🔍 Running Generate human readable transcripts...
+2026-08-15 15:15:52,716 - transcriptx - INFO - Starting transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:52,717 - transcriptx - INFO - Starting transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:52,718 - transcriptx - INFO - Generating human-friendly transcript for _deep_test_large_norm
+2026-08-15 15:15:52,748 - transcriptx - INFO - Human-friendly transcript generated successfully: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_151429_99669213/transcripts/_deep_test_large_norm-transcript.txt
+✅ Generated human-friendly transcript
+
+2026-08-15 15:15:52,749 - transcriptx - INFO - Completed transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+✅ Completed Generate human readable transcripts
+
+2026-08-15 15:15:52,749 - transcriptx - INFO - Completed transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json
+2026-08-15 15:15:52,749 - transcriptx - INFO - transcript_output completed in 0.03s
+2026-08-15 15:15:52,749 - transcriptx - INFO - Pipeline completed. Ran 10 modules with 0 errors
+2026-08-15 15:15:52,782 - transcriptx - INFO - Saved run results summary to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_151429_99669213/run_results.json
+2026-08-15 15:15:52,824 - transcriptx - INFO - Saved output manifest to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_151429_99669213/manifest.json
+2026-08-15 15:15:53,277 - transcriptx - INFO - Saved run manifest to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_151429_99669213/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: _deep_test_large_norm
+📂 Output Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_1
+51429_99669213
+🔄 Analysis Status: 10/9 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (9):
+--------------------------------------------------
+
+✅ STATS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_1
+51429_99669213/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ SENTIMENT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_1
+51429_99669213/sentiment
+   📄 Files: 47
+   📂 Subdirectories: 32
+   📋 Key outputs:
+      • charts/speakers/Rochelle/dynamic/rolling_sentiment.html (4554.4 KB)
+      • charts/speakers/Rochelle/static/rolling_sentiment.evidence.json (3.7 KB)
+      • charts/speakers/Rochelle/static/rolling_sentiment.png (163.5 KB)
+      • charts/speakers/Mariela/dynamic/rolling_sentiment.html (4555.3 KB)
+      • charts/speakers/Mariela/static/rolling_sentiment.evidence.json (4.0 KB)
+      • ... and 42 more files
+
+✅ EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_1
+51429_99669213/emotion
+   📄 Files: 43
+   📂 Subdirectories: 52
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • charts/speakers/Rochelle/dynamic/bar/emotion_assignment_counts.html 
+(4552.4 KB)
+      • charts/speakers/Rochelle/static/bar/emotion_assignment_counts.png (113.6
+KB)
+      • 
+charts/speakers/Rochelle/static/bar/emotion_assignment_counts.evidence.json (0.7
+KB)
+      • charts/speakers/Mariela/dynamic/bar/emotion_assignment_counts.html 
+(4552.4 KB)
+      • ... and 38 more files
+
+✅ KEYPHRASES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_1
+51429_99669213/keyphrases
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_keyphrases.json (213.9 KB)
+      • data/global/_deep_test_large_norm_keyphrases_summary.json (1.9 KB)
+      • data/global/_deep_test_large_norm_keyphrases.csv (25.9 KB)
+
+✅ INSIGHT_ELIGIBILITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_1
+51429_99669213/insight_eligibility
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_insight_eligibility_tic_mask.json (2.5
+KB)
+      • data/global/_deep_test_large_norm_insight_eligibility_phrase_scores.json
+(429.2 KB)
+      • data/global/_deep_test_large_norm_insight_eligibility.json (1078.9 KB)
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_1
+51429_99669213/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_highlights.json (29.4 KB)
+
+✅ SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_1
+51429_99669213/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_summary.json (16.2 KB)
+
+✅ INSIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_1
+51429_99669213/insights
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/_deep_test_large_norm_insights.json (13.4 KB)
+
+✅ TRANSCRIPT_OUTPUT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_1
+51429_99669213/transcripts
+   📄 Files: 4
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • _deep_test_large_norm-transcript.txt (57.3 KB)
+      • _deep_test_large_norm-transcript.csv (62.0 KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (9.1 KB)
+   • report.md (0.6 KB)
+   • run_results.json (1.8 KB)
+   • report.txt (0.6 KB)
+   • manifest.json (119.3 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 106
+   • Total output size: 96.9 MB
+   • Successful modules: 9
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_1
+51429_99669213
+  Executed:
+    • emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • keyphrases
+    • sentiment
+    • stats
+    • summary
+    • tics
+    • transcript_output
+  To explore results: open the web interface
+---
+
+2026-08-15 15:15:53,325 - transcriptx - INFO - Pipeline completed for /Users/89298/Documents/transcriptx/data/transcripts/_deep_test_large_norm.json - Successfully ran: emotion, sentiment, stats, tics, insight_eligibility, highlights, insights, keyphrases, summary, transcript_output
+success True
+errors []
+run_dir /Users/89298/Documents/transcriptx/data/outputs/_deep_test_large_norm/20260815_151429_99669213

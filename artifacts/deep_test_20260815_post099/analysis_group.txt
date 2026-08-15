@@ -1,0 +1,655 @@
+2026-08-15 15:16:18,323 - transcriptx - INFO - Starting group analysis pipeline for 2 transcripts with modules: stats, sentiment, emotion, keyphrases, insight_eligibility, highlights, summary, insights, transcript_output
+2026-08-15 15:16:18,323 - transcriptx - INFO - Starting analysis pipeline for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json with modules: stats, sentiment, emotion, keyphrases, insight_eligibility, highlights, summary, insights, transcript_output
+2026-08-15 15:16:18,582 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: mini_transcript.json
+  Outputs:    
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_1
+51618_99778325
+  Modules that will run:
+    • emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • keyphrases
+    • sentiment
+    • stats
+    • summary
+    • tics
+    • transcript_output
+---
+
+2026-08-15 15:16:18,588 - transcriptx - INFO - Starting DAG pipeline for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:18,588 - transcriptx - INFO - Execution order: emotion, sentiment, stats, tics, insight_eligibility, highlights, insights, keyphrases, summary, transcript_output
+2026-08-15 15:16:18,588 - transcriptx - INFO - Running emotion analysis
+
+────────────────────────────────────────────────────────────
+😄 EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Emotion-associated vocabulary (NRC lexicon)...
+2026-08-15 15:16:18,589 - transcriptx - INFO - Starting emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:18,599 - transcriptx - INFO - Starting emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:20,436 - transcriptx - INFO - [EMOTION] lexical v2 complete: scored=10 skipped=0 empty=0 failed=0 usable=True cache_hit=True
+2026-08-15 15:16:21,651 - transcriptx - INFO - Completed emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+✅ Completed Emotion-associated vocabulary (NRC lexicon)
+
+2026-08-15 15:16:21,656 - transcriptx - INFO - Completed emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:21,656 - transcriptx - INFO - emotion completed in 3.06s
+2026-08-15 15:16:21,656 - transcriptx - INFO - Running sentiment analysis
+
+────────────────────────────────────────────────────────────
+😊 SENTIMENT
+────────────────────────────────────────────────────────────
+🔍 Running Sentiment Analysis...
+2026-08-15 15:16:21,659 - transcriptx - INFO - Starting sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+Some weights of the model checkpoint at /Users/89298/.cache/huggingface/hub/models--cardiffnlp--twitter-roberta-base-sentiment-latest/snapshots/3216a57f2a0d9c45a2e6c20157c20c49fb4bf9c7 were not used when initializing RobertaForSequenceClassification: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+- This IS expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+Device set to use mps:0
+2026-08-15 15:16:24,266 - transcriptx - INFO - [SENTIMENT] Transformers sentiment model loaded successfully
+2026-08-15 15:16:24,266 - transcriptx - INFO - Starting sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:26,321 - transcriptx - INFO - Completed sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+✅ Completed Sentiment Analysis
+
+2026-08-15 15:16:26,326 - transcriptx - INFO - Completed sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:26,326 - transcriptx - INFO - sentiment completed in 4.67s
+2026-08-15 15:16:26,327 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+📊 STATS
+────────────────────────────────────────────────────────────
+🔍 Running Statistical Analysis...
+2026-08-15 15:16:26,327 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:26,336 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:26,349 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+✅ Completed Statistical Analysis
+
+2026-08-15 15:16:26,349 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:26,349 - transcriptx - INFO - stats completed in 0.02s
+2026-08-15 15:16:26,349 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+✔️ TICS
+────────────────────────────────────────────────────────────
+🔍 Running Verbal Tics Analysis...
+2026-08-15 15:16:26,350 - transcriptx - INFO - Starting tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:26,350 - transcriptx - INFO - Starting tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:26,575 - transcriptx - INFO - Completed tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+✅ Completed Verbal Tics Analysis
+
+2026-08-15 15:16:26,576 - transcriptx - INFO - Completed tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:26,576 - transcriptx - INFO - tics completed in 0.23s
+2026-08-15 15:16:26,576 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+🔍 Running Shared content-vs-style insight eligibility pipeline...
+2026-08-15 15:16:26,577 - transcriptx - INFO - Starting insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:26,586 - transcriptx - INFO - Starting insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:30,288 - transcriptx - INFO - Completed insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+✅ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-15 15:16:30,289 - transcriptx - INFO - Completed insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:30,289 - transcriptx - INFO - insight_eligibility completed in 3.71s
+2026-08-15 15:16:30,289 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ HIGHLIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Highlights and conflict moments (quote-forward)...
+2026-08-15 15:16:30,290 - transcriptx - INFO - Starting highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:30,295 - transcriptx - INFO - Starting highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:30,349 - transcriptx - INFO - Completed highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+✅ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-15 15:16:30,349 - transcriptx - INFO - Completed highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:30,349 - transcriptx - INFO - highlights completed in 0.06s
+2026-08-15 15:16:30,349 - transcriptx - INFO - Running insights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Content-first insights layer separated from style markers...
+2026-08-15 15:16:30,350 - transcriptx - INFO - Starting insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:30,351 - transcriptx - INFO - Starting insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:30,354 - transcriptx - INFO - Completed insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+✅ Completed Content-first insights layer separated from style markers
+
+2026-08-15 15:16:30,354 - transcriptx - INFO - Completed insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:30,354 - transcriptx - INFO - insights completed in 0.00s
+2026-08-15 15:16:30,354 - transcriptx - INFO - Running keyphrases analysis
+
+────────────────────────────────────────────────────────────
+⚙️ KEYPHRASES
+────────────────────────────────────────────────────────────
+🔍 Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
+2026-08-15 15:16:30,355 - transcriptx - INFO - Starting keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:30,368 - transcriptx - INFO - Starting keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:30,407 - transcriptx - INFO - Completed keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+✅ Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
+
+2026-08-15 15:16:30,408 - transcriptx - INFO - Completed keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:30,408 - transcriptx - INFO - keyphrases completed in 0.05s
+2026-08-15 15:16:30,408 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+⚙️ SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Executive brief summary derived from highlights...
+2026-08-15 15:16:30,408 - transcriptx - INFO - Starting summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:30,410 - transcriptx - INFO - Starting summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:31,333 - transcriptx - INFO - Saved all-charts PDF to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_151618_99778325/summary/all_charts.pdf (3 modules, 7 charts)
+2026-08-15 15:16:31,334 - transcriptx - INFO - Completed summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+✅ Completed Executive brief summary derived from highlights
+
+2026-08-15 15:16:31,334 - transcriptx - INFO - Completed summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:31,334 - transcriptx - INFO - summary completed in 0.93s
+2026-08-15 15:16:31,334 - transcriptx - INFO - Running transcript_output analysis
+
+────────────────────────────────────────────────────────────
+📃 TRANSCRIPT OUTPUT
+────────────────────────────────────────────────────────────
+🔍 Running Generate human readable transcripts...
+2026-08-15 15:16:31,335 - transcriptx - INFO - Starting transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:31,336 - transcriptx - INFO - Starting transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:31,337 - transcriptx - INFO - Generating human-friendly transcript for mini
+2026-08-15 15:16:31,338 - transcriptx - INFO - Human-friendly transcript generated successfully: /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_151618_99778325/transcripts/mini-transcript.txt
+✅ Generated human-friendly transcript
+
+2026-08-15 15:16:31,339 - transcriptx - INFO - Completed transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+✅ Completed Generate human readable transcripts
+
+2026-08-15 15:16:31,339 - transcriptx - INFO - Completed transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json
+2026-08-15 15:16:31,339 - transcriptx - INFO - transcript_output completed in 0.00s
+2026-08-15 15:16:31,339 - transcriptx - INFO - Pipeline completed. Ran 10 modules with 0 errors
+2026-08-15 15:16:31,355 - transcriptx - INFO - Saved run results summary to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_151618_99778325/run_results.json
+2026-08-15 15:16:31,377 - transcriptx - INFO - Saved output manifest to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_151618_99778325/manifest.json
+2026-08-15 15:16:31,479 - transcriptx - INFO - Saved run manifest to /Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_151618_99778325/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: mini_transcript
+📂 Output Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_1
+51618_99778325
+🔄 Analysis Status: 10/9 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (9):
+--------------------------------------------------
+
+✅ STATS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_1
+51618_99778325/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ SENTIMENT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_1
+51618_99778325/sentiment
+   📄 Files: 17
+   📂 Subdirectories: 14
+   📋 Key outputs:
+      • charts/speakers/Bob/dynamic/rolling_sentiment.html (4552.5 KB)
+      • charts/speakers/Bob/static/rolling_sentiment.evidence.json (0.8 KB)
+      • charts/speakers/Bob/static/rolling_sentiment.png (116.3 KB)
+      • charts/speakers/Alice/dynamic/rolling_sentiment.html (4552.5 KB)
+      • charts/speakers/Alice/static/rolling_sentiment.evidence.json (0.8 KB)
+      • ... and 12 more files
+
+✅ EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_1
+51618_99778325/emotion
+   📄 Files: 19
+   📂 Subdirectories: 22
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • charts/speakers/Bob/dynamic/bar/emotion_assignment_counts.html (4552.4 
+KB)
+      • charts/speakers/Bob/static/bar/emotion_assignment_counts.png (115.0 KB)
+      • charts/speakers/Bob/static/bar/emotion_assignment_counts.evidence.json 
+(0.7 KB)
+      • charts/speakers/Alice/dynamic/bar/emotion_assignment_counts.html (4552.4
+KB)
+      • ... and 14 more files
+
+✅ KEYPHRASES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_1
+51618_99778325/keyphrases
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/mini_keyphrases.json (11.4 KB)
+      • data/global/mini_keyphrases.csv (1.5 KB)
+      • data/global/mini_keyphrases_summary.json (1.4 KB)
+
+✅ INSIGHT_ELIGIBILITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_1
+51618_99778325/insight_eligibility
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/mini_insight_eligibility_tic_mask.json (2.5 KB)
+      • data/global/mini_insight_eligibility.json (30.1 KB)
+      • data/global/mini_insight_eligibility_phrase_scores.json (7.1 KB)
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_1
+51618_99778325/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/mini_highlights.json (22.0 KB)
+
+✅ SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_1
+51618_99778325/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/mini_summary.json (5.5 KB)
+
+✅ INSIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_1
+51618_99778325/insights
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/mini_insights.json (9.3 KB)
+
+✅ TRANSCRIPT_OUTPUT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_1
+51618_99778325/transcripts
+   📄 Files: 4
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • mini-transcript.csv (0.8 KB)
+      • mini-transcript.txt (0.9 KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (5.4 KB)
+   • report.md (0.3 KB)
+   • run_results.json (1.8 KB)
+   • report.txt (0.4 KB)
+   • manifest.json (44.2 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 52
+   • Total output size: 28.4 MB
+   • Successful modules: 9
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  
+/Users/89298/Documents/transcriptx/data/outputs/_deep_test_mini_probe/20260815_1
+51618_99778325
+  Executed:
+    • emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • keyphrases
+    • sentiment
+    • stats
+    • summary
+    • tics
+    • transcript_output
+  To explore results: open the web interface
+---
+
+2026-08-15 15:16:31,509 - transcriptx - INFO - Pipeline completed for /Users/89298/Documents/transcriptx/data/transcripts/mini_transcript.json - Successfully ran: emotion, sentiment, stats, tics, insight_eligibility, highlights, insights, keyphrases, summary, transcript_output
+2026-08-15 15:16:31,509 - transcriptx - INFO - Starting analysis pipeline for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json with modules: stats, sentiment, emotion, keyphrases, insight_eligibility, highlights, summary, insights, transcript_output
+2026-08-15 15:16:31,834 - transcriptx - INFO - Module registry finalized and locked
+
+---
+Review before run
+---
+  Transcript: 260615_Ana_phd_supervision_meeting.json
+  Outputs:    
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260815_151631_99791558
+  Modules that will run:
+    • emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • keyphrases
+    • sentiment
+    • stats
+    • summary
+    • tics
+    • transcript_output
+---
+
+2026-08-15 15:16:31,859 - transcriptx - INFO - Starting DAG pipeline for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:31,865 - transcriptx - INFO - Execution order: emotion, sentiment, stats, tics, insight_eligibility, highlights, insights, keyphrases, summary, transcript_output
+2026-08-15 15:16:31,865 - transcriptx - INFO - Running emotion analysis
+
+────────────────────────────────────────────────────────────
+😄 EMOTION
+────────────────────────────────────────────────────────────
+🔍 Running Emotion-associated vocabulary (NRC lexicon)...
+2026-08-15 15:16:31,866 - transcriptx - INFO - Starting emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:31,866 - transcriptx - INFO - Starting emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:31,940 - transcriptx - INFO - [EMOTION] lexical v2 complete: scored=450 skipped=0 empty=0 failed=0 usable=True cache_hit=True
+2026-08-15 15:16:32,982 - transcriptx - INFO - Completed emotion analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Emotion-associated vocabulary (NRC lexicon)
+
+2026-08-15 15:16:32,983 - transcriptx - INFO - Completed emotion analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:32,983 - transcriptx - INFO - emotion completed in 1.12s
+2026-08-15 15:16:32,983 - transcriptx - INFO - Running sentiment analysis
+
+────────────────────────────────────────────────────────────
+😊 SENTIMENT
+────────────────────────────────────────────────────────────
+🔍 Running Sentiment Analysis...
+2026-08-15 15:16:32,984 - transcriptx - INFO - Starting sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+Some weights of the model checkpoint at /Users/89298/.cache/huggingface/hub/models--cardiffnlp--twitter-roberta-base-sentiment-latest/snapshots/3216a57f2a0d9c45a2e6c20157c20c49fb4bf9c7 were not used when initializing RobertaForSequenceClassification: ['roberta.pooler.dense.bias', 'roberta.pooler.dense.weight']
+- This IS expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing RobertaForSequenceClassification from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+Device set to use mps:0
+2026-08-15 15:16:33,532 - transcriptx - INFO - [SENTIMENT] Transformers sentiment model loaded successfully
+2026-08-15 15:16:33,532 - transcriptx - INFO - Starting sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:51,693 - transcriptx - INFO - Completed sentiment analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Sentiment Analysis
+
+2026-08-15 15:16:51,703 - transcriptx - INFO - Completed sentiment analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:51,703 - transcriptx - INFO - sentiment completed in 18.72s
+2026-08-15 15:16:51,704 - transcriptx - INFO - Running stats analysis
+
+────────────────────────────────────────────────────────────
+📊 STATS
+────────────────────────────────────────────────────────────
+🔍 Running Statistical Analysis...
+2026-08-15 15:16:51,705 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:51,705 - transcriptx - INFO - Starting stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:51,857 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Statistical Analysis
+
+2026-08-15 15:16:51,858 - transcriptx - INFO - Completed stats analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:51,858 - transcriptx - INFO - stats completed in 0.15s
+2026-08-15 15:16:51,858 - transcriptx - INFO - Running tics analysis
+
+────────────────────────────────────────────────────────────
+✔️ TICS
+────────────────────────────────────────────────────────────
+🔍 Running Verbal Tics Analysis...
+2026-08-15 15:16:51,859 - transcriptx - INFO - Starting tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:51,860 - transcriptx - INFO - Starting tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:52,956 - transcriptx - INFO - Completed tics analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Verbal Tics Analysis
+
+2026-08-15 15:16:52,957 - transcriptx - INFO - Completed tics analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:52,957 - transcriptx - INFO - tics completed in 1.10s
+2026-08-15 15:16:52,957 - transcriptx - INFO - Running insight_eligibility analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHT ELIGIBILITY
+────────────────────────────────────────────────────────────
+🔍 Running Shared content-vs-style insight eligibility pipeline...
+2026-08-15 15:16:52,959 - transcriptx - INFO - Starting insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:52,959 - transcriptx - INFO - Starting insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:57,975 - transcriptx - INFO - Completed insight_eligibility analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Shared content-vs-style insight eligibility pipeline
+
+2026-08-15 15:16:57,976 - transcriptx - INFO - Completed insight_eligibility analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:57,976 - transcriptx - INFO - insight_eligibility completed in 5.02s
+2026-08-15 15:16:57,976 - transcriptx - INFO - Running highlights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ HIGHLIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Highlights and conflict moments (quote-forward)...
+2026-08-15 15:16:57,977 - transcriptx - INFO - Starting highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:16:57,977 - transcriptx - INFO - Starting highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:01,017 - transcriptx - INFO - Completed highlights analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Highlights and conflict moments (quote-forward)
+
+2026-08-15 15:17:01,019 - transcriptx - INFO - Completed highlights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:01,019 - transcriptx - INFO - highlights completed in 3.04s
+2026-08-15 15:17:01,019 - transcriptx - INFO - Running insights analysis
+
+────────────────────────────────────────────────────────────
+⚙️ INSIGHTS
+────────────────────────────────────────────────────────────
+🔍 Running Content-first insights layer separated from style markers...
+2026-08-15 15:17:01,020 - transcriptx - INFO - Starting insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:01,021 - transcriptx - INFO - Starting insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:01,032 - transcriptx - INFO - Completed insights analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Content-first insights layer separated from style markers
+
+2026-08-15 15:17:01,033 - transcriptx - INFO - Completed insights analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:01,033 - transcriptx - INFO - insights completed in 0.01s
+2026-08-15 15:17:01,033 - transcriptx - INFO - Running keyphrases analysis
+
+────────────────────────────────────────────────────────────
+⚙️ KEYPHRASES
+────────────────────────────────────────────────────────────
+🔍 Running Keyphrase ranking (noun chunks / YAKE / KeyBERT)...
+2026-08-15 15:17:01,034 - transcriptx - INFO - Starting keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:01,035 - transcriptx - INFO - Starting keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:02,702 - transcriptx - INFO - Completed keyphrases analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Keyphrase ranking (noun chunks / YAKE / KeyBERT)
+
+2026-08-15 15:17:02,703 - transcriptx - INFO - Completed keyphrases analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:02,703 - transcriptx - INFO - keyphrases completed in 1.67s
+2026-08-15 15:17:02,703 - transcriptx - INFO - Running summary analysis
+
+────────────────────────────────────────────────────────────
+⚙️ SUMMARY
+────────────────────────────────────────────────────────────
+🔍 Running Executive brief summary derived from highlights...
+2026-08-15 15:17:02,704 - transcriptx - INFO - Starting summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:02,704 - transcriptx - INFO - Starting summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:04,660 - transcriptx - INFO - Saved all-charts PDF to /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260815_151631_99791558/summary/all_charts.pdf (3 modules, 11 charts)
+2026-08-15 15:17:04,661 - transcriptx - INFO - Completed summary analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Executive brief summary derived from highlights
+
+2026-08-15 15:17:04,661 - transcriptx - INFO - Completed summary analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:04,661 - transcriptx - INFO - summary completed in 1.96s
+2026-08-15 15:17:04,661 - transcriptx - INFO - Running transcript_output analysis
+
+────────────────────────────────────────────────────────────
+📃 TRANSCRIPT OUTPUT
+────────────────────────────────────────────────────────────
+🔍 Running Generate human readable transcripts...
+2026-08-15 15:17:04,662 - transcriptx - INFO - Starting transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:04,663 - transcriptx - INFO - Starting transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:04,663 - transcriptx - INFO - Generating human-friendly transcript for 260615_Ana_phd_supervision_meeting
+2026-08-15 15:17:04,680 - transcriptx - INFO - Human-friendly transcript generated successfully: /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260815_151631_99791558/transcripts/260615_Ana_phd_supervision_meeting-transcript.txt
+✅ Generated human-friendly transcript
+
+2026-08-15 15:17:04,681 - transcriptx - INFO - Completed transcript_output analysis for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+✅ Completed Generate human readable transcripts
+
+2026-08-15 15:17:04,682 - transcriptx - INFO - Completed transcript_output analysis for: /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json
+2026-08-15 15:17:04,682 - transcriptx - INFO - transcript_output completed in 0.02s
+2026-08-15 15:17:04,682 - transcriptx - INFO - Pipeline completed. Ran 10 modules with 0 errors
+2026-08-15 15:17:04,705 - transcriptx - INFO - Saved run results summary to /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260815_151631_99791558/run_results.json
+2026-08-15 15:17:04,735 - transcriptx - INFO - Saved output manifest to /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260815_151631_99791558/manifest.json
+2026-08-15 15:17:04,939 - transcriptx - INFO - Saved run manifest to /Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeting/20260815_151631_99791558/.transcriptx/manifest.json
+
+================================================================================
+📊 COMPREHENSIVE ANALYSIS OUTPUT SUMMARY
+================================================================================
+
+ Transcript: 260615_Ana_phd_supervision_meeting
+📂 Output Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260815_151631_99791558
+🔄 Analysis Status: 10/9 modules completed
+
+✅ SUCCESSFULLY COMPLETED MODULES (9):
+--------------------------------------------------
+
+✅ STATS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260815_151631_99791558/stats
+   📄 Files: 0
+   📂 Subdirectories: 0
+
+✅ SENTIMENT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260815_151631_99791558/sentiment
+   📄 Files: 22
+   📂 Subdirectories: 17
+   📋 Key outputs:
+      • charts/speakers/Ana/dynamic/rolling_sentiment.html (4557.3 KB)
+      • charts/speakers/Ana/static/rolling_sentiment.evidence.json (4.0 KB)
+      • charts/speakers/Ana/static/rolling_sentiment.png (235.3 KB)
+      • charts/speakers/Filka/dynamic/rolling_sentiment.html (4556.7 KB)
+      • charts/speakers/Filka/static/rolling_sentiment.evidence.json (4.0 KB)
+      • ... and 17 more files
+
+✅ EMOTION
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260815_151631_99791558/emotion
+   📄 Files: 23
+   📂 Subdirectories: 27
+   📋 Key outputs:
+      • artifact_index.json (0.7 KB)
+      • charts/speakers/Ana/dynamic/bar/emotion_assignment_counts.html (4552.4 
+KB)
+      • charts/speakers/Ana/static/bar/emotion_assignment_counts.png (113.2 KB)
+      • charts/speakers/Ana/static/bar/emotion_assignment_counts.evidence.json 
+(0.7 KB)
+      • charts/speakers/Filka/dynamic/bar/emotion_assignment_counts.html (4552.4
+KB)
+      • ... and 18 more files
+
+✅ KEYPHRASES
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260815_151631_99791558/keyphrases
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_keyphrases.csv (14.6 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_keyphrases.json (127.7 
+KB)
+      • data/global/260615_Ana_phd_supervision_meeting_keyphrases_summary.json 
+(1.6 KB)
+
+✅ INSIGHT_ELIGIBILITY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260815_151631_99791558/insight_eligibility
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • 
+data/global/260615_Ana_phd_supervision_meeting_insight_eligibility_tic_mask.json
+(2.5 KB)
+      • 
+data/global/260615_Ana_phd_supervision_meeting_insight_eligibility_phrase_scores
+.json (229.2 KB)
+      • data/global/260615_Ana_phd_supervision_meeting_insight_eligibility.json 
+(558.7 KB)
+
+✅ HIGHLIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260815_151631_99791558/highlights
+   📄 Files: 2
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_highlights.json (27.9 KB)
+
+✅ SUMMARY
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260815_151631_99791558/summary
+   📄 Files: 3
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_summary.json (11.9 KB)
+
+✅ INSIGHTS
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260815_151631_99791558/insights
+   📄 Files: 1
+   📂 Subdirectories: 2
+   📋 Key outputs:
+      • data/global/260615_Ana_phd_supervision_meeting_insights.json (12.8 KB)
+
+✅ TRANSCRIPT_OUTPUT
+   📁 Directory: 
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260815_151631_99791558/transcripts
+   📄 Files: 4
+   📂 Subdirectories: 0
+   📋 Key outputs:
+      • 260615_Ana_phd_supervision_meeting-transcript.csv (34.3 KB)
+      • 260615_Ana_phd_supervision_meeting-transcript.txt (32.1 KB)
+
+📄 ADDITIONAL FILES (6):
+------------------------------
+   • report.json (6.2 KB)
+   • report.md (0.4 KB)
+   • run_results.json (1.8 KB)
+   • report.txt (0.5 KB)
+   • manifest.json (62.1 KB)
+   • .run_finalization.lock (0.0 KB)
+
+📈 SUMMARY STATISTICS:
+-------------------------
+   • Total files generated: 61
+   • Total output size: 44.6 MB
+   • Successful modules: 9
+   • Failed modules: 0
+
+================================================================================
+
+---
+Run summary
+---
+  Status:   completed
+  Outputs:  
+/Users/89298/Documents/transcriptx/data/outputs/260615_Ana_phd_supervision_meeti
+ng/20260815_151631_99791558
+  Executed:
+    • emotion
+    • highlights
+    • insight_eligibility
+    • insights
+    • keyphrases
+    • sentiment
+    • stats
+    • summary
+    • tics
+    • transcript_output
+  To explore results: open the web interface
+---
+
+2026-08-15 15:17:04,976 - transcriptx - INFO - Pipeline completed for /Users/89298/Documents/transcriptx/data/transcripts/260615_Ana_phd_supervision_meeting.json - Successfully ran: emotion, sentiment, stats, tics, insight_eligibility, highlights, insights, keyphrases, summary, transcript_output
+2026-08-15 15:17:11,876 - transcriptx - INFO - Saved output manifest to /Users/89298/Documents/transcriptx/data/outputs/groups/2149f9f4-4c62-4d3f-b010-cbef97d27ba4/20260815_131704_d5a2594b/manifest.json
+2026-08-15 15:17:11,879 - transcriptx - INFO - Saved run results summary to /Users/89298/Documents/transcriptx/data/outputs/groups/2149f9f4-4c62-4d3f-b010-cbef97d27ba4/20260815_131704_d5a2594b/run_results.json
+success True
+errors []
+run_dir /Users/89298/Documents/transcriptx/data/outputs/groups/2149f9f4-4c62-4d3f-b010-cbef97d27ba4/20260815_131704_d5a2594b

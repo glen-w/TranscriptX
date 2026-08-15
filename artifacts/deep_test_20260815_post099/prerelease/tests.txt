@@ -1,0 +1,161 @@
+=== smoke ===
+============================= test session starts ==============================
+platform darwin -- Python 3.10.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/89298/Documents/transcriptx
+configfile: pytest.ini
+plugins: html-4.1.1, xdist-3.8.0, mock-3.15.0, timeout-2.4.0, asyncio-1.4.0, metadata-3.1.1, cov-4.1.0, clarity-1.0.1, anyio-3.7.1, hypothesis-6.136.1, typeguard-4.4.4
+timeout: 300.0s
+timeout method: thread
+timeout func_only: False
+asyncio: mode=strict, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 41 items
+
+tests/smoke/test_all_modules_smoke.py ............................       [ 68%]
+tests/smoke/test_analysis_pipeline_smoke.py ...                          [ 75%]
+tests/smoke/test_analyze_smoke.py .                                      [ 78%]
+tests/smoke/test_capabilities_snapshot.py ..                             [ 82%]
+tests/smoke/test_cli_help.py ..                                          [ 87%]
+tests/smoke/test_group_analysis_smoke.py .                               [ 90%]
+tests/smoke/test_install_run_smoke.py .                                  [ 92%]
+tests/smoke/test_module_registry_smoke.py .                              [ 95%]
+tests/smoke/test_sentiment_module_smoke.py .                             [ 97%]
+tests/smoke/test_stats_module_smoke.py .                                 [100%]
+
+=============================== warnings summary ===============================
+../../.pyenv/versions/3.10.13/lib/python3.10/site-packages/_hypothesis_pytestplugin.py:461
+  /Users/89298/.pyenv/versions/3.10.13/lib/python3.10/site-packages/_hypothesis_pytestplugin.py:461: UserWarning: Skipping collection of '.hypothesis' directory - this usually means you've explicitly set the `norecursedirs` pytest config option, replacing rather than extending the default ignores.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================== 41 passed, 1 warning in 158.06s (0:02:38) ===================
+smoke:0
+=== contracts ===
+============================= test session starts ==============================
+platform darwin -- Python 3.10.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/89298/Documents/transcriptx
+configfile: pytest.ini
+plugins: html-4.1.1, xdist-3.8.0, mock-3.15.0, timeout-2.4.0, asyncio-1.4.0, metadata-3.1.1, cov-4.1.0, clarity-1.0.1, anyio-3.7.1, hypothesis-6.136.1, typeguard-4.4.4
+timeout: 300.0s
+timeout method: thread
+timeout func_only: False
+asyncio: mode=strict, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 475 items
+
+tests/contracts/test_artifact_contracts.py ...                           [  0%]
+tests/contracts/test_bertopic_optional_extra.py ..                       [  1%]
+tests/contracts/test_chart_output_service_wiring.py ..                   [  1%]
+tests/contracts/test_default_modules_uses_v2.py ..                       [  1%]
+tests/contracts/test_emotion_contracts.py .                              [  2%]
+tests/contracts/test_emotion_nrclex_compat_contracts.py ....             [  2%]
+tests/contracts/test_manifest_contracts.py .                             [  3%]
+tests/contracts/test_manifest_driven_run.py ..                           [  3%]
+tests/contracts/test_module_registry_legacy_flag.py ..                   [  4%]
+tests/contracts/test_ner_contracts.py .                                  [  4%]
+tests/contracts/test_ner_map_artifacts_contracts.py ......               [  5%]
+tests/contracts/test_observability_import_boundary.py .                  [  5%]
+tests/contracts/test_output_naming.py .                                  [  5%]
+tests/contracts/test_pipeline_layering_thinness.py ......                [  7%]
+tests/contracts/test_playwright_container_contracts.py ....              [  8%]
+tests/contracts/test_retired_public_ids_invariant.py ....                [  8%]
+tests/contracts/test_run_results_and_manifest_contracts.py ...           [  9%]
+tests/contracts/test_semantic_v2_explicit_legacy_selection.py ..         [  9%]
+tests/contracts/test_semantic_v2_missing_torch.py .....                  [ 10%]
+tests/contracts/test_semantic_v2_no_duplicate_default.py .               [ 11%]
+tests/contracts/test_semantic_v2_no_legacy_v2_coexistence_default.py .   [ 11%]
+tests/contracts/test_semantic_v2_outcome_envelope.py .                   [ 11%]
+tests/contracts/test_semantic_v2_output_validation.py .                  [ 11%]
+tests/contracts/test_speaker_exclusion.py ..                             [ 12%]
+tests/contracts/test_speaker_profiles_avatars.py ...............         [ 15%]
+tests/contracts/test_speaker_profiles_backfill_from_maps.py .....        [ 16%]
+tests/contracts/test_speaker_profiles_ignored_gaps.py ..                 [ 16%]
+tests/contracts/test_speaker_profiles_longitudinal.py .................. [ 20%]
+.....                                                                    [ 21%]
+tests/contracts/test_speaker_profiles_phase15.py .............           [ 24%]
+tests/contracts/test_speaker_profiles_phase15_gaps.py ................   [ 27%]
+tests/contracts/test_speaker_profiles_recovery.py ......                 [ 29%]
+tests/contracts/test_speaker_profiles_resolver_discovery.py ........     [ 30%]
+tests/contracts/test_speaker_profiles_service_ops.py .......             [ 32%]
+tests/contracts/test_speaker_profiles_stage4_web.py ....                 [ 33%]
+tests/contracts/test_speaker_profiles_stages_5_8.py .........            [ 34%]
+tests/contracts/test_speaker_profiles_v1_contracts.py .................. [ 38%]
+.......                                                                  [ 40%]
+tests/contracts/test_speaker_profiles_voice_accept_query_evidence.py ..  [ 40%]
+tests/contracts/test_speaker_profiles_voice_audit_fixes.py .......       [ 42%]
+tests/contracts/test_speaker_profiles_voice_bootstrap.py ....            [ 42%]
+tests/contracts/test_speaker_profiles_voice_chunked_crash.py .....       [ 44%]
+tests/contracts/test_speaker_profiles_voice_completion.py ....           [ 44%]
+tests/contracts/test_speaker_profiles_voice_eval_harness.py ....         [ 45%]
+tests/contracts/test_speaker_profiles_voice_finalize.py ......           [ 46%]
+tests/contracts/test_speaker_profiles_voice_operator.py ....             [ 47%]
+tests/contracts/test_speaker_profiles_voice_persistence.py ....          [ 48%]
+tests/contracts/test_speaker_profiles_voice_stage0.py ..............     [ 51%]
+tests/contracts/test_speaker_profiles_voice_stage1.py ......             [ 52%]
+tests/contracts/test_speaker_profiles_voice_stage2.py ...s.              [ 53%]
+tests/contracts/test_speaker_profiles_voice_stage3.py ...                [ 54%]
+tests/contracts/test_speaker_profiles_voice_stage4_5.py .....            [ 55%]
+tests/contracts/test_speaker_profiles_voice_stage6.py .                  [ 55%]
+tests/contracts/test_speaker_profiles_voice_stage8.py .....              [ 56%]
+tests/contracts/test_speaker_profiles_voice_stage9_index.py ......       [ 58%]
+tests/contracts/test_stale_surface_references.py ....................... [ 62%]
+........................................................................ [ 78%]
+........................................................................ [ 93%]
+.......                                                                  [ 94%]
+tests/contracts/test_topic_modeling_contracts.py ....                    [ 95%]
+tests/contracts/test_transcript_quality_contract.py ..                   [ 96%]
+tests/contracts/test_transcription_models_contract.py .......            [ 97%]
+tests/contracts/test_unnamed_speaker_artifact_exclusion.py .......       [ 98%]
+tests/contracts/test_weak_analysis_module_contracts.py ....              [ 99%]
+tests/contracts/test_write_authority.py .                                [100%]
+
+=============================== warnings summary ===============================
+../../.pyenv/versions/3.10.13/lib/python3.10/site-packages/_hypothesis_pytestplugin.py:461
+  /Users/89298/.pyenv/versions/3.10.13/lib/python3.10/site-packages/_hypothesis_pytestplugin.py:461: UserWarning: Skipping collection of '.hypothesis' directory - this usually means you've explicitly set the `norecursedirs` pytest config option, replacing rather than extending the default ignores.
+    warnings.warn(
+
+tests/contracts/test_topic_modeling_contracts.py::TestTopicModelingContracts::test_topic_modeling_empty_segments_output_contract
+  /Users/89298/Documents/transcriptx/tests/contracts/test_topic_modeling_contracts.py:76: UserWarning: Topic modeling fell back to segment-level text because insight_eligibility windows were missing or empty; canonical runs should supply eligibility.
+    result = topic_module.analyze([])
+
+tests/contracts/test_topic_modeling_contracts.py::TestTopicModelingContracts::test_topic_modeling_insufficient_segments_output_contract
+  /Users/89298/Documents/transcriptx/tests/contracts/test_topic_modeling_contracts.py:100: UserWarning: Topic modeling fell back to segment-level text because insight_eligibility windows were missing or empty; canonical runs should supply eligibility.
+    result = topic_module.analyze(segments)
+
+tests/contracts/test_topic_modeling_contracts.py::TestTopicModelingContracts::test_topic_modeling_success_output_contract
+  /Users/89298/Documents/transcriptx/tests/contracts/test_topic_modeling_contracts.py:184: UserWarning: Topic modeling fell back to segment-level text because insight_eligibility windows were missing or empty; canonical runs should supply eligibility.
+    result = topic_module.analyze(sample_segments)
+
+tests/contracts/test_topic_modeling_contracts.py::TestTopicModelingContracts::test_topic_modeling_dependency_error_contract
+  /Users/89298/Documents/transcriptx/src/transcriptx/core/analysis/base.py:183: UserWarning: Topic modeling fell back to segment-level text because insight_eligibility windows were missing or empty; canonical runs should supply eligibility.
+    results = self.analyze(segments)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/contracts/test_speaker_profiles_voice_stage2.py:62: speechbrain installed in this environment
+================= 474 passed, 1 skipped, 5 warnings in 26.01s ==================
+contracts:0
+=== config atomicity ===
+============================= test session starts ==============================
+platform darwin -- Python 3.10.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/89298/Documents/transcriptx
+configfile: pytest.ini
+plugins: html-4.1.1, xdist-3.8.0, mock-3.15.0, timeout-2.4.0, asyncio-1.4.0, metadata-3.1.1, cov-4.1.0, clarity-1.0.1, anyio-3.7.1, hypothesis-6.136.1, typeguard-4.4.4
+timeout: 300.0s
+timeout method: thread
+timeout func_only: False
+asyncio: mode=strict, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 48 items
+
+tests/core/config/test_file_overrides_atomicity.py ...                   [  6%]
+tests/core/config/test_nested_file_overrides_probe.py .................. [ 43%]
+                                                                         [ 43%]
+tests/core/config/test_settings_file_load_pilots.py .................... [ 85%]
+.......                                                                  [100%]
+
+=============================== warnings summary ===============================
+../../.pyenv/versions/3.10.13/lib/python3.10/site-packages/_hypothesis_pytestplugin.py:461
+  /Users/89298/.pyenv/versions/3.10.13/lib/python3.10/site-packages/_hypothesis_pytestplugin.py:461: UserWarning: Skipping collection of '.hypothesis' directory - this usually means you've explicitly set the `norecursedirs` pytest config option, replacing rather than extending the default ignores.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 48 passed, 1 warning in 7.02s =========================
+atomicity:0

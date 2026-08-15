@@ -1,0 +1,62 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.10.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/89298/Documents/transcriptx
+configfile: pytest.ini
+plugins: html-4.1.1, xdist-3.8.0, mock-3.15.0, timeout-2.4.0, asyncio-1.4.0, metadata-3.1.1, cov-4.1.0, clarity-1.0.1, anyio-3.7.1, hypothesis-6.136.1, typeguard-4.4.4
+timeout: 300.0s
+timeout method: thread
+timeout func_only: False
+asyncio: mode=strict, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 4 items
+
+tests/core/config/test_delegation_shape_snapshots.py F                   [ 25%]
+tests/core/config/test_registry_ownership.py FF                          [ 75%]
+tests/core/pipeline/test_module_registry_specs_snapshot.py F             [100%]
+
+=================================== FAILURES ===================================
+______________ test_pre_delegation_analysis_shape_matches_fixture ______________
+tests/core/config/test_delegation_shape_snapshots.py:78: in test_pre_delegation_analysis_shape_matches_fixture
+    assert _normalize_for_json(asdict(AnalysisConfig())) == expected
+E   AssertionError: assert {'sentiment_w...emotion', ...} == {'active_acts...default', ...}
+E     
+E     Omitting 106 identical items, use -vv to show
+E     Left contains 1 more item:
+E     {'allow_unnamed_speakers': False}
+E     Use -v to get more diff
+______________ test_ownership_snapshot_matches_committed_fixture _______________
+tests/core/config/test_registry_ownership.py:162: in test_ownership_snapshot_matches_committed_fixture
+    assert actual == expected
+E   AssertionError: assert {'total_regis...unt': 54, ...} == {'baseline_ke...12, ...}, ...}
+E     
+E     Omitting 3 identical items, use -vv to show
+E     Differing items:
+E     {'total_registry_keys': 737} != {'total_registry_keys': 736}
+E     {'per_pilot_key_counts': {'semantic_similarity': 25, 'metadata': 4, 'dashboard_display': 3, 'llm': 14, ...}} != {'per_pilot_key_counts': {'acts': 21, 'affect_tension': 9, 'analysis_entity': 3, 'analysis_interaction': 12, ...}}
+E     {'pilot_count': 54} != {'pilot_count': 53}
+E     {'pydantic_owned_keys': 721} != {'pydantic_owned_keys': 720}
+E     Use -v to get more diff
+_______________________ test_ownership_invariant_counts ________________________
+tests/core/config/test_registry_ownership.py:168: in test_ownership_invariant_counts
+    assert snap["pilot_count"] == 53
+E   assert 54 == 53
+________________ test_build_module_definitions_matches_snapshot ________________
+tests/core/pipeline/test_module_registry_specs_snapshot.py:18: in test_build_module_definitions_matches_snapshot
+    assert normalized == load_snapshot_fixture()
+E   AssertionError: assert {'module_orde...', ...}, ...}} == {'module_orde...', ...}, ...}}
+E     
+E     Omitting 1 identical items, use -vv to show
+E     Differing items:
+E     {'modules': {'acts': {'category': 'medium', 'dependencies': [], 'description': 'Dialogue Act Classification', 'determi...'dependencies': [], 'description': 'Emotion-associated vocabulary (NRC lexicon)', 'determinism_tier': 'T1', ...}, ...}} != {'modules': {'acts': {'category': 'medium', 'dependencies': [], 'description': 'Dialogue Act Classification', 'determi...[], 'description': 'Per-chart LLM narratives (finalize-phase; after all charts)', 'determinism_tier': 'T2', ...}, ...}}
+E     Use -v to get more diff
+=============================== warnings summary ===============================
+../../.pyenv/versions/3.10.13/lib/python3.10/site-packages/_hypothesis_pytestplugin.py:461
+  /Users/89298/.pyenv/versions/3.10.13/lib/python3.10/site-packages/_hypothesis_pytestplugin.py:461: UserWarning: Skipping collection of '.hypothesis' directory - this usually means you've explicitly set the `norecursedirs` pytest config option, replacing rather than extending the default ignores.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/core/config/test_delegation_shape_snapshots.py::test_pre_delegation_analysis_shape_matches_fixture
+FAILED tests/core/config/test_registry_ownership.py::test_ownership_snapshot_matches_committed_fixture
+FAILED tests/core/config/test_registry_ownership.py::test_ownership_invariant_counts
+FAILED tests/core/pipeline/test_module_registry_specs_snapshot.py::test_build_module_definitions_matches_snapshot
+========================= 4 failed, 1 warning in 1.78s =========================
