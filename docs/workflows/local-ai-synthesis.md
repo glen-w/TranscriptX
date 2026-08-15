@@ -31,26 +31,17 @@ Local AI is **optional**. Workflows 1–3 and 5 work without it.
 
 2. Expand **LLM setup**. When Ollama is healthy you should see the active model and optional per-run overrides. If LLM is disabled or unreachable, the panel says so clearly — enable Ollama under [**Settings**](../runtime/settings.md) → Configuration and manage models under **Settings → Models** ([LLM](../runtime/llm.md)), then return here.
 
-```{image} /_static/workflows/local-ai-llm-setup.png
-:alt: Run Analysis LLM setup section showing that local AI is disabled or not set to Ollama
-:width: 720px
-```
+![Run Analysis LLM setup section showing that local AI is disabled or not set to Ollama](../_static/workflows/local-ai-llm-setup.png)
 
 3. Choose **Run analysis**. Watch the progress panel: LLM modules may take longer than deterministic ones. Completed, skipped, and failed counts should stay honest if something times out.
 
 4. Open [**Overview**](../public_surfaces.md). After a successful Local AI run, look for summary content and compact meeting extracts with a **Local AI** badge. Until those modules complete, Overview may still show the deterministic summary from core analysis — useful context, but not Local AI output.
 
-```{image} /_static/workflows/local-ai-overview-summary.png
-:alt: Overview summary area for the planning-review run after analysis
-:width: 720px
-```
+![Overview summary area for the planning-review run after analysis](../_static/workflows/local-ai-overview-summary.png)
 
 5. Open **Insights → Actions** for **Meeting extracts** when `llm_action_items` completed. If that module was skipped, open **Insights → Summary** and use the deterministic executive summary as a baseline, then re-run with LLM enabled when you want generated extracts.
 
-```{image} /_static/workflows/local-ai-meeting-extracts.png
-:alt: Insights Summary synthesis for the planning review used when checking claims before or beside Local AI extracts
-:width: 720px
-```
+![Insights Summary synthesis for the planning review used when checking claims before or beside Local AI extracts](../_static/workflows/local-ai-meeting-extracts.png)
 
 6. Spot-check two claims against **Transcript** (for this fixture: private beta on the twelfth, public launch on the twenty-sixth, analytics deferred). Correct the record in your own notes if synthesis drifts.
 
