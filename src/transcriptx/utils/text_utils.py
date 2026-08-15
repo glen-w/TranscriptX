@@ -7,7 +7,7 @@ used across the TranscriptX codebase.
 
 import contextvars
 import re
-from typing import Any, Literal, Mapping, Optional
+from typing import Any, Literal, Mapping
 
 # Lazy import to avoid startup delays
 # import nltk
