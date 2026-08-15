@@ -668,8 +668,6 @@ def _render_run_button(
 
 
 def _render_result(result: object) -> None:
-    from transcriptx.app.models.results import MergeResult
-
     r: MergeResult = result  # type: ignore[assignment]
 
     if r.success:

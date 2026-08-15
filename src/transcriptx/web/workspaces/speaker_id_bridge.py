@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 from typing import Any, Mapping, Optional, Sequence
 
 from transcriptx.app.speaker_id import (
@@ -12,7 +11,6 @@ from transcriptx.app.speaker_id import (
     mapping_revision_from_state,
     transcript_revision_from_path,
 )
-from transcriptx.app.speaker_id.effects import apply_speaker_id_ack_effects
 from transcriptx.web.workspaces.clip_transport import encode_clip_b64, within_clip_budget
 
 try:
