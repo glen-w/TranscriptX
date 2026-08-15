@@ -7,7 +7,8 @@ Authority: tests/README.md
 **Not a dumping ground:** only AppTest-blind items. Navigation, validation text, stubbed service success/error, and library/group/profile persistence are covered by AppTest.
 
 **Automated lane:** `make test-gui-acceptance` (marker `gui_acceptance`, also selected by `make test-heavy`).  
-**Policy:** No Playwright for the Streamlit GUI before 1.0; reconsider post-1.0 if this list stays release-critical or repeatedly catches regressions.
+**Browser E2E lane:** Playwright live-Streamlit under `tests/e2e_gui/` (marker `gui_e2e`) — included in default `pytest` / `make test-fast`, and runnable via `make test-gui-e2e`. Covers documented workflows (import/analyse, speaker trust, investigate, local-AI surface, export) plus Charts. AppTest remains the structural acceptance suite; Playwright covers AppTest-blind browser behaviour (e.g. real file uploader, export download UI).  
+**Policy:** Playwright GUI E2E is a first-class automated lane (not deferred / not banned). Theme C CCv2 browser checks remain under `make test-theme-c-browser`.
 
 ---
 
@@ -23,8 +24,8 @@ Authority: tests/README.md
 
 | # | Item | Pass criteria |
 |---|------|----------------|
-| R1 | **Import file picker** | OS / Streamlit uploader chooses a real file; admit succeeds; Library shows the new transcript |
-| R2 | **Export browser download** | Create Export → browser download / save dialog yields a usable zip (not only in-app download widget presence) |
+| R1 | **Import file picker** | OS / Streamlit uploader chooses a real file; admit succeeds; Library shows the new transcript. Covered by Playwright `test_first_analysis_import_run_overview`. |
+| R2 | **Export browser download** | Create Export → browser download / save dialog yields a usable zip (not only in-app download widget presence). Partially covered by Playwright `test_export_results` (Create Export / Download Export UI); OS save dialog remains manual when present. |
 | R3 | **Export open-on-disk / `file://`** (if offered) | Opening the zip or index from the UI lands in the expected viewer without a broken path |
 | R4 | **Hover / focus reveal** | Sidebar / context-bar / action-menu hover or focus reveals match the intended labels (no clipped tooltips) |
 | R5 | **Popovers / expanders visual** | Critical expanders (e.g. Aggregation notices, Full log) open and content is readable without layout collapse |
@@ -39,5 +40,5 @@ Authority: tests/README.md
 
 - Full visual regression / accessibility snapshots
 - Real ML / Ollama / heavy model runs (core/integration lanes)
-- Playwright / Selenium GUI automation (deferred until post-1.0 reconsideration)
-- Anything already asserted by `tests/web/gui_acceptance/`
+- OS-native file-save dialogs beyond in-app Download Export (see R2)
+- Anything already asserted by `tests/web/gui_acceptance/` or `tests/e2e_gui/`

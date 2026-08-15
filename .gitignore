@@ -94,6 +94,7 @@ htmlcov/
 
 # Sphinx HTML build output
 docs/_build/
+_site/
 
 
 # Local reports archive (run dumps; docs archive is tracked under docs/archive/)
@@ -130,3 +131,4 @@ data/transcripts/projects/foo/call1.json
 # Theme C CCv2 frontend
 packages/**/node_modules/
 packages/**/frontend/build/.vite/
+.local/

@@ -7,11 +7,11 @@ Use TranscriptX as an analysis workbench: start from a question, follow results 
 
 ## Outcome
 
-You will have answered one concrete question about the sample meeting by moving from **Overview** through **Insights** into transcript evidence.
+You will have answered one concrete question about the sample meeting by moving from [**Overview**](../public_surfaces.md) through **Insights** into transcript evidence.
 
 ## Starting point
 
-The planning-review transcript is imported, speakers are preferably named ([Identify and name speakers](speaker-identification.md)), and a **Balanced** (or richer) run is selected on **Overview**.
+The planning-review transcript is [imported](../runtime/transcription.md), speakers are preferably named ([Identify and name speakers](speaker-identification.md)), and a [**Balanced**](../runtime/installation.md#analysis-presets) (or richer) run is selected on **Overview**.
 
 **Example question:** *Where did the speakers disagree most about the launch plan?*
 
@@ -27,24 +27,15 @@ The planning-review transcript is imported, speakers are preferably named ([Iden
 
 1. Keep the example question in mind. Open **Overview** for the planning-review run and scan the compact highlights and speaker cards for signs of disagreement (timeline, scope, analytics).
 
-```{image} /_static/workflows/investigate-overview.png
-:alt: Overview highlights suggesting disagreement topics in the planning review run
-:width: 720px
-```
+![Overview highlights suggesting disagreement topics in the planning review run](../_static/workflows/investigate-overview.png)
 
 2. Open **Insights** and stay on the **Summary** section first. Read the executive overview, key themes, and any tension points — in this sample you should see disagreement around timeline, collaboration scope, and analytics.
 
-```{image} /_static/workflows/investigate-highlights.png
-:alt: Insights Summary showing executive overview, key themes, and a tension point with a quoted excerpt
-:width: 720px
-```
+![Insights Summary showing executive overview, key themes, and a tension point with a quoted excerpt](../_static/workflows/investigate-highlights.png)
 
 3. Follow one tension point or theme quote into fuller context. Prefer a cited speaker line (for example Sam on analytics versus shared folders) and open **Transcript** to read the surrounding turns. Use **Highlights** only if you want a denser quote/tension list.
 
-```{image} /_static/workflows/investigate-evidence-jump.gif
-:alt: Moving from Insights summary evidence into the Transcript view for surrounding context
-:width: 720px
-```
+![Moving from Insights summary evidence into the Transcript view for surrounding context](../_static/workflows/investigate-evidence-jump.gif)
 
 4. On **Transcript**, read a few turns before and after the cited segment. In this sample, the sharpest disagreement is timeline-versus-scope (ship on the twelfth versus delaying for offline sync), with a later disagreement about analytics in beta.
 
