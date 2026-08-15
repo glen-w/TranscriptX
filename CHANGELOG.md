@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- GitHub Actions **nightly** workflow (`.github/workflows/nightly.yml`): scheduled + manual `make test-integration-core`.
+- CI **lint** job: ruff critical/unused gate on `src/transcriptx` (`E9,F63,F7,F82,F401,F841`).
 - Audio **Merge** source profiles (`CONFIG_DIR/audio_merge_profiles.json`): per-source day / time-gap sliders, custom regex profiles, and **Auto-merge selected groups**. Builtin defaults keep the 20-minute voice-note gap; users can retune (e.g. WhatsApp same day within 2 hours).
 - Dashboard Builder **Edit** mode: select and ↑↓ reorder Overview/Insights blocks; save custom layouts in place. Charts Overview strip selector (checkboxes + order) under **Settings → Configuration**. Guides: [dashboard_builder.md](docs/dev/dashboard_builder.md), [settings.md](docs/runtime/settings.md).
 - **System → Tools** hub: audio **Preprocessing** and **Merge** tabs restored under the renamed System sidebar section (formerly Settings), with dependency checks, guided assess/apply-suggested flow, serial-group one-click fill, and handoffs to Transcribe Audio. CLI scripts remain for automation.
@@ -24,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- CI `tests` / `tests-nlp` install `.[dev,web]` / `.[dev,nlp,web]` so Streamlit web modules collect under contracts/fast (fixes missing-`streamlit` collection failures).
 - Workflow walkthrough 2 renamed from “speaker trust” to [Identify and name speakers](docs/workflows/speaker-identification.md) — wording now emphasizes naming diarized speakers for readable transcripts, not analysis “trust”.
 - Audio **Merge** concatenates only by default. Optional **Preprocess files while merging** checkbox (CLI `--preprocess`) applies current preprocessing defaults in the same pass; otherwise run Preprocessing separately.
 - Sidebar section **Settings** renamed to **System** (page keys unchanged: Settings, Tools, Profiles, Dashboard Builder, Diagnostics).

@@ -19,7 +19,12 @@
 
 ## CI lane order and time budgets
 
-**PR order**: Smoke → Contracts → Fast
+**PR order**: Lint (ruff critical) → Smoke → Contracts → Fast  
+(plus parallel `tests-nlp`, docs, Theme C workspaces; then `release-checks`)
+
+**Install note:** PR `tests` / `tests-nlp` install `.[dev,web]` / `.[dev,nlp,web]` so Streamlit web modules collect under contracts/fast. Smoke still skips spaCy-gated modules unless `[nlp]` is present.
+
+**Nightly:** `.github/workflows/nightly.yml` runs `make test-integration-core` on a schedule (`cron` 06:00 UTC) and via `workflow_dispatch`.
 
 Time budgets (target ceilings):
 - `test-smoke` ≤ 5 min

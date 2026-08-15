@@ -16,7 +16,7 @@ Living assessment of the pytest / Vitest / Playwright testing system.
 The suite is **large, well-laned, and CI-gated for the fast path**, with strong offline contracts and an explicit GUI AppTest policy. The main risks are not “too few tests,” but **env brittleness and lane gaps**:
 
 1. **NLP half-install kills green lanes** when `spacy` is importable but `en_core_web_md` is missing — smoke, contracts, and many fast-lane analysis tests fail instead of skipping.
-2. **`integration_core` is documented as nightly but is not scheduled in CI** — 58 tests exist only behind Makefile.
+2. **`integration_core` nightly** — covered by `.github/workflows/nightly.yml` (`make test-integration-core`); still excluded from PR CI by design.
 3. **Web GUI risk is intentionally outside coverage** (`.coveragerc` omits `transcriptx/web/*`) and **outside PR CI** (`gui_acceptance` is manual/heavy); one known AppTest journey failure remains in artifacts.
 4. **Soft-skips** in integration-extended DAG tests can hide real pipeline finalization failures.
 5. Marker/docs drift is real but mostly P2 (`optional` unused, `browser` not in `pytest.ini`, stale `conftest` comment about `integration_core` in the default suite).
@@ -261,7 +261,7 @@ Not all are bugs (fixtures often use `/tmp`). Prefer `tmp_path` / `pytest.approx
 
 ### P1 — protection gaps / portability
 
-4. **Schedule `make test-integration-core`** (nightly or weekly workflow). Align docs with automation; 58 tests currently unpaid debt.
+4. ~~**Schedule `make test-integration-core`**~~ **Done** — `.github/workflows/nightly.yml` (schedule + `workflow_dispatch`).
 5. **Run-cleanup fingerprint tests vs multi-device / overlay FS** — failures (`dev=40 != 39`, `mount` vs `symlink`) indicate env assumptions; make tests tolerate cloud/Linux layouts or document required FS topology.
 6. **Decide web coverage policy explicitly in tests README:** either (a) keep omit + require periodic `test-gui-acceptance` evidence, or (b) introduce a thin web coverage/allowlist gate for critical services (e.g. run_cleanup, group_service).
 7. **Deduplicate CI contract work** — either exclude `contract` from fast once contracts job is required, or drop the separate job and keep contracts only in fast (prefer keeping the explicit contracts job and excluding from fast to save ~20s and simplify mental model).
@@ -282,7 +282,7 @@ Not all are bugs (fixtures often use `/tmp`). Prefer `tmp_path` / `pytest.approx
 ## 8. Recommended follow-ups (out of scope here)
 
 - Remediation PR for P0 items 1–3.
-- Nightly workflow PR for `integration_core` (+ optional GUI acceptance on a schedule).
+- Nightly workflow PR for `integration_core` (+ optional GUI acceptance on a schedule). → **Nightly `integration_core` shipped** (`.github/workflows/nightly.yml`); GUI acceptance schedule still optional.
 - Optional: refresh deep_test artifact pack after NLP-gate and cleanup-portability fixes for a clean baseline.
 
 ---
