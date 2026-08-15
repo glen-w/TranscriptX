@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Security pins: `cryptography` 48.0.1 → 50.0.0 and `nltk` 3.9.4 → 3.10.3 (fixable pip-audit findings on the clean-env wheel gate).
+
 ## [0.9.9.5] - 2026-08-15
 
 Interim cut of the post-**0.9.9** wave before unfamiliar-user validation. Programme narrative: [post_0_9_9_shipped_overview.md](docs/dev/post_0_9_9_shipped_overview.md); checklist: [pre_release_roadmap_1_0.md](docs/dev/pre_release_roadmap_1_0.md).
