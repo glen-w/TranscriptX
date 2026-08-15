@@ -104,14 +104,12 @@ def test_try_install_package_returns_false_on_failed_pip() -> None:
     def _fake_run(cmd, capture_output, text, timeout):
         return fake_result
 
+    # patch.object (not string targets): patching importlib.import_module via a
+    # dotted path replaces the global symbol, which breaks nested patch()
+    # resolution on Python 3.11+.
     with (
-        patch(
-            "transcriptx.core.utils.lazy_imports.importlib.import_module",
-            side_effect=ImportError("nope"),
-        ),
-        patch(
-            "transcriptx.core.utils.lazy_imports.subprocess.run", side_effect=_fake_run
-        ),
+        patch.object(li.subprocess, "run", side_effect=_fake_run),
+        patch.object(li.importlib, "import_module", side_effect=ImportError("nope")),
     ):
         ok, err = li._try_install_package(
             "definitely_missing_pkg_xyz",

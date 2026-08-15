@@ -56,17 +56,9 @@ def test_try_install_success_path(monkeypatch: pytest.MonkeyPatch) -> None:
 
     ok_result = MagicMock(returncode=0, stderr="", stdout="ok")
     with (
-        patch(
-            "transcriptx.core.utils.lazy_imports.importlib.import_module",
-            side_effect=_import,
-        ),
-        patch(
-            "transcriptx.core.utils.lazy_imports.subprocess.run",
-            return_value=ok_result,
-        ),
-        patch(
-            "transcriptx.core.utils.lazy_imports.importlib.invalidate_caches",
-        ),
+        patch.object(li.subprocess, "run", return_value=ok_result),
+        patch.object(li.importlib, "import_module", side_effect=_import),
+        patch.object(li.importlib, "invalidate_caches"),
     ):
         ok, err = li._try_install_package(
             "installed_pkg_xyz", "installed_pkg_xyz", "testing"
@@ -91,14 +83,9 @@ def test_try_install_extra_fallback_to_package() -> None:
         return MagicMock(returncode=0, stderr="", stdout="")
 
     with (
-        patch(
-            "transcriptx.core.utils.lazy_imports.importlib.import_module",
-            side_effect=_import,
-        ),
-        patch("transcriptx.core.utils.lazy_imports.subprocess.run", side_effect=_run),
-        patch(
-            "transcriptx.core.utils.lazy_imports.importlib.invalidate_caches",
-        ),
+        patch.object(li.subprocess, "run", side_effect=_run),
+        patch.object(li.importlib, "import_module", side_effect=_import),
+        patch.object(li.importlib, "invalidate_caches"),
     ):
         ok, err = li._try_install_package(
             "pkg_name", "pkg_name", "testing", extra="viz"
@@ -111,28 +98,20 @@ def test_try_install_extra_fallback_to_package() -> None:
 @pytest.mark.unit
 def test_try_install_timeout_and_exception() -> None:
     with (
-        patch(
-            "transcriptx.core.utils.lazy_imports.importlib.import_module",
-            side_effect=ImportError("x"),
-        ),
-        patch(
-            "transcriptx.core.utils.lazy_imports.subprocess.run",
+        patch.object(
+            li.subprocess,
+            "run",
             side_effect=li.subprocess.TimeoutExpired(cmd="pip", timeout=1),
         ),
+        patch.object(li.importlib, "import_module", side_effect=ImportError("x")),
     ):
         ok, err = li._try_install_package("p", "p", "t")
     assert ok is False
     assert "timed out" in err
 
     with (
-        patch(
-            "transcriptx.core.utils.lazy_imports.importlib.import_module",
-            side_effect=ImportError("x"),
-        ),
-        patch(
-            "transcriptx.core.utils.lazy_imports.subprocess.run",
-            side_effect=OSError("boom"),
-        ),
+        patch.object(li.subprocess, "run", side_effect=OSError("boom")),
+        patch.object(li.importlib, "import_module", side_effect=ImportError("x")),
     ):
         ok2, err2 = li._try_install_package("p", "p", "t")
     assert ok2 is False
