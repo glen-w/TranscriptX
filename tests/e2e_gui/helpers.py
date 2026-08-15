@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Any, Optional
 
@@ -312,3 +313,186 @@ def optional_screenshot(page: Page, path: Optional[Path]) -> None:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     page.screenshot(path=str(path), full_page=False)
+
+
+def expand_labeled(page: Page, label: str) -> None:
+    """Open a Streamlit expander / disclosure whose summary contains ``label``."""
+    root = page.locator('[data-testid="stMain"], section.main').first
+    # Streamlit expanders expose a summary button / details summary.
+    candidates = root.locator("details summary, [data-testid='stExpander'] summary")
+    count = candidates.count()
+    for i in range(count):
+        node = candidates.nth(i)
+        try:
+            if label.lower() in (node.inner_text() or "").lower():
+                node.click(force=True)
+                wait(page, 1000)
+                return
+        except Exception:
+            continue
+    # Fallback: click any text match in main.
+    text = root.get_by_text(label, exact=False)
+    if text.count():
+        text.first.click(force=True)
+        wait(page, 1000)
+
+
+def set_checkbox_labeled(page: Page, label: str, *, checked: bool = True) -> None:
+    """Toggle a Streamlit checkbox by accessible label."""
+    root = page.locator('[data-testid="stMain"], section.main').first
+
+    def _resolve():
+        # Streamlit 1.6x React Aria checkboxes: visually-hidden native <input>.
+        by_aria = root.locator(f'input[type="checkbox"][aria-label="{label}"]')
+        if by_aria.count():
+            return by_aria.first
+        role = root.get_by_role("checkbox", name=label, exact=True)
+        if role.count():
+            return role.first
+        blocks = root.locator('[data-testid="stCheckbox"]').filter(has_text=label)
+        if blocks.count():
+            native = blocks.first.locator('input[type="checkbox"]')
+            if native.count():
+                return native.first
+            return blocks.first
+        raise RuntimeError(f"checkbox not found for label {label!r}")
+
+    box = _resolve()
+    expect(box).to_be_attached(timeout=20000)
+    if box.is_checked() != checked:
+        # React Aria hidden inputs ignore Playwright click/check; focus+Space works.
+        box.focus()
+        page.keyboard.press("Space")
+        wait(page, 2500)
+        box = _resolve()
+        if box.is_checked() != checked:
+            box.focus()
+            page.keyboard.press("Space")
+            wait(page, 2500)
+            box = _resolve()
+    if box.is_checked() != checked:
+        raise RuntimeError(
+            f"checkbox {label!r} did not become checked={checked} "
+            f"(after={box.is_checked()!r})"
+        )
+
+
+def fill_main_text_input(page: Page, label: str, value: str) -> None:
+    """Fill a main-pane text input by label or nearby caption."""
+    root = page.locator('[data-testid="stMain"], section.main').first
+    # Prefer stTextInput blocks: get_by_label often matches Streamlit help buttons
+    # (aria-label "Help for …") which are not fillable.
+    blocks = root.locator('[data-testid="stTextInput"]')
+    for i in range(blocks.count()):
+        block = blocks.nth(i)
+        if label.lower() in (block.inner_text() or "").lower():
+            inp = block.locator("input:not([disabled])")
+            if inp.count() == 0:
+                inp = block.locator("input")
+            expect(inp.first).to_be_visible(timeout=10000)
+            inp.first.click()
+            inp.first.fill(value)
+            wait(page, 500)
+            return
+
+    # Fallback: get_by_label but only real editable fields.
+    by_label = root.get_by_label(label, exact=False)
+    for i in range(by_label.count()):
+        el = by_label.nth(i)
+        try:
+            tag = (el.evaluate("e => e.tagName") or "").upper()
+        except Exception:
+            continue
+        if tag not in ("INPUT", "TEXTAREA"):
+            continue
+        el.click()
+        el.fill(value)
+        wait(page, 500)
+        return
+    raise RuntimeError(f"text input not found for label {label!r}")
+
+
+def create_group_via_ui(
+    page: Page, *, name: str, transcript_needle: str = "planning"
+) -> None:
+    """Create a group from the Groups page expander."""
+    nav(page, "Groups")
+    wait(page, 2500)
+    expand_labeled(page, "Create new group")
+    fill_main_text_input(page, "Name", name)
+
+    # Multiselect: open and pick a matching option.
+    multi = page.locator('[data-testid="stMultiSelect"]')
+    expect(multi.first).to_be_visible(timeout=20000)
+    multi.first.click()
+    wait(page, 800)
+    opt = page.locator('[role="option"]').filter(has_text=transcript_needle)
+    if opt.count() == 0:
+        opt = page.locator('[role="option"]').filter(has_text="planning")
+    expect(opt.first).to_be_visible(timeout=10000)
+    opt.first.click()
+    wait(page, 800)
+    page.keyboard.press("Escape")
+    wait(page, 400)
+
+    click_main_button(page, "Create group", exact=True)
+    wait(page, 3500)
+
+
+def open_correct_mode_and_propose(
+    page: Page,
+    *,
+    find_text: str,
+    replacement: str,
+) -> None:
+    """Enable Correct mode on Transcript and propose a manual correction."""
+    # Planning-review speakers are still SPEAKER_* placeholders; Correct-mode
+    # propose panels only render for *visible* segments.
+    set_checkbox_labeled(page, "Show unnamed speakers", checked=True)
+    set_checkbox_labeled(page, "Correct mode", checked=True)
+    wait(page, 2500)
+    root = page.locator('[data-testid="stMain"], section.main').first
+    # Wait until at least one propose expander is present (Streamlit rerun).
+    deadline = time.time() + 20
+    while time.time() < deadline:
+        n = (
+            root.locator("details summary, [data-testid='stExpander'] summary")
+            .filter(has_text="Propose correction")
+            .count()
+        )
+        if n:
+            break
+        wait(page, 500)
+    expand_labeled(page, "Propose correction")
+    fill_main_text_input(page, "Find exact text in segment", find_text)
+    fill_main_text_input(page, "Replacement", replacement)
+    click_main_button(page, "Propose", exact=True)
+    wait(page, 3000)
+
+
+def rename_transcript_via_ui(
+    page: Page, *, new_name: str, needle: str = "planning"
+) -> None:
+    """Rename the selected transcript on the Rename Transcript page."""
+    nav(page, "Rename Transcript")
+    wait(page, 2500)
+    boxes = page.locator('[data-testid="stMain"] [data-testid="stSelectbox"]')
+    if boxes.count() == 0:
+        boxes = page.locator('[data-testid="stSelectbox"]')
+    expect(boxes.first).to_be_visible(timeout=20000)
+    boxes.first.click()
+    wait(page, 800)
+    opt = page.locator('[role="option"]').filter(has_text=needle)
+    if opt.count() == 0:
+        opt = page.locator('[role="option"]').filter(has_text="planning")
+    expect(opt.first).to_be_visible(timeout=10000)
+    opt.first.click()
+    wait(page, 2500)
+
+    fill_main_text_input(page, "New file name", new_name)
+    # Form submit button.
+    root = page.locator('[data-testid="stMain"], section.main').first
+    btn = root.get_by_role("button", name="Rename", exact=True)
+    expect(btn.first).to_be_visible(timeout=15000)
+    btn.first.click(force=True)
+    wait(page, 4000)

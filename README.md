@@ -41,6 +41,23 @@ Details: [installation](docs/runtime/installation.md) · [install verification m
 | **Python API** | Scripting via `transcriptx.app.workflows` |
 | **Managed import** | Only supported way to admit transcripts into the library |
 
+### Ten key GUI workflows
+
+Outcome-focused walkthroughs (shared sample: [planning_review.json](docs/workflows/fixtures/planning_review.json)):
+
+1. [First analysis](docs/workflows/first-analysis.md) — import → Balanced run → Overview  
+2. [Identify and name speakers](docs/workflows/speaker-identification.md)  
+3. [Investigate with evidence](docs/workflows/investigate-evidence.md)  
+4. [Local AI synthesis](docs/workflows/local-ai-synthesis.md) (optional Ollama)  
+5. [Export results](docs/workflows/export-results.md)  
+6. [Explore Charts](docs/workflows/charts.md)  
+7. [Bundle into a group](docs/workflows/groups.md)  
+8. [Correct while reading](docs/workflows/corrections.md)  
+9. [Rename a transcript](docs/workflows/rename-transcript.md)  
+10. [Browse speaker profiles](docs/workflows/speakers.md)  
+
+Index: [docs/workflows/](docs/workflows/index.md). Automated browser coverage: `make test-gui-e2e` (`tests/e2e_gui/`).
+
 ```python
 from pathlib import Path
 
@@ -79,7 +96,7 @@ Stabilisation toward a credible **1.0** (schema epoch through **0.9.9** Overview
 
 - [Website](website/index.html) (modest public landing; GitHub Pages workflow)
 - [Comparison](docs/comparison.md) — TranscriptX vs STT, meeting assistants, and CI products
-- [Using TranscriptX: five workflows](docs/workflows/index.md) — screenshot walkthroughs
+- [Using TranscriptX: ten workflows](docs/workflows/index.md) — screenshot walkthroughs for the ten key GUI flows (Playwright: `make test-gui-e2e`)
 - [User docs index](docs/USER_INDEX.md)
 - [Developer docs index](docs/DEV_INDEX.md)
 - [Contract index](docs/CONTRACT_INDEX.md)

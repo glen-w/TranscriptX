@@ -22,7 +22,7 @@ Curated entry points for people using TranscriptX (not repository historians).
 | [Known limitations](known_limitations.md) | User-facing limits (experimental, optional stacks, AI, privacy, EPUB, Speaker ID CCv2 rollback) |
 | [Export (ZIP / HTML / EPUB)](runtime/export.md) | Overview artifact export packages |
 | [Workspace backup / restore](backup_and_restore.md) | Full-workspace ZIP create / verify / restore |
-| [Using TranscriptX: five workflows](workflows/index.md) | Outcome-focused walkthroughs with screenshots |
+| [Using TranscriptX: ten workflows](workflows/index.md) | Outcome-focused walkthroughs (import → export plus Charts, Groups, Corrections, Rename, Speakers) |
 
 ## Reference
 

@@ -30,6 +30,11 @@ workflows/speaker-identification
 workflows/investigate-evidence
 workflows/local-ai-synthesis
 workflows/export-results
+workflows/charts
+workflows/groups
+workflows/corrections
+workflows/rename-transcript
+workflows/speakers
 ```
 
 ```{toctree}
