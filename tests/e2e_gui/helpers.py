@@ -32,11 +32,16 @@ def main_area(page: Page):
 
 
 def nav(page: Page, label: str, *, settle_ms: int = 3500) -> None:
-    """Click a sidebar navigation button by exact label."""
+    """Click a sidebar navigation button by exact label.
+
+    Prefer the last matching sidebar button so subject-type controls named
+    ``Transcript`` / ``Group`` (segmented control) do not steal the click from
+    the VIEW page nav entries.
+    """
     sb = sidebar(page)
     btn = sb.get_by_role("button", name=label, exact=True)
-    expect(btn.first).to_be_visible(timeout=20000)
-    btn.first.click(force=True, timeout=20000)
+    expect(btn.last).to_be_visible(timeout=20000)
+    btn.last.click(force=True, timeout=20000)
     wait(page, settle_ms)
 
 
@@ -57,6 +62,7 @@ def select_transcript(page: Page, needle: str = "planning_review") -> None:
         if (
             "Select transcript" in txt
             or "Select a transcript" in txt
+            or "Selected Transcript" in txt
             or "transcript" in txt.lower()
         ):
             target = boxes.nth(i)
@@ -86,6 +92,60 @@ def select_transcript(page: Page, needle: str = "planning_review") -> None:
             wait(page, 2000)
 
 
+def library_option_labels(page: Page) -> list[str]:
+    """Open the Library transcript selectbox and return option labels."""
+    nav(page, "Library")
+    boxes = page.locator('[data-testid="stSelectbox"]')
+    expect(boxes.first).to_be_visible(timeout=20000)
+    boxes.first.click()
+    wait(page, 800)
+    opts = page.locator('[role="option"]').all_text_contents()
+    page.keyboard.press("Escape")
+    wait(page, 400)
+    return opts
+
+
+def assert_library_lists_transcript(page: Page, needle: str = "planning") -> None:
+    opts = library_option_labels(page)
+    joined = "\n".join(opts)
+    assert any(needle.lower() in o.lower() for o in opts), (
+        f"Expected Library option containing {needle!r}; options={opts!r}"
+    )
+    assert "No transcripts found" not in page_text(page)
+
+
+def open_speaker_identification(page: Page, needle: str = "planning") -> None:
+    """Open Speaker Identification with a transcript selected.
+
+    Prefer the Library post-select action (passes subject context). Fall back to
+    the page's own transcript picker when needed.
+    """
+    select_transcript(page, needle=needle)
+    run_sid = page.get_by_role("button", name="Run Speaker ID")
+    if run_sid.count():
+        run_sid.first.click(force=True)
+        wait(page, 3500)
+    else:
+        nav(page, "Speaker Identification")
+        wait(page, 2500)
+
+    body = page_text(page)
+    if "SPEAKER_" not in body and "Assign name" not in body:
+        # Select transcript on the Speaker Identification page itself.
+        boxes = page.locator('[data-testid="stMain"] [data-testid="stSelectbox"]')
+        if boxes.count() == 0:
+            boxes = page.locator('[data-testid="stSelectbox"]')
+        if boxes.count():
+            boxes.first.click()
+            wait(page, 600)
+            opt = page.locator('[role="option"]').filter(has_text=needle)
+            if opt.count() == 0:
+                opt = page.locator('[role="option"]').filter(has_text="planning")
+            if opt.count():
+                opt.first.click()
+                wait(page, 3500)
+
+
 def upload_transcript(page: Page, path: Path) -> None:
     """Upload a transcript file on Import Transcript and submit the form."""
     path = Path(path)
@@ -100,15 +160,15 @@ def upload_transcript(page: Page, path: Path) -> None:
     file_inputs.first.set_input_files(str(path))
     wait(page, 1500)
 
-    submit = page.get_by_role("button", name="Import Transcript", exact=True)
-    # Prefer the form submit in the main pane (not a nav button).
     candidates = page.locator(
         '[data-testid="stMain"] button, section.main button'
     ).filter(has_text="Import Transcript")
     if candidates.count():
         candidates.first.click(force=True)
     else:
-        submit.last.click(force=True)
+        page.get_by_role("button", name="Import Transcript", exact=True).last.click(
+            force=True
+        )
     wait(page, 4000)
 
 
@@ -127,7 +187,6 @@ def click_main_button(page: Page, name: str, *, exact: bool = True) -> None:
 
 def select_analysis_preset(page: Page, label: str) -> None:
     """Select Quick / Balanced / Thorough / Custom via segmented control or buttons."""
-    # Streamlit segmented_control renders as buttons / radio-like options.
     root = page.locator('[data-testid="stMain"], section.main').first
     control = root.get_by_role("button", name=label, exact=True)
     if control.count() == 0:
@@ -153,20 +212,19 @@ def wait_for_analysis_finish(page: Page, *, timeout_ms: int = 300000) -> None:
         "Outputs:",
         "Run summary",
         "successfully",
+        "Processed",
     )
-    # Poll for any completion signal in the main area.
     main = page.locator('[data-testid="stMain"], section.main').first
     elapsed = 0
     step = 2000
+    text = ""
     while elapsed < timeout_ms:
-        text = ""
         try:
             text = main.inner_text(timeout=5000)
         except Exception:
             pass
         lower = text.lower()
         if any(p.lower() in lower for p in deadline_phrases):
-            # Prefer explicit completed / success markers when present.
             if (
                 "completed" in lower
                 or "partial" in lower
@@ -185,17 +243,20 @@ def wait_for_analysis_finish(page: Page, *, timeout_ms: int = 300000) -> None:
 def fill_assign_name(page: Page, name: str) -> None:
     """Fill Speaker Identification 'Assign name' and save."""
     root = page.locator('[data-testid="stMain"], section.main').first
-    # Prefer the labeled text input.
-    inp = root.get_by_label("Assign name")
+    # Prefer the text input; get_by_label can match the help tooltip button.
+    inp = root.locator('[data-testid="stTextInput"] input')
     if inp.count() == 0:
-        inp = root.locator('input[type="text"]').first
+        inp = root.get_by_placeholder("Type speaker name…")
+    if inp.count() == 0:
+        inp = root.locator('input[aria-label="Assign name"]')
     expect(inp.first).to_be_visible(timeout=20000)
+    inp.first.click()
     inp.first.fill(name)
     wait(page, 500)
     save = root.get_by_role("button", name="Save name", exact=True)
     expect(save.first).to_be_visible(timeout=10000)
     save.first.click(force=True)
-    wait(page, 2500)
+    wait(page, 3000)
 
 
 def click_section_tab(page: Page, label: str) -> None:

@@ -72,6 +72,10 @@ def _mkdirs(ws: E2EWorkspace) -> None:
         ws.data_dir / "recordings" / "imports",
     ):
         path.mkdir(parents=True, exist_ok=True)
+    # Occupied data roots without a marker trip the Streamlit schema-epoch gate.
+    from transcriptx.core.utils.schema_epoch import write_epoch
+
+    write_epoch(ws.data_dir)
 
 
 def _workspace_env(ws_dirs: dict[str, Path]) -> dict[str, str]:
@@ -84,10 +88,10 @@ def _workspace_env(ws_dirs: dict[str, Path]) -> dict[str, str]:
             "TRANSCRIPTX_TRANSCRIPTS_DIR": str(ws_dirs["transcripts_dir"]),
             "TRANSCRIPTX_SPEAKER_PROFILES_DIR": str(ws_dirs["speaker_profiles_dir"]),
             "TRANSCRIPTX_DISABLE_DOWNLOADS": "1",
-            # Keep LLM off for deterministic offline runs.
-            "TRANSCRIPTX_DISABLE_LLM": env.get("TRANSCRIPTX_DISABLE_LLM", "1"),
             "STREAMLIT_BROWSER_GATHER_USAGE_STATS": "false",
             "STREAMLIT_SERVER_HEADLESS": "true",
+            # Prefer classic Speaker ID UI (no CCv2 workspace package required).
+            "TX_SPEAKER_ID_WORKSPACE_COMPONENT": "0",
         }
     )
     return env
@@ -143,7 +147,7 @@ def _apply_paths_for_seeding(ws: E2EWorkspace) -> None:
         setattr(paths_mod, name, value)
 
     # Keep managed import / discovery aligned with the isolated tree.
-    for mod_path, attr, value in (
+    path_aliases: list[tuple[str, str, Path]] = [
         (
             "transcriptx.io.managed_import_workflow",
             "DIARISED_TRANSCRIPTS_DIR",
@@ -165,11 +169,37 @@ def _apply_paths_for_seeding(ws: E2EWorkspace) -> None:
             ws.transcripts_dir / "imports",
         ),
         (
+            "transcriptx.io.admit_and_register",
+            "DIARISED_TRANSCRIPTS_DIR",
+            ws.transcripts_dir,
+        ),
+        (
+            "transcriptx.io.import_metadata.paths",
+            "DIARISED_TRANSCRIPTS_DIR",
+            ws.transcripts_dir,
+        ),
+        (
+            "transcriptx.io.import_metadata.paths",
+            "TRANSCRIPTS_METADATA_DIR",
+            ws.transcripts_dir / "metadata",
+        ),
+        (
             "transcriptx.core.utils.file_discovery",
             "DIARISED_TRANSCRIPTS_DIR",
             ws.transcripts_dir,
         ),
-    ):
+        (
+            "transcriptx.core.utils.slug_manager",
+            "OUTPUTS_DIR",
+            ws.outputs_dir,
+        ),
+        (
+            "transcriptx.core.utils.slug_manager",
+            "INDEX_FILE",
+            ws.outputs_dir / ".transcriptx_index.json",
+        ),
+    ]
+    for mod_path, attr, value in path_aliases:
         module = __import__(mod_path, fromlist=[attr])
         setattr(module, attr, value)
 
@@ -205,29 +235,43 @@ def create_workspace(tmp_path: Path) -> E2EWorkspace:
 
 
 def seed_planning_transcript(ws: E2EWorkspace) -> E2EWorkspace:
-    """Import planning_review.json into the isolated library (in-process)."""
+    """Import + register planning_review.json into the isolated library.
+
+    Uses ``admit_and_register`` so the slug index is written — required for the
+    live Streamlit sidebar transcript picker (Library file discovery alone is
+    not enough for VIEW pages that need ``subject_id``).
+    """
     if not _PLANNING.is_file():
         pytest.skip(f"planning_review fixture missing: {_PLANNING}")
 
     _apply_paths_for_seeding(ws)
-    from transcriptx.io.managed_import_workflow import run_managed_import_workflow
+    from transcriptx.io.admit_and_register import AdmitOutcomeKind, admit_and_register
 
     staging = (
         ws.transcripts_dir / "imports" / f"{uuid4().hex}_planning_review.json"
     )
     staging.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(_PLANNING, staging)
-    result = run_managed_import_workflow(
+    outcome = admit_and_register(
         staging,
-        logical_upload_basename="planning_review.json",
-        overwrite=False,
+        logical_basename="planning_review.json",
     )
-    slug = result.json_path.stem
+    if outcome.kind not in {
+        AdmitOutcomeKind.IMPORTED_AND_REGISTERED,
+        AdmitOutcomeKind.PARTIAL_STATE_REPAIRED,
+        AdmitOutcomeKind.REGISTRATION_RECOVERED,
+        AdmitOutcomeKind.ALREADY_MANAGED,
+    }:
+        raise RuntimeError(
+            f"admit_and_register failed: {outcome.kind} {outcome.user_safe_detail}"
+        )
+    assert outcome.transcript_path is not None
+    slug = outcome.slug or outcome.transcript_path.stem
     return replace(
         ws,
         slug=slug,
-        transcript_path=result.json_path,
-        import_id=result.import_id,
+        transcript_path=outcome.transcript_path,
+        import_id=None,
     )
 
 

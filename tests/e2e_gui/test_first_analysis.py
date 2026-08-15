@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from tests.e2e_gui.helpers import (
+    assert_library_lists_transcript,
     assert_text_visible,
     fixture_planning_review,
     goto_app,
@@ -38,28 +39,24 @@ def test_first_analysis_import_run_overview(live_app, page) -> None:
     upload_transcript(page, fixture)
 
     body = page_text(page)
-    assert "Processed" in body or "success" in body.lower() or "imported" in body.lower()
+    assert "Processed" in body or "imported_and_registered" in body.lower()
 
-    # Library should list the new transcript.
-    nav(page, "Library")
-    lib_text = page_text(page)
-    assert "No transcripts found" not in lib_text
-    assert (
-        "planning" in lib_text.lower()
-        or "Launch planning" in lib_text
-        or "planning_review" in lib_text
-    )
-
+    assert_library_lists_transcript(page, needle="planning")
     select_transcript(page, needle="planning")
 
-    nav(page, "Run Analysis")
-    wait(page, 2000)
+    # Prefer Library action when present (passes subject context).
+    run_btn = page.get_by_role("button", name="Run Analysis")
+    if run_btn.count():
+        run_btn.first.click(force=True)
+        wait(page, 3500)
+    else:
+        nav(page, "Run Analysis")
+        wait(page, 2000)
+
     run_text = page_text(page)
     assert "Run Analysis" in run_text or "Analysis preset" in run_text
-    # Balanced is the documented default.
     assert "Balanced" in run_text
 
-    # Offline-friendly launch: Quick avoids LLM + heavy allowlist modules.
     select_analysis_preset(page, "Quick")
     launch_analysis(page)
     wait_for_analysis_finish(page, timeout_ms=300000)
@@ -77,5 +74,4 @@ def test_first_analysis_import_run_overview(live_app, page) -> None:
         or "partial" in overview.lower()
         or "Completed" in overview
     )
-    # Should not bounce to an empty-home dead end after a completed/partial run.
     assert_text_visible(page, "Overview", timeout_ms=15000)
