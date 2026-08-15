@@ -35,6 +35,17 @@ Any other skipped-at-collection tests (e.g. missing modules) remain in the tree;
 
 ## 4. High-leverage tests added
 
+### Playwright GUI E2E (`tests/e2e_gui/`, 2026-08-15)
+
+- Default-suite `gui_e2e` lane: first-analysis, speaker-trust, investigate-evidence, local-AI surface, export-results, charts-view.
+- Pytest session logs announce Playwright scope (`Playwright gui_e2e collected: N`).
+
+### Unit additions (2026-08-15)
+
+- `tests/web/test_context_readiness.py` — transcript VIEW requires `run_id`; group subjects unlock `transcript_or_group`.
+- `tests/unit/test_analysis_preset_offline.py` — Quick vs Balanced offline module policy.
+- `tests/unit/test_export_zip_packaging.py` — export ZIP from `minimal_run` fixture.
+
 ### Unit (`tests/unit/test_high_leverage.py`)
 
 - **Config lifecycle:** `get_config` returns `TranscriptXConfig`, has required sections; `set_config` updates global; `load_config(path)` loads JSON and sets global.
