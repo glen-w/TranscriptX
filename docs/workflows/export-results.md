@@ -7,7 +7,7 @@ Take a completed run out of TranscriptX as a portable package.
 
 ## Outcome
 
-You will have created an export ZIP containing selected artifacts plus `index.html` (and `index.epub` when EPUB support is installed), and you will know what the package can and cannot do offline.
+You will have created an [export](../runtime/export.md) ZIP containing selected artifacts plus `index.html` (and `index.epub` when EPUB support is installed), and you will know what the package can and cannot do offline.
 
 ## Starting point
 
@@ -61,7 +61,7 @@ A completed analysis run is selected for the planning-review transcript (from [F
 
 - Export is selection-scoped: HTML/EPUB only include what you chose to copy into the ZIP.
 - Artifacts **Preview** is for inspection; **Export** is for taking work elsewhere.
-- Overview can also offer export entry points; **Artifacts → Export** is the durable end-of-workflow surface.
+- [Overview](../public_surfaces.md) can also offer export entry points; **Artifacts → Export** is the durable end-of-workflow surface.
 - Large selections warn or hard-cap; prefer a focused package for sharing.
 
 ## You should now have…

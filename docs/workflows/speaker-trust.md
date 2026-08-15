@@ -11,7 +11,7 @@ You will have named (or deliberately ignored) the diarized speakers on the sampl
 
 ## Starting point
 
-The sample [planning_review.json](fixtures/planning_review.json) is imported (see [First analysis](first-analysis.md)). Speakers still show as `SPEAKER_00`, `SPEAKER_01`, and `SPEAKER_02`.
+The sample [planning_review.json](fixtures/planning_review.json) is [imported](../runtime/transcription.md) (see [First analysis](first-analysis.md)). Speakers still show as `SPEAKER_00`, `SPEAKER_01`, and `SPEAKER_02`.
 
 Audio is optional for this workflow; sample text lines are enough.
 
@@ -73,5 +73,5 @@ A multi-speaker transcript with stable human-readable names confirmed in the tra
 ## Next
 
 - [Investigate a question and trace it back to evidence](investigate-evidence.md)
-- [First analysis](first-analysis.md) if you still need a Balanced run after renaming
+- [First analysis](first-analysis.md) if you still need a [Balanced](../runtime/installation.md#analysis-presets) run after renaming
 - [Known limitations](../known_limitations.md) for diarization and naming caveats

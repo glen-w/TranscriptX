@@ -7,7 +7,7 @@ The shortest realistic path from importing a transcript to reading your first an
 
 ## Outcome
 
-You will have imported a transcript, completed a **Balanced** analysis run, and identified several useful outputs on **Overview**.
+You will have [imported](../runtime/transcription.md) a transcript, completed a [**Balanced**](../runtime/installation.md#analysis-presets) analysis run, and identified several useful outputs on [**Overview**](../public_surfaces.md).
 
 ## Starting point
 
@@ -57,7 +57,7 @@ Download or copy the sample file [planning_review.json](fixtures/planning_review
 
 6. Pick two or three outputs that look useful for this meeting — for example a theme-related highlight, a speaker card, or run status. You do not need every panel yet.
 
-7. From here, either improve speaker names (**Speaker Identification**) or dig into a specific question (**Insights**). Export can wait until you trust the results.
+7. From here, either improve speaker names ([**Speaker Identification**](speaker-trust.md)) or dig into a specific question ([**Insights**](investigate-evidence.md)). [Export](../runtime/export.md) can wait until you trust the results.
 
 ## What to notice
 

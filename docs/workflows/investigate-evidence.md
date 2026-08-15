@@ -7,11 +7,11 @@ Use TranscriptX as an analysis workbench: start from a question, follow results 
 
 ## Outcome
 
-You will have answered one concrete question about the sample meeting by moving from **Overview** through **Insights** into transcript evidence.
+You will have answered one concrete question about the sample meeting by moving from [**Overview**](../public_surfaces.md) through **Insights** into transcript evidence.
 
 ## Starting point
 
-The planning-review transcript is imported, speakers are preferably named ([Speaker-aware trust](speaker-trust.md)), and a **Balanced** (or richer) run is selected on **Overview**.
+The planning-review transcript is [imported](../runtime/transcription.md), speakers are preferably named ([Speaker-aware trust](speaker-trust.md)), and a [**Balanced**](../runtime/installation.md#analysis-presets) (or richer) run is selected on **Overview**.
 
 **Example question:** *Where did the speakers disagree most about the launch plan?*
 
