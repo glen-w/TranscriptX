@@ -37,7 +37,7 @@ Any other skipped-at-collection tests (e.g. missing modules) remain in the tree;
 
 ### Playwright GUI E2E (`tests/e2e_gui/`, 2026-08-15)
 
-- Default-suite `gui_e2e` lane: first-analysis, speaker-trust, investigate-evidence, local-AI surface, export-results, charts-view.
+- Default-suite `gui_e2e` lane: first-analysis, speaker-identification, investigate-evidence, local-AI surface, export-results, charts-view.
 - Pytest session logs announce Playwright scope (`Playwright gui_e2e collected: N`).
 
 ### Unit additions (2026-08-15)

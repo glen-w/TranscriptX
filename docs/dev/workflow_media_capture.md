@@ -42,7 +42,7 @@ Capture against a disposable data root when practical.
 | `first-analysis-import` | Import Transcript |
 | `first-analysis-run-analysis` | Run Analysis |
 | `first-analysis-overview` | Overview |
-| `speaker-trust-*` | Speaker Identification / Transcript |
+| `speaker-identification-*` (legacy `speaker-trust-*`) | Speaker Identification / Transcript |
 | `investigate-*` | Overview / Insights (Highlights) / Transcript |
 | `local-ai-*` | Run Analysis (LLM setup) / Overview / Insights (Actions) |
 | `export-*` | Artifacts (Browse / Export) + external HTML preview |
@@ -85,9 +85,9 @@ Committed names expected by the walkthrough pages:
 - `first-analysis-run-analysis.png`
 - `first-analysis-run-complete.gif`
 - `first-analysis-overview.png`
-- `speaker-trust-page.png`
-- `speaker-trust-naming.gif`
-- `speaker-trust-transcript.png`
+- `speaker-identification-page.png` (legacy `speaker-trust-page.png`)
+- `speaker-identification-naming.gif` (legacy `speaker-trust-naming.gif`)
+- `speaker-identification-transcript.png` (legacy `speaker-trust-transcript.png`)
 - `investigate-overview.png`
 - `investigate-highlights.png`
 - `investigate-evidence-jump.gif`

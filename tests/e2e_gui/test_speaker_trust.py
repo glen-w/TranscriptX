@@ -1,4 +1,4 @@
-"""Workflow 2: Speaker-aware trust — name speakers and confirm on Transcript."""
+"""Workflow 2: Identify and name speakers — name speakers and confirm on Transcript."""
 
 from __future__ import annotations
 

@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Workflow walkthrough 2 renamed from “speaker trust” to [Identify and name speakers](docs/workflows/speaker-identification.md) — wording now emphasizes naming diarized speakers for readable transcripts, not analysis “trust”.
 - Audio **Merge** concatenates only by default. Optional **Preprocess files while merging** checkbox (CLI `--preprocess`) applies current preprocessing defaults in the same pass; otherwise run Preprocessing separately.
 - Sidebar section **Settings** renamed to **System** (page keys unchanged: Settings, Tools, Profiles, Dashboard Builder, Diagnostics).
 - Legacy bookmarks **Audio Prep** / **Audio Merge** redirect to **Tools** (Preprocessing / Merge tabs) instead of Transcribe Audio.

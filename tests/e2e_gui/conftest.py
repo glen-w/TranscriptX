@@ -35,7 +35,7 @@ def pytest_report_header(config: pytest.Config) -> list[str]:
     """Surface Playwright GUI E2E scope in pytest session logs."""
     return [
         "Playwright GUI E2E (gui_e2e): tests/e2e_gui — workflows "
-        "first-analysis, speaker-trust, investigate-evidence, "
+        "first-analysis, speaker-identification, investigate-evidence, "
         "local-ai-synthesis surface, export-results, charts-view; "
         "included in default pytest (skips without Chromium)",
     ]

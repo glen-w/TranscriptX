@@ -29,7 +29,7 @@ Download or copy the sample file [planning_review.json](fixtures/planning_review
 
 ![Import Transcript page with the planning review JSON selected for upload](../_static/workflows/first-analysis-import.png)
 
-2. Open **Library**, select the new transcript, then open **Transcript**. Skim a few turns so you know the cast uses diarized labels such as `SPEAKER_00`. Most speaker-aware modules need human-readable names; if Overview looks sparse after the first run, complete [Speaker-aware trust](speaker-trust.md) and re-run.
+2. Open **Library**, select the new transcript, then open **Transcript**. Skim a few turns so you know the cast uses diarized labels such as `SPEAKER_00`. Most speaker-aware modules need human-readable names; if Overview looks sparse after the first run, complete [Identify and name speakers](speaker-identification.md) and re-run.
 
 3. Open **Run Analysis**. Keep the target as **Transcript** and the analysis preset as **Balanced** (the default). Balanced runs a practical core set without requiring local AI for the non-LLM modules.
 
@@ -45,7 +45,7 @@ Download or copy the sample file [planning_review.json](fixtures/planning_review
 
 6. Pick two or three outputs that look useful for this meeting — for example a theme-related highlight, a speaker card, or run status. You do not need every panel yet.
 
-7. From here, either improve speaker names ([**Speaker Identification**](speaker-trust.md)) or dig into a specific question ([**Insights**](investigate-evidence.md)). [Export](../runtime/export.md) can wait until you trust the results.
+7. From here, either improve speaker names ([**Speaker Identification**](speaker-identification.md)) or dig into a specific question ([**Insights**](investigate-evidence.md)). [Export](../runtime/export.md) can wait until you trust the results.
 
 ## What to notice
 
@@ -60,6 +60,6 @@ An imported sample transcript, a completed Balanced run, and a mental map of Ove
 
 ## Next
 
-- [Make speaker-aware analysis trustworthy](speaker-trust.md)
+- [Identify and name speakers](speaker-identification.md)
 - [Investigate a question and trace it back to evidence](investigate-evidence.md)
 - [Installation](../runtime/installation.md) if you still need a durable install profile
