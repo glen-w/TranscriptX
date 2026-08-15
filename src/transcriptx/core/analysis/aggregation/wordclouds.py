@@ -19,7 +19,7 @@ from transcriptx.core.utils.speaker_extraction import (  # type: ignore[import]
 )
 from transcriptx.core.utils.nlp_utils import tokenize_and_filter  # type: ignore[import]
 from transcriptx.io.transcript_service import TranscriptService  # type: ignore[import]
-from transcriptx.utils.text_utils import is_named_speaker  # type: ignore[import]
+from transcriptx.utils.text_utils import is_analysis_speaker_label  # type: ignore[import]
 
 
 def segment_order_key(segment: Dict[str, Any]) -> tuple:
@@ -68,7 +68,7 @@ def resolve_segment_canonical_display(
     if info is None:
         return None
 
-    if not is_named_speaker(info.display_name):
+    if not is_analysis_speaker_label(info.display_name):
         return None
 
     local_to_canonical = canonical_speaker_map.transcript_to_speakers.get(
@@ -127,13 +127,13 @@ def aggregate_wordclouds_group(
             info = extract_speaker_info(segment)
             if info is None:
                 speaker_label = segment.get("speaker")
-                if speaker_label and not is_named_speaker(str(speaker_label)):
+                if speaker_label and not is_analysis_speaker_label(str(speaker_label)):
                     excluded_speakers.add(str(speaker_label))
                 excluded_chunks += 1
                 excluded_chars += len(cleaned_text)
                 continue
 
-            if not is_named_speaker(info.display_name):
+            if not is_analysis_speaker_label(info.display_name):
                 excluded_speakers.add(info.display_name)
                 excluded_chunks += 1
                 excluded_chars += len(cleaned_text)

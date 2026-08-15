@@ -69,11 +69,25 @@ def compute_review_before_run_for_pipeline(
     context = None
     named_speaker_count: Optional[int] = None
     turn_taking_speaker_count: Optional[int] = None
+    allow_unnamed_speakers = bool(
+        getattr(speaker_options, "allow_unnamed_speakers", False)
+    )
+    try:
+        from transcriptx.core.pipeline.speaker_ungate import (
+            resolve_allow_unnamed_speakers,
+        )
+
+        allow_unnamed_speakers = resolve_allow_unnamed_speakers(
+            per_run=allow_unnamed_speakers
+        )
+    except Exception:
+        pass
     try:
         context = PipelineContext(
             transcript_path,
             include_unidentified_speakers=speaker_options.include_unidentified,
             anonymise_speakers=speaker_options.anonymise,
+            allow_unnamed_speakers=allow_unnamed_speakers,
             batch_mode=True,
             output_dir=output_dir,
             transcript_key=transcript_key,
@@ -82,6 +96,12 @@ def compute_review_before_run_for_pipeline(
         if context.validate():
             named_speaker_count = gating_named_speaker_count(transcript_path, context)
             turn_taking_speaker_count = gating_turn_taking_speaker_count(context)
+            try:
+                allow_unnamed_speakers = bool(
+                    (context.get_runtime_flags() or {}).get("allow_unnamed_speakers")
+                )
+            except Exception:
+                pass
     except Exception:
         named_speaker_count = None
         turn_taking_speaker_count = None
@@ -150,6 +170,7 @@ def compute_review_before_run_for_pipeline(
                     module_info,
                     named_speaker_count=named_speaker_count,
                     turn_taking_speaker_count=turn_taking_speaker_count,
+                    allow_unnamed_speakers=allow_unnamed_speakers,
                 )
                 if reason_text:
                     modules_skipped.append(

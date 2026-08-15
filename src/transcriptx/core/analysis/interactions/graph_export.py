@@ -18,7 +18,7 @@ from transcriptx.core.utils.output_standards import (
     get_global_static_chart_path,
 )
 from transcriptx.core.viz.specs import NetworkGraphSpec
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 
 SCHEMA_ID = "transcriptx.interactions.interaction_graph.v1"
 SCHEMA_VERSION = 1
@@ -62,7 +62,7 @@ def _event_keys(event: InteractionEvent) -> tuple[str, str] | None:
     b_label = (event.speaker_b or "").strip()
     if not a_label or not b_label:
         return None
-    if not is_named_speaker(a_label) or not is_named_speaker(b_label):
+    if not is_analysis_speaker_label(a_label) or not is_analysis_speaker_label(b_label):
         return None
     # Prefer immutable keys; fall back to labels only when keys absent (legacy events).
     return (a_key or a_label, b_key or b_label)

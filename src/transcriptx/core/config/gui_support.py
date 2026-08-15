@@ -128,6 +128,11 @@ COMMON_SETTINGS_SCHEMA: tuple[CommonSettingField, ...] = (
         group="Display",
         label="Exclude unnamed speakers from Transcript view",
     ),
+    CommonSettingField(
+        key="analysis.allow_unnamed_speakers",
+        group="Speakers",
+        label="Allow analysis without named speakers",
+    ),
     # Semantic similarity (nested module config; public module id is semantic_similarity)
     CommonSettingField(
         key="analysis.semantic_similarity.enabled",

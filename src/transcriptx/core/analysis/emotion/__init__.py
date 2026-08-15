@@ -72,7 +72,7 @@ from transcriptx.core.utils.viz_ids import (
     VIZ_EMOTION_RADAR_SPEAKER,
 )
 from transcriptx.core.viz.specs import BarCategoricalSpec
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 
 logger = get_logger()
 
@@ -356,7 +356,7 @@ class EmotionAnalysis(AnalysisModule):
             )
             pending_projections.append((seg, proj))
 
-            if is_named_speaker(speaker) and result_state == "scored":
+            if is_analysis_speaker_label(speaker) and result_state == "scored":
                 speaker_assignments[speaker].append(assignment_counts)
                 speaker_valence[speaker].append(valence_assignment_counts)
 
@@ -392,7 +392,7 @@ class EmotionAnalysis(AnalysisModule):
             if r["evaluation_state"] != "scored":
                 continue
             sp = r.get("speaker") or ""
-            if not is_named_speaker(sp):
+            if not is_analysis_speaker_label(sp):
                 continue
             speaker_scored_n[sp] += 1
             speaker_tokens[sp] += int(r.get("tokens_considered") or 0)

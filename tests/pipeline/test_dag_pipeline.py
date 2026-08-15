@@ -317,10 +317,10 @@ class TestDAGPipeline:
         skipped = {x["module"] for x in r["skipped_modules"]}
         assert "multi_only" in skipped
 
-    def test_execute_pipeline_runs_turn_taking_module_on_diarized_speakers(
+    def test_execute_pipeline_runs_ungated_module_on_diarized_speakers(
         self, tmp_path, temp_transcript_file
     ):
-        """Turn-taking gate: diarized (un-named) speakers count, so it runs."""
+        """When ungated, diarized (un-named) speakers count so the module runs."""
         p = DAGPipeline()
         p.add_module("turn_only", "T", "light", [], MagicMock())
         p.finalize()
@@ -328,7 +328,6 @@ class TestDAGPipeline:
         info = _minimal_module_info(
             name="turn_only",
             requires_multiple_speakers=True,
-            gate_on_turn_taking_speakers=True,
         )
         diarized_segments = [
             {"speaker": "SPEAKER_00", "text": "first turn here"},
@@ -352,6 +351,7 @@ class TestDAGPipeline:
             mc.validate.return_value = True
             mc.get_segments.return_value = diarized_segments
             mc.get_speaker_map.return_value = sp
+            mc.get_runtime_flags.return_value = {"allow_unnamed_speakers": True}
             mock_ctx_cls.return_value = mc
             r = p.execute_pipeline(
                 transcript_path=str(temp_transcript_file),
@@ -363,10 +363,53 @@ class TestDAGPipeline:
         skipped = {x["module"] for x in r["skipped_modules"]}
         assert "turn_only" not in skipped
 
-    def test_execute_pipeline_skips_turn_taking_module_single_speaker(
+    def test_execute_pipeline_skips_diarized_when_not_ungated(
         self, tmp_path, temp_transcript_file
     ):
-        """Turn-taking multi-speaker module still skips a single-speaker transcript."""
+        """Without ungate, diarized-only transcripts skip named-speaker modules."""
+        p = DAGPipeline()
+        p.add_module("named_only", "N", "light", [], MagicMock())
+        p.finalize()
+        sp = {"SPEAKER_00": "SPEAKER_00", "SPEAKER_01": "SPEAKER_01"}
+        info = _minimal_module_info(name="named_only", min_named_speakers=1)
+        diarized_segments = [
+            {"speaker": "SPEAKER_00", "text": "first turn here"},
+            {"speaker": "SPEAKER_01", "text": "second turn here"},
+        ]
+        ctx_cm = _patch_execute_io_and_context()
+        with (
+            ctx_cm[0] as mock_ctx_cls,
+            ctx_cm[1],
+            ctx_cm[2],
+            patch(
+                "transcriptx.core.pipeline.module_registry.get_module_info",
+                return_value=info,
+            ),
+            patch(
+                "transcriptx.core.pipeline.dag_pipeline_run.gating_named_speaker_count",
+                return_value=0,
+            ),
+        ):
+            mc = MagicMock()
+            mc.validate.return_value = True
+            mc.get_segments.return_value = diarized_segments
+            mc.get_speaker_map.return_value = sp
+            mc.get_runtime_flags.return_value = {"allow_unnamed_speakers": False}
+            mock_ctx_cls.return_value = mc
+            r = p.execute_pipeline(
+                transcript_path=str(temp_transcript_file),
+                selected_modules=["named_only"],
+                output_dir=str(tmp_path / "out"),
+                context=mc,
+                named_speaker_count=0,
+            )
+        skipped = {x["module"] for x in r["skipped_modules"]}
+        assert "named_only" in skipped
+
+    def test_execute_pipeline_skips_ungated_module_single_speaker(
+        self, tmp_path, temp_transcript_file
+    ):
+        """Ungated multi-speaker module still skips a single-speaker transcript."""
         p = DAGPipeline()
         p.add_module("turn_only", "T", "light", [], MagicMock())
         p.finalize()
@@ -374,7 +417,6 @@ class TestDAGPipeline:
         info = _minimal_module_info(
             name="turn_only",
             requires_multiple_speakers=True,
-            gate_on_turn_taking_speakers=True,
         )
         single_speaker_segments = [
             {"speaker": "SPEAKER_00", "text": "first turn here"},
@@ -398,6 +440,7 @@ class TestDAGPipeline:
             mc.validate.return_value = True
             mc.get_segments.return_value = single_speaker_segments
             mc.get_speaker_map.return_value = sp
+            mc.get_runtime_flags.return_value = {"allow_unnamed_speakers": True}
             mock_ctx_cls.return_value = mc
             r = p.execute_pipeline(
                 transcript_path=str(temp_transcript_file),

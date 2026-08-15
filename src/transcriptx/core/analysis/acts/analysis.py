@@ -11,7 +11,7 @@ from transcriptx.core.analysis.acts.classification import classify_utterance
 from transcriptx.core.analysis.acts.config import ClassificationMethod, get_act_config
 from transcriptx.core.utils._path_core import get_enriched_transcript_path
 from transcriptx.io import save_transcript
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 
 
 class ActsAnalysis(AnalysisModule):
@@ -149,7 +149,7 @@ class ActsAnalysis(AnalysisModule):
 
             # Count acts using display name (grouping by speaker_db_id happens via grouping_key)
             act_counts_global[act] += 1
-            if is_named_speaker(display_name):
+            if is_analysis_speaker_label(display_name):
                 act_counts_per_speaker[display_name][act] += 1
                 act_confidence_scores[display_name].append(confidence)
 
@@ -158,7 +158,7 @@ class ActsAnalysis(AnalysisModule):
         # Prepare summary data
         speaker_stats = {}
         for speaker, counts in act_counts_per_speaker.items():
-            if is_named_speaker(speaker):
+            if is_analysis_speaker_label(speaker):
                 avg_confidence = (
                     sum(act_confidence_scores[speaker])
                     / len(act_confidence_scores[speaker])

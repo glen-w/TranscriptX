@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.utils.config import get_config
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 from transcriptx.utils.html_utils import wrap_tooltip_text
 from transcriptx.utils.location_cache import geocode_with_cache
 from transcriptx.core.utils.viz_ids import (
@@ -113,7 +113,7 @@ class NERAnalysis(AnalysisModule):
                 speaker = get_speaker_display_name(
                     speaker_info.grouping_key, [seg], segments
                 )
-                if not speaker or not is_named_speaker(speaker):
+                if not speaker or not is_analysis_speaker_label(speaker):
                     continue
 
                 text = seg.get("text", "")
@@ -146,7 +146,7 @@ class NERAnalysis(AnalysisModule):
         all_entity_counter = Counter()
         all_sentences = defaultdict(list)
         for speaker, ents in entity_counts_per_speaker.items():
-            if not is_named_speaker(speaker):
+            if not is_analysis_speaker_label(speaker):
                 continue
             for ent, count in ents.items():
                 all_entity_counter[ent] += count
@@ -156,13 +156,13 @@ class NERAnalysis(AnalysisModule):
         summary_json = {
             speaker: dict(counter)
             for speaker, counter in entity_counts_per_speaker.items()
-            if is_named_speaker(speaker)
+            if is_analysis_speaker_label(speaker)
         }
 
         # Prepare per-speaker CSV rows
         speaker_csv_rows = {}
         for speaker, ents in entity_counts_per_speaker.items():
-            if not is_named_speaker(speaker):
+            if not is_analysis_speaker_label(speaker):
                 continue
             rows = [
                 [ent, count, " | ".join(entity_sentences_per_speaker[speaker][ent])]
@@ -179,7 +179,7 @@ class NERAnalysis(AnalysisModule):
         # Aggregate label counts globally
         all_label_counter = Counter()
         for speaker, labels in label_counts_per_speaker.items():
-            if not is_named_speaker(speaker):
+            if not is_analysis_speaker_label(speaker):
                 continue
             for label, count in labels.items():
                 all_label_counter[label] += count
@@ -268,7 +268,7 @@ class NERAnalysis(AnalysisModule):
                 output_service.save_chart(spec, chart_type="entity_types")
 
         # Create global entity types chart only when more than one identified speaker
-        named_speakers = [s for s in entity_counts_per_speaker if is_named_speaker(s)]
+        named_speakers = [s for s in entity_counts_per_speaker if is_analysis_speaker_label(s)]
         if all_label_counter and len(named_speakers) > 1:
             labels = Counter(all_label_counter)
             spec = BarCategoricalSpec(
@@ -302,7 +302,7 @@ class NERAnalysis(AnalysisModule):
         speaker_stats = {
             speaker: dict(counter)
             for speaker, counter in entity_counts_per_speaker.items()
-            if is_named_speaker(speaker)
+            if is_analysis_speaker_label(speaker)
         }
         global_stats = dict(all_label_counter)
 
@@ -316,7 +316,7 @@ class NERAnalysis(AnalysisModule):
         """Generate summary text file content."""
         lines = []
         for speaker, ents in entity_counts_per_speaker.items():
-            if not is_named_speaker(speaker):
+            if not is_analysis_speaker_label(speaker):
                 continue
             lines.append(f"Speaker: {speaker}\n")
             for ent, count in ents.most_common(15):
@@ -373,7 +373,7 @@ class NERAnalysis(AnalysisModule):
         filtered_locations = {
             speaker: counter
             for speaker, counter in location_entities_per_speaker.items()
-            if is_named_speaker(speaker)
+            if is_analysis_speaker_label(speaker)
         }
 
         mentions_by_speaker = location_mentions_per_speaker or {}
@@ -383,7 +383,7 @@ class NERAnalysis(AnalysisModule):
 
         for speaker, counter in filtered_locations.items():
             # Speaker is already a display name from segments
-            if not is_named_speaker(speaker):
+            if not is_analysis_speaker_label(speaker):
                 continue
             display_name = speaker
 

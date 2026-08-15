@@ -27,7 +27,7 @@ from transcriptx.core.utils.viz_ids import (
     VIZ_VOICE_F0_SLOPE_DISTRIBUTION_GLOBAL,
 )
 from transcriptx.core.viz.specs import BoxSpec, LineTimeSeriesSpec
-from transcriptx.utils.text_utils import is_named_speaker  # type: ignore[import-untyped]
+from transcriptx.utils.text_utils import is_analysis_speaker_label  # type: ignore[import-untyped]
 
 logger = get_logger()
 
@@ -188,7 +188,7 @@ class VoiceContoursAnalysis(AnalysisModule):
             selected_rows = []
             total_seconds = 0.0
             for speaker, sub in df.groupby("speaker"):
-                if not speaker or not is_named_speaker(str(speaker)):
+                if not speaker or not is_analysis_speaker_label(str(speaker)):
                     continue
                 sub = sub.sort_values("duration_s", ascending=False)
                 sub = sub.head(MAX_SEGMENTS_PER_SPEAKER)

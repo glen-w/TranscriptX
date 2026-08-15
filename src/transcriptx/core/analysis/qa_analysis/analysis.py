@@ -19,7 +19,7 @@ import numpy as np
 
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.utils.logger import get_logger
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 from transcriptx.core.utils.viz_ids import (
     VIZ_QA_TIMELINE,
     VIZ_QA_RESPONSE_QUALITY,
@@ -168,7 +168,7 @@ class QAAnalysis(AnalysisModule):
             speaker = get_speaker_display_name(
                 speaker_info.grouping_key, [segment], all_segments
             )
-            if speaker and is_named_speaker(speaker):
+            if speaker and is_analysis_speaker_label(speaker):
                 speaker_id = segment.get("speaker", speaker_info.grouping_key)
                 return speaker, str(speaker_id)
 

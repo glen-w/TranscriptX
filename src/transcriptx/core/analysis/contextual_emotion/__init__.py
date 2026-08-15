@@ -65,7 +65,7 @@ from transcriptx.core.analysis.hf_text_classification.profiles import (
     get_builtin_profile,
 )
 from transcriptx.core.utils.logger import get_logger, log_info, log_warning
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 
 logger = get_logger()
 
@@ -404,7 +404,7 @@ class ContextualEmotionAnalysis(AnalysisModule):
             )
             pending_projections.append((seg, proj))
 
-            if is_named_speaker(item.speaker):
+            if is_analysis_speaker_label(item.speaker):
                 if selected:
                     speaker_label_counts[item.speaker][selected] += 1
                 speaker_outcome_counts[item.speaker][outcome] += 1

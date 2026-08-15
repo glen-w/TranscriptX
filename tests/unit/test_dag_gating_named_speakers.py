@@ -43,3 +43,19 @@ def test_gating_resolver_only_when_no_context_or_empty_keys() -> None:
         return_value=4,
     ):
         assert gating_named_speaker_count("/x/y.json", ctx) == 4
+
+
+@pytest.mark.unit
+def test_resolve_allow_unnamed_or_global() -> None:
+    from transcriptx.core.pipeline.speaker_ungate import resolve_allow_unnamed_speakers
+    from transcriptx.core.utils.config import TranscriptXConfig, set_config
+
+    config = TranscriptXConfig()
+    config.analysis.allow_unnamed_speakers = False
+    set_config(config)
+    assert resolve_allow_unnamed_speakers(per_run=False) is False
+    assert resolve_allow_unnamed_speakers(per_run=True) is True
+
+    config.analysis.allow_unnamed_speakers = True
+    set_config(config)
+    assert resolve_allow_unnamed_speakers(per_run=False) is True

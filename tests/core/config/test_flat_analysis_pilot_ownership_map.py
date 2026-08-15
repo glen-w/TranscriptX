@@ -22,6 +22,7 @@ def test_flat_analysis_pilots_are_disjoint_and_complete() -> None:
         "analysis_sentiment",
         "analysis_ner",
         "analysis_wordcloud",
+        "analysis_speakers",
         "analysis_interaction",
         "analysis_entity",
         "analysis_legacy_semantic",
@@ -70,6 +71,7 @@ def test_flat_analysis_pilots_are_disjoint_and_complete() -> None:
             "readability_metrics",
         }
     )
+    assert field_map["analysis_speakers"] == frozenset({"allow_unnamed_speakers"})
     assert field_map["analysis_interaction"] == frozenset(
         {
             "interaction_overlap_threshold",
@@ -94,7 +96,8 @@ def test_flat_analysis_pilots_are_disjoint_and_complete() -> None:
         }
     )
     assert len(field_map["analysis_legacy_semantic"]) == 25
-    assert len(seen) == 8 + 6 + 5 + 12 + 3 + 25
+    assert len(field_map["analysis_speakers"]) == 1
+    assert len(seen) == 8 + 6 + 5 + 1 + 12 + 3 + 25
 
 
 def test_dashboard_display_and_overview_fields_are_disjoint() -> None:

@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.io import save_transcript
 from transcriptx.core.utils.nlp_utils import ALL_VERBAL_TICS, extract_tics_from_text
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 from transcriptx.core.utils._path_core import get_enriched_transcript_path
 from transcriptx.core.utils.lazy_imports import lazy_pyplot
 from transcriptx.core.utils.viz_ids import VIZ_TICS_SPEAKER
@@ -30,7 +30,7 @@ def extract_tics_and_top_words(grouped_text: dict, top_n: int = 100) -> tuple:
     per_speaker_common = {}
 
     for speaker, texts in grouped_text.items():
-        if not is_named_speaker(speaker):
+        if not is_analysis_speaker_label(speaker):
             continue
 
         tokens = []
@@ -95,7 +95,7 @@ class TicsAnalysis(AnalysisModule):
             speaker = get_speaker_display_name(
                 speaker_info.grouping_key, [seg], segments
             )
-            if not speaker or not is_named_speaker(speaker):
+            if not speaker or not is_analysis_speaker_label(speaker):
                 continue
 
             text = seg.get("text", "").lower()

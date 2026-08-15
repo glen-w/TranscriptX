@@ -229,7 +229,7 @@ class SpeakerInteractionAnalyzer:
                 DeprecationWarning,
                 stacklevel=2,
             )
-        from transcriptx.utils.text_utils import is_named_speaker
+        from transcriptx.utils.text_utils import is_analysis_speaker_label
 
         # Initialize counters for different interaction types
         interruption_initiated = defaultdict(int)
@@ -248,8 +248,8 @@ class SpeakerInteractionAnalyzer:
             if (
                 not speaker_a
                 or not speaker_b
-                or not is_named_speaker(speaker_a)
-                or not is_named_speaker(speaker_b)
+                or not is_analysis_speaker_label(speaker_a)
+                or not is_analysis_speaker_label(speaker_b)
             ):
                 continue
 

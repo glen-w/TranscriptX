@@ -75,11 +75,11 @@ def generate_human_friendly_transcript(
 
         # Extract unique speakers using segment-based approach
         from transcriptx.core.utils.speaker_extraction import get_unique_speakers
-        from transcriptx.utils.text_utils import is_named_speaker
+        from transcriptx.utils.text_utils import is_analysis_speaker_label
 
         unique_speakers = get_unique_speakers(segments)
         speaker_names = sorted(
-            [name for name in set(unique_speakers.values()) if is_named_speaker(name)]
+            [name for name in set(unique_speakers.values()) if is_analysis_speaker_label(name)]
         )
 
         from transcriptx.io.transcript_schema import compute_metadata_from_segments

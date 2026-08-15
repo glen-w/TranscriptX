@@ -79,7 +79,8 @@ def run_analysis_pipeline(
         else:
             selected_modules = list(manifest.modules)
         speaker_options = SpeakerRunOptions(
-            include_unidentified=manifest.include_unidentified_speakers
+            include_unidentified=manifest.include_unidentified_speakers,
+            allow_unnamed_speakers=manifest.allow_unnamed_speakers,
         )
         persist = manifest.persist
         transcript_path = manifest.transcript_path

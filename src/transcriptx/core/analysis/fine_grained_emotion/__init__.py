@@ -67,7 +67,7 @@ from transcriptx.core.analysis.hf_text_classification.profiles import (
     get_builtin_profile,
 )
 from transcriptx.core.utils.logger import get_logger, log_info, log_warning
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 
 logger = get_logger()
 
@@ -429,7 +429,7 @@ class FineGrainedEmotionAnalysis(AnalysisModule):
             outcome_counts[outcome] += 1
             for lab in qualifying:
                 native_prevalence[lab] += 1
-            if is_named_speaker(item.speaker):
+            if is_analysis_speaker_label(item.speaker):
                 speaker_outcome_counts[item.speaker][outcome] += 1
                 for lab in qualifying:
                     speaker_label_counts[item.speaker][lab] += 1

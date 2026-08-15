@@ -20,7 +20,7 @@ from transcriptx.core.utils.module_result import (  # type: ignore[import-untype
     capture_exception,
     now_iso,
 )
-from transcriptx.utils.text_utils import is_named_speaker  # type: ignore[import-untyped]
+from transcriptx.utils.text_utils import is_analysis_speaker_label  # type: ignore[import-untyped]
 
 from transcriptx.core.analysis.voice.aggregate import (  # type: ignore[import-untyped]
     compute_arousal_raw,
@@ -251,7 +251,7 @@ class VoiceMismatchAnalysis(AnalysisModule):
             # Ranked moments table (exclude unnamed speakers by default)
             ranked = work.copy()
             ranked["speaker_is_named"] = ranked["speaker"].apply(
-                lambda s: bool(s) and is_named_speaker(str(s))
+                lambda s: bool(s) and is_analysis_speaker_label(str(s))
             )
             ranked_table = ranked[ranked["speaker_is_named"]].copy()
             ranked_table = ranked_table[

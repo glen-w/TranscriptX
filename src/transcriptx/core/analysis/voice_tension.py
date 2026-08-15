@@ -17,7 +17,7 @@ from transcriptx.core.utils.module_result import (  # type: ignore[import-untype
     capture_exception,
     now_iso,
 )
-from transcriptx.utils.text_utils import is_named_speaker  # type: ignore[import-untyped]
+from transcriptx.utils.text_utils import is_analysis_speaker_label  # type: ignore[import-untyped]
 
 from transcriptx.core.analysis.voice.aggregate import (
     compute_arousal_raw,
@@ -112,7 +112,7 @@ class VoiceTensionAnalysis(AnalysisModule):
 
             if not include_unnamed and "speaker" in df.columns:
                 df = df[
-                    df["speaker"].apply(lambda s: bool(s) and is_named_speaker(str(s)))
+                    df["speaker"].apply(lambda s: bool(s) and is_analysis_speaker_label(str(s)))
                 ]
 
             curve_rows = compute_tension_curve(

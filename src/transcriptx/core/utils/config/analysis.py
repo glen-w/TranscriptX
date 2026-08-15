@@ -387,6 +387,8 @@ class AnalysisConfig:
     wordcloud_stopwords: list[str] = field(init=False, repr=True)
     # When True, per-speaker charts/data only for named speakers
     exclude_unidentified_from_speaker_charts: bool = field(init=False, repr=True)
+    # When True, run modules on diarized labels (SPEAKER_00, …) without naming
+    allow_unnamed_speakers: bool = field(init=False, repr=True)
 
     # Corrections settings
     corrections: CorrectionsConfig = field(default_factory=CorrectionsConfig)
@@ -572,6 +574,9 @@ class AnalysisConfig:
         from transcriptx.core.config.models.analysis_wordcloud import (
             AnalysisWordcloudSettingsModel,
         )
+        from transcriptx.core.config.models.analysis_speakers import (
+            AnalysisSpeakersSettingsModel,
+        )
         from transcriptx.core.config.models.analysis_interaction import (
             AnalysisInteractionSettingsModel,
         )
@@ -597,6 +602,7 @@ class AnalysisConfig:
         _hydrate_analysis_slice(self, AnalysisSentimentSettingsModel())
         _hydrate_analysis_slice(self, AnalysisNerSettingsModel())
         _hydrate_analysis_slice(self, AnalysisWordcloudSettingsModel())
+        _hydrate_analysis_slice(self, AnalysisSpeakersSettingsModel())
         _hydrate_analysis_slice(self, AnalysisInteractionSettingsModel())
         _hydrate_analysis_slice(self, AnalysisEntitySettingsModel())
         _hydrate_analysis_slice(self, AnalysisLegacySemanticSettingsModel())

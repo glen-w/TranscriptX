@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 import math
 
-from transcriptx.utils.text_utils import is_named_speaker, count_words
+from transcriptx.utils.text_utils import is_analysis_speaker_label, count_words
 from transcriptx.core.utils.nlp_utils import (
     build_tic_mask,
 )
@@ -412,7 +412,7 @@ def compute_highlights(
     named_segments = [
         seg
         for seg in segments
-        if seg.text.strip() and is_named_speaker(seg.speaker_display)
+        if seg.text.strip() and is_analysis_speaker_label(seg.speaker_display)
     ]
     named_segments.sort(key=lambda seg: seg.segment_index)
 
@@ -758,7 +758,7 @@ def _turn_taking_rate(segments: List[SegmentLite]) -> float:
 def _participants(segments: List[SegmentLite]) -> List[Dict[str, Any]]:
     seen = {}
     for seg in segments:
-        if not is_named_speaker(seg.speaker_display):
+        if not is_analysis_speaker_label(seg.speaker_display):
             continue
         if seg.speaker_display not in seen:
             seen[seg.speaker_display] = seg.speaker_id

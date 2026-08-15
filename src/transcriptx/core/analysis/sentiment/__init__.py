@@ -21,7 +21,7 @@ from transcriptx.core.utils.downloads import (
     downloads_disabled_failfast_message,
 )
 from transcriptx.core.utils.output import suppress_stdout_stderr, spinner
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 from transcriptx.core.utils.notifications import notify_user
 from transcriptx.core.analysis.affect.output_helpers import (
     save_rows_json_csv,
@@ -425,7 +425,7 @@ class SentimentAnalysis(AnalysisModule):
             )
 
         # Generate multi-speaker comparison plot only when more than one identified speaker
-        named_speakers = [s for s in speaker_segments if is_named_speaker(s)]
+        named_speakers = [s for s in speaker_segments if is_analysis_speaker_label(s)]
         if len(named_speakers) > 1:
             multi_spec = self._build_multi_speaker_sentiment_spec(speaker_segments)
             if multi_spec:
@@ -461,7 +461,7 @@ class SentimentAnalysis(AnalysisModule):
 
     def _is_named_speaker(self, speaker: str) -> bool:
         """Check if speaker is named (not a system ID)."""
-        return is_named_speaker(speaker)
+        return is_analysis_speaker_label(speaker)
 
     def _analyze_speaker_sentiment(
         self, segments: List[Dict[str, Any]], speaker: str

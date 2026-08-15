@@ -39,7 +39,7 @@ from transcriptx.core.utils.speaker_extraction import (
 )
 from transcriptx.core.viz.specs import LineTimeSeriesSpec
 from transcriptx.io import load_transcript
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 
 
 def reconstruct_act_counters(
@@ -110,7 +110,7 @@ def generate_group_acts_temporal_overlay(
             return title
         return f"{title_prefix} — {title}"
 
-    speakers = sorted([s for s in act_counts_per_speaker.keys() if is_named_speaker(s)])
+    speakers = sorted([s for s in act_counts_per_speaker.keys() if is_analysis_speaker_label(s)])
     if not act_counts_global or not speakers:
         return
 

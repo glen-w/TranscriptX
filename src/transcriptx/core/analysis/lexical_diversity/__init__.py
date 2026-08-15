@@ -25,7 +25,7 @@ from transcriptx.core.utils.viz_ids import (
 )
 from transcriptx.core.viz.specs import BarCategoricalSpec
 from transcriptx.utils.text_utils import (
-    is_named_speaker,
+    is_analysis_speaker_label,
     is_turn_taking_speaker_label,
 )
 
@@ -242,7 +242,7 @@ def _plot_lexical_diversity_charts(
     speaker_stats = {
         speaker: stats
         for speaker, stats in (payload.get("speaker_stats") or {}).items()
-        if is_named_speaker(str(speaker)) and isinstance(stats, dict)
+        if is_analysis_speaker_label(str(speaker)) and isinstance(stats, dict)
     }
     if not speaker_stats:
         return

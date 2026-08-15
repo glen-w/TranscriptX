@@ -71,7 +71,6 @@ def build_nlp_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
-            "gate_on_turn_taking_speakers": True,
         },
         "keyphrases": {
             "description": "Keyphrase ranking (noun chunks / YAKE / KeyBERT)",

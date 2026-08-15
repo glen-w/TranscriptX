@@ -41,6 +41,7 @@ class AnalysisRequest:
     run_label: Optional[str] = None
     persist: bool = False
     include_unidentified_speakers: bool = False
+    allow_unnamed_speakers: bool = False
     llm_model_selection: LlmModelSelection | Mapping[str, Any] | None = None
     # None/omitted → library; [] → explicit empty run; list[str]|list[dict] → request
     llm_custom_qa_questions: list[str] | list[dict[str, Any]] | None = None
@@ -131,6 +132,7 @@ class GroupAnalysisRequest:
     profile: Optional[str] = None
     analysis_preset: Optional[str] = None
     include_unidentified_speakers: bool = False
+    allow_unnamed_speakers: bool = False
     output_dir: Optional[Path] = None
     persist: bool = False
     llm_model_selection: LlmModelSelection | Mapping[str, Any] | None = None

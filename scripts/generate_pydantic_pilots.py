@@ -560,6 +560,14 @@ ANALYSIS_PARTIAL: list[dict[str, Any]] = [
         ],
     },
     {
+        "pilot_id": "analysis_speakers",
+        "module": "analysis_speakers",
+        "model_class": "AnalysisSpeakersSettingsModel",
+        "fields": [
+            "allow_unnamed_speakers",
+        ],
+    },
+    {
         "pilot_id": "analysis_interaction",
         "module": "analysis_interaction",
         "model_class": "AnalysisInteractionSettingsModel",
