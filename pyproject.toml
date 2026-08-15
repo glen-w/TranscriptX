@@ -72,6 +72,8 @@ dev = [
     "pytest-mock>=3.11.0",
     "pytest-asyncio>=0.21.0",
     "pytest-timeout>=2.1.0",
+    # Property-based tests (e.g. llm_custom_qa plan coverage) import hypothesis at module level.
+    "hypothesis>=6.0.0",
     # Required for `make test-smoke` / contracts under Core+dev (see install_verification_matrix.md).
     # Chart writes hard-fail without matplotlib; topic modeling resets seaborn theme on analyze();
     # group aggregation imports geopy via NER.

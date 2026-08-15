@@ -354,7 +354,6 @@ def plan_export_epub(
 def write_epub_from_plan(plan: EpubDocumentPlan, output_path: Path) -> Path:
     """Package an EpubDocumentPlan with ebooklib. Raises ImportError if missing."""
     from transcriptx.core.utils.lazy_imports import get_ebooklib
-    import ebooklib
     from ebooklib import epub
 
     get_ebooklib()  # validate import / hint

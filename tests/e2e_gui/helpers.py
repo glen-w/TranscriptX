@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
-from playwright.sync_api import Page, expect
+try:
+    from playwright.sync_api import Page, expect
+except ImportError:  # pragma: no cover - optional for Core+dev / CI collection
+    Page = Any  # type: ignore[misc,assignment]
+    expect = None  # type: ignore[assignment]
+
 
 DEFAULT_VIEWPORT = {"width": 1440, "height": 900}
 DEFAULT_SETTLE_MS = 2500

@@ -27,6 +27,27 @@ jobs:
       - name: Assert canonical Compose bind
         run: bash scripts/release/assert_compose_bind.sh
 
+  # High-signal lint only. Full black/ruff remain pre-commit / cleanup territory
+  # (repo still has large formatting drift; do not gate PRs on black --check yet).
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install ruff
+        run: |
+          python -m pip install -U pip
+          pip install "ruff>=0.1.6,<1"
+      - name: Ruff (critical + unused)
+        run: |
+          # E9/F63/F7/F82: syntax / undefined-name class failures
+          # F401/F841: unused imports and locals in packaged source
+          ruff check src/transcriptx --select E9,F63,F7,F82,F401,F841
+
   tests:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -40,10 +61,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - name: Install package + test deps
+      - name: Install package + test deps + web
         run: |
           python -m pip install -U pip
-          pip install -e ".[dev]"
+          # [web] required: contracts + fast collect many Streamlit web modules.
+          pip install -e ".[dev,web]"
           # Confirm pytest entrypoint is on PATH for Makefile targets
           command -v pytest
           python -m pytest --version
@@ -78,10 +100,11 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-      - name: Install package + test deps + nlp
+      - name: Install package + test deps + nlp + web
         run: |
           python -m pip install -U pip
-          pip install -e ".[dev,nlp]"
+          # [web] required so speaker-profile / web contract modules collect.
+          pip install -e ".[dev,nlp,web]"
           command -v pytest
           python -m pytest --version
       - name: Bootstrap NLTK + spaCy model
@@ -137,7 +160,7 @@ jobs:
   release-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    needs: [compose-config, tests, tests-nlp, docs]
+    needs: [compose-config, lint, tests, tests-nlp, docs]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
