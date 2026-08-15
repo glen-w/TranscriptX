@@ -1,4 +1,4 @@
-"""Charts view journey — run-scoped Charts page after a completed run."""
+"""Workflow 6: Charts — open Charts for a finished run."""
 
 from __future__ import annotations
 

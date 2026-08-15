@@ -312,3 +312,128 @@ def optional_screenshot(page: Page, path: Optional[Path]) -> None:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     page.screenshot(path=str(path), full_page=False)
+
+
+def expand_labeled(page: Page, label: str) -> None:
+    """Open a Streamlit expander / disclosure whose summary contains ``label``."""
+    root = page.locator('[data-testid="stMain"], section.main').first
+    # Streamlit expanders expose a summary button / details summary.
+    candidates = root.locator("details summary, [data-testid='stExpander'] summary")
+    count = candidates.count()
+    for i in range(count):
+        node = candidates.nth(i)
+        try:
+            if label.lower() in (node.inner_text() or "").lower():
+                node.click(force=True)
+                wait(page, 1000)
+                return
+        except Exception:
+            continue
+    # Fallback: click any text match in main.
+    text = root.get_by_text(label, exact=False)
+    if text.count():
+        text.first.click(force=True)
+        wait(page, 1000)
+
+
+def set_checkbox_labeled(page: Page, label: str, *, checked: bool = True) -> None:
+    """Toggle a Streamlit checkbox by accessible label."""
+    root = page.locator('[data-testid="stMain"], section.main').first
+    box = root.get_by_role("checkbox", name=label)
+    expect(box.first).to_be_visible(timeout=20000)
+    if box.first.is_checked() != checked:
+        box.first.click(force=True)
+        wait(page, 1500)
+
+
+def fill_main_text_input(page: Page, label: str, value: str) -> None:
+    """Fill a main-pane text input by label or nearby caption."""
+    root = page.locator('[data-testid="stMain"], section.main').first
+    by_label = root.get_by_label(label, exact=False)
+    if by_label.count():
+        by_label.first.click()
+        by_label.first.fill(value)
+        wait(page, 500)
+        return
+    # Streamlit often nests label text outside the input; locate stTextInput blocks.
+    blocks = root.locator('[data-testid="stTextInput"]')
+    for i in range(blocks.count()):
+        block = blocks.nth(i)
+        if label.lower() in (block.inner_text() or "").lower():
+            inp = block.locator("input")
+            expect(inp.first).to_be_visible(timeout=10000)
+            inp.first.click()
+            inp.first.fill(value)
+            wait(page, 500)
+            return
+    raise RuntimeError(f"text input not found for label {label!r}")
+
+
+def create_group_via_ui(
+    page: Page, *, name: str, transcript_needle: str = "planning"
+) -> None:
+    """Create a group from the Groups page expander."""
+    nav(page, "Groups")
+    wait(page, 2500)
+    expand_labeled(page, "Create new group")
+    fill_main_text_input(page, "Name", name)
+
+    # Multiselect: open and pick a matching option.
+    multi = page.locator('[data-testid="stMultiSelect"]')
+    expect(multi.first).to_be_visible(timeout=20000)
+    multi.first.click()
+    wait(page, 800)
+    opt = page.locator('[role="option"]').filter(has_text=transcript_needle)
+    if opt.count() == 0:
+        opt = page.locator('[role="option"]').filter(has_text="planning")
+    expect(opt.first).to_be_visible(timeout=10000)
+    opt.first.click()
+    wait(page, 800)
+    page.keyboard.press("Escape")
+    wait(page, 400)
+
+    click_main_button(page, "Create group", exact=True)
+    wait(page, 3500)
+
+
+def open_correct_mode_and_propose(
+    page: Page,
+    *,
+    find_text: str,
+    replacement: str,
+) -> None:
+    """Enable Correct mode on Transcript and propose a manual correction."""
+    set_checkbox_labeled(page, "Correct mode", checked=True)
+    expand_labeled(page, "Propose correction")
+    fill_main_text_input(page, "Find exact text in segment", find_text)
+    fill_main_text_input(page, "Replacement", replacement)
+    click_main_button(page, "Propose", exact=True)
+    wait(page, 3000)
+
+
+def rename_transcript_via_ui(
+    page: Page, *, new_name: str, needle: str = "planning"
+) -> None:
+    """Rename the selected transcript on the Rename Transcript page."""
+    nav(page, "Rename Transcript")
+    wait(page, 2500)
+    boxes = page.locator('[data-testid="stMain"] [data-testid="stSelectbox"]')
+    if boxes.count() == 0:
+        boxes = page.locator('[data-testid="stSelectbox"]')
+    expect(boxes.first).to_be_visible(timeout=20000)
+    boxes.first.click()
+    wait(page, 800)
+    opt = page.locator('[role="option"]').filter(has_text=needle)
+    if opt.count() == 0:
+        opt = page.locator('[role="option"]').filter(has_text="planning")
+    expect(opt.first).to_be_visible(timeout=10000)
+    opt.first.click()
+    wait(page, 2500)
+
+    fill_main_text_input(page, "New file name", new_name)
+    # Form submit button.
+    root = page.locator('[data-testid="stMain"], section.main').first
+    btn = root.get_by_role("button", name="Rename", exact=True)
+    expect(btn.first).to_be_visible(timeout=15000)
+    btn.first.click(force=True)
+    wait(page, 4000)

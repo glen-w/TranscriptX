@@ -23,9 +23,13 @@ Capture against a disposable data root when practical.
 | Walkthrough media | Expected state |
 |-------------------|----------------|
 | Import / Run Analysis | Fresh import; no requirement for prior runs |
-| Overview / Insights / Export | Completed **Balanced** run on the fixture (re-run after naming if speaker cards should show names) |
+| Overview / Insights / Export / Charts | Completed **Balanced** run on the fixture (re-run after naming if speaker cards should show names) |
 | Speaker Identification | Fixture selected; speakers still diarized or mid-naming |
 | Local AI | `llm.enabled` with reachable Ollama; modules `llm_summary` + `llm_action_items` completed |
+| Groups | At least one managed transcript; create via Groups expander |
+| Corrections | Transcript VIEW with Correct mode; unique find text in a segment |
+| Rename Transcript | Managed transcript selected on Rename page |
+| Speakers | At least one longitudinal profile (link from Speaker ID) |
 | Export HTML preview | Unpacked ZIP `index.html` opened at `file://` (crop to page content) |
 
 ## Viewport and chrome
@@ -46,6 +50,11 @@ Capture against a disposable data root when practical.
 | `investigate-*` | Overview / Insights (Highlights) / Transcript |
 | `local-ai-*` | Run Analysis (LLM setup) / Overview / Insights (Actions) |
 | `export-*` | Artifacts (Browse / Export) + external HTML preview |
+| `charts-*` | Charts |
+| `groups-*` | Groups |
+| `corrections-*` | Transcript (Correct mode) / Corrections Studio |
+| `rename-*` | Rename Transcript |
+| `speakers-*` | Speakers |
 
 ## Capture method
 

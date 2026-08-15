@@ -7,7 +7,7 @@ Authority: tests/README.md
 **Not a dumping ground:** only AppTest-blind items. Navigation, validation text, stubbed service success/error, and library/group/profile persistence are covered by AppTest.
 
 **Automated lane:** `make test-gui-acceptance` (marker `gui_acceptance`, also selected by `make test-heavy`).  
-**Browser E2E lane:** Playwright live-Streamlit under `tests/e2e_gui/` (marker `gui_e2e`) — included in default `pytest` / `make test-fast`, and runnable via `make test-gui-e2e`. Covers documented workflows (import/analyse, speaker trust, investigate, local-AI surface, export) plus Charts. AppTest remains the structural acceptance suite; Playwright covers AppTest-blind browser behaviour (e.g. real file uploader, export download UI).  
+**Browser E2E lane:** Playwright live-Streamlit under `tests/e2e_gui/` (marker `gui_e2e`) — runnable via `make test-gui-e2e`. Covers the ten documented key flows ([docs/workflows/](../workflows/index.md)): import/analyse, speaker identification, investigate, local-AI surface, export, Charts, Groups, Corrections (Correct mode), Rename Transcript, Speakers. AppTest remains the structural acceptance suite; Playwright covers AppTest-blind browser behaviour (e.g. real file uploader, export download UI, Correct-mode propose).  
 **Policy:** Playwright GUI E2E is a first-class automated lane (not deferred / not banned). Theme C CCv2 browser checks remain under `make test-theme-c-browser`.
 
 ---

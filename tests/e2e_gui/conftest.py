@@ -34,10 +34,11 @@ def pytest_configure(config: pytest.Config) -> None:
 def pytest_report_header(config: pytest.Config) -> list[str]:
     """Surface Playwright GUI E2E scope in pytest session logs."""
     return [
-        "Playwright GUI E2E (gui_e2e): tests/e2e_gui — workflows "
-        "first-analysis, speaker-identification, investigate-evidence, "
-        "local-ai-synthesis surface, export-results, charts-view; "
-        "included in default pytest (skips without Chromium)",
+        "Playwright GUI E2E (gui_e2e): tests/e2e_gui — 10 key flows "
+        "(first-analysis, speaker-identification, investigate-evidence, "
+        "local-ai-synthesis, export-results, charts-view, groups, "
+        "corrections, rename-transcript, speakers); "
+        "run via make test-gui-e2e (skips without Chromium)",
     ]
 
 
@@ -77,6 +78,8 @@ class E2EWorkspace:
     import_id: str | None = None
     run_id: str | None = None
     run_root: Path | None = None
+    profile_id: str | None = None
+    group_id: str | None = None
 
 
 def _mkdirs(ws: E2EWorkspace) -> None:
@@ -324,6 +327,56 @@ def seed_succeeded_run(
     return replace(ws, run_id=run_id, run_root=run_root)
 
 
+def seed_speaker_profile(
+    ws: E2EWorkspace, *, name: str = "Maya Facilitator"
+) -> E2EWorkspace:
+    """Write a minimal file-backed speaker profile under the isolated root."""
+    from transcriptx.core.speaker_profiles.layout import profile_path
+    from transcriptx.core.speaker_profiles.models import SpeakerProfileV1
+    from transcriptx.core.speaker_profiles.store_io import (
+        dumps_model,
+        ensure_layout,
+        utc_now_iso,
+        write_bytes_under_root,
+    )
+
+    _apply_paths_for_seeding(ws)
+    root = ws.speaker_profiles_dir
+    ensure_layout(root)
+    pid = str(uuid4())
+    now = utc_now_iso()
+    write_bytes_under_root(
+        profile_path(pid, root=root),
+        dumps_model(
+            SpeakerProfileV1(
+                profile_id=pid,
+                display_name=name,
+                created_at=now,
+                updated_at=now,
+            )
+        ),
+        root=root,
+    )
+    return replace(ws, profile_id=pid)
+
+
+def seed_group(
+    ws: E2EWorkspace, *, name: str = "Planning cohort"
+) -> E2EWorkspace:
+    """Create a file-backed group with the seeded transcript as sole member."""
+    from transcriptx.core.services.group_service import GroupService
+
+    _apply_paths_for_seeding(ws)
+    if ws.transcript_path is None:
+        raise ValueError("seed_planning_transcript first")
+    group, _created = GroupService.create_or_get_group_with_status(
+        name=name,
+        group_type="group",
+        transcript_refs=[str(ws.transcript_path)],
+    )
+    return replace(ws, group_id=group.group_id)
+
+
 @dataclass
 class LiveApp:
     workspace: E2EWorkspace
@@ -431,6 +484,17 @@ def seeded_app(e2e_workspace: E2EWorkspace) -> Iterator[LiveApp]:
 def seeded_run_app(e2e_workspace: E2EWorkspace) -> Iterator[LiveApp]:
     """Workspace with planning_review + completed minimal_run before Streamlit."""
     ws = seed_succeeded_run(seed_planning_transcript(e2e_workspace))
+    app = start_streamlit(ws)
+    try:
+        yield app
+    finally:
+        stop_streamlit(app)
+
+
+@pytest.fixture
+def seeded_profile_app(e2e_workspace: E2EWorkspace) -> Iterator[LiveApp]:
+    """Planning transcript + longitudinal speaker profile before Streamlit."""
+    ws = seed_speaker_profile(seed_planning_transcript(e2e_workspace))
     app = start_streamlit(ws)
     try:
         yield app
