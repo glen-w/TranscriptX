@@ -25,7 +25,7 @@ from transcriptx.core.output.output_service import create_output_service
 from transcriptx.core.viz.specs import BarCategoricalSpec, LineTimeSeriesSpec
 from transcriptx.core.utils._path_core import get_enriched_transcript_path
 from transcriptx.io import save_csv, save_json, save_transcript
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 
 plt = lazy_pyplot()
 
@@ -68,7 +68,7 @@ def generate_acts_charts(
         get_speaker_display_name,
     )
 
-    speakers = sorted([s for s in act_counts_per_speaker.keys() if is_named_speaker(s)])
+    speakers = sorted([s for s in act_counts_per_speaker.keys() if is_analysis_speaker_label(s)])
 
     # Per-speaker pie + bar charts
     for speaker, counter in act_counts_per_speaker.items():
@@ -397,7 +397,7 @@ def tag_acts(
         if speaker_info is None:
             continue
         speaker = get_speaker_display_name(speaker_info.grouping_key, [seg], segments)
-        if not is_named_speaker(speaker):
+        if not is_analysis_speaker_label(speaker):
             continue
 
         act_counts_global[act] += 1
@@ -575,7 +575,7 @@ def _generate_method_summary(
         if speaker_info is None:
             continue
         speaker = get_speaker_display_name(speaker_info.grouping_key, [seg], segments)
-        if not is_named_speaker(speaker):
+        if not is_analysis_speaker_label(speaker):
             continue
 
         act_counts_global[act] += 1

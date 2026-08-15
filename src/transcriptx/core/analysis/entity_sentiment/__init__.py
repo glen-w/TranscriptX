@@ -16,7 +16,7 @@ from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.analysis.ner import extract_named_entities
 from transcriptx.core.analysis.sentiment import score_sentiment
 from transcriptx.core.utils.nlp_utils import preprocess_for_sentiment
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 from transcriptx.core.utils.lazy_imports import lazy_pyplot
 from transcriptx.core.utils.viz_ids import (
     VIZ_ENTITY_SENTIMENT_HEATMAP,
@@ -127,7 +127,7 @@ class EntitySentimentAnalysis(AnalysisModule):
             )
 
             # Skip segments from unnamed speakers
-            if not speaker or not is_named_speaker(speaker):
+            if not speaker or not is_analysis_speaker_label(speaker):
                 continue
 
             # Extract entities from this segment (per-segment NER; no pipeline reuse)
@@ -483,7 +483,7 @@ class EntitySentimentAnalysis(AnalysisModule):
         speaker_entity_counts = defaultdict(Counter)
         for entity_name, stats in entity_stats.items():
             for speaker, count in stats["speaker_breakdown"].items():
-                if not is_named_speaker(speaker):
+                if not is_analysis_speaker_label(speaker):
                     continue
                 speaker_entity_counts[speaker][entity_name] = count
 

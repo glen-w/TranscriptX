@@ -47,6 +47,7 @@ Draft overrides are reported with run-layer provenance (`source: run`) by design
 
 - **Charts overview** (Configuration, edit mode): checkbox + ordered list for `dashboard.overview_charts`. Empty list → registry defaults for the run kind (transcript vs group). See [group_charts_default_overview.md](../groups/group_charts_default_overview.md).
 - **Common Settings** are a curated allowlist (`COMMON_SETTINGS_SCHEMA`): models, semantic similarity, a few workflow/output/display keys.
+  - Speakers: `analysis.allow_unnamed_speakers` — when on, analysis runs on diarized labels (`SPEAKER_00`, …) without naming; default off. Per-run override: Run Analysis checkbox.
 - **Advanced/raw** exposes every registered config leaf (except profile activation keys). Registry fields may mark `advanced=True` for documentation; the GUI does not yet use that flag to partition the form — the toggle is the partition.
 - Prefer Common or Analysis presets unless you know why a leaf matters.
 

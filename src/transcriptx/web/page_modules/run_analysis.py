@@ -490,6 +490,18 @@ def _run_analysis_config_and_launch_fragment(
         f"{len(selected_modules)} modules · {q_part} · {model_label}"
     )
 
+    allow_unnamed_speakers = st.checkbox(
+        "Allow analysis without named speakers",
+        value=False,
+        key="run_analysis_allow_unnamed_speakers",
+        help=(
+            "When enabled, modules run on diarized labels (SPEAKER_00, …) even if "
+            "speakers have not been named. Default is to skip until names exist. "
+            "A global default is also available under Settings → "
+            "analysis.allow_unnamed_speakers."
+        ),
+    )
+
     st.markdown(
         '<div class="tx-run-analysis-footer" aria-hidden="true"></div>',
         unsafe_allow_html=True,
@@ -526,6 +538,7 @@ def _run_analysis_config_and_launch_fragment(
             modules=selected_modules,
             profile=resolved.profile,
             analysis_preset=resolved.preset,
+            allow_unnamed_speakers=allow_unnamed_speakers,
             llm_model_selection=llm_selection,
             llm_custom_qa_questions=qa_request_questions,
         )
@@ -541,6 +554,7 @@ def _run_analysis_config_and_launch_fragment(
             profile=resolved.profile,
             analysis_preset=resolved.preset,
             include_unidentified_speakers=False,
+            allow_unnamed_speakers=allow_unnamed_speakers,
             llm_model_selection=llm_selection,
             llm_custom_qa_questions=qa_request_questions,
         )

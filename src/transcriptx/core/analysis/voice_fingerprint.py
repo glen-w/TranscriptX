@@ -19,7 +19,7 @@ from transcriptx.core.utils.module_result import (  # type: ignore[import-untype
     capture_exception,
     now_iso,
 )
-from transcriptx.utils.text_utils import is_named_speaker  # type: ignore[import-untyped]
+from transcriptx.utils.text_utils import is_analysis_speaker_label  # type: ignore[import-untyped]
 
 from transcriptx.core.analysis.voice.aggregate import robust_stats, robust_z
 from transcriptx.core.analysis.voice.cache import load_voice_features
@@ -84,7 +84,7 @@ class VoiceFingerprintAnalysis(AnalysisModule):
             drift_moments: dict[str, list[dict[str, Any]]] = {}
 
             for speaker, g in df.groupby("speaker"):
-                if not speaker or not is_named_speaker(str(speaker)):
+                if not speaker or not is_analysis_speaker_label(str(speaker)):
                     continue
                 g = g.copy()
                 stats_energy = robust_stats(g["rms_db"].astype(float).to_numpy())

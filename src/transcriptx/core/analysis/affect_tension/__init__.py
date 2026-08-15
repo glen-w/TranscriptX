@@ -31,7 +31,7 @@ from transcriptx.core.utils.logger import (
     log_analysis_start,
     log_analysis_complete,
 )
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 
 logger = get_logger()
 
@@ -269,7 +269,7 @@ class AffectTensionAnalysis(AnalysisModule):
             speaker = get_speaker_display_name(
                 speaker_info.grouping_key, [seg], segments
             )
-            if not speaker or not is_named_speaker(speaker):
+            if not speaker or not is_analysis_speaker_label(speaker):
                 excluded_count += 1
                 continue
             speaker_segment_indexes.setdefault(speaker, []).append(idx)

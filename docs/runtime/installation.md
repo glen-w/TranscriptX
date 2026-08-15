@@ -109,15 +109,22 @@ When you run analysis, choose a **Preset** that determines which modules run:
 
 Edit Quick / Balanced / Thorough policies (and optional full module overrides) under **Settings → Analysis**. Mode `quick` vs `full` still controls depth knobs (semantic/NER limits) for the chosen preset.
 
-### Single-speaker behavior
+### Single-speaker / unnamed-speaker behavior
 
-Some modules require multiple named speakers (conversation loops, contagion, interactions, semantic similarity, Q&A, echoes). When a transcript has only one named speaker, these modules are automatically skipped. For group runs, the module list is filtered by the minimum named speaker count across members.
+By default, modules require **human-named** speakers. Diarized placeholders (`SPEAKER_00`, …) do not count until you name speakers in Speaker Identification. Modules that need multiple speakers (conversation loops, contagion, interactions, semantic similarity, Q&A, echoes, and others) skip when the named-speaker count is below their minimum. For group runs, the module list is filtered by the minimum named speaker count across members.
+
+To run modules on diarized labels without naming speakers:
+
+- **Global:** Settings → `analysis.allow_unnamed_speakers` (or env `TRANSCRIPTX_ANALYSIS_ALLOW_UNNAMED_SPEAKERS`)
+- **Per run:** Run Analysis checkbox **Allow analysis without named speakers**
+
+Either knob ungates the pipeline (global **or** per-run). When ungated, speaker-count gates use turn-taking labels and per-speaker artifacts include unidentified speakers.
 
 ## Gates
 
 Gates are checks that block or skip work to keep results accurate and runs predictable.
 
-- **Speaker identification gate** — Prompts to identify speakers before analysis so per-speaker outputs are meaningful.
+- **Speaker identification gate** — Prompts to identify speakers before analysis so per-speaker outputs are meaningful. Analysis also skips modules until speakers are named unless you ungate via `analysis.allow_unnamed_speakers` / the per-run checkbox.
 - **Audio/default-module gate** — Audio-required modules are included in defaults only when audio is resolvable and required optional extras are available. Core mode does not hide modules. Override by passing an explicit module list.
 - **Pipeline requirements gate** — Modules are skipped when transcript capabilities (segments, timestamps, speaker labels, etc.) do not meet requirements.
 - **Downloads gate** — Downloads are enabled by default. Set `TRANSCRIPTX_DISABLE_DOWNLOADS=1` to force offline/no-download behavior. spaCy model auto-download is allowed by default when not in core mode unless `TRANSCRIPTX_DISABLE_SPACY_DOWNLOAD=1`.

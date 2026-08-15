@@ -30,7 +30,7 @@ from transcriptx.core.utils.viz_ids import (
     VIZ_AFFECT_TENSION_MISMATCH_TIMESERIES_GLOBAL,
     VIZ_AFFECT_TENSION_VOLATILITY_TIMESERIES_GLOBAL,
 )
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 
 logger = get_logger()
 
@@ -102,7 +102,7 @@ def _group_segments(
         if not segs:
             continue
         speaker = get_speaker_display_name(key, segs, segments)
-        if not speaker or not is_named_speaker(speaker):
+        if not speaker or not is_analysis_speaker_label(speaker):
             continue
         display_grouped.setdefault(speaker, []).extend(segs)
 

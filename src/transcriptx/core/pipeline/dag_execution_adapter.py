@@ -203,15 +203,22 @@ def execute_single_module(
     try:
         module_info = get_module_info(module_name)
         if module_info:
+            flags = {}
+            try:
+                raw_flags = context.get_runtime_flags() if context is not None else None
+                if isinstance(raw_flags, dict):
+                    flags = raw_flags
+            except Exception:
+                flags = {}
+            allow_unnamed = bool(flags.get("allow_unnamed_speakers"))
             turn_taking_count = (
-                gating_turn_taking_speaker_count(context)
-                if getattr(module_info, "gate_on_turn_taking_speakers", False)
-                else None
+                gating_turn_taking_speaker_count(context) if allow_unnamed else None
             )
             reason_text = speaker_gate_skip_reason(
                 module_info,
                 named_speaker_count=named_speaker_count,
                 turn_taking_speaker_count=turn_taking_count,
+                allow_unnamed_speakers=allow_unnamed,
             )
             if reason_text:
                 return ModuleExecOutcome(status="skipped", skip_reason=reason_text)

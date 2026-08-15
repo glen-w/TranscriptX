@@ -21,7 +21,7 @@ from transcriptx.core.models.events import Event, generate_event_id
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.lazy_imports import lazy_pyplot
 from transcriptx.io import save_json
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 from transcriptx.core.utils.viz_ids import (
     VIZ_PAUSES_HIST,
     VIZ_PAUSES_TIMELINE,
@@ -218,7 +218,7 @@ class PausesAnalysis(AnalysisModule):
 
         speaker_stats: Dict[str, Any] = {}
         for speaker, speaker_gaps in speaker_gap_stats.items():
-            if not is_named_speaker(speaker):
+            if not is_analysis_speaker_label(speaker):
                 continue
             speaker_stats[speaker] = {
                 "gap_count": len(speaker_gaps),

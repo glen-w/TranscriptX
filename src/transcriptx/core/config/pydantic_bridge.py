@@ -68,6 +68,7 @@ from .models.analysis_legacy_semantic import AnalysisLegacySemanticSettingsModel
 from .models.analysis_ner import AnalysisNerSettingsModel
 from .models.analysis_sentiment import AnalysisSentimentSettingsModel
 from .models.analysis_wordcloud import AnalysisWordcloudSettingsModel
+from .models.analysis_speakers import AnalysisSpeakersSettingsModel
 from .models.audio_preprocessing import AudioPreprocessingSettingsModel
 from .models.bertopic import BERTopicSettingsModel
 from .models.corrections import CorrectionsSettingsModel
@@ -469,6 +470,13 @@ PYDANTIC_REGISTRY_PILOTS: tuple[PydanticPilotSpec, ...] = (
     PydanticPilotSpec(
         pilot_id="analysis_wordcloud",
         model=AnalysisWordcloudSettingsModel,
+        dotpath_prefix="analysis",
+        category="analysis",
+        dataclass_type=None,
+    ),
+    PydanticPilotSpec(
+        pilot_id="analysis_speakers",
+        model=AnalysisSpeakersSettingsModel,
         dotpath_prefix="analysis",
         category="analysis",
         dataclass_type=None,

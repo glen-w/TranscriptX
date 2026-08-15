@@ -66,7 +66,6 @@ def build_conversation_module_definitions(
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
             "requires_multiple_speakers": True,
-            "gate_on_turn_taking_speakers": True,
         },
         "politeness": {
             "description": "Politeness / formality / directiveness markers",
@@ -75,6 +74,5 @@ def build_conversation_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
-            "gate_on_turn_taking_speakers": True,
         },
     }

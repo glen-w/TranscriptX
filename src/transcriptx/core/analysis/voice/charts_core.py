@@ -39,7 +39,7 @@ from transcriptx.core.viz.specs import (
     ScatterSpec,
 )
 from transcriptx.core.utils.validation import sanitize_filename
-from transcriptx.utils.text_utils import is_named_speaker  # type: ignore[import-untyped]
+from transcriptx.utils.text_utils import is_analysis_speaker_label  # type: ignore[import-untyped]
 
 logger = get_logger()
 
@@ -162,7 +162,7 @@ class VoiceChartsCoreAnalysis(AnalysisModule):
                 by_speaker: dict[str, list[float]] = {}
                 for entry in gap_series:
                     speaker = entry.get("speaker")
-                    if not speaker or not is_named_speaker(speaker):
+                    if not speaker or not is_analysis_speaker_label(speaker):
                         continue
                     by_speaker.setdefault(str(speaker), []).append(
                         entry.get("gap_seconds", 0.0)
@@ -267,7 +267,7 @@ class VoiceChartsCoreAnalysis(AnalysisModule):
                 for _, row in df.iterrows():
                     speaker = row.get("speaker")
                     seg_id = str(row.get("segment_id"))
-                    if not speaker or not is_named_speaker(str(speaker)):
+                    if not speaker or not is_analysis_speaker_label(str(speaker)):
                         continue
                     runs = vad_runs.get(seg_id, {}).get("voiced_runs_s", [])
                     if not runs:

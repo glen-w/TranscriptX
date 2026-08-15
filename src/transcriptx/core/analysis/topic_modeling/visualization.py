@@ -556,11 +556,11 @@ def create_speaker_charts(
         output_structure: Output directory structure
         html_imgs: Optional list of HTML image paths
     """
-    from transcriptx.utils.text_utils import is_named_speaker
+    from transcriptx.utils.text_utils import is_analysis_speaker_label
 
     # speaker_labels already contain display names from prepare_text_data()
     # Filter out any None or unnamed speakers
-    display_labels = [s for s in speaker_labels if s and is_named_speaker(s)]
+    display_labels = [s for s in speaker_labels if s and is_analysis_speaker_label(s)]
     speaker_topic_data = defaultdict(lambda: {"lda": [], "nmf": []})
     lda_label_map = _build_topic_label_map(lda_results.get("topics"))
 

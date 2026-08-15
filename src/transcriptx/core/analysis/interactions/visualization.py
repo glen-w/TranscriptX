@@ -6,7 +6,7 @@ from collections import defaultdict
 from typing import Any
 
 from transcriptx.core.analysis.interactions.events import InteractionEvent
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 from transcriptx.core.viz.specs import (
     BarCategoricalSpec,
     HeatmapMatrixSpec,
@@ -49,12 +49,12 @@ def create_combined_timeline(
         {
             event.speaker_a
             for event in interactions
-            if event.speaker_a and is_named_speaker(event.speaker_a)
+            if event.speaker_a and is_analysis_speaker_label(event.speaker_a)
         }
         | {
             event.speaker_b
             for event in interactions
-            if event.speaker_b and is_named_speaker(event.speaker_b)
+            if event.speaker_b and is_analysis_speaker_label(event.speaker_b)
         }
     )
     speaker_positions = {speaker: idx for idx, speaker in enumerate(unique_speakers)}
@@ -349,8 +349,8 @@ def create_speaker_timeline_charts(
         if (
             not speaker_a
             or not speaker_b
-            or not is_named_speaker(speaker_a)
-            or not is_named_speaker(speaker_b)
+            or not is_analysis_speaker_label(speaker_a)
+            or not is_analysis_speaker_label(speaker_b)
         ):
             continue
 

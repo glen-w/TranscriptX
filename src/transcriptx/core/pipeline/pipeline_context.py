@@ -18,7 +18,11 @@ from typing import Any, Dict, List, Optional
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.io.speaker_map_resolver import normalize_diarized_id
 from transcriptx.io.transcript_service import TranscriptService
-from transcriptx.utils.text_utils import is_eligible_named_speaker
+from transcriptx.utils.text_utils import (
+    is_eligible_named_speaker,
+    reset_pipeline_allow_unnamed_speakers,
+    set_pipeline_allow_unnamed_speakers,
+)
 
 logger = get_logger()
 
@@ -53,6 +57,7 @@ class PipelineContextBuilder:
         transcript_path: str,
         include_unidentified_speakers: bool = False,
         anonymise_speakers: bool = False,
+        allow_unnamed_speakers: bool = False,
         batch_mode: bool = False,
         output_dir: Optional[str] = None,
         transcript_key: Optional[str] = None,
@@ -61,6 +66,7 @@ class PipelineContextBuilder:
         self.transcript_path = transcript_path
         self.include_unidentified_speakers = include_unidentified_speakers
         self.anonymise_speakers = anonymise_speakers
+        self.allow_unnamed_speakers = allow_unnamed_speakers
         self.batch_mode = batch_mode
         self.output_dir = output_dir
         self.transcript_key = transcript_key
@@ -137,8 +143,12 @@ class PipelineContextBuilder:
         transcript_key = self.transcript_key or compute_transcript_identity_hash(
             speaker_resolution.segments
         )
+        include_unidentified = bool(
+            self.include_unidentified_speakers or self.allow_unnamed_speakers
+        )
         runtime_flags: Dict[str, Any] = {
-            "include_unidentified_speakers": self.include_unidentified_speakers,
+            "include_unidentified_speakers": include_unidentified,
+            "allow_unnamed_speakers": bool(self.allow_unnamed_speakers),
             "anonymise_speakers": self.anonymise_speakers,
             "ignored_speaker_ids": speaker_resolution.ignored_speaker_ids,
         }
@@ -149,6 +159,7 @@ class PipelineContextBuilder:
         runtime_flags["named_speaker_keys"] = self._collect_named_speaker_keys(
             speaker_resolution.segments,
             speaker_resolution.ignored_speaker_ids,
+            allow_unnamed=bool(self.allow_unnamed_speakers),
         )
         runtime_flags["speaker_key_aliases"] = self._build_speaker_key_aliases(
             speaker_resolution.speaker_map
@@ -174,14 +185,23 @@ class PipelineContextBuilder:
 
     @classmethod
     def _collect_named_speaker_keys(
-        cls, segments: List[Dict[str, Any]], ignored_speaker_ids: set[str]
+        cls,
+        segments: List[Dict[str, Any]],
+        ignored_speaker_ids: set[str],
+        *,
+        allow_unnamed: bool = False,
     ) -> set[str]:
         named_keys: set[str] = set()
         for segment in segments:
             label = segment.get("speaker")
             key = cls._get_speaker_key_from_segment(segment)
             if key and label:
-                if is_eligible_named_speaker(str(label), str(key), ignored_speaker_ids):
+                if is_eligible_named_speaker(
+                    str(label),
+                    str(key),
+                    ignored_speaker_ids,
+                    allow_unnamed=allow_unnamed,
+                ):
                     named_keys.add(key)
         return named_keys
 
@@ -289,6 +309,7 @@ class PipelineContext:
         output_dir: Optional[str] = None,
         transcript_key: Optional[str] = None,
         run_id: Optional[str] = None,
+        allow_unnamed_speakers: bool = False,
     ):
         """
         Initialize the pipeline context.
@@ -298,17 +319,29 @@ class PipelineContext:
             include_unidentified_speakers: Include unidentified speakers in per-speaker outputs
             anonymise_speakers: Anonymise speaker display names in outputs
             batch_mode: Whether running in batch mode
+            allow_unnamed_speakers: Treat diarized labels as eligible speakers
 
         Raises:
             FileNotFoundError: If transcript file doesn't exist
             ValueError: If transcript data is invalid
             RuntimeError: If context initialization fails
         """
+        from transcriptx.core.pipeline.speaker_ungate import (
+            resolve_allow_unnamed_speakers,
+        )
+
         self.transcript_path = transcript_path
+        effective_allow_unnamed = resolve_allow_unnamed_speakers(
+            per_run=bool(allow_unnamed_speakers)
+        )
+        include_unidentified = bool(
+            include_unidentified_speakers or effective_allow_unnamed
+        )
         builder = PipelineContextBuilder(
             transcript_path=transcript_path,
-            include_unidentified_speakers=include_unidentified_speakers,
+            include_unidentified_speakers=include_unidentified,
             anonymise_speakers=anonymise_speakers,
+            allow_unnamed_speakers=effective_allow_unnamed,
             batch_mode=batch_mode,
             output_dir=output_dir,
             transcript_key=transcript_key,
@@ -340,6 +373,10 @@ class PipelineContext:
 
         # Track if context is frozen (read-only)
         self._frozen = False
+
+        self._allow_unnamed_token = set_pipeline_allow_unnamed_speakers(
+            effective_allow_unnamed
+        )
 
         logger.debug(
             f"Initialized pipeline context: {len(self.segments)} segments, "
@@ -395,6 +432,14 @@ class PipelineContext:
             clear_speaker_display_map()
         except Exception:
             pass
+
+        token = getattr(self, "_allow_unnamed_token", None)
+        if token is not None:
+            try:
+                reset_pipeline_allow_unnamed_speakers(token)
+            except Exception:
+                pass
+            self._allow_unnamed_token = None
 
         self._closed = True
         logger.debug("PipelineContext closed and resources cleaned up")

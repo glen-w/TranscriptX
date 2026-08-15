@@ -28,7 +28,7 @@ from transcriptx.core.analysis.phrase_quality.policies import (
 )
 from transcriptx.core.analysis.phrase_quality.scoring import select_diverse_themes
 from transcriptx.core.utils.nlp_utils import build_tic_mask
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 
 
 def compute_summary(
@@ -62,7 +62,7 @@ def _build_overview(
     named_speakers = {
         seg.speaker_display
         for seg in segments
-        if seg.speaker_display and is_named_speaker(seg.speaker_display)
+        if seg.speaker_display and is_analysis_speaker_label(seg.speaker_display)
     }
     total_speakers = len(named_speakers)
 

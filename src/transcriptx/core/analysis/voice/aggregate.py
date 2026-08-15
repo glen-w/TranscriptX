@@ -6,7 +6,7 @@ from typing import Any, Tuple
 
 import numpy as np
 
-from transcriptx.utils.text_utils import is_named_speaker  # type: ignore[import-untyped]
+from transcriptx.utils.text_utils import is_analysis_speaker_label  # type: ignore[import-untyped]
 
 EPS = 1e-9
 
@@ -199,7 +199,7 @@ def compute_speaker_fingerprints_and_drift(
     drift: dict[str, list[dict[str, Any]]] = {}
 
     for speaker, group in df.groupby("speaker"):
-        if not speaker or not is_named_speaker(str(speaker)):
+        if not speaker or not is_analysis_speaker_label(str(speaker)):
             continue
         g = group.copy()
         stats_energy = robust_stats(g["rms_db"].astype(float).to_numpy())

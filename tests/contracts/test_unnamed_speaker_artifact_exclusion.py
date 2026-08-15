@@ -38,6 +38,9 @@ def test_named_speaker_predicates_split_turn_taking_from_display() -> None:
     assert is_named_speaker("Ana") is True
     assert is_eligible_named_speaker("SPEAKER_03", "SPEAKER_03") is False
     assert is_eligible_named_speaker("Ana", "SPEAKER_00") is True
+    assert (
+        is_eligible_named_speaker("SPEAKER_03", "SPEAKER_03", allow_unnamed=True) is True
+    )
 
 
 @pytest.mark.contract
@@ -76,6 +79,30 @@ def test_output_service_skips_speaker_scoped_diarization_label(
         )
     )
     assert skipped == {"static": None, "dynamic": None}
+
+
+@pytest.mark.contract
+@pytest.mark.unit
+def test_output_service_includes_diarization_label_when_ungated(
+    tmp_path: Path,
+) -> None:
+    """When allow_unnamed forces include_unidentified, SPEAKER_* artifacts emit."""
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    config = TranscriptXConfig()
+    config.analysis.exclude_unidentified_from_speaker_charts = True
+    set_config(config)
+
+    service = OutputService(
+        str(transcript),
+        "sentiment",
+        output_dir=str(tmp_path / "out"),
+        runtime_flags={
+            "include_unidentified_speakers": True,
+            "allow_unnamed_speakers": True,
+        },
+    )
+    assert service._should_skip_speaker_artifact("SPEAKER_00") is False
 
 
 @pytest.mark.contract

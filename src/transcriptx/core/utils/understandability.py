@@ -20,7 +20,7 @@ from transcriptx.core.utils.output_standards import (
 )
 from transcriptx.core.output.output_service import create_output_service
 from transcriptx.core.viz.specs import BarCategoricalSpec
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 from transcriptx.core.utils.notifications import notify_user
 
 
@@ -122,7 +122,7 @@ def compute_understandability_metrics(text: str) -> dict:
 
 def save_understandability_csv(all_scores: dict, output_structure, base_name: str):
     # Only include named speakers
-    filtered_scores = {s: v for s, v in all_scores.items() if is_named_speaker(s)}
+    filtered_scores = {s: v for s, v in all_scores.items() if is_analysis_speaker_label(s)}
 
     # Check if we have any scores to save
     if not filtered_scores:
@@ -161,7 +161,7 @@ def save_understandability_csv(all_scores: dict, output_structure, base_name: st
 
 def save_understandability_json(all_scores: dict, output_structure, base_name: str):
     # Only include named speakers
-    filtered_scores = {s: v for s, v in all_scores.items() if is_named_speaker(s)}
+    filtered_scores = {s: v for s, v in all_scores.items() if is_analysis_speaker_label(s)}
     global_path = (
         output_structure.global_data_dir / f"{base_name}_understandability.json"
     )
@@ -204,7 +204,7 @@ def plot_understandability_charts(
         )
 
     # Only include named speakers (consistent with save_understandability_csv)
-    filtered_scores = {s: v for s, v in all_scores.items() if is_named_speaker(s)}
+    filtered_scores = {s: v for s, v in all_scores.items() if is_analysis_speaker_label(s)}
 
     # Check if we have any scores to plot
     if not filtered_scores:
@@ -401,7 +401,7 @@ def compute_and_save_understandability(
 
     for grouping_key, segs in grouped_segments.items():
         display_name = get_speaker_display_name(grouping_key, segs, segments)
-        if not display_name or not is_named_speaker(display_name):
+        if not display_name or not is_analysis_speaker_label(display_name):
             skipped += len(segs)
             continue
 

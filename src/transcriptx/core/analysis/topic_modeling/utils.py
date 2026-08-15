@@ -20,7 +20,7 @@ from transcriptx.core.utils.nlp_utils import (
     preprocess_for_topic_modeling,
     build_tic_mask,
 )
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 
 # Matches CountVectorizer/TfidfVectorizer default token_pattern.
 _VECTORIZER_TOKEN_RE = re.compile(r"(?u)\b\w\w+\b")
@@ -614,4 +614,4 @@ def analyze_discourse_topics(
 
 
 def _is_named_speaker(speaker):
-    return is_named_speaker(speaker)
+    return is_analysis_speaker_label(speaker)

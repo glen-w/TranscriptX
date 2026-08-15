@@ -26,7 +26,7 @@ from transcriptx.core.utils.output_standards import (
     save_speaker_data,
 )
 from transcriptx.core.analysis.sentiment import score_sentiment
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 from transcriptx.core.utils.artifact_writer import write_text
 from transcriptx.core.viz.specs import (
     BarCategoricalSpec,
@@ -135,7 +135,7 @@ class ConversationLoopDetector:
             display_name = get_speaker_display_name(
                 info.grouping_key, [segment], all_segments
             )
-            if not is_named_speaker(display_name) and speaker_map:
+            if not is_analysis_speaker_label(display_name) and speaker_map:
                 speaker_key = segment.get("speaker")
                 mapped = speaker_map.get(speaker_key) if speaker_key else None
                 if mapped:
@@ -155,7 +155,7 @@ class ConversationLoopDetector:
             if speaker_1_info is None:
                 continue
 
-            if not is_named_speaker(speaker_1):
+            if not is_analysis_speaker_label(speaker_1):
                 continue
 
             # Check if turn 1 is a question or directive
@@ -175,7 +175,7 @@ class ConversationLoopDetector:
                 if speaker_2_info is None:
                     continue
 
-                if not is_named_speaker(speaker_2):
+                if not is_analysis_speaker_label(speaker_2):
                     continue
 
                 # Turn 2 must be from a different speaker (check by grouping_key to handle same names)
@@ -195,7 +195,7 @@ class ConversationLoopDetector:
                     if speaker_3_info is None:
                         continue
 
-                    if not is_named_speaker(speaker_3):
+                    if not is_analysis_speaker_label(speaker_3):
                         continue
 
                     # Turn 3 must be from the original speaker (Speaker A) - check by grouping_key
@@ -749,7 +749,7 @@ def save_loop_data(
     for loop in loops:
         # Add to both speakers' data
         for speaker in [loop.speaker_a, loop.speaker_b]:
-            if not is_named_speaker(speaker):
+            if not is_analysis_speaker_label(speaker):
                 continue
 
             speaker_loop_data[speaker].append(

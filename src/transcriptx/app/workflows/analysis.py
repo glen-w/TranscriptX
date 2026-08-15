@@ -373,6 +373,7 @@ def run_analysis(
             skip_confirm=True,
             output_dir=output_dir_str,
             include_unidentified_speakers=request.include_unidentified_speakers,
+            allow_unnamed_speakers=request.allow_unnamed_speakers,
             persist=request.persist,
         )
         results = run_analysis_pipeline(manifest=manifest, on_event=on_event)
@@ -674,7 +675,8 @@ def run_group_analysis(
             target=target,
             selected_modules=filtered,
             speaker_options=SpeakerRunOptions(
-                include_unidentified=request.include_unidentified_speakers
+                include_unidentified=request.include_unidentified_speakers,
+                allow_unnamed_speakers=request.allow_unnamed_speakers,
             ),
             persist=request.persist,
             on_event=None,

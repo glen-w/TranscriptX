@@ -226,6 +226,7 @@ class TranscriptXConfig:
                 "wordcloud_min_font_size": self.analysis.wordcloud_min_font_size,
                 "wordcloud_stopwords": self.analysis.wordcloud_stopwords,
                 "exclude_unidentified_from_speaker_charts": self.analysis.exclude_unidentified_from_speaker_charts,
+                "allow_unnamed_speakers": self.analysis.allow_unnamed_speakers,
                 "readability_metrics": self.analysis.readability_metrics,
                 "interaction_overlap_threshold": self.analysis.interaction_overlap_threshold,
                 "interaction_min_gap": self.analysis.interaction_min_gap,

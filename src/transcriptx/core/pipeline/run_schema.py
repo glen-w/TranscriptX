@@ -31,6 +31,7 @@ class RunManifestInput(BaseModel):
     config_overrides: Optional[Dict[str, Any]] = Field(default_factory=dict)
     output_dir: Optional[str] = None
     include_unidentified_speakers: bool = False
+    allow_unnamed_speakers: bool = False
     skip_confirm: bool = False
     persist: bool = False
     run_id: Optional[str] = Field(
@@ -62,6 +63,7 @@ class RunManifestInput(BaseModel):
         skip_confirm: bool = False,
         output_dir: Optional[str] = None,
         include_unidentified_speakers: bool = False,
+        allow_unnamed_speakers: bool = False,
         persist: bool = False,
         run_id: Optional[str] = None,
         config_overrides: Optional[Dict[str, Any]] = None,
@@ -77,6 +79,7 @@ class RunManifestInput(BaseModel):
             config_overrides=config_overrides or {},
             output_dir=output_dir,
             include_unidentified_speakers=include_unidentified_speakers,
+            allow_unnamed_speakers=allow_unnamed_speakers,
             skip_confirm=skip_confirm,
             persist=persist,
             run_id=run_id,

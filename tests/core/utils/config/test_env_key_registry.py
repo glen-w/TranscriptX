@@ -74,6 +74,7 @@ def _sample_and_expected(env_name: str) -> tuple[str, object]:
         "TRANSCRIPTX_MODULE_PROGRESS_LOG_INTERVAL_SECONDS": ("9", 9.0),
         "TRANSCRIPTX_ACTS_MODEL": ("acts/model", "acts/model"),
         "TRANSCRIPTX_WORDCLOUD_MAX_WORDS": ("123", 123),
+        "TRANSCRIPTX_ANALYSIS_ALLOW_UNNAMED_SPEAKERS": ("on", True),
         "TRANSCRIPTX_WAV_FOLDERS": ('["/a","/b"]', ["/a", "/b"]),
         "TRANSCRIPTX_RECORDINGS_FOLDERS": ("/r1,/r2", ["/r1", "/r2"]),
         "TRANSCRIPTX_FILE_SELECTION_MODE": ("explore", "explore"),

@@ -5,12 +5,34 @@ This module provides common text processing and formatting functions
 used across the TranscriptX codebase.
 """
 
+import contextvars
 import re
-from typing import Literal
+from typing import Any, Literal, Mapping
 
 # Lazy import to avoid startup delays
 # import nltk
 # from nltk.corpus import stopwords
+
+# Set by PipelineContext for the duration of a run so analysis eligibility
+# helpers can treat diarized labels as speakers when ungated.
+_pipeline_allow_unnamed_speakers: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "pipeline_allow_unnamed_speakers", default=False
+)
+
+
+def set_pipeline_allow_unnamed_speakers(value: bool) -> contextvars.Token[bool]:
+    """Bind allow-unnamed for the current pipeline run (reset on context close)."""
+    return _pipeline_allow_unnamed_speakers.set(bool(value))
+
+
+def reset_pipeline_allow_unnamed_speakers(token: contextvars.Token[bool]) -> None:
+    """Restore the previous allow-unnamed binding."""
+    _pipeline_allow_unnamed_speakers.reset(token)
+
+
+def get_pipeline_allow_unnamed_speakers() -> bool:
+    """Return whether the active pipeline run allows unnamed/diarized speakers."""
+    return bool(_pipeline_allow_unnamed_speakers.get())
 
 
 def is_named_speaker(name: str) -> bool:
@@ -96,15 +118,36 @@ def is_turn_taking_speaker_label(name: str) -> bool:
     return True
 
 
+def is_analysis_speaker_label(
+    name: str, *, allow_unnamed: bool | None = None
+) -> bool:
+    """
+    True when a speaker label is eligible for analysis grouping.
+
+    By default requires a human-named speaker. When ``allow_unnamed`` is True
+    (or the active pipeline run is ungated), diarization labels such as
+    ``SPEAKER_00`` are accepted via :func:`is_turn_taking_speaker_label`.
+    """
+    if allow_unnamed is None:
+        allow_unnamed = get_pipeline_allow_unnamed_speakers()
+    if allow_unnamed:
+        return is_turn_taking_speaker_label(name)
+    return is_named_speaker(name)
+
+
 def is_eligible_named_speaker(
     display_name: str | None,
     speaker_id: str | None,
     ignored_ids: set[str] | None = None,
+    *,
+    allow_unnamed: bool | None = None,
 ) -> bool:
     """
     Return True when a speaker is eligible for per-speaker artifacts.
 
     This is the single blessed predicate for gating per-speaker charts/JSON/filenames.
+    When ``allow_unnamed`` is True (or the active pipeline run is ungated),
+    diarized labels count as eligible.
     """
     if not display_name or not speaker_id:
         return False
@@ -112,7 +155,50 @@ def is_eligible_named_speaker(
         str(speaker_id) in ignored_ids or str(display_name) in ignored_ids
     ):
         return False
+    if allow_unnamed is None:
+        allow_unnamed = get_pipeline_allow_unnamed_speakers()
+    if allow_unnamed:
+        return is_turn_taking_speaker_label(str(display_name))
     return is_named_speaker(str(display_name))
+
+
+def is_pipeline_eligible_speaker(
+    display_name: str | None,
+    speaker_id: str | None,
+    ignored_ids: set[str] | None = None,
+    *,
+    allow_unnamed: bool = False,
+) -> bool:
+    """Explicit allow_unnamed variant of :func:`is_eligible_named_speaker`."""
+    return is_eligible_named_speaker(
+        display_name,
+        speaker_id,
+        ignored_ids,
+        allow_unnamed=allow_unnamed,
+    )
+
+
+def is_runtime_eligible_speaker(
+    display_name: str | None,
+    speaker_id: str | None,
+    runtime_flags: Mapping[str, Any] | None = None,
+    ignored_ids: set[str] | None = None,
+) -> bool:
+    """Eligibility using ``runtime_flags['allow_unnamed_speakers']``."""
+    flags = runtime_flags or {}
+    ignored = ignored_ids
+    if ignored is None:
+        raw = flags.get("ignored_speaker_ids")
+        if isinstance(raw, set):
+            ignored = raw
+        elif raw:
+            ignored = {str(x) for x in raw}
+    return is_pipeline_eligible_speaker(
+        display_name,
+        speaker_id,
+        ignored,
+        allow_unnamed=bool(flags.get("allow_unnamed_speakers")),
+    )
 
 
 def format_time(seconds: float) -> str:

@@ -13,7 +13,7 @@ from typing import Any, Callable, Literal, Mapping
 from transcriptx.core.analysis.emotion_family.errors import NonNeutralChartInputError
 from transcriptx.core.utils.logger import log_warning
 from transcriptx.core.viz.specs import BarCategoricalSpec
-from transcriptx.utils.text_utils import is_named_speaker
+from transcriptx.utils.text_utils import is_analysis_speaker_label
 
 OrderMode = Literal["alpha", "top_n"]
 
@@ -191,7 +191,7 @@ def iter_named_speaker_label_counts(
     """Yield named speakers with non-empty label_counts mappings."""
     out: list[tuple[str, dict[str, Any]]] = []
     for speaker, stats in (speaker_stats or {}).items():
-        if not is_named_speaker(speaker):
+        if not is_analysis_speaker_label(speaker):
             continue
         label_counts = (stats or {}).get("label_counts") or {}
         if not label_counts:
