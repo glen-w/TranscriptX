@@ -876,7 +876,7 @@ Journeys (each with prerequisites, test data, steps, expected UI, expected files
 - [ ] Downloadable alternatives for visual outputs where practical
 - [ ] At least the browsers **Streamlit officially supports** at release time
 
-Automation split: keep expanding `make test-gui-acceptance` / AppTest for structural journeys; residual AppTest-blind items stay in [docs/dev/gui_acceptance_residual_checklist.md](docs/dev/gui_acceptance_residual_checklist.md); **no Playwright for Streamlit before 1.0** (existing policy). Browser checks for the **app** are manual/acceptance against Streamlit’s supported browsers; separate browser checks apply to **website** and **RTD**.
+Automation split: keep expanding `make test-gui-acceptance` / AppTest for structural journeys; residual AppTest-blind items stay in [docs/dev/gui_acceptance_residual_checklist.md](docs/dev/gui_acceptance_residual_checklist.md); **Playwright live-Streamlit E2E** under `tests/e2e_gui/` (`gui_e2e`, also `make test-gui-e2e`) is a **first-class default-suite lane** covering documented workflows and complementary to AppTest. Browser checks for the **app** also remain manual/acceptance against Streamlit’s supported browsers for residual items; separate browser checks apply to **website** and **RTD**.
 
 ---
 

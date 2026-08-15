@@ -196,7 +196,7 @@ Named analysis module with no path-name test hit: **`contextual_emotion`** (wort
 ### 5.3 GUI / frontend
 
 - Seven AppTest journeys under [`tests/web/gui_acceptance/`](../../tests/web/gui_acceptance/); residual manual R1–R6 in [`docs/dev/gui_acceptance_residual_checklist.md`](gui_acceptance_residual_checklist.md).
-- Policy: **no Playwright for Streamlit GUI before 1.0** (Theme C workspaces Playwright only) — retained unless residual list stays release-critical.
+- Policy: Playwright live-Streamlit GUI E2E is a first-class lane under `tests/e2e_gui/` (`gui_e2e`, included in default pytest; Theme C workspaces Playwright remains separate).
 - Vitest surface is minimal (lifecycle + index) — acceptable for current Theme C size; expand when frontend grows.
 
 ### 5.4 Skip taxonomy (~68 `pytest.skip` call sites; 0 xfail)
