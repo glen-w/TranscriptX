@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Any, Optional
 
@@ -339,33 +340,75 @@ def expand_labeled(page: Page, label: str) -> None:
 def set_checkbox_labeled(page: Page, label: str, *, checked: bool = True) -> None:
     """Toggle a Streamlit checkbox by accessible label."""
     root = page.locator('[data-testid="stMain"], section.main').first
-    box = root.get_by_role("checkbox", name=label)
-    expect(box.first).to_be_visible(timeout=20000)
-    if box.first.is_checked() != checked:
-        box.first.click(force=True)
-        wait(page, 1500)
+
+    def _resolve():
+        # Streamlit 1.6x React Aria checkboxes: visually-hidden native <input>.
+        by_aria = root.locator(f'input[type="checkbox"][aria-label="{label}"]')
+        if by_aria.count():
+            return by_aria.first
+        role = root.get_by_role("checkbox", name=label, exact=True)
+        if role.count():
+            return role.first
+        blocks = root.locator('[data-testid="stCheckbox"]').filter(has_text=label)
+        if blocks.count():
+            native = blocks.first.locator('input[type="checkbox"]')
+            if native.count():
+                return native.first
+            return blocks.first
+        raise RuntimeError(f"checkbox not found for label {label!r}")
+
+    box = _resolve()
+    expect(box).to_be_attached(timeout=20000)
+    if box.is_checked() != checked:
+        # React Aria hidden inputs ignore Playwright click/check; focus+Space works.
+        box.focus()
+        page.keyboard.press("Space")
+        wait(page, 2500)
+        box = _resolve()
+        if box.is_checked() != checked:
+            box.focus()
+            page.keyboard.press("Space")
+            wait(page, 2500)
+            box = _resolve()
+    if box.is_checked() != checked:
+        raise RuntimeError(
+            f"checkbox {label!r} did not become checked={checked} "
+            f"(after={box.is_checked()!r})"
+        )
 
 
 def fill_main_text_input(page: Page, label: str, value: str) -> None:
     """Fill a main-pane text input by label or nearby caption."""
     root = page.locator('[data-testid="stMain"], section.main').first
-    by_label = root.get_by_label(label, exact=False)
-    if by_label.count():
-        by_label.first.click()
-        by_label.first.fill(value)
-        wait(page, 500)
-        return
-    # Streamlit often nests label text outside the input; locate stTextInput blocks.
+    # Prefer stTextInput blocks: get_by_label often matches Streamlit help buttons
+    # (aria-label "Help for …") which are not fillable.
     blocks = root.locator('[data-testid="stTextInput"]')
     for i in range(blocks.count()):
         block = blocks.nth(i)
         if label.lower() in (block.inner_text() or "").lower():
-            inp = block.locator("input")
+            inp = block.locator("input:not([disabled])")
+            if inp.count() == 0:
+                inp = block.locator("input")
             expect(inp.first).to_be_visible(timeout=10000)
             inp.first.click()
             inp.first.fill(value)
             wait(page, 500)
             return
+
+    # Fallback: get_by_label but only real editable fields.
+    by_label = root.get_by_label(label, exact=False)
+    for i in range(by_label.count()):
+        el = by_label.nth(i)
+        try:
+            tag = (el.evaluate("e => e.tagName") or "").upper()
+        except Exception:
+            continue
+        if tag not in ("INPUT", "TEXTAREA"):
+            continue
+        el.click()
+        el.fill(value)
+        wait(page, 500)
+        return
     raise RuntimeError(f"text input not found for label {label!r}")
 
 
@@ -403,7 +446,23 @@ def open_correct_mode_and_propose(
     replacement: str,
 ) -> None:
     """Enable Correct mode on Transcript and propose a manual correction."""
+    # Planning-review speakers are still SPEAKER_* placeholders; Correct-mode
+    # propose panels only render for *visible* segments.
+    set_checkbox_labeled(page, "Show unnamed speakers", checked=True)
     set_checkbox_labeled(page, "Correct mode", checked=True)
+    wait(page, 2500)
+    root = page.locator('[data-testid="stMain"], section.main').first
+    # Wait until at least one propose expander is present (Streamlit rerun).
+    deadline = time.time() + 20
+    while time.time() < deadline:
+        n = (
+            root.locator("details summary, [data-testid='stExpander'] summary")
+            .filter(has_text="Propose correction")
+            .count()
+        )
+        if n:
+            break
+        wait(page, 500)
     expand_labeled(page, "Propose correction")
     fill_main_text_input(page, "Find exact text in segment", find_text)
     fill_main_text_input(page, "Replacement", replacement)
