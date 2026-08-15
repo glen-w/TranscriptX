@@ -21,7 +21,7 @@ Authority: self
 | `docs/dev/` | Developer / programme | Developer |
 | `docs/archive/` | Historical (banners) | Historical |
 | Read the Docs (scaffold) | Hosted user/dev nav | Built from docs; Sphinx + `.readthedocs.yml` |
-| `website/` | Modest public landing | Marketing; not contract — GitHub Pages |
+| `website/` + Pages `/guide/` | Modest public landing **and** auto-published Sphinx HTML from the same `docs/` tree | Marketing + interim hosted guide — GitHub Pages |
 
 ## Indexes
 
@@ -34,6 +34,7 @@ Authority: self
 - [x] Revive Sphinx tree (`docs/conf.py`, MyST, Furo) rooted on curated user/runtime pages + DEV index
 - [x] Wire `make docs` → [scripts/release/build_docs.sh](../../scripts/release/build_docs.sh); CI `docs` job
 - [x] Add `.readthedocs.yml` scaffold (install `.[docs]`)
+- [x] **Content parity:** Sphinx has no separate doc corpus — it builds the Markdown under `docs/` directly. CI regenerates `docs/generated/` (`make docs-gen`) and fails on drift; every docs-affecting `main` push rebuilds and publishes HTML to GitHub Pages `/guide/` via [assemble_pages_site.sh](../../scripts/release/assemble_pages_site.sh)
 - [ ] Confirm RTD project + nav when owner supplies slug/domain (§20) — [rtd_go_live_checklist.md](rtd_go_live_checklist.md)
 - [ ] Flip `scripts/release/stale_refs.sh` RTD hostname denylist when a live URL is intentional
 - Keep entry surfaces concise; detail stays in contracts/runtime/dev
@@ -42,5 +43,5 @@ Authority: self
 ## Open
 
 - [ ] RTD project go-live + hostname allowlist update
-- [x] Modest `website/` / GitHub Pages (**0.9.7**)
+- [x] Modest `website/` / GitHub Pages (**0.9.7**); Sphinx guide auto-publish on Pages (**interim until RTD**)
 - [x] Screenshot-based user guides — five workflow walkthroughs under [docs/workflows/](../workflows/index.md) with media in `docs/_static/workflows/` (capture notes: [workflow_media_capture.md](workflow_media_capture.md))

@@ -1,7 +1,7 @@
 # TranscriptX Makefile
 # Main targets for documentation and development
 
-.PHONY: docs-gen docs docs-clean help test-smoke test-smoke-nlp test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance test-gui-e2e test-workspaces test-theme-c-browser workspaces-build docker-smoke run clean-test-artifacts perf-envelopes
+.PHONY: docs-gen docs docs-clean pages-site help test-smoke test-smoke-nlp test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance test-gui-e2e test-workspaces test-theme-c-browser workspaces-build docker-smoke run clean-test-artifacts perf-envelopes
 
 help:
 	@echo "TranscriptX Makefile"
@@ -10,6 +10,7 @@ help:
 	@echo "  docs-gen     Regenerate module catalog + quality-audit scaffold from registry"
 	@echo "  docs         Build Sphinx HTML into docs/_build/html (requires .[docs])"
 	@echo "  docs-clean   Remove Sphinx build artifacts (keeps docs/generated/)"
+	@echo "  pages-site   Assemble website/ + Sphinx guide into _site/ (GitHub Pages payload)"
 	@echo "  perf-envelopes  Print performance-envelope measurement recipe (0.9.7)"
 	@echo ""
 	@echo "Workspaces (Theme C):"
@@ -57,9 +58,12 @@ perf-envelopes:
 docs:
 	@bash scripts/release/build_docs.sh
 
+pages-site:
+	@bash scripts/release/assemble_pages_site.sh
+
 docs-clean:
 	@echo "Cleaning Sphinx build artifacts..."
-	@rm -rf docs/_build docs/api/generated
+	@rm -rf docs/_build docs/api/generated _site
 	@echo "Documentation build cleaned (docs/generated/ preserved)."
 
 clean-test-artifacts:

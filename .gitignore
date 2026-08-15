@@ -94,6 +94,7 @@ htmlcov/
 
 # Sphinx HTML build output
 docs/_build/
+_site/
 
 
 # Local reports archive (run dumps; docs archive is tracked under docs/archive/)

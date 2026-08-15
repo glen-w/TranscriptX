@@ -59,6 +59,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | `scripts/setup_env.sh` | Interactive venv/Docker menu; dead compose refs | developer | activate_env | stale | no | env mutate | any | — | **removed 0.9.1** | disposable | deleted |
 | `scripts/release/repo_hygiene_audit.py` | Phase 0A hygiene checks (allowlist, paths, banners, …) | maintainer | CI release-checks | yes | warn + strict subset | read-only | any | — | valid | maintainer | retain; `--checks` subset (**0.9.5**) |
 | `scripts/release/build_docs.sh` | Sphinx HTML build wrapper | maintainer | `make docs` / CI docs | yes | CI | writes `_build` | any | `[docs]` | valid | maintainer | retain (**0.9.5**) |
+| `scripts/release/assemble_pages_site.sh` | Assemble `website/` + Sphinx `/guide/` for Pages | maintainer | `make pages-site` / Pages workflow | yes | Pages | writes `_site` | any | `[docs]` | valid | maintainer | retain |
 | `scripts/release/regen_module_docs.py` | Regen module catalog + quality-audit scaffold | maintainer | `make docs-gen` | yes | no | writes docs | any | package import | valid | maintainer | retain (**0.9.5**) |
 | `scripts/release/perf_envelope_recipe.py` | Print perf-envelope measurement recipe | maintainer | `make perf-envelopes` | yes | release unit | read-only | any | package import | valid | maintainer | retain (**0.9.7**) |
 | `scripts/generate_demo_runs.py` | Bundled demo pack installer (0.9.6 trial) | maintainer | — | n/a | n/a | n/a | n/a | n/a | **removed** (Guided/demo trial ended) | disposable | deleted |

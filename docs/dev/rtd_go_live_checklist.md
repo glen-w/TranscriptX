@@ -22,5 +22,6 @@ Authority: docs_architecture_1_0.md
 
 ## Until then
 
-- User docs remain in-repo via [USER_INDEX.md](../USER_INDEX.md) and Sphinx HTML artifacts from CI.
-- Website docs link stays on GitHub paths (no forbidden hostname).
+- User docs remain in-repo via [USER_INDEX.md](../USER_INDEX.md).
+- Sphinx HTML is rebuilt from the same `docs/` tree on every CI run, and published to GitHub Pages under `/guide/` on docs-affecting `main` pushes ([assemble_pages_site.sh](../../scripts/release/assemble_pages_site.sh)).
+- Website Docs / Workflows CTAs point at that Pages guide until an intentional RTD URL replaces them.
