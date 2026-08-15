@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - CI `tests` / `tests-nlp` install `.[dev,web]` / `.[dev,nlp,web]` so Streamlit web modules collect under contracts/fast (fixes missing-`streamlit` collection failures).
+- Dev extra includes `hypothesis` (fast-lane property tests); `tests/e2e_gui/helpers.py` soft-imports Playwright so Core+dev collection no longer hard-fails.
 - Workflow walkthrough 2 renamed from “speaker trust” to [Identify and name speakers](docs/workflows/speaker-identification.md) — wording now emphasizes naming diarized speakers for readable transcripts, not analysis “trust”.
 - Audio **Merge** concatenates only by default. Optional **Preprocess files while merging** checkbox (CLI `--preprocess`) applies current preprocessing defaults in the same pass; otherwise run Preprocessing separately.
 - Sidebar section **Settings** renamed to **System** (page keys unchanged: Settings, Tools, Profiles, Dashboard Builder, Diagnostics).
