@@ -14,7 +14,7 @@ First-time users should follow **1 → 5**. Returning users can jump straight to
 | # | Workflow | Outcome |
 |---|----------|---------|
 | 1 | [First analysis](first-analysis.md) | Import a transcript, run Balanced analysis, and read the Overview |
-| 2 | [Speaker-aware trust](speaker-trust.md) | Name speakers before relying on speaker-level results |
+| 2 | [Identify and name speakers](speaker-identification.md) | Turn diarized labels into readable names before using speaker-level results |
 | 3 | [Investigate with evidence](investigate-evidence.md) | Answer a concrete question and trace it back to the transcript |
 | 4 | [Local AI synthesis](local-ai-synthesis.md) | Use optional local LLM modules for summary and meeting extracts |
 | 5 | [Export results](export-results.md) | Package a finished run as a ZIP with HTML (and EPUB when available) |

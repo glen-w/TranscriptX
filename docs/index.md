@@ -26,7 +26,7 @@ runtime/export
 
 workflows/index
 workflows/first-analysis
-workflows/speaker-trust
+workflows/speaker-identification
 workflows/investigate-evidence
 workflows/local-ai-synthesis
 workflows/export-results

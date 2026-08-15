@@ -11,7 +11,7 @@ You will have answered one concrete question about the sample meeting by moving 
 
 ## Starting point
 
-The planning-review transcript is imported, speakers are preferably named ([Speaker-aware trust](speaker-trust.md)), and a **Balanced** (or richer) run is selected on **Overview**.
+The planning-review transcript is imported, speakers are preferably named ([Identify and name speakers](speaker-identification.md)), and a **Balanced** (or richer) run is selected on **Overview**.
 
 **Example question:** *Where did the speakers disagree most about the launch plan?*
 

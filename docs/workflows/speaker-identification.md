@@ -1,9 +1,9 @@
 Type: GUIDE
 Authority: docs/PRODUCT.md
 
-# Make speaker-aware analysis trustworthy
+# Identify and name speakers
 
-Inspect and improve speaker identity before you lean on speaker-level analysis.
+Replace diarized speaker IDs with readable names so the transcript and speaker-level results are legible and meaningful.
 
 ## Outcome
 
@@ -21,7 +21,7 @@ Audio is optional for this workflow; sample text lines are enough.
 2. Review sample lines for each diarized speaker.
 3. Assign clear names (and ignore any junk label if present).
 4. Confirm the names on **Transcript**.
-5. Understand why this matters for later speaker results.
+5. Understand why naming matters for later speaker results.
 
 ## Walkthrough
 
@@ -61,10 +61,10 @@ Audio is optional for this workflow; sample text lines are enough.
 
 ## What to notice
 
-- Speaker identity is part of analysis trust, not a cosmetic rename.
+- Naming speakers makes the transcript readable and unlocks speaker-level modules; it is not a cosmetic rename.
 - **Ignore** is for unusable diarization IDs; prefer naming real participants.
 - Longitudinal profile linking (when offered) is optional; naming alone is enough for single-transcript work.
-- Downstream speaker cards, per-speaker LLM summaries, and interaction-style views are only as good as these labels.
+- Downstream speaker cards, per-speaker LLM summaries, and interaction-style views depend on these labels being meaningful.
 
 ## You should now have…
 

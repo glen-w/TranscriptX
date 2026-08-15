@@ -169,7 +169,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/runtime/export.md | Overview ZIP / HTML / EPUB export | live | user | current | Guide; selection-scoped indexes | retain | — | USER_INDEX, known_limitations | docs/contracts/output-contract-v1.md | yes |
 | docs/workflows/index.md | Five workflow walkthroughs landing | live | user | current | Screenshot guides (**2026-08**) | retain | — | USER_INDEX, index.md | docs/PRODUCT.md | yes |
 | docs/workflows/first-analysis.md | Workflow 1 — first analysis | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
-| docs/workflows/speaker-trust.md | Workflow 2 — speaker trust | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
+| docs/workflows/speaker-identification.md | Workflow 2 — identify and name speakers | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
 | docs/workflows/investigate-evidence.md | Workflow 3 — investigate with evidence | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
 | docs/workflows/local-ai-synthesis.md | Workflow 4 — local AI synthesis | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
 | docs/workflows/export-results.md | Workflow 5 — export results | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
