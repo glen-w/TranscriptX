@@ -308,3 +308,33 @@ def test_dispatch_navigate_jump_resolves_speaker_id() -> None:
     )
     assert out["status"] == "ok"
     assert seen["payload"]["target_idx"] == 1
+
+
+def test_speaker_id_workspace_registers_default_state_callbacks(monkeypatch) -> None:
+    """CCv2 rejects ``default`` keys that lack ``on_{name}_change`` callbacks."""
+    import sys
+
+    ws_root = Path(__file__).resolve().parents[2] / "packages" / "transcriptx_workspaces"
+    monkeypatch.syspath_prepend(str(ws_root))
+    sys.modules.pop("transcriptx_workspaces", None)
+    import transcriptx_workspaces as ws
+
+    captured: dict = {}
+
+    def _fake_comp(**kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(command=None, ack_seq=0)
+
+    monkeypatch.setattr(ws, "_get_speaker_id_component", lambda: _fake_comp)
+    ws.speaker_id_workspace(data={"protocol_version": "1"}, key="speaker_id_ws:test")
+
+    default_keys = set(captured["default"])
+    callback_states = {
+        name[3:-7]
+        for name in captured
+        if name.startswith("on_") and name.endswith("_change")
+    }
+    assert default_keys <= callback_states
+    assert {"ack_seq", "command"} <= default_keys
+    assert callable(captured["on_ack_seq_change"])
+    assert callable(captured["on_command_change"])

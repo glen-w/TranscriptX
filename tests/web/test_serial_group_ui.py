@@ -33,7 +33,7 @@ class TestNavigationHelpers:
         from transcriptx.web.navigation import migrate_legacy_page_key
 
         assert migrate_legacy_page_key("Audio Prep") == ("Tools", "Preprocessing")
-        assert migrate_legacy_page_key("Audio Merge") == ("Tools", "Merge")
+        assert migrate_legacy_page_key("Audio Merge") == ("Tools", "Auto-merge")
 
 
 class TestSerialDetectionIntegration:
@@ -71,6 +71,13 @@ class TestSerialGroupHideRestore:
         assert "Hidden suggestions" in source
         assert "audio_merge_restore_group_" in source
 
+    def test_merge_panel_previews_files_in_detected_groups(self) -> None:
+        import transcriptx.web.ui.tools.merge_panel as mod
+
+        source = Path(mod.__file__).read_text(encoding="utf-8")
+        assert "_render_merge_file_preview" in source
+        assert "audio_merge_preview_" in source
+
 
 class TestPageIntegrationPresence:
     def test_transcribe_audio_is_external_instructions(self) -> None:
@@ -86,6 +93,6 @@ class TestPageIntegrationPresence:
 
         source = Path(mod.__file__).read_text(encoding="utf-8")
         assert "render_serial_group_prompt" in source
-        assert "Workflow → Audio Preprocessing → Merge" in source
+        assert "Workflow → Audio Preprocessing → Auto-merge" in source
         assert "Transcribe these files separately anyway" in source
-        assert "Open Audio Preprocessing → Merge" in source
+        assert "Open Audio Preprocessing → Auto-merge" in source

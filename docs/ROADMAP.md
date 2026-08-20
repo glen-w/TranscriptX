@@ -89,6 +89,7 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | K. External STT command generation | Broader copyable host CLIs until / beside theme H | Ongoing light |
 | L. Polish & onboarding extras | Coach-marks, bundled demos, aesthetics — only if capacity | Anytime light |
 | M. Research / citeable methods | Optional B4-style methods; multilingual beyond small subset | Later 1.x+ |
+| N. Multi-provider LLM (opt-in) | OpenAI-compatible / LiteLLM gateway beyond Ollama; never silent cloud default | Mid–late 1.x |
 | → 2.0 | Personal audio intelligence companion | Vision |
 
 Public positioning today: [comparison.md](comparison.md). Analysis backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
@@ -277,9 +278,33 @@ Only if capacity remains after core themes:
 
 ---
 
+### N. Multi-provider LLM (opt-in)
+
+**1.0 stance unchanged:** optional local AI is **Ollama-only** (`provider=ollama`). Analysis modules already use a pluggable `LLMClient`; the factory and UI (model tags, presets, thinking-model gates) are Ollama-specific.
+
+**1.x intent:** let operators optionally call **other LLM providers** (OpenAI, Anthropic, Azure, Bedrock, vLLM, …) without rewriting each LLM analysis module — while staying **local-first** and never making cloud the silent default.
+
+**Candidate approach (design before build):**
+
+| Piece | Notes |
+|-------|--------|
+| **OpenAI-compatible `LLMClient`** | New provider (e.g. `openai_compatible`) behind the existing `generate` / `is_available` interface; map JSON consumers to `response_format` (or equivalent) |
+| **LiteLLM (or equivalent) gateway** | Prefer a **sidecar / proxy** ([LiteLLM](https://github.com/BerriAI/litellm)) over embedding the full SDK in the analysis image; one `base_url` reaches many backends |
+| **Keep Ollama as default path** | Do not force local traffic through the gateway; Settings / Run Analysis Ollama UX stays for `provider=ollama` |
+| **Model selection honesty** | Free-form model ids (and/or gateway catalog) when not on Ollama tags; clear labelling that remote endpoints receive transcript content |
+| **Privacy / trust** | Explicit opt-in only; document remote data flow; align with [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md) |
+
+**Hard parts:** structured JSON parity with Ollama `format=json`; seed/reproducibility across vendors; long timeouts and large prompts vs cloud limits; Corrections Studio + Run Analysis pickers that today assume `/api/tags`; dependency/image weight if the SDK is in-process.
+
+**Decision fork:** **Invest** (OpenAI-compatible client + optional LiteLLM compose service) · **Narrow** (single remote OpenAI-compatible endpoint, no multi-vendor catalog) · **Defer**. Do not ship cloud LLM as a silent default (that remains deferred below).
+
+**Non-goals for this theme:** replacing Ollama as the recommended local path; hosted multi-tenant LLM SaaS; chat-over-corpus as the primary product.
+
+---
+
 ## 2.0 vision
 
-**Personal audio intelligence companion:** personal recordings, voice-note workflows, optional local STT, deeper conversational analytics, stronger local AI — still local-first and modular. Themes **G–I** (recording workflows, in-app transcription, installable shell) are the main 1.x bridges toward that vision; themes **A–F** and **J** keep the analysis workbench excellent on the way.
+**Personal audio intelligence companion:** personal recordings, voice-note workflows, optional local STT, deeper conversational analytics, stronger local AI — still local-first and modular. Themes **G–I** (recording workflows, in-app transcription, installable shell) are the main 1.x bridges toward that vision; themes **A–F** and **J** keep the analysis workbench excellent on the way; theme **N** optionally widens LLM backends without abandoning local-first.
 
 ---
 
@@ -290,7 +315,7 @@ Still **not** near-term product goals (unless a later roadmap rewrite says other
 - Meeting bots / auto-join Zoom–Meet–Teams capture
 - Hosted multi-user SaaS analysis; CRM / revenue-pipeline platforms
 - Chat-over-corpus / RAG meeting assistant as the primary product
-- Cloud STT or cloud LLM as silent defaults
+- Cloud STT or cloud LLM as **silent defaults** (explicit opt-in multi-provider LLM is theme **N**)
 - Mode systems that duplicate page logic
 - Elaborate interactive marketing-website effects
 - Broader “everything in the DB” library migration (beyond theme **J**)

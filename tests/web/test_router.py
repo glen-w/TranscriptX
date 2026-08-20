@@ -134,8 +134,8 @@ def test_legacy_audio_prep_redirect_sets_tools_tab(monkeypatch) -> None:
     )
 
     assert ss[PAGE_KEY] == "Tools"
-    assert ss[TOOLS_HUB_TAB_KEY] == "Merge"
-    assert ss[TOOLS_HUB_FORCE_TAB_KEY] == "Merge"
+    assert ss[TOOLS_HUB_TAB_KEY] == "Auto-merge"
+    assert ss[TOOLS_HUB_FORCE_TAB_KEY] == "Auto-merge"
     assert rendered == ["tools"]
 
 

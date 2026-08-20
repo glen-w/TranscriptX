@@ -28,6 +28,7 @@ from transcriptx.web.components.progress_panel import (
 )
 from transcriptx.web.components.rename_form import render_audio_linked_rename_form
 from transcriptx.web.navigation import (
+    MERGE_ORDERED_PATHS_KEY,
     navigate_to_tools_tab,
     navigate_to_transcribe_with_paths,
 )
@@ -40,7 +41,7 @@ from transcriptx.web.ui.tools.shared import (
 )
 from transcriptx.web.components.info_tooltip import widget_help
 
-_KEY_ORDERED_PATHS = "audio_merge_ordered_paths"
+_KEY_ORDERED_PATHS = MERGE_ORDERED_PATHS_KEY
 _KEY_HIDDEN_SERIAL = "audio_merge_hidden_serial_keys"
 _KEY_RUN_IN_PROGRESS = "audio_merge_run_in_progress"
 _KEY_RESULT = "audio_merge_result"
@@ -72,10 +73,10 @@ def restore_serial_group_in_session(session: dict, key: str) -> None:
     ]
 
 
-def render_merge_panel(*, deps_ready: bool = True) -> None:
-    """Render the Merge tool tab."""
+def render_auto_merge_panel(*, deps_ready: bool = True) -> None:
+    """Render the Auto-merge tool tab."""
     st.caption(
-        "Merge multiple audio files into a single MP3. "
+        "Detect split recordings and merge each group into a single MP3. "
         "Supports WAV, MP3, OGG, M4A, FLAC, AAC, and WMA. "
         "Preprocessing is optional and off by default."
     )
@@ -94,7 +95,29 @@ def render_merge_panel(*, deps_ready: bool = True) -> None:
         deps_ready=deps_ready,
         options=options,
     )
+
+
+def render_manual_merge_panel(*, deps_ready: bool = True) -> None:
+    """Render the Manual merge tool tab."""
+    st.caption(
+        "Choose files and set merge order manually, then concatenate into one MP3. "
+        "Supports WAV, MP3, OGG, M4A, FLAC, AAC, and WMA. "
+        "Preprocessing is optional and off by default."
+    )
+
+    recordings = render_upload_and_refresh(uploader_key="audio_merge_manual_uploader")
+    if not recordings:
+        render_empty_recordings_hint()
+        return
+
+    options = _render_shared_merge_options()
     _render_section_select(recordings, deps_ready=deps_ready, options=options)
+
+
+def render_merge_panel(*, deps_ready: bool = True) -> None:
+    """Render auto- and manual-merge panels together (legacy entry point)."""
+    render_auto_merge_panel(deps_ready=deps_ready)
+    render_manual_merge_panel(deps_ready=deps_ready)
 
 
 def _render_shared_merge_options() -> dict[str, bool]:
@@ -144,6 +167,21 @@ def _render_shared_merge_options() -> dict[str, bool]:
         "delete_originals": delete_originals,
         "apply_preprocessing": apply_preprocessing,
     }
+
+
+def _render_merge_file_preview(path: Path, *, key_suffix: str) -> None:
+    """Show a filename with an inline audio player for quick preview."""
+    col_name, col_audio = st.columns([4, 3])
+    with col_name:
+        st.text(path.name)
+    with col_audio:
+        if not path.exists():
+            st.caption("File not found")
+            return
+        try:
+            st.audio(path.read_bytes(), key=f"audio_merge_preview_{key_suffix}")
+        except Exception as exc:
+            st.caption(f"Playback unavailable: {exc}")
 
 
 def _format_merge_row_meta(path: Path) -> str:
@@ -225,8 +263,8 @@ def _render_detected_serial_groups(
             "These files look like parts of one recording or a burst of voice notes. "
             "Tune grouping under Merge source profiles (draft applies immediately; "
             "Save persists). "
-            "Use a suggested group to pre-fill merge order, auto-merge selected "
-            "groups, hide false matches, or select files manually below."
+            "Auto-merge selected groups here, hide false matches, or open "
+            "**Manual merge** to pick files and order yourself."
         )
         selected: list[SerialGroup] = []
         for group in visible:
@@ -300,19 +338,24 @@ def _render_serial_group_card(group: SerialGroup) -> bool:
             st.caption(
                 f"Combined duration: {RecordingsService.format_duration(total_duration)}"
             )
-        for path in group.ordered_paths:
-            st.text(path.name)
+        for index, path in enumerate(group.ordered_paths):
+            _render_merge_file_preview(
+                path,
+                key_suffix=f"{group.dismissal_key}_{index}",
+            )
         for warning in group.warnings:
             st.caption(f"⚠ {warning}")
         col_use, col_hide = st.columns(2)
         with col_use:
             if st.button(
-                "Use this group",
+                "Open in Manual merge",
                 key=f"audio_merge_use_group_{group.dismissal_key}",
             ):
-                st.session_state[_KEY_ORDERED_PATHS] = [
-                    str(p) for p in group.ordered_paths
-                ]
+                navigate_to_tools_tab(
+                    st.session_state,
+                    "Manual merge",
+                    merge_ordered_paths=[str(p) for p in group.ordered_paths],
+                )
                 st.rerun()
         with col_hide:
             if st.button(

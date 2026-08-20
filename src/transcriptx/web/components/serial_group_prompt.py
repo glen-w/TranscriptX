@@ -55,7 +55,8 @@ def render_serial_group_prompt(
         "These files look like **parts of one recording**. Transcribing them "
         "separately will create **separate transcripts**. Merging first is "
         "recommended for **one unified transcript**. Order is based on filename "
-        "indices; merge via **Workflow → Audio Preprocessing → Merge** before transcription."
+        "indices; merge via **Workflow → Audio Preprocessing → Auto-merge** "
+        "before transcription."
     )
 
     for group in groups:
@@ -89,7 +90,7 @@ def render_serial_group_prompt(
         )
     with col_review:
         review_clicked = st.button(
-            "Open Audio Preprocessing → Merge",
+            "Open Audio Preprocessing → Auto-merge",
             key=review_button_key,
         )
 
@@ -101,7 +102,7 @@ def render_serial_group_prompt(
             (
                 "Split recorder files are normally merged before transcription. "
                 "Merge concatenates only unless you enable preprocessing on the "
-                "Merge form."
+                "Auto-merge or Manual merge form."
             )
         ),
     )

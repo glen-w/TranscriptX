@@ -10,6 +10,11 @@ PROTOCOL_VERSION = "1"
 _speaker_id_component = None
 
 
+def _noop() -> None:
+    """Stable no-op for unused CCv2 ``on_*_change`` callbacks."""
+    return None
+
+
 def _get_speaker_id_component():
     """Lazy-register so import works outside ``streamlit run`` (tests/wheel checks)."""
     global _speaker_id_component
@@ -86,11 +91,12 @@ def speaker_id_workspace(
             }
         ),
         "height": height,
+        # Streamlit CCv2 only accepts ``default`` keys that have matching
+        # ``on_{state}_change`` callbacks. Always register both protocol states
+        # even when the caller does not consume them.
+        "on_command_change": on_command_change or _noop,
+        "on_ack_seq_change": on_ack_seq_change or _noop,
     }
-    if on_command_change is not None:
-        kwargs["on_command_change"] = on_command_change
-    if on_ack_seq_change is not None:
-        kwargs["on_ack_seq_change"] = on_ack_seq_change
     return comp(**kwargs)
 
 

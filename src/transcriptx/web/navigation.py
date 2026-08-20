@@ -210,13 +210,25 @@ LEGACY_PAGE_REDIRECTS: dict[str, tuple[str, str | None]] = {
     # Data / Explorer aliases removed in 0.9.7 — use Artifacts Preview / Browse.
     "Statistics": ("Home", None),
     "Audio Prep": ("Tools", "Preprocessing"),
-    "Audio Merge": ("Tools", "Merge"),
+    "Audio Merge": ("Tools", "Auto-merge"),
 }
 
 TOOLS_HUB_TAB_KEY = "tools_hub_selected_tab"
 TOOLS_HUB_FORCE_TAB_KEY = "tools_hub_force_tab"
-TOOLS_HUB_TABS: tuple[str, ...] = ("Preprocessing", "Merge")
+TOOLS_HUB_TABS: tuple[str, ...] = ("Preprocessing", "Auto-merge", "Manual merge")
+TOOLS_HUB_TAB_ALIASES: dict[str, str] = {"Merge": "Auto-merge"}
 PREPROCESS_SELECTED_FILES_KEY = "audio_prep_selected_files"
+MERGE_ORDERED_PATHS_KEY = "audio_merge_ordered_paths"
+
+
+def normalize_tools_hub_tab(tab: str | None) -> str:
+    """Map legacy hub tab names to current labels."""
+    if not tab:
+        return TOOLS_HUB_TABS[0]
+    tab = TOOLS_HUB_TAB_ALIASES.get(tab, tab)
+    if tab not in TOOLS_HUB_TABS:
+        return TOOLS_HUB_TABS[0]
+    return tab
 
 
 def migrate_legacy_page_key(page: str | None) -> tuple[str, str | None]:
@@ -233,16 +245,20 @@ def navigate_to_tools_tab(
     tab: str,
     *,
     preprocess_paths: list[Path | str] | None = None,
+    merge_ordered_paths: list[Path | str] | None = None,
 ) -> None:
     """Open Workflow → Audio Preprocessing on the given hub tab, optionally preselecting prep files."""
-    if tab not in TOOLS_HUB_TABS:
-        tab = TOOLS_HUB_TABS[0]
+    tab = normalize_tools_hub_tab(tab)
     session_state["page"] = "Tools"
     session_state[TOOLS_HUB_TAB_KEY] = tab
     session_state[TOOLS_HUB_FORCE_TAB_KEY] = tab
     if preprocess_paths is not None:
         session_state[PREPROCESS_SELECTED_FILES_KEY] = [
             str(p) for p in preprocess_paths
+        ]
+    if merge_ordered_paths is not None:
+        session_state[MERGE_ORDERED_PATHS_KEY] = [
+            str(p) for p in merge_ordered_paths
         ]
 
 

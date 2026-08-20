@@ -78,12 +78,15 @@ def test_tools_page_renders_tabs_and_panels(monkeypatch) -> None:
         lambda **_k: rendered.append("preprocess"),
     )
     monkeypatch.setattr(
-        mod, "render_merge_panel", lambda **_k: rendered.append("merge")
+        mod, "render_auto_merge_panel", lambda **_k: rendered.append("auto-merge")
+    )
+    monkeypatch.setattr(
+        mod, "render_manual_merge_panel", lambda **_k: rendered.append("manual-merge")
     )
 
     mod.render_tools_page()
 
-    assert rendered == ["preprocess", "merge"]
+    assert rendered == ["preprocess", "auto-merge", "manual-merge"]
     assert any("Prepare recordings" in c for c in captions)
 
 
@@ -92,7 +95,7 @@ def test_tools_page_force_tab_reorders(monkeypatch) -> None:
     import transcriptx.web.page_modules.tools as mod
     from transcriptx.web.navigation import TOOLS_HUB_FORCE_TAB_KEY
 
-    DummyHomeStreamlit.session_state = {TOOLS_HUB_FORCE_TAB_KEY: "Merge"}
+    DummyHomeStreamlit.session_state = {TOOLS_HUB_FORCE_TAB_KEY: "Auto-merge"}
     seen_labels: list[list[str]] = []
 
     class _TabCtx:
@@ -119,12 +122,13 @@ def test_tools_page_force_tab_reorders(monkeypatch) -> None:
     monkeypatch.setattr(mod, "st", _St)
     monkeypatch.setattr(mod, "render_dependency_banner", lambda: True)
     monkeypatch.setattr(mod, "render_preprocess_panel", lambda **_k: None)
-    monkeypatch.setattr(mod, "render_merge_panel", lambda **_k: None)
+    monkeypatch.setattr(mod, "render_auto_merge_panel", lambda **_k: None)
+    monkeypatch.setattr(mod, "render_manual_merge_panel", lambda **_k: None)
 
     mod.render_tools_page()
 
     assert seen_labels
-    assert seen_labels[0][0] == "Merge"
+    assert seen_labels[0][0] == "Auto-merge"
     assert TOOLS_HUB_FORCE_TAB_KEY not in DummyHomeStreamlit.session_state
 
 
@@ -232,7 +236,7 @@ def test_merge_empty_recordings_shows_info(monkeypatch, tmp_path: Path) -> None:
         },
     )
 
-    mod.render_merge_panel(deps_ready=True)
+    mod.render_auto_merge_panel(deps_ready=True)
 
     assert infos
     assert "No audio files found" in infos[0]
@@ -293,7 +297,7 @@ def test_merge_with_recordings_renders_section(monkeypatch, tmp_path: Path) -> N
         },
     )
 
-    mod.render_merge_panel(deps_ready=True)
+    mod.render_manual_merge_panel(deps_ready=True)
 
     assert section_calls
     assert clip in section_calls[0]

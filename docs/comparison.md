@@ -5,7 +5,7 @@ Authority: docs/PRODUCT.md
 
 A plain-language map of where TranscriptX sits next to transcription tools, meeting assistants, and conversation-intelligence products.
 
-**Last reviewed:** 2026-08. Feature lists for other products are based on public docs and positioning — not paid pilots. Prefer this page over scattered marketing claims elsewhere in the repo.
+**Last reviewed:** 2026-08-20. Feature lists for other products are based on public docs and positioning — not paid pilots. Prefer this page over scattered marketing claims elsewhere in the repo.
 
 ## Short answer
 
@@ -13,6 +13,7 @@ A plain-language map of where TranscriptX sits next to transcription tools, meet
 |--------------|----------|
 | Deep, local, modular analysis of transcripts you already have | **TranscriptX** |
 | Self-hosted audio → text (diarization, reader, optional chat) | **[Scriberr](https://scriberr.app/)** or WhisperX / similar |
+| Org-grade self-hosted live + batch STT (GPU, on-prem) | **[nanosamur.ai](https://nanosamur.ai)** |
 | Auto-join Zoom/Meet notes + team sharing | Otter, Fireflies, Avoma |
 | Sales deal coaching + CRM outcomes | Gong, Chorus by ZoomInfo |
 | Contact-center QA / omnichannel coaching | CallMiner, Observe.ai |
@@ -30,30 +31,30 @@ Most tools in this space optimise one or more of:
 3. **Integrate** — CRM, calendars, team rollouts  
 4. **Analyze** — discourse, affect, voice, multi-session science with contracts
 
-TranscriptX is built for **(4)**, with a local-first library and optional local AI (Ollama). Transcription is **external** by design. Self-hosted tools such as [Scriberr](https://github.com/rishikanthc/Scriberr) are natural **upstreams**: produce transcripts locally, then import into TranscriptX.
+TranscriptX is built for **(4)**, with a local-first library and optional local AI (Ollama). Transcription is **external** by design. Self-hosted tools such as [Scriberr](https://github.com/rishikanthc/Scriberr) and [nanosamur.ai](https://github.com/nanosamurai/nanosamurai) are natural **upstreams**: produce transcripts locally (or on-prem), then import into TranscriptX.
 
 ```text
 Audio / meetings  →  STT / notes tool  →  transcript files  →  TranscriptX analysis
                          ↑
-              Scriberr, WhisperX, Otter export, …
+              Scriberr, nanosamur.ai, WhisperX, Otter export, …
 ```
 
 ## Capability snapshot
 
 Legend: **Yes** = first-class · **Partial** = adjacent or lighter · **No** = absent or out of scope · **N/A** = not that product’s job.
 
-| Capability | TranscriptX | Scriberr | Otter / Fireflies | Gong / Chorus / Avoma | CallMiner-class |
-|------------|-------------|----------|-------------------|------------------------|-----------------|
-| Local / air-gapped analysis | Yes | Yes (local mode) | No | No | No |
-| Built-in speech-to-text | No (BYO) | Yes | Yes | Yes (via capture) | Partial |
-| Meeting bot / auto-join | No | No | Yes | Yes | Partial |
-| Modular conversational analytics | Yes | No | Partial | Partial–Yes | Yes (CC domain) |
-| Emotion / interaction / voice stacks | Yes | No | Partial | Partial | Yes (domain) |
-| Multi-session groups + charts | Yes | No | Partial | Partial (deal/team) | Yes (agent/team) |
-| Schema-versioned artifacts + Python API | Yes | Partial (API) | No | No | No |
-| CRM / revenue pipeline | No | No | Partial | Yes | Partial |
-| Chat / Ask-AI over meetings | No (by design) | Yes | Yes | Yes | Partial |
-| Local LLM (Ollama) | Yes | Yes | No | No | No |
+| Capability | TranscriptX | Scriberr | Nanosamurai | Otter / Fireflies | Gong / Chorus / Avoma | CallMiner-class |
+|------------|-------------|----------|-------------|-------------------|------------------------|-----------------|
+| Local / air-gapped analysis | Yes | Yes (local mode) | Partial (self-hosted STT; NVIDIA GPU; not turnkey air-gap) | No | No | No |
+| Built-in speech-to-text | No (BYO) | Yes | Yes (live + refine + final) | Yes | Yes (via capture) | Partial |
+| Meeting bot / auto-join | No | No | No | Yes | Yes | Partial |
+| Modular conversational analytics | Yes | No | No | Partial | Partial–Yes | Yes (CC domain) |
+| Emotion / interaction / voice stacks | Yes | No | Partial (enrollment / diarization) | Partial | Partial | Yes (domain) |
+| Multi-session groups + charts | Yes | No | No | Partial | Partial (deal/team) | Yes (agent/team) |
+| Schema-versioned artifacts + Python API | Yes | Partial (API) | Partial (OpenAPI / SDK / protobuf) | No | No | No |
+| CRM / revenue pipeline | No | No | No | Partial | Yes | Partial |
+| Chat / Ask-AI over meetings | No (by design) | Yes | No | Yes | Yes | Partial |
+| Local LLM (Ollama) | Yes | Yes | No | No | No | No |
 
 ## Complementary: self-hosted transcription
 
@@ -63,6 +64,13 @@ Legend: **Yes** = first-class · **Partial** = adjacent or lighter · **No** = a
 - **Fit:** Offline-friendly self-hosted transcription workspace — local models (e.g. Parakeet / Canary / Whisper-class), diarization, polished transcript reader, notes, folder watch / API, optional Ollama or OpenAI-compatible chat.  
 - **With TranscriptX:** Use Scriberr to **create** transcripts; use TranscriptX to **analyse** a corpus over time.  
 - **Not a substitute for:** TranscriptX’s module DAG, group analytics, or contract-backed research outputs.
+
+### Nanosamurai
+
+- **Sites:** [nanosamur.ai](https://nanosamur.ai) · [GitHub](https://github.com/nanosamurai/nanosamurai)  
+- **Fit:** Apache-2.0 **org-grade speech platform** — browser UI + Windows Electron app, realtime captions with replaceable partials, asynchronous WhisperX refinement, canonical final transcripts with word timings and karaoke playback, speaker enrollment / diarization, PostgreSQL + object storage, Python SDK/CLI, optional Grafana/Tempo/Loki. Aimed at organisations that cannot send audio to a third party (on-prem / private cloud). Community Edition is a Docker Compose evaluator; default speech path expects an **NVIDIA GPU**. Agentic workflows and webhooks are public contracts, not shipped runners.  
+- **With TranscriptX:** Use Nanosamurai to **capture and transcribe** sensitive sessions on infrastructure you control; export the **final** transcript (and recording) and import into TranscriptX to **analyse** a corpus. Personal / laptop-first STT is usually simpler with Scriberr or WhisperX.  
+- **Not a substitute for:** TranscriptX’s analysis modules, groups, charts, or file-backed research contracts. Nanosamurai is capture + STT + session records, not conversational science.
 
 ### Other STT / subtitle paths
 
@@ -112,6 +120,9 @@ Limits users should know: [known_limitations.md](known_limitations.md).
 Need STT from audio on my machine *today*?
   → Scriberr / WhisperX / …  then optionally → TranscriptX
   (TranscriptX may add optional local STT in 1.x — see ROADMAP)
+
+Need org-grade self-hosted live + batch STT (NVIDIA GPU, on-prem)?
+  → Nanosamurai  then optionally → TranscriptX
 
 Need bots + team notes tomorrow?
   → Otter / Fireflies / Avoma
