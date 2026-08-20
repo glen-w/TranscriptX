@@ -46,6 +46,25 @@ Prepared evidence ≠ measured evidence ≠ signed-off evidence.
 - Prefer Docker Compose for predictability; native only if claiming native support
 - Record OS, architecture, install profile, package version, SHA
 
+**Curated sample stack (optional facilitator prep)**
+
+For a disposable UI that only mounts the facilitator sample set (not the maintainer library), use the sibling tree `../transcriptx_test/` and:
+
+```bash
+# Once per fresh data tree (or after wiping data/): write the epoch-1 marker
+python -c "from pathlib import Path; from transcriptx.core.utils.schema_epoch import write_epoch; write_epoch(Path('../transcriptx_test/data'))"
+docker compose -f docker-compose.unfamiliar-user.yml up -d transcriptx-web
+# Register pre-copied managed transcripts (Home uses the slug index, not raw disk scan)
+docker compose -f docker-compose.unfamiliar-user.yml exec -T transcriptx-web python - <<'PY'
+from transcriptx.core.utils.file_discovery import discover_managed_transcript_paths
+from transcriptx.io.admit_and_register import _try_register
+for p in discover_managed_transcript_paths():
+    print(_try_register(p), p.name)
+PY
+```
+
+Then open http://127.0.0.1:8502 (port **8502** so it does not collide with the main stack on 8501). This compose file is standalone (does not merge `docker-compose.override.yml`). Defaults point at `transcriptx_test_transcripts` / `transcriptx_test_recordings` / `transcriptx_test_outputs` plus disposable `data/`, `config/`, and `transcript-inbox/` under that tree. The data root needs `schema_epoch.json` (epoch **1**) once Streamlit has written any content under it — otherwise the schema-epoch gate blocks analysis. Files copied into the transcripts mount still need **registration** into `.transcriptx_index.json` (under outputs) for Home to list them; Library pickers can also see on-disk JSON. See [docker.md](../runtime/docker.md).
+
 ---
 
 ## 3. Facilitator script (principal journey)

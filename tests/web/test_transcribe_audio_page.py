@@ -27,7 +27,8 @@ def test_transcribe_audio_page_is_instruction_only():
     assert "~/.local/bin" in source
     assert "on PATH" in source
     assert "python3 scripts/whispermlx-missing.py" in source
-    assert "Import Transcript" in source
+    assert "Import into TranscriptX" not in source
+    assert "transcribe_goto_import" not in source
     assert "generate_transcription_command" in source
     assert "TRANSCRIPTION_MODEL_OPTIONS" in source
     assert "st.selectbox" in source

@@ -7,6 +7,17 @@ describe("Speaker ID workspace lifecycle helpers", () => {
     expect(__test.FRONTEND_BUILD_ID).toBe("tx-workspaces-0.1.0");
   });
 
+  it("uses authoritative active speaker for stale checks, not optimistic target", () => {
+    const data = {
+      active_speaker_id: "SPEAKER_00",
+    } as any;
+    // Clicking SPEAKER_01 sets optimistic target before fireCommand; expected
+    // must remain SPEAKER_00 so navigate_jump is not rejected_stale.
+    expect(__test.expectedSpeakerForCommand(data, "SPEAKER_01")).toBe(
+      "SPEAKER_00",
+    );
+  });
+
   it("rejects clips exceeding blob budget", () => {
     const state = {
       blobUrls: new Map<string, string>(),

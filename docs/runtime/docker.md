@@ -127,7 +127,44 @@ print('success:', result.success)
 | Mode | Command |
 |------|---------|
 | Web interface | `docker compose up` or `docker compose up transcriptx-web` → http://localhost:8501 |
+| Unfamiliar-user / curated samples | `docker compose -f docker-compose.unfamiliar-user.yml up transcriptx-web` → http://127.0.0.1:8502 (isolated project; mounts `../transcriptx_test/` only — see below) |
 | Custom host/port | `docker run --rm -p 8501:8501 transcriptx:latest --host 0.0.0.0 --port 8501` |
+
+### Unfamiliar-user / disposable sample stack
+
+`docker-compose.unfamiliar-user.yml` is a **standalone** Compose project (`name: transcriptx-unfamiliar`). It does not merge `docker-compose.override.yml` and does not touch the main `./data` library.
+
+Default host mounts (override with `HOST_UNFAMILIAR_*` env vars):
+
+| Host path | Container |
+|-----------|-----------|
+| `../transcriptx_test/data` | `/data` |
+| `../transcriptx_test/config` | `/data/.transcriptx` |
+| `../transcriptx_test/transcriptx_test_transcripts` | `/mnt/transcripts` |
+| `../transcriptx_test/transcriptx_test_recordings` | `/mnt/recordings` |
+| `../transcriptx_test/transcriptx_test_outputs` | `/mnt/outputs` |
+| `../transcriptx_test/transcript-inbox` | `/mnt/transcript-inbox` |
+
+UI: http://127.0.0.1:8502 (`TRANSCRIPTX_UNFAMILIAR_PORT` to change). Use this for facilitator-supplied samples during [unfamiliar-user validation](../dev/unfamiliar_user_validation_1_0.md).
+
+After the first boot (or any wipe of `../transcriptx_test/data`), ensure the epoch marker exists — Streamlit writes `perf/` under `/data`, which makes an unmarked root fail the schema-epoch gate (`missing_marker`):
+
+```bash
+python -c "from pathlib import Path; from transcriptx.core.utils.schema_epoch import write_epoch; write_epoch(Path('../transcriptx_test/data'))"
+```
+
+Pre-copied managed transcripts under the transcripts mount are **not** auto-registered. Home counts the slug index (`HOST_UNFAMILIAR_OUTPUT_DIR/.transcriptx_index.json`). After the stack is up:
+
+```bash
+docker compose -f docker-compose.unfamiliar-user.yml exec -T transcriptx-web python - <<'PY'
+from transcriptx.core.utils.file_discovery import discover_managed_transcript_paths
+from transcriptx.io.admit_and_register import _try_register
+for p in discover_managed_transcript_paths():
+    print(_try_register(p), p.name)
+PY
+```
+
+Then reload the UI (no recreate required if the volume is already mounted).
 
 ## Volume layout
 

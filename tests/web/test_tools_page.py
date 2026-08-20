@@ -133,6 +133,89 @@ def test_tools_page_force_tab_reorders(monkeypatch) -> None:
 
 
 @pytest.mark.unit
+def test_tools_page_force_tab_merge_alias(monkeypatch) -> None:
+    import transcriptx.web.page_modules.tools as mod
+    from transcriptx.web.navigation import TOOLS_HUB_FORCE_TAB_KEY, TOOLS_HUB_TAB_KEY
+
+    DummyHomeStreamlit.session_state = {TOOLS_HUB_FORCE_TAB_KEY: "Merge"}
+    seen_labels: list[list[str]] = []
+
+    class _TabCtx:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+    class _St(DummyHomeStreamlit):
+        @staticmethod
+        def tabs(labels):
+            seen_labels.append(list(labels))
+            return [_TabCtx() for _ in labels]
+
+        @staticmethod
+        def caption(*_a, **_k):
+            return None
+
+        @staticmethod
+        def markdown(*_a, **_k):
+            return None
+
+    monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(mod, "render_dependency_banner", lambda: True)
+    monkeypatch.setattr(mod, "render_preprocess_panel", lambda **_k: None)
+    monkeypatch.setattr(mod, "render_auto_merge_panel", lambda **_k: None)
+    monkeypatch.setattr(mod, "render_manual_merge_panel", lambda **_k: None)
+
+    mod.render_tools_page()
+
+    assert seen_labels[0][0] == "Auto-merge"
+    assert DummyHomeStreamlit.session_state[TOOLS_HUB_TAB_KEY] == "Auto-merge"
+    assert TOOLS_HUB_FORCE_TAB_KEY not in DummyHomeStreamlit.session_state
+
+
+@pytest.mark.unit
+def test_tools_page_force_manual_merge_tab(monkeypatch) -> None:
+    import transcriptx.web.page_modules.tools as mod
+    from transcriptx.web.navigation import TOOLS_HUB_FORCE_TAB_KEY
+
+    DummyHomeStreamlit.session_state = {TOOLS_HUB_FORCE_TAB_KEY: "Manual merge"}
+    seen_labels: list[list[str]] = []
+
+    class _TabCtx:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+    class _St(DummyHomeStreamlit):
+        @staticmethod
+        def tabs(labels):
+            seen_labels.append(list(labels))
+            return [_TabCtx() for _ in labels]
+
+        @staticmethod
+        def caption(*_a, **_k):
+            return None
+
+        @staticmethod
+        def markdown(*_a, **_k):
+            return None
+
+    monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(mod, "render_dependency_banner", lambda: True)
+    monkeypatch.setattr(mod, "render_preprocess_panel", lambda **_k: None)
+    monkeypatch.setattr(mod, "render_auto_merge_panel", lambda **_k: None)
+    monkeypatch.setattr(mod, "render_manual_merge_panel", lambda **_k: None)
+
+    mod.render_tools_page()
+
+    assert seen_labels[0][0] == "Manual merge"
+    assert seen_labels[0][1:] == ["Preprocessing", "Auto-merge"]
+
+
+@pytest.mark.unit
 def test_preprocess_empty_list_shows_info(monkeypatch, tmp_path) -> None:
     import transcriptx.web.ui.tools.preprocess_panel as mod
     import transcriptx.web.ui.tools.shared as shared
@@ -228,7 +311,7 @@ def test_merge_empty_recordings_shows_info(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(
         mod,
         "_render_shared_merge_options",
-        lambda: {
+        lambda **_k: {
             "backup_wavs": True,
             "overwrite": False,
             "delete_originals": False,
@@ -289,7 +372,7 @@ def test_merge_with_recordings_renders_section(monkeypatch, tmp_path: Path) -> N
     monkeypatch.setattr(
         mod,
         "_render_shared_merge_options",
-        lambda: {
+        lambda **_k: {
             "backup_wavs": True,
             "overwrite": False,
             "delete_originals": False,
@@ -314,6 +397,61 @@ def test_merge_panel_has_delete_originals_option() -> None:
     assert "Originals will be deleted with no storage backup" in source
     assert "hide_serial_group_in_session" in source
     assert "Hidden suggestions" in source
+
+
+@pytest.mark.unit
+def test_shared_merge_options_warns_without_backup(monkeypatch) -> None:
+    import transcriptx.web.ui.tools.merge_panel as mod
+
+    warnings: list[str] = []
+    DummyHomeStreamlit.session_state = {
+        "audio_merge_auto_backup": False,
+        "audio_merge_auto_delete_originals": True,
+        "audio_merge_auto_overwrite": False,
+        "audio_merge_auto_preprocess": False,
+    }
+
+    class _St(DummyHomeStreamlit):
+        @staticmethod
+        def subheader(*_a, **_k):
+            return None
+
+        @staticmethod
+        def checkbox(_label, *, value=False, key=None, **_k):
+            if key is not None and key in DummyHomeStreamlit.session_state:
+                return bool(DummyHomeStreamlit.session_state[key])
+            return value
+
+        @staticmethod
+        def warning(msg, **_k):
+            warnings.append(str(msg))
+
+    monkeypatch.setattr(mod, "st", _St)
+    options = mod._render_shared_merge_options(key_prefix="audio_merge_auto")
+
+    assert options["backup_wavs"] is False
+    assert options["delete_originals"] is True
+    assert any("no storage backup" in w for w in warnings)
+
+
+@pytest.mark.unit
+def test_render_merge_panel_legacy_calls_both(monkeypatch) -> None:
+    import transcriptx.web.ui.tools.merge_panel as mod
+
+    called: list[str] = []
+    monkeypatch.setattr(
+        mod,
+        "render_auto_merge_panel",
+        lambda **_k: called.append("auto"),
+    )
+    monkeypatch.setattr(
+        mod,
+        "render_manual_merge_panel",
+        lambda **_k: called.append("manual"),
+    )
+
+    mod.render_merge_panel(deps_ready=False)
+    assert called == ["auto", "manual"]
 
 
 @pytest.mark.unit

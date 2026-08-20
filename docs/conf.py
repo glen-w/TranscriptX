@@ -67,4 +67,8 @@ suppress_warnings = ["myst.xref_missing", "misc.highlighting_failure"]
 
 html_theme = "furo"
 html_title = "TranscriptX"
-html_static_path = ["_static"]
+# Shared public-site chrome (header nav) lives under website/chrome/ so the
+# marketing landing and Sphinx /guide/ pages stay aligned.
+html_static_path = ["_static", "../website/chrome"]
+html_css_files = ["site_chrome.css"]
+html_js_files = ["site_nav.js"]

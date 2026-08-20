@@ -2379,3 +2379,38 @@ Follow-up: expand testing of knobs-heavy GUI pages (Settings Analysis, Custom QA
 1. Keep bertopic isolated-fit error strings (`bertopic_fit_timeout`, `bertopic_native_crash:…`) stable; unit tests pin them.
 2. Prefer pure helper unit tests for export HTML/EPUB shared prep before AppTest export journeys.
 3. Do not re-enable collect-ignored semantic v1 modules until rewritten for current semantic similarity APIs.
+
+---
+
+## 80. Expansion (2026-08-20) – Tools hub Auto/Manual merge + serial-group prompt GUI
+
+### Trigger
+`/tests GUI` (suite review + targeted GUI expansion after Tools merge tab split)
+
+### Review
+- **Backup:** `/Users/89298/Documents/transcriptx backup/260820.zip` (9.6M); `custom-commands/` mirrored.
+- **Collection (default filter):** `8094/8444` selected (`350` deselected).
+- **Baseline before expansion:** `8091 passed, 3 skipped, 350 deselected` (green).
+- **Cleanup:** disabled (per command).
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0; `-m quarantined` selects nothing); not re-enabled.
+- **Markers / addopts:** unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow/gui_acceptance/gui_e2e/browser).
+- **Structure:** `tests/{analysis,app,browser,contracts,core,e2e_gui,integration,io,optional,packaging,pipeline,presentation,quarantine,regression,release,scripts,services,smoke,unit,utils,web}` (+ `tests/web/transcript_viewer/`, `tests/web/gui_acceptance/`).
+- **GUI note:** Streamlit P0–P2 backlog already closed; residual risk after `faa769b` was behavioral coverage for `render_serial_group_prompt` and Tools hub tab alias/force ordering (presence-only tests were insufficient).
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Serial-group prompt | Source-string pins only; no L3 state/duration/button contracts | Extend `tests/web/test_serial_group_ui.py` |
+| Tools hub tabs | Legacy `"Merge"` alias + Manual-merge force reorder untested | Extend `tests/web/test_tools_page.py` + nav helpers |
+| Shared merge options | Delete-without-backup warning path unexercised | New L3 doubles test |
+
+### Tests added / extended
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/web/test_serial_group_ui.py` | **+4** | `_format_duration`; prompt L3 state; tab alias normalize; navigate with ordered paths |
+| `tests/web/test_tools_page.py` | **+4** | force `"Merge"` → Auto-merge; Manual merge reorder; delete-without-backup warning; legacy `render_merge_panel` |
+
+### Validation
+- Focused slice: **31 passed** (`test_serial_group_ui` + `test_tools_page`).
+- **Production code:** none (tests-only).
+- **Quarantined tests:** not re-enabled.

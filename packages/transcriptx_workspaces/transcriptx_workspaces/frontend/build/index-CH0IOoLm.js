@@ -57,7 +57,7 @@ function f(n, e, r, o = {}, i = {}) {
     action_seq: ++n.actionSeq,
     transcript_id: e.transcript_id,
     transcript_revision: e.transcript_revision,
-    expected_speaker_id: n.optimisticSpeakerId ?? e.active_speaker_id,
+    expected_speaker_id: e.active_speaker_id,
     expected_mapping_revision: e.mapping_revision,
     audio_fingerprint: e.audio_fingerprint ?? null,
     action: r,
@@ -232,7 +232,11 @@ const q = (n) => {
   ensureBlobUrl: v,
   revokeAllBlobs: b,
   PROTOCOL_VERSION: k,
-  FRONTEND_BUILD_ID: m
+  FRONTEND_BUILD_ID: m,
+  /** Mirrors fireCommand expected_speaker_id selection (authoritative only). */
+  expectedSpeakerForCommand(n, e) {
+    return n.active_speaker_id;
+  }
 };
 export {
   U as __test,

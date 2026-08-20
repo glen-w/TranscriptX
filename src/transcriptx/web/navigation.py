@@ -77,14 +77,14 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
         "Import Transcript", "Import Transcript", "workflow", may_mutate_context=True
     ),
     _spec(
-        "Speaker ID",
-        "Speaker Identification",
+        "Rename Transcript",
+        "Rename Transcript",
         "workflow",
         may_mutate_context=True,
     ),
     _spec(
-        "Rename Transcript",
-        "Rename Transcript",
+        "Speaker ID",
+        "Speaker Identification",
         "workflow",
         may_mutate_context=True,
     ),

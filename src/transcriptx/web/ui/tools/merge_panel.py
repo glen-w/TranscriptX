@@ -88,7 +88,7 @@ def render_auto_merge_panel(*, deps_ready: bool = True) -> None:
         render_empty_recordings_hint()
         return
 
-    options = _render_shared_merge_options()
+    options = _render_shared_merge_options(key_prefix="audio_merge_auto")
     _render_detected_serial_groups(
         recordings,
         profiles=profiles,
@@ -110,7 +110,7 @@ def render_manual_merge_panel(*, deps_ready: bool = True) -> None:
         render_empty_recordings_hint()
         return
 
-    options = _render_shared_merge_options()
+    options = _render_shared_merge_options(key_prefix="audio_merge_manual")
     _render_section_select(recordings, deps_ready=deps_ready, options=options)
 
 
@@ -120,23 +120,23 @@ def render_merge_panel(*, deps_ready: bool = True) -> None:
     render_manual_merge_panel(deps_ready=deps_ready)
 
 
-def _render_shared_merge_options() -> dict[str, bool]:
-    """Single set of merge flags shared by auto-merge and manual merge."""
+def _render_shared_merge_options(*, key_prefix: str) -> dict[str, bool]:
+    """Merge flags for one panel. ``key_prefix`` must be unique per Streamlit tab."""
     st.subheader("Merge options")
     col_a, col_b = st.columns(2)
     with col_a:
         backup_wavs = st.checkbox(
             "Backup originals to storage before merging",
-            value=bool(st.session_state.get("audio_merge_backup", True)),
-            key="audio_merge_backup",
+            value=bool(st.session_state.get(f"{key_prefix}_backup", True)),
+            key=f"{key_prefix}_backup",
             help=widget_help(
                 "Copies each source file to the WAV storage directory before merging."
             ),
         )
         apply_preprocessing = st.checkbox(
             "Preprocess files while merging",
-            value=bool(st.session_state.get("audio_merge_preprocess", False)),
-            key="audio_merge_preprocess",
+            value=bool(st.session_state.get(f"{key_prefix}_preprocess", False)),
+            key=f"{key_prefix}_preprocess",
             help=widget_help(
                 "Apply current preprocessing defaults before concatenating. Off by default."
             ),
@@ -144,14 +144,14 @@ def _render_shared_merge_options() -> dict[str, bool]:
     with col_b:
         overwrite = st.checkbox(
             "Overwrite output if it already exists",
-            value=bool(st.session_state.get("audio_merge_overwrite", False)),
-            key="audio_merge_overwrite",
+            value=bool(st.session_state.get(f"{key_prefix}_overwrite", False)),
+            key=f"{key_prefix}_overwrite",
             help=widget_help("Replace an existing merged file at the output path."),
         )
         delete_originals = st.checkbox(
             "Delete originals once merge is complete",
-            value=bool(st.session_state.get("audio_merge_delete_originals", False)),
-            key="audio_merge_delete_originals",
+            value=bool(st.session_state.get(f"{key_prefix}_delete_originals", False)),
+            key=f"{key_prefix}_delete_originals",
             help=widget_help(
                 "Permanently remove source files and linked part transcripts after success."
             ),
@@ -179,7 +179,9 @@ def _render_merge_file_preview(path: Path, *, key_suffix: str) -> None:
             st.caption("File not found")
             return
         try:
-            st.audio(path.read_bytes(), key=f"audio_merge_preview_{key_suffix}")
+            # st.audio has no `key` arg; keyed container keeps multi-file previews distinct.
+            with st.container(key=f"audio_merge_preview_{key_suffix}"):
+                st.audio(path.read_bytes())
         except Exception as exc:
             st.caption(f"Playback unavailable: {exc}")
 

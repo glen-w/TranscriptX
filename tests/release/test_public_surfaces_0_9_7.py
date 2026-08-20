@@ -13,17 +13,40 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_website_landing_scaffold() -> None:
     index = ROOT / "website" / "index.html"
     css = ROOT / "website" / "styles.css"
+    chrome_css = ROOT / "website" / "chrome" / "site_chrome.css"
+    chrome_js = ROOT / "website" / "chrome" / "site_nav.js"
     pages = ROOT / ".github" / "workflows" / "pages.yml"
     assert index.is_file()
     assert css.is_file()
+    assert chrome_css.is_file()
+    assert chrome_js.is_file()
     assert pages.is_file()
     html = index.read_text(encoding="utf-8")
     assert "TranscriptX" in html
+    assert 'class="site-header tx-site-chrome"' in html
+    assert "chrome/site_chrome.css" in html
+    assert "chrome/site_nav.js" in html
+    assert "./guide/workflows/index.html" in html
     # Forbidden public RTD hostname must stay out of marketing copy until go-live.
     forbidden = "readthedocs" + ".io"
     assert forbidden not in html
     assert "ko-fi.com/C0C1XK8G" in html
     assert "website" in pages.read_text(encoding="utf-8")
+
+
+@pytest.mark.unit
+def test_sphinx_guide_keeps_site_header_chrome() -> None:
+    """Guide pages (incl. workflows) must keep the public site header nav."""
+    conf = (ROOT / "docs" / "conf.py").read_text(encoding="utf-8")
+    assert "../website/chrome" in conf
+    assert "site_chrome.css" in conf
+    assert "site_nav.js" in conf
+    page_tmpl = (ROOT / "docs" / "_templates" / "page.html").read_text(
+        encoding="utf-8"
+    )
+    assert "tx-site-chrome" in page_tmpl
+    assert "workflows/index" in page_tmpl
+    assert "pathto(master_doc)" in page_tmpl
 
 
 @pytest.mark.unit

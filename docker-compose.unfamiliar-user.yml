@@ -1,0 +1,99 @@
+# Isolated unfamiliar-user / disposable test stack.
+#
+# Mounts only the curated tree under ../transcriptx_test (sibling of this repo)
+# so the UI sees those transcripts/recordings — not your main library.
+# Uses a separate Compose project name, data root, config, outputs, and port.
+#
+# Bring up (from repo root; does NOT auto-load docker-compose.override.yml):
+#
+#   # Seed epoch marker once (required after first boot creates perf/ under data/)
+#   python -c "from pathlib import Path; from transcriptx.core.utils.schema_epoch import write_epoch; write_epoch(Path('../transcriptx_test/data'))"
+#   docker compose -f docker-compose.unfamiliar-user.yml up -d transcriptx-web
+#   # Register pre-placed managed transcripts into the library index (Home uses the index)
+#   docker compose -f docker-compose.unfamiliar-user.yml exec -T transcriptx-web python - <<'PY'
+#   from transcriptx.core.utils.file_discovery import discover_managed_transcript_paths
+#   from transcriptx.io.admit_and_register import _try_register
+#   for p in discover_managed_transcript_paths():
+#       print(_try_register(p), p.name)
+#   PY
+#
+# Then open http://127.0.0.1:8502
+#
+# Fresh data roots become "occupied" once Streamlit writes perf/ caches; without
+# schema_epoch.json the UI blocks on the schema-epoch gate (missing_marker).
+# Dropping JSON into the transcripts mount does not auto-register them; Home
+# counts the slug index under outputs (`.transcriptx_index.json`).
+#
+# Optional path overrides via env (defaults match the local test layout):
+#   HOST_UNFAMILIAR_DATA_DIR, HOST_UNFAMILIAR_CONFIG_DIR,
+#   HOST_UNFAMILIAR_TRANSCRIPTS_DIR, HOST_UNFAMILIAR_RECORDINGS_DIR,
+#   HOST_UNFAMILIAR_OUTPUT_DIR, HOST_UNFAMILIAR_INBOX_DIR, HOST_UNFAMILIAR_WAV_DIR
+#
+# Stop without touching the main stack: Ctrl-C / docker compose -f … down
+# (do not use prune / down -v unless you intend to drop the test cache volume).
+
+name: transcriptx-unfamiliar
+
+services:
+  transcriptx-web:
+    build:
+      context: .
+      args:
+        TRANSCRIPTX_TORCH_VARIANT: ${TRANSCRIPTX_TORCH_VARIANT:-cpu}
+    image: transcriptx:latest
+    init: true
+    user: "${UID:-1000}:${GID:-1000}"
+    working_dir: /data
+    volumes:
+      - ${HOST_UNFAMILIAR_DATA_DIR:-../transcriptx_test/data}:/data
+      - ${HOST_UNFAMILIAR_CONFIG_DIR:-../transcriptx_test/config}:/data/.transcriptx
+      - transcriptx_unfamiliar_cache:/home/transcriptx/.cache
+      - ${HOST_UNFAMILIAR_TRANSCRIPTS_DIR:-../transcriptx_test/transcriptx_test_transcripts}:/mnt/transcripts
+      - ${HOST_UNFAMILIAR_INBOX_DIR:-../transcriptx_test/transcript-inbox}:/mnt/transcript-inbox:ro
+      - ${HOST_UNFAMILIAR_OUTPUT_DIR:-../transcriptx_test/transcriptx_test_outputs}:/mnt/outputs
+      - ${HOST_UNFAMILIAR_RECORDINGS_DIR:-../transcriptx_test/transcriptx_test_recordings}:/mnt/recordings
+      - ${HOST_UNFAMILIAR_RECORDINGS_DIR:-../transcriptx_test/transcriptx_test_recordings}/imports:/mnt/recordings/imports
+      - ${HOST_UNFAMILIAR_WAV_DIR:-../transcriptx_test/wav}:/mnt/wav
+    environment:
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+      - STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500
+      - TRANSCRIPTX_DATA_DIR=/data
+      - TRANSCRIPTX_CONFIG_DIR=/data/.transcriptx
+      - TRANSCRIPTX_TRANSCRIPTS_DIR=/mnt/transcripts
+      - TRANSCRIPTX_OUTPUT_DIR=/mnt/outputs
+      - TRANSCRIPTX_RECORDINGS_DIR=/mnt/recordings
+      - TRANSCRIPTX_IMPORTS_DIR=/mnt/recordings/imports
+      - TRANSCRIPTX_WAV_BACKUP_DIR=/mnt/wav
+      - TRANSCRIPTX_USE_EMOJIS=0
+      - TRANSCRIPTX_CORE=0
+      - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-0}
+      - HF_HOME=/data/.cache/huggingface
+      - PLAYWRIGHT_BROWSERS_PATH=/data/.cache/ms-playwright
+      - MPLCONFIGDIR=/data/.cache/matplotlib
+      - NLTK_DATA=/opt/venv/nltk_data
+      - NUMBA_CACHE_DIR=/tmp/numba_cache
+      - TRANSCRIPTX_SPACY_MODEL=${TRANSCRIPTX_SPACY_MODEL:-}
+      - TRANSCRIPTX_SEMANTIC_MODEL=${TRANSCRIPTX_SEMANTIC_MODEL:-}
+      - TRANSCRIPTX_SEMANTIC_SIMILARITY_MODEL=${TRANSCRIPTX_SEMANTIC_SIMILARITY_MODEL:-}
+      - TRANSCRIPTX_EMOTION_MODEL=${TRANSCRIPTX_EMOTION_MODEL:-}
+      - TRANSCRIPTX_SENTIMENT_BACKEND=${TRANSCRIPTX_SENTIMENT_BACKEND:-}
+      - TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL=${TRANSCRIPTX_BERTOPIC_EMBEDDING_MODEL:-}
+      - TRANSCRIPTX_LLM_ENABLED=${TRANSCRIPTX_LLM_ENABLED:-}
+      - TRANSCRIPTX_LLM_PROVIDER=${TRANSCRIPTX_LLM_PROVIDER:-}
+      - TRANSCRIPTX_LLM_MODEL=${TRANSCRIPTX_LLM_MODEL:-}
+      - TRANSCRIPTX_LLM_BASE_URL=${TRANSCRIPTX_LLM_BASE_URL:-}
+      - TRANSCRIPTX_LLM_SEED=${TRANSCRIPTX_LLM_SEED:-}
+      - TRANSCRIPTX_CORRECTIONS_LLM_ENABLED=${TRANSCRIPTX_CORRECTIONS_LLM_ENABLED:-}
+    ports:
+      # Separate from the main stack (8501) so both can run if needed.
+      - "${TRANSCRIPTX_UNFAMILIAR_BIND_HOST:-127.0.0.1}:${TRANSCRIPTX_UNFAMILIAR_PORT:-8502}:8501"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    command: ["--host", "0.0.0.0"]
+
+volumes:
+  transcriptx_unfamiliar_cache:

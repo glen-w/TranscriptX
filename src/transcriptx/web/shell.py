@@ -25,7 +25,7 @@ def brand_logo_path(*, for_dark_chrome: bool = True) -> Path | None:
     """Sidebar/brand mark path.
 
     Prefer the light-wordmark variant on dark Streamlit chrome; fall back to the
-    standard full logo, then icon-only.
+    standard full logo (dark wordmark for light chrome), then icon-only.
     """
     if for_dark_chrome and _LOGO_DARK.is_file():
         return _LOGO_DARK
@@ -36,24 +36,47 @@ def brand_logo_path(*, for_dark_chrome: bool = True) -> Path | None:
     return None
 
 
-def render_brand_logo(*, width: int = 200) -> None:
-    """Sidebar brand mark without Streamlit's st.image fullscreen toolbar."""
-    logo = brand_logo_path()
-    if logo is None:
-        return
-    raw = logo.read_bytes()
+def _logo_data_uri(path: Path) -> str:
+    raw = path.read_bytes()
     b64 = base64.b64encode(raw).decode("ascii")
-    suffix = logo.suffix.lower()
+    suffix = path.suffix.lower()
     mime = "image/png" if suffix == ".png" else "image/jpeg"
-    st.markdown(
-        (
-            f'<div class="tx-sidebar-brand">'
-            f'<img src="data:{mime};base64,{b64}" width="{width}" '
+    return f"data:{mime};base64,{b64}"
+
+
+def render_brand_logo(*, width: int = 200) -> None:
+    """Sidebar brand mark without Streamlit's st.image fullscreen toolbar.
+
+    Emits both light-chrome and dark-chrome wordmarks; CSS picks the readable
+    variant from Streamlit's active ``color-scheme`` (see inject_global_styles).
+    """
+    light_chrome = brand_logo_path(for_dark_chrome=False)
+    dark_chrome = brand_logo_path(for_dark_chrome=True)
+    if light_chrome is None and dark_chrome is None:
+        return
+
+    parts = ['<div class="tx-sidebar-brand">']
+    if light_chrome is not None:
+        parts.append(
+            f'<img class="tx-logo-light-chrome" '
+            f'src="{_logo_data_uri(light_chrome)}" width="{width}" '
             f'alt="TranscriptX" />'
-            f"</div>"
-        ),
-        unsafe_allow_html=True,
-    )
+        )
+    if dark_chrome is not None and dark_chrome != light_chrome:
+        parts.append(
+            f'<img class="tx-logo-dark-chrome" '
+            f'src="{_logo_data_uri(dark_chrome)}" width="{width}" '
+            f'alt="" aria-hidden="true" />'
+        )
+    elif dark_chrome is not None:
+        # Only one asset available — single img, no theme swap needed.
+        parts = [
+            '<div class="tx-sidebar-brand">',
+            f'<img src="{_logo_data_uri(dark_chrome)}" width="{width}" '
+            f'alt="TranscriptX" />',
+        ]
+    parts.append("</div>")
+    st.markdown("".join(parts), unsafe_allow_html=True)
 
 
 def configure_streamlit_page() -> None:
@@ -94,6 +117,16 @@ def inject_global_styles() -> None:
         display: block;
         max-width: 100%;
         height: auto;
+    }
+    /* Default: dark wordmark (readable on light chrome). JS sets data-tx-chrome
+       from the live sidebar background so Streamlit theme wins over OS/browser. */
+    .tx-sidebar-brand .tx-logo-dark-chrome { display: none; }
+    .tx-sidebar-brand .tx-logo-light-chrome { display: block; }
+    .tx-sidebar-brand[data-tx-chrome="dark"] .tx-logo-light-chrome { display: none; }
+    .tx-sidebar-brand[data-tx-chrome="dark"] .tx-logo-dark-chrome { display: block; }
+    @media (prefers-color-scheme: dark) {
+        .tx-sidebar-brand:not([data-tx-chrome]) .tx-logo-light-chrome { display: none; }
+        .tx-sidebar-brand:not([data-tx-chrome]) .tx-logo-dark-chrome { display: block; }
     }
     section[data-testid="stSidebar"] * {
         overflow-wrap: anywhere;
@@ -253,12 +286,12 @@ def inject_global_styles() -> None:
         height: auto !important;
         line-height: 1.3 !important;
     }
-    /* Sidebar nav — solid buttons (readable on dark theme) */
+    /* Sidebar nav — theme-aware (Streamlit light/dark; browsers differ on default) */
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="secondary"] {
-        background: rgba(250, 250, 250, 0.07) !important;
-        border: 1px solid rgba(250, 250, 250, 0.14) !important;
+        background: color-mix(in srgb, var(--text-color, #31333F) 8%, transparent) !important;
+        border: 1px solid color-mix(in srgb, var(--text-color, #31333F) 18%, transparent) !important;
         border-radius: 6px !important;
-        color: #d7dee8 !important;
+        color: var(--text-color, #31333F) !important;
         text-align: center;
         padding: 0.35rem 0.55rem;
         font-weight: 500;
@@ -269,9 +302,9 @@ def inject_global_styles() -> None:
         transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
     }
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="secondary"]:hover {
-        color: #eef4fb !important;
-        background: rgba(31, 119, 180, 0.22) !important;
-        border-color: rgba(155, 208, 245, 0.35) !important;
+        color: var(--text-color, #31333F) !important;
+        background: color-mix(in srgb, #1f77b4 22%, transparent) !important;
+        border-color: color-mix(in srgb, #1f77b4 40%, transparent) !important;
         text-decoration: none;
     }
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="secondary"]:focus-visible {
@@ -280,17 +313,17 @@ def inject_global_styles() -> None:
         box-shadow: none !important;
     }
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="secondary"]:disabled {
-        background: rgba(250, 250, 250, 0.05) !important;
-        border-color: rgba(250, 250, 250, 0.10) !important;
-        color: #b8c2d0 !important;
+        background: color-mix(in srgb, var(--text-color, #31333F) 5%, transparent) !important;
+        border-color: color-mix(in srgb, var(--text-color, #31333F) 12%, transparent) !important;
+        color: color-mix(in srgb, var(--text-color, #31333F) 55%, transparent) !important;
         opacity: 1 !important;
     }
     /* Active nav — brighter fill, same size/spacing as inactive */
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="primary"] {
-        background: rgba(31, 119, 180, 0.38) !important;
-        border: 1px solid rgba(155, 208, 245, 0.45) !important;
+        background: color-mix(in srgb, #1f77b4 28%, var(--secondary-background-color, transparent)) !important;
+        border: 1px solid color-mix(in srgb, #1f77b4 45%, transparent) !important;
         border-radius: 6px !important;
-        color: #f3f9fd !important;
+        color: var(--text-color, #31333F) !important;
         text-align: center;
         padding: 0.35rem 0.55rem;
         font-weight: 600;
@@ -300,9 +333,9 @@ def inject_global_styles() -> None:
         opacity: 1 !important;
     }
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="primary"]:hover {
-        background: rgba(31, 119, 180, 0.48) !important;
-        border-color: rgba(155, 208, 245, 0.55) !important;
-        color: #ffffff !important;
+        background: color-mix(in srgb, #1f77b4 38%, var(--secondary-background-color, transparent)) !important;
+        border-color: color-mix(in srgb, #1f77b4 55%, transparent) !important;
+        color: var(--text-color, #31333F) !important;
     }
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="primary"]:focus-visible {
         outline: 2px solid #1f77b4;
@@ -953,6 +986,51 @@ def inject_global_styles() -> None:
     }
 </style>
 <script>
+    // Match brand wordmark to Streamlit chrome (light vs dark), not only OS preference.
+    (function() {
+        if (window.__txBrandChromeSync) return;
+        window.__txBrandChromeSync = true;
+        const luminance = function(el) {
+            if (!el) return null;
+            const bg = window.getComputedStyle(el).backgroundColor || '';
+            const m = bg.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+            if (!m) return null;
+            return (0.2126 * +m[1]) + (0.7152 * +m[2]) + (0.0722 * +m[3]);
+        };
+        const resolveChrome = function() {
+            const sidebar = document.querySelector('section[data-testid="stSidebar"]');
+            const lum = luminance(sidebar);
+            if (lum !== null) {
+                return lum > 140 ? 'light' : 'dark';
+            }
+            const root = document.querySelector('[data-testid="stAppViewContainer"]')
+                || document.documentElement;
+            const scheme = (window.getComputedStyle(root).colorScheme || '').toLowerCase();
+            if (scheme.indexOf('dark') !== -1) return 'dark';
+            if (scheme.indexOf('light') !== -1) return 'light';
+            return window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark' : 'light';
+        };
+        const apply = function() {
+            const chrome = resolveChrome();
+            document.querySelectorAll('.tx-sidebar-brand').forEach(function(node) {
+                if (node.getAttribute('data-tx-chrome') !== chrome) {
+                    node.setAttribute('data-tx-chrome', chrome);
+                }
+            });
+        };
+        apply();
+        const obs = new MutationObserver(apply);
+        obs.observe(document.documentElement, {
+            attributes: true,
+            childList: true,
+            subtree: true,
+        });
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener(
+            'change', apply
+        );
+    })();
+
     // Scroll to top button functionality
     window.addEventListener('DOMContentLoaded', function() {
         // Create the button

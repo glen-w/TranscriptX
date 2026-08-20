@@ -97,6 +97,8 @@ def test_sphinx_scaffold_files_and_wiring() -> None:
     conf = (ROOT / "docs" / "conf.py").read_text(encoding="utf-8")
     assert "myst_parser" in conf
     assert 'html_theme = "furo"' in conf
+    assert (ROOT / "docs" / "_templates" / "page.html").is_file()
+    assert "site_chrome.css" in conf
 
     rtd = (ROOT / ".readthedocs.yml").read_text(encoding="utf-8")
     assert "configuration: docs/conf.py" in rtd

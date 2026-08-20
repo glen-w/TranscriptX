@@ -173,3 +173,48 @@ def test_navigate_jump_does_not_sync_jump_key(transcript: Path) -> None:
     assert ack.status == "ok"
     assert ack.effects.navigate_to_idx == 1
     assert ack.effects.sync_jump is False
+
+
+def test_navigate_jump_rejects_when_expected_is_target_not_current(
+    transcript: Path,
+) -> None:
+    """Frontend must send the current active id as expected_speaker_id.
+
+    Speaker-list clicks set an optimistic *target* in the UI; if that target
+    is also sent as expected_speaker_id, navigate_jump is rejected_stale and
+    appears as a no-op.
+    """
+    ctrl = _FakeController()
+    svc = _service(ctrl)
+    ack = svc.execute(
+        SpeakerIdCommand(
+            action="navigate_jump",
+            transcript_id=str(transcript),
+            action_id=new_action_id(),
+            action_seq=4,
+            current_speaker_idx=0,
+            expected_speaker_id="SPEAKER_01",
+            payload={"target_idx": 1},
+        )
+    )
+    assert ack.status == "rejected_stale"
+    assert ack.active_speaker_idx == 0
+
+
+def test_navigate_jump_ok_when_expected_matches_current(transcript: Path) -> None:
+    ctrl = _FakeController()
+    svc = _service(ctrl)
+    ack = svc.execute(
+        SpeakerIdCommand(
+            action="navigate_jump",
+            transcript_id=str(transcript),
+            action_id=new_action_id(),
+            action_seq=5,
+            current_speaker_idx=0,
+            expected_speaker_id="SPEAKER_00",
+            payload={"target_idx": 1},
+        )
+    )
+    assert ack.status == "ok"
+    assert ack.active_speaker_idx == 1
+    assert ack.active_speaker_id == "SPEAKER_01"

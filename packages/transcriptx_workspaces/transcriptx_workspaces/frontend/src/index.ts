@@ -183,6 +183,9 @@ function fireCommand(
     return;
   }
   if (mutating) state.mutating = true;
+  // Stale checks must use the last Python-authoritative active speaker.
+  // Never send optimisticSpeakerId here: speaker-list clicks set the optimistic
+  // *target* before fireCommand, which would reject navigate_jump as stale.
   const envelope: CommandEnvelope = {
     protocol_version: PROTOCOL_VERSION,
     frontend_build_id: FRONTEND_BUILD_ID,
@@ -190,7 +193,7 @@ function fireCommand(
     action_seq: ++state.actionSeq,
     transcript_id: data.transcript_id,
     transcript_revision: data.transcript_revision,
-    expected_speaker_id: state.optimisticSpeakerId ?? data.active_speaker_id,
+    expected_speaker_id: data.active_speaker_id,
     expected_mapping_revision: data.mapping_revision,
     audio_fingerprint: data.audio_fingerprint ?? null,
     action,
@@ -480,4 +483,8 @@ export const __test = {
   revokeAllBlobs,
   PROTOCOL_VERSION,
   FRONTEND_BUILD_ID,
+  /** Mirrors fireCommand expected_speaker_id selection (authoritative only). */
+  expectedSpeakerForCommand(data: WorkspaceData, _optimistic: string | null): string {
+    return data.active_speaker_id;
+  },
 };

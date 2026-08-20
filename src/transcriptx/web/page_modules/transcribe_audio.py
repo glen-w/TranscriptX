@@ -30,7 +30,6 @@ from transcriptx.services.transcription.stt_command_profiles import (
 )
 from transcriptx.web.navigation import consume_transcription_nav_paths
 from transcriptx.web.components.info_tooltip import widget_help
-from transcriptx.web.state import PAGE_KEY
 
 _ENV_FILE_DEFAULT = default_host_env_file(PATHS.project_root)
 _SCRIPT_REF = default_host_script_ref(PATHS.project_root)
@@ -523,30 +522,3 @@ whispermlx-missing --dry-run
 whispermlx-missing""",
         language="bash",
     )
-
-    st.subheader("Import into TranscriptX")
-    st.markdown(
-        "When transcription finishes, open **Import Transcript** and upload the result "
-        "(WhisperX / whispermlx JSON, Whisper-WebUI **SRT/VTT**, and other supported formats). "
-        "Optionally attach the source recording on that page for speaker ID and "
-        "audio-derived features; same-stem audio in the mounted recordings folder "
-        "will be linked."
-    )
-    if st.button(
-        "Go to Import Transcript →", type="primary", key="transcribe_goto_import"
-    ):
-        st.session_state[PAGE_KEY] = "Import Transcript"
-        st.rerun()
-
-    with st.expander("Host vs Docker boundaries", expanded=False):
-        st.markdown("""
-| Where | What runs |
-|-------|-----------|
-| Host (Mac terminal) | `whispermlx`, `whispermlx-missing` |
-| Host (Linux/GPU or Docker Desktop) | WhisperX Docker; Whisper-WebUI Gradio |
-| `transcriptx-web` (Docker or native) | Import, library, analysis only |
-
-**whispermlx** needs Apple MLX and cannot run inside the Linux analysis image.
-See `docs/runtime/transcription.md`, `docs/recipes/whisperx/README.md`, and
-`docs/recipes/whisper-webui/README.md`.
-""")
