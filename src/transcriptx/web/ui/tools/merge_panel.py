@@ -13,6 +13,10 @@ from transcriptx.app.controllers.merge_controller import MergeController
 from transcriptx.app.models.requests import MergeRequest
 from transcriptx.app.models.results import MergeResult
 from transcriptx.app.progress import make_initial_snapshot
+from transcriptx.core.audio.linked_transcripts import (
+    delete_linked_transcripts_for_audio,
+    find_transcripts_for_audio,
+)
 from transcriptx.core.audio.merge_profiles import MergeSourceProfile
 from transcriptx.core.audio.serial_groups import (
     SerialGroup,
@@ -20,7 +24,7 @@ from transcriptx.core.audio.serial_groups import (
     partition_dismissed_serial_groups,
 )
 from transcriptx.core.audio.utils import get_audio_duration
-from transcriptx.core.utils.paths import RECORDINGS_DIR
+from transcriptx.core.utils.paths import RECORDINGS_DIR, RECORDINGS_IMPORTS_DIR
 from transcriptx.core.utils.rename.date_prefix import extract_date_prefix
 from transcriptx.web.components.progress_panel import (
     MERGE_SNAPSHOT_KEY,
@@ -41,6 +45,7 @@ from transcriptx.web.ui.tools.shared import (
     render_upload_and_refresh,
 )
 from transcriptx.web.components.info_tooltip import widget_help
+from transcriptx.web.state import set_page_flash, try_page_toast
 
 _KEY_ORDERED_PATHS = MERGE_ORDERED_PATHS_KEY
 _KEY_HIDDEN_SERIAL = "audio_merge_hidden_serial_keys"
@@ -48,7 +53,121 @@ _KEY_RUN_IN_PROGRESS = "audio_merge_run_in_progress"
 _KEY_RESULT = "audio_merge_result"
 _KEY_AUTO_RESULTS = "audio_merge_auto_results"
 _STAGE_COUNT = 4
+
+# Browsers typically allow only ~6–8 concurrent media fetches per origin.
+# Eager st.audio() for every part leaves later players stuck at 0:00 / 0:00.
+_AUDIO_MIME_BY_SUFFIX = {
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
+    ".ogg": "audio/ogg",
+    ".flac": "audio/flac",
+    ".webm": "audio/webm",
+}
+
+
+def _audio_mime_for_path(path: Path) -> str:
+    return _AUDIO_MIME_BY_SUFFIX.get(path.suffix.lower(), "audio/mpeg")
+
+
 _SAFE_NAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def _path_is_under(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(Path(root).resolve())
+        return True
+    except (ValueError, OSError):
+        return False
+
+
+def recording_is_deletable(path: Path) -> bool:
+    """True when *path* is a file under recordings or recordings imports."""
+    if not path.is_file():
+        return False
+    return _path_is_under(path, Path(RECORDINGS_DIR)) or _path_is_under(
+        path, Path(RECORDINGS_IMPORTS_DIR)
+    )
+
+
+def delete_merge_recording(path: Path) -> tuple[bool, int, list[str]]:
+    """Delete a merge-panel recording and linked transcripts.
+
+    Returns ``(audio_deleted, transcripts_deleted, errors)``.
+    """
+    if not recording_is_deletable(path):
+        return (
+            False,
+            0,
+            ["This file is not a managed recording and cannot be deleted here."],
+        )
+    transcripts_deleted, warnings = delete_linked_transcripts_for_audio(path)
+    errors = list(warnings)
+    try:
+        path.unlink()
+    except OSError as exc:
+        errors.append(f"Could not delete {path.name}: {exc}")
+        return False, transcripts_deleted, errors
+    return True, transcripts_deleted, errors
+
+
+def drop_recording_from_merge_session(session: dict, path: Path) -> None:
+    """Remove *path* from the manual-merge order list if present."""
+    ordered = session.get(_KEY_ORDERED_PATHS, [])
+    if not isinstance(ordered, list):
+        return
+    path_str = str(path)
+    session[_KEY_ORDERED_PATHS] = [item for item in ordered if str(item) != path_str]
+
+
+@st.dialog("Delete recording?")
+def _confirm_delete_recording_dialog(path_str: str) -> None:
+    path = Path(path_str)
+    st.markdown(f"Permanently delete **`{path.name}`**?")
+    st.caption("This cannot be undone.")
+    try:
+        linked = find_transcripts_for_audio(path)
+    except Exception:
+        linked = []
+    if linked:
+        st.caption(f"Also deletes {len(linked)} linked transcript(s).")
+
+    col_ok, col_cancel = st.columns(2)
+    with col_ok:
+        if st.button(
+            "Delete",
+            type="primary",
+            icon=ic.DELETE,
+            key="audio_merge_confirm_delete",
+        ):
+            ok, tx_count, errors = delete_merge_recording(path)
+            if not ok:
+                for err in errors:
+                    st.error(err)
+                return
+            drop_recording_from_merge_session(st.session_state, path)
+            RecordingsService.list_recordings.clear()  # type: ignore[attr-defined]
+            msg = f"Deleted {path.name}."
+            if tx_count:
+                msg = f"Deleted {path.name} and {tx_count} linked transcript(s)."
+            set_page_flash("success", msg)
+            try_page_toast(msg)
+            st.rerun()
+    with col_cancel:
+        if st.button("Cancel", icon=ic.CANCEL, key="audio_merge_cancel_delete"):
+            st.rerun()
+
+
+def _render_delete_recording_button(path: Path, *, widget_key: str) -> None:
+    if st.button(
+        "",
+        key=widget_key,
+        icon=ic.DELETE,
+        help=widget_help("Delete this recording from disk."),
+        disabled=not recording_is_deletable(path),
+    ):
+        _confirm_delete_recording_dialog(str(path))
 
 
 def hidden_serial_keys_from_session(session: dict) -> list[str]:
@@ -170,19 +289,35 @@ def _render_shared_merge_options(*, key_prefix: str) -> dict[str, bool]:
     }
 
 
-def _render_merge_file_preview(path: Path, *, key_suffix: str) -> None:
-    """Show a filename with an inline audio player for quick preview."""
-    col_name, col_audio = st.columns([4, 3])
+def _render_merge_file_preview(
+    path: Path, *, key_suffix: str, show_player: bool
+) -> None:
+    """Show a filename, and optionally an inline audio player.
+
+    Callers gate ``show_player`` (typically one checkbox per group) so the page
+    does not mount every clip at once. Browsers allow only ~6–8 concurrent media
+    fetches per origin; pass the path (not bytes) so hour-long MP3s are not read
+    into memory on every rerun.
+    """
+    col_name, col_delete, col_audio = st.columns(
+        [4, 1, 3], vertical_alignment="center"
+    )
     with col_name:
         st.text(path.name)
+    with col_delete:
+        _render_delete_recording_button(
+            path, widget_key=f"audio_merge_delete_{key_suffix}"
+        )
     with col_audio:
+        if not show_player:
+            return
         if not path.exists():
             st.caption("File not found")
             return
         try:
             # st.audio has no `key` arg; keyed container keeps multi-file previews distinct.
             with st.container(key=f"audio_merge_preview_{key_suffix}"):
-                st.audio(path.read_bytes())
+                st.audio(path, format=_audio_mime_for_path(path))
         except Exception as exc:
             st.caption(f"Playback unavailable: {exc}")
 
@@ -266,6 +401,7 @@ def _render_detected_serial_groups(
             "These files look like parts of one recording or a burst of voice notes. "
             "Tune grouping under Merge source profiles (draft applies immediately; "
             "Save persists). "
+            "Check **Preview clips** on a group to listen (one group at a time works best). "
             "Auto-merge selected groups here, hide false matches, or open "
             "**Manual merge** to pick files and order yourself."
         )
@@ -343,10 +479,20 @@ def _render_serial_group_card(group: SerialGroup) -> bool:
             st.caption(
                 f"Combined duration: {RecordingsService.format_duration(total_duration)}"
             )
+        preview = st.checkbox(
+            "Preview clips",
+            value=False,
+            key=f"audio_merge_preview_group_{group.dismissal_key}",
+            help=widget_help(
+                "Load players for every file in this group. Prefer one group at "
+                "a time — browsers limit concurrent media downloads."
+            ),
+        )
         for index, path in enumerate(group.ordered_paths):
             _render_merge_file_preview(
                 path,
                 key_suffix=f"{group.dismissal_key}_{index}",
+                show_player=preview,
             )
         for warning in group.warnings:
             st.caption(f"⚠ {warning}")
@@ -528,11 +674,17 @@ def _render_section_select(
 
     st.markdown("**Merge order** (top = first in output):")
     for i, path_str in enumerate(merged_order):
-        col_label, col_up, col_down = st.columns([8, 1, 1])
+        col_label, col_delete, col_up, col_down = st.columns(
+            [7, 1, 1, 1], vertical_alignment="center"
+        )
         with col_label:
             label = all_labels.get(path_str, path_str)
             meta_str = _format_merge_row_meta(Path(path_str))
             st.markdown(f"{i + 1}. **{label}**{meta_str}")
+        with col_delete:
+            _render_delete_recording_button(
+                Path(path_str), widget_key=f"audio_merge_delete_order_{i}"
+            )
         with col_up:
             if i > 0 and st.button(
                 "",
@@ -750,7 +902,7 @@ def _render_result(result: object) -> None:
         if r.output_path and r.output_path.exists():
             st.markdown("**Listen to merged output:**")
             try:
-                st.audio(r.output_path.read_bytes(), format="audio/mpeg")
+                st.audio(r.output_path, format="audio/mpeg")
             except Exception as exc:
                 st.caption(f"Playback unavailable: {exc}")
             st.caption(f"`{r.output_path}`")

@@ -186,10 +186,74 @@ class TestSerialGroupHideRestore:
 
         source = Path(mod.__file__).read_text(encoding="utf-8")
         assert "_render_merge_file_preview" in source
+        assert "audio_merge_preview_group_" in source
+        assert "Preview clips" in source
         assert "audio_merge_preview_" in source
         # Streamlit MediaMixin.audio has no `key`; identity lives on the container.
-        assert "st.audio(path.read_bytes(), key=" not in source
+        # Eager path.read_bytes() players saturate the browser media connection pool.
+        assert "st.audio(path.read_bytes()" not in source
+        assert "st.audio(path, format=_audio_mime_for_path(path))" in source
         assert 'st.container(key=f"audio_merge_preview_{key_suffix}")' in source
+        assert "show_player=preview" in source
+
+    def test_merge_panel_has_delete_recording_popup(self) -> None:
+        import transcriptx.web.ui.tools.merge_panel as mod
+
+        source = Path(mod.__file__).read_text(encoding="utf-8")
+        assert "@st.dialog" in source
+        assert "Delete recording?" in source
+        assert "_render_delete_recording_button" in source
+        assert "audio_merge_delete_" in source
+        assert "audio_merge_confirm_delete" in source
+        assert "audio_merge_cancel_delete" in source
+
+
+class TestDeleteMergeRecording:
+    def test_refuses_files_outside_recordings(self, tmp_path, monkeypatch) -> None:
+        import transcriptx.web.ui.tools.merge_panel as mod
+
+        recordings = tmp_path / "recordings"
+        recordings.mkdir()
+        monkeypatch.setattr(mod, "RECORDINGS_DIR", recordings)
+        monkeypatch.setattr(mod, "RECORDINGS_IMPORTS_DIR", recordings / "imports")
+        outsider = tmp_path / "other.wav"
+        outsider.write_bytes(b"x")
+        ok, tx_count, errors = mod.delete_merge_recording(outsider)
+        assert ok is False
+        assert tx_count == 0
+        assert outsider.exists()
+        assert any("managed recording" in err for err in errors)
+
+    def test_deletes_recording_under_imports(self, tmp_path, monkeypatch) -> None:
+        import transcriptx.web.ui.tools.merge_panel as mod
+
+        recordings = tmp_path / "recordings"
+        imports = recordings / "imports"
+        imports.mkdir(parents=True)
+        clip = imports / "part.wav"
+        clip.write_bytes(b"audio")
+        monkeypatch.setattr(mod, "RECORDINGS_DIR", recordings)
+        monkeypatch.setattr(mod, "RECORDINGS_IMPORTS_DIR", imports)
+        monkeypatch.setattr(
+            mod, "delete_linked_transcripts_for_audio", lambda _p: (0, [])
+        )
+        ok, tx_count, errors = mod.delete_merge_recording(clip)
+        assert ok is True
+        assert tx_count == 0
+        assert errors == []
+        assert not clip.exists()
+
+    def test_drop_recording_from_merge_session(self) -> None:
+        from transcriptx.web.navigation import MERGE_ORDERED_PATHS_KEY
+        from transcriptx.web.ui.tools.merge_panel import (
+            drop_recording_from_merge_session,
+        )
+
+        keep = Path("/rec/keep.wav")
+        drop = Path("/rec/drop.wav")
+        session = {MERGE_ORDERED_PATHS_KEY: [str(keep), str(drop)]}
+        drop_recording_from_merge_session(session, drop)
+        assert session[MERGE_ORDERED_PATHS_KEY] == [str(keep)]
 
 
 class TestPageIntegrationPresence:
