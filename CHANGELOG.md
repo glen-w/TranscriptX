@@ -12,13 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Settings → Storage: **Duplicate library files** finds exact audio copies and identical transcript bytes or canonical content, keeps the richest copy, and deletes extras (including linked companions) after typed confirmation.
+- Run Analysis: **Cancel analysis** and **Skip module** stay available while a run is in progress (cooperative; the current module is abandoned, remaining work is not started on cancel).
 - Playwright **GUI E2E** expanded to **ten key flows** under `tests/e2e_gui/` (`make test-gui-e2e`): workflows 1–5 plus Charts, Groups, Corrections (Correct mode), Rename Transcript, and Speakers.
 - Workflow walkthroughs expanded to ten guides under [docs/workflows/](docs/workflows/index.md); root [README](README.md) lists the ten key GUI workflows.
 
 ### Changed
 
+- Library: select a transcript by clicking its title in a paginated list (no checkbox dataframe).
 - Comparison page: added [nanosamur.ai](https://nanosamur.ai) as a complementary org-grade self-hosted STT upstream (not an analysis substitute).
 - Security pins: `cryptography` 48.0.1 → 50.0.0 and `nltk` 3.9.4 → 3.10.3 (fixable pip-audit findings on the clean-env wheel gate).
+- Docs surfaces aligned: Sphinx [docs/index.md](docs/index.md) toctrees match [USER_INDEX](docs/USER_INDEX.md) (backup, corrections viewer/karaoke/LLM, recipes, STORAGE under Reference); PRODUCT/website/inventory say **ten** workflows; public series badge **0.9.9.5**; website install snippet includes `.env` / `HOST_RECORDINGS_DIR`.
+
+### Fixed
+
+- `inbox-watch` audio convert: pass `-f mp3` so ffmpeg 8+ can mux to a `.mp3.partial` temp file (it no longer infers MP3 from that extension). Terminal feedback mirrors analysis Review / Run summary (`[i/n]` progress, elapsed times, streamed ffmpeg stats); Sphinx guide covers the UX under [transcription.md](docs/runtime/transcription.md#terminal-feedback) and links it from [directory_watcher.md](docs/runtime/directory_watcher.md).
 
 ## [0.9.9.5] - 2026-08-15
 

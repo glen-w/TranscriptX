@@ -885,6 +885,18 @@ def warn_missing_paths(cfg: EffectiveConfig) -> None:
         )
 
 
+def looks_like_managed_library_root(path: Path) -> bool:
+    """True when *path* is the managed transcripts library root (not originals/)."""
+    resolved = path.expanduser()
+    if resolved.name == "originals":
+        return False
+    markers = ("metadata", "originals", "imports")
+    try:
+        return any((resolved / name).is_dir() for name in markers)
+    except OSError:
+        return False
+
+
 def validate_for_dry_run(cfg: EffectiveConfig) -> tuple[dict[str, str], str | None]:
     """Lightweight validation for --dry-run (no HF_TOKEN/env-file requirements)."""
     validate_config_shape(cfg)
@@ -896,6 +908,14 @@ def validate_for_dry_run(cfg: EffectiveConfig) -> tuple[dict[str, str], str | No
 
     if cfg.transcripts is None:
         raise SystemExit("ERROR: --transcripts is required (or save it in config)")
+    if looks_like_managed_library_root(cfg.transcripts):
+        raise SystemExit(
+            "ERROR: --transcripts must be the originals/ folder "
+            "(e.g. …/transcripts/originals), not the managed library root that "
+            "contains metadata/ or imports/. Point JSON/CLI config at originals/, "
+            "or set TRANSCRIPTX_TRANSCRIPTS_DIR to the library base (script appends "
+            "/originals)."
+        )
 
     if not cfg.whispermlx.is_file():
         print(
@@ -932,6 +952,14 @@ def validate_for_processing(cfg: EffectiveConfig) -> tuple[dict[str, str], str |
 
     if cfg.transcripts is None:
         raise SystemExit("ERROR: --transcripts is required (or save it in config)")
+    if looks_like_managed_library_root(cfg.transcripts):
+        raise SystemExit(
+            "ERROR: --transcripts must be the originals/ folder "
+            "(e.g. …/transcripts/originals), not the managed library root that "
+            "contains metadata/ or imports/. Point JSON/CLI config at originals/, "
+            "or set TRANSCRIPTX_TRANSCRIPTS_DIR to the library base (script appends "
+            "/originals)."
+        )
     if not cfg.transcripts.exists():
         cfg.transcripts.mkdir(parents=True, exist_ok=True)
         print(f"Created transcripts folder: {cfg.transcripts}")

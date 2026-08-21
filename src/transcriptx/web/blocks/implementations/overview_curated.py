@@ -7,6 +7,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.utils.text_utils import (
     format_bytes_display,
     format_duration_display_from_config,
@@ -375,13 +376,17 @@ def render_insights_summary_panel(ctx: BlockContext, placement: BlockPlacement) 
             show_full = st.session_state.get(expand_key, False)
             if truncated and not show_full:
                 st.markdown(preview)
-                if st.button("Read full summary", key=f"{expand_key}_btn"):
+                if st.button(
+                    "Read full summary", key=f"{expand_key}_btn", icon=ic.SHOW_MORE
+                ):
                     st.session_state[expand_key] = True
                     st.rerun()
             else:
                 st.markdown(body_md)
                 if truncated and show_full:
-                    if st.button("Show preview", key=f"{expand_key}_collapse"):
+                    if st.button(
+                        "Show preview", key=f"{expand_key}_collapse", icon=ic.SHOW_LESS
+                    ):
                         st.session_state[expand_key] = False
                         st.rerun()
         else:
@@ -426,6 +431,7 @@ def render_insights_summary_panel(ctx: BlockContext, placement: BlockPlacement) 
                 if st.button(
                     "View raw file",
                     key=f"insights_sum_raw_{placement.placement_id}_{selected.kind}",
+                    icon=ic.INVENTORY,
                 ):
                     navigate_to_data_artifact(artifact_id=artifact.id)
 
@@ -918,6 +924,8 @@ def render_run_status_compact(ctx: BlockContext, _placement: BlockPlacement) -> 
                     f"Skipped: {summary.skipped_count} · "
                     f"Blocked: {summary.blocked_count}"
                 )
-            if st.button("Open Diagnostics", key="run_status_open_diagnostics"):
+            if st.button(
+                "Open Diagnostics", key="run_status_open_diagnostics", icon=ic.DIAGNOSTICS
+            ):
                 st.session_state["page"] = "Diagnostics"
                 st.rerun()

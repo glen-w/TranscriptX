@@ -1,191 +1,206 @@
-"""
-Home / Dashboard page for TranscriptX.
-"""
+"""Home launchpad: what should I do next?"""
 
 from __future__ import annotations
 
-import pandas as pd
 import streamlit as st
 
-from transcriptx.utils.text_utils import (
-    format_bytes_display,
-    format_duration_display_from_config,
+from transcriptx.web import icons as ic
+from transcriptx.app.corpus_inventory.models import (
+    ContinueAction,
+    InventoryRow,
+    LibraryFilter,
+    LibraryWorkflowPreset,
 )
+from transcriptx.app.corpus_inventory.query import (
+    continue_working_action,
+    corpus_summary,
+    needs_attention_counts,
+    select_continue_working,
+)
+from transcriptx.utils.text_utils import format_duration_display_from_config
+from transcriptx.web.action_menus.context import build_transcript_identity_with_run
+from transcriptx.web.action_menus.services import navigate_with_identity
 from transcriptx.web.cache_helpers import (
     cached_list_recent_runs,
-    get_cached_home_light_summary,
+    get_cached_corpus_inventory,
 )
-from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.components.recent_run_row import render_recent_run_row
+from transcriptx.web.corpus_inventory_display import format_relative_age
+from transcriptx.web.navigation import navigate_to_library
 from transcriptx.web.perf import instrument_cached_call, set_count
 from transcriptx.web.sidebar_options import _slug_display_labels_from_index
-from transcriptx.web.utils import (
-    get_all_sessions_statistics,
-    list_available_sessions,
+
+_HOME_DESCRIPTION = (
+    "Resume work and see what needs attention. Browse and filter the full "
+    "corpus in Library."
 )
 
-_HOME_DETAIL_STATS_KEY = "home_show_detailed_statistics"
-_HOME_SESSIONS_KEY = "home_show_sessions"
-_HOME_RECENT_RUNS_KEY = "home_show_recent_runs"
+_CONTINUE_PAGES = {
+    ContinueAction.CORRECTIONS: ("Corrections", "Corrections Studio"),
+    ContinueAction.SPEAKER_ID: ("Speaker ID", "Speaker ID"),
+    ContinueAction.ANALYSE: ("Analyse", "Run Analysis"),
+    ContinueAction.OPEN: ("Open", "Overview"),
+}
+
+_HOME_RECENT_ACTIVITY_EXPANDED = "home_recent_activity_expanded"
+_RECENT_ACTIVITY_INITIAL = 3
+_RECENT_ACTIVITY_MAX = 10
 
 
-@st.cache_data(ttl=60, show_spinner=False)
-def _cached_sessions_and_stats() -> tuple[list, dict]:
-    sessions = list_available_sessions()
-    stats = dict(get_all_sessions_statistics())
-    return sessions, stats
+def _inventory_rows() -> list[InventoryRow]:
+    rows = instrument_cached_call(
+        "cached_corpus_inventory",
+        get_cached_corpus_inventory,
+        bucket="home_summary",
+    )
+    return list(rows or [])
 
 
-def _render_transcript_overview() -> bool:
-    """Render light count metrics. Returns True when library or sessions exist."""
-    summary = get_cached_home_light_summary()
-    library_count = int(summary.get("library_transcript_count", 0) or 0)
-    analysed_count = int(summary.get("analysed_transcript_count", 0) or 0)
-    session_count = int(summary.get("session_count", 0) or 0)
-    if not summary.get("has_any"):
-        st.info("No transcripts found. Add transcripts in Library to get started.")
-        return False
-
+def _render_corpus_summary(rows: list[InventoryRow]) -> None:
+    summary = corpus_summary(rows)
+    duration = format_duration_display_from_config(
+        summary["total_duration_seconds"]
+    )
+    st.caption(
+        f"{summary['transcript_count']} transcripts · "
+        f"{summary['analysed_count']} analysed · {duration}"
+    )
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric(
-            "Transcripts",
-            library_count,
-            help=widget_help("Registered transcripts in the library index"),
-        )
+        st.metric("Transcripts", int(summary["transcript_count"]))
     with col2:
-        st.metric(
-            "Analysed transcripts",
-            analysed_count,
-            help=widget_help(
-                "Unique transcripts with at least one viewable analysis run"
-            ),
-        )
+        st.metric("Analysed transcripts", int(summary["analysed_count"]))
     with col3:
-        st.metric("Sessions", session_count)
-    return True
+        st.metric("Total duration", duration)
 
 
-def _render_detailed_statistics() -> None:
-    """Rich aggregate metrics (opt-in; parses transcripts / manifests)."""
-    _sessions, stats = _cached_sessions_and_stats()
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        st.metric(
-            "Total duration",
-            format_duration_display_from_config(stats.get("total_duration_seconds", 0)),
-            help=widget_help("Sum of unique analysed transcript durations"),
-        )
-    with col2:
-        st.metric("Total words", f"{stats.get('total_word_count', 0):,}")
-    with col3:
-        st.metric("Speakers (max)", stats.get("total_speakers", 0))
-    with col4:
-        st.metric(
-            "Analysis completion",
-            f"{stats.get('average_completion', 0):.0f}%",
-            help=widget_help("Average analysis completion across analysed transcripts"),
-        )
-    with col5:
-        st.metric(
-            "Size on disk",
-            format_bytes_display(stats.get("total_artifact_bytes", 0)),
-            help=widget_help(
-                "Total size of produced analysis artifacts across all runs"
-            ),
-        )
+def _open_continue_item(row: InventoryRow) -> None:
+    action = continue_working_action(row)
+    _label, page = _CONTINUE_PAGES[action]
+    identity = build_transcript_identity_with_run(
+        subject_id=row.slug or row.transcript_path.stem,
+        transcript_path=row.transcript_path,
+        run_id=row.analysis.latest_run_id,
+    )
+    navigate_with_identity(identity, page)
+    st.rerun()
 
 
-def _render_sessions() -> None:
-    """Per-session table (opt-in; shares cache with detailed statistics)."""
-    sessions, _stats = _cached_sessions_and_stats()
-    if not sessions:
-        st.info("No sessions found.")
+def _render_continue_working(rows: list[InventoryRow]) -> None:
+    st.subheader("Continue working")
+    chosen = select_continue_working(rows, limit=5)
+    if not chosen:
+        st.caption("Nothing queued — import a transcript or pick up work in Library.")
         return
-    rows = []
-    for s in sorted(
-        sessions,
-        key=lambda session: session.get("duration_seconds", 0),
-        reverse=True,
-    ):
-        rows.append(
-            {
-                "Session": s.get("name", ""),
-                "Duration": format_duration_display_from_config(
-                    s.get("duration_seconds", 0)
-                ),
-                "Words": s.get("word_count", 0),
-                "Segments": s.get("segment_count", 0),
-                "Speakers": s.get("speaker_count", 0),
-                "Completion %": s.get("analysis_completion", 0),
-            }
-        )
-    st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+    for index, row in enumerate(chosen):
+        action = continue_working_action(row)
+        label, _page = _CONTINUE_PAGES[action]
+        cols = st.columns([4, 1.2])
+        with cols[0]:
+            st.markdown(f"**{row.title}**")
+            st.caption(format_relative_age(row.last_activity_at))
+        with cols[1]:
+            if st.button(
+                label,
+                key=f"home_continue_{index}_{row.transcript_path.stem}",
+                icon=ic.ARROW_FORWARD,
+            ):
+                _open_continue_item(row)
 
 
-def _render_recent_runs() -> None:
-    """Recent-run list (opt-in; walks outputs tree)."""
+def _render_needs_attention(rows: list[InventoryRow]) -> None:
+    st.subheader("Needs attention")
+    counts = needs_attention_counts(rows)
+    items = [
+        (
+            counts["speaker_id"],
+            "need Speaker ID",
+            LibraryFilter(preset=LibraryWorkflowPreset.NEEDS_SPEAKER_ID),
+        ),
+        (
+            counts["analysis"],
+            "have incomplete analyses",
+            LibraryFilter(preset=LibraryWorkflowPreset.FAILED_INCOMPLETE),
+        ),
+        (
+            counts["corrections"],
+            "correction sessions unfinished",
+            LibraryFilter(preset=LibraryWorkflowPreset.CORRECTIONS_PENDING),
+        ),
+    ]
+    if not any(count for count, _label, _filt in items):
+        st.caption("No blockers right now.")
+        return
+    for count, label, library_filter in items:
+        if not count:
+            continue
+        if st.button(
+            f"{count} {label}",
+            key=f"home_attention_{library_filter.preset.value}",
+            icon=ic.TASK_ALT,
+        ):
+            navigate_to_library(st.session_state, library_filter=library_filter)
+            st.rerun()
+
+
+def _render_recent_activity() -> None:
+    st.subheader("Recent activity")
     runs = instrument_cached_call(
         "cached_list_recent_runs",
         cached_list_recent_runs,
-        limit=10,
+        limit=_RECENT_ACTIVITY_MAX,
         bucket="home_summary",
     )
     set_count("recent_runs_returned", len(runs))
-
     if not runs:
-        render_empty_state(
-            "no_results_yet",
-            "No analysis runs yet",
-            "Start from the Library or Run Analysis after adding transcripts.",
-            primary_action=("Run Analysis", "Run Analysis"),
-            secondary_action=("Library", "Library"),
-        )
-    else:
-        slug_labels = _slug_display_labels_from_index()
-        for idx, run in enumerate(runs[:5]):
-            render_recent_run_row(run, row_index=idx, slug_labels=slug_labels)
+        st.caption("No analysis runs yet.")
+        return
+    expanded = bool(st.session_state.get(_HOME_RECENT_ACTIVITY_EXPANDED))
+    show_n = _RECENT_ACTIVITY_MAX if expanded else _RECENT_ACTIVITY_INITIAL
+    slug_labels = _slug_display_labels_from_index()
+    for idx, run in enumerate(runs[:show_n]):
+        render_recent_run_row(run, row_index=idx, slug_labels=slug_labels)
+    if len(runs) > _RECENT_ACTIVITY_INITIAL and not expanded:
+        if st.button(
+            "Show more",
+            key="home_recent_activity_show_more",
+            icon=ic.SHOW_MORE,
+        ):
+            st.session_state[_HOME_RECENT_ACTIVITY_EXPANDED] = True
+            st.rerun()
 
 
 def render_home() -> None:
-    """Render the home/dashboard page."""
-    render_page_shell("Home")
+    """Render the home launchpad."""
+    render_page_shell("Home", _HOME_DESCRIPTION)
 
     try:
-        _render_transcript_overview()
+        rows = _inventory_rows()
+        if not rows:
+            render_empty_state(
+                "no_results_yet",
+                "No transcripts found",
+                "Add transcripts in Library to get started.",
+                primary_action=("Import Transcript", "Import Transcript"),
+                secondary_action=("Library", "Library"),
+            )
+            return
 
-        # Dynamic expanders (on_change="rerun") gate expensive work via .open —
-        # collapsed bodies do not run until the user expands them.
-        details = st.expander(
-            "Detailed statistics",
-            expanded=False,
-            key=_HOME_DETAIL_STATS_KEY,
-            on_change="rerun",
-        )
-        if details.open:
-            with details:
-                _render_detailed_statistics()
-
-        sessions = st.expander(
-            "Sessions",
-            expanded=False,
-            key=_HOME_SESSIONS_KEY,
-            on_change="rerun",
-        )
-        if sessions.open:
-            with sessions:
-                _render_sessions()
-
-        recent = st.expander(
-            "Recent runs",
-            expanded=False,
-            key=_HOME_RECENT_RUNS_KEY,
-            on_change="rerun",
-        )
-        if recent.open:
-            with recent:
-                _render_recent_runs()
+        _render_corpus_summary(rows)
+        _render_recent_activity()
+        _render_needs_attention(rows)
+        _render_continue_working(rows)
+        if st.button(
+            "Browse all transcripts",
+            key="home_browse_library",
+            icon=ic.LIBRARY,
+        ):
+            navigate_to_library(
+                st.session_state,
+                library_filter=LibraryFilter(preset=LibraryWorkflowPreset.ALL),
+            )
+            st.rerun()
     except Exception as e:
         st.error(f"Could not load dashboard: {e}")

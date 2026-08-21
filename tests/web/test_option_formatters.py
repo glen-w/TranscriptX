@@ -7,6 +7,7 @@ import pytest
 import transcriptx.web.module_option_format as module_option_format
 from transcriptx.web.module_option_format import format_module_option
 from transcriptx.web.transcript_option_format import (
+    format_transcript_option_with_analysis_status,
     format_transcript_option_with_speaker_status,
 )
 
@@ -21,6 +22,13 @@ def test_format_module_option_uses_other_bucket_for_unknown_module() -> None:
         "module_does_not_exist", label_builder=lambda _: "X"
     )
     assert formatted == "Other · X"
+
+
+def test_format_transcript_option_with_analysis_status() -> None:
+    assert (
+        format_transcript_option_with_analysis_status("Meeting", "no analysis")
+        == "Meeting (no analysis)"
+    )
 
 
 def test_format_transcript_option_defaults_when_summary_missing_fields() -> None:

@@ -85,7 +85,12 @@ def run_batch_analysis(
     success_count = 0
     total = len(transcript_paths)
 
+    from transcriptx.core.pipeline.run_control import pipeline_is_cancelled
+
     for idx, path in enumerate(transcript_paths):
+        if pipeline_is_cancelled():
+            errors.append("Batch cancelled")
+            break
         progress.on_stage_start("batch_analysis")
         # Leave pct to nested per-transcript module events (0–100). Passing a
         # 0–1 batch fraction here used to collapse the live bar.
@@ -109,6 +114,9 @@ def run_batch_analysis(
             llm_custom_qa_questions=request.llm_custom_qa_questions,
         )
         result: AnalysisResult = run_analysis(analysis_request, progress)
+        if result.status == "cancelled":
+            errors.append(f"{path.name}: Analysis cancelled")
+            break
         if result.success:
             success_count += 1
             runs.append(_run_summary_from_analysis(path, result))

@@ -29,7 +29,7 @@ Download or copy the sample file [planning_review.json](fixtures/planning_review
 
 ![Import Transcript page with the planning review JSON selected for upload](../_static/workflows/first-analysis-import.png)
 
-2. Open **Library**, select the new transcript, then open **Transcript**. Skim a few turns so you know the cast uses diarized labels such as `SPEAKER_00`. Most speaker-aware modules need human-readable names; if Overview looks sparse after the first run, complete [Identify and name speakers](speaker-identification.md) and re-run.
+2. Open **Library**, select the new transcript in the list, then open **Transcript**. Skim a few turns so you know the cast uses diarized labels such as `SPEAKER_00`. Most speaker-aware modules need human-readable names; if Overview looks sparse after the first run, complete [Identify and name speakers](speaker-identification.md) and re-run.
 
 3. Open **Run Analysis**. Keep the target as **Transcript** and the analysis preset as **Balanced** (the default). Balanced runs a practical core set without requiring local AI for the non-LLM modules.
 

@@ -2,13 +2,54 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 
 from tests.web.streamlit_doubles import DummyHomeStreamlit
+from transcriptx.app.corpus_inventory.models import (
+    AnalysisState,
+    AnalysisStatus,
+    CorrectionsState,
+    CorrectionsStatus,
+    FieldIntegrity,
+    FileStamp,
+    InventoryFingerprint,
+    InventoryRow,
+    SpeakerIdState,
+    SpeakerIdStatus,
+)
+
+
+def _sample_rows() -> list[InventoryRow]:
+    return [
+        InventoryRow(
+            transcript_path=Path("/tmp/slug-1.json"),
+            transcript_key="k1",
+            slug="slug-1",
+            title="Interview Alice",
+            imported_at=datetime(2026, 8, 12, tzinfo=timezone.utc),
+            duration_seconds=4920,
+            speaker_count=3,
+            word_count=10430,
+            source_id="whisperx",
+            listing_integrity=FieldIntegrity.OK,
+            speaker=SpeakerIdState(
+                status=SpeakerIdStatus.NONE, integrity=FieldIntegrity.MISSING
+            ),
+            corrections=CorrectionsState(
+                status=CorrectionsStatus.NEVER_STARTED,
+                integrity=FieldIntegrity.MISSING,
+            ),
+            analysis=AnalysisState(
+                status=AnalysisStatus.UNANALYSED, integrity=FieldIntegrity.MISSING
+            ),
+            last_activity_at=datetime(2026, 8, 20, tzinfo=timezone.utc),
+            fingerprint=InventoryFingerprint(stamps=(FileStamp("/tmp/slug-1.json", 1, 1),)),
+        )
+    ]
 
 
 def _patch_home_common(monkeypatch, mod, st_double=DummyHomeStreamlit) -> None:
@@ -20,17 +61,7 @@ def _patch_home_common(monkeypatch, mod, st_double=DummyHomeStreamlit) -> None:
 
     monkeypatch.setattr(mod, "render_page_shell", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(Path, "exists", lambda _self: True)
-    monkeypatch.setattr(
-        mod,
-        "get_cached_home_light_summary",
-        lambda: {
-            "library_transcript_count": 0,
-            "analysed_transcript_count": 0,
-            "session_count": 0,
-            "has_any": False,
-        },
-    )
-    monkeypatch.setattr(mod, "_cached_sessions_and_stats", lambda: ([], {}))
+    monkeypatch.setattr(mod, "get_cached_corpus_inventory", _sample_rows)
     monkeypatch.setattr(mod, "st", st_double)
     monkeypatch.setattr(action_links, "st", st_double)
     monkeypatch.setattr(recent_run_row, "st", st_double)
@@ -39,11 +70,96 @@ def _patch_home_common(monkeypatch, mod, st_double=DummyHomeStreamlit) -> None:
     monkeypatch.setattr(am_services, "st", st_double)
 
 
-def test_home_initial_render_skips_recent_runs_and_rich_stats(monkeypatch) -> None:
+def test_home_renders_launchpad_sections_in_order(monkeypatch) -> None:
+    import transcriptx.web.page_modules.home as mod
+
+    DummyHomeStreamlit.session_state = {}
+    subheaders: list[str] = []
+
+    class _OrderHome(DummyHomeStreamlit):
+        @staticmethod
+        def subheader(title, **_kwargs):
+            subheaders.append(str(title))
+
+    _patch_home_common(monkeypatch, mod, st_double=_OrderHome)
+    monkeypatch.setattr(
+        mod,
+        "instrument_cached_call",
+        lambda name, fn, *a, **k: (
+            [] if name == "cached_list_recent_runs" else fn()
+        ),
+    )
+    mod.render_home()
+
+    assert subheaders == ["Recent activity", "Needs attention", "Continue working"]
+
+
+def _make_recent_runs(count: int) -> list[object]:
+    runs = []
+    for index in range(count):
+        run = type(
+            f"_Run{index}",
+            (),
+            {
+                "created_at": datetime(2026, 3, 25, 10, index),
+                "run_id": f"run-{index}",
+                "run_dir": Path(f"/tmp/slug-1/run-{index}"),
+                "transcript_path": Path("/tmp/slug-1.json"),
+                "selected_modules": ["overview"],
+                "status": "completed",
+                "duration_seconds": 12.0,
+                "profile_name": "balanced",
+            },
+        )()
+        runs.append(run)
+    return runs
+
+
+def test_home_recent_activity_shows_three_then_expands_to_ten(monkeypatch) -> None:
+    import transcriptx.web.page_modules.home as mod
+
+    DummyHomeStreamlit.session_state = {}
+    rendered: list[int] = []
+
+    class _ExpandHome(DummyHomeStreamlit):
+        @staticmethod
+        def button(*_args, key=None, **_kwargs):
+            return key == "home_recent_activity_show_more"
+
+    _patch_home_common(monkeypatch, mod, st_double=_ExpandHome)
+    monkeypatch.setattr(mod, "_slug_display_labels_from_index", lambda: {})
+    monkeypatch.setattr(
+        mod,
+        "render_recent_run_row",
+        lambda run, row_index, slug_labels: rendered.append(row_index),
+    )
+    monkeypatch.setattr(
+        mod,
+        "instrument_cached_call",
+        lambda name, fn, *a, **k: (
+            _make_recent_runs(10)
+            if name == "cached_list_recent_runs"
+            else _sample_rows()
+            if name == "cached_corpus_inventory"
+            else fn()
+        ),
+    )
+
+    mod.render_home()
+    assert rendered == [0, 1, 2]
+    assert _ExpandHome.session_state.get(mod._HOME_RECENT_ACTIVITY_EXPANDED) is True
+
+    rendered.clear()
+    mod.render_home()
+    assert rendered == list(range(10))
+
+
+def test_home_empty_corpus_skips_recent_runs(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
     DummyHomeStreamlit.session_state = {}
     _patch_home_common(monkeypatch, mod)
+    monkeypatch.setattr(mod, "get_cached_corpus_inventory", lambda: [])
     slug_label_calls = {"count": 0}
     monkeypatch.setattr(
         mod,
@@ -51,31 +167,26 @@ def test_home_initial_render_skips_recent_runs_and_rich_stats(monkeypatch) -> No
         lambda: slug_label_calls.__setitem__("count", slug_label_calls["count"] + 1)
         or {},
     )
-    rich = MagicMock(side_effect=AssertionError("rich stats should not run"))
-    monkeypatch.setattr(mod, "_cached_sessions_and_stats", rich)
     calls = {"recent_runs": 0}
 
     def _fake_instrument(name, fn, *args, **kwargs):
         if name == "cached_list_recent_runs":
             calls["recent_runs"] += 1
             return []
-        return fn(*args, **kwargs)
+        return fn()
 
     monkeypatch.setattr(mod, "instrument_cached_call", _fake_instrument)
-
     mod.render_home()
 
     assert calls["recent_runs"] == 0
     assert slug_label_calls["count"] == 0
-    rich.assert_not_called()
 
 
-def test_home_loads_recent_runs_when_expander_open(monkeypatch) -> None:
+def test_home_loads_recent_activity_on_launchpad(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
-    DummyHomeStreamlit.session_state = {mod._HOME_RECENT_RUNS_KEY: True}
+    DummyHomeStreamlit.session_state = {}
     _patch_home_common(monkeypatch, mod)
-    monkeypatch.setattr(mod, "render_empty_state", lambda *_args, **_kwargs: None)
     slug_label_calls = {"count": 0}
     monkeypatch.setattr(
         mod,
@@ -99,10 +210,11 @@ def test_home_loads_recent_runs_when_expander_open(monkeypatch) -> None:
         if name == "cached_list_recent_runs":
             calls["recent_runs"] += 1
             return [_Run()]
-        return fn(*args, **kwargs)
+        if name == "cached_corpus_inventory":
+            return _sample_rows()
+        return fn()
 
     monkeypatch.setattr(mod, "instrument_cached_call", _fake_instrument)
-
     mod.render_home()
 
     assert calls["recent_runs"] == 1
@@ -112,9 +224,8 @@ def test_home_loads_recent_runs_when_expander_open(monkeypatch) -> None:
 def test_home_skips_slug_labels_when_no_recent_runs(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
-    DummyHomeStreamlit.session_state = {mod._HOME_RECENT_RUNS_KEY: True}
+    DummyHomeStreamlit.session_state = {}
     _patch_home_common(monkeypatch, mod)
-    monkeypatch.setattr(mod, "render_empty_state", lambda *_args, **_kwargs: None)
     slug_label_calls = {"count": 0}
     monkeypatch.setattr(
         mod,
@@ -126,183 +237,108 @@ def test_home_skips_slug_labels_when_no_recent_runs(monkeypatch) -> None:
     def _fake_instrument(name, fn, *args, **kwargs):
         if name == "cached_list_recent_runs":
             return []
-        return fn(*args, **kwargs)
+        if name == "cached_corpus_inventory":
+            return _sample_rows()
+        return fn()
 
     monkeypatch.setattr(mod, "instrument_cached_call", _fake_instrument)
-
     mod.render_home()
 
     assert slug_label_calls["count"] == 0
 
 
-def test_home_renders_light_overview_and_detail_when_expander_open(monkeypatch) -> None:
+def test_home_renders_corpus_summary_from_inventory(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
-    DummyHomeStreamlit.session_state = {
-        mod._HOME_DETAIL_STATS_KEY: True,
-        mod._HOME_SESSIONS_KEY: True,
-    }
-    monkeypatch.setattr(mod, "render_page_shell", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(mod, "_slug_display_labels_from_index", lambda: {})
-    monkeypatch.setattr(
-        mod,
-        "get_cached_home_light_summary",
-        lambda: {
-            "library_transcript_count": 12,
-            "analysed_transcript_count": 1,
-            "session_count": 1,
-            "has_any": True,
-        },
-    )
-
-    def _fake_instrument(name, fn, *args, **kwargs):
-        if name == "cached_list_recent_runs":
-            return []
-        return fn(*args, **kwargs)
-
-    monkeypatch.setattr(mod, "instrument_cached_call", _fake_instrument)
-    monkeypatch.setattr(
-        mod,
-        "_cached_sessions_and_stats",
-        lambda: (
-            [
-                {
-                    "name": "session-a",
-                    "duration_seconds": 90,
-                    "word_count": 100,
-                    "segment_count": 10,
-                    "speaker_count": 2,
-                    "analysis_completion": 80,
-                }
-            ],
-            {
-                "total_duration_seconds": 90,
-                "total_word_count": 100,
-                "total_speakers": 2,
-                "average_completion": 80,
-                "total_artifact_bytes": 3 * 1024 * 1024,
-            },
-        ),
-    )
-
+    DummyHomeStreamlit.session_state = {}
     metrics: list[tuple] = []
-    frames: list[object] = []
-    expanders: list[str] = []
 
-    class _StatsHomeStreamlit(DummyHomeStreamlit):
+    class _SummaryHome(DummyHomeStreamlit):
         @staticmethod
         def metric(*args, **kwargs):
             metrics.append((args, kwargs))
 
-        @staticmethod
-        def dataframe(df, **_kwargs):
-            frames.append(df)
-
-        @classmethod
-        def expander(cls, label, **kwargs):
-            expanders.append(str(label))
-            return DummyHomeStreamlit.expander(label, **kwargs)
-
-    import transcriptx.web.components.action_links as action_links
-    import transcriptx.web.components.recent_run_row as recent_run_row
-
-    monkeypatch.setattr(mod, "st", _StatsHomeStreamlit)
-    monkeypatch.setattr(action_links, "st", _StatsHomeStreamlit)
-    monkeypatch.setattr(recent_run_row, "st", _StatsHomeStreamlit)
-    mod.render_home()
-
-    assert expanders == ["Detailed statistics", "Sessions", "Recent runs"]
-    metric_labels = [args[0] for args, _ in metrics if args]
-    assert metric_labels == [
-        "Transcripts",
-        "Analysed transcripts",
-        "Sessions",
-        "Total duration",
-        "Total words",
-        "Speakers (max)",
-        "Analysis completion",
-        "Size on disk",
-    ]
-    metric_values = {args[0]: args[1] for args, _ in metrics if len(args) >= 2}
-    assert metric_values["Transcripts"] == 12
-    assert metric_values["Analysed transcripts"] == 1
-    assert metric_values["Size on disk"] == "3.0 MB"
-    assert frames
-    assert list(frames[0]["Session"]) == ["session-a"]
-
-
-def test_home_sessions_expander_independent_of_detailed_statistics(monkeypatch) -> None:
-    import transcriptx.web.page_modules.home as mod
-
-    DummyHomeStreamlit.session_state = {mod._HOME_SESSIONS_KEY: True}
     monkeypatch.setattr(mod, "render_page_shell", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(mod, "_slug_display_labels_from_index", lambda: {})
-    monkeypatch.setattr(
-        mod,
-        "get_cached_home_light_summary",
-        lambda: {
-            "library_transcript_count": 1,
-            "analysed_transcript_count": 1,
-            "session_count": 1,
-            "has_any": True,
-        },
-    )
+    monkeypatch.setattr(mod, "get_cached_corpus_inventory", _sample_rows)
     monkeypatch.setattr(
         mod,
         "instrument_cached_call",
         lambda name, fn, *args, **kwargs: (
-            [] if name == "cached_list_recent_runs" else fn(*args, **kwargs)
+            [] if name == "cached_list_recent_runs" else fn()
         ),
     )
-    monkeypatch.setattr(
-        mod,
-        "_cached_sessions_and_stats",
-        lambda: (
-            [
-                {
-                    "name": "session-b",
-                    "duration_seconds": 30,
-                    "word_count": 40,
-                    "segment_count": 4,
-                    "speaker_count": 1,
-                    "analysis_completion": 50,
-                }
-            ],
-            {
-                "total_duration_seconds": 30,
-                "total_word_count": 40,
-                "total_speakers": 1,
-                "average_completion": 50,
-                "total_artifact_bytes": 1024,
-            },
-        ),
-    )
-
-    metrics: list[str] = []
-    frames: list[object] = []
-
-    class _SessionsHomeStreamlit(DummyHomeStreamlit):
-        @staticmethod
-        def metric(*args, **kwargs):
-            if args:
-                metrics.append(str(args[0]))
-
-        @staticmethod
-        def dataframe(df, **_kwargs):
-            frames.append(df)
-
-    monkeypatch.setattr(mod, "st", _SessionsHomeStreamlit)
+    monkeypatch.setattr(mod, "st", _SummaryHome)
     mod.render_home()
 
-    assert "Total duration" not in metrics
-    assert frames
-    assert list(frames[0]["Session"]) == ["session-b"]
+    metric_labels = [args[0] for args, _ in metrics if args]
+    assert metric_labels == ["Transcripts", "Analysed transcripts", "Total duration"]
+    metric_values = {args[0]: args[1] for args, _ in metrics if len(args) >= 2}
+    assert metric_values["Transcripts"] == 1
+    assert metric_values["Analysed transcripts"] == 0
+
+
+def test_home_needs_attention_navigates_with_library_filter(monkeypatch) -> None:
+    import transcriptx.web.page_modules.home as mod
+    from transcriptx.app.corpus_inventory.models import LibraryWorkflowPreset
+    from transcriptx.web.state import LIBRARY_NAV_FILTER, PAGE_KEY
+
+    DummyHomeStreamlit.session_state = {}
+
+    class _ClickHome(DummyHomeStreamlit):
+        session_state: dict[str, object] = {}
+
+        @staticmethod
+        def button(label, key=None, **_kwargs):
+            return key == "home_attention_needs_speaker_id"
+
+    _patch_home_common(monkeypatch, mod, st_double=_ClickHome)
+    monkeypatch.setattr(
+        mod,
+        "instrument_cached_call",
+        lambda name, fn, *a, **k: (
+            [] if name == "cached_list_recent_runs" else fn()
+        ),
+    )
+    mod.render_home()
+    assert _ClickHome.session_state.get(PAGE_KEY) == "Library"
+    nav_filter = _ClickHome.session_state.get(LIBRARY_NAV_FILTER)
+    assert nav_filter is not None
+    assert nav_filter.preset is LibraryWorkflowPreset.NEEDS_SPEAKER_ID
+
+
+def test_home_continue_pairs_run_id_with_run_dir(monkeypatch) -> None:
+    import transcriptx.web.page_modules.home as mod
+
+    DummyHomeStreamlit.session_state = {}
+    row = replace(
+        _sample_rows()[0],
+        analysis=AnalysisState(
+            status=AnalysisStatus.COMPLETED,
+            integrity=FieldIntegrity.OK,
+            latest_run_id="run-1",
+        ),
+    )
+    captured: dict[str, object] = {}
+
+    def _nav(identity, page):
+        captured["identity"] = identity
+        captured["page"] = page
+
+    monkeypatch.setattr(mod, "st", DummyHomeStreamlit)
+    monkeypatch.setattr(mod, "navigate_with_identity", _nav)
+    mod._open_continue_item(row)
+
+    identity = captured["identity"]
+    assert identity.run_id == "run-1"
+    assert identity.run_dir is not None
+    assert identity.run_dir.name == "run-1"
 
 
 def test_home_export_zip_prepares_download(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
-    DummyHomeStreamlit.session_state = {mod._HOME_RECENT_RUNS_KEY: True}
+    DummyHomeStreamlit.session_state = {}
 
     class _ExportHomeStreamlit(DummyHomeStreamlit):
         downloads: list[dict[str, object]] = []
@@ -332,7 +368,9 @@ def test_home_export_zip_prepares_download(monkeypatch) -> None:
     def _fake_instrument(name, fn, *args, **kwargs):
         if name == "cached_list_recent_runs":
             return [_Run()]
-        return fn(*args, **kwargs)
+        if name == "cached_corpus_inventory":
+            return _sample_rows()
+        return fn()
 
     monkeypatch.setattr(mod, "instrument_cached_call", _fake_instrument)
 
@@ -364,7 +402,6 @@ def test_home_recent_run_open_updates_session_state(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
     DummyHomeStreamlit.session_state = {
-        mod._HOME_RECENT_RUNS_KEY: True,
         "subject_id_selector": "",
         "run_selector": "stale-run",
         "subject_type_selector": "Group",
@@ -401,7 +438,13 @@ def test_home_recent_run_open_updates_session_state(monkeypatch) -> None:
     monkeypatch.setattr(
         mod,
         "instrument_cached_call",
-        lambda name, fn, *a, **k: [_Run()] if name == "cached_list_recent_runs" else [],
+        lambda name, fn, *a, **k: (
+            [_Run()]
+            if name == "cached_list_recent_runs"
+            else _sample_rows()
+            if name == "cached_corpus_inventory"
+            else []
+        ),
     )
 
     mod.render_home()
@@ -440,7 +483,6 @@ def test_home_recent_run_action_links_navigate_to_target_page(
     import transcriptx.web.page_modules.home as mod
 
     DummyHomeStreamlit.session_state = {
-        mod._HOME_RECENT_RUNS_KEY: True,
         "subject_id_selector": "",
         "run_selector": "other-run",
     }
@@ -468,7 +510,13 @@ def test_home_recent_run_action_links_navigate_to_target_page(
     monkeypatch.setattr(
         mod,
         "instrument_cached_call",
-        lambda name, fn, *a, **k: [_Run()] if name == "cached_list_recent_runs" else [],
+        lambda name, fn, *a, **k: (
+            [_Run()]
+            if name == "cached_list_recent_runs"
+            else _sample_rows()
+            if name == "cached_corpus_inventory"
+            else []
+        ),
     )
 
     mod.render_home()
@@ -545,7 +593,7 @@ def test_apply_subject_context_pops_widgets_when_locked() -> None:
 def test_home_recent_runs_perf_boundary_no_expensive_calls(monkeypatch) -> None:
     import transcriptx.web.page_modules.home as mod
 
-    DummyHomeStreamlit.session_state = {mod._HOME_RECENT_RUNS_KEY: True}
+    DummyHomeStreamlit.session_state = {}
     _patch_home_common(monkeypatch, mod)
     monkeypatch.setattr(mod, "_slug_display_labels_from_index", lambda: {})
 
@@ -562,7 +610,13 @@ def test_home_recent_runs_perf_boundary_no_expensive_calls(monkeypatch) -> None:
     monkeypatch.setattr(
         mod,
         "instrument_cached_call",
-        lambda name, fn, *a, **k: [_Run()] if name == "cached_list_recent_runs" else [],
+        lambda name, fn, *a, **k: (
+            [_Run()]
+            if name == "cached_list_recent_runs"
+            else _sample_rows()
+            if name == "cached_corpus_inventory"
+            else []
+        ),
     )
 
     import transcriptx.web.action_menus.services as am_services

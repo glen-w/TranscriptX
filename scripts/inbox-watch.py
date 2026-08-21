@@ -159,10 +159,47 @@ class CycleStats:
     converted_names: list[str] = field(default_factory=list)
     copied_names: list[str] = field(default_factory=list)
     failed_names: list[str] = field(default_factory=list)
+    skipped_names: list[tuple[str, str]] = field(default_factory=list)
+    unstable_names: list[str] = field(default_factory=list)
 
     @property
     def failed(self) -> int:
         return self.audio_failed + self.transcripts_failed
+
+
+def _log(msg: str = "", *, err: bool = False) -> None:
+    print(msg, file=sys.stderr if err else sys.stdout, flush=True)
+
+
+def _print_section(title: str) -> None:
+    """Compact section banner — same shape as analysis Review / Run summary."""
+    _log()
+    _log("---")
+    _log(title)
+    _log("---")
+
+
+def _print_limited_items(
+    label: str, items: Sequence[str], *, limit: int = 12
+) -> None:
+    if not items:
+        return
+    shown = min(len(items), limit)
+    _log(f"  {label}:")
+    for item in items[:limit]:
+        _log(f"    • {item}")
+    if len(items) > limit:
+        _log(f"    • ... and {len(items) - shown} more")
+
+
+def _cycle_status(stats: CycleStats, *, dry_run: bool) -> str:
+    if dry_run:
+        return "dry-run"
+    if stats.failed:
+        if stats.audio_converted or stats.transcripts_copied:
+            return "partial"
+        return "failed"
+    return "completed"
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -779,6 +816,8 @@ def discover_inbox_files(
 
 
 def build_ffmpeg_cmd(ffmpeg: str | Path, src: Path, dest: Path) -> list[str]:
+    # Always pass -f mp3: dest may be a .mp3.partial temp path, and ffmpeg 8+
+    # will not guess the muxer from a non-standard extension.
     return [
         str(ffmpeg),
         "-nostdin",
@@ -793,6 +832,8 @@ def build_ffmpeg_cmd(ffmpeg: str | Path, src: Path, dest: Path) -> list[str]:
         FFMPEG_CODEC,
         "-b:a",
         FFMPEG_BITRATE,
+        "-f",
+        "mp3",
         str(dest),
     ]
 
@@ -836,8 +877,19 @@ def build_missing_cmd(
     return cmd
 
 
+def _human_bytes(n: int) -> str:
+    if n >= 1024 * 1024 * 1024:
+        return f"{n / (1024 * 1024 * 1024):.1f} GiB"
+    if n >= 1024 * 1024:
+        return f"{n / (1024 * 1024):.1f} MiB"
+    if n >= 1024:
+        return f"{n / 1024:.1f} KiB"
+    return f"{n} B"
+
+
 def run_ffmpeg(cmd: Sequence[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, capture_output=True, text=True, check=False)
+    # Inherit stderr so ffmpeg's time=/speed= stats are visible on long encodes.
+    return subprocess.run(cmd, check=False)
 
 
 def run_whispermlx_missing(cmd: Sequence[str]) -> int:
@@ -930,6 +982,22 @@ def finalize_inbox_source(
         stats.originals_deleted += 1
 
 
+def looks_like_managed_library_root(path: Path) -> bool:
+    """True when *path* is the managed transcripts library root (not originals/).
+
+    Host helpers must write raw engine JSON under ``…/transcripts/originals``,
+    never into the library root beside ``metadata/`` / ``imports/``.
+    """
+    resolved = path.expanduser()
+    if resolved.name == "originals":
+        return False
+    markers = ("metadata", "originals", "imports")
+    try:
+        return any((resolved / name).is_dir() for name in markers)
+    except OSError:
+        return False
+
+
 def validate_layout(cfg: EffectiveConfig) -> str | None:
     if not cfg.watch_audio and not cfg.watch_transcripts:
         return "Enable at least one of watch_audio / watch_transcripts."
@@ -943,6 +1011,14 @@ def validate_layout(cfg: EffectiveConfig) -> str | None:
             return "transcripts is required when watch_audio is on (whispermlx-missing output)."
     if cfg.watch_transcripts and cfg.transcripts is None:
         return "transcripts is required when watch_transcripts is on."
+
+    if cfg.transcripts is not None and looks_like_managed_library_root(cfg.transcripts):
+        return (
+            "transcripts must be the originals/ folder (e.g. …/transcripts/originals), "
+            "not the managed library root that contains metadata/ or imports/. "
+            "Raw engine JSON in the library root is not admitted until Import Transcript "
+            "or Settings → Watcher runs."
+        )
 
     dests: list[tuple[str, Path]] = []
     if cfg.recordings is not None:
@@ -999,29 +1075,45 @@ def convert_audio(
     existing = find_stem_match(recordings, src.stem, AUDIO_EXTENSIONS)
     dest = recordings / f"{src.stem}.mp3"
     if existing is not None and not force:
-        print(f"Skipping audio (stem exists): {src.name} -> {existing.name}")
+        _log(f"  Skipping (stem exists): {src.name} -> {existing.name}")
         return "skipped"
     if dry_run:
         cmd = build_ffmpeg_cmd(ffmpeg, src, dest)
-        print("Would convert:", " ".join(cmd))
+        _log(f"  Would convert: {' '.join(cmd)}")
         finalize_inbox_source(src, cfg, kind="audio", dry_run=True, stats=stats)
         return "dry_run"
 
     recordings.mkdir(parents=True, exist_ok=True)
     partial = recordings / f".inbox-watch.{src.stem}.mp3.partial"
+    try:
+        size = f" ({_human_bytes(src.stat().st_size)})"
+    except OSError:
+        size = ""
+    _log(f"  Converting: {src.name} -> {dest.name}{size}")
+    _log("  ffmpeg progress on stderr (time=/speed=)…")
+    started = time.perf_counter()
     cmd = build_ffmpeg_cmd(ffmpeg, src, partial)
     result = run_ffmpeg(cmd)
+    elapsed = time.perf_counter() - started
     if result.returncode != 0:
         if partial.exists():
             partial.unlink(missing_ok=True)
-        tail = "\n".join((result.stderr or "").splitlines()[-20:])
-        print(
-            f"ERROR: ffmpeg failed for {src.name} (exit {result.returncode}): {tail}",
-            file=sys.stderr,
+        extra = ""
+        if result.stderr:
+            tail = "\n".join(result.stderr.splitlines()[-20:])
+            extra = f": {tail}"
+        _log(
+            f"ERROR: ffmpeg failed for {src.name} "
+            f"(exit {result.returncode}, {elapsed:.1f}s){extra}",
+            err=True,
         )
         return "failed"
     os.replace(partial, dest)
-    print(f"Converted: {src.name} -> {dest.name}")
+    try:
+        out_size = f" ({_human_bytes(dest.stat().st_size)})"
+    except OSError:
+        out_size = ""
+    _log(f"  Converted: {src.name} -> {dest.name}{out_size} in {elapsed:.1f}s")
     finalize_inbox_source(src, cfg, kind="audio", dry_run=False, stats=stats)
     return "converted"
 
@@ -1038,22 +1130,53 @@ def copy_transcript(
     existing = find_stem_match(transcripts, src.stem, TRANSCRIPT_EXTENSIONS)
     dest = transcripts / src.name
     if existing is not None and not force:
-        print(f"Skipping transcript (stem exists): {src.name} -> {existing.name}")
+        _log(f"  Skipping (stem exists): {src.name} -> {existing.name}")
         return "skipped"
     if dry_run:
-        print(f"Would copy: {src} -> {dest}")
+        _log(f"  Would copy: {src} -> {dest}")
         finalize_inbox_source(src, cfg, kind="transcript", dry_run=True, stats=stats)
         return "dry_run"
 
     transcripts.mkdir(parents=True, exist_ok=True)
+    _log(f"  Copying: {src.name} -> {dest.name}")
     try:
         shutil.copy2(src, dest)
     except OSError as exc:
-        print(f"ERROR: copy failed for {src.name}: {exc}", file=sys.stderr)
+        _log(f"ERROR: copy failed for {src.name}: {exc}", err=True)
         return "failed"
-    print(f"Copied: {src.name} -> {dest.name}")
+    _log(f"  Copied: {src.name} -> {dest.name}")
     finalize_inbox_source(src, cfg, kind="transcript", dry_run=False, stats=stats)
     return "copied"
+
+
+def print_review_before_cycle(
+    cfg: EffectiveConfig,
+    work: Sequence[tuple[Path, Kind]],
+    *,
+    dry_run: bool,
+) -> None:
+    audio_n = sum(1 for _, kind in work if kind == "audio")
+    tx_n = sum(1 for _, kind in work if kind == "transcript")
+    _print_section("Review before cycle")
+    _log(f"  Mode:        {'dry-run' if dry_run else 'once'}")
+    _log(f"  Inbox:       {cfg.inbox}")
+    if cfg.watch_audio:
+        _log(f"  Recordings:  {cfg.recordings}")
+    if cfg.watch_transcripts or cfg.watch_audio:
+        _log(f"  Transcripts: {cfg.transcripts}")
+    modes: list[str] = []
+    if cfg.watch_audio:
+        modes.append("audio→mp3 + whispermlx-missing")
+    if cfg.watch_transcripts:
+        modes.append("transcript copy")
+    _log(f"  Watching:    {', '.join(modes) if modes else '(none)'}")
+    _log(f"  Candidates:  {len(work)} ({audio_n} audio, {tx_n} transcript)")
+    if work:
+        preview = [f"{kind}: {src.name}" for src, kind in work]
+        _print_limited_items("Will consider", preview, limit=12)
+    else:
+        _log("  Will consider: (none)")
+    _log("---")
 
 
 def maybe_run_missing(
@@ -1071,17 +1194,28 @@ def maybe_run_missing(
         transcripts=cfg.transcripts,
         env_file=cfg.env_file,
     )
+    _print_section("Transcription (whispermlx-missing)")
     if dry_run:
-        print("Would run:", " ".join(cmd))
+        _log(f"  Would run: {' '.join(cmd)}")
         stats.would_invoke_missing += 1
+        _log("---")
         return
-    print("Running:", " ".join(cmd))
+    _log(f"  Running: {' '.join(cmd)}")
+    _log("  (child process output follows)")
+    started = time.perf_counter()
     rc = run_whispermlx_missing(cmd)
+    elapsed = time.perf_counter() - started
     stats.missing_invoked += 1
     if rc != 0:
-        print(f"WARNING: whispermlx-missing exited {rc}", file=sys.stderr)
+        _log(
+            f"WARNING: whispermlx-missing exited {rc} after {elapsed:.1f}s",
+            err=True,
+        )
         stats.failed_names.append("whispermlx-missing")
         stats.audio_failed += 1
+    else:
+        _log(f"  Finished whispermlx-missing in {elapsed:.1f}s")
+    _log("---")
 
 
 def process_cycle(
@@ -1101,6 +1235,7 @@ def process_cycle(
         recursive=cfg.recursive,
         skip_under=[p for p in (cfg.move_processed, cfg.wav_backup) if p is not None],
     )
+    work: list[tuple[Path, Kind]] = []
     for src in files:
         kind = classify_path(src)
         if kind == "audio" and not cfg.watch_audio:
@@ -1109,14 +1244,26 @@ def process_cycle(
             continue
         if kind == "ignore":
             continue
+        work.append((src, kind))
+
+    print_review_before_cycle(cfg, work, dry_run=dry_run)
+    total = len(work)
+    if total == 0:
+        _log("No inbox candidates this cycle.")
+        return stats
+
+    _print_section("Processing")
+    for index, (src, kind) in enumerate(work, start=1):
+        _log(f"[{index}/{total}] {kind}: {src.name}")
         if not wait_until_stable(
             src,
             checks=stability_checks,
             interval_ms=stability_interval_ms,
             timeout_ms=stability_timeout_ms,
         ):
-            print(f"Unstable (skipped this cycle): {src.name}", file=sys.stderr)
+            _log(f"  Unstable (skipped this cycle): {src.name}", err=True)
             stats.unstable += 1
+            stats.unstable_names.append(src.name)
             continue
         if kind == "audio":
             assert cfg.recordings is not None
@@ -1138,6 +1285,7 @@ def process_cycle(
                 stats.converted_names.append(src.name)
             elif outcome == "skipped":
                 stats.audio_skipped += 1
+                stats.skipped_names.append((src.name, "stem exists in recordings"))
             else:
                 stats.audio_failed += 1
                 stats.failed_names.append(src.name)
@@ -1159,42 +1307,82 @@ def process_cycle(
                 stats.copied_names.append(src.name)
             elif outcome == "skipped":
                 stats.transcripts_skipped += 1
+                stats.skipped_names.append((src.name, "stem exists in transcripts"))
             else:
                 stats.transcripts_failed += 1
                 stats.failed_names.append(src.name)
 
+    _log("---")
     return stats
 
 
-def print_summary(stats: CycleStats, *, dry_run: bool) -> None:
+def print_summary(
+    stats: CycleStats,
+    cfg: EffectiveConfig,
+    *,
+    dry_run: bool,
+) -> None:
+    status = _cycle_status(stats, dry_run=dry_run)
+    _print_section("Run summary")
+    _log(f"  Status:   {status}")
+    if cfg.inbox is not None:
+        _log(f"  Inbox:    {cfg.inbox}")
+    if cfg.watch_audio and cfg.recordings is not None:
+        _log(f"  Outputs:  {cfg.recordings}")
+    if (cfg.watch_transcripts or cfg.watch_audio) and cfg.transcripts is not None:
+        _log(f"  Transcripts: {cfg.transcripts}")
+
     if dry_run:
-        print(
-            "Dry-run: "
-            f"would convert {stats.would_convert}, "
-            f"would copy {stats.would_copy}, "
-            f"would invoke missing {stats.would_invoke_missing}, "
-            f"would backup {stats.would_backup}, "
-            f"would delete {stats.would_delete}, "
-            f"skipped audio {stats.audio_skipped}, "
-            f"skipped transcripts {stats.transcripts_skipped}, "
-            f"unstable {stats.unstable}"
-        )
-        return
-    print(
-        "Done: "
-        f"converted {stats.audio_converted}, "
-        f"copied {stats.transcripts_copied}, "
-        f"backed up {stats.originals_backed_up}, "
-        f"deleted originals {stats.originals_deleted}, "
-        f"skipped audio {stats.audio_skipped}, "
-        f"skipped transcripts {stats.transcripts_skipped}, "
-        f"missing runs {stats.missing_invoked}, "
-        f"failed {stats.failed}, "
-        f"unstable {stats.unstable}"
-    )
+        _log(f"  Would convert: {stats.would_convert}")
+        _log(f"  Would copy:    {stats.would_copy}")
+        _log(f"  Would invoke missing: {stats.would_invoke_missing}")
+        _log(f"  Would backup:  {stats.would_backup}")
+        _log(f"  Would delete:  {stats.would_delete}")
+        _print_limited_items("Would convert", stats.converted_names)
+        _print_limited_items("Would copy", stats.copied_names)
+    else:
+        _log(f"  Converted: {stats.audio_converted}")
+        _log(f"  Copied:    {stats.transcripts_copied}")
+        _log(f"  Backed up: {stats.originals_backed_up}")
+        _log(f"  Deleted:   {stats.originals_deleted}")
+        _log(f"  Missing runs: {stats.missing_invoked}")
+        _print_limited_items("Converted", stats.converted_names)
+        _print_limited_items("Copied", stats.copied_names)
+
+    if stats.skipped_names:
+        _log("  Skipped:")
+        for name, reason in stats.skipped_names[:12]:
+            _log(f"    • {name} ({reason})")
+        if len(stats.skipped_names) > 12:
+            _log(f"    • ... and {len(stats.skipped_names) - 12} more")
+    else:
+        skipped_n = stats.audio_skipped + stats.transcripts_skipped
+        _log(f"  Skipped:  {skipped_n}")
+
+    if stats.unstable_names:
+        _print_limited_items("Unstable", stats.unstable_names)
+    elif stats.unstable:
+        _log(f"  Unstable: {stats.unstable}")
+
+    if stats.failed_names:
+        _print_limited_items("Failed", stats.failed_names)
+    else:
+        _log(f"  Failed:   {stats.failed}")
+
+    if not dry_run and (stats.audio_converted or stats.transcripts_copied):
+        _log("  Next: import transcripts in the web UI if they are not managed yet")
+    _log("---")
+    _log()
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(line_buffering=True)
+            except (OSError, ValueError):
+                pass
     args = parse_args(argv)
     config_path = resolve_config_path(args)
     cfg = resolve_config(args, config_path=config_path)
@@ -1272,14 +1460,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                     maybe_run_missing(
                         cfg, stats, missing=missing, dry_run=args.dry_run
                     )
-            print_summary(stats, dry_run=args.dry_run)
+            print_summary(stats, cfg, dry_run=args.dry_run)
             total_failed += stats.failed
             if not watch_loop:
                 break
             first = False
             time.sleep(max(cfg.interval_seconds, 0.1))
     except KeyboardInterrupt:
-        print("Stopped.")
+        _log()
+        _log("Stopped.")
         return 0 if total_failed == 0 else 1
 
     return 1 if total_failed > 0 else 0

@@ -251,6 +251,57 @@ def test_sequential_phase_failed_outcome_aborts_when_policy_requests_abort() -> 
     assert outcome == (True, 2, 0, 0, 1, "boom")
 
 
+def test_sequential_phase_cancel_aborts_before_any_module() -> None:
+    from transcriptx.core.pipeline.run_control import (
+        PipelineRunControl,
+        bind_run_control,
+        reset_run_control,
+    )
+
+    pipeline = _FakePipeline()
+    pipeline.nodes = {
+        "ok": SimpleNamespace(name="ok"),
+        "ok2": SimpleNamespace(name="ok2"),
+    }
+    control = PipelineRunControl()
+    control.request_cancel()
+    token = bind_run_control(control)
+    try:
+        outcome, emitted, results, _ = _run(pipeline, execution_order=["ok", "ok2"])
+    finally:
+        reset_run_control(token)
+    assert outcome[0] is True
+    assert outcome[5] == "cancellation"
+    assert pipeline.execute_calls == []
+    assert results.get("termination_reason") == "cancellation"
+    assert [e["event"] for e in emitted] == ["run_started"]
+
+
+def test_sequential_phase_skip_marks_module_and_continues() -> None:
+    from transcriptx.core.pipeline.run_control import (
+        PipelineRunControl,
+        bind_run_control,
+        reset_run_control,
+    )
+
+    pipeline = _FakePipeline()
+    pipeline.nodes = {
+        "ok": SimpleNamespace(name="ok"),
+    }
+    control = PipelineRunControl()
+    control.request_skip()
+    token = bind_run_control(control)
+    try:
+        outcome, emitted, results, _ = _run(pipeline, execution_order=["ok", "ok"])
+    finally:
+        reset_run_control(token)
+    assert outcome[0] is False
+    assert [call["module_name"] for call in pipeline.execute_calls] == ["ok"]
+    assert results["skipped_modules"][0]["module"] == "ok"
+    assert results["skipped_modules"][0]["reason"] == "user_skipped"
+    assert results["modules_run"] == ["ok"]
+
+
 def test_sequential_phase_uses_preseeded_named_speaker_count_without_lookup(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

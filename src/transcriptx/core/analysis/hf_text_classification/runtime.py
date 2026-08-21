@@ -10,7 +10,11 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, Sequence
 
 from transcriptx.core.analysis.emotion_family.canonical_hash import canonical_json_hash
-from transcriptx.core.utils.logger import get_logger
+from transcriptx.core.utils.hf_hub_load import (
+    huggingface_offline_scope,
+    load_from_hub_with_retries,
+)
+from transcriptx.core.utils.logger import get_logger, log_warning
 
 logger = get_logger()
 
@@ -236,8 +240,105 @@ def _loading_lock_for(key: str) -> threading.Lock:
         return lock
 
 
+def _instantiate_classifier(
+    profile: ModelProfile,
+    *,
+    transformers: Any,
+    torch_mod: Any,
+    device: Any,
+    device_class: str,
+    dtype: Any,
+    cache_key: str,
+    local_only: bool,
+) -> LoadedClassifier:
+    """Materialize tokenizer+model without touching the process LRU cache."""
+    common_kw = dict(
+        local_files_only=local_only,
+        trust_remote_code=False,
+    )
+    tokenizer = transformers.AutoTokenizer.from_pretrained(
+        profile.tokenizer_id,
+        revision=profile.tokenizer_revision,
+        **common_kw,
+    )
+    # Prefer safetensors when available (convert bin locally if needed) so
+    # load works on torch<2.6 where transformers blocks torch.load.
+    # Load from the local snapshot path: Hub metadata ignores converted files.
+    from transcriptx.core.analysis.hf_safetensors import ensure_local_safetensors
+
+    local_root = ensure_local_safetensors(
+        profile.model_id, revision=profile.model_revision
+    )
+    model_ref = str(local_root) if local_root is not None else profile.model_id
+    use_safetensors = True if local_root is not None else profile.prefer_safetensors
+    model_kw = dict(common_kw)
+    if local_root is None:
+        model_kw["revision"] = profile.model_revision
+    try:
+        model = transformers.AutoModelForSequenceClassification.from_pretrained(
+            model_ref,
+            use_safetensors=use_safetensors,
+            torch_dtype=dtype,
+            **model_kw,
+        )
+    except TypeError:
+        model = transformers.AutoModelForSequenceClassification.from_pretrained(
+            model_ref,
+            torch_dtype=dtype,
+            **model_kw,
+        )
+
+    id2label = _resolved_id2label(model)
+    resolved_hash = _validate_indexed_label_map(profile, id2label)
+    effective_max = resolve_usable_max_length(
+        tokenizer, profile.max_length, model=model
+    )
+
+    model.to(device=device, dtype=dtype)
+    # Validate resolved parameter dtype matches claimed numerical profile
+    for param in model.parameters():
+        if param.dtype != dtype:
+            raise RuntimeError(
+                f"model dtype {param.dtype} != required float32 for "
+                f"{profile.profile_id}"
+            )
+        break
+    model.eval()
+    return LoadedClassifier(
+        profile=profile,
+        model=model,
+        tokenizer=tokenizer,
+        device=device,
+        device_class=device_class,
+        dtype=dtype,
+        cache_key=cache_key,
+        effective_max_length=effective_max,
+        resolved_label_map_hash=resolved_hash,
+        resolved_id2label=dict(id2label),
+    )
+
+
+def _cache_loaded(
+    torch_mod: Any, key: str, loaded: LoadedClassifier
+) -> LoadedClassifier:
+    with _CACHE_LOCK:
+        if key in _MODEL_CACHE:
+            _MODEL_CACHE.move_to_end(key)
+            return _MODEL_CACHE[key]
+        while len(_MODEL_CACHE) >= _MAX_CACHE_SLOTS:
+            _evict_one(torch_mod)
+        _MODEL_CACHE[key] = loaded
+        _MODEL_CACHE.move_to_end(key)
+    return loaded
+
+
 def load_classifier(profile: ModelProfile) -> LoadedClassifier:
-    """Load and validate a built-in profile; thread-safe bounded LRU cache."""
+    """Load and validate a built-in profile; thread-safe bounded LRU cache.
+
+    Prefers the local Hub snapshot so a bad network cannot stall on etag
+    checks. If the snapshot is missing and downloads are allowed, Hub access
+    is bounded (timeout + retry) and then fails so the caller can skip.
+    """
     from transcriptx.core.utils.downloads import downloads_disabled
     from transcriptx.core.utils.lazy_imports import get_torch, get_transformers
 
@@ -263,81 +364,34 @@ def load_classifier(profile: ModelProfile) -> LoadedClassifier:
                 _MODEL_CACHE.move_to_end(key)
                 return cached
 
-        local_only = bool(downloads_disabled())
-        common_kw = dict(
-            local_files_only=local_only,
-            trust_remote_code=False,
-        )
-        tokenizer = transformers.AutoTokenizer.from_pretrained(
-            profile.tokenizer_id,
-            revision=profile.tokenizer_revision,
-            **common_kw,
-        )
-        # Prefer safetensors when available (convert bin locally if needed) so
-        # load works on torch<2.6 where transformers blocks torch.load.
-        # Load from the local snapshot path: Hub metadata ignores converted files.
-        from transcriptx.core.analysis.hf_safetensors import ensure_local_safetensors
+        def instantiate(*, local_only: bool) -> LoadedClassifier:
+            return _instantiate_classifier(
+                profile,
+                transformers=transformers,
+                torch_mod=torch,
+                device=device,
+                device_class=dclass,
+                dtype=dtype,
+                cache_key=key,
+                local_only=local_only,
+            )
 
-        local_root = ensure_local_safetensors(
-            profile.model_id, revision=profile.model_revision
-        )
-        model_ref = str(local_root) if local_root is not None else profile.model_id
-        use_safetensors = True if local_root is not None else profile.prefer_safetensors
-        model_kw = dict(common_kw)
-        if local_root is None:
-            model_kw["revision"] = profile.model_revision
         try:
-            model = transformers.AutoModelForSequenceClassification.from_pretrained(
-                model_ref,
-                use_safetensors=use_safetensors,
-                torch_dtype=dtype,
-                **model_kw,
+            with huggingface_offline_scope():
+                loaded = instantiate(local_only=True)
+        except Exception as local_exc:
+            if downloads_disabled():
+                raise
+            log_warning(
+                "HF_TEXT_CLASSIFICATION",
+                f"local cache miss; trying Hub ({local_exc})",
             )
-        except TypeError:
-            model = transformers.AutoModelForSequenceClassification.from_pretrained(
-                model_ref,
-                torch_dtype=dtype,
-                **model_kw,
+            loaded = load_from_hub_with_retries(
+                lambda: instantiate(local_only=False),
+                log_prefix="HF_TEXT_CLASSIFICATION",
             )
 
-        id2label = _resolved_id2label(model)
-        resolved_hash = _validate_indexed_label_map(profile, id2label)
-        effective_max = resolve_usable_max_length(
-            tokenizer, profile.max_length, model=model
-        )
-
-        model.to(device=device, dtype=dtype)
-        # Validate resolved parameter dtype matches claimed numerical profile
-        for param in model.parameters():
-            if param.dtype != dtype:
-                raise RuntimeError(
-                    f"model dtype {param.dtype} != required float32 for "
-                    f"{profile.profile_id}"
-                )
-            break
-        model.eval()
-        loaded = LoadedClassifier(
-            profile=profile,
-            model=model,
-            tokenizer=tokenizer,
-            device=device,
-            device_class=dclass,
-            dtype=dtype,
-            cache_key=key,
-            effective_max_length=effective_max,
-            resolved_label_map_hash=resolved_hash,
-            resolved_id2label=dict(id2label),
-        )
-
-        with _CACHE_LOCK:
-            if key in _MODEL_CACHE:
-                _MODEL_CACHE.move_to_end(key)
-                return _MODEL_CACHE[key]
-            while len(_MODEL_CACHE) >= _MAX_CACHE_SLOTS:
-                _evict_one(torch)
-            _MODEL_CACHE[key] = loaded
-            _MODEL_CACHE.move_to_end(key)
-        return loaded
+        return _cache_loaded(torch, key, loaded)
 
 
 def score_texts(

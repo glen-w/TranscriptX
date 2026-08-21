@@ -31,6 +31,10 @@ from transcriptx.core.pipeline.target_resolver import (
     resolve_analysis_target,
 )
 from transcriptx.core.pipeline.run_orchestrator import RunOrchestrator
+from transcriptx.core.pipeline.run_control import (
+    TERMINATION_CANCELLATION,
+    pipeline_is_cancelled,
+)
 from transcriptx.core.pipeline.contracts import RunRequest, TranscriptSource
 from transcriptx.core.pipeline.pipeline_legacy_compat import (
     apply_legacy_resolver_compat,
@@ -130,8 +134,13 @@ def run_analysis_pipeline(
 
     per_transcript_results: List[PerTranscriptResult] = []
     group_errors: List[str] = []
+    cancelled = False
     try:
         for index, transcript_path in enumerate(resolved_paths):
+            if pipeline_is_cancelled():
+                cancelled = True
+                group_errors.append("Analysis cancelled")
+                break
             single_result = _run_single_analysis_pipeline(
                 transcript_path=transcript_path,
                 selected_modules=selected_modules,
@@ -157,8 +166,12 @@ def run_analysis_pipeline(
                 )
             )
             group_errors.extend(single_result.get("errors", []))
+            if single_result.get("termination_reason") == TERMINATION_CANCELLATION:
+                cancelled = True
+                group_errors.append("Analysis cancelled")
+                break
 
-        return finalize_group_analysis(
+        result = finalize_group_analysis(
             scope=scope,
             members=members,
             resolved_paths=resolved_paths,
@@ -168,6 +181,10 @@ def run_analysis_pipeline(
             config=config,
             performance_recorder=group_recorder,
         )
+        if cancelled:
+            result["termination_reason"] = TERMINATION_CANCELLATION
+            result["status"] = "aborted"
+        return result
     finally:
         # Emergency cleanup only: if finalize never stopped the wall, stop without write.
         if group_recorder.state == RecorderState.running:

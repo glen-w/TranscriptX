@@ -8,6 +8,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.web.blocks.implementations.data import render_artifact_file_preview
 from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.components.action_links import render_action_link
@@ -221,7 +222,7 @@ def _render_browse(ctx: RunScopedPageContext) -> None:
             if entry.preview_eligible and render_action_link(
                 "Preview",
                 key=f"art_prev_{a.id}",
-                icon=":material/visibility:",
+                icon=ic.VISIBILITY,
             ):
                 # Section nav widgets already exist this run — defer widget sync.
                 _open_artifact_preview(a.id, defer_widgets=True)
@@ -230,7 +231,9 @@ def _render_browse(ctx: RunScopedPageContext) -> None:
     st.session_state[ARTIFACTS_KEY_SELECTED_IDS] = selected
 
     if len(entries) > show_n:
-        if st.button("Show more", key="artifacts_show_more_btn"):
+        if st.button(
+            "Show more", key="artifacts_show_more_btn", icon=ic.SHOW_MORE
+        ):
             st.session_state[ARTIFACTS_KEY_SHOW_MORE] = show_n + BROWSE_PAGE_SIZE
             st.rerun()
 
@@ -332,6 +335,7 @@ def _render_preview(ctx: RunScopedPageContext) -> None:
             data = path.read_bytes()
             st.download_button(
                 "Download",
+                icon=ic.DOWNLOAD,
                 data=data,
                 file_name=path.name,
                 key=f"artifacts_dl_{selected_id}",

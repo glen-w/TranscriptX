@@ -15,6 +15,15 @@ from transcriptx.core.utils.logger import (
 )
 from transcriptx.core.utils.notifications import notify_user
 from transcriptx.core.pipeline.dag_pipeline_types import ModuleExecOutcome
+from transcriptx.core.pipeline.run_control import (
+    SKIP_REASON_CANCELLED,
+    SKIP_REASON_USER,
+    get_bound_run_control,
+    pipeline_consume_skip,
+    pipeline_is_cancelled,
+)
+
+_ISOLATION_POLL_S = 0.25
 
 
 def _elapsed_ms(start: float) -> float:
@@ -73,6 +82,106 @@ def _resolve_module_timeout_seconds(module_name: str, node: Any) -> int:
         except Exception:
             pass
     return timeout
+
+
+def _timeout_module_outcome(
+    *,
+    pipeline: Any,
+    module_name: str,
+    module_start: float,
+    module_started_at: str,
+    module_run: Any,
+    timeout_seconds: int,
+    build_module_result: Any,
+    now_iso: Any,
+) -> ModuleExecOutcome:
+    duration_ms = _elapsed_ms(module_start)
+    message = (
+        f"Module '{module_name}' timed out after {timeout_seconds}s; "
+        "abandoning this module and continuing the pipeline"
+    )
+    pipeline.logger.error(message)
+    err_module_result = build_module_result(
+        module_name=module_name,
+        status="error",
+        started_at=module_started_at,
+        finished_at=now_iso(),
+        artifacts=[],
+        metrics={
+            "duration_seconds": duration_ms / 1000.0,
+            "timeout_seconds": float(timeout_seconds),
+        },
+        payload_type="analysis_results",
+        payload={},
+        error={
+            "error_type": "TimeoutError",
+            "error_message": message,
+            "error_code": "module_timeout",
+            "traceback_text": "",
+        },
+    )
+    return ModuleExecOutcome(
+        status="failed",
+        module_result=err_module_result,
+        error=message,
+        duration_ms=duration_ms,
+        module_run=module_run,
+        module_started_at=module_started_at,
+    )
+
+
+def _await_isolated_module(
+    future: concurrent.futures.Future[ModuleExecOutcome],
+    *,
+    pipeline: Any,
+    module_name: str,
+    module_start: float,
+    module_started_at: str,
+    module_run: Any,
+    timeout_seconds: int,
+    build_module_result: Any,
+    now_iso: Any,
+) -> ModuleExecOutcome:
+    """Wait for an isolated module worker; honour timeout, skip, and cancel."""
+    deadline = None if timeout_seconds <= 0 else module_start + float(timeout_seconds)
+    while True:
+        now = time.perf_counter()
+        if deadline is not None and now >= deadline:
+            return _timeout_module_outcome(
+                pipeline=pipeline,
+                module_name=module_name,
+                module_start=module_start,
+                module_started_at=module_started_at,
+                module_run=module_run,
+                timeout_seconds=timeout_seconds,
+                build_module_result=build_module_result,
+                now_iso=now_iso,
+            )
+        wait_s = _ISOLATION_POLL_S
+        if deadline is not None:
+            wait_s = min(_ISOLATION_POLL_S, max(deadline - now, 0.01))
+        try:
+            return future.result(timeout=wait_s)
+        except concurrent.futures.TimeoutError:
+            if pipeline_is_cancelled():
+                return ModuleExecOutcome(
+                    status="skipped",
+                    skip_reason=SKIP_REASON_CANCELLED,
+                    duration_ms=_elapsed_ms(module_start),
+                    module_run=module_run,
+                    module_started_at=module_started_at,
+                )
+            if pipeline_consume_skip():
+                pipeline.logger.info(
+                    "Skipping module '%s' at user request", module_name
+                )
+                return ModuleExecOutcome(
+                    status="skipped",
+                    skip_reason=SKIP_REASON_USER,
+                    duration_ms=_elapsed_ms(module_start),
+                    module_run=module_run,
+                    module_started_at=module_started_at,
+                )
 
 
 def apply_module_side_effects(
@@ -365,7 +474,8 @@ def execute_single_module(
 
     try:
         timeout_seconds = _resolve_module_timeout_seconds(module_name, node)
-        if timeout_seconds <= 0:
+        control = get_bound_run_control()
+        if timeout_seconds <= 0 and control is None:
             return _run_module_body()
 
         # wait=False on shutdown so a hung native fit does not block later modules.
@@ -374,42 +484,17 @@ def execute_single_module(
         try:
             ctx = contextvars.copy_context()
             future = executor.submit(ctx.run, _run_module_body)
-            try:
-                return future.result(timeout=float(timeout_seconds))
-            except concurrent.futures.TimeoutError:
-                duration_ms = _elapsed_ms(module_start)
-                message = (
-                    f"Module '{module_name}' timed out after {timeout_seconds}s; "
-                    "abandoning this module and continuing the pipeline"
-                )
-                pipeline.logger.error(message)
-                err_module_result = build_module_result(
-                    module_name=module_name,
-                    status="error",
-                    started_at=module_started_at,
-                    finished_at=now_iso(),
-                    artifacts=[],
-                    metrics={
-                        "duration_seconds": duration_ms / 1000.0,
-                        "timeout_seconds": float(timeout_seconds),
-                    },
-                    payload_type="analysis_results",
-                    payload={},
-                    error={
-                        "error_type": "TimeoutError",
-                        "error_message": message,
-                        "error_code": "module_timeout",
-                        "traceback_text": "",
-                    },
-                )
-                return ModuleExecOutcome(
-                    status="failed",
-                    module_result=err_module_result,
-                    error=message,
-                    duration_ms=duration_ms,
-                    module_run=module_run,
-                    module_started_at=module_started_at,
-                )
+            return _await_isolated_module(
+                future,
+                pipeline=pipeline,
+                module_name=module_name,
+                module_start=module_start,
+                module_started_at=module_started_at,
+                module_run=module_run,
+                timeout_seconds=timeout_seconds,
+                build_module_result=build_module_result,
+                now_iso=now_iso,
+            )
         finally:
             executor.shutdown(wait=False, cancel_futures=True)
     finally:

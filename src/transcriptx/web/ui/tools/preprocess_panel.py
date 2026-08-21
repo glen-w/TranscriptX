@@ -8,6 +8,7 @@ from typing import Dict, List
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.app.controllers.preprocess_controller import PreprocessController
 from transcriptx.app.models.requests import PreprocessRequest
 from transcriptx.app.progress import make_initial_snapshot
@@ -177,7 +178,12 @@ def _render_assess_and_configure(audio_paths: List[Path], *, deps_ready: bool) -
             _run_assessment(audio_path, cache_key)
             st.rerun()
     else:
-        if st.button("Assess audio", key="audio_prep_assess", type="secondary"):
+        if st.button(
+            "Assess audio",
+            key="audio_prep_assess",
+            type="secondary",
+            icon=ic.GRAPHIC_EQ,
+        ):
             _run_assessment(audio_path, cache_key)
             st.rerun()
         st.caption(
@@ -490,7 +496,13 @@ def _render_run_button(
         st.warning("Install ffmpeg and pydub before processing.")
 
     disabled = (not deps_ready) and mode != "off"
-    if st.button(button_label, type="primary", key="audio_prep_run", disabled=disabled):
+    if st.button(
+        button_label,
+        type="primary",
+        key="audio_prep_run",
+        icon=ic.RUN,
+        disabled=disabled,
+    ):
         st.session_state[PREPROCESS_SNAPSHOT_KEY] = make_initial_snapshot(total=5)
         st.session_state[_KEY_RUN_IN_PROGRESS] = True
         progress = StreamlitProgressCallback(PREPROCESS_SNAPSHOT_KEY)
@@ -638,6 +650,7 @@ def _render_transcription_handoff(output_paths: List[Path]) -> None:
     if st.button(
         "Open Transcribe Audio",
         type="primary",
+        icon=ic.TRANSCRIBE,
         key="audio_prep_transcribe_handoff",
     ):
         navigate_to_transcribe_with_paths(st.session_state, output_paths)

@@ -83,6 +83,7 @@ def render_progress_panel(
         "finalizing": "Finalizing…",
         "completed": "Completed",
         "failed": "Failed",
+        "cancelled": "Cancelled",
     }
     phase_label = phase_labels.get(phase, phase.replace("_", " ").title())
     if status == "completed":
@@ -93,6 +94,8 @@ def render_progress_panel(
             st.error(error)
         elif error_code:
             st.error(f"[{error_code}]")
+    elif status == "cancelled":
+        st.warning(f"**{phase_label}**")
     else:
         st.info(f"**{phase_label}**")
 
@@ -101,7 +104,7 @@ def render_progress_panel(
     if current_item:
         item_prefix = (
             f"Last {item_label.lower().replace('current ', '')}:"
-            if status in ("completed", "failed")
+            if status in ("completed", "failed", "cancelled")
             else f"{item_label}:"
         )
         st.markdown(f"{item_prefix} `{current_item}`")
@@ -110,7 +113,7 @@ def render_progress_panel(
     if current_module:
         prefix = (
             f"Last {current_label.lower().replace('current ', '')}:"
-            if status in ("completed", "failed")
+            if status in ("completed", "failed", "cancelled")
             else f"{current_label}:"
         )
         st.markdown(f"{prefix} `{current_module}`")
@@ -164,17 +167,21 @@ class StreamlitProgressCallback:
         snapshot_key: str = SNAPSHOT_KEY,
         *,
         render_slot: Any | None = None,
+        snapshot: Optional[MutableMapping[str, Any]] = None,
         unit_label: str = "modules",
         current_label: str = "Current module",
         item_label: str = "Current transcript",
     ) -> None:
         self._snapshot_key = snapshot_key
         self._render_slot = render_slot
+        self._snapshot_obj = snapshot
         self._unit_label = unit_label
         self._current_label = current_label
         self._item_label = item_label
 
     def _snap(self) -> Optional[MutableMapping[str, Any]]:
+        if self._snapshot_obj is not None:
+            return self._snapshot_obj
         return st.session_state.get(self._snapshot_key)
 
     def refresh_panel(self) -> None:

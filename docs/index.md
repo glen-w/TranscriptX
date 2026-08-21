@@ -5,6 +5,8 @@ Authority: PRODUCT.md
 
 Local-first personal transcript analysis workbench. Start with the product definition, then installation and task guides.
 
+Hosted navigation mirrors [USER_INDEX.md](USER_INDEX.md) for user-facing pages (plus a short Developers section). Sphinx builds the same Markdown tree as the repo — there is no separate docs corpus.
+
 ```{toctree}
 :maxdepth: 2
 :caption: Start here
@@ -16,8 +18,10 @@ known_limitations
 runtime/installation
 runtime/settings
 runtime/transcription
+runtime/directory_watcher
 runtime/docker
 runtime/export
+backup_and_restore
 ```
 
 ```{toctree}
@@ -43,11 +47,17 @@ workflows/speakers
 
 runtime/models
 runtime/llm
+runtime/corrections-viewer
+runtime/karaoke-playback
+runtime/corrections-llm
 generated/modules
 generated/cli
 TERMS
 public_surfaces
 CONTRACT_INDEX
+runtime/STORAGE
+recipes/whisperx/README
+recipes/whisper-webui/README
 ```
 
 ```{toctree}
@@ -60,7 +70,6 @@ runtime/epistemic_markers
 runtime/politeness
 runtime/topic_shift
 runtime/transcript_quality
-runtime/STORAGE
 ```
 
 ```{toctree}

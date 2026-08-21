@@ -39,6 +39,7 @@ from transcriptx.io.import_metadata_sidecar import (
 from transcriptx.io.originals_archive import exclusive_create_originals_archive
 from transcriptx.io.speaker_map_inheritance import apply_speaker_map_on_import
 from transcriptx.io.transcript_importer import import_transcript
+from transcriptx.io.transcript_schema import validate_transcript_document
 
 logger = get_logger()
 
@@ -331,6 +332,10 @@ def _run_managed_import_body(
     )
 
     # Retry / repair boundary when JSON exists and overwrite is false.
+    # Schema-invalid occupants (e.g. raw WhisperX dropped into the library root)
+    # fall through to full admission with replace, instead of trying to patch the
+    # invalid document in place (which can fail on vendor NaNs/Infs).
+    replace_schema_invalid = False
     if target_json.exists() and not overwrite:
         if inspection.state is ManagedArtifactState.ALREADY_MANAGED:
             raise FileExistsError(
@@ -344,6 +349,7 @@ def _run_managed_import_body(
         elif inspection.state is ManagedArtifactState.INCOMPLETE_UNREPAIRABLE:
             # Only missing provenance may be backfilled from app-owned staging.
             # Unsafe/present original_path must surface as a hard error (no pairing).
+            # Schema-invalid JSON is replaced via new admission below.
             try:
                 with open(target_json, "r", encoding="utf-8") as handle:
                     doc = json.load(handle)
@@ -351,87 +357,102 @@ def _run_managed_import_body(
                 raise ValueError(
                     inspection.detail or "Incomplete managed transcript is not readable"
                 ) from exc
-            source = _source_object_from_document(doc) if isinstance(doc, dict) else {}
-            existing_rel = str(source.get("original_path") or "").strip()
-            if existing_rel:
-                # Re-raise the precise safety error (e.g. must be under originals/).
-                validate_safe_originals_relpath(existing_rel, output_dir=output_dir)
-                raise ValueError(
-                    inspection.detail
-                    or "Incomplete managed transcript is not repairable"
+            schema_valid = False
+            if isinstance(doc, dict):
+                try:
+                    validate_transcript_document(doc, label=str(target_json))
+                    schema_valid = True
+                except ValueError:
+                    schema_valid = False
+            if not schema_valid:
+                logger.info(
+                    "Replacing schema-invalid library JSON via managed admission: %s",
+                    target_json,
                 )
-            if not allow_provenance_backfill:
-                raise ValueError(
-                    inspection.detail
-                    or "Incomplete managed transcript is not repairable"
-                )
-            try:
-                rel = _backfill_retry_original_path_from_app_staging(
-                    json_path=target_json,
-                    staging_path=staging,
-                    output_dir=output_dir,
-                    originals_dir=originals_dir,
-                    imported_at=imported_at,
-                    archive_basename=archive_basename,
-                    created=created,
-                )
-            except Exception:
-                _rollback_attempt(created)
-                raise
+                replace_schema_invalid = True
+            else:
+                source = _source_object_from_document(doc)
+                existing_rel = str(source.get("original_path") or "").strip()
+                if existing_rel:
+                    # Re-raise the precise safety error (e.g. must be under originals/).
+                    validate_safe_originals_relpath(existing_rel, output_dir=output_dir)
+                    raise ValueError(
+                        inspection.detail
+                        or "Incomplete managed transcript is not repairable"
+                    )
+                if not allow_provenance_backfill:
+                    raise ValueError(
+                        inspection.detail
+                        or "Incomplete managed transcript is not repairable"
+                    )
+                try:
+                    rel = _backfill_retry_original_path_from_app_staging(
+                        json_path=target_json,
+                        staging_path=staging,
+                        output_dir=output_dir,
+                        originals_dir=originals_dir,
+                        imported_at=imported_at,
+                        archive_basename=archive_basename,
+                        created=created,
+                    )
+                except Exception:
+                    _rollback_attempt(created)
+                    raise
         else:
             raise ValueError(f"Unexpected managed state for retry: {inspection.state}")
 
-        try:
-            sidecar_retry_path = _write_sidecar_for_existing_json(
-                json_path=target_json,
+        if not replace_schema_invalid:
+            try:
+                sidecar_retry_path = _write_sidecar_for_existing_json(
+                    json_path=target_json,
+                    import_id=import_id,
+                    imported_at=imported_at,
+                    source_upload_basename=archive_basename,
+                    archived_original_relpath=rel,
+                )
+                created.sidecar = sidecar_retry_path
+                validation = validate_managed_transcript(target_json)
+                if not validation.ok and (output_dir / rel).exists():
+                    import_transcript(
+                        output_dir / rel,
+                        output_dir=output_dir,
+                        overwrite=True,
+                        imported_at=imported_at,
+                        source_original_path=rel,
+                        canonical_json_stem=canonical_stem,
+                    )
+                    validation = validate_managed_transcript(target_json)
+                if not validation.ok:
+                    raise ValueError(
+                        "Managed transcript validation failed after sidecar retry: "
+                        f"{validation.message}"
+                    )
+            except Exception:
+                _rollback_attempt(created)
+                raise
+
+            _cleanup_app_owned_staging(
+                staging,
+                policy=staging_cleanup,
+                skip_unlink_if_same_as=output_dir / rel,
+            )
+            with open(target_json, "r", encoding="utf-8") as handle:
+                doc = json.load(handle)
+            source = doc.get("source", {}) if isinstance(doc, dict) else {}
+            source_type = str(source.get("type") or "existing")
+            archived_path = output_dir / rel
+            speaker_err = _apply_speaker_map_recoverable(target_json)
+            return ManagedImportResult(
                 import_id=import_id,
                 imported_at=imported_at,
-                source_upload_basename=archive_basename,
+                json_path=target_json,
+                archived_original_path=archived_path,
                 archived_original_relpath=rel,
+                adapter_source_id=source_type,
+                sidecar_path=sidecar_retry_path,
+                repaired_incomplete=True,
+                speaker_map_error=speaker_err,
             )
-            created.sidecar = sidecar_retry_path
-            validation = validate_managed_transcript(target_json)
-            if not validation.ok and (output_dir / rel).exists():
-                import_transcript(
-                    output_dir / rel,
-                    output_dir=output_dir,
-                    overwrite=True,
-                    imported_at=imported_at,
-                    source_original_path=rel,
-                    canonical_json_stem=canonical_stem,
-                )
-                validation = validate_managed_transcript(target_json)
-            if not validation.ok:
-                raise ValueError(
-                    "Managed transcript validation failed after sidecar retry: "
-                    f"{validation.message}"
-                )
-        except Exception:
-            _rollback_attempt(created)
-            raise
-
-        _cleanup_app_owned_staging(
-            staging,
-            policy=staging_cleanup,
-            skip_unlink_if_same_as=output_dir / rel,
-        )
-        with open(target_json, "r", encoding="utf-8") as handle:
-            doc = json.load(handle)
-        source = doc.get("source", {}) if isinstance(doc, dict) else {}
-        source_type = str(source.get("type") or "existing")
-        archived_path = output_dir / rel
-        speaker_err = _apply_speaker_map_recoverable(target_json)
-        return ManagedImportResult(
-            import_id=import_id,
-            imported_at=imported_at,
-            json_path=target_json,
-            archived_original_path=archived_path,
-            archived_original_relpath=rel,
-            adapter_source_id=source_type,
-            sidecar_path=sidecar_retry_path,
-            repaired_incomplete=True,
-            speaker_map_error=speaker_err,
-        )
 
     # New admission: parse snapshot first, then exclusive-create archive, then write.
     try:
@@ -460,7 +481,9 @@ def _run_managed_import_body(
         )
         writer = AtomicTranscriptWriter(reason="import")
         json_path = writer.write(
-            target_json, import_result.canonical_document, overwrite=overwrite
+            target_json,
+            import_result.canonical_document,
+            overwrite=overwrite or replace_schema_invalid,
         )
         created.json_path = json_path
 
@@ -497,5 +520,6 @@ def _run_managed_import_body(
         archived_original_relpath=archived_relpath,
         adapter_source_id=import_result.selected_adapter_id,
         sidecar_path=sidecar_path,
+        repaired_incomplete=replace_schema_invalid,
         speaker_map_error=speaker_err,
     )

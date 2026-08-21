@@ -167,6 +167,84 @@ def test_run_analysis_in_progress_skips_launch_fragment(monkeypatch) -> None:
 
 
 @pytest.mark.unit
+def test_run_analysis_in_progress_overrides_batch_target(monkeypatch) -> None:
+    """Returning mid-run must show progress even if Target was left on Batch."""
+    import transcriptx.web.page_modules.run_analysis as mod
+
+    DummyHomeStreamlit.session_state = {
+        "analysis_run_in_progress": True,
+        "run_analysis_target": "Batch",
+        mod.SNAPSHOT_KEY: {"status": "running", "pct": 25, "phase": "running_pipeline"},
+        mod._PENDING_LAUNCH_KEY: {
+            "started": True,
+            "form_cleared": True,
+            "target_type": "Transcript",
+            "footer_summary": "Running…",
+            "modules": ["stats"],
+        },
+        mod._WORKER_HOLDER_KEY: {"done": False},
+    }
+    progress_calls: list = []
+    batch_calls: list = []
+
+    class _St(DummyHomeStreamlit):
+        @staticmethod
+        def segmented_control(_label, options, index=0, **_kwargs):
+            # Simulate a sticky Batch selection from session before sync wins.
+            return "Batch"
+
+        @staticmethod
+        def fragment(fn=None, **_kwargs):
+            if fn is None:
+
+                def _decorator(f):
+                    return f
+
+                return _decorator
+            return fn
+
+        @staticmethod
+        def markdown(*_a, **_k):
+            return None
+
+        @staticmethod
+        def container():
+            return DummyHomeStreamlit.expander()
+
+        @staticmethod
+        def columns(n, **_kwargs):
+            count = len(n) if isinstance(n, (list, tuple)) else int(n)
+            return tuple(DummyHomeStreamlit.expander() for _ in range(count))
+
+        @staticmethod
+        def button(*_a, **_k):
+            return False
+
+    monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(mod, "render_page_shell", lambda *_a, **_k: None)
+    monkeypatch.setattr(mod, "_render_post_analysis_actions", lambda: None)
+    monkeypatch.setattr(
+        mod,
+        "get_config",
+        lambda: SimpleNamespace(group_analysis=SimpleNamespace(enabled=False)),
+    )
+    monkeypatch.setattr(
+        mod, "render_progress_panel", lambda snap: progress_calls.append(snap)
+    )
+    monkeypatch.setattr(
+        mod, "render_batch_analysis_panel", lambda: batch_calls.append(True)
+    )
+    monkeypatch.setattr(
+        mod, "_run_analysis_config_and_launch_fragment", lambda *_a, **_k: None
+    )
+
+    mod.render_run_analysis_page()
+
+    assert progress_calls
+    assert batch_calls == []
+    assert DummyHomeStreamlit.session_state["run_analysis_target"] == "Transcript"
+
+@pytest.mark.unit
 def test_run_analysis_page_renders_post_success_action_links() -> None:
     """After a successful run, show homepage-style next-step links under the flash."""
     import transcriptx.web.page_modules.run_analysis as mod
@@ -720,7 +798,69 @@ def test_run_analysis_group_copy_only_when_group_selected() -> None:
 
 
 @pytest.mark.unit
-def test_run_analysis_single_launch_button() -> None:
+def test_run_analysis_in_progress_renders_skip_and_cancel(monkeypatch) -> None:
+    import transcriptx.web.page_modules.run_analysis as mod
+    from transcriptx.core.pipeline.run_control import PipelineRunControl
+
+    DummyHomeStreamlit.session_state = {
+        "analysis_run_in_progress": True,
+        mod.SNAPSHOT_KEY: {"status": "running", "pct": 10, "phase": "running_pipeline"},
+        mod._PENDING_LAUNCH_KEY: {
+            "started": True,
+            "form_cleared": True,
+            "footer_summary": "Running…",
+            "modules": ["stats"],
+        },
+        mod._RUN_CONTROL_KEY: PipelineRunControl(),
+        mod._WORKER_HOLDER_KEY: {"done": False},
+    }
+    keys: list[str] = []
+
+    class _Col:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+        def button(self, _label, key=None, **_kwargs):
+            if key:
+                keys.append(str(key))
+            return False
+
+    class _St(DummyHomeStreamlit):
+        @staticmethod
+        def segmented_control(_label, options, index=0, **_kwargs):
+            return options[index]
+
+        @staticmethod
+        def columns(n, **_kwargs):
+            count = len(n) if isinstance(n, (list, tuple)) else int(n)
+            return tuple(_Col() for _ in range(count))
+
+        @staticmethod
+        def button(_label, key=None, **_kwargs):
+            if key:
+                keys.append(str(key))
+            return False
+
+    monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(mod, "render_page_shell", lambda *_a, **_k: None)
+    monkeypatch.setattr(mod, "_render_post_analysis_actions", lambda: None)
+    monkeypatch.setattr(
+        mod,
+        "get_config",
+        lambda: SimpleNamespace(group_analysis=SimpleNamespace(enabled=False)),
+    )
+    monkeypatch.setattr(mod, "render_progress_panel", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        mod, "_run_analysis_config_and_launch_fragment", lambda *_a, **_k: None
+    )
+
+    mod.render_run_analysis_page()
+
+    assert "run_analysis_skip" in keys
+    assert "run_analysis_cancel" in keys
     import transcriptx.web.page_modules.run_analysis as mod
 
     source = Path(mod.__file__).read_text(encoding="utf-8")

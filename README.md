@@ -90,7 +90,7 @@ Supported interfaces are defined only in [docs/public_surfaces.md](docs/public_s
 
 ## Direction
 
-Stabilisation toward a credible **1.0** (schema epoch through **0.9.9** Overview presentation; Guided/demo trialled in **0.9.6** then removed; then unfamiliar-user validation) — not feature-count sprawl. Longer term: personal audio intelligence companion (optional local STT, playback polish, installable shell — see 1.x themes). See [ROADMAP.md](docs/ROADMAP.md) and [pre_release_roadmap_1_0.md](docs/dev/pre_release_roadmap_1_0.md).
+Stabilisation toward a credible **1.0** (schema epoch through **0.9.9** Overview presentation; interim **0.9.9.5** post-0.9.9 wave; Guided/demo trialled in **0.9.6** then removed; then unfamiliar-user validation) — not feature-count sprawl. Longer term: personal audio intelligence companion (optional local STT, playback polish, installable shell — see 1.x themes). See [ROADMAP.md](docs/ROADMAP.md) and [pre_release_roadmap_1_0.md](docs/dev/pre_release_roadmap_1_0.md).
 
 ## Links
 

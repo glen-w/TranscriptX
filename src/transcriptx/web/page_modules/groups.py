@@ -13,6 +13,7 @@ from typing import Mapping
 import pandas as pd
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.domain.group import Group
 from transcriptx.core.store.group_manifest_store import (
     canonical_group_member_path,
@@ -65,7 +66,9 @@ def _render_create_group_transcripts_fragment(
             "Members of the new group. Membership is file-backed and can be edited later."
         ),
     )
-    if st.button("Create group", type="primary", key="create_group_submit"):
+    if st.button(
+        "Create group", type="primary", key="create_group_submit", icon=ic.ADD
+    ):
         if not selected_paths:
             st.error("Select at least one transcript.")
         else:
@@ -128,7 +131,9 @@ def _render_edit_membership_fragment(
             format_func=lambda p: path_to_label.get(p, Path(p).name),
             key=f"membership_add_{group.group_id}",
         )
-        if st.button("Add selected", key=f"membership_add_btn_{group.group_id}"):
+        if st.button(
+            "Add selected", key=f"membership_add_btn_{group.group_id}", icon=ic.ADD
+        ):
             if not to_add:
                 st.warning(
                     "Pick one or more transcripts in “Add transcripts”, then click "
@@ -165,7 +170,9 @@ def _render_edit_membership_fragment(
         disabled=True,
     )
 
-    if st.button("Save membership", key=f"membership_save_{group.group_id}"):
+    if st.button(
+        "Save membership", key=f"membership_save_{group.group_id}", icon=ic.SAVE
+    ):
         if not working_paths:
             st.error("Group must have at least one transcript.")
         else:
@@ -179,7 +186,9 @@ def _render_edit_membership_fragment(
                 st.rerun()
             except Exception as e:
                 st.error(str(e))
-    if st.button("Cancel", key=f"membership_cancel_{group.group_id}"):
+    if st.button(
+        "Cancel", key=f"membership_cancel_{group.group_id}", icon=ic.CANCEL
+    ):
         st.session_state.pop(membership_key, None)
         st.rerun()
 
@@ -233,7 +242,9 @@ def _groups_detail_fragment(
     rename_key = f"group_rename_input_{group.group_id}"
     with st.expander("Rename group"):
         new_name = st.text_input("Name", value=group.name or "", key=rename_key)
-        if st.button("Update name", key=f"rename_btn_{group.group_id}"):
+        if st.button(
+            "Update name", key=f"rename_btn_{group.group_id}", icon=ic.RENAME
+        ):
             new_name = (new_name or "").strip()
             if not new_name:
                 st.error("Name cannot be empty.")
@@ -257,7 +268,12 @@ def _groups_detail_fragment(
         )
 
     confirm_key = f"confirm_delete_group_{group.group_id}"
-    if st.button("Delete group", type="secondary", key=f"delete_btn_{group.group_id}"):
+    if st.button(
+        "Delete group",
+        type="secondary",
+        key=f"delete_btn_{group.group_id}",
+        icon=ic.DELETE,
+    ):
         st.session_state[confirm_key] = True
         st.rerun()
 
@@ -266,7 +282,10 @@ def _groups_detail_fragment(
         col1, col2 = st.columns(2)
         with col1:
             if st.button(
-                "Confirm delete", type="primary", key=f"confirm_del_{group.group_id}"
+                "Confirm delete",
+                type="primary",
+                key=f"confirm_del_{group.group_id}",
+                icon=ic.CONFIRM,
             ):
                 GroupService.delete_group(group.group_id)
                 _clear_group_caches()
@@ -276,7 +295,9 @@ def _groups_detail_fragment(
                 try_page_toast("Group deleted.")
                 st.rerun()
         with col2:
-            if st.button("Cancel", key=f"cancel_del_{group.group_id}"):
+            if st.button(
+                "Cancel", key=f"cancel_del_{group.group_id}", icon=ic.CANCEL
+            ):
                 st.session_state.pop(confirm_key, None)
                 st.rerun()
 
@@ -284,7 +305,7 @@ def _groups_detail_fragment(
     if render_action_link(
         "View group in subject panel",
         key=f"view_subject_{group.group_id}",
-        icon=":material/groups:",
+        icon=ic.SPEAKERS,
     ):
         st.session_state["subject_type"] = "group"
         st.session_state["subject_id"] = group.group_id

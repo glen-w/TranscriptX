@@ -129,12 +129,13 @@ def test_streamlit_progress_callback_persists_current_item_across_modules(
 
 @pytest.mark.unit
 def test_run_analysis_execute_uses_live_panel_not_spinner() -> None:
-    """Contract: pending launch must bind a progress slot and avoid spinner overlay."""
+    """Contract: in-progress launch polls a live panel; Skip/Cancel stay clickable."""
     import transcriptx.web.page_modules.run_analysis as mod
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
-    assert "render_slot=progress_slot" in source
-    assert "st.empty()" in source
-    assert "progress.refresh_panel()" in source
-    # Spinner must not wrap the blocking run (it hid the live bar/count).
+    assert "_start_pending_launch_worker" in source
+    assert 'key="run_analysis_cancel"' in source
+    assert 'key="run_analysis_skip"' in source
+    assert "st.fragment(run_every=0.5)" in source
+    # Spinner must not wrap the run (it hid the live bar/count).
     assert 'with st.spinner("Running analysis…")' not in source

@@ -418,21 +418,43 @@ def run_analysis(
         duration = time.perf_counter() - start
     progress.on_stage_complete("running_pipeline")
 
-    # -----------------------------------------------------------------------
-    # Finalizing phase
-    # -----------------------------------------------------------------------
-    _update_snapshot(snapshot, phase="finalizing", latest_event="Finalizing outputs…")
-
     output_dir = results.get("output_dir", "")
     output_path = Path(output_dir) if output_dir else Path()
     manifest_path = output_path / "manifest.json" if output_path else Path()
     modules_run = results.get("modules_run", [])
-    result_errors = results.get("errors", [])
+    result_errors = list(results.get("errors", []) or [])
+    cancelled = results.get("termination_reason") == "cancellation"
 
     if output_path and getattr(request, "analysis_preset", None):
         from transcriptx.core.pipeline.manifest_builder import record_analysis_preset
 
         record_analysis_preset(output_path, request.analysis_preset)
+
+    if cancelled:
+        if not result_errors:
+            result_errors = ["Analysis cancelled"]
+        _update_snapshot(
+            snapshot,
+            status="cancelled",
+            phase="cancelled",
+            latest_event="Analysis cancelled",
+            error=result_errors[0],
+        )
+        return AnalysisResult(
+            success=False,
+            run_dir=output_path,
+            manifest_path=manifest_path if manifest_path.exists() else Path(),
+            modules_executed=modules_run,
+            warnings=[],
+            errors=result_errors,
+            duration_seconds=duration,
+            status="cancelled",
+        )
+
+    # -----------------------------------------------------------------------
+    # Finalizing phase
+    # -----------------------------------------------------------------------
+    _update_snapshot(snapshot, phase="finalizing", latest_event="Finalizing outputs…")
 
     status = "completed"
     if result_errors:
@@ -749,6 +771,14 @@ def run_group_analysis(
     if group_errors and status == "completed":
         status = "partial"
 
+    cancelled = (
+        results.get("termination_reason") == "cancellation" or status == "aborted"
+    )
+    if cancelled:
+        status = "cancelled"
+        if not group_errors:
+            group_errors.append("Analysis cancelled")
+
     raw_agg = results.get("aggregation_warnings")
     aggregation_warnings: List[Any] = list(raw_agg) if isinstance(raw_agg, list) else []
     chart_failed = sum(
@@ -767,13 +797,18 @@ def run_group_analysis(
             merged_warnings.append(_format_aggregation_warning_message(w))
 
     if snapshot is not None:
-        final_status = "failed" if status == "failed" else "completed"
-        final_phase = "failed" if status == "failed" else "completed"
-        latest = f"Done: group analysis on {len(resolved_paths)} transcripts" + (
-            f", {len(group_errors)} error(s)" if group_errors else ""
-        )
-        if chart_failed:
-            latest += f", {chart_failed} group chart failure(s)"
+        if status == "cancelled":
+            final_status = "cancelled"
+            final_phase = "cancelled"
+            latest = "Analysis cancelled"
+        else:
+            final_status = "failed" if status == "failed" else "completed"
+            final_phase = "failed" if status == "failed" else "completed"
+            latest = f"Done: group analysis on {len(resolved_paths)} transcripts" + (
+                f", {len(group_errors)} error(s)" if group_errors else ""
+            )
+            if chart_failed:
+                latest += f", {chart_failed} group chart failure(s)"
         snapshot.update(
             status=final_status,
             phase=final_phase,
@@ -781,13 +816,17 @@ def run_group_analysis(
             latest_event=latest,
             error=(
                 group_errors[0]
-                if group_errors and status == "failed"
+                if group_errors and status in ("failed", "cancelled")
                 else snapshot.get("error")
             ),
         )
 
     return AnalysisResult(
-        success=len(group_errors) == 0 or status in ("completed", "partial"),
+        success=(
+            False
+            if status == "cancelled"
+            else len(group_errors) == 0 or status in ("completed", "partial")
+        ),
         run_dir=output_path,
         manifest_path=manifest_path if manifest_path.exists() else Path(),
         modules_executed=modules_executed,

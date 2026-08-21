@@ -13,6 +13,7 @@ import os
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.services.corrections_studio.controller import (
     CorrectionsStudioController,
 )
@@ -279,7 +280,12 @@ def _render_candidate_detail(
     st.divider()
     col_accept, col_accept_sel, col_reject, col_skip, col_learn = st.columns(5)
     with col_accept:
-        if st.button("Accept all", key=f"accept_{candidate_id}", type="primary"):
+        if st.button(
+            "Accept all",
+            key=f"accept_{candidate_id}",
+            type="primary",
+            icon=ic.CHECK_ALL,
+        ):
             if _record_decision_via_action_service(
                 controller,
                 session_id=session_id,
@@ -290,7 +296,11 @@ def _render_candidate_detail(
             ):
                 st.rerun()
     with col_accept_sel:
-        if st.button("Accept selected", key=f"accept_sel_{candidate_id}"):
+        if st.button(
+            "Accept selected",
+            key=f"accept_sel_{candidate_id}",
+            icon=ic.CHECK,
+        ):
             st.session_state["corrections_studio_pending_accept_selected"] = (
                 candidate_id,
                 session_id,
@@ -298,7 +308,7 @@ def _render_candidate_detail(
             )
             st.rerun()
     with col_reject:
-        if st.button("Reject", key=f"reject_{candidate_id}"):
+        if st.button("Reject", key=f"reject_{candidate_id}", icon=ic.REJECT):
             if _record_decision_via_action_service(
                 controller,
                 session_id=session_id,
@@ -308,7 +318,7 @@ def _render_candidate_detail(
             ):
                 st.rerun()
     with col_skip:
-        if st.button("Skip", key=f"skip_{candidate_id}"):
+        if st.button("Skip", key=f"skip_{candidate_id}", icon=ic.SKIP):
             if _record_decision_via_action_service(
                 controller,
                 session_id=session_id,
@@ -318,7 +328,11 @@ def _render_candidate_detail(
             ):
                 st.rerun()
     with col_learn:
-        if st.button("Accept & Learn Rule", key=f"learn_{candidate_id}"):
+        if st.button(
+            "Accept & Learn Rule",
+            key=f"learn_{candidate_id}",
+            icon=ic.SPELLCHECK,
+        ):
             from transcriptx.core.corrections.models import CorrectionRule
 
             right = _candidate_right_text(candidate)
@@ -522,7 +536,7 @@ def _corrections_studio_workspace_fragment(
     st.divider()
     preview_col, export_col = st.columns([1, 1])
     with preview_col:
-        if st.button("Compute Full Preview"):
+        if st.button("Compute Full Preview", icon=ic.PREVIEW):
             try:
                 preview = controller.compute_preview(session_id)
                 st.session_state["corrections_studio_preview_cache"] = preview
@@ -536,7 +550,12 @@ def _corrections_studio_workspace_fragment(
         if st.session_state.get("corrections_studio_confirm_export"):
             confirm_col1, confirm_col2 = st.columns(2)
             with confirm_col1:
-                if st.button("Yes, Export", type="primary", key="export_confirm_yes"):
+                if st.button(
+                    "Yes, Export",
+                    type="primary",
+                    key="export_confirm_yes",
+                    icon=ic.CONFIRM,
+                ):
                     try:
                         result = _apply_and_export_via_action_service(
                             controller,
@@ -549,10 +568,10 @@ def _corrections_studio_workspace_fragment(
                     except Exception as e:
                         st.error(f"Export error: {e}")
             with confirm_col2:
-                if st.button("Cancel", key="export_confirm_cancel"):
+                if st.button("Cancel", key="export_confirm_cancel", icon=ic.CANCEL):
                     st.session_state.pop("corrections_studio_confirm_export", None)
                     st.rerun()
-        elif st.button("Apply & Export", type="primary"):
+        elif st.button("Apply & Export", type="primary", icon=ic.APPLY):
             st.session_state["corrections_studio_confirm_export"] = True
             st.rerun()
 
@@ -608,8 +627,12 @@ def render_corrections_studio() -> None:
         st.info("No transcripts found. Add transcript JSON files to get started.")
         return
 
-    options = [t.base_name for t in transcripts]
+    from transcriptx.web.transcript_option_format import decorate_transcript_picker_label
+
     paths = [t.path for t in transcripts]
+    options = [
+        decorate_transcript_picker_label(t.base_name, path=t.path) for t in transcripts
+    ]
     default_idx = SubjectService.index_in_path_options(st.session_state, paths)
     idx = st.selectbox(
         "Transcript",
@@ -632,11 +655,13 @@ def render_corrections_studio() -> None:
     # -- Start / Resume / Generate --
     col_start, col_gen, col_regen = st.columns([1, 1, 1])
     with col_start:
-        start_clicked = st.button("Start / Resume Session", type="primary")
+        start_clicked = st.button(
+            "Start / Resume Session", type="primary", icon=ic.PLAY
+        )
     with col_gen:
-        generate_clicked = st.button("Generate Candidates")
+        generate_clicked = st.button("Generate Candidates", icon=ic.CORRECTIONS)
     with col_regen:
-        regen_clicked = st.button("Regenerate Candidates")
+        regen_clicked = st.button("Regenerate Candidates", icon=ic.REPLAY)
 
     if start_clicked:
         try:

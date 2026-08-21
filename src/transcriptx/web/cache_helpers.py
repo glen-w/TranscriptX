@@ -11,10 +11,14 @@ Cache policy tiers (implementation stays distributed until a later pass):
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import streamlit as st
 
 from transcriptx.web.perf import mark_cache_miss
+
+if TYPE_CHECKING:
+    from transcriptx.core.utils.analysis_picker_status import AnalysisPickerStatusIndex
 
 
 @st.cache_data(ttl=120, show_spinner=False)
@@ -37,6 +41,49 @@ def cached_list_viewable_session_names() -> list[str]:
     from transcriptx.web.services.file_service import FileService
 
     return FileService.list_viewable_session_names()
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def cached_analysis_picker_status(
+    session_names: tuple[str, ...],
+    index_mtime: float | None,
+    _results_mtime_ns: int,
+) -> tuple[tuple[tuple[str, str], ...], tuple[tuple[str, str], ...]]:
+    """Cached slug status + path→slug pairs for transcript picker labels."""
+    mark_cache_miss("cached_analysis_picker_status")
+    from transcriptx.core.utils.analysis_picker_status import (
+        build_analysis_picker_status,
+    )
+
+    index = build_analysis_picker_status(session_names)
+    return (
+        tuple(sorted(index.by_slug.items())),
+        tuple(sorted(index.path_to_slug.items())),
+    )
+
+
+def get_cached_analysis_picker_status() -> AnalysisPickerStatusIndex:
+    """Picker analysis-coverage status keyed by viewable runs and slug index."""
+    from transcriptx.core.utils.analysis_picker_status import (
+        AnalysisPickerStatusIndex,
+        run_results_mtime_ns,
+    )
+    from transcriptx.core.utils.slug_manager import INDEX_FILE
+
+    session_names = tuple(cached_list_viewable_session_names())
+    try:
+        index_mtime = INDEX_FILE.stat().st_mtime
+    except OSError:
+        index_mtime = None
+    by_slug, path_to_slug = cached_analysis_picker_status(
+        session_names,
+        index_mtime,
+        run_results_mtime_ns(session_names),
+    )
+    return AnalysisPickerStatusIndex(
+        by_slug=dict(by_slug),
+        path_to_slug=dict(path_to_slug),
+    )
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -85,6 +132,42 @@ def get_cached_home_light_summary() -> dict[str, int | bool]:
     except OSError:
         index_mtime = None
     return cached_home_light_summary(session_names, index_mtime)
+
+
+_CORPUS_INVENTORY = None
+
+
+def _corpus_inventory_singleton():
+    global _CORPUS_INVENTORY
+    if _CORPUS_INVENTORY is None:
+        from transcriptx.app.corpus_inventory.service import CorpusInventory
+
+        _CORPUS_INVENTORY = CorpusInventory()
+    return _CORPUS_INVENTORY
+
+
+@st.cache_data(show_spinner=False)
+def _cached_corpus_inventory_rows(digest: tuple) -> list:
+    """Streamlit wrapper; digest is the explicit fingerprint hash from the app service."""
+    mark_cache_miss("cached_corpus_inventory")
+    return _corpus_inventory_singleton().list_rows()
+
+
+def get_cached_corpus_inventory() -> list:
+    """Home/Library corpus rows. Invalidates when any contributor fingerprint changes."""
+    from transcriptx.app.corpus_inventory.service import (
+        corpus_fingerprint_digest,
+        discover_transcript_refs,
+    )
+
+    refs = discover_transcript_refs()
+    digest = corpus_fingerprint_digest(refs)
+    return _cached_corpus_inventory_rows(digest)
+
+
+def clear_corpus_inventory_cache() -> None:
+    """Clear the Streamlit inventory wrapper (per-row cache stays fingerprint-keyed)."""
+    _cached_corpus_inventory_rows.clear()  # type: ignore[attr-defined]
 
 
 def _transcript_metadata_signature(path) -> tuple[float, int, float]:
@@ -204,6 +287,7 @@ def cached_list_transcript_picker_options(
 
 def get_cached_list_transcript_picker_options() -> list[TranscriptPickerOption]:
     """Run Analysis / Batch transcript picker without full library metadata."""
+    from transcriptx.core.utils.analysis_picker_status import format_with_analysis_status
     from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
     from transcriptx.core.utils.slug_manager import INDEX_FILE
 
@@ -214,7 +298,16 @@ def get_cached_list_transcript_picker_options() -> list[TranscriptPickerOption]:
     raw = cached_list_transcript_picker_options(
         index_mtime, str(DIARISED_TRANSCRIPTS_DIR)
     )
-    return [TranscriptPickerOption(path=path, label=label) for path, label in raw]
+    status_index = get_cached_analysis_picker_status()
+    return [
+        TranscriptPickerOption(
+            path=path,
+            label=format_with_analysis_status(
+                label, status_index.status_for(path=path)
+            ),
+        )
+        for path, label in raw
+    ]
 
 
 def get_cached_light_transcript_metadata() -> list:
@@ -517,6 +610,15 @@ def clear_run_listing_caches() -> None:
     """Invalidate cached run listings (call after an analysis run completes)."""
     cached_list_runs.clear()  # type: ignore[attr-defined]
     cached_list_recent_runs.clear()  # type: ignore[attr-defined]
+    clear_corpus_inventory_cache()
+    cached_list_viewable_session_names.clear()  # type: ignore[attr-defined]
+    cached_analysis_picker_status.clear()  # type: ignore[attr-defined]
+    try:
+        from transcriptx.web.sidebar_options import clear_transcript_dropdown_caches
+
+        clear_transcript_dropdown_caches()
+    except Exception:
+        pass
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -633,6 +735,8 @@ def clear_transcript_listing_caches() -> None:
     _cached_resolve_transcript_path.clear()  # type: ignore[attr-defined]
     _cached_transcript_metadata.clear()  # type: ignore[attr-defined]
     cached_transcript_paths_for_speaker_views.clear()  # type: ignore[attr-defined]
+    clear_corpus_inventory_cache()
+    cached_analysis_picker_status.clear()  # type: ignore[attr-defined]
     # Dropdown assembler lives in sidebar_options; clear lazily to avoid import cycles.
     try:
         from transcriptx.web.sidebar_options import clear_transcript_dropdown_caches

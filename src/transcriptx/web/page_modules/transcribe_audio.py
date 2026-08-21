@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.utils.paths import PATHS
 from transcriptx.services.transcription.command_gen import (
     DEFAULT_TRANSCRIPTION_MODEL,
@@ -90,6 +91,7 @@ def _render_preset_controls(params: CommandGenParams) -> None:
         if st.button(
             "Load",
             key="tx_cmdgen_preset_load",
+            icon=ic.PRESET,
             disabled=selected == _BLANK_PRESET,
         ):
             st.session_state[_KEY_PENDING_LOAD] = selected
@@ -104,6 +106,7 @@ def _render_preset_controls(params: CommandGenParams) -> None:
         if st.button(
             "Delete",
             key="tx_cmdgen_preset_delete",
+            icon=ic.DELETE,
             disabled=selected == _BLANK_PRESET or not confirm_delete,
         ):
             if delete_stt_profile(selected):
@@ -125,7 +128,7 @@ def _render_preset_controls(params: CommandGenParams) -> None:
             key=_KEY_PRESET_SAVE_NAME,
             placeholder="mac-mlx-meetings",
         )
-        if st.button("Save", key="tx_cmdgen_preset_save"):
+        if st.button("Save", key="tx_cmdgen_preset_save", icon=ic.SAVE):
             name = save_name.strip()
             if not name or name == "default":
                 st.session_state["tx_cmdgen_preset_banner"] = (

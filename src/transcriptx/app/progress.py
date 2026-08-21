@@ -24,7 +24,7 @@ except ``event``):
     error        : str
 
 Phase vocabulary (high-level workflow state):
-    validating | running_pipeline | finalizing | completed | failed
+    validating | running_pipeline | finalizing | completed | failed | cancelled
 
 Event vocabulary (fine-grained occurrences within a phase):
     run_started | module_started | module_completed | module_skipped
@@ -36,7 +36,7 @@ Snapshot shape
 The workflow layer maintains a single ``ProgressSnapshot`` in session
 state. The UI renders only this object — no state is inferred from logs.
 
-    status          : "running" | "completed" | "failed"
+    status          : "running" | "completed" | "failed" | "cancelled"
     phase           : one of the phase strings above
     current_module  : last active module (persists after run ends)
     current_item    : batch/group subject label (e.g. transcript name); persists
@@ -92,9 +92,10 @@ PhaseType = Literal[
     "finalizing",
     "completed",
     "failed",
+    "cancelled",
 ]
 
-StatusType = Literal["running", "completed", "failed"]
+StatusType = Literal["running", "completed", "failed", "cancelled"]
 
 # ---------------------------------------------------------------------------
 # Structured progress event
@@ -287,12 +288,18 @@ def update_snapshot_from_event(
         snapshot["latest_event"] = event.get("message", "Run completed")
 
     elif ev == "run_failed":
-        snapshot["status"] = "failed"
-        snapshot["phase"] = "failed"
         err = event.get("error", "")
-        snapshot["latest_event"] = f"Run failed: {err}" if err else "Run failed"
-        if err:
+        if err == "cancellation":
+            snapshot["status"] = "cancelled"
+            snapshot["phase"] = "cancelled"
+            snapshot["latest_event"] = "Analysis cancelled"
             snapshot["error"] = err
+        else:
+            snapshot["status"] = "failed"
+            snapshot["phase"] = "failed"
+            snapshot["latest_event"] = f"Run failed: {err}" if err else "Run failed"
+            if err:
+                snapshot["error"] = err
 
     if log_line:
         logs: List[str] = snapshot.get("recent_logs", [])  # type: ignore[assignment]

@@ -14,6 +14,7 @@ from typing import Any
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.utils.paths import TRANSCRIPTS_IMPORTS_DIR
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.io.admit_and_register import (
@@ -297,6 +298,7 @@ def _render_folder_import_section() -> None:
         st.button(
             scan_label,
             key="import_folder_scan_btn",
+            icon=ic.SCAN,
             on_click=_on_scan_folder,
         )
     with col_import:
@@ -310,6 +312,7 @@ def _render_folder_import_section() -> None:
         import_clicked = st.button(
             "Import eligible",
             key="import_folder_import_btn",
+            icon=ic.UPLOAD,
             type="primary",
             disabled=not can_import,
         )
@@ -462,6 +465,7 @@ def render_upload_transcript_page() -> None:
         import_submitted = st.form_submit_button(
             "Import Transcript",
             type="primary",
+            icon=ic.UPLOAD,
             width="content",
         )
 
@@ -516,7 +520,9 @@ def render_upload_transcript_page() -> None:
             ),
             key="upload_optional_recording_file",
         )
-        recording_submitted = st.form_submit_button("Upload Recording")
+        recording_submitted = st.form_submit_button(
+            "Upload Recording", icon=ic.AUDIO_FILE
+        )
 
     if recording_submitted:
         if not uploaded_recording:

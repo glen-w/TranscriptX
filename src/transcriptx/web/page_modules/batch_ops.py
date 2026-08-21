@@ -11,16 +11,22 @@ short ``form_cleared`` rerun drops prior selection widgets before execute.
 
 from __future__ import annotations
 
+import threading
 from pathlib import Path
-from typing import Mapping
+from typing import Any, Mapping
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.app.controllers.batch_controller import BatchController
 from transcriptx.app.models.errors import ValidationError, WorkflowExecutionError
 from transcriptx.app.models.requests import BatchAnalysisRequest
-from transcriptx.app.models.results import BatchAnalysisResult
 from transcriptx.app.progress import make_initial_snapshot
+from transcriptx.core.pipeline.run_control import (
+    PipelineRunControl,
+    bind_run_control,
+    reset_run_control,
+)
 from transcriptx.web.cache_helpers import (
     cached_get_module_info_list,
     clear_run_listing_caches,
@@ -44,6 +50,8 @@ from transcriptx.web.sidebar_options import _slug_display_labels_from_index
 
 _BATCH_RESULT_KEY = "batch_ops_last_result"
 _PENDING_BATCH_KEY = "batch_ops_pending_launch"
+_BATCH_CONTROL_KEY = "batch_ops_run_control"
+_BATCH_WORKER_HOLDER_KEY = "batch_ops_worker_holder"
 
 
 def _sanitize_batch_widget_state(option_keys: list[str]) -> None:
@@ -112,10 +120,17 @@ def _finalize_batch_snapshot(
     success: bool,
     message: str,
     error: str | None = None,
+    cancelled: bool = False,
 ) -> None:
     """Align the shared progress snapshot with overall batch outcome."""
     snap = st.session_state.get(SNAPSHOT_KEY)
     if not isinstance(snap, dict):
+        return
+    if cancelled:
+        snap["status"] = "cancelled"
+        snap["phase"] = "cancelled"
+        snap["latest_event"] = message or "Batch cancelled"
+        snap["error"] = error
         return
     if success:
         snap["status"] = "completed"
@@ -131,41 +146,125 @@ def _finalize_batch_snapshot(
             snap["error"] = error
 
 
-def _execute_pending_batch(
-    pending: dict,
-    *,
-    progress: StreamlitProgressCallback,
-) -> None:
-    """Run stored batch request; progress panel is the run affordance."""
+def _clear_batch_in_progress_state() -> None:
+    st.session_state.pop(_PENDING_BATCH_KEY, None)
+    st.session_state.pop(_BATCH_CONTROL_KEY, None)
+    st.session_state.pop(_BATCH_WORKER_HOLDER_KEY, None)
+
+
+def _start_pending_batch_worker(pending: dict) -> None:
     request = pending["request"]
+    snapshot = st.session_state.get(SNAPSHOT_KEY)
+    if not isinstance(snapshot, dict):
+        modules = list(getattr(request, "selected_modules", None) or [])
+        snapshot = make_initial_snapshot(len(modules) or 1)
+        st.session_state[SNAPSHOT_KEY] = snapshot
+    progress = StreamlitProgressCallback(snapshot=snapshot)
+    control = PipelineRunControl()
+    holder: dict[str, Any] = {"done": False, "result": None, "error": None}
     st.session_state.pop(_BATCH_RESULT_KEY, None)
-    try:
-        result = BatchController().run_batch_analysis(request, progress=progress)
+    st.session_state[_BATCH_CONTROL_KEY] = control
+    st.session_state[_BATCH_WORKER_HOLDER_KEY] = holder
+
+    def _worker() -> None:
+        token = bind_run_control(control)
+        try:
+            holder["result"] = BatchController().run_batch_analysis(
+                request, progress=progress
+            )
+        except Exception as exc:  # noqa: BLE001 — surface on the UI thread
+            holder["error"] = exc
+        finally:
+            reset_run_control(token)
+            holder["done"] = True
+
+    threading.Thread(target=_worker, name="tx-batch-analysis", daemon=True).start()
+
+
+def _finish_pending_batch(holder: dict[str, Any]) -> None:
+    error = holder.get("error")
+    result = holder.get("result")
+    _clear_batch_in_progress_state()
+    clear_run_listing_caches()
+    if error is not None:
+        if isinstance(error, (ValidationError, WorkflowExecutionError)):
+            msg = str(error) or "Batch analysis failed."
+        else:
+            msg = f"Batch analysis failed: {error}"
+        st.error(msg)
+        st.session_state["_batch_ops_flash_error"] = msg
+        _finalize_batch_snapshot(success=False, message=msg, error=msg)
+        st.rerun()
+        return
+    if result is not None:
         st.session_state[_BATCH_RESULT_KEY] = result
+        errors = list(getattr(result, "errors", None) or [])
+        cancelled = any("cancel" in str(e).lower() for e in errors)
         _finalize_batch_snapshot(
-            success=bool(result.success),
-            message=str(result.message or ""),
-            error=(
-                "; ".join(result.errors)
-                if isinstance(result, BatchAnalysisResult) and result.errors
-                else None
-            ),
+            success=bool(getattr(result, "success", False)),
+            message=str(getattr(result, "message", "") or ""),
+            error="; ".join(str(e) for e in errors) if errors else None,
+            cancelled=cancelled,
         )
-    except (ValidationError, WorkflowExecutionError) as exc:
-        msg = str(exc) or "Batch analysis failed."
-        st.error(msg)
-        st.session_state["_batch_ops_flash_error"] = msg
-        _finalize_batch_snapshot(success=False, message=msg, error=msg)
-    except Exception as exc:  # noqa: BLE001 — keep merged page responsive
-        msg = f"Batch analysis failed: {exc}"
-        st.error(msg)
-        st.session_state["_batch_ops_flash_error"] = msg
-        _finalize_batch_snapshot(success=False, message=msg, error=msg)
-    finally:
-        clear_run_listing_caches()
-        st.session_state.pop(_PENDING_BATCH_KEY, None)
-        progress.refresh_panel()
     st.rerun()
+
+
+def _render_batch_in_progress_controls() -> None:
+    snapshot = st.session_state.get(SNAPSHOT_KEY)
+    if snapshot is not None:
+        render_progress_panel(snapshot)
+    else:
+        st.info("Batch analysis is running…")
+
+    control = st.session_state.get(_BATCH_CONTROL_KEY)
+    cancelling = isinstance(control, PipelineRunControl) and control.is_cancelled()
+    skipping = (
+        isinstance(control, PipelineRunControl)
+        and control.skip_event.is_set()
+        and not cancelling
+    )
+    cols = st.columns([1.5, 1.6, 3])
+    with cols[0]:
+        if st.button(
+            "Skip module",
+            key="batch_ops_skip",
+            icon=ic.SKIP,
+            disabled=cancelling or skipping,
+            width="stretch",
+            help="Abandon the module that is running and continue with the rest.",
+        ):
+            if isinstance(control, PipelineRunControl):
+                control.request_skip()
+            if isinstance(snapshot, dict):
+                snapshot["latest_event"] = "Skipping current module…"
+            st.rerun()
+    with cols[1]:
+        if st.button(
+            "Cancel analysis",
+            key="batch_ops_cancel",
+            icon=ic.STOP,
+            disabled=cancelling,
+            width="stretch",
+            help="Stop this batch. The current module is abandoned; later work is not started.",
+        ):
+            if isinstance(control, PipelineRunControl):
+                control.request_cancel()
+            if isinstance(snapshot, dict):
+                snapshot["latest_event"] = (
+                    "Cancelling — waiting for the current module to stop…"
+                )
+            st.rerun()
+    if cancelling:
+        st.caption("Cancelling… remaining transcripts will not start.")
+    elif skipping:
+        st.caption("Skipping current module…")
+
+
+def _poll_batch_in_progress() -> None:
+    _render_batch_in_progress_controls()
+    holder = st.session_state.get(_BATCH_WORKER_HOLDER_KEY)
+    if isinstance(holder, dict) and holder.get("done"):
+        st.rerun()
 
 
 def render_batch_analysis_panel() -> None:
@@ -189,16 +288,13 @@ def render_batch_analysis_panel() -> None:
         # Three-phase launch so Streamlit can drop the prior form widgets:
         # 1) click stores pending + rerun
         # 2) paint progress only + form_cleared + rerun (ends script → clears form)
-        # 3) paint progress + execute (blocking; form stays gone)
-        progress_slot = st.empty()
-        snapshot = st.session_state.get(SNAPSHOT_KEY)
-        if snapshot is not None:
-            with progress_slot.container():
-                render_progress_panel(snapshot)
-        else:
-            with progress_slot.container():
-                st.info("Batch analysis is running…")
+        # 3) start a background worker and poll so Skip / Cancel stay clickable
         if not pending.get("form_cleared"):
+            snapshot = st.session_state.get(SNAPSHOT_KEY)
+            if snapshot is not None:
+                render_progress_panel(snapshot)
+            else:
+                st.info("Batch analysis is running…")
             pending["form_cleared"] = True
             st.session_state[_PENDING_BATCH_KEY] = pending
             st.rerun()
@@ -206,16 +302,20 @@ def render_batch_analysis_panel() -> None:
         if not pending.get("started"):
             pending["started"] = True
             st.session_state[_PENDING_BATCH_KEY] = pending
-            modules = list(
-                getattr(pending.get("request"), "selected_modules", None) or []
-            )
             if SNAPSHOT_KEY not in st.session_state:
+                modules = list(
+                    getattr(pending.get("request"), "selected_modules", None) or []
+                )
                 st.session_state[SNAPSHOT_KEY] = make_initial_snapshot(
                     len(modules) or 1
                 )
-            progress = StreamlitProgressCallback(render_slot=progress_slot)
-            progress.refresh_panel()
-            _execute_pending_batch(pending, progress=progress)
+            _start_pending_batch_worker(pending)
+        holder = st.session_state.get(_BATCH_WORKER_HOLDER_KEY)
+        if isinstance(holder, dict) and holder.get("done"):
+            _finish_pending_batch(holder)
+            return
+        poll = st.fragment(run_every=0.5)(_poll_batch_in_progress)
+        poll()
         return
 
     flash_error = st.session_state.pop("_batch_ops_flash_error", None)
@@ -274,6 +374,7 @@ def render_batch_analysis_panel() -> None:
         "Run Batch Analysis",
         type="primary",
         key="batch_run",
+        icon=ic.RUN,
         disabled=not can_launch,
     ):
         if not selected_paths:
@@ -302,7 +403,11 @@ def render_batch_analysis_panel() -> None:
             st.rerun()
 
     last_snapshot = st.session_state.get(SNAPSHOT_KEY)
-    if last_snapshot and last_snapshot.get("status") in ("completed", "failed"):
+    if last_snapshot and last_snapshot.get("status") in (
+        "completed",
+        "failed",
+        "cancelled",
+    ):
         with st.expander("Last run progress", expanded=False):
             render_progress_panel(last_snapshot)
 

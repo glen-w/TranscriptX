@@ -110,10 +110,24 @@ class DummyStreamlit:
         return None
 
 
+class DummySelection:
+    def __init__(self, rows=None):
+        self.rows = list(rows or [])
+        self.columns = []
+
+
+class DummyDataframeEvent:
+    def __init__(self, rows=None):
+        self.selection = DummySelection(rows)
+
+
 class DummyStreamlitWithDataframe:
     captured_df = None
     session_state: dict[str, object] = {}
     captions: list[str] = []
+    selected_rows: list[int] = []
+    button_presses: set[str] = set()
+    button_labels: list[str] = []
 
     @staticmethod
     def markdown(*_args, **_kwargs):
@@ -126,7 +140,7 @@ class DummyStreamlitWithDataframe:
     @classmethod
     def dataframe(cls, df, **_kwargs):
         cls.captured_df = df.copy()
-        return None
+        return DummyDataframeEvent(cls.selected_rows)
 
     @staticmethod
     def divider():
@@ -136,17 +150,43 @@ class DummyStreamlitWithDataframe:
     def subheader(*_args, **_kwargs):
         return None
 
-    @staticmethod
-    def selectbox(*_args, **_kwargs):
-        return 0
+    @classmethod
+    def selectbox(cls, _label, options, index=0, key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            current = cls.session_state[key]
+            if current in options:
+                return current
+        if options:
+            return options[index]
+        return None
+
+    @classmethod
+    def pills(cls, _label, options, key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            current = cls.session_state[key]
+            if current in options:
+                return current
+        return options[0] if options else None
+
+    @classmethod
+    def text_input(cls, *_args, key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            return str(cls.session_state[key] or "")
+        return str(_kwargs.get("value") or "")
 
     @staticmethod
-    def columns(_n):
-        return (DummyColumn(), DummyColumn())
+    def popover(*_args, **_kwargs):
+        return DummyForm()
 
     @staticmethod
-    def button(*_args, **_kwargs):
-        return False
+    def columns(_n, **_kwargs):
+        count = len(_n) if isinstance(_n, (list, tuple)) else int(_n)
+        return tuple(DummyColumn() for _ in range(count))
+
+    @classmethod
+    def button(cls, label, key=None, **_kwargs):
+        cls.button_labels.append(str(label))
+        return bool(key and key in cls.button_presses)
 
     @staticmethod
     def rerun():
@@ -162,10 +202,6 @@ class DummyStreamlitWithDataframe:
         return DummyForm()
 
     @staticmethod
-    def text_input(*_args, **_kwargs):
-        return ""
-
-    @staticmethod
     def form_submit_button(*_args, **_kwargs):
         return False
 
@@ -177,13 +213,25 @@ class DummyStreamlitWithDataframe:
     def success(*_args, **_kwargs):
         return None
 
-    @staticmethod
-    def toggle(*_args, **_kwargs):
-        return False
+    @classmethod
+    def toggle(cls, _label, *, value=False, key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            return bool(cls.session_state[key])
+        return value
 
     @staticmethod
     def expander(*_args, **_kwargs):
         return DummyForm()
+
+    @staticmethod
+    def fragment(fn=None, **_kwargs):
+        if fn is None:
+
+            def _decorator(f):
+                return f
+
+            return _decorator
+        return fn
 
 
 class DummySidebarStreamlit:
@@ -247,12 +295,23 @@ class DummyHomeStreamlit:
     session_state: dict[str, object] = {}
 
     @staticmethod
+    def fragment(fn=None, **_kwargs):
+        if fn is None:
+
+            def _decorator(f):
+                return f
+
+            return _decorator
+        return fn
+
+    @staticmethod
     def subheader(*_args, **_kwargs):
         return None
 
     @staticmethod
     def columns(n, **_kwargs):
-        return tuple(DummyColumn() for _ in range(n))
+        count = len(n) if isinstance(n, (list, tuple)) else int(n)
+        return tuple(DummyColumn() for _ in range(count))
 
     @staticmethod
     def markdown(*_args, **_kwargs):
@@ -279,7 +338,7 @@ class DummyHomeStreamlit:
         return False
 
     @staticmethod
-    def rerun():
+    def rerun(*_args, **_kwargs):
         return None
 
     @classmethod

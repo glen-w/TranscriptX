@@ -12,6 +12,13 @@ from transcriptx.core.pipeline.dag_pipeline_progress import (
     run_started_event,
 )
 from transcriptx.core.pipeline.dag_pipeline_types import ModuleExecOutcome
+from transcriptx.core.pipeline.run_control import (
+    SKIP_REASON_CANCELLED,
+    SKIP_REASON_USER,
+    TERMINATION_CANCELLATION,
+    pipeline_consume_skip,
+    pipeline_is_cancelled,
+)
 from transcriptx.core.utils.speaker_extraction import named_speaker_count_for_path
 
 if TYPE_CHECKING:
@@ -50,6 +57,35 @@ def run_sequential_execution_phase(
     abort_error: str | None = None
     for idx_0, module_name in enumerate(execution_order):
         index = idx_0 + 1
+
+        if pipeline_is_cancelled():
+            aborted = True
+            abort_error = TERMINATION_CANCELLATION
+            results["termination_reason"] = TERMINATION_CANCELLATION
+            break
+
+        if pipeline_consume_skip():
+            ev_skipped += 1
+            emit(
+                module_skipped_event(
+                    module_name=module_name,
+                    index=index,
+                    total_modules=total_modules,
+                    ev_completed=ev_completed,
+                    ev_skipped=ev_skipped,
+                    ev_failed=ev_failed,
+                    message=SKIP_REASON_USER,
+                )
+            )
+            pipeline._reduce_module_outcome(
+                module_name=module_name,
+                outcome=ModuleExecOutcome(
+                    status="skipped",
+                    skip_reason=SKIP_REASON_USER,
+                ),
+                results=results,
+            )
+            continue
 
         if module_name not in pipeline.nodes:
             pipeline.logger.warning(f"Unknown module: {module_name}")
@@ -198,6 +234,11 @@ def run_sequential_execution_phase(
             transcript_path=transcript_path,
             run_report=run_report,
         )
+        if outcome.status == "skipped" and outcome.skip_reason == SKIP_REASON_CANCELLED:
+            aborted = True
+            abort_error = TERMINATION_CANCELLATION
+            results["termination_reason"] = TERMINATION_CANCELLATION
+            break
         if outcome.status == "failed" and pipeline._should_abort_pipeline(
             outcome, results
         ):

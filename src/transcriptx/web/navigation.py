@@ -295,10 +295,17 @@ def make_session_path_resolver():
 
 
 def library_transcript_index(transcripts: list, transcript_path: str | Path) -> int:
-    """Return 1-based Library selectbox index, or 0 when transcript is not listed."""
+    """Return 1-based index into a path-bearing list, or 0 when not listed.
+
+    Kept for rename/import callers that still preselect from an ordered list.
+    Library itself selects by transcript path, never by this index.
+    """
     target = tolerant_resolve(transcript_path)
     for i, meta in enumerate(transcripts):
-        if paths_match(meta.path, target):
+        path = getattr(meta, "path", None) or getattr(meta, "transcript_path", None)
+        if path is None:
+            continue
+        if paths_match(path, target):
             return i + 1
     return 0
 
@@ -355,21 +362,65 @@ def apply_library_rename_navigation(
     session_state[LIBRARY_NAV_TRANSCRIPT_PATH] = tolerant_resolve(transcript_path)
 
 
+def navigate_to_library(
+    session_state: dict[str, Any],
+    *,
+    library_filter: Any | None = None,
+    transcript_path: str | Path | None = None,
+) -> None:
+    """Open Library with an optional workflow filter and/or pending transcript path."""
+    from transcriptx.web.state import LIBRARY_NAV_FILTER, PAGE_KEY
+
+    if transcript_path is not None:
+        apply_library_rename_navigation(session_state, transcript_path)
+    if library_filter is not None:
+        session_state[LIBRARY_NAV_FILTER] = library_filter
+    session_state[PAGE_KEY] = "Library"
+
+
+def consume_library_nav(session_state: dict[str, Any]) -> None:
+    """Apply one-shot Library filter + pending transcript path (identity, not row)."""
+    from transcriptx.app.corpus_inventory.models import LibraryFilter
+    from transcriptx.web.state import (
+        LIBRARY_FILTER_PRESET_KEY,
+        LIBRARY_FILTER_QUERY_KEY,
+        LIBRARY_FILTER_SORT_KEY,
+        LIBRARY_NAV_FILTER,
+        LIBRARY_NAV_TRANSCRIPT_PATH,
+        LIBRARY_SELECTED_TRANSCRIPT_PATH,
+    )
+
+    nav_filter = session_state.pop(LIBRARY_NAV_FILTER, None)
+    if isinstance(nav_filter, LibraryFilter):
+        session_state[LIBRARY_FILTER_PRESET_KEY] = nav_filter.preset.value
+        session_state[LIBRARY_FILTER_QUERY_KEY] = nav_filter.query
+        session_state[LIBRARY_FILTER_SORT_KEY] = nav_filter.sort.value
+    nav_path = session_state.pop(LIBRARY_NAV_TRANSCRIPT_PATH, None)
+    if nav_path:
+        session_state[LIBRARY_SELECTED_TRANSCRIPT_PATH] = str(
+            tolerant_resolve(nav_path)
+        )
+
+
 def consume_library_transcript_nav(
     session_state: dict[str, Any],
-    transcripts: list,
+    transcripts: list | None = None,
     *,
     library_select_key: str = "library_transcript_select",
 ) -> None:
-    """Apply one-shot Library transcript preselect from navigation."""
-    from transcriptx.web.state import LIBRARY_NAV_TRANSCRIPT_PATH
+    """Apply one-shot Library transcript preselect from navigation.
 
-    nav_path = session_state.pop(LIBRARY_NAV_TRANSCRIPT_PATH, None)
-    if not nav_path:
-        return
-    idx = library_transcript_index(transcripts, nav_path)
-    if idx > 0:
-        session_state[library_select_key] = idx
+    ``transcripts`` / ``library_select_key`` remain for older callers; Library
+    selection identity is the pending path, not a list/page index.
+    """
+    consume_library_nav(session_state)
+    from transcriptx.web.state import LIBRARY_SELECTED_TRANSCRIPT_PATH
+
+    selected = session_state.get(LIBRARY_SELECTED_TRANSCRIPT_PATH)
+    if selected and transcripts:
+        idx = library_transcript_index(transcripts, selected)
+        if idx > 0:
+            session_state[library_select_key] = idx
 
 
 def context_readiness(session_state: dict[str, Any]) -> dict[str, bool]:

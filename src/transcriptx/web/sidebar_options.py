@@ -7,6 +7,8 @@ from typing import Callable
 
 import streamlit as st
 
+from transcriptx.core.utils.analysis_picker_status import AnalysisPickerStatusIndex
+
 from transcriptx.web.cache_helpers import (
     cached_list_available_sessions,
     cached_list_viewable_session_names,
@@ -81,12 +83,32 @@ def _slug_index_mtime() -> float | None:
         return None
 
 
-def _make_option_formatter(slug_labels: dict[str, str]) -> Callable[[str], str]:
+def _make_option_formatter(
+    slug_labels: dict[str, str],
+    status_index: AnalysisPickerStatusIndex | None = None,
+) -> Callable[[str], str]:
+    from transcriptx.core.utils.analysis_picker_status import (
+        ANALYSIS_STATUS_NONE,
+        format_with_analysis_status,
+    )
+
     def _format(opt: str) -> str:
         p = Path(opt)
         if p.is_absolute() and p.suffix.lower() == ".json":
-            return p.stem
-        return slug_labels.get(opt, opt)
+            name = p.stem
+            status = (
+                status_index.status_for(path=opt)
+                if status_index is not None
+                else ANALYSIS_STATUS_NONE
+            )
+        else:
+            name = slug_labels.get(opt, opt)
+            status = (
+                status_index.status_for(slug=opt)
+                if status_index is not None
+                else ANALYSIS_STATUS_NONE
+            )
+        return format_with_analysis_status(name, status)
 
     return _format
 
@@ -115,6 +137,10 @@ def clear_transcript_dropdown_caches() -> None:
 
 def get_transcript_dropdown_options() -> tuple[list[str], Callable[[str], str]]:
     """Return merged transcript options and formatter for selectbox."""
+    from transcriptx.web.cache_helpers import get_cached_analysis_picker_status
+
     session_names = tuple(cached_list_viewable_session_names())
     options, slug_labels = _cached_dropdown_options(session_names, _slug_index_mtime())
-    return options, _make_option_formatter(slug_labels)
+    return options, _make_option_formatter(
+        slug_labels, get_cached_analysis_picker_status()
+    )

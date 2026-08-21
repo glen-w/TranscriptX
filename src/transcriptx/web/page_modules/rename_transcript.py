@@ -213,8 +213,12 @@ def render_rename_transcript_page() -> None:
         st.info("No transcripts found. Import or transcribe a recording first.")
         return
 
+    from transcriptx.web.transcript_option_format import decorate_transcript_picker_label
+
     options = list(paths)
-    labels = [p.stem or str(p) for p in options]
+    labels = [
+        decorate_transcript_picker_label(p.stem or str(p), path=p) for p in options
+    ]
 
     # Precedence: one-shot nav → valid current context → picker → first available.
     one_shot = _consume_one_shot_nav()

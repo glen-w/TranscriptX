@@ -57,33 +57,18 @@ def goto_app(page: Page, base_url: str) -> None:
 
 
 def select_transcript(page: Page, needle: str = "planning_review") -> None:
-    """Select a transcript via Library page dropdown (and sidebar picker if present)."""
+    """Select a transcript by clicking its Library title button."""
     nav(page, "Library")
-    boxes = page.locator('[data-testid="stSelectbox"]')
-    expect(boxes.first).to_be_visible(timeout=20000)
-    target = None
-    count = boxes.count()
-    for i in range(count):
-        txt = boxes.nth(i).inner_text()
-        if (
-            "Select transcript" in txt
-            or "Select a transcript" in txt
-            or "Selected Transcript" in txt
-            or "transcript" in txt.lower()
-        ):
-            target = boxes.nth(i)
-            break
-    if target is None and count:
-        target = boxes.first
-    if target is None:
-        raise RuntimeError("no transcript selectbox found on Library")
-    target.click()
-    wait(page, 800)
-    opt = page.locator('[role="option"]').filter(has_text=needle)
-    if opt.count() == 0:
-        opt = page.locator('[role="option"]').filter(has_text="planning")
-    expect(opt.first).to_be_visible(timeout=10000)
-    opt.first.click()
+    search = page.get_by_label("Search transcripts")
+    if search.count():
+        search.first.fill(needle)
+        wait(page, 800)
+    main = main_area(page)
+    title_btn = main.get_by_role("button", name=needle, exact=False)
+    if title_btn.count() == 0:
+        title_btn = main.get_by_role("button", name="planning", exact=False)
+    expect(title_btn.first).to_be_visible(timeout=20000)
+    title_btn.first.click(force=True)
     wait(page, 2500)
 
     sb_boxes = sidebar(page).locator('[data-testid="stSelectbox"]')
@@ -99,16 +84,12 @@ def select_transcript(page: Page, needle: str = "planning_review") -> None:
 
 
 def library_option_labels(page: Page) -> list[str]:
-    """Open the Library transcript selectbox and return option labels."""
+    """Return visible Library list titles and caption lines."""
     nav(page, "Library")
-    boxes = page.locator('[data-testid="stSelectbox"]')
-    expect(boxes.first).to_be_visible(timeout=20000)
-    boxes.first.click()
-    wait(page, 800)
-    opts = page.locator('[role="option"]').all_text_contents()
-    page.keyboard.press("Escape")
-    wait(page, 400)
-    return opts
+    main = main_area(page)
+    # Title buttons are the clickable list rows; include captions for workflow marks.
+    expect(main.get_by_role("button").first).to_be_visible(timeout=20000)
+    return [line for line in main.inner_text().splitlines() if line.strip()]
 
 
 def assert_library_lists_transcript(page: Page, needle: str = "planning") -> None:

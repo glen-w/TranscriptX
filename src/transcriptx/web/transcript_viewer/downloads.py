@@ -8,10 +8,11 @@ from typing import Any
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.web.components.action_links import render_download_link
 from transcriptx.web.transcript_view_state import TranscriptArtifactsResult
 
-_DOWNLOAD_ICON = ":material/download:"
+_DOWNLOAD_ICON = ic.DOWNLOAD
 
 
 def _read_bytes(path: Path) -> bytes:

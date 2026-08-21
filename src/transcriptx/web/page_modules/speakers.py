@@ -15,6 +15,7 @@ from uuid import uuid4
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.speaker_profiles.accents import SPEAKER_ACCENTS
 from transcriptx.core.speaker_profiles.aggregates import (
     AppearanceRow,
@@ -278,6 +279,7 @@ def _render_recovery_banners(root) -> None:
             if st.button(
                 "Attempt safe recovery",
                 key=f"speakers_recover_{detail.operation_id}",
+                icon=ic.REPLAY,
                 type="primary",
             ):
                 try:
@@ -498,6 +500,7 @@ def _render_merged_readonly(
     if target_id and st.button(
         "Open target profile",
         key=f"speakers_open_merge_target_{profile.profile_id}",
+        icon=ic.OPEN_IN_NEW,
         type="primary",
     ):
         st.session_state[_SELECTED_KEY] = target_id
@@ -701,6 +704,7 @@ def _render_voice_controls(
         if st.button(
             "Enrol trusted voice from confirmed links",
             key=f"spk_voice_bootstrap_{profile.profile_id}",
+            icon=ic.VOICE,
             help=widget_help(
                 (
                     "Explicit bootstrap: extracts and embeds voice from this profile's "
@@ -764,6 +768,7 @@ def _render_voice_controls(
         if samples and st.button(
             "Delete voice evidence for this profile",
             key=f"spk_voice_wipe_{profile.profile_id}",
+            icon=ic.DELETE,
         ):
             try:
                 VoiceWipeService(root=snap.root).wipe_profile_voice(
@@ -1066,6 +1071,7 @@ def _render_locations_map(
         if st.button(
             "Open in transcript",
             key=f"spk_loc_jump_{profile.profile_id}",
+            icon=ic.ARTICLE,
             type="primary",
         ):
             navigate_highlight_to_transcript(
@@ -1419,6 +1425,7 @@ def _render_appearances_table(
                     if st.button(
                         "Open transcript",
                         key=f"speakers_open_tx_{row.link_id}",
+                        icon=ic.ARTICLE,
                     ):
                         _open_transcript(snap, row)
 
@@ -1433,6 +1440,7 @@ def _render_appearances_table(
                             if st.button(
                                 "Confirm",
                                 key=f"speakers_unlink_yes_{row.link_id}",
+                                icon=ic.CONFIRM,
                                 type="primary",
                             ):
                                 payload = {
@@ -1461,6 +1469,7 @@ def _render_appearances_table(
                             if st.button(
                                 "Cancel",
                                 key=f"speakers_unlink_no_{row.link_id}",
+                                icon=ic.CANCEL,
                             ):
                                 _clear_idempotency(f"unlink_{row.link_id}")
                                 st.session_state.pop(confirm_unlink, None)
@@ -1468,6 +1477,7 @@ def _render_appearances_table(
                     elif st.button(
                         "Unlink",
                         key=f"speakers_unlink_{row.link_id}",
+                        icon=ic.UNLINK,
                         disabled=mutate_disabled,
                     ):
                         st.session_state[confirm_unlink] = True
@@ -1491,6 +1501,7 @@ def _render_appearances_table(
                                 if st.button(
                                     "Confirm",
                                     key=f"speakers_fp_yes_{row.link_id}",
+                                    icon=ic.CONFIRM,
                                     type="primary",
                                 ):
                                     payload = {
@@ -1521,6 +1532,7 @@ def _render_appearances_table(
                                 if st.button(
                                     "Cancel",
                                     key=f"speakers_fp_no_{row.link_id}",
+                                    icon=ic.CANCEL,
                                 ):
                                     _clear_idempotency(f"fp_{row.link_id}")
                                     st.session_state.pop(confirm_fp, None)
@@ -1528,6 +1540,7 @@ def _render_appearances_table(
                         elif st.button(
                             "Accept fingerprint",
                             key=f"speakers_fp_{row.link_id}",
+                            icon=ic.CHECK,
                             disabled=mutate_disabled or expected_fp is None,
                         ):
                             st.session_state[confirm_fp] = True
@@ -1610,6 +1623,7 @@ def _render_edit_form(profile: SpeakerProfileV1, *, root) -> None:
         if st.button(
             "Save photo changes",
             key=f"{form_prefix}_avatar_save",
+            icon=ic.PHOTO,
             disabled=upload is None and not clear_avatar,
         ):
             try:
@@ -1673,7 +1687,12 @@ def _render_edit_form(profile: SpeakerProfileV1, *, root) -> None:
 
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("Save changes", key=f"{form_prefix}_save", type="primary"):
+            if st.button(
+                "Save changes",
+                key=f"{form_prefix}_save",
+                type="primary",
+                icon=ic.SAVE,
+            ):
                 try:
                     result = _service().update_profile(
                         operation_idempotency_key=_idempotency_key(
@@ -1697,7 +1716,7 @@ def _render_edit_form(profile: SpeakerProfileV1, *, root) -> None:
                 except Exception as exc:
                     st.error(str(exc))
         with c2:
-            if st.button("Cancel edit", key=f"{form_prefix}_cancel"):
+            if st.button("Cancel edit", key=f"{form_prefix}_cancel", icon=ic.CANCEL):
                 _clear_idempotency(f"update_{profile.profile_id}")
                 for suffix in (
                     "display_name",
@@ -1795,6 +1814,7 @@ def _render_link_another(
             if st.button(
                 "Link to this profile",
                 key=f"speakers_link_existing_{profile.profile_id}",
+                icon=ic.LINK,
                 type="primary",
             ):
                 payload = {
@@ -1842,6 +1862,7 @@ def _render_link_another(
                 if st.button(
                     "Confirm relink",
                     key=f"speakers_relink_yes_{profile.profile_id}",
+                    icon=ic.CONFIRM,
                     type="primary",
                 ):
                     payload = {
@@ -1873,6 +1894,7 @@ def _render_link_another(
                 if st.button(
                     "Cancel",
                     key=f"speakers_relink_no_{profile.profile_id}",
+                    icon=ic.CANCEL,
                 ):
                     _clear_idempotency(f"relink_{profile.profile_id}")
                     st.session_state.pop(confirm_key, None)
@@ -1880,6 +1902,7 @@ def _render_link_another(
         elif st.button(
             "Relink to this profile",
             key=f"speakers_relink_{profile.profile_id}",
+            icon=ic.LINK,
         ):
             st.session_state[confirm_key] = True
             _rerun_ui()
@@ -1910,6 +1933,7 @@ def _render_lifecycle(
                 if st.button(
                     "Archive profile",
                     key=f"speakers_archive_{profile.profile_id}",
+                    icon=ic.ARCHIVE,
                 ):
                     payload = {
                         "profile_id": profile.profile_id,
@@ -1932,6 +1956,7 @@ def _render_lifecycle(
                 if st.button(
                     "Unarchive profile",
                     key=f"speakers_unarchive_{profile.profile_id}",
+                    icon=ic.UNARCHIVE,
                 ):
                     payload = {
                         "profile_id": profile.profile_id,
@@ -1978,6 +2003,7 @@ def _render_lifecycle(
                         if st.button(
                             "Confirm merge",
                             key=f"speakers_merge_yes_{profile.profile_id}",
+                            icon=ic.CONFIRM,
                             type="primary",
                         ):
                             payload = {
@@ -2005,6 +2031,7 @@ def _render_lifecycle(
                         if st.button(
                             "Cancel",
                             key=f"speakers_merge_no_{profile.profile_id}",
+                            icon=ic.CANCEL,
                         ):
                             _clear_idempotency(f"merge_{profile.profile_id}")
                             st.session_state.pop(confirm_merge, None)
@@ -2012,6 +2039,7 @@ def _render_lifecycle(
                 elif st.button(
                     "Merge into selected",
                     key=f"speakers_merge_{profile.profile_id}",
+                    icon=ic.MERGE,
                 ):
                     st.session_state[confirm_merge] = True
                     _rerun_ui()

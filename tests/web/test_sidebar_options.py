@@ -5,6 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
+from transcriptx.core.utils.analysis_picker_status import (
+    ANALYSIS_STATUS_COMPLETE,
+    ANALYSIS_STATUS_PARTIAL,
+    AnalysisPickerStatusIndex,
+)
 import transcriptx.web.sidebar_options as mod
 
 
@@ -95,9 +100,31 @@ def test_get_transcript_dropdown_options_uses_light_listing(monkeypatch) -> None
         "_cached_dropdown_options",
         lambda _names, _mtime: (["slug-a", "import-only"], {"slug-a": "A"}),
     )
+    monkeypatch.setattr(
+        "transcriptx.web.cache_helpers.get_cached_analysis_picker_status",
+        lambda: AnalysisPickerStatusIndex(by_slug={}, path_to_slug={}),
+    )
 
     options, formatter = mod.get_transcript_dropdown_options()
     assert options == ["slug-a", "import-only"]
-    assert formatter("slug-a") == "A"
+    assert formatter("slug-a") == "A (no analysis)"
     rich.assert_not_called()
     library.assert_not_called()
+
+
+def test_option_formatter_appends_analysis_status() -> None:
+    formatter = mod._make_option_formatter(
+        {"done": "Done Meeting", "partial": "Partial Meeting"},
+        AnalysisPickerStatusIndex(
+            by_slug={
+                "done": ANALYSIS_STATUS_COMPLETE,
+                "partial": ANALYSIS_STATUS_PARTIAL,
+            },
+            path_to_slug={},
+        ),
+    )
+    assert formatter("done") == "Done Meeting (analysis complete)"
+    assert formatter("partial") == "Partial Meeting (partial analysis)"
+    assert formatter("missing") == "missing (no analysis)"
+    abs_json = "/tmp/imported.json"
+    assert formatter(abs_json) == "imported (no analysis)"

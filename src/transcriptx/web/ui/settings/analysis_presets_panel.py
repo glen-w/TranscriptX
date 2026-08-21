@@ -6,6 +6,7 @@ from typing import Any
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.analysis.selection import is_heavy_module
 from transcriptx.core.config.persistence import patch_project_config_keys
 from transcriptx.core.pipeline.module_registry import (
@@ -209,6 +210,7 @@ def render_analysis_presets_panel() -> None:
         save = st.button(
             "Save presets",
             type="primary",
+            icon=ic.SAVE,
             key="settings_ui_presets_save",
         )
     with col_reset:

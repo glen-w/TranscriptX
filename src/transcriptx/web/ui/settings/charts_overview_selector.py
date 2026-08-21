@@ -6,6 +6,7 @@ from typing import Any, Sequence
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.utils.chart_registry import (
     get_chart_registry,
     get_default_overview_charts,
@@ -113,7 +114,8 @@ def render_charts_overview_selector(
                 st.caption(f"`{viz_id}`")
             with cols[1]:
                 if st.button(
-                    "↑",
+                    "",
+                    icon=ic.MOVE_UP,
                     key=f"{scope_key}_ov_up_{viz_id}",
                     disabled=idx == 0,
                 ):
@@ -123,7 +125,8 @@ def render_charts_overview_selector(
                     st.rerun()
             with cols[2]:
                 if st.button(
-                    "↓",
+                    "",
+                    icon=ic.MOVE_DOWN,
                     key=f"{scope_key}_ov_down_{viz_id}",
                     disabled=idx >= len(selected) - 1,
                 ):
@@ -132,7 +135,9 @@ def render_charts_overview_selector(
                     _sync_overview_checkbox_keys(scope_key=scope_key, selected=selected)
                     st.rerun()
             with cols[3]:
-                if st.button("Remove", key=f"{scope_key}_ov_rm_{viz_id}"):
+                if st.button(
+                    "", key=f"{scope_key}_ov_rm_{viz_id}", icon=ic.REMOVE
+                ):
                     selected = toggle_overview_chart(selected, viz_id, enabled=False)
                     draft_dot[OVERVIEW_CHARTS_KEY] = selected
                     _sync_overview_checkbox_keys(scope_key=scope_key, selected=selected)
@@ -143,13 +148,18 @@ def render_charts_overview_selector(
         if st.button(
             "Reset to transcript defaults",
             key=f"{scope_key}_ov_reset_defaults",
+            icon=ic.RESET,
         ):
             selected = list(get_default_overview_charts())
             draft_dot[OVERVIEW_CHARTS_KEY] = selected
             _sync_overview_checkbox_keys(scope_key=scope_key, selected=selected)
             st.rerun()
     with action_cols[1]:
-        if st.button("Clear (use run-kind defaults)", key=f"{scope_key}_ov_clear"):
+        if st.button(
+            "Clear (use run-kind defaults)",
+            key=f"{scope_key}_ov_clear",
+            icon=ic.CLEAR,
+        ):
             selected = []
             draft_dot[OVERVIEW_CHARTS_KEY] = selected
             _sync_overview_checkbox_keys(scope_key=scope_key, selected=selected)

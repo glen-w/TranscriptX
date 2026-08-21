@@ -12,6 +12,7 @@ from typing import Any
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.utils.text_utils import format_duration_display_from_config
@@ -133,7 +134,7 @@ def _render_group_browser(subject) -> None:
             if render_action_link(
                 f"View: {numbered_name}",
                 key=f"group_member_transcript_{member_key}",
-                icon=":material/article:",
+                icon=ic.ARTICLE,
             ):
                 from transcriptx.web.state import apply_subject_context
 
@@ -450,6 +451,7 @@ def _render_chapters_panel(chapter_rows: list[Any]) -> None:
             if target is not None and st.button(
                 "Jump",
                 key=f"tx_chapter_jump_{row.span_id}",
+                icon=ic.TARGET,
                 use_container_width=True,
             ):
                 queue_chapter_jump(
@@ -460,6 +462,7 @@ def _render_chapters_panel(chapter_rows: list[Any]) -> None:
             if target is not None and st.button(
                 "Play",
                 key=f"tx_chapter_play_{row.span_id}",
+                icon=ic.PLAY,
                 use_container_width=True,
             ):
                 queue_chapter_jump(
@@ -593,6 +596,7 @@ def _transcript_interaction_fragment(
     if shown_count < total_filtered and st.button(
         "Show more segments",
         key=f"tx_show_more_segments::{owner}",
+        icon=ic.SHOW_MORE,
     ):
         st.session_state[shown_key] = shown_count + SEGMENTS_PAGE_SIZE
         st.rerun(scope="fragment")
@@ -722,6 +726,7 @@ def _transcript_interaction_fragment(
             if st.button(
                 f"Open last corrected: {Path(last_corrected).name}",
                 key="tx_open_last_corrected",
+                icon=ic.SPELLCHECK,
             ):
                 open_corrected_as_subject(last_corrected)
 

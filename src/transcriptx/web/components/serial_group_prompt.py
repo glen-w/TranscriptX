@@ -11,6 +11,7 @@ from typing import Optional
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.audio.serial_groups import SerialGroup
 from transcriptx.web.components.info_tooltip import widget_help
 
@@ -86,12 +87,14 @@ def render_serial_group_prompt(
         merge_clicked = st.button(
             "Merge detected groups and transcribe",
             type="primary",
+            icon=ic.MERGE,
             key=merge_button_key,
         )
     with col_review:
         review_clicked = st.button(
-            "Open Audio Preprocessing → Auto-merge",
+            "Open Audio Preprocessing",
             key=review_button_key,
+            icon=ic.GRAPHIC_EQ,
         )
 
     separate_ok = st.checkbox(

@@ -10,6 +10,7 @@ from typing import Any, Optional, Sequence
 import streamlit as st
 from PIL import Image
 
+from transcriptx.web import icons as ic
 from transcriptx.core.config import resolve_effective_config
 from transcriptx.export import ChartsExportResult
 from transcriptx.web.blocks.filters.subview_slice import render_subview_slice_filter
@@ -215,8 +216,9 @@ def _render_chart_gallery_card(
                         f"{mb:.1f} MB — too large to render; open artifact on disk."
                     )
             if st.button(
-                "⛶",
+                "",
                 key=button_key,
+                icon=ic.FULLSCREEN,
                 help=widget_help("Open full screen"),
                 type="secondary",
             ):
@@ -468,7 +470,9 @@ def _render_view_options_popover(visible_module_ids: list[str]) -> None:
         )
         expand_col, collapse_col = st.columns(2)
         with expand_col:
-            if st.button("Expand visible", key="charts_expand_visible"):
+            if st.button(
+                "Expand visible", key="charts_expand_visible", icon=ic.SHOW_MORE
+            ):
                 ids = list(
                     visible_module_ids
                     or st.session_state.get("_charts_visible_module_ids")
@@ -477,7 +481,9 @@ def _render_view_options_popover(visible_module_ids: list[str]) -> None:
                 set_charts_open_modules(st.session_state, ids)
                 _fragment_rerun()
         with collapse_col:
-            if st.button("Collapse all", key="charts_collapse_all"):
+            if st.button(
+                "Collapse all", key="charts_collapse_all", icon=ic.SHOW_LESS
+            ):
                 set_charts_open_modules(st.session_state, [])
                 _fragment_rerun()
 
@@ -512,7 +518,7 @@ def _render_export_under_badges(
     if render_action_link(
         "Export visible",
         key="charts_export_visible",
-        icon=":material/folder_zip:",
+        icon=ic.FOLDER_ZIP,
         help=widget_help("Zip the charts matching the current filters"),
     ):
         _run_export_visible(run_root, filtered_charts)
@@ -527,7 +533,7 @@ def _render_export_under_badges(
             file_name=stored_result.filename,
             mime="application/zip",
             key="charts_export_download",
-            icon=":material/download:",
+            icon=ic.DOWNLOAD,
         )
         parts = [
             f"{stored_result.exported_count} chart"
@@ -546,7 +552,9 @@ def _render_filter_toolbar(visible_module_ids: list[str]) -> None:
     if dirty:
         reset_col, options_col, _ = st.columns([0.9, 1.5, 4.5])
         with reset_col:
-            if st.button("Reset", key="charts_reset_filters", width="content"):
+            if st.button(
+                "Reset", key="charts_reset_filters", width="content", icon=ic.RESET
+            ):
                 reset_charts_filters_to_defaults(st.session_state)
                 _fragment_rerun()
         with options_col:
@@ -794,7 +802,7 @@ def _charts_filters_and_gallery_fragment(
                 selected_description = resolve_chart_display_description(selected)
                 if selected_description:
                     st.caption(selected_description)
-            if st.button("Close Full Screen"):
+            if st.button("Close Full Screen", icon=ic.FULLSCREEN_EXIT):
                 st.session_state[CHARTS_KEY_FULL_SCREEN] = None
                 st.rerun()
             if selected.kind == "chart_static":

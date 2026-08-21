@@ -344,6 +344,82 @@ def unregister_slug(slug: str) -> bool:
     return True
 
 
+def unregister_source_path(
+    transcript_path: str | Path,
+    *,
+    retarget_to: str | Path | None = None,
+) -> bool:
+    """Remove index mappings for one library path without wiping a shared key.
+
+    If the extra shares ``transcript_key`` with a kept file, ``retarget_to``
+    updates ``source_path`` instead of deleting the key. Slug mappings whose
+    ``source_path`` is the extra are dropped; a slug is restored from the
+    keeper when the key would otherwise have none.
+    """
+    try:
+        extra = str(Path(transcript_path).expanduser().resolve(strict=False))
+    except OSError:
+        extra = str(transcript_path)
+    keep: str | None
+    if retarget_to is None:
+        keep = None
+    else:
+        try:
+            keep = str(Path(retarget_to).expanduser().resolve(strict=False))
+        except OSError:
+            keep = str(retarget_to)
+
+    index = load_index()
+    transcripts = index.get("transcripts", {}) or {}
+    slug_to_key = index.get("slug_to_key", {}) or {}
+    changed = False
+
+    affected_keys: set[str] = set()
+    for slug, key in list(slug_to_key.items()):
+        entry = transcripts.get(key)
+        if not isinstance(entry, dict):
+            continue
+        source = entry.get("source_path")
+        if source and _paths_equivalent(source, extra):
+            slug_to_key.pop(slug, None)
+            affected_keys.add(str(key))
+            changed = True
+
+    for key, entry in list(transcripts.items()):
+        if not isinstance(entry, dict):
+            continue
+        source = entry.get("source_path")
+        if not source or not _paths_equivalent(source, extra):
+            continue
+        affected_keys.add(str(key))
+        remaining = [s for s, k in slug_to_key.items() if k == key]
+        if keep:
+            entry["source_path"] = keep
+            entry["source_basename"] = get_canonical_base_name(keep)
+            if not remaining:
+                slug = str(entry.get("slug") or "").strip() or generate_slug_from_path(
+                    keep
+                )
+                owner = slug_to_key.get(slug)
+                if owner is None or owner == key:
+                    slug_to_key[slug] = key
+                    entry["slug"] = slug
+            transcripts[key] = entry
+            changed = True
+            continue
+        if remaining:
+            continue
+        transcripts.pop(key, None)
+        changed = True
+
+    if changed:
+        index["transcripts"] = transcripts
+        index["slug_to_key"] = slug_to_key
+        save_index(index)
+        logger.debug("Unregistered source path %s from slug index", extra)
+    return changed
+
+
 def list_slugs_matching(prefix: str) -> List[str]:
     """
     List all slugs that start with the given prefix.

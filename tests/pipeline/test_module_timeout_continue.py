@@ -157,6 +157,110 @@ def test_module_timeout_zero_means_unlimited() -> None:
 
 
 @pytest.mark.unit
+def test_module_skip_abandons_running_module() -> None:
+    import threading
+
+    from transcriptx.core.pipeline.run_control import (
+        PipelineRunControl,
+        bind_run_control,
+        reset_run_control,
+    )
+
+    class _SlowModule:
+        def run_from_context(self, _context):
+            time.sleep(5.0)
+            return {"status": "success", "payload": {}}
+
+    pipeline = SimpleNamespace(
+        logger=MagicMock(),
+        _module_progress_heartbeat=lambda *_a, **_k: None,
+    )
+    node = SimpleNamespace(
+        function=_SlowModule,
+        description="Slow module",
+        requirements=[],
+        timeout_seconds=30,
+    )
+    control = PipelineRunControl()
+    token = bind_run_control(control)
+
+    def _skip_soon() -> None:
+        time.sleep(0.3)
+        control.request_skip()
+
+    threading.Thread(target=_skip_soon, daemon=True).start()
+    started = time.perf_counter()
+    try:
+        outcome = execute_single_module(
+            pipeline,
+            module_name="slow_test_module",
+            node=node,
+            transcript_path="/tmp/t.json",
+            context=object(),
+            requirements_resolver=None,
+            named_speaker_count=2,
+        )
+    finally:
+        reset_run_control(token)
+    elapsed = time.perf_counter() - started
+    assert elapsed < 2.5
+    assert outcome.status == "skipped"
+    assert outcome.skip_reason == "user_skipped"
+
+
+@pytest.mark.unit
+def test_module_cancel_abandons_running_module() -> None:
+    import threading
+
+    from transcriptx.core.pipeline.run_control import (
+        PipelineRunControl,
+        bind_run_control,
+        reset_run_control,
+    )
+
+    class _SlowModule:
+        def run_from_context(self, _context):
+            time.sleep(5.0)
+            return {"status": "success", "payload": {}}
+
+    pipeline = SimpleNamespace(
+        logger=MagicMock(),
+        _module_progress_heartbeat=lambda *_a, **_k: None,
+    )
+    node = SimpleNamespace(
+        function=_SlowModule,
+        description="Slow module",
+        requirements=[],
+        timeout_seconds=30,
+    )
+    control = PipelineRunControl()
+    token = bind_run_control(control)
+
+    def _cancel_soon() -> None:
+        time.sleep(0.3)
+        control.request_cancel()
+
+    threading.Thread(target=_cancel_soon, daemon=True).start()
+    started = time.perf_counter()
+    try:
+        outcome = execute_single_module(
+            pipeline,
+            module_name="slow_test_module",
+            node=node,
+            transcript_path="/tmp/t.json",
+            context=object(),
+            requirements_resolver=None,
+            named_speaker_count=2,
+        )
+    finally:
+        reset_run_control(token)
+    elapsed = time.perf_counter() - started
+    assert elapsed < 2.5
+    assert outcome.status == "skipped"
+    assert outcome.skip_reason == "cancelled"
+
+
+@pytest.mark.unit
 def test_timeout_worker_inherits_bound_run_writer_lease(tmp_path) -> None:
     """Worker thread must see orchestrator lease (copy_context), else saves deadlock."""
     import contextvars

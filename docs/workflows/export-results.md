@@ -60,4 +60,4 @@ A downloaded ZIP for the sample run, with `index.html` opened locally and a clea
 
 - [Exporting runs (ZIP / HTML / EPUB)](../runtime/export.md)
 - [Known limitations](../known_limitations.md) (EPUB / interactive charts)
-- [Using TranscriptX: five workflows](index.md) to pick another task
+- [Using TranscriptX: ten workflows](index.md) to pick another task

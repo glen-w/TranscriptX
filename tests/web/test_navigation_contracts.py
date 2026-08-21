@@ -71,7 +71,36 @@ def test_library_rename_navigation_sets_canonical_context_and_one_shot_nav(
 
     consume_library_transcript_nav(ss, transcripts)
     assert LIBRARY_NAV_TRANSCRIPT_PATH not in ss
+    from transcriptx.web.state import LIBRARY_SELECTED_TRANSCRIPT_PATH
+
+    assert ss[LIBRARY_SELECTED_TRANSCRIPT_PATH] == str(transcript.resolve())
     assert ss["library_transcript_select"] == 2
+
+
+def test_navigate_to_library_sets_filter_and_pending_path(monkeypatch, tmp_path) -> None:
+    from transcriptx.app.corpus_inventory.models import (
+        LibraryFilter,
+        LibraryWorkflowPreset,
+    )
+    from transcriptx.web import navigation as nav_mod
+    from transcriptx.web.state import LIBRARY_NAV_FILTER, PAGE_KEY
+
+    transcript = tmp_path / "interview.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict[str, object] = {}
+    monkeypatch.setattr(
+        nav_mod,
+        "make_session_path_resolver",
+        lambda: (lambda _p: ("slug-1", None)),
+    )
+    nav_mod.navigate_to_library(
+        ss,
+        library_filter=LibraryFilter(preset=LibraryWorkflowPreset.NEEDS_SPEAKER_ID),
+        transcript_path=transcript,
+    )
+    assert ss[PAGE_KEY] == "Library"
+    assert ss[LIBRARY_NAV_FILTER].preset is LibraryWorkflowPreset.NEEDS_SPEAKER_ID
+    assert ss[LIBRARY_NAV_TRANSCRIPT_PATH] == str(transcript.resolve())
 
 
 def test_library_nav_path_is_one_shot_and_does_not_write_legacy_path(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from transcriptx.web import icons as ic
 from transcriptx.web.action_menus.ids import ActionId, SectionId
 
 
@@ -20,73 +21,73 @@ ACTIONS: tuple[ActionDef, ...] = (
     ActionDef(
         ActionId.OPEN,
         "Open",
-        ":material/folder_open:",
+        ic.FOLDER_OPEN,
         "Open Overview for the selected subject (works with a transcript even when no analysis run exists).",
     ),
     ActionDef(
         ActionId.OPEN_LIBRARY,
         "Open Library",
-        ":material/folder_open:",
+        ic.FOLDER_OPEN,
         "Open the Library focused on this transcript.",
     ),
     ActionDef(
         ActionId.OPEN_TRANSCRIPT,
         "Transcript",
-        ":material/description:",
+        ic.DESCRIPTION,
         "Open the Transcript viewer for the selected transcript.",
     ),
     ActionDef(
         ActionId.CHARTS,
         "Charts",
-        ":material/bar_chart:",
+        ic.BAR_CHART,
         "Open Charts for a completed analysis run.",
     ),
     ActionDef(
         ActionId.ARTIFACTS,
         "Artifacts",
-        ":material/inventory_2:",
+        ic.INVENTORY,
         "Open Artifacts (data) for a completed analysis run.",
     ),
     ActionDef(
         ActionId.INSIGHTS,
         "Insights",
-        ":material/lightbulb:",
+        ic.INSIGHTS,
         "Open Insights for a completed compatible analysis run.",
     ),
     ActionDef(
         ActionId.EXPORT_ZIP,
         "Export ZIP",
-        ":material/folder_zip:",
+        ic.FOLDER_ZIP,
         "Build and download a ZIP of run artifacts (requires a valid analysis run).",
     ),
     ActionDef(
         ActionId.RENAME,
         "Rename",
-        ":material/drive_file_rename_outline:",
+        ic.RENAME,
         "Rename the transcript (and linked audio) on the Rename Transcript page.",
     ),
     ActionDef(
         ActionId.RUN_SPEAKER_ID,
         "Run Speaker ID",
-        ":material/record_voice_over:",
+        ic.TRANSCRIBE,
         "Go to Speaker Identification for this transcript.",
     ),
     ActionDef(
         ActionId.RUN_ANALYSIS,
         "Run Analysis",
-        ":material/analytics:",
+        ic.ANALYTICS,
         "Go to Run Analysis for this subject.",
     ),
     ActionDef(
         ActionId.CORRECTIONS,
         "Corrections Studio",
-        ":material/edit_note:",
+        ic.CORRECTIONS,
         "Open Corrections Studio for this transcript (requires a usable corrections workspace).",
     ),
     ActionDef(
         ActionId.CORRECT_IN_VIEWER,
         "Correct in viewer",
-        ":material/spellcheck:",
+        ic.SPELLCHECK,
         "Open the Transcript viewer in Correct mode to propose word-level fixes while reading.",
     ),
 )
@@ -97,7 +98,6 @@ OPTIONAL_ACTIONS: frozenset[ActionId] = frozenset(
     {
         ActionId.OPEN_TRANSCRIPT,
         ActionId.INSIGHTS,
-        ActionId.CORRECTIONS,
         ActionId.CORRECT_IN_VIEWER,
     }
 )
@@ -115,12 +115,14 @@ SECTION_ALLOWLISTS: dict[SectionId, tuple[ActionId, ...]] = {
         ActionId.CORRECT_IN_VIEWER,
     ),
     SectionId.LIBRARY_SELECTED: (
+        ActionId.OPEN,
         ActionId.RUN_SPEAKER_ID,
-        ActionId.RUN_ANALYSIS,
-        ActionId.OPEN_TRANSCRIPT,
         ActionId.CORRECTIONS,
-        ActionId.CORRECT_IN_VIEWER,
+        ActionId.RUN_ANALYSIS,
         ActionId.RENAME,
+        ActionId.EXPORT_ZIP,
+        ActionId.OPEN_TRANSCRIPT,
+        ActionId.CORRECT_IN_VIEWER,
     ),
     SectionId.IMPORT_SUCCESS: (
         ActionId.OPEN_LIBRARY,
@@ -178,8 +180,12 @@ class SectionDefaultKey:
 SECTION_DEFAULTS: dict[SectionDefaultKey, tuple[ActionId, ...]] = {
     SectionDefaultKey(SectionId.HOME_RECENT_RUNS, "transcript", True): HOME_STRIP,
     SectionDefaultKey(SectionId.LIBRARY_SELECTED, "transcript", None): (
+        ActionId.OPEN,
         ActionId.RUN_SPEAKER_ID,
+        ActionId.CORRECTIONS,
         ActionId.RUN_ANALYSIS,
+        ActionId.RENAME,
+        ActionId.EXPORT_ZIP,
     ),
     SectionDefaultKey(SectionId.IMPORT_SUCCESS, "transcript", None): (
         ActionId.OPEN_LIBRARY,

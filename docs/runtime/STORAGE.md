@@ -52,14 +52,15 @@ Implications:
 
 ### Details
 
-- **recordings_dir**: User-owned, persistent, mountable, never auto-clean, user-authored content. **Do not commit audio into the repository.** With Docker Compose, set `HOST_RECORDINGS_DIR` to a host directory outside the clone; `data/recordings/` under the repo is gitignored for local/native defaults only.
-- **transcripts_dir**: User-owned, persistent, mountable, never auto-clean, user-authored content.  
+- **recordings_dir**: User-owned, persistent, mountable, never auto-clean, user-authored content. **Do not commit audio into the repository.** With Docker Compose, set `HOST_RECORDINGS_DIR` to a host directory outside the clone; `data/recordings/` under the repo is gitignored for local/native defaults only. **Settings → Storage → Duplicate library files** may delete extra copies after an explicit preview and typed confirmation; it is never automatic.
+- **transcripts_dir**: User-owned, persistent, mountable, never auto-clean, user-authored content. The same Settings tool may delete extra duplicate transcripts (and companions) after confirmation; admission, rename, and analysis-run cleanup still never auto-delete this tree.  
   - `readable/` is a derived child within this library (not a peer root).
   - `imports/` is ephemeral staging owned by the managed import workflow.
   - `originals/` stores archived source files for managed imports (never overwritten; disambiguated names). Audio paths under `originals/` (and any archival audio roots) are stable archival references and are intentionally decoupled from transcript filenames.
   - `metadata/` stores managed transcript sidecars under metadata-kind subtrees that mirror the transcript-relative path (for example, `transcripts/foo/bar.json` → `metadata/imports/foo/bar.import_meta.json`).
   - Language variants (e.g. `meeting_fr.json` beside `meeting.json`) are separate canonical transcripts with separate mirrored speaker-map sidecars. Import may copy the base speaker map into the variant sidecar; see `docs/runtime/transcription.md` (Multi-language variants).
   - A file at `transcripts_dir/*.json` alone is not library-valid; library admission requires a managed artifact set (canonical JSON + valid import sidecar, with archived original path linkage).
+  - Host transcription helpers (`whispermlx-missing`, `inbox-watch`) must write raw engine output under `transcripts/originals/` only. They refuse the managed library root (the directory that already contains `metadata/` / `imports/`). Admit via Import Transcript or Settings → Watcher.
   - Naming leaves room for future subtypes (`diarised/`, `normalized/`, `export/`).
 - **data_dir**: App-owned, persistent but partially reconstructable, not user-authored.  
   - `groups/` and `speaker_profiles/` are durable local project state (not safe to auto-delete). Speaker profile `.cache/` is disposable; profiles/links/events/operations **and** `profiles/assets/` (optional avatar WebP photos — face PII) are canonical (see `docs/contracts/speaker_profiles_v1.md`). Canonical voice evidence under `speaker_profiles/voice/` is biometric-derived local state (see `docs/contracts/speaker_profiles_voice_v1.md`); `.cache/voice/` is disposable. Ordinary exports must exclude `voice/` and `.cache/voice/`.

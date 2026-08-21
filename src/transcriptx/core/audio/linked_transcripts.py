@@ -193,6 +193,11 @@ def _drop_processing_state_for_transcripts(transcripts: list[Path]) -> None:
         )
 
 
+def drop_processing_state_for_transcripts(transcripts: list[Path]) -> None:
+    """Remove processed_files entries that point at the given transcript paths."""
+    _drop_processing_state_for_transcripts(transcripts)
+
+
 def delete_linked_transcripts_for_audio(audio_path: Path) -> tuple[int, list[str]]:
     """Delete managed transcripts (and companions) linked to *audio_path*.
 

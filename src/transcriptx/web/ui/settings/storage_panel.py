@@ -1,4 +1,4 @@
-"""Settings storage roots + workspace backup + bulk analysis-run cleanup UI."""
+"""Settings storage roots + workspace backup + duplicate library cleanup + bulk analysis-run cleanup UI."""
 
 from __future__ import annotations
 
@@ -8,7 +8,15 @@ from pathlib import Path
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.app.controllers.settings_controller import SettingsController
+from transcriptx.app.duplicate_cleanup import (
+    CONFIRM_DELETE_DUPLICATES,
+    DuplicateAuthorization,
+    DuplicateCleanupService,
+    DuplicatePreview,
+    DuplicateResult,
+)
 from transcriptx.app.models.errors import BackupError
 from transcriptx.core.utils.paths import PATHS
 from transcriptx.services.workspace_backup import (
@@ -29,6 +37,14 @@ from transcriptx.web.services.run_cleanup.session_clear import (
     clear_session_selections_for_removed_runs,
 )
 from transcriptx.web.components.info_tooltip import widget_help
+from transcriptx.web.cache_helpers import clear_transcript_listing_caches
+from transcriptx.web.state import (
+    LIBRARY_SELECTED_TRANSCRIPT_PATH,
+    SUBJECT_ID_KEY,
+    apply_subject_context,
+)
+
+_SESSION_ID_KEY = "_cleanup_ui_session_id"
 
 _SESSION_ID_KEY = "_cleanup_ui_session_id"
 _HANDLE_KEY = "_cleanup_plan_handle"
@@ -38,6 +54,10 @@ _ACK_KEY = "_cleanup_ack"
 _PHRASE_KEY = "_cleanup_phrase"
 _PREVIEW_KEY = "_cleanup_preview"
 _RESULT_KEY = "_cleanup_last_result"
+_DUP_PREVIEW_KEY = "_dup_cleanup_preview"
+_DUP_ACK_KEY = "_dup_cleanup_ack"
+_DUP_PHRASE_KEY = "_dup_cleanup_phrase"
+_DUP_RESULT_KEY = "_dup_cleanup_last_result"
 
 
 def _ui_session_id() -> str:
@@ -154,6 +174,7 @@ def _render_pending_staging_section() -> None:
                 if st.button(
                     f"Retry recovery ({operation_id})",
                     key=f"_cleanup_retry_{operation_id}",
+                    icon=ic.REPLAY,
                 ):
                     result = svc.retry_interrupted_staging(operation_id)
                     clear_session_selections_for_removed_runs(
@@ -210,7 +231,7 @@ def _render_cleanup_section() -> None:
     if stored_mode is not None and stored_mode != mode.value:
         _clear_preview_state()
 
-    if st.button("Generate preview", key="_cleanup_preview_btn"):
+    if st.button("Generate preview", key="_cleanup_preview_btn", icon=ic.PREVIEW):
         svc = RunCleanupService()
         handle, preview = svc.preview_cleanup(mode, _ui_session_id())
         st.session_state[_HANDLE_KEY] = handle
@@ -304,6 +325,7 @@ def _render_cleanup_section() -> None:
     if st.button(
         "Execute cleanup",
         type="primary",
+        icon=ic.CLEANUP,
         disabled=execute_disabled,
         key="_cleanup_execute_btn",
     ):
@@ -354,7 +376,7 @@ def _render_workspace_backup_section() -> None:
             "Also pack TRANSCRIPTX_OUTPUT_DIR (rebuildable analysis runs)."
         ),
     )
-    if st.button("Create backup", key="workspace_backup_create"):
+    if st.button("Create backup", key="workspace_backup_create", icon=ic.BACKUP):
         try:
             dest = default_backup_dest(PATHS)
             result = WorkspaceBackupService().create_backup(
@@ -389,7 +411,7 @@ def _render_workspace_backup_section() -> None:
     )
     verify_col, dry_col = st.columns(2)
     with verify_col:
-        if st.button("Verify archive", key="workspace_backup_verify"):
+        if st.button("Verify archive", key="workspace_backup_verify", icon=ic.VERIFY):
             if not restore_path.strip():
                 st.error("Enter the path to a backup ZIP.")
             else:
@@ -408,7 +430,9 @@ def _render_workspace_backup_section() -> None:
                 except BackupError as exc:
                     st.error(str(exc))
     with dry_col:
-        if st.button("Dry-run restore", key="workspace_backup_dry_run"):
+        if st.button(
+            "Dry-run restore", key="workspace_backup_dry_run", icon=ic.DRY_RUN
+        ):
             if not restore_path.strip():
                 st.error("Enter the path to a backup ZIP.")
             else:
@@ -429,7 +453,9 @@ def _render_workspace_backup_section() -> None:
         value=False,
         key="workspace_backup_restore_confirm",
     )
-    if st.button("Restore from backup", key="workspace_backup_restore"):
+    if st.button(
+        "Restore from backup", key="workspace_backup_restore", icon=ic.RESTORE
+    ):
         if not restore_confirm:
             st.error("Confirm the replace checkbox before restoring.")
         elif not restore_path.strip():
@@ -458,6 +484,188 @@ def _render_workspace_backup_section() -> None:
                 st.error(str(exc))
 
 
+def _dup_reset_confirmation() -> None:
+    st.session_state.pop(_DUP_ACK_KEY, None)
+    st.session_state.pop(_DUP_PHRASE_KEY, None)
+
+
+def _clear_session_for_deleted_transcripts(deleted_paths: tuple[str, ...]) -> None:
+    resolved: set[str] = set()
+    stems: set[str] = set()
+    for raw in deleted_paths:
+        stems.add(Path(raw).stem)
+        try:
+            resolved.add(str(Path(raw).expanduser().resolve()))
+        except OSError:
+            resolved.add(str(raw))
+    selected = st.session_state.get(LIBRARY_SELECTED_TRANSCRIPT_PATH)
+    if selected:
+        try:
+            selected_key = str(Path(str(selected)).expanduser().resolve())
+        except OSError:
+            selected_key = str(selected)
+        if selected_key in resolved:
+            apply_subject_context(
+                st.session_state,
+                subject_type=None,
+                subject_id=None,
+                run_id=None,
+            )
+            return
+    subject = st.session_state.get(SUBJECT_ID_KEY)
+    if subject and str(subject) in stems:
+        apply_subject_context(
+            st.session_state,
+            subject_type=None,
+            subject_id=None,
+            run_id=None,
+        )
+
+
+def _render_duplicate_result(result: DuplicateResult) -> None:
+    if result.ok:
+        st.success(
+            f"Removed {result.audio_deleted} audio file(s) and "
+            f"{result.transcripts_deleted} transcript(s)."
+        )
+    else:
+        st.error("Duplicate cleanup did not finish cleanly.")
+        for err in result.errors:
+            st.error(err)
+    for skipped in result.skipped:
+        st.warning(skipped)
+    for warn in result.warnings:
+        st.warning(warn)
+    if result.dangling_speaker_links:
+        st.info(
+            f"{result.dangling_speaker_links} speaker-profile link(s) still point at "
+            "deleted import IDs. Relink in Speakers if needed."
+        )
+    if result.emptied_groups:
+        st.warning(
+            "These groups have no remaining members and were left unchanged: "
+            + ", ".join(result.emptied_groups)
+        )
+
+
+def _render_duplicate_cleanup_section() -> None:
+    st.subheader("Duplicate library files")
+    st.caption(
+        "Finds exact copies of recordings (same file bytes) and transcripts "
+        "(same file bytes or the same canonical transcript content). "
+        "Keeps the copy with the most analysis / corrections / speaker ID work. "
+        "Linked audio and transcript companions of extras are deleted together. "
+        "Analysis run folders are left in place — use Analysis run cleanup below. "
+        "This is irreversible and is never run automatically."
+    )
+
+    pending = st.session_state.pop(_DUP_RESULT_KEY, None)
+    if pending is not None:
+        _dup_reset_confirmation()
+        _render_duplicate_result(pending)
+
+    if st.button("Scan for duplicates", key="_dup_cleanup_scan_btn", icon=ic.SCAN):
+        preview = DuplicateCleanupService().preview()
+        st.session_state[_DUP_PREVIEW_KEY] = preview
+        _dup_reset_confirmation()
+        st.rerun()
+
+    preview = st.session_state.get(_DUP_PREVIEW_KEY)
+    if preview is None:
+        st.info("Scan to see duplicate recordings and transcripts.")
+        return
+    if not isinstance(preview, DuplicatePreview):
+        st.session_state.pop(_DUP_PREVIEW_KEY, None)
+        st.info("Scan to see duplicate recordings and transcripts.")
+        return
+
+    for warn in preview.warnings:
+        st.warning(warn)
+    if preview.unique_transcript_warnings:
+        st.warning(
+            f"{preview.unique_transcript_warnings} group(s) include a linked transcript "
+            "that is not itself a content duplicate. Confirm before deleting."
+        )
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Groups", len(preview.groups))
+    c2.metric("Extras to delete", preview.extra_count)
+    c3.metric("Size (est.)", _format_bytes(preview.size_estimate_bytes))
+
+    if preview.groups:
+        st.markdown("**Keepers**")
+        st.dataframe(
+            [
+                {
+                    "kind": group.kind.value,
+                    "keep": group.keeper.title,
+                    "path": str(group.keeper.fingerprint.path),
+                    "role": group.keeper.role.value,
+                }
+                for group in preview.groups
+            ],
+            width="stretch",
+            hide_index=True,
+        )
+        st.markdown("**Extras**")
+        st.dataframe(
+            [
+                {
+                    "kind": group.kind.value,
+                    "name": extra.title,
+                    "path": str(extra.fingerprint.path),
+                    "role": extra.role.value,
+                    "size": extra.fingerprint.size,
+                    "unique_transcript": extra.unique_transcript_at_risk,
+                }
+                for group in preview.groups
+                for extra in group.extras
+            ],
+            width="stretch",
+            hide_index=True,
+        )
+    else:
+        st.caption("No duplicates found.")
+
+    if not preview.can_execute:
+        return
+
+    ack = st.checkbox(
+        "I understand this permanently deletes duplicate recordings and transcripts",
+        key=_DUP_ACK_KEY,
+    )
+    phrase_ok = False
+    if ack:
+        typed = st.text_input(
+            f"Type {CONFIRM_DELETE_DUPLICATES} to confirm",
+            key=_DUP_PHRASE_KEY,
+            help=widget_help("Exact match required (case-sensitive, no trimming)."),
+        )
+        phrase_ok = typed == CONFIRM_DELETE_DUPLICATES
+        if typed and not phrase_ok:
+            st.caption("Phrase does not match exactly.")
+
+    if st.button(
+        "Delete extras",
+        type="primary",
+        icon=ic.DELETE,
+        disabled=not (ack and phrase_ok),
+        key="_dup_cleanup_execute_btn",
+    ):
+        typed_phrase = st.session_state.get(_DUP_PHRASE_KEY, "")
+        auth = DuplicateAuthorization(
+            acknowledged=bool(st.session_state.get(_DUP_ACK_KEY)),
+            phrase=typed_phrase if isinstance(typed_phrase, str) else "",
+            plan_id=preview.plan_id,
+        )
+        result = DuplicateCleanupService().execute(preview, auth)
+        _clear_session_for_deleted_transcripts(result.deleted_transcript_paths)
+        clear_transcript_listing_caches()
+        st.session_state[_DUP_RESULT_KEY] = result
+        st.session_state.pop(_DUP_PREVIEW_KEY, None)
+        st.rerun()
+
+
 def render_storage_panel() -> None:
     """Show configured storage root paths, workspace backup, and cleanup controls."""
     st.subheader("Storage roots")
@@ -468,6 +676,8 @@ def render_storage_panel() -> None:
 
     st.divider()
     _render_workspace_backup_section()
+    st.divider()
+    _render_duplicate_cleanup_section()
     st.divider()
     _render_cleanup_section()
     st.divider()

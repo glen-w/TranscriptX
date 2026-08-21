@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.services.corrections_studio.bulk_generation import (
     CONFIRM_REGENERATE_ALL,
     BulkGenerationMode,
@@ -104,7 +105,9 @@ def render_corrections_panel() -> None:
     if stored_mode is not None and stored_mode != mode.value:
         _clear_preview_state()
 
-    if st.button("Refresh inventory", key="_corrections_bulk_preview_btn"):
+    if st.button(
+        "Refresh inventory", key="_corrections_bulk_preview_btn", icon=ic.REFRESH
+    ):
         ctrl = CorrectionsStudioController()
         preview = ctrl.preview_bulk_candidate_generation(mode)
         st.session_state[_PREVIEW_KEY] = preview
@@ -177,6 +180,7 @@ def render_corrections_panel() -> None:
     if st.button(
         button_label,
         type="primary",
+        icon=ic.CORRECTIONS,
         disabled=execute_disabled,
         key="_corrections_bulk_execute_btn",
     ):

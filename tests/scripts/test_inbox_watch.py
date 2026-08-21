@@ -96,7 +96,61 @@ class TestFfmpegArgv:
         assert "-ar" in cmd and cmd[cmd.index("-ar") + 1] == "16000"
         assert "-c:a" in cmd and cmd[cmd.index("-c:a") + 1] == "libmp3lame"
         assert "-b:a" in cmd and cmd[cmd.index("-b:a") + 1] == "64k"
+        assert "-f" in cmd and cmd[cmd.index("-f") + 1] == "mp3"
         assert cmd[-1] == str(dest)
+
+    def test_explicit_mp3_muxer_when_dest_is_partial(self, iw, tmp_path: Path):
+        src = tmp_path / "clip.wav"
+        dest = tmp_path / ".inbox-watch.clip.mp3.partial"
+        cmd = iw.build_ffmpeg_cmd("/usr/bin/ffmpeg", src, dest)
+        assert cmd[-3:] == ["-f", "mp3", str(dest)]
+
+
+@pytest.mark.unit
+class TestConvertProgress:
+    def test_prints_converting_before_ffmpeg(self, iw, tmp_path, capsys, monkeypatch):
+        recordings = tmp_path / "rec"
+        recordings.mkdir()
+        src = tmp_path / "clip.wav"
+        src.write_bytes(b"x" * 2048)
+        monkeypatch.setattr(iw, "run_ffmpeg", _ok_ffmpeg)
+        monkeypatch.setattr(iw, "finalize_inbox_source", lambda *a, **k: None)
+        cfg = MagicMock()
+        stats = iw.CycleStats()
+        outcome = iw.convert_audio(
+            src,
+            recordings,
+            ffmpeg=Path("ffmpeg"),
+            force=False,
+            dry_run=False,
+            cfg=cfg,
+            stats=stats,
+        )
+        assert outcome == "converted"
+        out = capsys.readouterr().out
+        assert "Converting: clip.wav -> clip.mp3" in out
+        assert "Converted: clip.wav -> clip.mp3" in out
+        assert "in " in out and "s" in out
+
+
+@pytest.mark.unit
+class TestCycleFeedback:
+    def test_review_and_summary_sections(self, iw, dirs, monkeypatch, capsys):
+        inbox, recordings, transcripts = dirs
+        (inbox / "clip.m4a").write_bytes(b"audio")
+        monkeypatch.setattr(iw, "run_ffmpeg", _ok_ffmpeg)
+        monkeypatch.setattr(iw, "run_whispermlx_missing", lambda _cmd: 0)
+        rc = iw.main(
+            _once_args(inbox, recordings, transcripts, ["--no-watch-transcripts"])
+        )
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "Review before cycle" in out
+        assert "Processing" in out
+        assert "[1/1] audio: clip.m4a" in out
+        assert "Run summary" in out
+        assert "Status:   completed" in out
+        assert "Converted" in out
 
 
 @pytest.mark.unit

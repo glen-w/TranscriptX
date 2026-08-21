@@ -24,6 +24,7 @@ from typing import Dict, List, Sequence
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.app.models.results import RunSummary
 from transcriptx.app.speaker_id import (
     SpeakerIdActionService,
@@ -324,8 +325,12 @@ def _cached_fallback_transcripts() -> list:
 
 def _light_transcript_picker_rows(paths: list[Path]) -> tuple[list[Path], list[str]]:
     """Build picker options/labels without parsing segments for every path."""
+    from transcriptx.web.transcript_option_format import decorate_transcript_picker_label
+
     options = list(paths)
-    labels = [p.stem or str(p) for p in options]
+    labels = [
+        decorate_transcript_picker_label(p.stem or str(p), path=p) for p in options
+    ]
     return options, labels
 
 
@@ -1187,6 +1192,7 @@ def _render_voice_suggestions(
         st.button(
             "Load voice suggestions",
             key=widget_key(path_str, f"voice_load_{active_id}"),
+            icon=ic.VOICE,
             on_click=_cb_load_voice,
             args=(path_str,),
             help=widget_help(
@@ -1530,6 +1536,17 @@ def _speaker_id_workspace_fragment(
     except FileNotFoundError as exc:
         st.error(f"Transcript file is missing or unreadable: {exc}")
         return
+    except ValueError as exc:
+        message = str(exc)
+        if "schema" in message.lower() or "schema_version" in message:
+            st.error(
+                f"This transcript is not a managed library artifact yet: {exc}. "
+                "Import it via Import Transcript (or Settings → Watcher auto-import) "
+                "so canonical schema markers and an import sidecar are written."
+            )
+        else:
+            st.error(f"Could not load this transcript: {exc}")
+        return
     except Exception as exc:
         st.error(
             f"Speaker mapping file is corrupt for this transcript: {exc}. "
@@ -1690,6 +1707,7 @@ def _speaker_id_workspace_fragment(
         st.button(
             "Save name",
             key=widget_key(transcript_path, "save"),
+            icon=ic.SAVE,
             type="primary",
             width="stretch",
             on_click=_cb_save_name,
@@ -1700,6 +1718,7 @@ def _speaker_id_workspace_fragment(
         st.button(
             ignore_label,
             key=widget_key(transcript_path, "ignore"),
+            icon=ic.HIDE,
             width="stretch",
             on_click=_cb_ignore_toggle,
             args=(str(transcript_path), active_id),
@@ -1709,8 +1728,9 @@ def _speaker_id_workspace_fragment(
     col_prev, col_jump, col_next = st.columns([1, 3, 1])
     with col_prev:
         st.button(
-            "← Prev",
+            "Prev",
             key=widget_key(transcript_path, "prev"),
+            icon=ic.CHEVRON_LEFT,
             disabled=(speaker_idx == 0),
             width="stretch",
             on_click=_cb_prev,
@@ -1718,8 +1738,9 @@ def _speaker_id_workspace_fragment(
         )
     with col_next:
         st.button(
-            "Next →",
+            "Next",
             key=widget_key(transcript_path, "next"),
+            icon=ic.CHEVRON_RIGHT,
             disabled=(speaker_idx >= total_speakers - 1),
             width="stretch",
             on_click=_cb_next,

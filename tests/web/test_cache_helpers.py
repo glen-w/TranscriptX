@@ -289,6 +289,11 @@ def test_clear_transcript_listing_caches_clears_session_list(monkeypatch) -> Non
         MagicMock(clear=_track_clear("speaker_paths")),
     )
     monkeypatch.setattr(
+        mod,
+        "cached_analysis_picker_status",
+        MagicMock(clear=_track_clear("analysis_status")),
+    )
+    monkeypatch.setattr(
         "transcriptx.web.sidebar_options.clear_transcript_dropdown_caches",
         _track_clear("dropdown"),
     )
@@ -308,6 +313,7 @@ def test_clear_transcript_listing_caches_clears_session_list(monkeypatch) -> Non
         "resolve",
         "metadata",
         "speaker_paths",
+        "analysis_status",
         "dropdown",
     ]
 
@@ -522,3 +528,48 @@ def test_transcript_picker_options_uses_index_and_disk_without_validation(
     assert by_label["disk-only"] == str(on_disk.resolve())
     assert "Gone" not in by_label
     assert validate_calls == []
+
+
+def test_transcript_picker_excludes_library_paths_without_import_sidecar(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Raw JSON in the library root must not appear until managed admit."""
+    from transcriptx.core.utils import transcript_picker as picker_mod
+    from transcriptx.io import import_metadata as import_meta
+
+    library = tmp_path / "transcripts"
+    library.mkdir()
+    metadata = library / "metadata" / "imports"
+    metadata.mkdir(parents=True)
+
+    admitted = library / "admitted.json"
+    admitted.write_text("{}", encoding="utf-8")
+    (metadata / "admitted.import_meta.json").write_text("{}", encoding="utf-8")
+
+    raw = library / "raw-whisperx.json"
+    raw.write_text('{"segments":[]}', encoding="utf-8")
+
+    outside = tmp_path / "outside.json"
+    outside.write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "transcriptx.core.utils.paths.DIARISED_TRANSCRIPTS_DIR", library
+    )
+    monkeypatch.setattr(import_meta.paths, "DIARISED_TRANSCRIPTS_DIR", library)
+    monkeypatch.setattr(
+        import_meta.paths, "TRANSCRIPTS_METADATA_DIR", library / "metadata"
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.slug_manager.list_all_transcripts",
+        lambda: [],
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.file_discovery.discover_all_transcript_paths",
+        lambda _root: [admitted, raw, outside],
+    )
+
+    options = picker_mod.list_transcript_picker_options()
+    paths = {opt.path for opt in options}
+    assert str(admitted.resolve()) in paths
+    assert str(outside.resolve()) in paths
+    assert str(raw.resolve()) not in paths

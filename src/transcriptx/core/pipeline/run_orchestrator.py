@@ -473,6 +473,11 @@ class RunOrchestrator:
                     state.dag_results = state.executed.dag_results
                     state.summary = state.executed.summary
                     state.execution_status = state.executed.execution_status
+                    dag_reason = state.executed.dag_results.get("termination_reason")
+                    if dag_reason:
+                        state.termination_reason = state.termination_reason or str(
+                            dag_reason
+                        )
                     state.persistence_outcomes.extend(
                         self._persist_success_outcome(
                             state.executed,

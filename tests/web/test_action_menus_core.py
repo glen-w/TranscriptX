@@ -93,7 +93,14 @@ def test_built_in_standard_excludes_optional() -> None:
             SectionId.LIBRARY_SELECTED,
             "transcript",
             False,
-            [ActionId.RUN_SPEAKER_ID, ActionId.RUN_ANALYSIS],
+            [
+                ActionId.OPEN,
+                ActionId.RUN_SPEAKER_ID,
+                ActionId.CORRECTIONS,
+                ActionId.RUN_ANALYSIS,
+                ActionId.RENAME,
+                ActionId.EXPORT_ZIP,
+            ],
         ),
         (
             SectionId.IMPORT_SUCCESS,
@@ -191,6 +198,32 @@ def test_identity_rejects_mismatched_run(tmp_path: Path) -> None:
             run_id="run-b",
             run_dir=run_dir,
         )
+
+
+def test_transcript_identity_with_run_pairs_outputs_path(monkeypatch, tmp_path: Path) -> None:
+    from transcriptx.web.action_menus.context import build_transcript_identity_with_run
+
+    monkeypatch.setattr(
+        "transcriptx.web.action_menus.context.OUTPUTS_DIR",
+        tmp_path / "outputs",
+    )
+    tp = tmp_path / "t.json"
+    tp.write_text("{}", encoding="utf-8")
+    ident = build_transcript_identity_with_run(
+        subject_id="slug",
+        transcript_path=tp,
+        run_id="run-a",
+    )
+    assert ident.run_id == "run-a"
+    assert ident.run_dir == tmp_path / "outputs" / "slug" / "run-a"
+
+    bare = build_transcript_identity_with_run(
+        subject_id="slug",
+        transcript_path=tp,
+        run_id=None,
+    )
+    assert bare.run_id is None
+    assert bare.run_dir is None
 
 
 def test_open_available_without_run(tmp_path: Path) -> None:

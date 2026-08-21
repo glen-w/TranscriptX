@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.audio.merge_profiles import (
     MergeSourceProfile,
     builtin_merge_source_profiles,
@@ -232,6 +233,7 @@ def render_merge_profiles_editor() -> list[MergeSourceProfile]:
                     if row.get("builtin") and st.button(
                         "Reset builtin",
                         key=f"{prefix}_reset",
+                        icon=ic.RESET,
                     ):
                         current = _draft_to_profiles(rows)
                         reset = reset_builtin_profile(current, row["id"])

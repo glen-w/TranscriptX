@@ -7,6 +7,7 @@ from typing import Any
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.web.action_menus.context import CanonicalIdentity
 from transcriptx.web.navigation import (
     make_session_path_resolver,
@@ -42,6 +43,7 @@ PAGE_TRANSCRIPT_PICKER_KEYS: tuple[str, ...] = (
     "run_analysis_transcript",
     "corrections_studio_transcript",
     "library_transcript_select",
+    "library_selected_transcript_path",
     "rename_transcript_select",
 )
 
@@ -184,6 +186,7 @@ def render_export_residuals(identity: CanonicalIdentity, *, download_key: str) -
         return
     st.download_button(
         "Download ZIP",
+        icon=ic.FOLDER_ZIP,
         data=bytes(payload),
         file_name=filename,
         mime="application/zip",

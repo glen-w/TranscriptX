@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.services.watcher import (
     DirectoryWatcherSettings,
     get_watcher_service,
@@ -95,7 +96,9 @@ def render_watcher_panel() -> None:
         ),
     )
 
-    if st.button("Save watcher settings", type="primary", key="watcher_save_btn"):
+    if st.button(
+        "Save watcher settings", type="primary", key="watcher_save_btn", icon=ic.SAVE
+    ):
         paths = [line.strip() for line in paths_text.splitlines() if line.strip()]
         settings = DirectoryWatcherSettings(
             enabled=bool(enabled),

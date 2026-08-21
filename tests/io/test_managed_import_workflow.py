@@ -262,6 +262,44 @@ def test_retry_reimports_raw_json_missing_schema_version(
     assert result.sidecar_path.exists()
 
 
+def test_retry_replaces_raw_json_with_nonfinite_vendor_floats(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Schema-invalid library JSON with NaN vendor fields is replaced, not patched."""
+    from transcriptx.io import managed_import_workflow as mod
+
+    transcript_root = tmp_path / "transcripts"
+    _patch_managed_dirs(monkeypatch, transcript_root)
+    target_json = transcript_root / "meeting.json"
+    raw_whisper = {
+        "segments": [
+            {
+                "speaker": "SPEAKER_00",
+                "text": "Hello",
+                "start": 0.0,
+                "end": 1.0,
+                "avg_logprob": float("nan"),
+            }
+        ],
+    }
+    # json.dumps rejects NaN by default; write via Python allow_nan for the fixture.
+    target_json.write_text(
+        json.dumps(raw_whisper, allow_nan=True), encoding="utf-8"
+    )
+    staging = transcript_root / "imports" / "meeting.json"
+    staging.parent.mkdir(parents=True, exist_ok=True)
+    staging.write_text(json.dumps(raw_whisper, allow_nan=True), encoding="utf-8")
+
+    result = mod.run_managed_import_workflow(staging, overwrite=False)
+
+    doc = json.loads(target_json.read_text(encoding="utf-8"))
+    assert doc.get("schema_version") == 1
+    assert isinstance(doc.get("source"), dict)
+    assert result.repaired_incomplete is True
+    assert result.sidecar_path.exists()
+    assert "avg_logprob" not in doc["segments"][0]
+
+
 def test_retry_backfills_when_source_is_legacy_string(
     monkeypatch, tmp_path: Path
 ) -> None:

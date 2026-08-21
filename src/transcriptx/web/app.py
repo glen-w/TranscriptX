@@ -32,6 +32,9 @@ import streamlit as st
 
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.web.components.context_bar import render_context_bar
+from transcriptx.web.components.global_analysis_progress import (
+    render_global_analysis_progress,
+)
 from transcriptx.web.layout import apply_page_layout, page_uses_wide_layout
 from transcriptx.web.navigation import (
     page_requires_workspace_hydration,
@@ -173,6 +176,9 @@ def main() -> None:
 
         if should_show_context_bar(current_page):
             render_context_bar(st.session_state)
+
+        # Floating chip while analysis runs off the Run Analysis page.
+        render_global_analysis_progress()
 
         try:
             with section(

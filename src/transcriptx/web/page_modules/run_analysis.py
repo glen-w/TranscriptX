@@ -4,18 +4,25 @@ Run Analysis page - configure and execute single-transcript or group analysis.
 
 from __future__ import annotations
 
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.app.controllers.analysis_controller import AnalysisController
 from transcriptx.app.models.requests import AnalysisRequest, GroupAnalysisRequest
 from transcriptx.app.models.results import RunSummary
 from transcriptx.app.output_capture import capture_output
 from transcriptx.app.progress import make_initial_snapshot
 from transcriptx.core.domain.group import Group
+from transcriptx.core.pipeline.run_control import (
+    PipelineRunControl,
+    bind_run_control,
+    reset_run_control,
+)
 from transcriptx.core.utils.config import get_config
 from transcriptx.web.action_menus.context import ActionContext, build_canonical_identity
 from transcriptx.web.components.info_tooltip import widget_help
@@ -39,6 +46,10 @@ from transcriptx.web.components.analysis_preset_controls import (
     render_effective_module_summary,
 )
 from transcriptx.web.components.empty_state import render_empty_state
+from transcriptx.web.components.global_analysis_progress import (
+    is_analysis_operation_active,
+    sync_run_analysis_target_to_active_operation,
+)
 from transcriptx.web.components.llm_custom_qa_picker import render_custom_qa_picker
 from transcriptx.web.components.llm_model_selector import render_compact_llm_setup
 from transcriptx.web.components.page_shell import render_page_shell
@@ -69,6 +80,8 @@ _RUN_ANALYSIS_DESCRIPTION = (
 _KEY_LAST_SUCCESS = "run_analysis_last_success"
 _RUN_ANALYSIS_TARGET_KEY = "run_analysis_target"
 _PENDING_LAUNCH_KEY = "run_analysis_pending_launch"
+_RUN_CONTROL_KEY = "run_analysis_run_control"
+_WORKER_HOLDER_KEY = "run_analysis_worker_holder"
 
 
 def _normalize_run_analysis_target(*, group_target_available: bool) -> str:
@@ -168,58 +181,107 @@ def _truncate_label(text: str, *, max_chars: int = 28) -> str:
     return text[: max_chars - 1] + "…"
 
 
-def _execute_pending_launch(
-    pending: dict[str, Any],
-    *,
-    progress: StreamlitProgressCallback | None = None,
-) -> None:
-    """Execute a snapshotted request; sole launch authority after Run click.
-
-    Prefer a bound ``StreamlitProgressCallback`` (with ``render_slot``) so the
-    progress panel updates live during the blocking run. A spinner alone would
-    hide the module count / bar that users expect to watch.
-    """
+def _start_pending_launch_worker(pending: dict[str, Any]) -> None:
+    """Run the snapshotted request in a background thread so Skip/Cancel stay live."""
     analysis_ctrl = AnalysisController()
     target_type = pending["target_type"]
     modules = list(pending["modules"])
-    st.session_state[SNAPSHOT_KEY] = make_initial_snapshot(len(modules))
-    if progress is None:
-        progress = StreamlitProgressCallback()
-    snapshot = st.session_state[SNAPSHOT_KEY]
-    progress.refresh_panel()
+    snapshot = st.session_state.get(SNAPSHOT_KEY)
+    if not isinstance(snapshot, dict):
+        snapshot = make_initial_snapshot(len(modules))
+        st.session_state[SNAPSHOT_KEY] = snapshot
+    progress = StreamlitProgressCallback(snapshot=snapshot)
 
     request = pending["request"]
+    control = PipelineRunControl()
+    holder: dict[str, Any] = {
+        "done": False,
+        "result": None,
+        "error": None,
+        "captured": "",
+    }
+    st.session_state[_RUN_CONTROL_KEY] = control
+    st.session_state[_WORKER_HOLDER_KEY] = holder
+
+    def _worker() -> None:
+        token = bind_run_control(control)
+        try:
+            with capture_output() as (stdout_buf, stderr_buf):
+                if target_type == "Transcript":
+                    result = analysis_ctrl.run_analysis(
+                        request, progress=progress, snapshot=snapshot
+                    )
+                else:
+                    result = analysis_ctrl.run_group_analysis(
+                        request, progress=progress, snapshot=snapshot
+                    )
+            holder["result"] = result
+            holder["captured"] = stdout_buf.getvalue() + stderr_buf.getvalue()
+        except Exception as exc:  # noqa: BLE001 — surface on the UI thread
+            holder["error"] = exc
+        finally:
+            reset_run_control(token)
+            holder["done"] = True
+
+    threading.Thread(target=_worker, name="tx-run-analysis", daemon=True).start()
+
+
+def _clear_in_progress_run_state() -> None:
+    st.session_state["analysis_run_in_progress"] = False
+    st.session_state.pop(_PENDING_LAUNCH_KEY, None)
+    st.session_state.pop(_RUN_CONTROL_KEY, None)
+    st.session_state.pop(_WORKER_HOLDER_KEY, None)
+
+
+def _finish_pending_launch(pending: dict[str, Any], holder: dict[str, Any]) -> None:
+    """Apply worker outcome on the Streamlit script thread."""
+    from transcriptx.web.cache_helpers import clear_run_listing_caches
+
+    target_type = pending["target_type"]
     selected_group = pending.get("selected_group")
     transcript_path = pending.get("transcript_path")
     if transcript_path is not None:
         transcript_path = Path(transcript_path)
 
-    def run_fn():
-        if target_type == "Transcript":
-            return analysis_ctrl.run_analysis(
-                request, progress=progress, snapshot=snapshot
+    error = holder.get("error")
+    result = holder.get("result")
+    _clear_in_progress_run_state()
+    clear_run_listing_caches()
+
+    if error is not None:
+        set_page_flash("error", f"Analysis failed: {error}")
+        st.rerun()
+        return
+    if result is None:
+        set_page_flash("error", "Analysis failed.")
+        st.rerun()
+        return
+
+    rd = result.run_dir
+    if result.status == "cancelled":
+        if rd and Path(rd).is_dir():
+            if target_type == "Transcript":
+                st.session_state["subject_type"] = "transcript"
+                st.session_state["subject_id"] = rd.parent.name
+                subject_type = "transcript"
+            else:
+                st.session_state["subject_type"] = "group"
+                st.session_state["subject_id"] = selected_group
+                subject_type = "group"
+            st.session_state["run_id"] = rd.name
+            _store_last_success(
+                run_dir=rd,
+                transcript_path=(
+                    transcript_path if target_type == "Transcript" else None
+                ),
+                subject_type=subject_type,
+                modules=list(result.modules_executed or []),
             )
-        return analysis_ctrl.run_group_analysis(
-            request, progress=progress, snapshot=snapshot
-        )
-
-    # No st.spinner: the progress panel is the run affordance. A spinner would
-    # dominate the viewport while the bar/count stayed frozen at 0 / N.
-    try:
-        with capture_output() as (stdout_buf, stderr_buf):
-            result = run_fn()
-    finally:
-        st.session_state["analysis_run_in_progress"] = False
-        st.session_state.pop(_PENDING_LAUNCH_KEY, None)
-        progress.refresh_panel()
-
-    captured = stdout_buf.getvalue() + stderr_buf.getvalue()
+        set_page_flash("warning", "Analysis cancelled.")
+        st.rerun()
+        return
 
     if result.success:
-        from transcriptx.web.cache_helpers import clear_run_listing_caches
-
-        clear_run_listing_caches()
-        rd = result.run_dir
         if target_type == "Transcript":
             st.session_state["subject_type"] = "transcript"
             st.session_state["subject_id"] = rd.parent.name
@@ -236,59 +298,72 @@ def _execute_pending_launch(
             modules=list(result.modules_executed or []),
         )
         set_page_flash("success", f"Analysis completed. Output: `{rd}`")
-        if result.modules_executed:
-            st.caption(f"Modules run: {', '.join(result.modules_executed)}")
-        agg_warns = getattr(result, "aggregation_warnings", None) or []
-        if agg_warns:
-            chart_failed_n = sum(
-                1
-                for w in agg_warns
-                if isinstance(w, dict) and w.get("code") == "GROUP_CHART_FAILED"
-            )
-            if chart_failed_n:
-                st.error(
-                    f"Group chart generation failed for {chart_failed_n} "
-                    "aggregation step(s). Charts for those modules may be missing. "
-                    "See **Aggregation notices** below."
-                )
-            with st.expander(
-                f"Aggregation notices ({len(agg_warns)})",
-                expanded=bool(chart_failed_n),
-            ):
-                for w in agg_warns[:50]:
-                    if isinstance(w, dict):
-                        code = w.get("code") or "—"
-                        msg = w.get("message") or ""
-                        ak = w.get("aggregation_key")
-                        st.markdown(
-                            f"- **`{code}`**"
-                            + (f" (`{ak}`)" if ak else "")
-                            + f": {msg}"
-                        )
-                    else:
-                        st.markdown(f"- {w!s}")
-                if len(agg_warns) > 50:
-                    st.caption(
-                        f"… and {len(agg_warns) - 50} more "
-                        "(see aggregation_warnings.json in the run directory)."
-                    )
-        if result.warnings:
-            for w in result.warnings[:5]:
-                st.warning(w)
-        if result.errors:
-            st.warning(f"{len(result.errors)} warning(s) during run:")
-            for e in result.errors[:5]:
-                st.caption(f"  • {e}")
     else:
-        st.error("Analysis failed.")
-        for e in result.errors:
-            st.error(e)
-
-    if captured:
-        with st.expander("Full log output"):
-            st.text(captured)
-
+        err_text = "; ".join(str(e) for e in (result.errors or []) if e)
+        set_page_flash("error", err_text or "Analysis failed.")
     st.rerun()
+
+
+def _render_in_progress_run_controls() -> None:
+    """Skip / Cancel plus live progress. Safe to call from a polling fragment."""
+    snapshot = st.session_state.get(SNAPSHOT_KEY)
+    if snapshot is not None:
+        render_progress_panel(snapshot)
+    else:
+        st.info("Analysis is running…")
+
+    control = st.session_state.get(_RUN_CONTROL_KEY)
+    cancelling = isinstance(control, PipelineRunControl) and control.is_cancelled()
+    skipping = (
+        isinstance(control, PipelineRunControl)
+        and control.skip_event.is_set()
+        and not cancelling
+    )
+    cols = st.columns([1.5, 1.6, 3])
+    with cols[0]:
+        if st.button(
+            "Skip module",
+            key="run_analysis_skip",
+            icon=ic.SKIP,
+            disabled=cancelling or skipping,
+            width="stretch",
+            help="Abandon the module that is running and continue with the rest.",
+        ):
+            if isinstance(control, PipelineRunControl):
+                control.request_skip()
+            if isinstance(snapshot, dict):
+                snapshot["latest_event"] = "Skipping current module…"
+            st.rerun()
+    with cols[1]:
+        if st.button(
+            "Cancel analysis",
+            key="run_analysis_cancel",
+            icon=ic.STOP,
+            disabled=cancelling,
+            width="stretch",
+            help="Stop this run. The current module is abandoned; later modules are not started.",
+        ):
+            if isinstance(control, PipelineRunControl):
+                control.request_cancel()
+            if isinstance(snapshot, dict):
+                snapshot["latest_event"] = (
+                    "Cancelling — waiting for the current module to stop…"
+                )
+            else:
+                _clear_in_progress_run_state()
+                set_page_flash("warning", "Analysis cancelled.")
+            st.rerun()
+    if cancelling:
+        st.caption("Cancelling… remaining modules will not start.")
+    elif skipping:
+        st.caption("Skipping current module…")
+
+
+def _poll_in_progress_run() -> None:
+    _render_in_progress_run_controls()
+    holder = st.session_state.get(_WORKER_HOLDER_KEY)
+    if isinstance(holder, dict) and holder.get("done"):
+        st.rerun()
 
 
 def _resolve_transcript_selection(
@@ -579,6 +654,41 @@ def _run_analysis_config_and_launch_fragment(
     st.rerun()
 
 
+def _render_active_single_or_group_run(pending: dict[str, Any]) -> None:
+    """Resume / continue a single or group analysis already in flight."""
+    summary = pending.get("footer_summary") or "Running analysis…"
+    st.markdown(
+        '<div class="tx-run-analysis-footer" aria-hidden="true"></div>',
+        unsafe_allow_html=True,
+    )
+    with st.container():
+        st.markdown(
+            f'<div class="tx-run-analysis-footer-summary">{summary}</div>',
+            unsafe_allow_html=True,
+        )
+        if not pending.get("form_cleared"):
+            snapshot = st.session_state.get(SNAPSHOT_KEY)
+            if snapshot is not None:
+                render_progress_panel(snapshot)
+            else:
+                st.info("Analysis is running…")
+    if not pending.get("form_cleared"):
+        pending["form_cleared"] = True
+        st.session_state[_PENDING_LAUNCH_KEY] = pending
+        st.rerun()
+        return
+    if not pending.get("started"):
+        pending["started"] = True
+        st.session_state[_PENDING_LAUNCH_KEY] = pending
+        _start_pending_launch_worker(pending)
+    holder = st.session_state.get(_WORKER_HOLDER_KEY)
+    if isinstance(holder, dict) and holder.get("done"):
+        _finish_pending_launch(pending, holder)
+        return
+    poll = st.fragment(run_every=0.5)(_poll_in_progress_run)
+    poll()
+
+
 def render_run_analysis_page() -> None:
     """Render the Run Analysis page with form and execution."""
     config = get_config()
@@ -586,6 +696,9 @@ def render_run_analysis_page() -> None:
     group_target_available = group_analysis_enabled
 
     _normalize_run_analysis_target(group_target_available=group_target_available)
+    # Returning mid-run must reopen the same target + progress, not the config form.
+    active_target = sync_run_analysis_target_to_active_operation(st.session_state)
+    operation_active = is_analysis_operation_active(st.session_state)
 
     render_page_shell(
         "Run Analysis",
@@ -615,73 +728,45 @@ def render_run_analysis_page() -> None:
         "Target",
         options=target_options,
         key=_RUN_ANALYSIS_TARGET_KEY,
+        disabled=operation_active,
         help=widget_help(
             (
                 "Transcript: one managed file. Group: pooled multi-transcript run. "
                 "Batch: queue many transcripts with the same preset."
+                if not operation_active
+                else "Target is locked while an analysis run is in progress."
             )
         ),
     )
     if target_type is None:
         target_type = st.session_state.get(_RUN_ANALYSIS_TARGET_KEY, "Transcript")
+    if operation_active and active_target is not None:
+        target_type = active_target
 
     if not group_target_available:
         st.caption("Enable group analysis in config to run analysis on groups.")
-    if target_type == "Group" and group_target_available:
+    if target_type == "Group" and group_target_available and not operation_active:
         st.caption(
             "Group scope: modules differ—registry-backed aggregate charts, special paths "
             "(e.g. wordclouds), data-only (e.g. temporal dynamics), or blob-only (summary). "
             "See docs/groups/group_analysis_module_outputs.md in the project."
         )
 
-    if target_type == "Batch":
-        render_batch_analysis_panel()
-        return
-
-    # Three-phase launch so Streamlit can drop the prior form widgets:
-    # 1) click stores pending + rerun
-    # 2) paint progress only + form_cleared + rerun (ends script → clears form)
-    # 3) paint progress + execute (blocking; form stays gone)
+    # Ongoing single/group run takes priority over Target=Batch so return visits
+    # always restore the live progress panel (and Skip/Cancel).
     pending = st.session_state.get(_PENDING_LAUNCH_KEY)
     if st.session_state.get("analysis_run_in_progress", False) and isinstance(
         pending, dict
     ):
-        summary = pending.get("footer_summary") or "Running analysis…"
-        st.markdown(
-            '<div class="tx-run-analysis-footer" aria-hidden="true"></div>',
-            unsafe_allow_html=True,
-        )
-        with st.container():
-            st.markdown(
-                f'<div class="tx-run-analysis-footer-summary">{summary}</div>',
-                unsafe_allow_html=True,
-            )
-            progress_slot = st.empty()
-            snapshot = st.session_state.get(SNAPSHOT_KEY)
-            if snapshot is not None:
-                with progress_slot.container():
-                    render_progress_panel(snapshot)
-            else:
-                with progress_slot.container():
-                    st.info("Analysis is running…")
-        if not pending.get("form_cleared"):
-            pending["form_cleared"] = True
-            st.session_state[_PENDING_LAUNCH_KEY] = pending
-            st.rerun()
-            return
-        if not pending.get("started"):
-            pending["started"] = True
-            st.session_state[_PENDING_LAUNCH_KEY] = pending
-            progress = StreamlitProgressCallback(render_slot=progress_slot)
-            _execute_pending_launch(pending, progress=progress)
+        _render_active_single_or_group_run(pending)
         return
 
     if st.session_state.get("analysis_run_in_progress", False):
-        snapshot = st.session_state.get(SNAPSHOT_KEY)
-        if snapshot is not None:
-            render_progress_panel(snapshot)
-        else:
-            st.info("Analysis is running…")
+        _render_in_progress_run_controls()
+        return
+
+    if target_type == "Batch":
+        render_batch_analysis_panel()
         return
 
     transcript_options: tuple[str, ...] = ()
@@ -715,14 +800,18 @@ def render_run_analysis_page() -> None:
         groups = tuple(listed)
 
     last_snapshot = st.session_state.get(SNAPSHOT_KEY)
-    if last_snapshot and last_snapshot.get("status") in ("completed", "failed"):
+    if last_snapshot and last_snapshot.get("status") in (
+        "completed",
+        "failed",
+        "cancelled",
+    ):
         with st.expander("Last run progress", expanded=False):
             render_progress_panel(last_snapshot)
             if last_snapshot.get("status") == "completed":
                 if render_action_link(
                     "Open Viewer Overview",
                     key="last_run_progress_open_overview",
-                    icon=":material/folder_open:",
+                    icon=ic.FOLDER_OPEN,
                 ):
                     st.session_state["page"] = "Overview"
                     st.rerun()

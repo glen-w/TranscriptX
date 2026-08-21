@@ -1,59 +1,89 @@
-"""
-Library page - browse transcripts and audio inputs.
-
-First paint: render_page_shell() then light path/label discovery via
-get_cached_light_transcript_metadata(). Full per-file metadata loads only for
-the selected transcript (and detailed speaker stats behind the toggle).
-
-Table toggle and selection widgets run in ``@st.fragment`` so they do not trigger
-a full-app rerun.
-"""
+"""Library page — corpus inventory and workflow-state browser."""
 
 from __future__ import annotations
 
-from datetime import datetime
+import hashlib
 from pathlib import Path
 
 import streamlit as st
-import pandas as pd
 
+from transcriptx.web import icons as ic
+from transcriptx.app.corpus_inventory.models import (
+    InventoryRow,
+    LibraryFilter,
+    LibrarySort,
+    LibraryWorkflowPreset,
+)
+from transcriptx.app.corpus_inventory.query import apply_library_filter
 from transcriptx.core.analysis.voice.audio_io import resolve_audio_path
 from transcriptx.core.utils.rename.audio_association import find_original_audio_file
-from transcriptx.web.cache_helpers import (
-    cached_get_transcript_summaries_for_paths,
-    get_cached_light_transcript_metadata,
-    get_cached_transcript_metadata,
-)
-from transcriptx.web.components.info_tooltip import widget_help
-from transcriptx.web.action_menus.context import ActionContext, build_canonical_identity
-from transcriptx.web.action_menus.ids import NavStyle, SectionId
-from transcriptx.web.action_menus.render import render_configured_actions
-from transcriptx.web.components.empty_state import render_empty_state
-from transcriptx.web.components.page_shell import render_page_shell
-from transcriptx.web.perf import instrument_cached_call
-from transcriptx.web.state import (
-    SELECTBOX_PLACEHOLDER_TRANSCRIPT,
-)
-from transcriptx.web.navigation import (
-    consume_library_transcript_nav,
-    library_transcript_index,
-)
-from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.utils.text_utils import format_duration_display_from_config
+from transcriptx.web.action_menus.catalog import SECTION_ALLOWLISTS
+from transcriptx.web.action_menus.context import (
+    ActionContext,
+    build_transcript_identity_with_run,
+)
+from transcriptx.web.action_menus.ids import ActionId, NavStyle, SectionId
+from transcriptx.web.action_menus.render import (
+    action_widget_key,
+    render_action,
+    render_configured_actions,
+)
+from transcriptx.web.cache_helpers import get_cached_corpus_inventory
+from transcriptx.web.components.empty_state import render_empty_state
+from transcriptx.web.components.info_tooltip import widget_help
+from transcriptx.web.components.page_shell import render_page_shell
+from transcriptx.web.corpus_inventory_display import (
+    format_analysis_label,
+    format_corrections_label,
+    format_short_date,
+    format_speaker_id_label,
+    inventory_list_caption,
+)
+from transcriptx.web.navigation import consume_library_nav
+from transcriptx.web.perf import instrument_cached_call
+from transcriptx.web.services.subject_service import SubjectService
+from transcriptx.web.services.transcript_context_resolver import (
+    paths_match,
+    tolerant_resolve,
+)
+from transcriptx.web.state import (
+    LIBRARY_FILTER_PRESET_KEY,
+    LIBRARY_FILTER_QUERY_KEY,
+    LIBRARY_FILTER_SORT_KEY,
+    LIBRARY_FILTER_SOURCE_KEY,
+    LIBRARY_LIST_FILTER_FINGERPRINT_KEY,
+    LIBRARY_LIST_PAGE_KEY,
+    LIBRARY_SELECTED_TRANSCRIPT_PATH,
+)
 
+_LIBRARY_DESCRIPTION = (
+    "Find and manage transcripts — what you have, what state they are in, "
+    "and what to do next. Search titles here; use Search to find phrases "
+    "inside transcripts."
+)
 
-def _format_path_created_at(path: Path) -> str:
-    """Return file created timestamp when available."""
-    try:
-        stats = path.stat()
-    except OSError:
-        return "—"
-    timestamp = getattr(stats, "st_birthtime", stats.st_ctime)
-    return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M")
+_PRESET_LABELS: dict[LibraryWorkflowPreset, str] = {
+    LibraryWorkflowPreset.ALL: "All",
+    LibraryWorkflowPreset.UNANALYSED: "Unanalysed",
+    LibraryWorkflowPreset.NEEDS_SPEAKER_ID: "Needs Speaker ID",
+    LibraryWorkflowPreset.CORRECTIONS_PENDING: "Corrections pending",
+    LibraryWorkflowPreset.ANALYSED: "Analysed",
+    LibraryWorkflowPreset.FAILED_INCOMPLETE: "Failed / incomplete",
+}
+
+_SORT_LABELS: dict[LibrarySort, str] = {
+    LibrarySort.RECENTLY_WORKED: "Recently worked on",
+    LibrarySort.RECENTLY_ADDED: "Recently added",
+    LibrarySort.NAME: "Name",
+    LibrarySort.DURATION: "Duration",
+    LibrarySort.ANALYSIS_COMPLETION: "Analysis completion",
+}
+
+_LIBRARY_PAGE_SIZE = 25
 
 
 def _resolve_audio_for_transcript(transcript_path: Path) -> Path | None:
-    """Resolve linked audio file path for a transcript, if present."""
     try:
         candidate = find_original_audio_file(str(transcript_path))
         if candidate:
@@ -75,163 +105,217 @@ def _resolve_audio_for_transcript(transcript_path: Path) -> Path | None:
     return None
 
 
-def _speaker_stats_for_path(
-    summary_by_path: dict[str, object],
-    transcript_path: Path,
-    fallback_total: int | None,
-) -> tuple[str, str, str]:
-    """
-    Return (fully_mapped_mark, identified_count, ignored_count) for the table row.
-
-    Values are derived from Speaker Studio transcript summaries so Library and
-    Speaker ID use the same completeness semantics.
-    """
-    summary = summary_by_path.get(str(transcript_path.resolve()))
-    if summary is None:
-        return "—", "-", "-"
-
-    status = str(getattr(summary, "speaker_map_status", "none") or "none")
-    fully_mapped = "✓" if status == "complete" else "—"
-    ignored = int(getattr(summary, "ignored_speaker_count", 0) or 0)
-    unidentified = int(getattr(summary, "unidentified_speaker_count", 0) or 0)
-    total = fallback_total
-    if total is None:
-        total = int(getattr(summary, "unique_speaker_count", 0) or 0)
-    identified = max(int(total or 0) - ignored - unidentified, 0)
-    return fully_mapped, str(identified), str(ignored)
+def _row_by_path(rows: list[InventoryRow], transcript_path: str | Path | None) -> InventoryRow | None:
+    if not transcript_path:
+        return None
+    target = tolerant_resolve(transcript_path)
+    for row in rows:
+        if paths_match(row.transcript_path, target):
+            return row
+    return None
 
 
-def _build_library_rows(transcripts: list) -> list[dict[str, str]]:
-    rows = []
-    for m in transcripts:
-        transcript_path = Path(m.path)
-        rows.append(
-            {
-                "Name": m.base_name,
-                "Path": str(transcript_path),
-                "Date Created": _format_path_created_at(transcript_path),
-                "Speakers": ("-" if m.speaker_count is None else str(m.speaker_count)),
-                "Duration": format_duration_display_from_config(m.duration_seconds),
-            }
-        )
-    return rows
-
-
-def _load_selected_transcript_summary(selected_path: Path) -> object | None:
-    summaries = instrument_cached_call(
-        "cached_get_transcript_summaries_for_paths",
-        cached_get_transcript_summaries_for_paths,
-        (str(selected_path.resolve()),),
-        bucket="segment_metadata_load",
+def _current_library_filter() -> LibraryFilter:
+    preset_raw = st.session_state.get(
+        LIBRARY_FILTER_PRESET_KEY, LibraryWorkflowPreset.ALL.value
     )
-    return summaries[0] if summaries else None
-
-
-def _enrich_selected_transcript(selected_light) -> object:
-    """Load full metadata for one selected path; fall back to the light stub."""
     try:
-        return instrument_cached_call(
-            "get_cached_transcript_metadata",
-            get_cached_transcript_metadata,
-            selected_light.path,
-            bucket="segment_metadata_load",
+        preset = LibraryWorkflowPreset(preset_raw)
+    except ValueError:
+        preset = LibraryWorkflowPreset.ALL
+    sort_raw = st.session_state.get(
+        LIBRARY_FILTER_SORT_KEY, LibrarySort.RECENTLY_WORKED.value
+    )
+    try:
+        sort = LibrarySort(sort_raw)
+    except ValueError:
+        sort = LibrarySort.RECENTLY_WORKED
+    source = st.session_state.get(LIBRARY_FILTER_SOURCE_KEY) or None
+    if source in {"", "All"}:
+        source = None
+    return LibraryFilter(
+        preset=preset,
+        query=str(st.session_state.get(LIBRARY_FILTER_QUERY_KEY) or ""),
+        sort=sort,
+        source_id=source,
+    )
+
+
+def _filter_fingerprint(library_filter: LibraryFilter) -> tuple[str, str, str, str]:
+    return (
+        library_filter.preset.value,
+        library_filter.query,
+        library_filter.sort.value,
+        library_filter.source_id or "",
+    )
+
+
+def _row_widget_key(row: InventoryRow) -> str:
+    digest = hashlib.sha1(str(row.transcript_path).encode("utf-8")).hexdigest()[:12]
+    return f"lib_row_{digest}"
+
+
+def _sync_list_page(library_filter: LibraryFilter, visible_count: int) -> int:
+    """Reset page on filter change; clamp to available pages. Returns 1-based page."""
+    fingerprint = _filter_fingerprint(library_filter)
+    previous = st.session_state.get(LIBRARY_LIST_FILTER_FINGERPRINT_KEY)
+    if previous is not None and previous != fingerprint:
+        st.session_state[LIBRARY_LIST_PAGE_KEY] = 1
+    st.session_state[LIBRARY_LIST_FILTER_FINGERPRINT_KEY] = fingerprint
+
+    total_pages = max(1, (visible_count + _LIBRARY_PAGE_SIZE - 1) // _LIBRARY_PAGE_SIZE)
+    page = int(st.session_state.get(LIBRARY_LIST_PAGE_KEY) or 1)
+    if page < 1:
+        page = 1
+    if page > total_pages:
+        page = total_pages
+    st.session_state[LIBRARY_LIST_PAGE_KEY] = page
+    return page
+
+
+def _render_library_list(visible: list[InventoryRow], page: int) -> None:
+    total = len(visible)
+    if total == 0:
+        st.caption("No transcripts match these filters.")
+        return
+
+    start = (page - 1) * _LIBRARY_PAGE_SIZE
+    end = min(start + _LIBRARY_PAGE_SIZE, total)
+    page_rows = visible[start:end]
+    selected_raw = st.session_state.get(LIBRARY_SELECTED_TRANSCRIPT_PATH)
+    selected_path = tolerant_resolve(selected_raw) if selected_raw else None
+
+    for row in page_rows:
+        is_selected = bool(
+            selected_path and paths_match(row.transcript_path, selected_path)
         )
-    except Exception:
-        return selected_light
+        if st.button(
+            row.title,
+            key=_row_widget_key(row),
+            type="primary" if is_selected else "secondary",
+            width="stretch",
+        ):
+            st.session_state[LIBRARY_SELECTED_TRANSCRIPT_PATH] = str(
+                row.transcript_path
+            )
+            st.rerun()
+        st.caption(inventory_list_caption(row))
+
+    st.caption(f"Showing {start + 1}–{end} of {total}")
+    total_pages = max(1, (total + _LIBRARY_PAGE_SIZE - 1) // _LIBRARY_PAGE_SIZE)
+    if total_pages > 1:
+        prev_col, next_col = st.columns(2)
+        with prev_col:
+            if st.button(
+                "Previous",
+                key="library_list_prev",
+                icon=ic.CHEVRON_LEFT,
+                disabled=page <= 1,
+                width="stretch",
+            ):
+                st.session_state[LIBRARY_LIST_PAGE_KEY] = page - 1
+                st.rerun()
+        with next_col:
+            if st.button(
+                "Next",
+                key="library_list_next",
+                icon=ic.CHEVRON_RIGHT,
+                disabled=page >= total_pages,
+                width="stretch",
+            ):
+                st.session_state[LIBRARY_LIST_PAGE_KEY] = page + 1
+                st.rerun()
 
 
 @st.fragment
-def _library_browser_fragment(transcripts: list) -> None:
-    """Transcript table and actions without full-app rerun."""
-    rows = _build_library_rows(transcripts)
-    df = pd.DataFrame(rows)
-    show_path_col = st.toggle(
-        "Show path column",
-        value=False,
-        key="library_show_path",
-        help=widget_help("Include the on-disk managed path in the library table."),
+def _library_browser_fragment(rows: list[InventoryRow]) -> None:
+    consume_library_nav(st.session_state)
+    st.session_state.setdefault(
+        LIBRARY_FILTER_PRESET_KEY, LibraryWorkflowPreset.ALL.value
     )
-    show_detailed_metadata = st.toggle(
-        "Show detailed metadata",
-        value=False,
-        key="library_show_detailed_metadata",
-        help=widget_help(
-            "After selection, show richer sidecars (speaker map, recording link, etc.)."
-        ),
+    st.session_state.setdefault(
+        LIBRARY_FILTER_SORT_KEY, LibrarySort.RECENTLY_WORKED.value
     )
-    display_df = df if show_path_col else df.drop(columns=["Path"])
-    if show_detailed_metadata:
-        st.caption("Detailed metadata loads after you select a transcript.")
-    st.dataframe(
-        display_df,
-        width="stretch",
-        hide_index=True,
-    )
-
-    st.divider()
-    st.subheader("Selected Transcript")
-    consume_library_transcript_nav(st.session_state, transcripts)
+    st.session_state.setdefault(LIBRARY_LIST_PAGE_KEY, 1)
     current_path = SubjectService.current_transcript_path(st.session_state)
-    default_idx = (
-        library_transcript_index(transcripts, current_path) if current_path else 0
+    if current_path and not st.session_state.get(LIBRARY_SELECTED_TRANSCRIPT_PATH):
+        st.session_state[LIBRARY_SELECTED_TRANSCRIPT_PATH] = str(
+            tolerant_resolve(current_path)
+        )
+
+    query_col, preset_col, sort_col = st.columns([2, 2, 1.4])
+    with query_col:
+        st.text_input(
+            "Search transcripts",
+            key=LIBRARY_FILTER_QUERY_KEY,
+            placeholder="Title or filename",
+            help=widget_help("Filters the library by title or filename, not transcript text."),
+        )
+    with preset_col:
+        st.pills(
+            "Workflow",
+            options=[preset.value for preset in LibraryWorkflowPreset],
+            format_func=lambda value: _PRESET_LABELS[LibraryWorkflowPreset(value)],
+            key=LIBRARY_FILTER_PRESET_KEY,
+            help=widget_help("Slice the corpus by workflow state."),
+        )
+    with sort_col:
+        st.selectbox(
+            "Sort",
+            options=[item.value for item in LibrarySort],
+            format_func=lambda value: _SORT_LABELS[LibrarySort(value)],
+            key=LIBRARY_FILTER_SORT_KEY,
+        )
+
+    sources = sorted({row.source_id for row in rows if row.source_id})
+    with st.expander("Property filters", expanded=False):
+        st.selectbox(
+            "Source",
+            options=["All", *sources],
+            key=LIBRARY_FILTER_SOURCE_KEY,
+            help=widget_help("Import adapter / source type."),
+        )
+
+    library_filter = _current_library_filter()
+    visible = apply_library_filter(rows, library_filter)
+    st.caption(f"{len(visible)} of {len(rows)} transcripts")
+    page = _sync_list_page(library_filter, len(visible))
+    _render_library_list(visible, page)
+
+    selected = _row_by_path(
+        rows, st.session_state.get(LIBRARY_SELECTED_TRANSCRIPT_PATH)
     )
-    selected_idx = st.selectbox(
-        "Select transcript",
-        range(len(transcripts) + 1),
-        format_func=lambda i: (
-            SELECTBOX_PLACEHOLDER_TRANSCRIPT if i == 0 else transcripts[i - 1].base_name
-        ),
-        index=default_idx,
-        key="library_transcript_select",
-    )
-    if selected_idx == 0:
+    if selected is None:
         return
 
-    selected_light = transcripts[selected_idx - 1]
-    selected = _enrich_selected_transcript(selected_light)
     SubjectService.set_transcript_context_from_path(
         st.session_state,
-        selected.path,
-        linked_run_dirs=selected.linked_run_dirs,
+        selected.transcript_path,
+        linked_run_dirs=[],
     )
-    st.caption(f"Path: {selected.path}")
-    st.caption(
-        f"Duration: {format_duration_display_from_config(selected.duration_seconds)}"
-    )
-    st.caption(
-        f"Speakers: {'-' if selected.speaker_count is None else selected.speaker_count}"
-    )
+    _render_inspector(selected)
 
-    if show_detailed_metadata:
-        summary = _load_selected_transcript_summary(Path(selected.path))
-        fully_mapped, identified_count, ignored_count = _speaker_stats_for_path(
-            (
-                {str(Path(selected.path).resolve()): summary}
-                if summary is not None
-                else {}
-            ),
-            Path(selected.path),
-            selected.speaker_count,
-        )
-        audio_path = _resolve_audio_for_transcript(Path(selected.path))
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.caption(f"Has Audio: {'✓' if audio_path is not None else '—'}")
-            st.caption(f"Has Analysis: {'✓' if selected.has_analysis_outputs else '—'}")
-        with col2:
-            st.caption(f"Fully Mapped: {fully_mapped}")
-            st.caption(f"Identified: {identified_count}")
-        with col3:
-            st.caption(f"Ignored: {ignored_count}")
-            st.caption(
-                f"Date Recorded: {_format_path_created_at(audio_path) if audio_path else '—'}"
-            )
 
-    subject_id = selected.path.stem
-    identity = build_canonical_identity(
-        subject_type="transcript",
+def _render_inspector(selected: InventoryRow) -> None:
+    st.divider()
+    st.subheader(selected.title)
+    duration = format_duration_display_from_config(selected.duration_seconds)
+    speakers = "—" if selected.speaker_count is None else f"{selected.speaker_count} speakers"
+    words = (
+        f"{selected.word_count:,} words" if selected.word_count is not None else "— words"
+    )
+    st.caption(f"{duration} · {speakers} · {words}")
+    st.caption(f"Speaker identification: {format_speaker_id_label(selected.speaker)}")
+    st.caption(f"Corrections: {format_corrections_label(selected.corrections)}")
+    st.caption(f"Analysis: {format_analysis_label(selected.analysis)}")
+    last_analysed = format_short_date(selected.analysis.last_analysed_at)
+    st.caption(f"Last analysed: {last_analysed}")
+
+    subject_id = selected.slug or selected.transcript_path.stem
+    identity = build_transcript_identity_with_run(
         subject_id=subject_id,
-        transcript_path=selected.path,
+        transcript_path=selected.transcript_path,
+        run_id=selected.analysis.latest_run_id,
     )
     ctx = ActionContext(
         identity=identity,
@@ -239,26 +323,46 @@ def _library_browser_fragment(transcripts: list) -> None:
         nav_style=NavStyle.CLICK_RERUN,
         instance_prefix="lib",
         rename_supported=True,
+        export_supported=selected.analysis.latest_run_id is not None,
+        run_completed=selected.analysis.status.value == "completed",
     )
-    render_configured_actions(SectionId.LIBRARY_SELECTED, ctx)
+    primary = render_configured_actions(SectionId.LIBRARY_SELECTED, ctx)
+    overflow = [
+        action
+        for action in SECTION_ALLOWLISTS[SectionId.LIBRARY_SELECTED]
+        if action not in primary
+    ]
+    with st.popover("⋯"):
+        st.caption(f"Path: {selected.transcript_path}")
+        audio_path = _resolve_audio_for_transcript(selected.transcript_path)
+        st.caption(f"Audio: {'✓' if audio_path is not None else '—'}")
+        for action in overflow:
+            if action is ActionId.EXPORT_ZIP:
+                continue
+            key = action_widget_key(
+                instance_prefix=ctx.instance_prefix,
+                section=SectionId.LIBRARY_SELECTED,
+                widget_identity=f"{ctx.widget_identity}_more",
+                action=action,
+            )
+            render_action(action, ctx, section=SectionId.LIBRARY_SELECTED, key=key)
 
 
 def render_library() -> None:
     """Render the transcript library page."""
     render_page_shell(
         "Library",
-        "Browse transcripts quickly, then load detailed metadata only for the selected transcript.",
+        _LIBRARY_DESCRIPTION,
         actions=None,
     )
 
     try:
-        transcripts = instrument_cached_call(
-            "cached_list_transcript_picker_options",
-            get_cached_light_transcript_metadata,
+        rows = instrument_cached_call(
+            "cached_corpus_inventory",
+            get_cached_corpus_inventory,
             bucket="transcript_discovery",
         )
-
-        if not transcripts:
+        if not rows:
             render_empty_state(
                 "no_results_yet",
                 "No transcripts found",
@@ -267,7 +371,6 @@ def render_library() -> None:
                 secondary_action=("Transcribe Audio", "Transcribe Audio"),
             )
             return
-        _library_browser_fragment(transcripts)
-
+        _library_browser_fragment(rows)
     except Exception as e:
         st.error(f"Could not load library: {e}")

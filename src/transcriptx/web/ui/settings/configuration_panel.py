@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.config import (
     COMMON_SETTINGS_SCHEMA,
     build_registry,
@@ -241,6 +242,7 @@ def render_configuration_panel(
     with st.expander("View full JSON", expanded=False):
         st.download_button(
             "Download JSON",
+            icon=ic.DOWNLOAD,
             data=json.dumps(effective_config, indent=2),
             file_name=dl_name,
             mime="application/json",
@@ -442,7 +444,12 @@ def render_configuration_panel(
 
         col_save, col_reset, col_revert = st.columns(3)
         with col_save:
-            if st.button(save_btn, disabled=not can_save, key="settings_config_save"):
+            if st.button(
+                save_btn,
+                disabled=not can_save,
+                key="settings_config_save",
+                icon=ic.SAVE,
+            ):
                 if scope == "Project":
                     save_project_config(draft_config)
                 elif scope == "Draft override":
@@ -452,10 +459,12 @@ def render_configuration_panel(
                 st.success(f"Saved **{save_label_scope}** to `{save_path}`.")
                 st.rerun()
         with col_reset:
-            if st.button("Reset", key="settings_config_reset"):
+            if st.button("Reset", key="settings_config_reset", icon=ic.RESET):
                 st.session_state[_DRAFT_STATE_KEY] = copy.deepcopy(base_config)
                 st.rerun()
         with col_revert:
-            if st.button("Revert to defaults", key="settings_config_revert"):
+            if st.button(
+                "Revert to defaults", key="settings_config_revert", icon=ic.UNDO
+            ):
                 st.session_state[_DRAFT_STATE_KEY] = copy.deepcopy(defaults)
                 st.rerun()

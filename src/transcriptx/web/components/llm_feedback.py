@@ -6,6 +6,7 @@ from typing import Any, Mapping
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.llm_feedback.errors import (
     LlmFeedbackError,
     LlmFeedbackPersistenceError,
@@ -115,7 +116,8 @@ def render_llm_feedback_thumbs(
         up_col, down_col = st.columns(2)
         with up_col:
             if st.button(
-                ":material/thumb_up:",
+                "",
+                icon=ic.THUMB_UP,
                 key=f"llm_fb_up_{key_base}",
                 help=widget_help("Rate this model output helpful"),
                 type="tertiary",
@@ -126,7 +128,8 @@ def render_llm_feedback_thumbs(
                 _ensure_submission_token(instance_id)
         with down_col:
             if st.button(
-                ":material/thumb_down:",
+                "",
+                icon=ic.THUMB_DOWN,
                 key=f"llm_fb_down_{key_base}",
                 help=widget_help("Rate this model output not helpful"),
                 type="tertiary",
@@ -223,6 +226,7 @@ def render_llm_feedback_form(
             submit = st.button(
                 "Submit feedback",
                 key=f"llm_fb_submit_{key_base}",
+                icon=ic.SEND,
                 type="primary",
                 width="content",
             )
@@ -230,6 +234,7 @@ def render_llm_feedback_form(
             if st.button(
                 "Cancel",
                 key=f"llm_fb_cancel_{key_base}",
+                icon=ic.CANCEL,
                 type="tertiary",
                 width="content",
             ):

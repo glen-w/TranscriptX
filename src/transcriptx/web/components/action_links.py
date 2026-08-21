@@ -6,6 +6,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 import streamlit as st
+from transcriptx.web import icons as ic
 from transcriptx.web.components.info_tooltip import widget_help
 
 # Streamlit exposes widget keys as ``st-key-<key>`` CSS classes; this prefix
@@ -53,7 +54,7 @@ def render_download_link(
     data: Any,
     file_name: str,
     key: str,
-    icon: str = ":material/download:",
+    icon: str = ic.DOWNLOAD,
     mime: str | None = None,
     help: str | None = None,
     disabled: bool = False,

@@ -372,6 +372,66 @@ def inject_global_styles() -> None:
     #scroll-to-top-btn.show {
         display: block;
     }
+    /* Global analysis progress — fixed top-right while a run is active off-page */
+    div[data-testid="stVerticalBlock"]:has(> div.tx-global-run-progress-flag),
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.tx-global-run-progress-flag) {
+        position: fixed;
+        top: 0.65rem;
+        right: 0.85rem;
+        z-index: 1100;
+        width: min(22rem, calc(100vw - 1.7rem));
+        margin: 0 !important;
+        padding: 0.55rem 0.65rem 0.5rem 0.65rem;
+        background: var(--background-color, #0e1117);
+        border: 1px solid rgba(250, 250, 250, 0.14);
+        border-radius: 8px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+    }
+    .tx-global-run-progress {
+        font-size: 0.78rem;
+        line-height: 1.3;
+        color: #c5d0de;
+    }
+    .tx-global-run-progress__row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+    .tx-global-run-progress__title {
+        font-weight: 600;
+        color: #e8eef6;
+    }
+    .tx-global-run-progress__meta {
+        font-size: 0.7rem;
+        color: #8a9ab0;
+        white-space: nowrap;
+    }
+    .tx-global-run-progress__detail {
+        margin-top: 0.2rem;
+        color: #8a9ab0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .tx-global-run-progress__track {
+        margin-top: 0.4rem;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(250, 250, 250, 0.12);
+        overflow: hidden;
+    }
+    .tx-global-run-progress__fill {
+        height: 100%;
+        border-radius: 2px;
+        background: #1f77b4;
+        transition: width 0.25s ease;
+    }
+    .tx-global-run-progress__pct {
+        margin-top: 0.2rem;
+        font-size: 0.68rem;
+        color: #8a9ab0;
+    }
     /* Run Analysis sticky footer — keyed via .tx-run-analysis-footer flag */
     .main .block-container {
         padding-bottom: 5.5rem;

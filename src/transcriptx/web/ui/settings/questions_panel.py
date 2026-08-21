@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.analysis.llm_custom_qa.request_questions import (
     structured_library_from_settings,
 )
@@ -74,11 +75,11 @@ def render_questions_panel() -> None:
                 help=widget_help("Ask separately for each linked speaker profile."),
             )
         with c4:
-            if st.button("✕", key=f"settings_qa_rm_{i}"):
+            if st.button("", key=f"settings_qa_rm_{i}", icon=ic.CLOSE):
                 to_remove.append(i)
     for i in reversed(to_remove):
         rows.pop(i)
-    if st.button("Add question", key="settings_qa_add"):
+    if st.button("Add question", key="settings_qa_add", icon=ic.ADD):
         rows.append({"text": "", "global": True, "per_speaker": False})
 
     st.markdown("#### Evidence catalog")
@@ -124,7 +125,9 @@ def render_questions_panel() -> None:
         f"{cfg.max_library_total_question_chars} total chars, "
         f"{cfg.max_question_chars} chars each."
     )
-    if st.button("Save library", type="primary", key="settings_questions_save"):
+    if st.button(
+        "Save library", type="primary", key="settings_questions_save", icon=ic.SAVE
+    ):
         payload = []
         for row in rows:
             text = (row.get("text") or "").strip()

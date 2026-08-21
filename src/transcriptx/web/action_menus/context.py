@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from transcriptx.core.utils.paths import OUTPUTS_DIR
 from transcriptx.web.action_menus.ids import NavStyle
 
 
@@ -97,6 +98,24 @@ def build_canonical_identity(
         transcript_path=tp,
         run_id=rid,
         run_dir=rd,
+    )
+
+
+def build_transcript_identity_with_run(
+    *,
+    subject_id: str,
+    transcript_path: Path | str | None = None,
+    run_id: str | None = None,
+) -> CanonicalIdentity:
+    """Transcript identity; pairs ``run_id`` with ``OUTPUTS_DIR/subject_id/run_id``."""
+    rid = (run_id or "").strip() or None
+    run_dir = Path(OUTPUTS_DIR) / subject_id.strip() / rid if rid else None
+    return build_canonical_identity(
+        subject_type="transcript",
+        subject_id=subject_id,
+        transcript_path=transcript_path,
+        run_id=rid,
+        run_dir=run_dir,
     )
 
 

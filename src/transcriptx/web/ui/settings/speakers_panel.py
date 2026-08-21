@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.web.speaker_profile_signals import (
     INCLUDE_IGNORED_SESSION_KEY,
     SHOW_ARCHIVED_SESSION_KEY,
@@ -115,6 +116,7 @@ def _render_bulk_voice_ops() -> None:
     if st.button(
         "Refresh enrol inventory",
         key="voice_bulk_enrol_preview_btn",
+        icon=ic.REFRESH,
     ):
         try:
             preview = BulkVoiceOpsService().preview_enrol_all_profiles()
@@ -154,6 +156,7 @@ def _render_bulk_voice_ops() -> None:
             if st.button(
                 "Enrol trusted voice for all profiles",
                 type="primary",
+                icon=ic.VOICE,
                 key="voice_bulk_enrol_all_btn",
                 help=widget_help(
                     (
@@ -194,6 +197,7 @@ def _render_bulk_voice_ops() -> None:
     if st.button(
         "Refresh suggestion inventory",
         key="voice_bulk_preload_preview_btn",
+        icon=ic.REFRESH,
     ):
         try:
             preview = BulkVoiceOpsService().preview_preload_suggestions()
@@ -240,6 +244,7 @@ def _render_bulk_voice_ops() -> None:
     if st.button(
         "Pre-load voice suggestions",
         type="primary",
+        icon=ic.VOICE,
         key="voice_bulk_preload_btn",
         help=widget_help(
             (
@@ -350,6 +355,7 @@ def render_speakers_panel() -> None:
             if st.button(
                 "Replace settings and enable voice matching",
                 key="voice_privacy_enable_replace",
+                icon=ic.APPLY,
                 type="primary",
             ):
                 try:
@@ -411,6 +417,7 @@ def render_speakers_panel() -> None:
             if st.button(
                 "Save enrol link cap",
                 key="voice_operator_save_bootstrap_max_links",
+                icon=ic.SAVE,
             ):
                 try:
                     desired = int(st.session_state["voice_bootstrap_max_links"])
@@ -437,6 +444,7 @@ def render_speakers_panel() -> None:
                 if st.button(
                     "Revoke voice matching consent",
                     key="voice_privacy_revoke",
+                    icon=ic.REJECT,
                     disabled=not st.session_state.get(
                         "voice_privacy_revoke_confirm", False
                     ),
@@ -468,7 +476,7 @@ def render_speakers_panel() -> None:
                 wipe_key = ensure_idempotency_key(
                     st.session_state, "voice_privacy_wipe_resume"
                 )
-                if st.button("Resume voice wipe", key="voice_wipe_resume"):
+                if st.button("Resume voice wipe", key="voice_wipe_resume", icon=ic.REPLAY):
                     try:
                         from transcriptx.core.speaker_profiles.voice.wipe import (
                             VoiceWipeService,
@@ -496,6 +504,7 @@ def render_speakers_panel() -> None:
                 if st.button(
                     "Enable local voice matching",
                     key="voice_privacy_enable",
+                    icon=ic.CHECK_CIRCLE,
                     type="primary",
                 ):
                     try:

@@ -12,6 +12,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.components.empty_state import render_empty_state
@@ -24,9 +25,9 @@ from transcriptx.web.services.search_service import (
 from transcriptx.web.services.subject_service import SubjectService
 
 _SEARCH_DESCRIPTION = (
-    "Enter at least 3 characters — global search waits until you type a short "
-    "query to avoid noisy matches. Optionally scope to the current transcript "
-    "when one is selected in the sidebar."
+    "Find phrases inside transcripts. Library finds and manages documents; "
+    "this page searches transcript content. Enter at least 3 characters — "
+    "optionally scope to the current transcript when one is selected."
 )
 
 
@@ -111,7 +112,7 @@ def _render_results_section(
             if render_action_link(
                 "Jump to segment",
                 key=f"jump_{result.session_slug}_{result.run_id}_{result.segment_index}_{title}",
-                icon=":material/my_location:",
+                icon=ic.TARGET,
             ):
                 from transcriptx.web.app import navigate_to_segment
 

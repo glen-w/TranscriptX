@@ -55,6 +55,8 @@ which whispermlx
 
 If not found, set `WHISPERMLX` in `whisperx.env` at the repo root to the full binary path.
 
+**Host note (macOS whispermlx):** pyannote may dump a long `torchcodec is not installed correctly` warning (FFmpeg ABI / PyTorch mismatch while probing libtorchcodec). If VAD and transcription continue and segments appear, treat it as noise — whispermlx usually hands pyannote a preloaded waveform. Worth aligning torchcodec + PyTorch + FFmpeg only if a later job needs pyannote to decode a file path directly and fails.
+
 ### Environment defaults (`whisperx.env`)
 
 Copy `docs/recipes/whisperx/whisperx.env.example` to `whisperx.env` and configure:
@@ -115,8 +117,10 @@ It processes MP3s in a source folder that lack matching JSON in a transcripts ou
 | Source | Meaning |
 |--------|---------|
 | `TRANSCRIPTX_TRANSCRIPTS_DIR` env | Transcripts **base** directory; script appends `/originals` for batch output |
-| `transcripts` in JSON or `--transcripts` CLI | Exact **output** directory (no `/originals` append; use `.../originals` explicitly if desired) |
+| `transcripts` in JSON or `--transcripts` CLI | Exact **output** directory — must be `…/transcripts/originals` (scripts refuse the managed library root that contains `metadata/` / `imports/`) |
 | `TRANSCRIPTX_RECORDINGS_DIR` env | Maps directly to `source` (recordings folder) |
+
+Host helpers never admit into the managed library. Raw engine JSON belongs under `originals/`; library admission requires **Import Transcript** or Settings → Watcher (`admit_and_register`), which writes canonical `schema_version` / `source` markers plus an import sidecar.
 
 **`whisperx.env`** is used only for the whispermlx **subprocess** environment (`HF_TOKEN`, etc.), not for resolving config paths. Repo `.env` is loaded early (without overriding existing shell env) for `TRANSCRIPTX_*` path overrides — same pattern as Docker/native TranscriptX.
 
@@ -154,7 +158,47 @@ inbox-watch --once --inbox … --recordings … --transcripts …
 inbox-watch --watch --interval 5
 ```
 
-ffmpeg (audio mode): `-nostdin -y -ac 1 -ar 16000 -c:a libmp3lame -b:a 64k`. Writes a temp file then renames into recordings so `whispermlx-missing` never sees a half-written MP3.
+ffmpeg (audio mode): `-nostdin -y -ac 1 -ar 16000 -c:a libmp3lame -b:a 64k -f mp3`. Writes a temp `.mp3.partial` file then renames into recordings so `whispermlx-missing` never sees a half-written MP3. `-f mp3` is required so ffmpeg 8+ can mux even when the temp name does not end in `.mp3`.
+
+#### Terminal feedback
+
+Host output mirrors the analysis CLI **Review before run** / **Run summary** shape (plain text; the script does not import `transcriptx` or Rich):
+
+1. **Review before cycle** — inbox / recordings / transcripts paths, modes, and candidate file list
+2. **Processing** — `[i/n] audio|transcript: filename`, then indented convert/copy/skip lines; long encodes print elapsed time and stream ffmpeg `time=` / `speed=` on **stderr**
+3. **Transcription (whispermlx-missing)** — when audio mode ran (child process output follows)
+4. **Run summary** — `Status` (`completed` / `partial` / `failed` / `dry-run`), counts, and limited bullet lists for converted / skipped / failed
+
+Example (abbreviated):
+
+```text
+---
+Review before cycle
+---
+  Mode:        once
+  Inbox:       /Volumes/USB-DISK/RECORD
+  Candidates:  1 (1 audio, 0 transcript)
+  Will consider:
+    • audio: R20260814-175320.WAV
+---
+---
+Processing
+---
+[1/1] audio: R20260814-175320.WAV
+  Converting: R20260814-175320.WAV -> R20260814-175320.mp3 (… GiB)
+  ffmpeg progress on stderr (time=/speed=)…
+  Converted: R20260814-175320.WAV -> R20260814-175320.mp3 (… MiB) in 123.4s
+---
+---
+Run summary
+---
+  Status:   completed
+  Converted: 1
+  …
+---
+```
+
+Long WAV→MP3 converts can take minutes with little stdout while ffmpeg prints progress on stderr — that is expected. Ctrl-C stops the cycle (`Stopped.`); a half-written `.mp3.partial` is discarded on the next failed/interrupted convert.
 
 Inbox sources are **kept by default**. After a successful convert (audio) or copy (transcript):
 
@@ -252,7 +296,7 @@ docker run --rm \
   /bin/bash -c "whisperx /data/input/your_audio.wav --output_dir /data/output"
 ```
 
-WhisperX writes JSON with segments (often with `words` arrays). TranscriptX can load that format, but for managed library admission use the managed workflow API (below) so sidecar + archive are created.
+WhisperX writes JSON with segments (often with `words` arrays). That raw shape is an **import source**, not a library transcript: use the managed workflow API (below) so canonical `schema_version` / `source` / `metadata`, sidecar, and archive are created. Runtime loaders (`load_segments`, Speaker ID, analysis) accept only managed canonical artifacts.
 
 ### Whisper-WebUI (optional Gradio example)
 

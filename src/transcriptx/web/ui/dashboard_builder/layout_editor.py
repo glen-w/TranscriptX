@@ -7,6 +7,7 @@ from typing import Any
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.web.blocks.registry import get_block, list_blocks, list_blocks_by_group
 from transcriptx.web.layouts.specs import (
     BlockPlacementModel,
@@ -253,7 +254,8 @@ def render_layout_editor(layout_id: str) -> None:
                 st.rerun()
         with cols[2]:
             if st.button(
-                "↑",
+                "",
+                icon=ic.MOVE_UP,
                 key=f"dashboard_builder_up_{layout_id}_{row.placement_id}",
                 disabled=builtin or view_ix == 0,
             ):
@@ -268,7 +270,8 @@ def render_layout_editor(layout_id: str) -> None:
                 st.rerun()
         with cols[3]:
             if st.button(
-                "↓",
+                "",
+                icon=ic.MOVE_DOWN,
                 key=f"dashboard_builder_down_{layout_id}_{row.placement_id}",
                 disabled=builtin or view_ix >= len(view) - 1,
             ):
@@ -284,6 +287,7 @@ def render_layout_editor(layout_id: str) -> None:
         with cols[4]:
             if st.button(
                 "Remove",
+                icon=ic.REMOVE,
                 key=f"dashboard_builder_rm_{layout_id}_{row.placement_id}",
                 disabled=builtin,
             ):
@@ -330,6 +334,7 @@ def render_layout_editor(layout_id: str) -> None:
     if st.button(
         "Add selected blocks",
         key="dashboard_builder_add_btn",
+        icon=ic.ADD,
         disabled=builtin or not pick,
     ):
         for label in pick:
@@ -380,7 +385,11 @@ def render_layout_editor(layout_id: str) -> None:
                 value=False,
                 key="dashboard_builder_edit_overwrite_confirm",
             )
-        if st.button("Save as custom layout", key="dashboard_builder_edit_save_as_btn"):
+        if st.button(
+            "Save as custom layout",
+            key="dashboard_builder_edit_save_as_btn",
+            icon=ic.SAVE,
+        ):
             try:
                 slug = slugify_layout_id(new_id or "")
                 if LayoutProfileStore.custom_layout_exists(slug) and not overwrite_ok:
@@ -410,7 +419,9 @@ def render_layout_editor(layout_id: str) -> None:
         return
 
     st.subheader("Save layout")
-    if st.button("Save layout", key="dashboard_builder_save_layout_btn"):
+    if st.button(
+        "Save layout", key="dashboard_builder_save_layout_btn", icon=ic.SAVE
+    ):
         try:
             updated = apply_page_placements(layout, edited)
             # Keep charts / other pages from original layout; validate full spec.
@@ -431,6 +442,7 @@ def render_layout_editor(layout_id: str) -> None:
     if st.button(
         "Delete custom layout",
         key="dashboard_builder_edit_delete_btn",
+        icon=ic.DELETE,
         disabled=not confirm_delete,
     ):
         try:

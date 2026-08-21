@@ -8,6 +8,7 @@ from typing import List
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.app.controllers.merge_controller import MergeController
 from transcriptx.app.models.requests import MergeRequest
 from transcriptx.app.models.results import MergeResult
@@ -277,6 +278,7 @@ def _render_detected_serial_groups(
         if st.button(
             f"Auto-merge selected groups ({len(selected)})",
             type="primary",
+            icon=ic.MERGE,
             key="audio_merge_auto_run",
             disabled=not deps_ready or not selected,
             help=widget_help("Merge each checked group using the Merge options above."),
@@ -306,6 +308,7 @@ def _render_detected_serial_groups(
                     if st.button(
                         "Restore",
                         key=f"audio_merge_restore_group_{group.dismissal_key}",
+                        icon=ic.RESTORE,
                         help=widget_help("Show this suggestion again."),
                     ):
                         restore_serial_group_in_session(
@@ -352,6 +355,7 @@ def _render_serial_group_card(group: SerialGroup) -> bool:
             if st.button(
                 "Open in Manual merge",
                 key=f"audio_merge_use_group_{group.dismissal_key}",
+                icon=ic.MERGE,
             ):
                 navigate_to_tools_tab(
                     st.session_state,
@@ -363,6 +367,7 @@ def _render_serial_group_card(group: SerialGroup) -> bool:
             if st.button(
                 "Hide",
                 key=f"audio_merge_hide_group_{group.dismissal_key}",
+                icon=ic.HIDE,
                 help=widget_help(
                     "Hide this suggestion. Use when these files are separate "
                     "sessions, not parts of one recording."
@@ -466,7 +471,9 @@ def _render_auto_merge_results(results: list[dict]) -> None:
             st.error(f"**{label}** failed")
             for err in result.errors:
                 st.error(err)
-    if st.button("Clear auto-merge results", key="audio_merge_clear_auto"):
+    if st.button(
+        "Clear auto-merge results", key="audio_merge_clear_auto", icon=ic.CLEAR
+    ):
         st.session_state.pop(_KEY_AUTO_RESULTS, None)
         st.rerun()
 
@@ -528,7 +535,10 @@ def _render_section_select(
             st.markdown(f"{i + 1}. **{label}**{meta_str}")
         with col_up:
             if i > 0 and st.button(
-                "↑", key=f"merge_up_{i}", help=widget_help("Move up")
+                "",
+                key=f"merge_up_{i}",
+                icon=ic.MOVE_UP,
+                help=widget_help("Move up"),
             ):
                 merged_order[i], merged_order[i - 1] = (
                     merged_order[i - 1],
@@ -541,7 +551,10 @@ def _render_section_select(
                     st.rerun()
         with col_down:
             if i < len(merged_order) - 1 and st.button(
-                "↓", key=f"merge_down_{i}", help=widget_help("Move down")
+                "",
+                key=f"merge_down_{i}",
+                icon=ic.MOVE_DOWN,
+                help=widget_help("Move down"),
             ):
                 merged_order[i], merged_order[i + 1] = (
                     merged_order[i + 1],
@@ -673,6 +686,7 @@ def _render_run_button(
     if st.button(
         f"Merge {n} files",
         type="primary",
+        icon=ic.MERGE,
         key="audio_merge_run",
         disabled=not deps_ready,
     ):
@@ -746,6 +760,7 @@ def _render_result(result: object) -> None:
                 if st.button(
                     "Preprocess merged file",
                     key="audio_merge_to_preprocess",
+                    icon=ic.GRAPHIC_EQ,
                 ):
                     navigate_to_tools_tab(
                         st.session_state,
@@ -757,6 +772,7 @@ def _render_result(result: object) -> None:
                 if st.button(
                     "Open Transcribe Audio",
                     type="primary",
+                    icon=ic.TRANSCRIBE,
                     key="audio_merge_transcribe_result",
                 ):
                     navigate_to_transcribe_with_paths(st.session_state, [r.output_path])

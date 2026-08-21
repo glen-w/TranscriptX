@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -10,6 +11,24 @@ import pytest
 
 from tests.web.streamlit_doubles import DummyHomeStreamlit
 from transcriptx.app.models.errors import ValidationError, WorkflowExecutionError
+
+
+def _patch_sync_batch_worker(monkeypatch, mod) -> None:
+    """Wait for the background worker so unit tests can assert in one render."""
+    start = mod._start_pending_batch_worker
+
+    def _sync(pending):
+        start(pending)
+        holder = DummyHomeStreamlit.session_state.get(mod._BATCH_WORKER_HOLDER_KEY)
+        if not isinstance(holder, dict):
+            raise AssertionError("batch worker holder missing")
+        for _ in range(200):
+            if holder.get("done"):
+                return
+            time.sleep(0.01)
+        raise AssertionError("batch worker did not finish")
+
+    monkeypatch.setattr(mod, "_start_pending_batch_worker", _sync)
 
 
 @pytest.mark.unit
@@ -300,6 +319,7 @@ def test_batch_panel_controller_exception_shows_error_and_clears_cache(
     monkeypatch.setattr(
         mod, "clear_run_listing_caches", lambda: cache_cleared.append(True)
     )
+    _patch_sync_batch_worker(monkeypatch, mod)
 
     mod.render_batch_analysis_panel()
 
@@ -365,6 +385,7 @@ def test_batch_panel_workflow_error_clears_prior_result(monkeypatch) -> None:
     monkeypatch.setattr(mod, "cached_get_module_info_list", lambda: [])
     monkeypatch.setattr(mod, "BatchController", _Ctrl)
     monkeypatch.setattr(mod, "clear_run_listing_caches", lambda: None)
+    _patch_sync_batch_worker(monkeypatch, mod)
 
     mod.render_batch_analysis_panel()
 
@@ -431,6 +452,7 @@ def test_batch_panel_success_replaces_prior_result(monkeypatch) -> None:
     monkeypatch.setattr(mod, "BatchController", _Ctrl)
     monkeypatch.setattr(mod, "clear_run_listing_caches", lambda: None)
     monkeypatch.setattr(mod, "_render_batch_result", lambda _r: None)
+    _patch_sync_batch_worker(monkeypatch, mod)
 
     mod.render_batch_analysis_panel()
 
@@ -445,7 +467,6 @@ def test_batch_panel_execute_binds_live_progress_not_spinner(monkeypatch) -> Non
     from transcriptx.app.models.requests import BatchAnalysisRequest
     from transcriptx.app.progress import make_initial_snapshot
 
-    progress_paints: list = []
     progress_args: list = []
 
     DummyHomeStreamlit.session_state = {
@@ -497,13 +518,10 @@ def test_batch_panel_execute_binds_live_progress_not_spinner(monkeypatch) -> Non
                 transcript_count=1,
             )
 
-    def _paint(snap, **_k):
-        progress_paints.append(dict(snap))
-
     monkeypatch.setattr(mod, "st", _BatchStreamlit)
     monkeypatch.setattr(progress_panel, "st", _BatchStreamlit)
-    monkeypatch.setattr(mod, "render_progress_panel", _paint)
-    monkeypatch.setattr(progress_panel, "render_progress_panel", _paint)
+    monkeypatch.setattr(mod, "render_progress_panel", lambda *_a, **_k: None)
+    monkeypatch.setattr(progress_panel, "render_progress_panel", lambda *_a, **_k: None)
     monkeypatch.setattr(mod, "_batch_ops_selection_fragment", lambda *_a, **_k: None)
     _stub_batch_config_ui(monkeypatch, mod)
     monkeypatch.setattr(
@@ -515,11 +533,11 @@ def test_batch_panel_execute_binds_live_progress_not_spinner(monkeypatch) -> Non
     monkeypatch.setattr(mod, "BatchController", _Ctrl)
     monkeypatch.setattr(mod, "clear_run_listing_caches", lambda: None)
     monkeypatch.setattr(mod, "_render_batch_result", lambda _r: None)
+    _patch_sync_batch_worker(monkeypatch, mod)
 
     mod.render_batch_analysis_panel()
 
     assert progress_args and progress_args[0] is not None
-    assert progress_paints, "live panel must paint during execute"
     snap = DummyHomeStreamlit.session_state[progress_panel.SNAPSHOT_KEY]
     assert snap["status"] == "completed"
     assert any("Analyzing alice.json" in line for line in snap.get("recent_logs", []))
@@ -530,9 +548,10 @@ def test_batch_ops_execute_contract_uses_live_panel() -> None:
     import transcriptx.web.page_modules.batch_ops as mod
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
-    assert "render_slot=progress_slot" in source
     assert "StreamlitProgressCallback" in source
     assert 'pending.get("form_cleared")' in source
+    assert 'key="batch_ops_cancel"' in source
+    assert 'key="batch_ops_skip"' in source
     assert 'with st.spinner("Running batch analysis...")' not in source
 
 

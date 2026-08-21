@@ -7,6 +7,7 @@ from typing import Any, Dict
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.analysis.highlights.post_process import (
     collect_highlight_quotes,
     stable_quote_id,
@@ -114,7 +115,7 @@ def _render_open_in_transcript_button(
 ) -> None:
     if not session_slug or not run_id or segment_index is None:
         return
-    if st.button("Open in transcript", key=button_key):
+    if st.button("Open in transcript", key=button_key, icon=ic.ARTICLE):
         navigate_highlight_to_transcript(
             session_slug=session_slug,
             run_id=run_id,
@@ -155,7 +156,7 @@ def _render_view_raw_file_link(
         )
     if artifact is None:
         return
-    if st.button("View raw file", key=link_key):
+    if st.button("View raw file", key=link_key, icon=ic.INVENTORY):
         navigate_to_data_artifact(artifact_id=artifact.id)
 
 
@@ -827,7 +828,9 @@ def _render_highlight_card(
                     session_slug
                     and run_id
                     and card.segment_index is not None
-                    and st.button("Play", key=f"hl_play_{index}_{card.event_key}")
+                    and st.button(
+                        "Play", key=f"hl_play_{index}_{card.event_key}", icon=ic.PLAY
+                    )
                 ):
                     navigate_highlight_to_transcript(
                         session_slug=session_slug,
@@ -957,6 +960,7 @@ def _highlights_browser_fragment(
             if st.button(
                 f"Show more ({len(eligible) - shown_count} remaining)",
                 key="highlights_show_more",
+                icon=ic.SHOW_MORE,
             ):
                 st.session_state["highlights_guided_shown"] = shown_count + page_size
                 st.rerun()
