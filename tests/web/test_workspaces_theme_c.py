@@ -13,6 +13,7 @@ from transcriptx.web.workspaces.clip_transport import (
 from transcriptx.web.workspaces.flags import speaker_id_workspace_component_enabled
 from transcriptx.web.workspaces.speaker_id_bridge import (
     build_workspace_data,
+    command_from_workspace_result,
     stable_workspace_key,
 )
 
@@ -98,6 +99,20 @@ def test_stable_workspace_key_is_transcript_scoped() -> None:
     b = stable_workspace_key("/data/b.json")
     assert a.startswith("speaker_id_ws:")
     assert a != b
+
+
+def test_command_from_workspace_result_accepts_dict_and_attr() -> None:
+    assert command_from_workspace_result(None) is None
+    assert command_from_workspace_result({"command": None}) is None
+    assert command_from_workspace_result({"command": {}}) is None
+    envelope = {
+        "action": "navigate_jump",
+        "payload": {"target_speaker_id": "SPEAKER_01"},
+    }
+    assert command_from_workspace_result({"command": envelope}) == envelope
+    assert (
+        command_from_workspace_result(SimpleNamespace(command=envelope)) == envelope
+    )
 
 
 def test_build_workspace_data_uses_nonblocking_clips(tmp_path: Path) -> None:

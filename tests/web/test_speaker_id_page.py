@@ -58,6 +58,7 @@ def test_speaker_id_plain_rerun_whitelist() -> None:
         "_cb_next",
         "_cb_save_name",
         "_cb_ignore_toggle",
+        "_cb_ccv2_command",
     ):
         assert needle in source
         block = source.split(f"def {needle}", 1)[1].split("\ndef ", 1)[0]
@@ -1555,6 +1556,7 @@ def test_ccv2_is_default_mount_path_contract() -> None:
     frag = frag.split("def render_speaker_id_page", 1)[0]
     assert "speaker_id_workspace_component_enabled" in frag
     assert "_render_ccv2_speaker_workspace" in frag
+    assert "_drain_pending_ccv2_command" in frag
     assert "if mounted:" in frag
     assert "return True" in source.split("def _render_ccv2_speaker_workspace", 1)[1]
     assert "return False" in source.split("def _render_ccv2_speaker_workspace", 1)[1]
@@ -1718,6 +1720,222 @@ def test_render_ccv2_mounts_and_dispatches_command(
     ack_key = mod.widget_key(transcript, "ccv2_last_ack")
     assert ss[ack_key]["status"] == "ok"
     assert ss[ack_key]["action_id"] == "aid-ccv2"
+
+
+def test_render_ccv2_navigate_jump_reruns_when_painted_speaker_is_stale(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Return-value navigate_jump must fragment-rerun; otherwise samples stay put."""
+    import sys
+    from types import ModuleType, SimpleNamespace
+
+    import transcriptx.web.page_modules.speaker_id as mod
+    from transcriptx.app.speaker_id import SpeakerIdAck, SpeakerIdEffects
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict = {}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    reruns: list[bool] = []
+    monkeypatch.setattr(mod, "_rerun_ui", lambda: reruns.append(True))
+
+    class _Ctrl:
+        def cached_clip_status(self, *_a, **_k):
+            return SimpleNamespace(status="miss", clip_id="c1", path=None, reason=None)
+
+        def get_cached_clip_bytes(self, *_a, **_k):
+            return None
+
+        def enqueue_clip(self, *_a, **_k):
+            return SimpleNamespace(status="accepted", clip_id="c1")
+
+        def ffmpeg_available(self) -> bool:
+            return True
+
+    def _fake_workspace(*, data, key, on_command_change=None, **_kw):
+        return {
+            "command": {
+                "action": "navigate_jump",
+                "action_id": "jump-01",
+                "action_seq": 2,
+                "protocol_version": "1",
+                "frontend_build_id": "legacy",
+                "transcript_id": str(transcript),
+                "expected_speaker_id": "SPEAKER_00",
+                "payload": {"target_speaker_id": "SPEAKER_01"},
+            }
+        }
+
+    fake_pkg = ModuleType("transcriptx_workspaces")
+    fake_pkg.speaker_id_workspace = _fake_workspace  # type: ignore[attr-defined]
+    fake_pkg.FRONTEND_BUILD_ID = "tx-workspaces-0.1.0"  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "transcriptx_workspaces", fake_pkg)
+
+    class _Svc:
+        _expected_builds = set()
+
+        def execute(self, command):
+            return SpeakerIdAck(
+                action_id=command.action_id,
+                action_seq=command.action_seq,
+                status="ok",
+                transcript_id=command.transcript_id,
+                transcript_revision="tr1",
+                mapping_revision="mr1",
+                active_speaker_id="SPEAKER_01",
+                active_speaker_idx=1,
+                effects=SpeakerIdEffects(navigate_to_idx=1),
+            )
+
+    monkeypatch.setattr(mod, "_get_action_service", lambda: _Svc())
+    monkeypatch.setattr(mod, "_apply_ack", lambda *_a, **_k: None)
+
+    segs = [SimpleNamespace(start=0.0, end=1.0, text="hello")]
+    ok = mod._render_ccv2_speaker_workspace(
+        transcript_path=str(transcript),
+        controller=_Ctrl(),
+        speaker_ids=["SPEAKER_00", "SPEAKER_01"],
+        speaker_idx=0,
+        active_id="SPEAKER_00",
+        speaker_map={},
+        ignored=[],
+        active_segs=segs,
+        current_name="",
+        playback_ctx=SimpleNamespace(audio_path=None),
+        status_badge="❓ unnamed",
+        total_speakers=2,
+    )
+    assert ok is True
+    assert reruns == [True]
+
+
+def test_ccv2_command_callback_is_idempotent_on_action_id(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+    from transcriptx.app.speaker_id import SpeakerIdAck, SpeakerIdEffects
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    ss: dict = {}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+
+    class _Svc:
+        _expected_builds = set()
+        calls = 0
+
+        def execute(self, command):
+            type(self).calls += 1
+            return SpeakerIdAck(
+                action_id=command.action_id,
+                action_seq=command.action_seq,
+                status="ok",
+                transcript_id=command.transcript_id,
+                transcript_revision="tr",
+                mapping_revision="mr",
+                active_speaker_id="SPEAKER_01",
+                active_speaker_idx=1,
+                effects=SpeakerIdEffects(navigate_to_idx=1),
+            )
+
+    monkeypatch.setattr(mod, "_get_action_service", lambda: _Svc())
+    monkeypatch.setattr(mod, "_apply_ack", lambda *_a, **_k: None)
+
+    command = {
+        "action": "navigate_jump",
+        "action_id": "same-jump",
+        "action_seq": 3,
+        "protocol_version": "1",
+        "frontend_build_id": "legacy",
+        "transcript_id": str(transcript),
+        "payload": {"target_speaker_id": "SPEAKER_01"},
+    }
+    first = mod._apply_ccv2_workspace_command(
+        str(transcript), ["SPEAKER_00", "SPEAKER_01"], 0, command
+    )
+    second = mod._apply_ccv2_workspace_command(
+        str(transcript), ["SPEAKER_00", "SPEAKER_01"], 0, command
+    )
+    assert first[0] is True
+    assert second[0] is False
+    assert _Svc.calls == 1
+
+
+def test_workspace_fragment_drains_navigate_jump_before_ccv2_paint(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Speaker-list clicks must paint the target speaker's samples on the same run."""
+    from types import SimpleNamespace
+
+    import transcriptx.web.page_modules.speaker_id as mod
+    import transcriptx.web.workspaces.flags as flags_mod
+    from transcriptx.web.cache_helpers import SpeakerIdentificationIndex
+    from transcriptx.web.workspaces.speaker_id_bridge import stable_workspace_key
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    segs_00 = (SimpleNamespace(start=0.0, end=1.0, text="from zero"),)
+    segs_01 = (SimpleNamespace(start=2.0, end=3.0, text="from one"),)
+    result_key = stable_workspace_key(str(transcript.resolve()))
+    ss: dict = {
+        mod.speaker_idx_key(transcript): 0,
+        result_key: {
+            "command": {
+                "action": "navigate_jump",
+                "action_id": "jump-before-paint",
+                "action_seq": 1,
+                "protocol_version": "1",
+                "frontend_build_id": "legacy",
+                "transcript_id": str(transcript),
+                "expected_speaker_id": "SPEAKER_00",
+                "payload": {"target_speaker_id": "SPEAKER_01"},
+            }
+        },
+    }
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    _stub_fragment_chrome(monkeypatch, mod)
+    monkeypatch.setattr(
+        mod,
+        "load_speaker_identification_index",
+        lambda *_a, **_k: SpeakerIdentificationIndex(
+            segments_by_speaker={"SPEAKER_00": segs_00, "SPEAKER_01": segs_01},
+            ordered_speaker_ids=("SPEAKER_00", "SPEAKER_01"),
+            segment_counts=(1, 1),
+            durations=(1.0, 1.0),
+        ),
+    )
+    monkeypatch.setattr(
+        mod,
+        "resolve_playback_context",
+        lambda *_a, **_k: SimpleNamespace(audio_path=None),
+    )
+
+    class _Ctrl:
+        def get_mapping_status(self, *_a, **_k):
+            return SimpleNamespace(speaker_map={}, ignored_speakers=[])
+
+    def _fake_apply(path, ids, idx, command):
+        mod.navigate_to_speaker(1, transcript_path=path, speaker_count=len(ids))
+        return True, {"active_speaker_id": "SPEAKER_01", "active_speaker_idx": 1}
+
+    monkeypatch.setattr(mod, "_apply_ccv2_workspace_command", _fake_apply)
+    monkeypatch.setattr(
+        flags_mod, "speaker_id_workspace_component_enabled", lambda *_a, **_k: True
+    )
+
+    mounts: list[dict] = []
+
+    def _mount(**kwargs):
+        mounts.append(kwargs)
+        return True
+
+    monkeypatch.setattr(mod, "_render_ccv2_speaker_workspace", _mount)
+
+    mod._speaker_id_workspace_fragment.__wrapped__(str(transcript), _Ctrl())
+    assert len(mounts) == 1
+    assert mounts[0]["active_id"] == "SPEAKER_01"
+    assert mounts[0]["speaker_idx"] == 1
+    assert mounts[0]["active_segs"][0].text == "from one"
 
 
 class _CtxCol:
