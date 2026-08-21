@@ -335,6 +335,16 @@ def render_transcribe_audio_page() -> None:
                 "Treat near-matching output names as already done and skip those inputs."
             ),
         )
+        skip_serial = st.checkbox(
+            "Skip likely serial parts (merge later)",
+            value=False,
+            key="tx_cmdgen_skip_serial",
+            disabled=tool is not TranscriptionTool.WHISPERMLX_MISSING,
+            help=widget_help(
+                "Adds --skip-serial: do not transcribe files Auto-merge would group "
+                "(split parts / voice-note runs). Merge first, then transcribe the merged file."
+            ),
+        )
 
     whispermlx_binary = "whispermlx"
     device = "cpu"
@@ -477,6 +487,7 @@ def render_transcribe_audio_page() -> None:
         force=bool(force),
         dry_run=bool(dry_run),
         fuzzy_json_match=bool(fuzzy),
+        skip_serial=bool(skip_serial),
         device=device,
         compute_type=compute_type,
         batch_size=batch_size,

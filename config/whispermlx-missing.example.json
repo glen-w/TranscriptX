@@ -13,5 +13,6 @@
   "extra_whisper_args": [],
   "pass_hf_token_arg": false,
   "fuzzy_json_match": false,
+  "skip_serial": false,
   "follow_output": true
 }

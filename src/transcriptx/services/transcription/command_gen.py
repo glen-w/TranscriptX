@@ -91,6 +91,7 @@ class CommandGenParams:
     force: bool = False  # overwrite / re-run when JSON exists
     dry_run: bool = False
     fuzzy_json_match: bool = False
+    skip_serial: bool = False
     # WhisperX Docker / Linux recipe
     device: str = "cpu"
     compute_type: str = "float16"
@@ -218,6 +219,8 @@ def build_whispermlx_missing(params: CommandGenParams) -> GeneratedCommand:
         parts.append("--force")
     if params.fuzzy_json_match:
         parts.append("--fuzzy-json-match")
+    if params.skip_serial:
+        parts.append("--skip-serial")
     # Pass model/language/diarize through to whispermlx
     whisper_args: list[str] = [
         "--language",
@@ -235,6 +238,7 @@ def build_whispermlx_missing(params: CommandGenParams) -> GeneratedCommand:
         "Install once: install -m 755 scripts/whispermlx-missing.py ~/.local/bin/whispermlx-missing",
         "Requires ~/.local/bin on PATH (or run: python3 scripts/whispermlx-missing.py …).",
         "Skips stems that already have matching JSON (resume-friendly). Use --force to re-run.",
+        "Use --skip-serial to leave Auto-merge serial parts / voice-note runs untranscribed.",
         "Preview safely with --dry-run (no HF_TOKEN / binary required for preview).",
         "Paths with spaces are shell-quoted. Run on the macOS host, not inside transcriptx-web.",
         "--env-file must be the host repo whisperx.env (not a container path under /opt/venv).",
@@ -379,5 +383,6 @@ def generate_preview_lines(params: CommandGenParams) -> Sequence[str]:
         f"Diarize: {'yes' if params.diarize else 'no'}",
         f"Dry-run flag: {'yes' if params.dry_run else 'no'}",
         f"Force / overwrite: {'yes' if params.force else 'no'}",
+        f"Skip likely serial: {'yes' if params.skip_serial else 'no'}",
         f"Expected output format: {params.expected_output_format} (Import Transcript)",
     )

@@ -89,7 +89,9 @@ python3 scripts/whispermlx-missing.py --dry-run …
 
 It processes MP3s in a source folder that lack matching JSON in a transcripts output folder.
 
-**Resume / duplicates:** stems with matching JSON are skipped by default. Use `--force` / `--rerun` to replace after a valid new JSON is produced. `--fuzzy-json-match` also treats `foo-….json` / `foo_….json` / `foo.….json` as already done.
+**Resume / duplicates:** stems with matching JSON are skipped by default — in `--transcripts` (typically `…/originals`), in the parent library root when that folder is named `originals` (already-imported canonical JSON), as `foo (N).json` import-archive names, or as a sidecar next to the MP3. Use `--force` / `--rerun` to replace after a valid new JSON is produced. `--fuzzy-json-match` also treats `foo-….json` / `foo_….json` / `foo.….json` as already done. Writes still go only to `originals/` (see [STORAGE.md](STORAGE.md)).
+
+**Skip likely serial parts:** `--skip-serial` (also JSON `skip_serial` / `WHISPERMLX_SKIP_SERIAL`) does **not** transcribe MP3s that [Tools → Auto-merge](#audio-prep--merge-system--tools) would group as split parts or voice-note runs (`meeting_part2`, timestamp `_1`/`_2`, WhatsApp bursts, …). Merge those files first, then transcribe the `*_merged.mp3`. Standalone files still run. `--force` does not override this; use `--no-skip-serial`. When TranscriptX is importable (repo checkout / installed package), detection uses the same Auto-merge profiles; otherwise a filename + common voice-note fallback. Opt-in (off by default).
 
 **Dry-run:** `--dry-run` previews work without requiring HF_TOKEN or a working whispermlx binary.
 
@@ -140,7 +142,7 @@ Or run without installing: `python3 scripts/inbox-watch.py --once --dry-run …`
 
 | Mode | What it does | Skip when |
 |------|----------------|-----------|
-| `--watch-audio` (default on) | Convert new inbox audio to 16 kHz mono 64k MP3 in the recordings folder, then run `whispermlx-missing` | Recordings already has that stem (any audio extension) |
+| `--watch-audio` (default on) | Convert new inbox audio to 16 kHz mono 64k MP3 in the recordings folder, then run `whispermlx-missing` | Recordings already has that stem (any audio extension). With `--skip-serial`, `whispermlx-missing` also skips Auto-merge serial groups |
 | `--watch-transcripts` (default on) | Copy new JSON/SRT/VTT/txt/html into the transcripts dest | Dest already has that stem (any transcript extension) |
 | `--no-watch-audio` / `--no-watch-transcripts` | Disable that mode | At least one mode must stay on |
 
@@ -211,7 +213,7 @@ Inbox sources are **kept by default**. After a successful convert (audio) or cop
 
 `--backup-wav` and `--delete-originals` are independent (use either or both). Deleting with no backup prints a warning. A failed WAV backup skips delete for that file.
 
-**Local config (gitignored):** copy [`config/inbox-watch.example.json`](../config/inbox-watch.example.json) to `.transcriptx/inbox-watch.json`. Override with `--config` or `INBOX_WATCH_CONFIG`. Merge order: portable repo defaults ← `TRANSCRIPTX_*` / `INBOX_WATCH_*` env ← local JSON ← CLI. `TRANSCRIPTX_RECORDINGS_DIR` maps to recordings; `TRANSCRIPTX_TRANSCRIPTS_DIR` is the transcripts **base** (script appends `/originals`); `INBOX_WATCH_INBOX` is the drop folder; `TRANSCRIPTX_WAV_BACKUP_DIR` is the WAV archive. Boolean env: `INBOX_WATCH_BACKUP_WAV`, `INBOX_WATCH_DELETE_ORIGINALS`.
+**Local config (gitignored):** copy [`config/inbox-watch.example.json`](../config/inbox-watch.example.json) to `.transcriptx/inbox-watch.json`. Override with `--config` or `INBOX_WATCH_CONFIG`. Merge order: portable repo defaults ← `TRANSCRIPTX_*` / `INBOX_WATCH_*` env ← local JSON ← CLI. `TRANSCRIPTX_RECORDINGS_DIR` maps to recordings; `TRANSCRIPTX_TRANSCRIPTS_DIR` is the transcripts **base** (script appends `/originals`); `INBOX_WATCH_INBOX` is the drop folder; `TRANSCRIPTX_WAV_BACKUP_DIR` is the WAV archive. Boolean env: `INBOX_WATCH_BACKUP_WAV`, `INBOX_WATCH_DELETE_ORIGINALS`, `INBOX_WATCH_SKIP_SERIAL`.
 
 Do **not** point this inbox at the same folder as the in-app G2 watcher unless you intend both to handle new transcripts (G2 admits; inbox-watch copies). See [directory_watcher.md](directory_watcher.md).
 
@@ -219,7 +221,7 @@ Do **not** point this inbox at the same folder as the in-app G2 watcher unless y
 
 Interactive GUI under **System → Tools** (tabs: **Preprocessing**, **Merge**) for recordings **before** external transcription. Requires host `ffmpeg` and `pydub`. Theme **G1** still covers optional transcript-part stitching vs remove — see [ROADMAP.md](../ROADMAP.md).
 
-**Merge source profiles** (Merge tab expander) control how split parts and voice-note bursts are suggested and auto-merged. Settings live in `{config_dir}/audio_merge_profiles.json` (not project `config.json`). Edits in the expander apply to detection immediately; **Save** persists them. Builtin defaults keep a 20-minute consecutive gap for messaging/recorder families; serial filename parts always merge. Per-profile **day** and **minutes** sliders let you tighten or loosen grouping (examples: WhatsApp same day within 2 hours; Zoom full day; Telegram same day within 6 hours). **Auto-merge selected groups** runs one merge per checked suggestion using the shared Merge options (backup / overwrite / preprocess / delete-originals).
+**Merge source profiles** (Merge tab expander) control how split parts and voice-note bursts are suggested and auto-merged. Settings live in `{config_dir}/audio_merge_profiles.json` (not project `config.json`). Edits in the expander apply to detection immediately; **Save** persists them. Builtin defaults keep a 20-minute consecutive gap for messaging/recorder families; serial filename parts always merge. Per-profile **day** and **minutes** sliders let you tighten or loosen grouping (examples: WhatsApp same day within 2 hours; Zoom full day; Telegram same day within 6 hours). **Auto-merge selected groups** runs one merge per checked suggestion using the shared Merge options (backup / overwrite / preprocess / delete-originals). Host batch transcription can skip the same groups with `whispermlx-missing --skip-serial` (and `inbox-watch --skip-serial`) so parts are not transcribed before you merge.
 
 CLI helpers remain for automation:
 

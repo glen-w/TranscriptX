@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Settings → Storage: **Duplicate library files** finds exact audio copies and identical transcript bytes or canonical content, keeps the richest copy, and deletes extras (including linked companions) after typed confirmation.
+- Host **`whispermlx-missing --skip-serial`** (and `inbox-watch --skip-serial`) leaves Auto-merge serial parts / voice-note runs untranscribed so you merge first and transcribe the combined file.
 - Run Analysis: **Cancel analysis** and **Skip module** stay available while a run is in progress (cooperative; the current module is abandoned, remaining work is not started on cancel).
 - Playwright **GUI E2E** expanded to **ten key flows** under `tests/e2e_gui/` (`make test-gui-e2e`): workflows 1–5 plus Charts, Groups, Corrections (Correct mode), Rename Transcript, and Speakers.
 - Workflow walkthroughs expanded to ten guides under [docs/workflows/](docs/workflows/index.md); root [README](README.md) lists the ten key GUI workflows.
@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Managed admit replaces marker-less library JSON (raw WhisperX, including vendor NaNs) instead of failing mid-sidecar-repair; Speakers/Run pickers omit library paths without an import sidecar; `inbox-watch` / `whispermlx-missing` refuse writing into the managed library root (require `…/originals`).
+- `whispermlx-missing` skips stems that already have JSON in the parent library root, as `foo (N).json` archives, or as a sidecar next to the MP3 — not only files inside `--transcripts` (`originals/`).
 - `inbox-watch` audio convert: pass `-f mp3` so ffmpeg 8+ can mux to a `.mp3.partial` temp file (it no longer infers MP3 from that extension). Terminal feedback mirrors analysis Review / Run summary (`[i/n]` progress, elapsed times, streamed ffmpeg stats); Sphinx guide covers the UX under [transcription.md](docs/runtime/transcription.md#terminal-feedback) and links it from [directory_watcher.md](docs/runtime/directory_watcher.md).
 
 ## [0.9.9.5] - 2026-08-15

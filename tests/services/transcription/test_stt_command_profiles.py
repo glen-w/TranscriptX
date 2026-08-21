@@ -34,6 +34,7 @@ def test_command_gen_params_roundtrip_dict() -> None:
         dry_run=True,
         force=True,
         fuzzy_json_match=True,
+        skip_serial=True,
     )
     restored = command_gen_params_from_dict(command_gen_params_to_dict(params))
     assert restored == params

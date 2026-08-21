@@ -29,7 +29,7 @@ Inbox files are **never deleted or modified**. Admission always copies into app 
 
 The in-app watcher does **not** convert audio or run STT. For that, use the host script [`scripts/inbox-watch.py`](../../scripts/inbox-watch.py) documented under [Host inbox watcher (`inbox-watch`)](transcription.md#host-inbox-watcher-inbox-watch) in [transcription.md](transcription.md):
 
-- `--watch-audio` — ffmpeg 16 kHz mono 64k MP3 into recordings, then `whispermlx-missing`
+- `--watch-audio` — ffmpeg 16 kHz mono 64k MP3 into recordings, then `whispermlx-missing` (optional `--skip-serial` leaves Auto-merge groups untranscribed)
 - `--watch-transcripts` — copy new JSON/SRT/VTT/txt/html into a transcripts dest if the stem is missing
 - Terminal UX — same Review / Processing / Run summary shape as analysis CLI feedback ([Terminal feedback](transcription.md#terminal-feedback))
 

@@ -64,6 +64,7 @@ def command_gen_params_to_dict(params: CommandGenParams) -> dict[str, Any]:
         "force": bool(params.force),
         "dry_run": bool(params.dry_run),
         "fuzzy_json_match": bool(params.fuzzy_json_match),
+        "skip_serial": bool(params.skip_serial),
         "device": params.device,
         "compute_type": params.compute_type,
         "batch_size": int(params.batch_size),
@@ -118,6 +119,7 @@ def command_gen_params_from_dict(data: dict[str, Any]) -> CommandGenParams:
         force=bool(data.get("force", False)),
         dry_run=bool(data.get("dry_run", False)),
         fuzzy_json_match=bool(data.get("fuzzy_json_match", False)),
+        skip_serial=bool(data.get("skip_serial", False)),
         device=str(data.get("device") or "cpu"),
         compute_type=str(data.get("compute_type") or "float16"),
         batch_size=int(data.get("batch_size") or 16),
@@ -180,6 +182,7 @@ def apply_params_to_session_state(
     session_state["tx_cmdgen_dry"] = params.dry_run
     session_state["tx_cmdgen_force"] = params.force
     session_state["tx_cmdgen_fuzzy"] = params.fuzzy_json_match
+    session_state["tx_cmdgen_skip_serial"] = params.skip_serial
     session_state["tx_cmdgen_bin"] = params.whispermlx_binary
     session_state["tx_cmdgen_device"] = params.device
     session_state["tx_cmdgen_compute"] = params.compute_type

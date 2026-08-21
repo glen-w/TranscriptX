@@ -613,3 +613,50 @@ def test_refuses_managed_library_root_as_transcripts_dest(iw, tmp_path: Path) ->
     err = iw.validate_layout(cfg)
     assert err is not None
     assert "originals" in err
+
+
+@pytest.mark.unit
+class TestSkipSerialForwarding:
+    def test_build_missing_cmd_appends_skip_serial(self, iw, tmp_path: Path):
+        missing = tmp_path / "whispermlx-missing.py"
+        missing.write_text("# stub\n", encoding="utf-8")
+        recordings = tmp_path / "recordings"
+        transcripts = tmp_path / "originals"
+        cmd = iw.build_missing_cmd(
+            missing,
+            recordings=recordings,
+            transcripts=transcripts,
+            env_file=None,
+            skip_serial=True,
+        )
+        assert "--skip-serial" in cmd
+        assert str(recordings) in cmd
+
+    def test_build_missing_cmd_omits_flag_by_default(self, iw, tmp_path: Path):
+        missing = tmp_path / "whispermlx-missing.py"
+        missing.write_text("# stub\n", encoding="utf-8")
+        cmd = iw.build_missing_cmd(
+            missing,
+            recordings=tmp_path / "rec",
+            transcripts=tmp_path / "tx",
+            env_file=None,
+        )
+        assert "--skip-serial" not in cmd
+
+    def test_cli_enables_skip_serial(self, iw, tmp_path: Path, monkeypatch):
+        monkeypatch.setattr(iw, "CONFIG_PATH", tmp_path / "noconfig.json")
+        args = iw.parse_args(
+            [
+                "--once",
+                "--inbox",
+                str(tmp_path / "inbox"),
+                "--recordings",
+                str(tmp_path / "rec"),
+                "--transcripts",
+                str(tmp_path / "tx"),
+                "--skip-serial",
+            ]
+        )
+        cfg = iw.resolve_config(args, config_path=tmp_path / "noconfig.json")
+        assert cfg.skip_serial is True
+

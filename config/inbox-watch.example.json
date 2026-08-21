@@ -13,5 +13,6 @@
   "move_processed": "",
   "wav_backup": "/path/to/data/backups/wav",
   "backup_wavs": false,
-  "delete_originals": false
+  "delete_originals": false,
+  "skip_serial": false
 }

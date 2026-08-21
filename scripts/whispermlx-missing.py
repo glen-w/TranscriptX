@@ -39,11 +39,24 @@ Dry run:
 Dry-run uses lightweight validation (source/transcripts paths and source folder only).
 It does not require env file, HF_TOKEN, or a working whispermlx binary.
 
-Already-processed detection (flat transcripts folder, JSON only):
+Already-processed detection (flat folders, JSON only):
     For MP3 stem ``foo``, skip if any of these exist in --transcripts:
     foo.json, foo.diarized.json, foo_diarized.json, foo.diarised.json, foo_diarised.json
+    Also skip foo (N).json (import-archive disambiguation).
+    When --transcripts is ``…/originals``, also search the parent library root so
+    already-imported canonical JSON counts as done. Sidecar JSON next to the MP3
+    in --source is also treated as done.
     With --fuzzy-json-match, also match foo-<rest>.json, foo_<rest>.json, foo.<rest>.json
     (never matches foo2.json for stem foo).
+
+Skip likely serial parts (--skip-serial, off by default):
+    Do not transcribe MP3s that Auto-merge would group as split parts / voice-note
+    runs (meeting_part2, timestamp_1/_2, WhatsApp bursts, …). Merge those files in
+    Tools → Auto-merge and transcribe the ``*_merged.mp3`` instead. ``--force`` still
+    skips serial members; use ``--no-skip-serial`` to transcribe parts anyway.
+    JSON ``skip_serial`` / env WHISPERMLX_SKIP_SERIAL also enable it. Uses the
+    Auto-merge detector when TranscriptX is importable; otherwise filename +
+    common voice-note rules.
 
 Failure handling:
     Failed items leave temp dirs under transcripts/.whispermlx-missing/tmp/ for inspection.
@@ -81,9 +94,11 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import Any, Callable, Literal, Sequence
 
 CONFIG_VERSION = 1
 CONFIG_PATH: Path | None = None  # tests may monkeypatch; else repo .transcriptx default
@@ -108,6 +123,7 @@ KNOWN_CONFIG_KEYS = frozenset(
         "extra_whisper_args",
         "pass_hf_token_arg",
         "fuzzy_json_match",
+        "skip_serial",
         "follow_output",
     }
 )
@@ -138,8 +154,10 @@ class RunStats:
     processed: int = 0
     would_process: int = 0
     skipped: int = 0
+    skipped_serial: int = 0
     failed: int = 0
     would_process_names: list[str] = field(default_factory=list)
+    skipped_serial_names: list[str] = field(default_factory=list)
     failed_items: list[FailedItem] = field(default_factory=list)
 
 
@@ -166,7 +184,8 @@ class EffectiveConfig:
     extra_whisper_args: list[str]
     pass_hf_token_arg: bool
     fuzzy_json_match: bool
-    follow_output: bool
+    skip_serial: bool = False
+    follow_output: bool = True
     provenance: ConfigProvenance = field(default_factory=ConfigProvenance)
 
 
@@ -253,6 +272,24 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Also skip when foo-<rest>.json, foo_<rest>.json, or foo.<rest>.json exists.",
     )
+    serial_group = parser.add_mutually_exclusive_group()
+    serial_group.add_argument(
+        "--skip-serial",
+        dest="skip_serial",
+        action="store_true",
+        default=None,
+        help=(
+            "Do not transcribe MP3s that look like Auto-merge serial groups "
+            "(split parts / voice-note runs). Merge first, then transcribe "
+            "the merged file."
+        ),
+    )
+    serial_group.add_argument(
+        "--no-skip-serial",
+        dest="skip_serial",
+        action="store_false",
+        help="Transcribe serial parts (default unless config/env enables skip).",
+    )
     parser.add_argument(
         "--pass-hf-token-arg",
         action="store_true",
@@ -278,6 +315,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Capture whispermlx output (no live stream); show stderr tail on failure.",
     )
+    parser.set_defaults(skip_serial=None)
     return parser.parse_args(argv)
 
 
@@ -400,6 +438,10 @@ def env_derived_config() -> tuple[dict[str, Any], ConfigProvenance]:
         derived["diarize"] = _parse_bool_env(
             os.environ.get("WHISPERMLX_DIARIZE"), default=True
         )
+    if os.environ.get("WHISPERMLX_SKIP_SERIAL", "").strip():
+        derived["skip_serial"] = _parse_bool_env(
+            os.environ.get("WHISPERMLX_SKIP_SERIAL"), default=False
+        )
 
     return derived, provenance
 
@@ -416,6 +458,7 @@ def base_config_dict() -> dict[str, Any]:
         "extra_whisper_args": [],
         "pass_hf_token_arg": False,
         "fuzzy_json_match": False,
+        "skip_serial": False,
         "follow_output": True,
     }
 
@@ -486,6 +529,7 @@ def config_to_dict(cfg: EffectiveConfig) -> dict[str, Any]:
         "extra_whisper_args": list(cfg.extra_whisper_args),
         "pass_hf_token_arg": cfg.pass_hf_token_arg,
         "fuzzy_json_match": cfg.fuzzy_json_match,
+        "skip_serial": cfg.skip_serial,
         "follow_output": cfg.follow_output,
     }
 
@@ -515,6 +559,8 @@ def resolve_config(
     for key in _PATH_KEYS:
         if getattr(env_prov, key) != "unset":
             setattr(provenance, key, getattr(env_prov, key))
+    if "skip_serial" in env_layer:
+        merged["skip_serial"] = env_layer["skip_serial"]
 
     json_path_layer = {
         k: file_cfg[k] for k in _PATH_KEYS if k in file_cfg and file_cfg[k] is not None
@@ -556,6 +602,8 @@ def resolve_config(
         merged["pass_hf_token_arg"] = True
     if args.fuzzy_json_match:
         merged["fuzzy_json_match"] = True
+    if args.skip_serial is not None:
+        merged["skip_serial"] = args.skip_serial
     if args.no_clean_non_json:
         merged["clean_non_json"] = False
     if args.quiet:
@@ -596,6 +644,7 @@ def resolve_config(
             merged["pass_hf_token_arg"], "pass_hf_token_arg"
         ),
         fuzzy_json_match=require_bool(merged["fuzzy_json_match"], "fuzzy_json_match"),
+        skip_serial=require_bool(merged.get("skip_serial", False), "skip_serial"),
         follow_output=require_bool(merged["follow_output"], "follow_output"),
         provenance=provenance,
     )
@@ -663,8 +712,448 @@ def discover_mp3s(source_dir: Path) -> list[Path]:
     return sorted(mp3s, key=lambda p: p.name.lower())
 
 
+# --- serial skip (same groups Auto-merge would join) ---
+
+_MERGED_OUTPUT_RE = re.compile(r"_merged\.mp3$", re.IGNORECASE)
+_TIMESTAMP_SUFFIX_RE = re.compile(r"^(\d{8,})[_-](\d+)$")
+_TIMESTAMP_BARE_RE = re.compile(r"^(\d{8,})$")
+_PART_SUFFIX_RE = re.compile(
+    r"^(.+?)(?:[\s_.-]+)?part(?:[\s_.-]+)?(\d+)$",
+    re.IGNORECASE,
+)
+_NUMERIC_INDEX_RE = re.compile(r"^(.+?)[_-](\d{2,})$")
+_DUPLICATE_INDEX_RE = re.compile(r" \(([1-9]\d{0,2})\)$")
+_RE_WA_AT = re.compile(
+    r"^(?P<family>WhatsApp(?:\s+(?:Audio|PTT|Voice\s+Notes?))?|"
+    r"Voice\s+Notes?|Voice\s+Memos?|Voice\s+Messages?)"
+    r"\s+(?P<y>\d{4})-(?P<m>\d{2})-(?P<d>\d{2})"
+    r"\s+at\s+(?P<H>\d{1,2})[.:](?P<M>\d{2})[.:](?P<S>\d{2})$",
+    re.IGNORECASE,
+)
+_RE_WA_ANDROID = re.compile(
+    r"^(?P<kind>PTT|AUD)-(?P<y>\d{4})(?P<m>\d{2})(?P<d>\d{2})"
+    r"-WA(?P<seq>\d{3,5})$",
+    re.IGNORECASE,
+)
+_RE_TELEGRAM_AUDIO = re.compile(
+    r"^audio_(?P<y>\d{4})-(?P<m>\d{2})-(?P<d>\d{2})"
+    r"_(?P<H>\d{2})-(?P<M>\d{2})-(?P<S>\d{2})"
+    r"(?:_[0-9a-fA-F]+)?$",
+    re.IGNORECASE,
+)
+_RE_ZOOM_SEQ = re.compile(r"^ZOOM(?P<seq>\d{3,5})$", re.IGNORECASE)
+
+_LITE_RULE_PRIORITY = (
+    "timestamp_suffix",
+    "part_suffix",
+    "voice_note_run",
+    "numeric_index",
+    "duplicate_suffix",
+)
+_LITE_VOICE_GAP_SECONDS = 20 * 60
+_LITE_MAX_INDEX_GAP = 3
+_LITE_MIN_GROUP = 2
+
+
+@dataclass(frozen=True)
+class _LiteSerialGroup:
+    base_key: str
+    ordered_paths: tuple[Path, ...]
+    matched_rule: str
+
+
+def _strip_duplicate_stem(stem: str) -> str:
+    return re.sub(r" \(([1-9]\d{0,2})\)$", "", stem or "")
+
+
+def _lite_ymd_hms(
+    y: int, mo: int, d: int, hour: int, minute: int, second: int
+) -> datetime | None:
+    try:
+        return datetime(y, mo, d, hour, minute, second)
+    except ValueError:
+        return None
+
+
+def _lite_normalize_paths(paths: Sequence[Path]) -> list[Path]:
+    out: list[Path] = []
+    seen: set[Path] = set()
+    for path in paths:
+        try:
+            resolved = path.resolve()
+        except OSError:
+            resolved = path
+        if resolved in seen:
+            continue
+        if _MERGED_OUTPUT_RE.search(resolved.name):
+            continue
+        seen.add(resolved)
+        out.append(resolved)
+    return out
+
+
+def _lite_parse_timestamp(stem: str) -> tuple[str, int] | None:
+    match = _TIMESTAMP_SUFFIX_RE.match(stem)
+    if match:
+        return match.group(1), int(match.group(2))
+    match = _TIMESTAMP_BARE_RE.match(stem)
+    if match:
+        return match.group(1), 0
+    return None
+
+
+def _lite_parse_part(stem: str) -> tuple[str, int] | None:
+    match = _PART_SUFFIX_RE.match(stem)
+    if not match:
+        return None
+    base = match.group(1).rstrip("._- ")
+    if not base:
+        return None
+    return base, int(match.group(2))
+
+
+def _lite_parse_numeric(stem: str) -> tuple[str, int] | None:
+    if _TIMESTAMP_SUFFIX_RE.match(stem):
+        return None
+    match = _NUMERIC_INDEX_RE.match(stem)
+    if not match:
+        return None
+    base = match.group(1).rstrip("._- ")
+    if not base or base.isdigit():
+        return None
+    return base, int(match.group(2))
+
+
+def _lite_parse_duplicate(stem: str) -> tuple[str, int]:
+    match = _DUPLICATE_INDEX_RE.search(stem)
+    if match:
+        return _strip_duplicate_stem(stem), int(match.group(1))
+    return _strip_duplicate_stem(stem), 0
+
+
+def _lite_parse_voice_note(
+    stem: str,
+) -> tuple[str, datetime | None, int | None] | None:
+    s = _strip_duplicate_stem((stem or "").strip())
+    if not s:
+        return None
+    match = _RE_WA_AT.match(s)
+    if match:
+        dt = _lite_ymd_hms(
+            int(match["y"]),
+            int(match["m"]),
+            int(match["d"]),
+            int(match["H"]),
+            int(match["M"]),
+            int(match["S"]),
+        )
+        if dt is None:
+            return None
+        return "WhatsApp Audio", dt, None
+    match = _RE_TELEGRAM_AUDIO.match(s)
+    if match:
+        dt = _lite_ymd_hms(
+            int(match["y"]),
+            int(match["m"]),
+            int(match["d"]),
+            int(match["H"]),
+            int(match["M"]),
+            int(match["S"]),
+        )
+        if dt is None:
+            return None
+        return "Telegram Audio", dt, None
+    match = _RE_WA_ANDROID.match(s)
+    if match:
+        try:
+            dt = datetime(int(match["y"]), int(match["m"]), int(match["d"]))
+        except ValueError:
+            return None
+        family = (
+            "WhatsApp Voice Notes"
+            if match["kind"].upper() == "PTT"
+            else "WhatsApp Audio"
+        )
+        return family, dt, int(match["seq"])
+    match = _RE_ZOOM_SEQ.match(s)
+    if match:
+        return "Zoom Recorder", None, int(match["seq"])
+    return None
+
+
+def _lite_filename_groups(
+    paths: list[Path],
+    *,
+    rule: str,
+    parse: Callable[[str], tuple[str, int] | None],
+    require_positive_index: bool = False,
+) -> list[_LiteSerialGroup]:
+    by_base: dict[str, list[tuple[int, Path]]] = defaultdict(list)
+    for path in paths:
+        parsed = parse(path.stem)
+        if parsed is None:
+            continue
+        base, index = parsed
+        by_base[base].append((index, path))
+    groups: list[_LiteSerialGroup] = []
+    for base, entries in by_base.items():
+        if require_positive_index and not any(idx > 0 for idx, _path in entries):
+            continue
+        if len(entries) < _LITE_MIN_GROUP:
+            continue
+        ordered = tuple(
+            path for _idx, path in sorted(entries, key=lambda e: (e[0], e[1].name))
+        )
+        groups.append(
+            _LiteSerialGroup(base_key=base, ordered_paths=ordered, matched_rule=rule)
+        )
+    return groups
+
+
+def _lite_voice_note_groups(paths: list[Path]) -> list[_LiteSerialGroup]:
+    parsed: list[tuple[str, datetime | None, int | None, Path]] = []
+    for path in paths:
+        result = _lite_parse_voice_note(path.stem)
+        if result is None:
+            continue
+        family, recorded_at, sequence = result
+        parsed.append((family, recorded_at, sequence, path))
+    if len(parsed) < _LITE_MIN_GROUP:
+        return []
+    parsed.sort(
+        key=lambda item: (
+            item[0].lower(),
+            item[1] is None,
+            item[1] or datetime.min,
+            item[2] if item[2] is not None else -1,
+            item[3].name,
+        )
+    )
+    groups: list[_LiteSerialGroup] = []
+    cluster: list[tuple[datetime | None, int | None, Path]] = []
+    cluster_family = ""
+
+    def flush() -> None:
+        if len(cluster) < _LITE_MIN_GROUP:
+            cluster.clear()
+            return
+        first_dt, first_seq, _first = cluster[0]
+        if first_dt is None:
+            base_key = f"{cluster_family} {first_seq}"
+        elif first_seq is not None:
+            base_key = f"{cluster_family} {first_dt:%Y-%m-%d}"
+        else:
+            base_key = f"{cluster_family} {first_dt:%Y-%m-%d %H:%M:%S}"
+        groups.append(
+            _LiteSerialGroup(
+                base_key=base_key,
+                ordered_paths=tuple(path for _dt, _seq, path in cluster),
+                matched_rule="voice_note_run",
+            )
+        )
+        cluster.clear()
+
+    def breaks(
+        family: str, recorded_at: datetime | None, sequence: int | None
+    ) -> bool:
+        if not cluster:
+            return False
+        if family != cluster_family:
+            return True
+        prev_dt, prev_seq, _prev = cluster[-1]
+        if recorded_at is None and prev_dt is None:
+            if sequence is None or prev_seq is None:
+                return True
+            return (sequence - prev_seq - 1) > _LITE_MAX_INDEX_GAP
+        if recorded_at is None or prev_dt is None:
+            return True
+        if sequence is not None and prev_seq is not None:
+            if recorded_at.date() != prev_dt.date():
+                return True
+            return (sequence - prev_seq - 1) > _LITE_MAX_INDEX_GAP
+        return (recorded_at - prev_dt).total_seconds() > _LITE_VOICE_GAP_SECONDS
+
+    for family, recorded_at, sequence, path in parsed:
+        if breaks(family, recorded_at, sequence):
+            flush()
+        if not cluster:
+            cluster_family = family
+        cluster.append((recorded_at, sequence, path))
+    flush()
+    return groups
+
+
+def _lite_choose_groups(candidates: list[_LiteSerialGroup]) -> list[_LiteSerialGroup]:
+    priority_len = len(_LITE_RULE_PRIORITY)
+    ranked = sorted(
+        candidates,
+        key=lambda g: (
+            -(
+                priority_len - _LITE_RULE_PRIORITY.index(g.matched_rule)
+                if g.matched_rule in _LITE_RULE_PRIORITY
+                else 0
+            ),
+            g.base_key,
+        ),
+    )
+    assigned: set[Path] = set()
+    chosen: list[_LiteSerialGroup] = []
+    for group in ranked:
+        member_paths = set(group.ordered_paths)
+        if member_paths & assigned:
+            continue
+        chosen.append(group)
+        assigned.update(member_paths)
+    chosen.sort(key=lambda g: (g.base_key, str(g.ordered_paths[0])))
+    return chosen
+
+
+def lite_detect_serial_groups(paths: Sequence[Path]) -> list[_LiteSerialGroup]:
+    """Filename + common voice-note serial groups (standalone fallback)."""
+    normalized = _lite_normalize_paths(paths)
+    if len(normalized) < _LITE_MIN_GROUP:
+        return []
+    candidates: list[_LiteSerialGroup] = []
+    candidates.extend(
+        _lite_filename_groups(
+            normalized, rule="timestamp_suffix", parse=_lite_parse_timestamp
+        )
+    )
+    candidates.extend(
+        _lite_filename_groups(normalized, rule="part_suffix", parse=_lite_parse_part)
+    )
+    candidates.extend(_lite_voice_note_groups(normalized))
+    candidates.extend(
+        _lite_filename_groups(
+            normalized, rule="numeric_index", parse=_lite_parse_numeric
+        )
+    )
+    candidates.extend(
+        _lite_filename_groups(
+            normalized,
+            rule="duplicate_suffix",
+            parse=_lite_parse_duplicate,
+            require_positive_index=True,
+        )
+    )
+    return _lite_choose_groups(candidates)
+
+
+def _ensure_transcriptx_src_on_path() -> None:
+    repo_root = find_repo_root()
+    if repo_root is None:
+        return
+    src = repo_root / "src"
+    if src.is_dir():
+        src_str = str(src)
+        if src_str not in sys.path:
+            sys.path.insert(0, src_str)
+
+
+def detect_serial_groups_via_transcriptx(
+    paths: Sequence[Path],
+) -> list[_LiteSerialGroup] | None:
+    """Use Auto-merge detection when TranscriptX is importable."""
+    _ensure_transcriptx_src_on_path()
+    try:
+        from transcriptx.core.audio.serial_groups import (
+            detect_merge_groups,
+            detect_serial_audio_groups,
+        )
+    except ImportError:
+        return None
+    try:
+        from transcriptx.core.audio.merge_profiles import load_merge_source_profiles
+
+        raw_groups = detect_merge_groups(paths, profiles=load_merge_source_profiles())
+    except Exception:
+        try:
+            raw_groups = detect_serial_audio_groups(paths)
+        except Exception:
+            return None
+    return [
+        _LiteSerialGroup(
+            base_key=group.base_key,
+            ordered_paths=tuple(group.ordered_paths),
+            matched_rule=group.matched_rule,
+        )
+        for group in raw_groups
+    ]
+
+
+def serial_skip_reasons(
+    paths: Sequence[Path],
+) -> tuple[dict[Path, str], str]:
+    """Map original MP3 paths in serial groups to a reason string.
+
+    Returns (reasons, detector) where detector is ``auto-merge`` or ``lite``.
+    """
+    original_by_resolved: dict[Path, Path] = {}
+    for path in paths:
+        try:
+            resolved = path.resolve()
+        except OSError:
+            resolved = path
+        original_by_resolved.setdefault(resolved, path)
+
+    detector = "auto-merge"
+    groups = detect_serial_groups_via_transcriptx(paths)
+    if groups is None:
+        detector = "lite"
+        groups = lite_detect_serial_groups(paths)
+
+    reasons: dict[Path, str] = {}
+    for group in groups:
+        n = len(group.ordered_paths)
+        label = group.matched_rule.replace("_", " ")
+        reason = f"{label} · {group.base_key} ({n} parts)"
+        for member in group.ordered_paths:
+            original = original_by_resolved.get(member, member)
+            reasons[original] = reason
+            reasons.setdefault(member, reason)
+    return reasons, detector
+
+
 def _exact_transcript_names(stem: str) -> list[str]:
     return [f"{stem}{suffix}" for suffix in _EXACT_SUFFIXES]
+
+
+_DISAMBIG_STEM_RE = re.compile(r"^(.+) \((\d+)\)$")
+
+
+def skip_search_dirs(transcripts_dir: Path, *, source: Path | None = None) -> list[Path]:
+    """Folders to scan for already-done JSON without writing into them.
+
+    Always includes ``transcripts_dir`` (the write target, typically originals/).
+    When that folder is named ``originals``, also include its parent so canonical
+    library JSON from a prior import counts as done. Source is included so a
+    sidecar next to the MP3 is not re-transcribed.
+    """
+    dirs: list[Path] = []
+    seen: set[str] = set()
+
+    def add(path: Path | None) -> None:
+        if path is None:
+            return
+        key = str(path.expanduser())
+        if key in seen:
+            return
+        seen.add(key)
+        dirs.append(path)
+
+    add(transcripts_dir)
+    if transcripts_dir.name == "originals":
+        add(transcripts_dir.parent)
+    add(source)
+    return dirs
+
+
+def _is_disambiguated_archive_stem(file_stem: str, audio_stem: str) -> bool:
+    """True for ``foo (1)`` when the audio stem is ``foo`` (originals archive names)."""
+    match = _DISAMBIG_STEM_RE.fullmatch(file_stem)
+    if match is None:
+        return False
+    return match.group(1).casefold() == audio_stem.casefold()
 
 
 def find_existing_transcript(
@@ -679,17 +1168,34 @@ def find_existing_transcript(
         if candidate.is_file():
             return candidate
 
-    if not fuzzy:
-        return None
-
+    wanted_exact = {name.lower() for name in _exact_transcript_names(stem)}
+    stem_l = stem.lower()
+    fuzzy_hit: Path | None = None
     for path in transcripts_dir.iterdir():
         if not path.is_file() or path.suffix.lower() != ".json":
             continue
+        if path.name.lower() in wanted_exact:
+            return path
         file_stem = path.stem
-        for sep in ("-", "_", "."):
-            prefix = f"{stem}{sep}"
-            if file_stem.startswith(prefix) and len(file_stem) > len(prefix):
-                return path
+        if _is_disambiguated_archive_stem(file_stem, stem):
+            return path
+        if fuzzy and fuzzy_hit is None:
+            file_stem_l = file_stem.lower()
+            for sep in ("-", "_", "."):
+                prefix = f"{stem_l}{sep}"
+                if file_stem_l.startswith(prefix) and len(file_stem_l) > len(prefix):
+                    fuzzy_hit = path
+                    break
+    return fuzzy_hit
+
+
+def find_existing_transcript_in_dirs(
+    dirs: Sequence[Path], stem: str, *, fuzzy: bool = False
+) -> Path | None:
+    for folder in dirs:
+        found = find_existing_transcript(folder, stem, fuzzy=fuzzy)
+        if found is not None:
+            return found
     return None
 
 
@@ -1134,9 +1640,16 @@ def print_summary(
     if dry_run:
         print(f"  would process: {stats.would_process}")
         _print_limited_items("would process", stats.would_process_names)
+        print(f"  skipped:   {stats.skipped}")
+        if stats.skipped_serial:
+            print(f"  skipped likely serial: {stats.skipped_serial}")
+            _print_limited_items("skipped likely serial", stats.skipped_serial_names)
     else:
         print(f"  processed: {stats.processed}")
         print(f"  skipped:   {stats.skipped}")
+        if stats.skipped_serial:
+            print(f"  skipped likely serial: {stats.skipped_serial}")
+            _print_limited_items("skipped likely serial", stats.skipped_serial_names)
     print(f"  failed:    {stats.failed}")
     if transcripts_dir is not None:
         print(f"  transcripts: {transcripts_dir}")
@@ -1217,17 +1730,45 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
 
         stats = RunStats()
+        assert cfg.transcripts is not None
+        skip_dirs = skip_search_dirs(cfg.transcripts, source=cfg.source)
+        serial_reasons: dict[Path, str] = {}
+        if cfg.skip_serial:
+            serial_reasons, detector = serial_skip_reasons(mp3s)
+            print(
+                f"Note: --skip-serial is on ({detector} detector); "
+                "MP3s that look like Auto-merge groups will not be transcribed.",
+                file=sys.stderr,
+            )
         for mp3_path in mp3s:
             stem = mp3_path.stem
-            existing = find_existing_transcript(
-                cfg.transcripts,  # type: ignore[arg-type]
+            serial_reason = serial_reasons.get(mp3_path)
+            if serial_reason is None:
+                try:
+                    serial_reason = serial_reasons.get(mp3_path.resolve())
+                except OSError:
+                    serial_reason = None
+            if serial_reason is not None:
+                stats.skipped += 1
+                stats.skipped_serial += 1
+                label = f"{mp3_path.name}  [{serial_reason}]"
+                stats.skipped_serial_names.append(label)
+                print(f"Skipping (likely serial, merge later): {label}")
+                continue
+            existing = find_existing_transcript_in_dirs(
+                skip_dirs,
                 stem,
                 fuzzy=cfg.fuzzy_json_match,
             )
             if existing is not None and not args.force:
                 stats.skipped += 1
                 if not args.dry_run:
-                    print(f"Skipping (JSON exists): {mp3_path.name} -> {existing.name}")
+                    shown = (
+                        existing.name
+                        if existing.parent == cfg.transcripts
+                        else str(existing)
+                    )
+                    print(f"Skipping (JSON exists): {mp3_path.name} -> {shown}")
                 continue
 
             outcome, failed = process_one(

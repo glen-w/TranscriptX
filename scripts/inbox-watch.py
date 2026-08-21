@@ -42,6 +42,9 @@ Inbox files are kept by default. After a successful convert/copy you can
     --backup-wav (copy audio originals into the WAV backup folder),
     --delete-originals (remove the inbox source), both, or --move-processed DIR.
 
+    --skip-serial forwards to whispermlx-missing so split parts / voice-note
+    runs are not transcribed (merge first, then transcribe the merged file).
+
 Exit 0 = all ok; 1 = one or more item failures; 2 = CLI/config/validation error.
 """
 
@@ -92,6 +95,7 @@ KNOWN_CONFIG_KEYS = frozenset(
         "wav_backup",
         "backup_wavs",
         "delete_originals",
+        "skip_serial",
     }
 )
 
@@ -140,6 +144,7 @@ class EffectiveConfig:
     wav_backup: Path | None
     backup_wavs: bool
     delete_originals: bool
+    skip_serial: bool = False
     provenance: ConfigProvenance = field(default_factory=ConfigProvenance)
 
 
@@ -353,6 +358,23 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Overwrite an existing destination stem.",
     )
+    serial_group = parser.add_mutually_exclusive_group()
+    serial_group.add_argument(
+        "--skip-serial",
+        dest="skip_serial",
+        action="store_true",
+        default=None,
+        help=(
+            "Pass --skip-serial to whispermlx-missing: do not transcribe "
+            "MP3s that look like Auto-merge serial groups."
+        ),
+    )
+    serial_group.add_argument(
+        "--no-skip-serial",
+        dest="skip_serial",
+        action="store_false",
+        help="Transcribe serial parts (default unless config/env enables skip).",
+    )
     parser.add_argument(
         "--show-config",
         action="store_true",
@@ -390,6 +412,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         recursive=None,
         backup_wavs=None,
         delete_originals=None,
+        skip_serial=None,
     )
     return parser.parse_args(argv)
 
@@ -533,6 +556,10 @@ def env_derived_config() -> tuple[dict[str, Any], ConfigProvenance]:
         derived["delete_originals"] = _parse_bool_env(
             os.environ.get("INBOX_WATCH_DELETE_ORIGINALS"), default=False
         )
+    if os.environ.get("INBOX_WATCH_SKIP_SERIAL", "").strip():
+        derived["skip_serial"] = _parse_bool_env(
+            os.environ.get("INBOX_WATCH_SKIP_SERIAL"), default=False
+        )
     return derived, provenance
 
 
@@ -545,6 +572,7 @@ def base_config_dict() -> dict[str, Any]:
         "interval_seconds": 5.0,
         "backup_wavs": False,
         "delete_originals": False,
+        "skip_serial": False,
     }
 
 
@@ -663,6 +691,8 @@ def resolve_config(
         merged["backup_wavs"] = args.backup_wavs
     if args.delete_originals is not None:
         merged["delete_originals"] = args.delete_originals
+    if args.skip_serial is not None:
+        merged["skip_serial"] = args.skip_serial
     if args.recursive is not None:
         merged["recursive"] = args.recursive
     if args.interval_seconds is not None:
@@ -677,6 +707,7 @@ def resolve_config(
     delete_originals = require_bool(
         merged.get("delete_originals", False), "delete_originals"
     )
+    skip_serial = require_bool(merged.get("skip_serial", False), "skip_serial")
     interval = merged.get("interval_seconds", 5.0)
     try:
         interval_seconds = float(interval)
@@ -700,6 +731,7 @@ def resolve_config(
         wav_backup=_as_optional_path(merged.get("wav_backup")),
         backup_wavs=backup_wavs,
         delete_originals=delete_originals,
+        skip_serial=skip_serial,
         provenance=provenance,
     )
 
@@ -723,6 +755,7 @@ def config_to_dict(cfg: EffectiveConfig) -> dict[str, Any]:
         "wav_backup": str(cfg.wav_backup) if cfg.wav_backup else None,
         "backup_wavs": cfg.backup_wavs,
         "delete_originals": cfg.delete_originals,
+        "skip_serial": cfg.skip_serial,
     }
 
 
@@ -869,6 +902,7 @@ def build_missing_cmd(
     recordings: Path,
     transcripts: Path,
     env_file: Path | None,
+    skip_serial: bool = False,
 ) -> list[str]:
     cmd: list[str]
     if missing.suffix.lower() == ".py":
@@ -878,6 +912,8 @@ def build_missing_cmd(
     cmd.extend(["--source", str(recordings), "--transcripts", str(transcripts)])
     if env_file is not None:
         cmd.extend(["--env-file", str(env_file)])
+    if skip_serial:
+        cmd.append("--skip-serial")
     return cmd
 
 
@@ -1197,6 +1233,7 @@ def maybe_run_missing(
         recordings=cfg.recordings,
         transcripts=cfg.transcripts,
         env_file=cfg.env_file,
+        skip_serial=cfg.skip_serial,
     )
     _print_section("Transcription (whispermlx-missing)")
     if dry_run:

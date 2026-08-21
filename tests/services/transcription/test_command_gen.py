@@ -55,6 +55,7 @@ def test_whispermlx_missing_flags() -> None:
         dry_run=True,
         force=True,
         fuzzy_json_match=True,
+        skip_serial=True,
         model="medium",
         language="de",
     )
@@ -63,6 +64,7 @@ def test_whispermlx_missing_flags() -> None:
     assert "--dry-run" in cmd.shell
     assert "--force" in cmd.shell
     assert "--fuzzy-json-match" in cmd.shell
+    assert "--skip-serial" in cmd.shell
     assert "'/src with spaces'" in cmd.shell
     assert "--whisper-args" in cmd.shell
     assert "medium" in cmd.shell
