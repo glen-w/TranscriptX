@@ -258,24 +258,19 @@ def admit_and_register(
                 inspection.state is ManagedArtifactState.INCOMPLETE_UNREPAIRABLE
                 and not allow_provenance_backfill
             ):
-                # Schema-invalid library JSON can still be replaced by a fresh
-                # admission; provenance-only incompletes stay fail-closed.
-                schema_valid = False
+                # Marker-less library JSON (no schema_version) can still be replaced
+                # by a fresh admission; provenance-only incompletes stay fail-closed.
+                has_schema_marker = False
                 try:
                     with open(target_json, "r", encoding="utf-8") as handle:
                         existing_doc = json.load(handle)
-                    if isinstance(existing_doc, dict):
-                        from transcriptx.io.transcript_schema import (
-                            validate_transcript_document,
-                        )
-
-                        validate_transcript_document(
-                            existing_doc, label=str(target_json)
-                        )
-                        schema_valid = True
+                    has_schema_marker = (
+                        isinstance(existing_doc, dict)
+                        and "schema_version" in existing_doc
+                    )
                 except Exception:
-                    schema_valid = False
-                if schema_valid:
+                    has_schema_marker = False
+                if has_schema_marker:
                     return AdmitOutcome(
                         kind=AdmitOutcomeKind.INCOMPLETE_STATE_FAILURE,
                         transcript_path=target_json,

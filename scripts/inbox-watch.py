@@ -6,6 +6,10 @@ This is a companion to whispermlx-missing, not the in-app G2 directory watcher.
 Streamlit never executes it. It does not import transcriptx and does not admit
 files into the managed library (use Import Transcript or Settings → Watcher).
 
+The transcripts destination must be ``…/transcripts/originals`` (or another
+non-library folder). Config that points at the managed library root (the
+directory that already contains ``metadata/`` / ``imports/``) is rejected.
+
 Install:
     install -m 755 scripts/inbox-watch.py ~/.local/bin/inbox-watch
     (ensure ~/.local/bin is on PATH)

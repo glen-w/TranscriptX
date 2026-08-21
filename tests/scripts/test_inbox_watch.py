@@ -578,3 +578,38 @@ class TestBackupAndDelete:
         src.write_bytes(b"new")
         dest = iw.unique_backup_path(wav_backup, src)
         assert dest.name == "clip_1.m4a"
+
+
+def test_refuses_managed_library_root_as_transcripts_dest(iw, tmp_path: Path) -> None:
+    library = tmp_path / "transcripts"
+    library.mkdir()
+    (library / "metadata").mkdir()
+    originals = library / "originals"
+    originals.mkdir()
+    assert iw.looks_like_managed_library_root(library)
+    assert not iw.looks_like_managed_library_root(originals)
+
+    inbox = tmp_path / "inbox"
+    recordings = tmp_path / "recordings"
+    inbox.mkdir()
+    recordings.mkdir()
+    cfg = iw.EffectiveConfig(
+        inbox=inbox,
+        recordings=recordings,
+        transcripts=library,
+        env_file=tmp_path / "whisperx.env",
+        whispermlx_missing=tmp_path / "whispermlx-missing.py",
+        ffmpeg=None,
+        watch_audio=True,
+        watch_transcripts=False,
+        recursive=False,
+        interval_seconds=5,
+        move_processed=None,
+        wav_backup=None,
+        backup_wavs=False,
+        delete_originals=False,
+        provenance=iw.ConfigProvenance(),
+    )
+    err = iw.validate_layout(cfg)
+    assert err is not None
+    assert "originals" in err

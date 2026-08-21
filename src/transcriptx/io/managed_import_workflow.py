@@ -39,7 +39,6 @@ from transcriptx.io.import_metadata_sidecar import (
 from transcriptx.io.originals_archive import exclusive_create_originals_archive
 from transcriptx.io.speaker_map_inheritance import apply_speaker_map_on_import
 from transcriptx.io.transcript_importer import import_transcript
-from transcriptx.io.transcript_schema import validate_transcript_document
 
 logger = get_logger()
 
@@ -349,7 +348,8 @@ def _run_managed_import_body(
         elif inspection.state is ManagedArtifactState.INCOMPLETE_UNREPAIRABLE:
             # Only missing provenance may be backfilled from app-owned staging.
             # Unsafe/present original_path must surface as a hard error (no pairing).
-            # Schema-invalid JSON is replaced via new admission below.
+            # Marker-less JSON (no schema_version — e.g. raw WhisperX) is replaced
+            # via new admission below so vendor NaNs cannot block atomic writes.
             try:
                 with open(target_json, "r", encoding="utf-8") as handle:
                     doc = json.load(handle)
@@ -357,16 +357,10 @@ def _run_managed_import_body(
                 raise ValueError(
                     inspection.detail or "Incomplete managed transcript is not readable"
                 ) from exc
-            schema_valid = False
-            if isinstance(doc, dict):
-                try:
-                    validate_transcript_document(doc, label=str(target_json))
-                    schema_valid = True
-                except ValueError:
-                    schema_valid = False
-            if not schema_valid:
+            has_schema_marker = isinstance(doc, dict) and "schema_version" in doc
+            if not has_schema_marker:
                 logger.info(
-                    "Replacing schema-invalid library JSON via managed admission: %s",
+                    "Replacing marker-less library JSON via managed admission: %s",
                     target_json,
                 )
                 replace_schema_invalid = True

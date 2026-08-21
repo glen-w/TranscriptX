@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Managed admit replaces marker-less library JSON (raw WhisperX, including vendor NaNs) instead of failing mid-sidecar-repair; Speakers/Run pickers omit library paths without an import sidecar; `inbox-watch` / `whispermlx-missing` refuse writing into the managed library root (require `…/originals`).
 - `inbox-watch` audio convert: pass `-f mp3` so ffmpeg 8+ can mux to a `.mp3.partial` temp file (it no longer infers MP3 from that extension). Terminal feedback mirrors analysis Review / Run summary (`[i/n]` progress, elapsed times, streamed ffmpeg stats); Sphinx guide covers the UX under [transcription.md](docs/runtime/transcription.md#terminal-feedback) and links it from [directory_watcher.md](docs/runtime/directory_watcher.md).
 
 ## [0.9.9.5] - 2026-08-15
