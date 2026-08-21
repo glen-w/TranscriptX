@@ -174,7 +174,7 @@ def _render_assess_and_configure(audio_paths: List[Path], *, deps_ready: bool) -
     if cached:
         _render_assessment_result(cached["assessment"], cached["compliance"])
         col_re, _ = st.columns([1, 4])
-        if col_re.button("Re-assess", key="audio_prep_reassess"):
+        if col_re.button("Re-assess", key="audio_prep_reassess", icon=ic.REPLAY):
             _run_assessment(audio_path, cache_key)
             st.rerun()
     else:

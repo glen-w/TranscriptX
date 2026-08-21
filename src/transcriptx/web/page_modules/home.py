@@ -185,6 +185,8 @@ def render_home() -> None:
                 "Add transcripts in Library to get started.",
                 primary_action=("Import Transcript", "Import Transcript"),
                 secondary_action=("Library", "Library"),
+                primary_icon=ic.UPLOAD,
+                secondary_icon=ic.LIBRARY,
             )
             return
 

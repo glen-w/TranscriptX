@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.pipeline.run_outcome_truth import (
     project_canonical_outcomes,
     project_group_outcomes,
@@ -32,7 +33,7 @@ def render_run_health(ctx: BlockContext, _placement: BlockPlacement) -> None:
         st.warning("🟠 Warnings detected in this run.")
 
     if has_issues:
-        if st.button("Re-scan health checks", key="block_run_health_rescan"):
+        if st.button("Re-scan health checks", key="block_run_health_rescan", icon=ic.REFRESH):
             from transcriptx.web.services.artifact_service import clear_artifact_caches
 
             clear_artifact_caches()
@@ -117,6 +118,7 @@ def render_module_navigator(ctx: BlockContext, _placement: BlockPlacement) -> No
 
         if st.button(
             "View charts for selected module",
+            icon=ic.BAR_CHART,
             key="overview_nav_charts_module",
         ):
             navigate_to_charts(module=module)

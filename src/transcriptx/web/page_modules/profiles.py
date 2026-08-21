@@ -10,6 +10,7 @@ from typing import Any
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.app.controllers.profile_controller import ProfileController
 from transcriptx.core.config import get_profile_target_adapter
 from transcriptx.web.components.info_tooltip import widget_help
@@ -160,7 +161,7 @@ def render_profiles_page() -> None:
             key="profiles_create_base",
             disabled=create_mode != "copy_saved_profile",
         )
-        if st.button("Create profile", key="profiles_create_btn"):
+        if st.button("Create profile", key="profiles_create_btn", icon=ic.ADD):
             if not create_name.strip():
                 st.error("Profile name is required.")
             elif create_name == "default":
@@ -231,7 +232,7 @@ def render_profiles_page() -> None:
 
                 col_save, col_rename, col_delete = st.columns(3)
                 with col_save:
-                    if st.button("Save", key=f"save_{target_choice}_{profile_name}"):
+                    if st.button("Save", key=f"save_{target_choice}_{profile_name}", icon=ic.SAVE):
                         ok = ctrl.save_profile(
                             target_choice,
                             profile_name,
@@ -255,7 +256,8 @@ def render_profiles_page() -> None:
                         key=f"rename_to_{target_choice}_{profile_name}",
                     )
                     if st.button(
-                        "Rename", key=f"rename_{target_choice}_{profile_name}"
+                        "Rename",
+            icon=ic.RENAME, key=f"rename_{target_choice}_{profile_name}"
                     ):
                         if not new_name.strip():
                             st.error("New name is required.")
@@ -272,7 +274,8 @@ def render_profiles_page() -> None:
 
                 with col_delete:
                     if st.button(
-                        "Delete", key=f"delete_{target_choice}_{profile_name}"
+                        "Delete",
+            icon=ic.DELETE, key=f"delete_{target_choice}_{profile_name}"
                     ):
                         ok = ctrl.delete_profile(target_choice, profile_name)
                         if ok:
@@ -288,7 +291,7 @@ def render_profiles_page() -> None:
                     key=f"export_path_{target_choice}_{profile_name}",
                     value="",
                 )
-                if st.button("Export", key=f"export_{target_choice}_{profile_name}"):
+                if st.button("Export", key=f"export_{target_choice}_{profile_name}", icon=ic.DOWNLOAD):
                     if not exp_path.strip():
                         st.error("Provide an export path.")
                     else:
@@ -311,6 +314,7 @@ def render_profiles_page() -> None:
                 )
                 if st.button(
                     "Import as this profile",
+            icon=ic.UPLOAD,
                     key=f"import_{target_choice}_{profile_name}",
                 ):
                     if not import_path.strip():

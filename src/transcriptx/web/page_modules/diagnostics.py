@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.web.cache_helpers import (
     cached_doctor_report,
     cached_group_manifest_warnings,
@@ -74,6 +75,7 @@ def _render_speaker_profile_ops() -> None:
                 st.caption("Link keys: " + ", ".join(detail.link_file_keys))
             if st.button(
                 "Attempt safe recovery",
+            icon=ic.REPLAY,
                 key=f"diag_recover_{detail.operation_id}",
                 type="primary",
             ):
@@ -136,6 +138,7 @@ def _render_rename_repair_section() -> None:
             st.caption(f"{old_p} → {new_p}")
             if st.button(
                 "Repair incomplete rename",
+            icon=ic.RENAME,
                 key=f"repair_rename_{op_id}",
                 type="primary",
             ):

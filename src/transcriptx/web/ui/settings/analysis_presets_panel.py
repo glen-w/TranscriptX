@@ -216,6 +216,7 @@ def render_analysis_presets_panel() -> None:
     with col_reset:
         reset = st.button(
             "Reset to defaults",
+            icon=ic.RESET,
             key="settings_ui_presets_reset",
         )
 

@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.analysis.exemplars import (
     SegmentRecord,
     SpeakerExemplarsConfig,
@@ -133,7 +134,7 @@ def render_speaker_exemplars(speaker_id: int) -> None:
     with col_left:
         st.subheader("Exemplar Lines")
     with col_right:
-        if st.button("Recompute exemplars", key=f"recompute_exemplars_{speaker_id}"):
+        if st.button("Recompute exemplars", key=f"recompute_exemplars_{speaker_id}", icon=ic.REPLAY):
             st.session_state[refresh_key] += 1
 
     config_payload = json.dumps(asdict(config), sort_keys=True, default=str)

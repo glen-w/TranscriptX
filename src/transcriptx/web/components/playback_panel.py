@@ -46,6 +46,7 @@ from typing import Any, List, Optional, Sequence
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.services.speaker_studio.clip_service import WarmClipsResult
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
@@ -668,7 +669,8 @@ def render_exact_segment_preview(
                 st.write(text)
         with col_play:
             st.button(
-                "▶",
+                "",
+                icon=ic.PLAY,
                 key=f"{play_key}_btn_{active_id}_{i}",
                 help=widget_help("Play this clip"),
                 on_click=set_active_clip,
@@ -773,7 +775,8 @@ def render_playback_panel_body(
             st.write(seg.text or "_(empty)_")
         with col_play:
             st.button(
-                "▶",
+                "",
+                icon=ic.PLAY,
                 key=f"{play_key}_btn_{active_id}_{i}",
                 help=widget_help("Play this clip"),
                 on_click=set_active_clip,

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.web.action_menus.catalog import (
     ACTIONS,
     SECTION_ALLOWLISTS,
@@ -135,6 +136,7 @@ def render_interface_panel() -> None:
         )
         if st.button(
             "Replace with built-in defaults",
+            icon=ic.APPLY,
             key="iface_replace_defaults",
             type="primary",
         ):
@@ -240,14 +242,15 @@ def render_interface_panel() -> None:
     with c1:
         save_clicked = st.button(
             "Save",
+            icon=ic.SAVE,
             key="iface_save",
             type="primary",
             disabled=draft.recovery,
         )
     with c2:
-        restore_clicked = st.button("Restore built-in defaults", key="iface_restore")
+        restore_clicked = st.button("Restore built-in defaults", key="iface_restore", icon=ic.RESET)
     with c3:
-        reload_clicked = st.button("Reload saved settings", key="iface_reload")
+        reload_clicked = st.button("Reload saved settings", key="iface_reload", icon=ic.REFRESH)
 
     if save_clicked and not draft.recovery:
         _pull_widgets_into_draft()

@@ -7,6 +7,7 @@ from typing import Sequence
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.export.types import HARD_CAP_BYTES
 from transcriptx.web.models.artifact import Artifact
 from transcriptx.web.module_option_format import format_module_option
@@ -140,7 +141,8 @@ def render_export_panel_ui(
         st.error("Export exceeds 2GB hard cap.")
         return
     if st.button(
-        "Create Export", disabled=not confirm_large, key=f"{key_prefix}_create"
+        "Create Export",
+        icon=ic.FOLDER_ZIP, disabled=not confirm_large, key=f"{key_prefix}_create"
     ):
         export_path = ExportService.zip_artifacts(run_root, [a.id for a in selected])
         if export_path:
@@ -148,6 +150,7 @@ def render_export_panel_ui(
                 payload = ArtifactService.read_for_download(export_path)
                 st.download_button(
                     "Download Export",
+        icon=ic.DOWNLOAD,
                     data=payload,
                     file_name=export_path.name,
                     key=f"{key_prefix}_download",

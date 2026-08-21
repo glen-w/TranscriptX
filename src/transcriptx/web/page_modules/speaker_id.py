@@ -1118,18 +1118,21 @@ def _render_voice_display_payload(
             pid = cand.get("profile_id")
             cols[0].button(
                 "Confirm this profile",
+            icon=ic.CONFIRM,
                 key=widget_key(path_str, f"voice_confirm_{active_id}_{pid}"),
                 on_click=_cb_voice_confirm,
                 args=(path_str, active_id, pid),
             )
             cols[1].button(
                 "Reject suggestion",
+            icon=ic.REJECT,
                 key=widget_key(path_str, f"voice_reject_{active_id}_{pid}"),
                 on_click=_cb_voice_reject,
                 args=(path_str, active_id, pid),
             )
             cols[2].button(
                 "Leave unlinked",
+            icon=ic.UNLINK,
                 key=widget_key(path_str, f"voice_leave_{active_id}_{pid}"),
                 on_click=_cb_voice_leave,
                 args=(path_str, active_id, pid),
@@ -1232,6 +1235,7 @@ def _render_voice_suggestions(
     btn_one, btn_all = st.columns(2)
     btn_one.button(
         "Analyse voice",
+        icon=ic.VOICE,
         key=widget_key(path_str, f"voice_analyse_{active_id}"),
         help=widget_help("Embed this speaker and rank local profile suggestions."),
         on_click=_cb_voice_analyse_one,
@@ -1239,6 +1243,7 @@ def _render_voice_suggestions(
     )
     btn_all.button(
         "Analyse all speakers",
+        icon=ic.VOICE,
         key=widget_key(path_str, "voice_analyse_all"),
         help=widget_help(
             (

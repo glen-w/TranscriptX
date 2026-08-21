@@ -8,6 +8,7 @@ from typing import Any
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.analysis.llm_custom_qa.readers import (
     find_committed_custom_qa_artifact,
     load_committed_custom_qa_payload,
@@ -174,6 +175,7 @@ def _render_answer_card(
                         and segs
                         and st.button(
                             f"Jump to segment {segs[0]}",
+        icon=ic.TARGET,
                             key=f"{key_prefix}_jump_{row.get('question_index')}_{i}",
                         )
                     ):

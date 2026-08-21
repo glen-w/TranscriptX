@@ -9,6 +9,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.utils.paths import PATHS
 from transcriptx.core.utils.schema_epoch import (
     CURRENT_SCHEMA_EPOCH,
@@ -72,7 +73,7 @@ def render_schema_epoch_gate() -> bool:
             value=str(Path.home() / "transcriptx_epoch_transcript_inventory.json"),
             key="schema_epoch_inventory_export_path",
         )
-        if st.button("Export transcript inventory", key="schema_epoch_export_inv"):
+        if st.button("Export transcript inventory", key="schema_epoch_export_inv", icon=ic.DOWNLOAD):
             try:
                 path = export_transcript_inventory(inventory, Path(export_path))
                 st.success(f"Wrote inventory to `{path}`")
@@ -85,7 +86,7 @@ def render_schema_epoch_gate() -> bool:
         value=str(Path(assessment.data_root).parent / "transcriptx_data_epoch1"),
         key="schema_epoch_fresh_path",
     )
-    if st.button("Create fresh epoch-1 data directory", type="primary"):
+    if st.button("Create fresh epoch-1 data directory", type="primary", icon=ic.ADD):
         try:
             created = create_fresh_data_directory(Path(fresh_path))
             st.success(
@@ -112,7 +113,7 @@ def render_schema_epoch_gate() -> bool:
         value=str(Path.home() / "transcriptx_epoch_reset_report.json"),
         key="schema_epoch_reset_report_path",
     )
-    if st.button("Reset derived state", key="schema_epoch_reset_derived"):
+    if st.button("Reset derived state", key="schema_epoch_reset_derived", icon=ic.RESET):
         if confirm.strip() != "RESET DERIVED":
             st.error("Confirmation text must be exactly: RESET DERIVED")
         else:

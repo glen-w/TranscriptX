@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.analysis.llm_custom_qa.question_identity import (
     upsert_library_question,
 )
@@ -169,11 +170,12 @@ def render_custom_qa_picker(
             with c3:
                 if st.button(
                     "Save to library",
+        icon=ic.SAVE,
                     key=f"{key_prefix}_adhoc_save_{rid}",
                 ):
                     _save_one_row_to_library(row, cfg=cfg)
             with c4:
-                if st.button("✕", key=f"{key_prefix}_adhoc_rm_{rid}"):
+                if st.button("", key=f"{key_prefix}_adhoc_rm_{rid}", icon=ic.CLOSE):
                     remove_ids.append(rid)
 
         if remove_ids:
@@ -182,7 +184,7 @@ def render_custom_qa_picker(
             ]
             st.rerun()
 
-        if st.button("Add question", key=f"{key_prefix}_adhoc_add"):
+        if st.button("Add question", key=f"{key_prefix}_adhoc_add", icon=ic.ADD):
             adhoc_rows.append(_new_row())
             st.rerun()
 

@@ -22,9 +22,12 @@ def render_empty_state(
     detail: str,
     primary_action: tuple[str, str] | None = None,
     secondary_action: tuple[str, str] | None = None,
+    primary_icon: str | None = None,
+    secondary_icon: str | None = None,
 ) -> None:
     """
     primary_action / secondary_action: (button_label, target_page_key).
+    primary_icon / secondary_icon: Material tokens from ``transcriptx.web.icons``.
     """
     hero = kind == "missing_prerequisite"
     hero_cls = " tx-empty-hero" if hero else ""
@@ -41,6 +44,7 @@ def render_empty_state(
             if st.button(
                 label,
                 type="primary",
+                icon=primary_icon,
                 key=f"empty_pri_{kind}_{label}"[:64],
             ):
                 st.session_state["page"] = page
@@ -48,6 +52,10 @@ def render_empty_state(
     if secondary_action:
         label, page = secondary_action
         with cols[1]:
-            if st.button(label, key=f"empty_sec_{kind}_{label}"[:64]):
+            if st.button(
+                label,
+                icon=secondary_icon,
+                key=f"empty_sec_{kind}_{label}"[:64],
+            ):
                 st.session_state["page"] = page
                 st.rerun()

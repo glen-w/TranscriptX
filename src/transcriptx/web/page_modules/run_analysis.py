@@ -589,6 +589,7 @@ def _run_analysis_config_and_launch_fragment(
         with cols[1]:
             launch = st.button(
                 "Run analysis",
+                icon=ic.RUN,
                 type="primary",
                 key="run_analysis_launch",
                 disabled=not can_launch,

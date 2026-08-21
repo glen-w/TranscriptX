@@ -749,6 +749,7 @@ def _render_voice_controls(
             promo_action = f"voice_promote_{sample.sample_id}"
             if cols[1].button(
                 "Promote",
+            icon=ic.CHECK_CIRCLE,
                 key=f"spk_voice_promote_{sample.sample_id}",
             ):
                 try:

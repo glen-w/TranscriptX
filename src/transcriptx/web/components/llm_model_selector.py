@@ -7,6 +7,7 @@ from typing import Any, Sequence
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.app.controllers.profile_controller import ProfileController
 from transcriptx.core.analysis.llm_support.model_selection import (
     LLM_MODEL_CONSUMER_IDS,
@@ -868,7 +869,7 @@ def render_llm_models_settings_panel() -> None:
         return
 
     installed, list_error = cached_list_ollama_models(llm.base_url)
-    if st.button("Refresh models", key=_key(key_prefix, "refresh")):
+    if st.button("Refresh models", key=_key(key_prefix, "refresh"), icon=ic.REFRESH):
         cached_list_ollama_models.clear()
         cached_ollama_model_infos.clear()
         cached_ollama_library_meta.clear()
@@ -944,7 +945,7 @@ def render_llm_models_settings_panel() -> None:
         value=False,
         key=_key(key_prefix, "save_set_active"),
     )
-    if st.button("Save preset", key=_key(key_prefix, "save_btn")):
+    if st.button("Save preset", key=_key(key_prefix, "save_btn"), icon=ic.SAVE):
         draft = build_selection_from_session(key_prefix, include_group=True)
         try:
             validated = validate_llm_model_selection(draft, for_profile_save=True)

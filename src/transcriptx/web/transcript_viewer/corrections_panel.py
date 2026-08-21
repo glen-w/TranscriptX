@@ -8,6 +8,7 @@ from typing import Any, Optional, Tuple
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.corrections.detect import resolve_segment_id
 from transcriptx.core.corrections.word_spans import (
     AmbiguousFindError,
@@ -178,15 +179,18 @@ def render_segment_propose_panel(
         c1, c2, c3 = st.columns(3)
         propose = c1.button(
             "Propose",
+            icon=ic.SPELLCHECK,
             key=correction_widget_key(ctx.transcript_identity_hash, sid, "propose"),
         )
         accept_apply = c2.button(
             "Accept & apply this",
+            icon=ic.CHECK,
             key=correction_widget_key(ctx.transcript_identity_hash, sid, "apply"),
             type="primary",
         )
         open_studio = c3.button(
             "Open Studio",
+            icon=ic.CORRECTIONS,
             key=correction_widget_key(ctx.transcript_identity_hash, sid, "studio"),
         )
         if open_studio:
@@ -228,6 +232,7 @@ def render_segment_propose_panel(
                 )
                 if st.button(
                     "Open corrected transcript",
+            icon=ic.ARTICLE,
                     key=correction_widget_key(
                         ctx.transcript_identity_hash, sid, "open_corrected"
                     ),

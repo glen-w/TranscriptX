@@ -5,6 +5,7 @@ from __future__ import annotations
 import streamlit as st
 import yaml
 
+from transcriptx.web import icons as ic
 from transcriptx.web.blocks import register_builtin_blocks
 from transcriptx.web.blocks.availability import check_block_availability
 from transcriptx.web.blocks.composer import render_layout_page
@@ -110,7 +111,7 @@ def _render_schema_mode(layout_id: str) -> None:
         )
         if not overwrite_ok:
             st.caption("A custom layout with this id already exists.")
-    if st.button("Save as custom layout", key="dashboard_builder_save_as_btn"):
+    if st.button("Save as custom layout", key="dashboard_builder_save_as_btn", icon=ic.SAVE):
         try:
             slug = slugify_layout_id(new_id or "")
             if LayoutProfileStore.custom_layout_exists(slug) and not overwrite_ok:
@@ -141,6 +142,7 @@ def _render_schema_mode(layout_id: str) -> None:
         )
         if st.button(
             "Delete custom layout",
+        icon=ic.DELETE,
             key="dashboard_builder_delete_btn",
             disabled=not confirm_delete,
         ):

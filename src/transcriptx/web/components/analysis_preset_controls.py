@@ -6,6 +6,7 @@ from typing import Any, Optional, Sequence
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.core.analysis.selection import (
     VALID_PRESETS,
     AnalysisPreset,
@@ -338,7 +339,8 @@ def _render_review_module_row(
         st.markdown(f"- {label}")
     with remove_col:
         if st.button(
-            "✕",
+            "",
+            icon=ic.CLOSE,
             key=f"{key_prefix}_review_rm_{module_id}",
             help=widget_help(f"Remove from run: {label}"),
             type="tertiary",

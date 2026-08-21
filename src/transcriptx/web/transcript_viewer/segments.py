@@ -8,6 +8,7 @@ from typing import Any, Mapping
 
 import streamlit as st
 
+from transcriptx.web import icons as ic
 from transcriptx.export.grouping import segment_speaker_label
 from transcriptx.services.speaker_studio.segment_index import SegmentInfo
 from transcriptx.utils.text_utils import format_time_detailed
@@ -114,7 +115,8 @@ def _render_play_button(
         return
     assert binding is not None  # for type checkers; guarded above
     st.button(
-        "▶",
+        "",
+        icon=ic.PLAY,
         key=play_button_key(binding, tab, source_index),
         help=widget_help("Play this clip"),
         on_click=set_active_clip,
@@ -234,6 +236,7 @@ def render_plain_segments(
         joined = "\n\n".join(copy_chunks)
         st.download_button(
             "Download visible segments as .txt",
+        icon=ic.DOWNLOAD,
             data=joined,
             file_name="transcript_snippet.txt",
             mime="text/plain",

@@ -259,6 +259,7 @@ def render_merge_profiles_editor() -> list[MergeSourceProfile]:
                 with bcol2:
                     if not row.get("builtin") and st.button(
                         "Delete",
+            icon=ic.DELETE,
                         key=f"{prefix}_del",
                     ):
                         to_remove.append(i)
@@ -270,7 +271,7 @@ def render_merge_profiles_editor() -> list[MergeSourceProfile]:
 
         acol, scol, rcol = st.columns(3)
         with acol:
-            if st.button("Add profile", key="merge_prof_add"):
+            if st.button("Add profile", key="merge_prof_add", icon=ic.ADD):
                 rows.append(
                     {
                         "id": f"custom_{len(rows) + 1}",
@@ -290,7 +291,7 @@ def render_merge_profiles_editor() -> list[MergeSourceProfile]:
                 st.session_state[_GEN_KEY] = gen + 1
                 st.rerun()
         with scol:
-            if st.button("Save profiles", type="primary", key="merge_prof_save"):
+            if st.button("Save profiles", type="primary", key="merge_prof_save", icon=ic.SAVE):
                 try:
                     profiles = _draft_to_profiles(rows)
                     save_merge_source_profiles(profiles)
@@ -301,7 +302,7 @@ def render_merge_profiles_editor() -> list[MergeSourceProfile]:
                 except Exception as exc:
                     st.error(f"Could not save profiles: {exc}")
         with rcol:
-            if st.button("Reload defaults", key="merge_prof_reload_defaults"):
+            if st.button("Reload defaults", key="merge_prof_reload_defaults", icon=ic.RESET):
                 st.session_state[_DRAFT_KEY] = [
                     {
                         "id": p.id,
