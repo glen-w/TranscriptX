@@ -46,7 +46,7 @@ from transcriptx.web.services.recordings_service import RecordingsService
 
 logger = get_logger()
 
-_AUDIO_UPLOAD_TYPES = ["mp3", "wav", "m4a", "flac", "ogg", "aac"]
+_AUDIO_UPLOAD_TYPES = ["mp3", "wav", "m4a", "flac", "ogg", "opus", "aac"]
 _KEY_LAST_IMPORTED_TRANSCRIPT_PATH = "import_last_transcript_path"
 _KEY_FOLDER_PATH = "import_folder_path_input"
 _KEY_SCAN_HANDLE = "import_folder_scan_handle"

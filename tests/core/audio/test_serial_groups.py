@@ -9,6 +9,7 @@ from transcriptx.core.audio.serial_groups import (
     detect_serial_audio_groups,
     merged_output_filename,
     partition_dismissed_serial_groups,
+    partition_serial_group_visibility,
 )
 
 
@@ -332,6 +333,28 @@ class TestVoiceNoteRunGrouping:
             "signal-2026-08-12-13-20-50-88.aac",
         ]
 
+    def test_clusters_whatsapp_desktop_opus_burst(self) -> None:
+        """WhatsApp Desktop/iOS share-sheet exports are Opus; Auto-merge must see them."""
+        paths = [
+            _p("WhatsApp Audio 2026-08-12 at 13.11.09.opus"),
+            _p("WhatsApp Audio 2026-08-12 at 13.20.50.opus"),
+            _p("WhatsApp Audio 2026-08-12 at 13.21.35.opus"),
+            _p("WhatsApp Audio 2026-08-12 at 13.41.29.opus"),
+            _p("WhatsApp Audio 2026-08-12 at 13.45.31.opus"),
+            _p("WhatsApp Audio 2026-08-12 at 13.55.04.opus"),
+        ]
+        groups = detect_serial_audio_groups(paths)
+        assert len(groups) == 1
+        assert groups[0].matched_rule == "voice_note_run"
+        assert [p.name for p in groups[0].ordered_paths] == [
+            "WhatsApp Audio 2026-08-12 at 13.11.09.opus",
+            "WhatsApp Audio 2026-08-12 at 13.20.50.opus",
+            "WhatsApp Audio 2026-08-12 at 13.21.35.opus",
+            "WhatsApp Audio 2026-08-12 at 13.41.29.opus",
+            "WhatsApp Audio 2026-08-12 at 13.45.31.opus",
+            "WhatsApp Audio 2026-08-12 at 13.55.04.opus",
+        ]
+
     def test_clusters_whatsapp_android_ptt_same_day(self) -> None:
         paths = [
             _p("PTT-20260812-WA0001.opus"),
@@ -523,6 +546,23 @@ class TestDismissalPartition:
             ]
         )
         assert first[0].dismissal_key == later[0].dismissal_key
+
+    def test_permanent_dismissal_wins_over_session_hide(self) -> None:
+        paths = [
+            _p("260223_team_facilitation_10.mp3"),
+            _p("260223_team_facilitation_11.mp3"),
+            _p("20251230160235_1.wav"),
+            _p("20251230160235_2.wav"),
+        ]
+        groups = detect_serial_audio_groups(paths)
+        visible, hidden, never = partition_serial_group_visibility(
+            groups,
+            session_keys=["numeric_index:260223_team_facilitation"],
+            permanent_keys=["numeric_index:260223_team_facilitation"],
+        )
+        assert [g.base_key for g in visible] == ["20251230160235"]
+        assert hidden == []
+        assert [g.base_key for g in never] == ["260223_team_facilitation"]
 
 
 class TestMergedOutputFilename:

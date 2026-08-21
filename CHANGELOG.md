@@ -19,12 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Auto-merge groups start **unchecked**, with **Select all** / **Select none**. **Don't suggest again** persists a false match in `{config_dir}/audio_merge_dismissed.json` (Hide remains session-only). `whispermlx-missing --skip-serial` does not skip dismissed groups.
 - Comparison page: added [nanosamur.ai](https://nanosamur.ai) as a complementary org-grade self-hosted STT upstream (not an analysis substitute).
 - Security pins: `cryptography` 48.0.1 → 50.0.0 and `nltk` 3.9.4 → 3.10.3 (fixable pip-audit findings on the clean-env wheel gate).
 - Docs surfaces aligned: Sphinx [docs/index.md](docs/index.md) toctrees match [USER_INDEX](docs/USER_INDEX.md) (backup, corrections viewer/karaoke/LLM, recipes, STORAGE under Reference); PRODUCT/website/inventory say **ten** workflows; public series badge **0.9.9.5**; website install snippet includes `.env` / `HOST_RECORDINGS_DIR`.
 
 ### Fixed
 
+- Auto-merge / recordings discovery accept **Opus** (`.opus`) so WhatsApp Desktop voice-note bursts appear in Tools → Auto-merge (ffmpeg/pydub already decode them).
 - Managed admit replaces marker-less library JSON (raw WhisperX, including vendor NaNs) instead of failing mid-sidecar-repair; Speakers/Run pickers omit library paths without an import sidecar; `inbox-watch` / `whispermlx-missing` refuse writing into the managed library root (require `…/originals`).
 - `whispermlx-missing` skips stems that already have JSON in the parent library root, as `foo (N).json` archives, or as a sidecar next to the MP3 — not only files inside `--transcripts` (`originals/`).
 - `inbox-watch` audio convert: pass `-f mp3` so ffmpeg 8+ can mux to a `.mp3.partial` temp file (it no longer infers MP3 from that extension). Terminal feedback mirrors analysis Review / Run summary (`[i/n]` progress, elapsed times, streamed ffmpeg stats); Sphinx guide covers the UX under [transcription.md](docs/runtime/transcription.md#terminal-feedback) and links it from [directory_watcher.md](docs/runtime/directory_watcher.md).

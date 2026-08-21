@@ -987,6 +987,38 @@ class TestSkipSerial:
         assert "meeting_part2.mp3" in text
         assert "likely serial, merge later" in text
 
+    def test_skip_serial_honors_dont_suggest_again(
+        self, wm, tmp_path: Path, monkeypatch, capsys
+    ):
+        from transcriptx.core.audio.merge_dismissals import (
+            add_permanently_dismissed_key,
+        )
+
+        source = tmp_path / "audio"
+        transcripts = tmp_path / "tx"
+        self._write_mp3s(
+            source, ("meeting_part1.mp3", "meeting_part2.mp3", "standalone.mp3")
+        )
+        transcripts.mkdir()
+        config_dir = tmp_path / "config"
+        config_dir.mkdir()
+        monkeypatch.setattr(
+            "transcriptx.core.audio.merge_dismissals.CONFIG_DIR", config_dir
+        )
+        add_permanently_dismissed_key("part_suffix:meeting")
+        monkeypatch.setattr(wm, "CONFIG_PATH", tmp_path / "noconfig.json")
+        with (
+            patch.object(wm, "probe_output_format_support", return_value=True),
+            patch.object(wm.subprocess, "run"),
+        ):
+            rc = wm.main(
+                self._dry_run_argv(tmp_path, source, transcripts, ["--skip-serial"])
+            )
+        text = capsys.readouterr().out
+        assert rc == 0
+        assert "would process: 3" in text
+        assert "skipped likely serial" not in text
+
     def test_skip_serial_whatsapp_burst(
         self, wm, tmp_path: Path, monkeypatch, capsys
     ):

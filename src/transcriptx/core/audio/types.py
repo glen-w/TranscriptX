@@ -5,8 +5,9 @@ from __future__ import annotations
 from typing import Optional
 
 # Supported input audio extensions for recordings discovery and transcription.
+# Include .opus: WhatsApp Desktop / iOS voice notes commonly export as Opus.
 SUPPORTED_AUDIO_EXTENSIONS: frozenset[str] = frozenset(
-    {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac", ".wma"}
+    {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".opus", ".aac", ".wma"}
 )
 
 try:

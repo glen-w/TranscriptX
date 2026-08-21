@@ -12,7 +12,7 @@ from transcriptx.core.utils.paths import RECORDINGS_DIR, RECORDINGS_IMPORTS_DIR
 from transcriptx.web.services.recordings_service import RecordingsService
 from transcriptx.web.components.info_tooltip import widget_help
 
-_AUDIO_UPLOAD_TYPES = ["mp3", "wav", "m4a", "flac", "ogg", "aac"]
+_AUDIO_UPLOAD_TYPES = ["mp3", "wav", "m4a", "flac", "ogg", "opus", "aac"]
 
 
 def recordings_path_label(path: Path) -> str:

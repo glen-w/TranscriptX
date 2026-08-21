@@ -24,15 +24,12 @@ from transcriptx.core.audio.linked_transcripts import (
     delete_linked_transcripts_for_audio,
 )
 from transcriptx.core.audio.tools import check_ffmpeg_available
+from transcriptx.core.audio.types import SUPPORTED_AUDIO_EXTENSIONS
 from transcriptx.core.utils.rename.date_prefix import extract_date_prefix
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.paths import RECORDINGS_DIR
 
 logger = get_logger()
-
-_SUPPORTED_EXTENSIONS = frozenset(
-    {".wav", ".mp3", ".ogg", ".m4a", ".flac", ".aac", ".wma"}
-)
 
 # Total stage count — always 4 so the snapshot total is constant
 _TOTAL_STAGES = 4
@@ -138,7 +135,7 @@ def run_merge(
         )
 
     bad_ext = [
-        str(p) for p in file_paths if p.suffix.lower() not in _SUPPORTED_EXTENSIONS
+        str(p) for p in file_paths if p.suffix.lower() not in SUPPORTED_AUDIO_EXTENSIONS
     ]
     if bad_ext:
         progress.on_stage_complete("validating")
@@ -146,7 +143,7 @@ def run_merge(
             success=False,
             errors=[
                 f"Unsupported file format(s): {', '.join(bad_ext)}. "
-                f"Supported: {', '.join(sorted(_SUPPORTED_EXTENSIONS))}"
+                f"Supported: {', '.join(sorted(SUPPORTED_AUDIO_EXTENSIONS))}"
             ],
         )
 

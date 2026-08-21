@@ -72,7 +72,7 @@ _MEANINGFUL_PATH_SOURCES = frozenset({"cli", "json", "env"})
 Kind = Literal["audio", "transcript", "ignore"]
 
 AUDIO_EXTENSIONS = frozenset(
-    {".wav", ".mp3", ".m4a", ".flac", ".ogg", ".aac", ".wma"}
+    {".wav", ".mp3", ".m4a", ".flac", ".ogg", ".opus", ".aac", ".wma"}
 )
 TRANSCRIPT_EXTENSIONS = frozenset(
     {".json", ".srt", ".vtt", ".txt", ".html", ".htm"}

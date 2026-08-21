@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from transcriptx.core.audio.types import SUPPORTED_AUDIO_EXTENSIONS
 from transcriptx.core.utils._path_core import get_canonical_base_name
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.core.utils.paths import (
@@ -28,7 +29,7 @@ from transcriptx.io.speaker_map_resolver import speaker_map_sidecar_candidates
 
 logger = get_logger()
 
-_AUDIO_SUFFIXES = frozenset({".wav", ".mp3", ".ogg", ".m4a", ".flac", ".aac", ".wma"})
+_AUDIO_SUFFIXES = SUPPORTED_AUDIO_EXTENSIONS
 _AUDIO_STATE_FIELDS = (
     "audio_path",
     "mp3_path",

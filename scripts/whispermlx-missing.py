@@ -52,11 +52,12 @@ Already-processed detection (flat folders, JSON only):
 Skip likely serial parts (--skip-serial, off by default):
     Do not transcribe MP3s that Auto-merge would group as split parts / voice-note
     runs (meeting_part2, timestamp_1/_2, WhatsApp bursts, …). Merge those files in
-    Tools → Auto-merge and transcribe the ``*_merged.mp3`` instead. ``--force`` still
-    skips serial members; use ``--no-skip-serial`` to transcribe parts anyway.
-    JSON ``skip_serial`` / env WHISPERMLX_SKIP_SERIAL also enable it. Uses the
-    Auto-merge detector when TranscriptX is importable; otherwise filename +
-    common voice-note rules.
+    Tools → Auto-merge and transcribe the ``*_merged.mp3`` instead. Groups marked
+    **Don't suggest again** on Auto-merge are not skipped (they are treated as
+    separate recordings). ``--force`` still skips serial members; use
+    ``--no-skip-serial`` to transcribe parts anyway. JSON ``skip_serial`` / env
+    WHISPERMLX_SKIP_SERIAL also enable it. Uses the Auto-merge detector when
+    TranscriptX is importable; otherwise filename + common voice-note rules.
 
 Failure handling:
     Failed items leave temp dirs under transcripts/.whispermlx-missing/tmp/ for inspection.
@@ -1081,6 +1082,22 @@ def detect_serial_groups_via_transcriptx(
     ]
 
 
+def _exclude_permanently_dismissed_serial_groups(
+    groups: Sequence[_LiteSerialGroup],
+) -> list[_LiteSerialGroup]:
+    """Drop groups the user marked Don't suggest again on Auto-merge."""
+    try:
+        from transcriptx.core.audio.merge_dismissals import (
+            filter_permanently_dismissed,
+        )
+    except ImportError:
+        return list(groups)
+    try:
+        return list(filter_permanently_dismissed(groups))
+    except Exception:
+        return list(groups)
+
+
 def serial_skip_reasons(
     paths: Sequence[Path],
 ) -> tuple[dict[Path, str], str]:
@@ -1101,6 +1118,7 @@ def serial_skip_reasons(
     if groups is None:
         detector = "lite"
         groups = lite_detect_serial_groups(paths)
+    groups = _exclude_permanently_dismissed_serial_groups(groups)
 
     reasons: dict[Path, str] = {}
     for group in groups:

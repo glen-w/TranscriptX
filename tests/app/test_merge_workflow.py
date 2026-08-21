@@ -103,6 +103,25 @@ class TestMergeValidation:
         "transcriptx.app.workflows.merge.check_ffmpeg_available",
         return_value=_FFMPEG_OK,
     )
+    @patch("transcriptx.app.workflows.merge.merge_audio_files")
+    def test_opus_extension_is_accepted(self, mock_merge, _mock_ffmpeg, tmp_path):
+        files = _make_files(tmp_path, 2, suffix=".opus")
+        expected_out = tmp_path / "whatsapp_merged.mp3"
+        mock_merge.return_value = expected_out
+        req = MergeRequest(
+            file_paths=files,
+            output_dir=tmp_path,
+            output_filename="whatsapp_merged.mp3",
+            backup_wavs=False,
+        )
+        result = run_merge(req)
+        assert result.success
+        assert result.files_merged == 2
+
+    @patch(
+        "transcriptx.app.workflows.merge.check_ffmpeg_available",
+        return_value=_FFMPEG_OK,
+    )
     def test_output_exists_without_overwrite_returns_failure(
         self, _mock_ffmpeg, tmp_path
     ):

@@ -734,6 +734,32 @@ def partition_dismissed_serial_groups(
     return visible, hidden
 
 
+def partition_serial_group_visibility(
+    groups: Iterable[SerialGroup],
+    *,
+    session_keys: Iterable[str],
+    permanent_keys: Iterable[str],
+) -> tuple[list[SerialGroup], list[SerialGroup], list[SerialGroup]]:
+    """Split groups into visible, session-hidden, and never-suggest lists.
+
+    Permanent dismissal wins over session hide.
+    """
+    session = set(session_keys)
+    permanent = set(permanent_keys)
+    visible: list[SerialGroup] = []
+    hidden: list[SerialGroup] = []
+    never_suggest: list[SerialGroup] = []
+    for group in groups:
+        key = group.dismissal_key
+        if key in permanent:
+            never_suggest.append(group)
+        elif key in session:
+            hidden.append(group)
+        else:
+            visible.append(group)
+    return visible, hidden, never_suggest
+
+
 def merged_output_filename(base_key: str) -> str:
     """Default merge output name for a serial group."""
     return f"{base_key}_merged.mp3"

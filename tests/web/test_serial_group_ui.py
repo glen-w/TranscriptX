@@ -21,6 +21,8 @@ from transcriptx.web.navigation import (
 from transcriptx.web.ui.tools.merge_panel import (
     hide_serial_group_in_session,
     hidden_serial_keys_from_session,
+    never_suggest_serial_group,
+    restore_never_suggest_serial_group,
     restore_serial_group_in_session,
 )
 
@@ -172,6 +174,53 @@ class TestSerialGroupHideRestore:
         restore_serial_group_in_session(session, key)
         assert hidden_serial_keys_from_session(session) == []
 
+    def test_never_suggest_persists_and_clears_session_hide(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        from transcriptx.core.audio import merge_dismissals as dismissals
+
+        monkeypatch.setattr(dismissals, "CONFIG_DIR", tmp_path)
+        key = "numeric_index:260223_team_facilitation"
+        session: dict = {}
+        hide_serial_group_in_session(session, key)
+        never_suggest_serial_group(session, key)
+        assert hidden_serial_keys_from_session(session) == []
+        assert dismissals.load_permanently_dismissed_keys() == [key]
+        restore_never_suggest_serial_group(session, key)
+        assert dismissals.load_permanently_dismissed_keys() == []
+
+    def test_select_all_sets_checkbox_keys(self, monkeypatch) -> None:
+        import transcriptx.web.ui.tools.merge_panel as mod
+
+        DummyHomeStreamlit.session_state = {}
+        monkeypatch.setattr(mod, "st", DummyHomeStreamlit)
+        groups = [
+            SerialGroup(
+                base_key="A",
+                ordered_paths=(Path("/a1.wav"), Path("/a2.wav")),
+                confidence="high",
+                matched_rule="part_suffix",
+            ),
+            SerialGroup(
+                base_key="B",
+                ordered_paths=(Path("/b1.wav"), Path("/b2.wav")),
+                confidence="high",
+                matched_rule="numeric_index",
+            ),
+        ]
+        mod._set_visible_group_selection(groups, selected=True)
+        assert DummyHomeStreamlit.session_state[
+            "audio_merge_select_group_part_suffix:A"
+        ]
+        assert DummyHomeStreamlit.session_state[
+            "audio_merge_select_group_numeric_index:B"
+        ]
+        mod._set_visible_group_selection(groups, selected=False)
+        assert (
+            DummyHomeStreamlit.session_state["audio_merge_select_group_part_suffix:A"]
+            is False
+        )
+
     def test_merge_panel_has_hide_and_restore_controls(self) -> None:
         import transcriptx.web.ui.tools.merge_panel as mod
 
@@ -180,6 +229,15 @@ class TestSerialGroupHideRestore:
         assert "audio_merge_hide_group_" in source
         assert "Hidden suggestions" in source
         assert "audio_merge_restore_group_" in source
+        assert "Don't suggest again" in source
+        assert "audio_merge_never_group_" in source
+        assert "Select all" in source
+        assert "Select none" in source
+        include = source.split("Include in auto-merge", 1)[1]
+        include_block = include.split("Preview clips", 1)[0]
+        assert "value=False" in include_block
+        assert "value=True" not in include_block
+        assert "_select_group_key" in source
 
     def test_merge_panel_previews_files_in_detected_groups(self) -> None:
         import transcriptx.web.ui.tools.merge_panel as mod

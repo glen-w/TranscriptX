@@ -25,13 +25,14 @@ from transcriptx.core.audio.preprocessing import (
     assess_audio_noise,
     check_audio_compliance,
 )
-from transcriptx.core.audio.types import AudioAssessment, AudioCompliance
+from transcriptx.core.audio.types import (
+    AudioAssessment,
+    AudioCompliance,
+    SUPPORTED_AUDIO_EXTENSIONS,
+)
 from transcriptx.core.utils.logger import get_logger
 
 logger = get_logger()
-
-# Supported input formats for error messaging
-_SUPPORTED_FORMATS = {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac", ".wma"}
 
 
 def run_preprocess(
@@ -70,13 +71,13 @@ def run_preprocess(
         )
 
     suffix = request.input_path.suffix.lower()
-    if suffix not in _SUPPORTED_FORMATS:
+    if suffix not in SUPPORTED_AUDIO_EXTENSIONS:
         progress.on_stage_complete("validating")
         return PreprocessResult(
             success=False,
             errors=[
                 f"Unsupported format '{suffix}'. "
-                f"Supported: {', '.join(sorted(_SUPPORTED_FORMATS))}"
+                f"Supported: {', '.join(sorted(SUPPORTED_AUDIO_EXTENSIONS))}"
             ],
         )
 

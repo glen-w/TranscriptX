@@ -17,11 +17,16 @@ from transcriptx.core.audio.linked_transcripts import (
     delete_linked_transcripts_for_audio,
     find_transcripts_for_audio,
 )
+from transcriptx.core.audio.merge_dismissals import (
+    add_permanently_dismissed_key,
+    load_permanently_dismissed_keys,
+    remove_permanently_dismissed_key,
+)
 from transcriptx.core.audio.merge_profiles import MergeSourceProfile
 from transcriptx.core.audio.serial_groups import (
     SerialGroup,
     detect_merge_groups,
-    partition_dismissed_serial_groups,
+    partition_serial_group_visibility,
 )
 from transcriptx.core.audio.utils import get_audio_duration
 from transcriptx.core.utils.paths import RECORDINGS_DIR, RECORDINGS_IMPORTS_DIR
@@ -62,6 +67,7 @@ _AUDIO_MIME_BY_SUFFIX = {
     ".m4a": "audio/mp4",
     ".aac": "audio/aac",
     ".ogg": "audio/ogg",
+    ".opus": "audio/opus",
     ".flac": "audio/flac",
     ".webm": "audio/webm",
 }
@@ -193,11 +199,31 @@ def restore_serial_group_in_session(session: dict, key: str) -> None:
     ]
 
 
+def _select_group_key(group: SerialGroup) -> str:
+    return f"audio_merge_select_group_{group.dismissal_key}"
+
+
+def never_suggest_serial_group(session: dict, key: str) -> None:
+    """Persist a dismissal and drop it from session-hidden if present."""
+    add_permanently_dismissed_key(key)
+    restore_serial_group_in_session(session, key)
+
+
+def restore_never_suggest_serial_group(session: dict, key: str) -> None:
+    remove_permanently_dismissed_key(key)
+    restore_serial_group_in_session(session, key)
+
+
+def _set_visible_group_selection(groups: list[SerialGroup], *, selected: bool) -> None:
+    for group in groups:
+        st.session_state[_select_group_key(group)] = selected
+
+
 def render_auto_merge_panel(*, deps_ready: bool = True) -> None:
     """Render the Auto-merge tool tab."""
     st.caption(
         "Detect split recordings and merge each group into a single MP3. "
-        "Supports WAV, MP3, OGG, M4A, FLAC, AAC, and WMA. "
+        "Supports WAV, MP3, OGG, Opus, M4A, FLAC, AAC, and WMA. "
         "Preprocessing is optional and off by default."
     )
 
@@ -221,7 +247,7 @@ def render_manual_merge_panel(*, deps_ready: bool = True) -> None:
     """Render the Manual merge tool tab."""
     st.caption(
         "Choose files and set merge order manually, then concatenate into one MP3. "
-        "Supports WAV, MP3, OGG, M4A, FLAC, AAC, and WMA. "
+        "Supports WAV, MP3, OGG, Opus, M4A, FLAC, AAC, and WMA. "
         "Preprocessing is optional and off by default."
     )
 
@@ -299,9 +325,7 @@ def _render_merge_file_preview(
     fetches per origin; pass the path (not bytes) so hour-long MP3s are not read
     into memory on every rerun.
     """
-    col_name, col_delete, col_audio = st.columns(
-        [4, 1, 3], vertical_alignment="center"
-    )
+    col_name, col_delete, col_audio = st.columns([4, 1, 3], vertical_alignment="center")
     with col_name:
         st.text(path.name)
     with col_delete:
@@ -385,10 +409,12 @@ def _render_detected_serial_groups(
     if not groups:
         return
 
-    visible, hidden = partition_dismissed_serial_groups(
-        groups, hidden_serial_keys_from_session(st.session_state)
+    visible, hidden, never_suggest = partition_serial_group_visibility(
+        groups,
+        session_keys=hidden_serial_keys_from_session(st.session_state),
+        permanent_keys=load_permanently_dismissed_keys(),
     )
-    if not visible and not hidden:
+    if not visible and not hidden and not never_suggest:
         return
 
     auto_results = st.session_state.get(_KEY_AUTO_RESULTS)
@@ -401,10 +427,30 @@ def _render_detected_serial_groups(
             "These files look like parts of one recording or a burst of voice notes. "
             "Tune grouping under Merge source profiles (draft applies immediately; "
             "Save persists). "
+            "Groups start unchecked. Use **Select all** or tick the groups to merge. "
             "Check **Preview clips** on a group to listen (one group at a time works best). "
-            "Auto-merge selected groups here, hide false matches, or open "
-            "**Manual merge** to pick files and order yourself."
+            "**Hide** is for this session; **Don't suggest again** keeps a false match "
+            "off the list next time. Or open **Manual merge** to pick files yourself."
         )
+        col_all, col_none = st.columns(2)
+        with col_all:
+            if st.button(
+                "Select all",
+                key="audio_merge_select_all",
+                icon=ic.CHECK_ALL,
+                help=widget_help("Check every visible group for auto-merge."),
+            ):
+                _set_visible_group_selection(visible, selected=True)
+                st.rerun()
+        with col_none:
+            if st.button(
+                "Select none",
+                key="audio_merge_select_none",
+                icon=ic.CLEAR,
+                help=widget_help("Uncheck every visible group."),
+            ):
+                _set_visible_group_selection(visible, selected=False)
+                st.rerun()
         selected: list[SerialGroup] = []
         for group in visible:
             checked = _render_serial_group_card(group)
@@ -433,24 +479,17 @@ def _render_detected_serial_groups(
                 "Hidden for this session. Restore a suggestion if you hid it by mistake."
             )
             for group in hidden:
-                col_label, col_restore = st.columns([8, 2])
-                with col_label:
-                    label = group.profile_name or group.matched_rule
-                    st.text(
-                        f"{group.base_key} · {len(group.ordered_paths)} files · "
-                        f"{label}"
-                    )
-                with col_restore:
-                    if st.button(
-                        "Restore",
-                        key=f"audio_merge_restore_group_{group.dismissal_key}",
-                        icon=ic.RESTORE,
-                        help=widget_help("Show this suggestion again."),
-                    ):
-                        restore_serial_group_in_session(
-                            st.session_state, group.dismissal_key
-                        )
-                        st.rerun()
+                _render_dismissed_group_row(group, kind="session")
+
+    if never_suggest:
+        with st.expander(f"Don't suggest again ({len(never_suggest)})", expanded=False):
+            st.caption(
+                "These groups stay hidden across sessions and are not skipped as "
+                "serial parts by host transcription. Restore if you want them "
+                "suggested again."
+            )
+            for group in never_suggest:
+                _render_dismissed_group_row(group, kind="never")
 
 
 def _render_serial_group_card(group: SerialGroup) -> bool:
@@ -468,8 +507,8 @@ def _render_serial_group_card(group: SerialGroup) -> bool:
     with st.container(border=True):
         selected = st.checkbox(
             f"Include in auto-merge · {profile_label}",
-            value=True,
-            key=f"audio_merge_select_group_{group.dismissal_key}",
+            value=False,
+            key=_select_group_key(group),
         )
         st.markdown(
             f"**{group.base_key}** · {len(group.ordered_paths)} files · "
@@ -496,7 +535,7 @@ def _render_serial_group_card(group: SerialGroup) -> bool:
             )
         for warning in group.warnings:
             st.caption(f"⚠ {warning}")
-        col_use, col_hide = st.columns(2)
+        col_use, col_hide, col_never = st.columns(3)
         with col_use:
             if st.button(
                 "Open in Manual merge",
@@ -515,13 +554,52 @@ def _render_serial_group_card(group: SerialGroup) -> bool:
                 key=f"audio_merge_hide_group_{group.dismissal_key}",
                 icon=ic.HIDE,
                 help=widget_help(
-                    "Hide this suggestion. Use when these files are separate "
-                    "sessions, not parts of one recording."
+                    "Hide this suggestion for this session. Use when these files "
+                    "are separate sessions, not parts of one recording."
                 ),
             ):
                 hide_serial_group_in_session(st.session_state, group.dismissal_key)
                 st.rerun()
+        with col_never:
+            if st.button(
+                "Don't suggest again",
+                key=f"audio_merge_never_group_{group.dismissal_key}",
+                icon=ic.REJECT,
+                help=widget_help(
+                    "Never show this group again. Persists across sessions. "
+                    "Restore it from Don't suggest again below if you change "
+                    "your mind."
+                ),
+            ):
+                never_suggest_serial_group(st.session_state, group.dismissal_key)
+                st.rerun()
         return selected
+
+
+def _render_dismissed_group_row(group: SerialGroup, *, kind: str) -> None:
+    col_label, col_restore = st.columns([8, 2])
+    with col_label:
+        label = group.profile_name or group.matched_rule
+        st.text(f"{group.base_key} · {len(group.ordered_paths)} files · {label}")
+    with col_restore:
+        restore_key = (
+            f"audio_merge_restore_never_group_{group.dismissal_key}"
+            if kind == "never"
+            else f"audio_merge_restore_group_{group.dismissal_key}"
+        )
+        if st.button(
+            "Restore",
+            key=restore_key,
+            icon=ic.RESTORE,
+            help=widget_help("Show this suggestion again."),
+        ):
+            if kind == "never":
+                restore_never_suggest_serial_group(
+                    st.session_state, group.dismissal_key
+                )
+            else:
+                restore_serial_group_in_session(st.session_state, group.dismissal_key)
+            st.rerun()
 
 
 def _run_auto_merge(
