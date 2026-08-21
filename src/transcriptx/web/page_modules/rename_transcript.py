@@ -160,7 +160,9 @@ def _load_segments(path: Path) -> tuple[list[SegmentInfo] | None, str | None]:
     return list(segments or []), None
 
 
+@st.fragment
 def _render_preview(path: Path, segments: list[SegmentInfo]) -> None:
+    """Fragment-scoped preview so ▶ clicks rerun only the player, then autoplay."""
     preview = select_rename_preview_segments(segments, limit=_PREVIEW_LIMIT)
     mapped = mapped_speaker_summary_labels(preview)
     if mapped:
@@ -184,6 +186,7 @@ def _render_preview(path: Path, segments: list[SegmentInfo]) -> None:
         preview,
         play_key=rename_play_key(path),
         active_id="rename_preview",
+        autoplay=True,
         show_speaker_labels=True,
         playback_context=playback_ctx,
     )

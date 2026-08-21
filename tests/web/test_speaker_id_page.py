@@ -727,6 +727,22 @@ def test_render_post_speaker_id_actions_uses_recent_run_strip(
     assert called["nav_style"] == NavStyle.CLICK_RERUN
 
 
+def test_light_transcript_picker_rows_show_speaker_id_status(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from transcriptx.web.page_modules.speaker_id import _light_transcript_picker_rows
+
+    named = tmp_path / "standup.json"
+    named.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        "transcriptx.web.transcript_option_format.speaker_id_status_labels_for_paths",
+        lambda paths: {str(p): "Partial" for p in paths},
+    )
+    options, labels = _light_transcript_picker_rows([named])
+    assert options == [named]
+    assert labels == ["standup (Partial)"]
+
+
 def test_speaker_id_transcript_label_partial_shows_counts() -> None:
     from transcriptx.web.page_modules.speaker_id import _speaker_id_transcript_label
     from transcriptx.services.speaker_studio.segment_index import TranscriptSummary

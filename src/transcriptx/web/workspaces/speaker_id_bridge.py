@@ -32,6 +32,24 @@ def stable_workspace_key(transcript_id: str) -> str:
     return f"speaker_id_ws:{transcript_id}"
 
 
+def command_from_workspace_result(result: Any) -> Optional[dict[str, Any]]:
+    """Extract a CCv2 command envelope from a component return / session value."""
+    if result is None:
+        return None
+    command = getattr(result, "command", None)
+    if command is None and isinstance(result, Mapping):
+        command = result.get("command")
+    if not command:
+        return None
+    if isinstance(command, Mapping) and not isinstance(command, dict):
+        command = dict(command)
+    if not isinstance(command, dict):
+        return None
+    if not str(command.get("action") or "").strip():
+        return None
+    return command
+
+
 def build_workspace_data(
     *,
     transcript_path: str,

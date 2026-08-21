@@ -244,6 +244,7 @@ def test_rename_page_and_library_presence() -> None:
     rename_src = Path(rename_page.__file__).read_text(encoding="utf-8")
     assert "rename_transcript_page_form" in rename_src
     assert "render_exact_segment_preview" in rename_src
+    assert "autoplay=True" in rename_src
     assert "date_prefix_prefill=True" in rename_src
 
     assert any(s.key == "Rename Transcript" for s in PAGE_SPECS)

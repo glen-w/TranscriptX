@@ -30,3 +30,5 @@ def test_rename_transcript_page_uses_shared_rename_form() -> None:
     assert "render_transcript_rename_form" in source
     assert "rename_transcript_page_form" in source
     assert "date_prefix_prefill=True" in source
+    assert "autoplay=True" in source
+    assert "@st.fragment" in source

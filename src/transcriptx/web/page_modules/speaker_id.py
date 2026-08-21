@@ -6,12 +6,12 @@ speaker, supports audio clip playback (if audio is available), and lets the
 user assign a name or mark as ignored before moving to the next speaker.
 
 The post-picker workspace runs in ``_speaker_id_workspace_fragment``. Ordinary
-actions (Save / Ignore / Prev / Next / Jump / Voice) use module-level
-``on_click`` / ``on_change`` callbacks so mutations run before the natural
-fragment rerun — no mid-render ``_rerun_ui``. Transcript selection and
-completion may full-app rerun. Playback uses ``render_playback_panel_body``
-inside the workspace (no nested fragments). Voice is a lightweight conditional
-block, not a sibling/nested fragment.
+actions (Save / Ignore / Prev / Next / Jump / Voice / CCv2 commands) use
+module-level ``on_click`` / ``on_change`` callbacks so mutations run before
+the natural fragment rerun — no mid-render ``_rerun_ui`` on those paths.
+Transcript selection and completion may full-app rerun. Playback uses
+``render_playback_panel_body`` inside the workspace (no nested fragments).
+Voice is a lightweight conditional block, not a sibling/nested fragment.
 """
 
 from __future__ import annotations
@@ -325,11 +325,19 @@ def _cached_fallback_transcripts() -> list:
 
 def _light_transcript_picker_rows(paths: list[Path]) -> tuple[list[Path], list[str]]:
     """Build picker options/labels without parsing segments for every path."""
-    from transcriptx.web.transcript_option_format import decorate_transcript_picker_label
+    from transcriptx.web.transcript_option_format import (
+        decorate_transcript_picker_label_with_speaker_id,
+        speaker_id_status_labels_for_paths,
+    )
 
     options = list(paths)
+    status_by_path = speaker_id_status_labels_for_paths(options)
     labels = [
-        decorate_transcript_picker_label(p.stem or str(p), path=p) for p in options
+        decorate_transcript_picker_label_with_speaker_id(
+            p.stem or str(p),
+            status_label=status_by_path.get(str(p), "Unknown"),
+        )
+        for p in options
     ]
     return options, labels
 
@@ -864,6 +872,113 @@ def _cb_next(transcript_path: str, expected_speaker_id: str) -> None:
     )
     st.session_state["sid_action_seq"] = ack.action_seq
     _apply_ack(ack, transcript_path=transcript_path, speaker_count=len(speaker_ids))
+
+
+def _ccv2_processed_action_key(transcript_path: str | Path) -> str:
+    return widget_key(transcript_path, "ccv2_processed_action_id")
+
+
+def _ccv2_last_ack_key(transcript_path: str | Path) -> str:
+    return widget_key(transcript_path, "ccv2_last_ack")
+
+
+def _apply_ccv2_workspace_command(
+    transcript_path: str,
+    speaker_ids: list[str],
+    speaker_idx: int,
+    command: dict,
+) -> tuple[bool, dict | None]:
+    """Dispatch a CCv2 command once; skip duplicate ``action_id`` replays.
+
+    Returns ``(applied, ack_dict)``. ``applied`` is True only when this call
+    executed the command (not an idempotent skip).
+    """
+    from transcriptx.web.workspaces.speaker_id_bridge import dispatch_workspace_command
+
+    action_id = str(command.get("action_id") or "")
+    processed_key = _ccv2_processed_action_key(transcript_path)
+    ack_key = _ccv2_last_ack_key(transcript_path)
+    if action_id and st.session_state.get(processed_key) == action_id:
+        stored = st.session_state.get(ack_key)
+        return False, stored if isinstance(stored, dict) else None
+
+    service = _get_action_service()
+    ack_dict = dispatch_workspace_command(
+        command,
+        service=service,
+        speaker_ids=speaker_ids,
+        current_speaker_idx=speaker_idx,
+        apply_ack=lambda ack: _apply_ack(
+            ack,
+            transcript_path=transcript_path,
+            speaker_count=len(speaker_ids),
+        ),
+    )
+    if ack_dict is not None:
+        st.session_state[ack_key] = ack_dict
+        if action_id:
+            st.session_state[processed_key] = action_id
+        seq = ack_dict.get("action_seq")
+        if isinstance(seq, int):
+            st.session_state["sid_action_seq"] = seq
+    return True, ack_dict
+
+
+def _cb_ccv2_command(transcript_path: str) -> None:
+    """CCv2 ``on_command_change``: apply navigate/save before the fragment paints.
+
+    Speaker-list clicks use ``setTriggerValue("command", ...)``. Streamlit runs
+    this callback before the fragment body, so the next paint must already see
+    the jumped speaker — otherwise samples/title stay on the previous speaker
+    while clips of that previous speaker still play.
+    """
+    from transcriptx.web.workspaces.speaker_id_bridge import (
+        command_from_workspace_result,
+        stable_workspace_key,
+    )
+
+    try:
+        result_key = stable_workspace_key(str(Path(transcript_path).resolve()))
+    except OSError:
+        result_key = stable_workspace_key(str(transcript_path))
+    command = command_from_workspace_result(st.session_state.get(result_key))
+    if not command:
+        return
+    try:
+        index = load_speaker_identification_index(transcript_path)
+    except FileNotFoundError:
+        return
+    speaker_ids = list(index.ordered_speaker_ids)
+    if not speaker_ids:
+        return
+    speaker_idx = _current_speaker_idx(transcript_path, len(speaker_ids))
+    _apply_ccv2_workspace_command(
+        str(transcript_path), speaker_ids, speaker_idx, command
+    )
+
+
+def _drain_pending_ccv2_command(
+    transcript_path: str,
+    speaker_ids: list[str],
+    speaker_idx: int,
+) -> int:
+    """Apply a pending CCv2 command from session state before computing active samples."""
+    from transcriptx.web.workspaces.speaker_id_bridge import (
+        command_from_workspace_result,
+        stable_workspace_key,
+    )
+
+    try:
+        result_key = stable_workspace_key(str(Path(transcript_path).resolve()))
+    except OSError:
+        result_key = stable_workspace_key(str(transcript_path))
+    command = command_from_workspace_result(st.session_state.get(result_key))
+    if not command:
+        return speaker_idx
+    _apply_ccv2_workspace_command(
+        str(transcript_path), speaker_ids, speaker_idx, command
+    )
+    return _current_speaker_idx(transcript_path, len(speaker_ids))
 
 
 def _cb_jump_change(transcript_path: str) -> None:
@@ -1424,7 +1539,7 @@ def _render_ccv2_speaker_workspace(
     """
     from transcriptx.web.workspaces.speaker_id_bridge import (
         build_workspace_data,
-        dispatch_workspace_command,
+        command_from_workspace_result,
         stable_workspace_key,
     )
 
@@ -1451,7 +1566,7 @@ def _render_ccv2_speaker_workspace(
         }
         for s in active_segs[:10]
     ]
-    last_ack = st.session_state.get(widget_key(transcript_path, "ccv2_last_ack"))
+    last_ack = st.session_state.get(_ccv2_last_ack_key(transcript_path))
     data = build_workspace_data(
         transcript_path=str(transcript_path),
         speaker_ids=speaker_ids,
@@ -1471,46 +1586,26 @@ def _render_ccv2_speaker_workspace(
     result_key = stable_workspace_key(str(Path(transcript_path).resolve()))
 
     def _on_command() -> None:
-        # Trigger callback: command is available on the component result / session.
-        pass
+        _cb_ccv2_command(str(transcript_path))
 
     result = speaker_id_workspace(
         data=data,
         key=result_key,
         on_command_change=_on_command,
     )
-    command = None
-    if result is not None:
-        command = getattr(result, "command", None)
-        if command is None and isinstance(result, dict):
-            command = result.get("command")
-    # Also accept session_state mirror when keyed.
+    command = command_from_workspace_result(result)
     if command is None:
-        mirrored = st.session_state.get(result_key)
-        if mirrored is not None:
-            command = getattr(mirrored, "command", None)
-            if command is None and isinstance(mirrored, dict):
-                command = mirrored.get("command")
+        command = command_from_workspace_result(st.session_state.get(result_key))
 
     if command:
-        service = _get_action_service()
-
-        def _apply(ack) -> None:
-            _apply_ack(
-                ack,
-                transcript_path=transcript_path,
-                speaker_count=len(speaker_ids),
-            )
-
-        ack_dict = dispatch_workspace_command(
-            command if isinstance(command, dict) else dict(command),
-            service=service,
-            speaker_ids=speaker_ids,
-            current_speaker_idx=speaker_idx,
-            apply_ack=_apply,
+        applied, ack_dict = _apply_ccv2_workspace_command(
+            str(transcript_path), speaker_ids, speaker_idx, command
         )
-        if ack_dict is not None:
-            st.session_state[widget_key(transcript_path, "ccv2_last_ack")] = ack_dict
+        new_id = (ack_dict or {}).get("active_speaker_id")
+        # Return-value-only commands land after this paint already used the
+        # previous speaker. Fragment-rerun so samples/title match the jump.
+        if applied and new_id and new_id != active_id:
+            _rerun_ui()
 
     if profile_ctx.is_managed:
         with st.expander("Voice suggestions", expanded=False):
@@ -1597,6 +1692,18 @@ def _speaker_id_workspace_fragment(
             st.session_state[j_key] = speaker_idx
     st.session_state["speaker_id_speaker_idx"] = speaker_idx
 
+    # Theme C: CCv2 workspace is default-on; legacy path retained for rollback
+    # and when transcriptx-workspaces is not installed.
+    from transcriptx.web.workspaces.flags import speaker_id_workspace_component_enabled
+
+    ccv2_on = speaker_id_workspace_component_enabled(st.session_state)
+    if ccv2_on:
+        speaker_idx = _drain_pending_ccv2_command(
+            str(transcript_path), speaker_ids, speaker_idx
+        )
+        st.session_state[idx_key] = speaker_idx
+        st.session_state["speaker_id_speaker_idx"] = speaker_idx
+
     active_id = speaker_ids[speaker_idx]
     active_segs = list(index.segments_by_speaker[active_id])
     current_name = _speaker_map_display_name(speaker_map, active_id)
@@ -1613,11 +1720,7 @@ def _speaker_id_workspace_fragment(
         else (f"✅ **{current_name}**" if current_name.strip() else "❓ unnamed")
     )
 
-    # Theme C: CCv2 workspace is default-on; legacy path retained for rollback
-    # and when transcriptx-workspaces is not installed.
-    from transcriptx.web.workspaces.flags import speaker_id_workspace_component_enabled
-
-    if speaker_id_workspace_component_enabled(st.session_state):
+    if ccv2_on:
         mounted = _render_ccv2_speaker_workspace(
             transcript_path=transcript_path,
             controller=controller,

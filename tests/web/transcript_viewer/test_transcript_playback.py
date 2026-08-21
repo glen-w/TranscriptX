@@ -428,6 +428,58 @@ def test_render_active_clip_success_and_failure(
     assert "FileNotFoundError" not in warnings[0]
 
 
+def test_render_exact_segment_preview_autoplays_cached_active_clip(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Rename-style preview must autoplay once ▶ has selected a cached clip."""
+    from transcriptx.web.components import playback_panel as panel
+    from transcriptx.web.components.playback_panel import PlaybackContext
+
+    audio = tmp_path / "a.wav"
+    audio.write_bytes(b"wav")
+    session: dict[str, Any] = {"play_key": 0}
+    audio_calls: list[Any] = []
+
+    class _Col:
+        def __enter__(self) -> "_Col":
+            return self
+
+        def __exit__(self, *args: object) -> bool:
+            return False
+
+    monkeypatch.setattr(panel.st, "session_state", session)
+    monkeypatch.setattr(
+        panel.st, "audio", lambda *a, **k: audio_calls.append((a, k))
+    )
+    monkeypatch.setattr(panel.st, "caption", lambda *a, **k: None)
+    monkeypatch.setattr(panel.st, "write", lambda *a, **k: None)
+    monkeypatch.setattr(panel.st, "button", lambda *a, **k: None)
+    monkeypatch.setattr(panel.st, "columns", lambda spec: [_Col(), _Col(), _Col()])
+    monkeypatch.setattr(panel, "trigger_clip_warm", lambda *a, **k: None)
+
+    controller = MagicMock()
+    controller.get_cached_clip_bytes.return_value = b"mp3"
+    segs = [
+        SegmentInfo(index=0, start=0.0, end=1.0, text="hello", speaker="A"),
+    ]
+    ctx = PlaybackContext(
+        audio_path=audio,
+        audio_fingerprint=(str(audio.resolve()), 3, 1),
+        ffmpeg_available=True,
+    )
+    panel.render_exact_segment_preview(
+        controller,
+        "/t.json",
+        segs,
+        play_key="play_key",
+        autoplay=True,
+        playback_context=ctx,
+    )
+    assert audio_calls
+    assert audio_calls[0][0][0] == b"mp3"
+    assert audio_calls[0][1]["autoplay"] is True
+
+
 def test_render_active_clip_mounts_idle_player_when_none(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

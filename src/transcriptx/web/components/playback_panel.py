@@ -583,7 +583,9 @@ def render_exact_segment_preview(
 ) -> None:
     """Render an exact preselected segment sequence (no max_lines reselect/slice).
 
-    One clip extraction failure must not prevent remaining rows from rendering.
+    Pass ``autoplay=True`` when ▶ should start the loaded clip (Rename Transcript,
+    same contract as Speaker ID). One clip extraction failure must not prevent
+    remaining rows from rendering.
     """
     all_segs = list(segments)
     ctx = playback_context
