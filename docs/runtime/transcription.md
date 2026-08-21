@@ -15,7 +15,7 @@ We intentionally removed in-app transcription forms and `subprocess` orchestrati
 
 | Where | What runs |
 |-------|-----------|
-| Host (Mac terminal) | `whispermlx`, `whispermlx-missing`, optional WhisperX / Whisper-WebUI Docker |
+| Host (Mac terminal) | `whispermlx`, `whispermlx-missing`, `inbox-watch`, optional WhisperX / Whisper-WebUI Docker |
 | `transcriptx-web` (Docker or native) | Import, library, analysis, artifacts |
 
 **Why not merge stacks?** Transcription jobs are long-running and toolchain-heavy (ffmpeg, HF tokens, model weights, platform quirks). Keeping engines out of the analysis container avoids bloating the image, avoids coupling releases, and matches how most users already arrive (JSON from an external tool).
@@ -119,6 +119,57 @@ It processes MP3s in a source folder that lack matching JSON in a transcripts ou
 | `TRANSCRIPTX_RECORDINGS_DIR` env | Maps directly to `source` (recordings folder) |
 
 **`whisperx.env`** is used only for the whispermlx **subprocess** environment (`HF_TOKEN`, etc.), not for resolving config paths. Repo `.env` is loaded early (without overriding existing shell env) for `TRANSCRIPTX_*` path overrides — same pattern as Docker/native TranscriptX.
+
+### Host inbox watcher (`inbox-watch`)
+
+Optional **host-side** companion (not the in-app Settings → Watcher). Watches a drop folder for new **audio** and/or **transcripts**. Streamlit never runs it; it does not admit files into the managed library.
+
+Install once from the repo root:
+
+```bash
+mkdir -p ~/.local/bin
+install -m 755 scripts/inbox-watch.py ~/.local/bin/inbox-watch
+which inbox-watch
+```
+
+Or run without installing: `python3 scripts/inbox-watch.py --once --dry-run …`.
+
+| Mode | What it does | Skip when |
+|------|----------------|-----------|
+| `--watch-audio` (default on) | Convert new inbox audio to 16 kHz mono 64k MP3 in the recordings folder, then run `whispermlx-missing` | Recordings already has that stem (any audio extension) |
+| `--watch-transcripts` (default on) | Copy new JSON/SRT/VTT/txt/html into the transcripts dest | Dest already has that stem (any transcript extension) |
+| `--no-watch-audio` / `--no-watch-transcripts` | Disable that mode | At least one mode must stay on |
+
+```bash
+# Preview (no ffmpeg, no copy, no whispermlx)
+inbox-watch --once --dry-run \
+  --inbox /path/to/drop \
+  --recordings /path/to/recordings \
+  --transcripts /path/to/transcripts/originals
+
+# One scan (cron / launchd)
+inbox-watch --once --inbox … --recordings … --transcripts …
+
+# Poll until Ctrl-C
+inbox-watch --watch --interval 5
+```
+
+ffmpeg (audio mode): `-nostdin -y -ac 1 -ar 16000 -c:a libmp3lame -b:a 64k`. Writes a temp file then renames into recordings so `whispermlx-missing` never sees a half-written MP3.
+
+Inbox sources are **kept by default**. After a successful convert (audio) or copy (transcript):
+
+| Option | Effect |
+|--------|--------|
+| `--backup-wav` | Copy the **audio** inbox original into the WAV backup folder (`--wav-backup`, or `TRANSCRIPTX_WAV_BACKUP_DIR`) |
+| `--delete-originals` | Delete the inbox source (after backup, if backup was requested and succeeded) |
+| `--move-processed DIR` | Relocate the inbox source instead of deleting (mutually exclusive with `--delete-originals`) |
+| `--force` | Overwrite an existing destination stem |
+
+`--backup-wav` and `--delete-originals` are independent (use either or both). Deleting with no backup prints a warning. A failed WAV backup skips delete for that file.
+
+**Local config (gitignored):** copy [`config/inbox-watch.example.json`](../config/inbox-watch.example.json) to `.transcriptx/inbox-watch.json`. Override with `--config` or `INBOX_WATCH_CONFIG`. Merge order: portable repo defaults ← `TRANSCRIPTX_*` / `INBOX_WATCH_*` env ← local JSON ← CLI. `TRANSCRIPTX_RECORDINGS_DIR` maps to recordings; `TRANSCRIPTX_TRANSCRIPTS_DIR` is the transcripts **base** (script appends `/originals`); `INBOX_WATCH_INBOX` is the drop folder; `TRANSCRIPTX_WAV_BACKUP_DIR` is the WAV archive. Boolean env: `INBOX_WATCH_BACKUP_WAV`, `INBOX_WATCH_DELETE_ORIGINALS`.
+
+Do **not** point this inbox at the same folder as the in-app G2 watcher unless you intend both to handle new transcripts (G2 admits; inbox-watch copies). See [directory_watcher.md](directory_watcher.md).
 
 ### Audio prep / merge (System → Tools)
 

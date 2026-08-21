@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "inbox": "/path/to/drop",
+  "recordings": "/path/to/recordings",
+  "transcripts": "/path/to/transcripts/originals",
+  "env_file": "whisperx.env",
+  "whispermlx_missing": "",
+  "ffmpeg": "",
+  "watch_audio": true,
+  "watch_transcripts": true,
+  "recursive": false,
+  "interval_seconds": 5,
+  "move_processed": "",
+  "wav_backup": "/path/to/data/backups/wav",
+  "backup_wavs": false,
+  "delete_originals": false
+}

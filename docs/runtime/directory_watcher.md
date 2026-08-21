@@ -25,6 +25,15 @@ Inbox files are **never deleted or modified**. Admission always copies into app 
 - Job records and activity live under `data_dir/watcher/` (see [STORAGE.md](STORAGE.md)).
 - Prefer Settings UI for enablement; env overrides are for automation.
 
+## Host-side helper (`inbox-watch`)
+
+The in-app watcher does **not** convert audio or run STT. For that, use the host script [`scripts/inbox-watch.py`](../../scripts/inbox-watch.py) documented in [transcription.md](transcription.md):
+
+- `--watch-audio` — ffmpeg 16 kHz mono 64k MP3 into recordings, then `whispermlx-missing`
+- `--watch-transcripts` — copy new JSON/SRT/VTT/txt/html into a transcripts dest if the stem is missing
+
+It runs on the Mac host (outside `transcriptx-web`), does not import `transcriptx`, and does not admit into the managed library. G2 stays the GUI auto-import path. Both can run; do not point them at the same inbox unless you intend double handling of transcripts (G2 admits, host copies).
+
 ## Related
 
 - Folder scan (manual): Import Transcript → Import all from folder
