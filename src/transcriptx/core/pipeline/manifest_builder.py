@@ -244,7 +244,7 @@ def _iter_files(run_dir: Path) -> Iterable[Path]:
             continue
         if rel_path == "manifest.json":
             continue
-        if rel_path == ".run_finalization.lock":
+        if rel_path in {".run_finalization.lock", ".run_finalization.lock.lock"}:
             continue
         if "/.thumbnails/" in rel_path:
             continue

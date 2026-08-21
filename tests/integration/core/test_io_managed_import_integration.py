@@ -50,10 +50,10 @@ def _patch_managed_roots(monkeypatch: pytest.MonkeyPatch, root: Path) -> Path:
 def test_managed_import_vtt_happy_path_creates_canonical_and_sidecar(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _patch_managed_roots(monkeypatch, tmp_path)
+    transcripts = _patch_managed_roots(monkeypatch, tmp_path)
 
     fixture = Path("tests/fixtures/vtt/simple.vtt")
-    staging = tmp_path / "imports" / "simple.vtt"
+    staging = transcripts / "imports" / "simple.vtt"
     staging.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(fixture, staging)
 
@@ -70,7 +70,7 @@ def test_managed_import_vtt_happy_path_creates_canonical_and_sidecar(
     assert not staging.exists()
 
     doc = json.loads(result.json_path.read_text(encoding="utf-8"))
-    assert doc["schema_version"] == "1.0"
+    assert doc["schema_version"] == 1
     assert doc["source"]["original_path"] == result.archived_original_relpath
     assert isinstance(doc.get("segments"), list) and doc["segments"]
 

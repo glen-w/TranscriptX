@@ -31,8 +31,10 @@ def _member_payloads(order: int) -> dict:
         },
         "llm_action_items": {
             "payload": {
+                "schema_id": "transcriptx.llm_action_items.v1",
                 "items": [
                     {
+                        "record_type": "action_item",
                         "text": f"Action {order}",
                         "owner": "Alice",
                         "deadline": None,
@@ -40,7 +42,7 @@ def _member_payloads(order: int) -> dict:
                         "quote": f"action {order}",
                         "confidence": 0.7 + order * 0.05,
                     }
-                ]
+                ],
             }
         },
         "insights": {
