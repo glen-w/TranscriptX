@@ -126,8 +126,6 @@ class DummyStreamlitWithDataframe:
     session_state: dict[str, object] = {}
     captions: list[str] = []
     selected_rows: list[int] = []
-    button_presses: set[str] = set()
-    button_labels: list[str] = []
 
     @staticmethod
     def markdown(*_args, **_kwargs):
@@ -183,10 +181,9 @@ class DummyStreamlitWithDataframe:
         count = len(_n) if isinstance(_n, (list, tuple)) else int(_n)
         return tuple(DummyColumn() for _ in range(count))
 
-    @classmethod
-    def button(cls, label, key=None, **_kwargs):
-        cls.button_labels.append(str(label))
-        return bool(key and key in cls.button_presses)
+    @staticmethod
+    def button(*_args, **_kwargs):
+        return False
 
     @staticmethod
     def rerun():

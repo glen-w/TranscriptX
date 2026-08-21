@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import hashlib
 from pathlib import Path
 
+import pandas as pd
 import streamlit as st
 
-from transcriptx.web import icons as ic
 from transcriptx.app.corpus_inventory.models import (
     InventoryRow,
     LibraryFilter,
@@ -38,7 +37,7 @@ from transcriptx.web.corpus_inventory_display import (
     format_corrections_label,
     format_short_date,
     format_speaker_id_label,
-    inventory_list_caption,
+    inventory_table_row,
 )
 from transcriptx.web.navigation import consume_library_nav
 from transcriptx.web.perf import instrument_cached_call
@@ -52,9 +51,8 @@ from transcriptx.web.state import (
     LIBRARY_FILTER_QUERY_KEY,
     LIBRARY_FILTER_SORT_KEY,
     LIBRARY_FILTER_SOURCE_KEY,
-    LIBRARY_LIST_FILTER_FINGERPRINT_KEY,
-    LIBRARY_LIST_PAGE_KEY,
     LIBRARY_SELECTED_TRANSCRIPT_PATH,
+    LIBRARY_SHOW_PATH_KEY,
 )
 
 _LIBRARY_DESCRIPTION = (
@@ -79,8 +77,6 @@ _SORT_LABELS: dict[LibrarySort, str] = {
     LibrarySort.DURATION: "Duration",
     LibrarySort.ANALYSIS_COMPLETION: "Analysis completion",
 }
-
-_LIBRARY_PAGE_SIZE = 25
 
 
 def _resolve_audio_for_transcript(transcript_path: Path) -> Path | None:
@@ -141,90 +137,20 @@ def _current_library_filter() -> LibraryFilter:
     )
 
 
-def _filter_fingerprint(library_filter: LibraryFilter) -> tuple[str, str, str, str]:
-    return (
-        library_filter.preset.value,
-        library_filter.query,
-        library_filter.sort.value,
-        library_filter.source_id or "",
-    )
-
-
-def _row_widget_key(row: InventoryRow) -> str:
-    digest = hashlib.sha1(str(row.transcript_path).encode("utf-8")).hexdigest()[:12]
-    return f"lib_row_{digest}"
-
-
-def _sync_list_page(library_filter: LibraryFilter, visible_count: int) -> int:
-    """Reset page on filter change; clamp to available pages. Returns 1-based page."""
-    fingerprint = _filter_fingerprint(library_filter)
-    previous = st.session_state.get(LIBRARY_LIST_FILTER_FINGERPRINT_KEY)
-    if previous is not None and previous != fingerprint:
-        st.session_state[LIBRARY_LIST_PAGE_KEY] = 1
-    st.session_state[LIBRARY_LIST_FILTER_FINGERPRINT_KEY] = fingerprint
-
-    total_pages = max(1, (visible_count + _LIBRARY_PAGE_SIZE - 1) // _LIBRARY_PAGE_SIZE)
-    page = int(st.session_state.get(LIBRARY_LIST_PAGE_KEY) or 1)
-    if page < 1:
-        page = 1
-    if page > total_pages:
-        page = total_pages
-    st.session_state[LIBRARY_LIST_PAGE_KEY] = page
-    return page
-
-
-def _render_library_list(visible: list[InventoryRow], page: int) -> None:
-    total = len(visible)
-    if total == 0:
-        st.caption("No transcripts match these filters.")
+def _selection_from_dataframe(event: object, visible: list[InventoryRow]) -> None:
+    """Map a dataframe row click to path identity (never persist the row index)."""
+    selection = getattr(event, "selection", None)
+    rows = getattr(selection, "rows", None) or []
+    if not rows:
         return
-
-    start = (page - 1) * _LIBRARY_PAGE_SIZE
-    end = min(start + _LIBRARY_PAGE_SIZE, total)
-    page_rows = visible[start:end]
-    selected_raw = st.session_state.get(LIBRARY_SELECTED_TRANSCRIPT_PATH)
-    selected_path = tolerant_resolve(selected_raw) if selected_raw else None
-
-    for row in page_rows:
-        is_selected = bool(
-            selected_path and paths_match(row.transcript_path, selected_path)
+    try:
+        idx = int(rows[0])
+    except (TypeError, ValueError):
+        return
+    if 0 <= idx < len(visible):
+        st.session_state[LIBRARY_SELECTED_TRANSCRIPT_PATH] = str(
+            visible[idx].transcript_path
         )
-        if st.button(
-            row.title,
-            key=_row_widget_key(row),
-            type="primary" if is_selected else "secondary",
-            width="stretch",
-        ):
-            st.session_state[LIBRARY_SELECTED_TRANSCRIPT_PATH] = str(
-                row.transcript_path
-            )
-            st.rerun()
-        st.caption(inventory_list_caption(row))
-
-    st.caption(f"Showing {start + 1}–{end} of {total}")
-    total_pages = max(1, (total + _LIBRARY_PAGE_SIZE - 1) // _LIBRARY_PAGE_SIZE)
-    if total_pages > 1:
-        prev_col, next_col = st.columns(2)
-        with prev_col:
-            if st.button(
-                "Previous",
-                key="library_list_prev",
-                icon=ic.CHEVRON_LEFT,
-                disabled=page <= 1,
-                width="stretch",
-            ):
-                st.session_state[LIBRARY_LIST_PAGE_KEY] = page - 1
-                st.rerun()
-        with next_col:
-            if st.button(
-                "Next",
-                key="library_list_next",
-                icon=ic.CHEVRON_RIGHT,
-                disabled=page >= total_pages,
-                width="stretch",
-            ):
-                st.session_state[LIBRARY_LIST_PAGE_KEY] = page + 1
-                st.rerun()
 
 
 @st.fragment
@@ -236,7 +162,6 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
     st.session_state.setdefault(
         LIBRARY_FILTER_SORT_KEY, LibrarySort.RECENTLY_WORKED.value
     )
-    st.session_state.setdefault(LIBRARY_LIST_PAGE_KEY, 1)
     current_path = SubjectService.current_transcript_path(st.session_state)
     if current_path and not st.session_state.get(LIBRARY_SELECTED_TRANSCRIPT_PATH):
         st.session_state[LIBRARY_SELECTED_TRANSCRIPT_PATH] = str(
@@ -279,8 +204,25 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
     library_filter = _current_library_filter()
     visible = apply_library_filter(rows, library_filter)
     st.caption(f"{len(visible)} of {len(rows)} transcripts")
-    page = _sync_list_page(library_filter, len(visible))
-    _render_library_list(visible, page)
+
+    show_path = st.toggle(
+        "Show path column",
+        value=False,
+        key=LIBRARY_SHOW_PATH_KEY,
+        help=widget_help("Include the on-disk managed path in the library table."),
+    )
+    table = pd.DataFrame(
+        [inventory_table_row(row, include_path=show_path) for row in visible]
+    )
+    event = st.dataframe(
+        table,
+        width="stretch",
+        hide_index=True,
+        on_select="rerun",
+        selection_mode="single-row",
+        key="library_inventory_table",
+    )
+    _selection_from_dataframe(event, visible)
 
     selected = _row_by_path(
         rows, st.session_state.get(LIBRARY_SELECTED_TRANSCRIPT_PATH)

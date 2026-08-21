@@ -19,7 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Library: select a transcript by clicking its title in a paginated list (no checkbox dataframe).
 - Comparison page: added [nanosamur.ai](https://nanosamur.ai) as a complementary org-grade self-hosted STT upstream (not an analysis substitute).
 - Security pins: `cryptography` 48.0.1 → 50.0.0 and `nltk` 3.9.4 → 3.10.3 (fixable pip-audit findings on the clean-env wheel gate).
 - Docs surfaces aligned: Sphinx [docs/index.md](docs/index.md) toctrees match [USER_INDEX](docs/USER_INDEX.md) (backup, corrections viewer/karaoke/LLM, recipes, STORAGE under Reference); PRODUCT/website/inventory say **ten** workflows; public series badge **0.9.9.5**; website install snippet includes `.env` / `HOST_RECORDINGS_DIR`.

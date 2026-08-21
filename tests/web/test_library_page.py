@@ -19,11 +19,7 @@ from transcriptx.app.corpus_inventory.models import (
     SpeakerIdStatus,
 )
 from tests.web.streamlit_doubles import DummyStreamlitWithDataframe
-from transcriptx.web.state import (
-    LIBRARY_FILTER_QUERY_KEY,
-    LIBRARY_LIST_PAGE_KEY,
-    LIBRARY_SELECTED_TRANSCRIPT_PATH,
-)
+from transcriptx.web.state import LIBRARY_SELECTED_TRANSCRIPT_PATH
 
 _DummyStreamlit = DummyStreamlitWithDataframe
 
@@ -54,13 +50,11 @@ def _row(name: str, *, duration: float | None = 120.0, speakers: int | None = 2)
     )
 
 
-def _patch_library(monkeypatch, rows, *, click_key: str | None = None) -> None:
+def _patch_library(monkeypatch, rows) -> None:
     import transcriptx.web.page_modules.library as mod
 
     _DummyStreamlit.captured_df = None
     _DummyStreamlit.captions = []
-    _DummyStreamlit.button_labels = []
-    _DummyStreamlit.button_presses = {click_key} if click_key else set()
     monkeypatch.setattr(mod, "st", _DummyStreamlit)
     monkeypatch.setattr(mod, "render_page_shell", lambda *_a, **_k: None)
     monkeypatch.setattr(mod, "get_cached_corpus_inventory", lambda: rows)
@@ -86,42 +80,59 @@ def test_format_duration_display() -> None:
     assert format_duration_display(3720.0) == "1h 2m"
 
 
-def test_inventory_list_caption_includes_workflow_marks() -> None:
-    from transcriptx.web.corpus_inventory_display import inventory_list_caption
+def test_inventory_table_row_includes_workflow_marks() -> None:
+    from transcriptx.web.corpus_inventory_display import inventory_table_row
 
-    caption = inventory_list_caption(_row("short", duration=125.0, speakers=2))
-    assert "2m" in caption or "2 speakers" in caption
-    assert "2 speakers" in caption
-    assert "SID ✓" in caption
-    assert "Corr —" in caption
-    assert "Anal —" in caption
+    data = inventory_table_row(_row("short", duration=125.0, speakers=2))
+    assert data["Transcript"] == "short"
+    assert data["Duration"] != "-"
+    assert data["Speakers"] == "2"
+    assert data["Speaker ID"] == "✓"
+    assert data["Corrections"] == "—"
+    assert data["Analysis"] == "—"
+    assert "Path" not in data
 
 
-def test_render_library_list_shows_title_buttons(monkeypatch) -> None:
+def test_render_library_table_uses_inventory_workflow_columns(monkeypatch) -> None:
     import transcriptx.web.page_modules.library as mod
 
     _DummyStreamlit.session_state = {"library_filter_sort": "name"}
+    _DummyStreamlit.selected_rows = []
     rows = [_row("short", duration=125.0, speakers=2), _row("long", duration=4920.0, speakers=3)]
     _patch_library(monkeypatch, rows)
+    summaries = {"count": 0}
+    monkeypatch.setattr(
+        "transcriptx.io.transcript_loader.load_segments",
+        lambda *_a, **_k: summaries.__setitem__("count", summaries["count"] + 1),
+    )
 
     mod.render_library()
 
-    assert "short" in _DummyStreamlit.button_labels
-    assert "long" in _DummyStreamlit.button_labels
-    assert any("2 of 2 transcripts" in cap for cap in _DummyStreamlit.captions)
-    assert any("Showing 1–2 of 2" in cap for cap in _DummyStreamlit.captions)
-    assert _DummyStreamlit.captured_df is None
+    assert _DummyStreamlit.captured_df is not None
+    assert "Path" not in _DummyStreamlit.captured_df.columns
+    assert list(_DummyStreamlit.captured_df.columns) == [
+        "Transcript",
+        "Date",
+        "Duration",
+        "Speakers",
+        "Speaker ID",
+        "Corrections",
+        "Analysis",
+        "Last activity",
+    ]
+    assert "-" not in list(_DummyStreamlit.captured_df["Duration"])
+    assert set(_DummyStreamlit.captured_df["Speakers"]) == {"2", "3"}
+    assert set(_DummyStreamlit.captured_df["Transcript"]) == {"short", "long"}
+    assert summaries["count"] == 0
     assert "Select transcript" not in "".join(_DummyStreamlit.captions)
-    assert "Show path column" not in "".join(_DummyStreamlit.captions)
 
 
-def test_library_row_button_sets_path_identity(monkeypatch) -> None:
+def test_library_row_selection_sets_path_identity(monkeypatch) -> None:
     import transcriptx.web.page_modules.library as mod
 
-    row = _row("alice")
-    click_key = mod._row_widget_key(row)
     _DummyStreamlit.session_state = {}
-    _patch_library(monkeypatch, [row], click_key=click_key)
+    _DummyStreamlit.selected_rows = [0]
+    _patch_library(monkeypatch, [_row("alice")])
 
     mod.render_library()
 
@@ -129,33 +140,6 @@ def test_library_row_button_sets_path_identity(monkeypatch) -> None:
     assert selected is not None
     assert Path(str(selected)).name == "alice.json"
     assert any("Speaker identification:" in cap for cap in _DummyStreamlit.captions)
-
-
-def test_library_pagination_page_two_and_filter_reset(monkeypatch) -> None:
-    import transcriptx.web.page_modules.library as mod
-
-    rows = [_row(f"item_{i:02d}") for i in range(30)]
-    _DummyStreamlit.session_state = {
-        "library_filter_sort": "name",
-        LIBRARY_LIST_PAGE_KEY: 2,
-    }
-    _patch_library(monkeypatch, rows)
-
-    mod.render_library()
-
-    assert "item_25" in _DummyStreamlit.button_labels
-    assert "item_29" in _DummyStreamlit.button_labels
-    assert "item_00" not in _DummyStreamlit.button_labels
-    assert any("Showing 26–30 of 30" in cap for cap in _DummyStreamlit.captions)
-
-    _DummyStreamlit.captions = []
-    _DummyStreamlit.button_labels = []
-    _DummyStreamlit.session_state[LIBRARY_FILTER_QUERY_KEY] = "item_01"
-    mod.render_library()
-
-    assert _DummyStreamlit.session_state[LIBRARY_LIST_PAGE_KEY] == 1
-    assert "item_01" in _DummyStreamlit.button_labels
-    assert any("Showing 1–1 of 1" in cap for cap in _DummyStreamlit.captions)
 
 
 def test_library_inspector_accepts_latest_run_id(monkeypatch) -> None:
@@ -183,6 +167,7 @@ def test_library_inspector_accepts_latest_run_id(monkeypatch) -> None:
     _DummyStreamlit.session_state = {
         LIBRARY_SELECTED_TRANSCRIPT_PATH: "/tmp/analysed.json",
     }
+    _DummyStreamlit.selected_rows = []
     _patch_library(monkeypatch, [row])
     monkeypatch.setattr(mod, "render_configured_actions", _capture_actions)
 
@@ -202,4 +187,4 @@ def test_library_page_defers_rename_to_rename_transcript_page() -> None:
     assert "library_rename_form" not in source
     assert "render_transcript_rename_form" not in source
     assert "library_transcript_select" not in source
-    assert "st.dataframe" not in source
+    assert "st.dataframe" in source

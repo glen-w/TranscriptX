@@ -18,14 +18,13 @@ NAV_REQUEST_KEY = "nav_request"
 # One-shot: Home (etc.) sets this before navigating to Library focused on a transcript.
 LIBRARY_NAV_TRANSCRIPT_PATH = "_library_nav_transcript_path"
 LIBRARY_NAV_FILTER = "_library_nav_filter"
-# Persistent Library selection identity (path, never a list/page index).
+# Persistent Library selection identity (path, never a dataframe row index).
 LIBRARY_SELECTED_TRANSCRIPT_PATH = "library_selected_transcript_path"
 LIBRARY_FILTER_PRESET_KEY = "library_filter_preset"
 LIBRARY_FILTER_QUERY_KEY = "library_filter_query"
 LIBRARY_FILTER_SORT_KEY = "library_filter_sort"
 LIBRARY_FILTER_SOURCE_KEY = "library_filter_source"
-LIBRARY_LIST_PAGE_KEY = "library_list_page"
-LIBRARY_LIST_FILTER_FINGERPRINT_KEY = "library_list_filter_fingerprint"
+LIBRARY_SHOW_PATH_KEY = "library_show_path"
 IMPORT_LAST_TRANSCRIPT_PATH = "import_last_transcript_path"
 # One-shot: action-menu identity navigation → workflow picker pages (Speaker ID, etc.).
 WORKFLOW_NAV_TRANSCRIPT_PATH = "_workflow_nav_transcript_path"

@@ -134,17 +134,17 @@ def format_analysis_label(state: AnalysisState) -> str:
     return "Incomplete"
 
 
-def inventory_list_caption(row: InventoryRow) -> str:
-    """One-line status caption for a Library list row."""
-    speakers = "—" if row.speaker_count is None else str(row.speaker_count)
-    return " · ".join(
-        [
-            format_short_date(row.imported_at),
-            format_duration_display_from_config(row.duration_seconds),
-            f"{speakers} speakers",
-            f"SID {format_speaker_id_mark(row.speaker)}",
-            f"Corr {format_corrections_mark(row.corrections)}",
-            f"Anal {format_analysis_mark(row.analysis)}",
-            format_relative_age(row.last_activity_at),
-        ]
-    )
+def inventory_table_row(row: InventoryRow, *, include_path: bool = False) -> dict[str, str]:
+    data = {
+        "Transcript": row.title,
+        "Date": format_short_date(row.imported_at),
+        "Duration": format_duration_display_from_config(row.duration_seconds),
+        "Speakers": "—" if row.speaker_count is None else str(row.speaker_count),
+        "Speaker ID": format_speaker_id_mark(row.speaker),
+        "Corrections": format_corrections_mark(row.corrections),
+        "Analysis": format_analysis_mark(row.analysis),
+        "Last activity": format_relative_age(row.last_activity_at),
+    }
+    if include_path:
+        data["Path"] = str(row.transcript_path)
+    return data

@@ -57,18 +57,19 @@ def goto_app(page: Page, base_url: str) -> None:
 
 
 def select_transcript(page: Page, needle: str = "planning_review") -> None:
-    """Select a transcript by clicking its Library title button."""
+    """Select a transcript by clicking its Library table row."""
     nav(page, "Library")
     search = page.get_by_label("Search transcripts")
     if search.count():
         search.first.fill(needle)
         wait(page, 800)
-    main = main_area(page)
-    title_btn = main.get_by_role("button", name=needle, exact=False)
-    if title_btn.count() == 0:
-        title_btn = main.get_by_role("button", name="planning", exact=False)
-    expect(title_btn.first).to_be_visible(timeout=20000)
-    title_btn.first.click(force=True)
+    grid = page.locator('[data-testid="stDataFrame"]')
+    expect(grid.first).to_be_visible(timeout=20000)
+    cell = grid.get_by_text(needle, exact=False)
+    if cell.count() == 0:
+        cell = grid.get_by_text("planning", exact=False)
+    expect(cell.first).to_be_visible(timeout=10000)
+    cell.first.click()
     wait(page, 2500)
 
     sb_boxes = sidebar(page).locator('[data-testid="stSelectbox"]')
@@ -84,12 +85,11 @@ def select_transcript(page: Page, needle: str = "planning_review") -> None:
 
 
 def library_option_labels(page: Page) -> list[str]:
-    """Return visible Library list titles and caption lines."""
+    """Return visible Library table text lines (titles and workflow columns)."""
     nav(page, "Library")
-    main = main_area(page)
-    # Title buttons are the clickable list rows; include captions for workflow marks.
-    expect(main.get_by_role("button").first).to_be_visible(timeout=20000)
-    return [line for line in main.inner_text().splitlines() if line.strip()]
+    grid = page.locator('[data-testid="stDataFrame"]')
+    expect(grid.first).to_be_visible(timeout=20000)
+    return [line for line in grid.inner_text().splitlines() if line.strip()]
 
 
 def assert_library_lists_transcript(page: Page, needle: str = "planning") -> None:
