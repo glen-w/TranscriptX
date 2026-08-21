@@ -236,7 +236,7 @@ def test_pending_staging_section_invokes_retry(monkeypatch):
         def text(self, *_a, **_k):
             pass
 
-        def button(self, label, key=None):
+        def button(self, label, key=None, **_k):
             return bool(clicks.get("retry")) and "Retry" in label
 
         def success(self, msg):
@@ -378,7 +378,7 @@ def test_pending_staging_retry_partial_surfaces_errors(monkeypatch):
         def text(self, *_a, **_k):
             pass
 
-        def button(self, label, key=None):
+        def button(self, label, key=None, **_k):
             return "Retry" in label
 
         def success(self, msg):

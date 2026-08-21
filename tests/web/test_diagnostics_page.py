@@ -65,6 +65,7 @@ def test_diagnostics_shows_group_manifest_warnings(monkeypatch) -> None:
     warnings: list[str] = []
     subheaders: list[str] = []
     codes: list[str] = []
+    expanders: list[str] = []
 
     class _St(DummyHomeStreamlit):
         @staticmethod
@@ -82,6 +83,11 @@ def test_diagnostics_shows_group_manifest_warnings(monkeypatch) -> None:
         @staticmethod
         def code(text, **_k):
             codes.append(str(text))
+
+        @classmethod
+        def expander(cls, label, **_k):
+            expanders.append(str(label))
+            return super().expander(label, **_k)
 
         @staticmethod
         def write(*_a, **_k):
@@ -115,4 +121,5 @@ def test_diagnostics_shows_group_manifest_warnings(monkeypatch) -> None:
 
     assert any("Group manifests" in s for s in subheaders)
     assert warnings
+    assert any("1 unloadable group manifest" in e for e in expanders)
     assert "bad group.json" in codes

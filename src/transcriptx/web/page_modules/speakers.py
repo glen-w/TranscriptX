@@ -1053,7 +1053,7 @@ def _render_locations_map(
             pack.mentions, speaker_name=profile.display_name
         )
         if map_html:
-            st.components.v1.html(map_html, height=400)
+            st.iframe(map_html, height=400)
         else:
             st.caption(
                 "Map preview unavailable (install optional `[maps]` extra for Folium)."

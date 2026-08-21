@@ -29,7 +29,7 @@ def _is_picker_eligible(path: Path) -> bool:
     """Library paths need an import sidecar; non-library paths stay eligible.
 
     Cheap filesystem check only — no JSON parse / managed revalidation — so
-    first paint stays fast. Raw WhisperX JSON dropped into the library root
+    first paint stays fast. Raw STT JSON dropped into the library root
     (no sidecar) is excluded until managed admit.
     """
     if not _under_managed_library(path):

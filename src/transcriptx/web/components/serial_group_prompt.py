@@ -92,7 +92,7 @@ def render_serial_group_prompt(
         )
     with col_review:
         review_clicked = st.button(
-            "Open Audio Preprocessing",
+            "Open Audio Preprocessing → Auto-merge",
             key=review_button_key,
             icon=ic.GRAPHIC_EQ,
         )

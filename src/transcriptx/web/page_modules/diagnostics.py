@@ -172,8 +172,15 @@ def render_diagnostics_page() -> None:
             "transcript path no longer exists). Fix or remove the manifest under **data/groups** "
             "or restore the missing files."
         )
-        for line in group_warnings:
-            st.code(line, language=None)
+        count = len(group_warnings)
+        label = (
+            f"{count} unloadable group manifest"
+            if count == 1
+            else f"{count} unloadable group manifests"
+        )
+        with st.expander(label, expanded=False):
+            for line in group_warnings:
+                st.code(line, language=None)
 
     _render_rename_repair_section()
     _render_speaker_profile_ops()

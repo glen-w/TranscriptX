@@ -24,6 +24,11 @@ from transcriptx.services.corrections_studio.manual_propose_service import (
     ManualProposeConflict,
     ManualProposeValidationError,
 )
+from transcriptx.web.action_menus.context import build_canonical_identity
+from transcriptx.web.action_menus.services import (
+    PAGE_CORRECTIONS,
+    navigate_with_identity,
+)
 from transcriptx.web.state import PAGE_KEY, apply_subject_context
 from transcriptx.web.components.info_tooltip import widget_help
 
@@ -194,8 +199,17 @@ def render_segment_propose_panel(
             key=correction_widget_key(ctx.transcript_identity_hash, sid, "studio"),
         )
         if open_studio:
-            st.session_state[PAGE_KEY] = "Corrections Studio"
-            st.session_state["corrections_studio_transcript"] = ctx.transcript_path
+            # Clear picker key + bind subject via identity nav so the studio
+            # selectbox can use index= without a Session State conflict.
+            path = Path(ctx.transcript_path)
+            navigate_with_identity(
+                build_canonical_identity(
+                    subject_type="transcript",
+                    subject_id=path.stem,
+                    transcript_path=path,
+                ),
+                PAGE_CORRECTIONS,
+            )
             st.rerun()
 
         if not (propose or accept_apply):
