@@ -49,10 +49,26 @@ def _get_speaker_id_component():
                   <span>Link profile</span>
                 </label>
                 <div class="tx-sid-actions">
-                  <button type="button" class="tx-sid-save">Save</button>
-                  <button type="button" class="tx-sid-ignore">Ignore</button>
-                  <button type="button" class="tx-sid-prev">Prev</button>
-                  <button type="button" class="tx-sid-next">Next</button>
+                  <button type="button" class="tx-sid-save tx-sid-icon-btn" aria-label="Save" title="Save">
+                    <svg class="tx-sid-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/>
+                    </svg>
+                  </button>
+                  <button type="button" class="tx-sid-ignore tx-sid-icon-btn" aria-label="Ignore" title="Ignore">
+                    <svg class="tx-sid-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 0 1 6.32 12.9L7.1 5.68A7.96 7.96 0 0 1 12 4zm0 16a8 8 0 0 1-6.32-12.9L16.9 18.32A7.96 7.96 0 0 1 12 20z"/>
+                    </svg>
+                  </button>
+                  <button type="button" class="tx-sid-prev tx-sid-icon-btn" aria-label="Previous" title="Previous">
+                    <svg class="tx-sid-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                  </button>
+                  <button type="button" class="tx-sid-next tx-sid-icon-btn" aria-label="Next" title="Next">
+                    <svg class="tx-sid-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path fill="currentColor" d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
               <ol class="tx-sid-samples" aria-label="Sample lines"></ol>
@@ -83,17 +99,17 @@ def speaker_id_workspace(
     kwargs: dict[str, Any] = {
         "data": dict(data),
         "key": key,
-        "default": dict(
-            default
-            or {
-                "ack_seq": 0,
-                "command": None,
-            }
-        ),
+        # ``ack_seq`` is persistent component *state* (setStateValue).
+        # ``command`` must NOT be in ``default``: that would register it as
+        # state, and Streamlit's ComponentResult / presenter merge state *over*
+        # triggers — wiping every setTriggerValue("command", …) envelope to
+        # the default ``None`` before Python can apply navigate/save/ignore.
+        # Register ``on_command_change`` only so ``command`` stays a trigger.
+        "default": dict(default or {"ack_seq": 0}),
         "height": height,
         # Streamlit CCv2 only accepts ``default`` keys that have matching
-        # ``on_{state}_change`` callbacks. Always register both protocol states
-        # even when the caller does not consume them.
+        # ``on_{name}_change`` callbacks. Always register both protocol
+        # callbacks (state + trigger) even when the caller does not consume them.
         "on_command_change": on_command_change or _noop,
         "on_ack_seq_change": on_ack_seq_change or _noop,
     }

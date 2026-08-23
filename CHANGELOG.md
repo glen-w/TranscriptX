@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Deep Playwright GUI E2E coverage for Speaker Identification: speaker switching (Next/Prev/Jump), rename + Transcript confirm, ignore/unignore, and clip load/play with linked audio (`tests/e2e_gui/test_speaker_identification_deep.py`).
 - Host **`whispermlx-missing --skip-serial`** (and `inbox-watch --skip-serial`) leaves Auto-merge serial parts / voice-note runs untranscribed so you merge first and transcribe the combined file.
 - Run Analysis: **Cancel analysis** and **Skip module** stay available while a run is in progress (cooperative; the current module is abandoned, remaining work is not started on cancel).
 - Playwright **GUI E2E** expanded to **ten key flows** under `tests/e2e_gui/` (`make test-gui-e2e`): workflows 1–5 plus Charts, Groups, Corrections (Correct mode), Rename Transcript, and Speakers.
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- [Identify and name speakers](docs/workflows/speaker-identification.md) walkthrough expanded for switch / clip / ignore / rename flows; media promoted to `speaker-identification-*` filenames (legacy `speaker-trust-*` retained).
 - Auto-merge groups start **unchecked**, with **Select all** / **Select none**. **Don't suggest again** persists a false match in `{config_dir}/audio_merge_dismissed.json` (Hide remains session-only). `whispermlx-missing --skip-serial` does not skip dismissed groups.
 - Comparison page: added [nanosamur.ai](https://nanosamur.ai) as a complementary org-grade self-hosted STT upstream (not an analysis substitute).
 - Security pins: `cryptography` 48.0.1 → 50.0.0 and `nltk` 3.9.4 → 3.10.3 (fixable pip-audit findings on the clean-env wheel gate).

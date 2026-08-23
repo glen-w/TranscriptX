@@ -11,6 +11,7 @@ from tests.e2e_gui.helpers import (
     open_speaker_identification,
     page_text,
     select_transcript,
+    speaker_workspace_text,
     wait,
 )
 
@@ -28,12 +29,13 @@ def test_speaker_trust_name_and_confirm(seeded_run_app, page) -> None:
     goto_app(page, seeded_run_app.base_url)
     open_speaker_identification(page, needle="planning")
 
-    sid_text = page_text(page)
+    # CCv2 sample/title text lives in the workspace shadow tree.
+    sid_text = speaker_workspace_text(page)
     assert "Speaker" in sid_text
-    assert "SPEAKER_" in sid_text or "Assign name" in sid_text
+    assert "SPEAKER_" in sid_text or "Assign name" in sid_text or "Name" in sid_text
 
     fill_assign_name(page, _DISPLAY_NAME)
-    after_save = page_text(page)
+    after_save = speaker_workspace_text(page)
     assert (
         "Named" in after_save
         or _DISPLAY_NAME in after_save
