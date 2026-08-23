@@ -25,32 +25,52 @@ from tests.e2e_gui.helpers import (
 
 pytestmark = [pytest.mark.gui_e2e, pytest.mark.heavy]
 
+# Distinctive sample lines from docs/workflows/fixtures/planning_review.json.
+_SPEAKER_LINES = {
+    0: "launch planning review",
+    1: "feature cut before we leave",
+    2: "early access users",
+}
+
+
+def _assert_active_speaker_lines(page, index: int) -> str:
+    """Assert heading + sample lines belong to the expected diarized speaker."""
+    heading = active_speaker_heading(page)
+    expect_id = f"SPEAKER_0{index}"
+    expect_ord = f"{index + 1} /"
+    assert expect_id in heading or expect_ord in heading, heading
+    body = page_text(page)
+    needle = _SPEAKER_LINES[index]
+    assert needle in body, f"missing {needle!r} for {expect_id}; head={body[:900]!r}"
+    # Other speakers' distinctive openers must not remain after a switch.
+    for other, other_needle in _SPEAKER_LINES.items():
+        if other == index:
+            continue
+        assert other_needle not in body, (
+            f"stale lines for SPEAKER_0{other} still visible after selecting "
+            f"{expect_id}: {other_needle!r}"
+        )
+    return body
+
 
 def test_speaker_switch_next_prev_and_jump(seeded_run_app, page) -> None:
     """Next / Prev / Jump change the active diarized speaker and sample lines."""
     goto_app(page, seeded_run_app.base_url)
     open_speaker_identification(page, needle="planning")
 
-    first = active_speaker_heading(page)
-    assert "SPEAKER_00" in first or "1 /" in first, first
-    first_body = page_text(page)
-    assert "SPEAKER_" in first_body
+    _assert_active_speaker_lines(page, 0)
 
     click_speaker_nav(page, "next")
-    second = active_speaker_heading(page)
-    assert second != first, (first, second)
-    assert "SPEAKER_01" in second or "2 /" in second, second
-    second_body = page_text(page)
-    # Sample lines should refresh for the newly selected speaker.
-    assert second_body != first_body or "SPEAKER_01" in second_body
+    _assert_active_speaker_lines(page, 1)
 
     click_speaker_nav(page, "prev")
-    back = active_speaker_heading(page)
-    assert "SPEAKER_00" in back or "1 /" in back, back
+    _assert_active_speaker_lines(page, 0)
 
     jump_to_speaker_index(page, 2)
-    jumped = active_speaker_heading(page)
-    assert "SPEAKER_02" in jumped or "3 /" in jumped, jumped
+    _assert_active_speaker_lines(page, 2)
+
+    jump_to_speaker_index(page, 1)
+    _assert_active_speaker_lines(page, 1)
 
 
 def test_speaker_rename_and_confirm_on_transcript(seeded_run_app, page) -> None:
@@ -115,15 +135,24 @@ def test_speaker_clip_load_and_play(seeded_audio_run_app, page) -> None:
     open_speaker_identification(page, needle="planning")
 
     assert_playback_available(page)
-    body = page_text(page)
-    assert re.search(r"SPEAKER_0|Assign name|Speaker\s+1", body)
+    _assert_active_speaker_lines(page, 0)
 
     play_first_clip(page)
     assert_playback_available(page)
     assert_clip_player_mounted(page)
 
-    # Switching speakers must keep playback available and refresh samples.
+    # Selecting another speaker must refresh lines *and* reload that speaker's clips.
     click_speaker_nav(page, "next")
+    body = _assert_active_speaker_lines(page, 1)
+    assert_playback_available(page)
+    play_first_clip(page)
+    assert_playback_available(page)
+    assert_clip_player_mounted(page)
+    assert "feature cut before we leave" in body
+
+    # Jump (click another speaker in the picker) must also swap lines + clips.
+    jump_to_speaker_index(page, 2)
+    _assert_active_speaker_lines(page, 2)
     assert_playback_available(page)
     play_first_clip(page)
     assert_clip_player_mounted(page)

@@ -326,14 +326,31 @@ def active_speaker_heading(page: Page) -> str:
 def jump_to_speaker_index(page: Page, index: int) -> None:
     """Select a speaker via the Jump to speaker selectbox (0-based index)."""
     root = page.locator('[data-testid="stMain"], section.main').first
-    boxes = root.locator('[data-testid="stSelectbox"]')
-    # Prefer the jump control near nav buttons; fall back to last main selectbox.
-    target = boxes.last if boxes.count() else None
-    if target is None:
+    # Prefer the labeled Jump control; fall back to the last main selectbox.
+    jump = root.locator('[data-testid="stSelectbox"]').filter(
+        has_text=re.compile(r"Jump to speaker", re.I)
+    )
+    target = jump.first if jump.count() else root.locator('[data-testid="stSelectbox"]').last
+    if target.count() == 0:
         raise RuntimeError("no selectbox found for Jump to speaker")
-    target.click()
-    wait(page, 600)
+    target.scroll_into_view_if_needed()
+    # Open the listbox via the visible combo / value area.
+    combo = target.locator('[data-baseweb="select"], [role="combobox"], input').first
+    if combo.count():
+        combo.click(force=True)
+    else:
+        target.click(force=True)
+    wait(page, 800)
     options = page.locator('[role="option"]')
+    if options.count() == 0:
+        # Retry once after a short settle (clip/audio widgets can steal focus).
+        wait(page, 1000)
+        if combo.count():
+            combo.click(force=True)
+        else:
+            target.click(force=True)
+        wait(page, 800)
+        options = page.locator('[role="option"]')
     expect(options.first).to_be_visible(timeout=10000)
     count = options.count()
     if index < 0 or index >= count:
