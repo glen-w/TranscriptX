@@ -60,17 +60,26 @@ def goto_app(page: Page, base_url: str) -> None:
 def select_transcript(page: Page, needle: str = "planning_review") -> None:
     """Select a transcript by clicking its Library table row."""
     nav(page, "Library")
-    search = page.get_by_label("Search transcripts")
+    # Prefer stTextInput: get_by_label can match Streamlit help tooltip buttons.
+    search = page.locator('[data-testid="stMain"] [data-testid="stTextInput"] input')
+    if search.count() == 0:
+        search = page.locator('input[aria-label="Search transcripts"]')
     if search.count():
+        search.first.click()
         search.first.fill(needle)
         wait(page, 800)
     grid = page.locator('[data-testid="stDataFrame"]')
     expect(grid.first).to_be_visible(timeout=20000)
-    cell = grid.get_by_text(needle, exact=False)
+    # Streamlit/glide cells are often aria-hidden while still clickable.
+    cell = grid.get_by_role("gridcell").filter(has_text=re.compile(re.escape(needle), re.I))
+    if cell.count() == 0:
+        cell = grid.get_by_role("gridcell").filter(has_text=re.compile(r"planning", re.I))
+    if cell.count() == 0:
+        cell = grid.get_by_text(needle, exact=False)
     if cell.count() == 0:
         cell = grid.get_by_text("planning", exact=False)
-    expect(cell.first).to_be_visible(timeout=10000)
-    cell.first.click()
+    expect(cell.first).to_be_attached(timeout=10000)
+    cell.first.click(force=True)
     wait(page, 2500)
 
     sb_boxes = sidebar(page).locator('[data-testid="stSelectbox"]')
