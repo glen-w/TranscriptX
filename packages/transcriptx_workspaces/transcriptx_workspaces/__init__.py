@@ -83,17 +83,17 @@ def speaker_id_workspace(
     kwargs: dict[str, Any] = {
         "data": dict(data),
         "key": key,
-        "default": dict(
-            default
-            or {
-                "ack_seq": 0,
-                "command": None,
-            }
-        ),
+        # ``ack_seq`` is persistent component *state* (setStateValue).
+        # ``command`` must NOT be in ``default``: that would register it as
+        # state, and Streamlit's ComponentResult / presenter merge state *over*
+        # triggers — wiping every setTriggerValue("command", …) envelope to
+        # the default ``None`` before Python can apply navigate/save/ignore.
+        # Register ``on_command_change`` only so ``command`` stays a trigger.
+        "default": dict(default or {"ack_seq": 0}),
         "height": height,
         # Streamlit CCv2 only accepts ``default`` keys that have matching
-        # ``on_{state}_change`` callbacks. Always register both protocol states
-        # even when the caller does not consume them.
+        # ``on_{name}_change`` callbacks. Always register both protocol
+        # callbacks (state + trigger) even when the caller does not consume them.
         "on_command_change": on_command_change or _noop,
         "on_ack_seq_change": on_ack_seq_change or _noop,
     }
