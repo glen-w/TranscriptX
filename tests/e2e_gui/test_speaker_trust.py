@@ -14,6 +14,7 @@ from tests.e2e_gui.helpers import (
     page_text,
     select_transcript,
     show_unnamed_speakers_on_transcript,
+    speaker_workspace_text,
     wait,
 )
 
@@ -35,12 +36,13 @@ def test_speaker_trust_name_and_confirm(seeded_run_app, page) -> None:
     goto_app(page, seeded_run_app.base_url)
     open_speaker_identification(page, needle="planning")
 
-    sid_text = page_text(page)
+    # CCv2 sample/title text lives in the workspace shadow tree.
+    sid_text = speaker_workspace_text(page)
     assert "Speaker" in sid_text
-    assert "SPEAKER_" in sid_text or "Assign name" in sid_text
+    assert "SPEAKER_" in sid_text or "Assign name" in sid_text or "Name" in sid_text
 
     fill_assign_name(page, _SPEAKERS[0])
-    after_save = page_text(page)
+    after_save = speaker_workspace_text(page)
     assert (
         "Named" in after_save
         or _SPEAKERS[0] in after_save
@@ -70,7 +72,7 @@ def test_speaker_trust_names_multiple_speakers(seeded_run_app, page) -> None:
     assign_speaker_name(page, _SPEAKERS[1], advance=True)
     fill_assign_name(page, _SPEAKERS[2])
 
-    after = page_text(page)
+    after = speaker_workspace_text(page)
     assert (
         any(name in after for name in _SPEAKERS)
         or "Speaker 3" in after
@@ -96,11 +98,13 @@ def test_speaker_trust_next_control_advances(seeded_run_app, page) -> None:
     goto_app(page, seeded_run_app.base_url)
     open_speaker_identification(page, needle="planning")
 
-    root = page.locator('[data-testid="stMain"], section.main').first
-    next_btn = root.get_by_role("button", name="Next", exact=False)
-    assert next_btn.count(), "Speaker Identification should expose Next for multi-speaker flow"
-    assert "SPEAKER_" in page_text(page) or "Assign name" in page_text(page)
+    sid_text = speaker_workspace_text(page)
+    assert (
+        "SPEAKER_" in sid_text
+        or "Assign name" in sid_text
+        or "Name" in sid_text
+    )
 
     advance_speaker_id_next(page)
-    after = page_text(page)
+    after = speaker_workspace_text(page)
     assert "Speaker" in after

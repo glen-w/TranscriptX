@@ -344,12 +344,16 @@ def test_speaker_id_workspace_registers_default_state_callbacks(monkeypatch) -> 
     ws.speaker_id_workspace(data={"protocol_version": "1"}, key="speaker_id_ws:test")
 
     default_keys = set(captured["default"])
-    callback_states = {
+    callback_names = {
         name[3:-7]
         for name in captured
         if name.startswith("on_") and name.endswith("_change")
     }
-    assert default_keys <= callback_states
-    assert {"ack_seq", "command"} <= default_keys
+    # State defaults must be a subset of registered on_*_change callbacks.
+    assert default_keys <= callback_names
+    # ack_seq is state; command is trigger-only (must not appear in default).
+    assert default_keys == {"ack_seq"}
+    assert "command" not in default_keys
+    assert "command" in callback_names
     assert callable(captured["on_ack_seq_change"])
     assert callable(captured["on_command_change"])

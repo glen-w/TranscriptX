@@ -96,9 +96,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  align-items: center;
 }
 
-.tx-sid-actions button {
+.tx-sid-actions button,
+.tx-sid-icon-btn {
   border: 1px solid var(--tx-sid-border);
   background: transparent;
   color: inherit;
@@ -107,7 +109,34 @@
   cursor: pointer;
 }
 
-.tx-sid-actions button:disabled {
+.tx-sid-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.tx-sid-icon-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--tx-sid-accent) 55%, var(--tx-sid-border));
+  background: color-mix(in srgb, var(--tx-sid-accent) 12%, transparent);
+}
+
+.tx-sid-icon-btn:focus-visible {
+  outline: 2px solid var(--tx-sid-accent);
+  outline-offset: 2px;
+}
+
+.tx-sid-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: block;
+}
+
+.tx-sid-actions button:disabled,
+.tx-sid-icon-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
