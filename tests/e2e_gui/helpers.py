@@ -261,6 +261,16 @@ def wait_for_analysis_finish(page: Page, *, timeout_ms: int = 300000) -> None:
     )
 
 
+def _main_button_matching(page: Page, label: str):
+    """Locate a main-pane button whose accessible name ends with ``label``.
+
+    Streamlit Material icon buttons expose names like ``chevron_right  Next``.
+    """
+    root = page.locator('[data-testid="stMain"], section.main').first
+    pattern = re.compile(rf"(^|\s){re.escape(label)}$")
+    return root.get_by_role("button", name=pattern)
+
+
 def fill_assign_name(page: Page, name: str) -> None:
     """Fill Speaker Identification 'Assign name' and save."""
     root = page.locator('[data-testid="stMain"], section.main').first
@@ -274,7 +284,7 @@ def fill_assign_name(page: Page, name: str) -> None:
     inp.first.click()
     inp.first.fill(name)
     wait(page, 500)
-    save = root.get_by_role("button", name="Save name", exact=True)
+    save = _main_button_matching(page, "Save name")
     expect(save.first).to_be_visible(timeout=10000)
     save.first.click(force=True)
     wait(page, 3000)
@@ -283,19 +293,25 @@ def fill_assign_name(page: Page, name: str) -> None:
 def click_speaker_nav(page: Page, direction: str) -> None:
     """Click Speaker Identification Prev or Next."""
     label = {"prev": "Prev", "next": "Next"}[direction.lower()]
-    click_main_button(page, label, exact=True)
-    wait(page, 2000)
+    btn = _main_button_matching(page, label)
+    expect(btn.first).to_be_visible(timeout=20000)
+    btn.first.click(force=True)
+    wait(page, 2500)
 
 
 def click_ignore_speaker(page: Page) -> None:
     """Ignore the active speaker (classic Speaker Identification)."""
-    click_main_button(page, "Ignore", exact=True)
+    btn = _main_button_matching(page, "Ignore")
+    expect(btn.first).to_be_visible(timeout=20000)
+    btn.first.click(force=True)
     wait(page, 3000)
 
 
 def click_unignore_speaker(page: Page) -> None:
     """Unignore the active speaker (classic Speaker Identification)."""
-    click_main_button(page, "Unignore", exact=True)
+    btn = _main_button_matching(page, "Unignore")
+    expect(btn.first).to_be_visible(timeout=20000)
+    btn.first.click(force=True)
     wait(page, 3000)
 
 
