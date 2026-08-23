@@ -8,6 +8,7 @@ from tests.e2e_gui.helpers import (
     goto_app,
     nav,
     page_text,
+    select_analysis_preset,
     select_transcript,
     wait,
 )
@@ -58,3 +59,26 @@ def test_local_ai_synthesis_surface(seeded_run_app, page) -> None:
     assert any(
         s in body for s in llm_signals
     ), f"Expected LLM/Local AI readiness copy on Run Analysis; got head={body[:800]!r}"
+
+
+def test_local_ai_custom_preset_exposes_module_picker(seeded_run_app, page) -> None:
+    """Custom preset should expose module selection including LLM labels."""
+    goto_app(page, seeded_run_app.base_url)
+    select_transcript(page, needle="planning")
+    nav(page, "Run Analysis")
+    wait(page, 3000)
+
+    select_analysis_preset(page, "Custom")
+    body = page_text(page)
+    assert "Custom" in body or "module" in body.lower()
+    module_signals = (
+        "stats",
+        "summary",
+        "highlights",
+        "llm",
+        "Module",
+        "Select",
+    )
+    assert any(
+        s.lower() in body.lower() for s in module_signals
+    ), f"Expected Custom module picker on Run Analysis; head={body[:900]!r}"

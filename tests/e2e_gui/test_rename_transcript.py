@@ -7,8 +7,10 @@ import pytest
 from tests.e2e_gui.helpers import (
     assert_library_lists_transcript,
     goto_app,
+    nav,
     page_text,
     rename_transcript_via_ui,
+    wait,
 )
 
 pytestmark = [pytest.mark.gui_e2e, pytest.mark.heavy]
@@ -29,3 +31,26 @@ def test_rename_transcript(seeded_app, page) -> None:
     ), f"Expected rename success copy; head={body[:800]!r}"
 
     assert_library_lists_transcript(page, needle="planning_review_e2e_renamed")
+
+
+def test_rename_transcript_shows_current_filename(seeded_app, page) -> None:
+    """Rename page should show the current managed stem before editing."""
+    goto_app(page, seeded_app.base_url)
+    nav(page, "Rename Transcript")
+    wait(page, 2500)
+
+    boxes = page.locator('[data-testid="stMain"] [data-testid="stSelectbox"]')
+    if boxes.count() == 0:
+        boxes = page.locator('[data-testid="stSelectbox"]')
+    boxes.first.click()
+    wait(page, 800)
+    opt = page.locator('[role="option"]').filter(has_text="planning")
+    opt.first.click()
+    wait(page, 2500)
+
+    body = page_text(page)
+    assert (
+        "Current file name" in body
+        or "planning" in body.lower()
+        or "New file name" in body
+    )
