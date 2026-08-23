@@ -4,9 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 import streamlit as st
 
+from transcriptx.app.library_delete import (
+    delete_managed_library_transcript,
+    is_managed_library_transcript,
+)
+from transcriptx.web import icons as ic
 from transcriptx.web.action_menus.catalog import help_for, icon_for, label_for
 from transcriptx.web.action_menus.context import ActionContext, ContextCapabilities
 from transcriptx.web.action_menus.ids import ActionId, NavStyle, SectionId
@@ -25,9 +31,18 @@ from transcriptx.web.action_menus.services import (
     prepare_run_export,
     render_export_residuals,
 )
+from transcriptx.web.cache_helpers import clear_transcript_listing_caches
 from transcriptx.web.components.action_links import render_action_link
 from transcriptx.web.navigation import apply_library_rename_navigation
-from transcriptx.web.state import PAGE_KEY
+from transcriptx.web.state import (
+    LIBRARY_SELECTED_TRANSCRIPT_PATH,
+    LIBRARY_TABLE_EPOCH_KEY,
+    PAGE_KEY,
+    SUBJECT_ID_KEY,
+    apply_subject_context,
+    set_page_flash,
+    try_page_toast,
+)
 from transcriptx.web.components.info_tooltip import widget_help
 
 
@@ -245,6 +260,80 @@ def _render_export(ctx: ActionContext, *, section: SectionId, key: str) -> None:
         prepare_run_export(ctx.identity)
 
 
+def _clear_session_after_library_delete(path: Path) -> None:
+    ss = st.session_state
+    ss.pop(LIBRARY_SELECTED_TRANSCRIPT_PATH, None)
+    ss[LIBRARY_TABLE_EPOCH_KEY] = int(ss.get(LIBRARY_TABLE_EPOCH_KEY) or 0) + 1
+    subject = ss.get(SUBJECT_ID_KEY)
+    if subject and str(subject) == path.stem:
+        apply_subject_context(ss, subject_type=None, subject_id=None, run_id=None)
+
+
+@st.dialog("Delete transcript?")
+def _confirm_delete_transcript_dialog(path_str: str) -> None:
+    path = Path(path_str)
+    st.markdown(f"Permanently delete **`{path.name}`**?")
+    st.caption(
+        "Removes this managed transcript and its companions (speaker map, "
+        "import sidecar, readable copy). Linked recordings and analysis runs "
+        "are kept. This cannot be undone."
+    )
+    col_ok, col_cancel = st.columns(2)
+    with col_ok:
+        if st.button(
+            "Delete",
+            type="primary",
+            icon=icon_for(ActionId.DELETE),
+            key="lib_confirm_delete_transcript",
+        ):
+            result = delete_managed_library_transcript(path)
+            if not result.ok:
+                for err in result.errors:
+                    st.error(err)
+                for warn in result.warnings:
+                    st.warning(warn)
+                return
+            _clear_session_after_library_delete(path)
+            clear_transcript_listing_caches()
+            extras: list[str] = []
+            if result.emptied_groups:
+                extras.append(
+                    "Groups with no remaining members were left unchanged: "
+                    + ", ".join(result.emptied_groups)
+                )
+            if result.dangling_speaker_links:
+                extras.append(
+                    f"{result.dangling_speaker_links} speaker-profile link(s) still "
+                    "point at this transcript."
+                )
+            extras.extend(result.warnings)
+            msg = f"Deleted {path.name}."
+            if extras:
+                msg = msg + " " + " ".join(extras)
+            kind = "warning" if extras else "success"
+            set_page_flash(kind, msg)
+            try_page_toast(msg)
+            st.rerun()
+    with col_cancel:
+        if st.button("Cancel", icon=ic.CANCEL, key="lib_cancel_delete_transcript"):
+            st.rerun()
+
+
+def _render_delete(ctx: ActionContext, *, section: SectionId, key: str) -> None:
+    # Dialog must open on the same script path (click return), not on_click.
+    path = ctx.identity.transcript_path
+    disabled = path is None or not is_managed_library_transcript(path)
+    if render_action_link(
+        label_for(ActionId.DELETE, section),
+        key=key,
+        icon=icon_for(ActionId.DELETE),
+        help=widget_help(help_for(ActionId.DELETE)),
+        disabled=disabled,
+    ):
+        if path is not None:
+            _confirm_delete_transcript_dialog(str(path))
+
+
 def _post_export(ctx: ActionContext, download_key: str) -> None:
     render_export_residuals(ctx.identity, download_key=download_key)
 
@@ -258,6 +347,7 @@ HANDLERS: dict[ActionId, ActionHandler] = {
     ActionId.INSIGHTS: ActionHandler(_available_insights, _render_insights),
     ActionId.EXPORT_ZIP: ActionHandler(_available_export, _render_export, _post_export),
     ActionId.RENAME: ActionHandler(_available_rename, _render_rename),
+    ActionId.DELETE: ActionHandler(_available_transcript, _render_delete),
     ActionId.RUN_SPEAKER_ID: ActionHandler(_available_workflow, _render_speaker_id),
     ActionId.RUN_ANALYSIS: ActionHandler(_available_workflow, _render_run_analysis),
     ActionId.CORRECTIONS: ActionHandler(_available_corrections, _render_corrections),

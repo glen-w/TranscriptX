@@ -65,8 +65,10 @@ from transcriptx.web.services.group_service import GroupService
 from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.web.services.transcript_context_resolver import paths_match
 from transcriptx.web.state import (
+    IMPORT_LAST_TRANSCRIPT_PATH,
     SELECTBOX_PLACEHOLDER_GROUP,
     SELECTBOX_PLACEHOLDER_TRANSCRIPT,
+    WORKFLOW_NAV_TRANSCRIPT_PATH,
     set_page_flash,
 )
 from transcriptx.web.transcript_option_format import (
@@ -82,6 +84,7 @@ _RUN_ANALYSIS_TARGET_KEY = "run_analysis_target"
 _PENDING_LAUNCH_KEY = "run_analysis_pending_launch"
 _RUN_CONTROL_KEY = "run_analysis_run_control"
 _WORKER_HOLDER_KEY = "run_analysis_worker_holder"
+_RUN_ANALYSIS_TRANSCRIPT_KEY = "run_analysis_transcript"
 
 
 def _normalize_run_analysis_target(*, group_target_available: bool) -> str:
@@ -366,28 +369,109 @@ def _poll_in_progress_run() -> None:
         st.rerun()
 
 
+def _path_is_file(path: str | Path | None) -> bool:
+    if not path:
+        return False
+    try:
+        return Path(path).is_file()
+    except OSError:
+        return False
+
+
+def _preferred_transcript_path() -> str | None:
+    """Path from identity navigation, last import, or subject."""
+    for key in (WORKFLOW_NAV_TRANSCRIPT_PATH, IMPORT_LAST_TRANSCRIPT_PATH):
+        raw = st.session_state.get(key)
+        if raw and _path_is_file(raw):
+            return str(raw)
+    return SubjectService.current_transcript_path(st.session_state)
+
+
+def _label_for_picker_path(path: Path) -> str:
+    try:
+        summary = cached_transcript_summary_for_path(
+            str(path),
+            transcript_summary_signature(path),
+        )
+    except Exception:
+        summary = None
+    if summary is not None:
+        return format_transcript_option_with_speaker_status(summary)
+    return path.stem
+
+
+def _transcript_picker_with_preferred(
+    options: tuple[str, ...],
+    labels: tuple[str, ...],
+    preferred: str | None,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Ensure navigated subject is listed even if discovery briefly lags."""
+    if not preferred or not _path_is_file(preferred):
+        return options, labels
+    preferred_path = Path(preferred)
+    if any(paths_match(opt, preferred_path) for opt in options):
+        return options, labels
+    merged = sorted(
+        [*zip(options, labels, strict=True), (str(preferred_path), _label_for_picker_path(preferred_path))],
+        key=lambda row: str(Path(row[0]).resolve()),
+    )
+    return tuple(row[0] for row in merged), tuple(row[1] for row in merged)
+
+
+def _bind_transcript_picker_index(*, option_count: int, default_idx: int) -> None:
+    """Force selectbox value when key was cleared or reset to placeholder."""
+    key = _RUN_ANALYSIS_TRANSCRIPT_KEY
+    if key in st.session_state:
+        current = st.session_state.get(key)
+        if not isinstance(current, int) or current < 0 or current > option_count:
+            st.session_state[key] = default_idx if 0 <= default_idx <= option_count else 0
+            return
+        if current == 0 and default_idx > 0:
+            st.session_state[key] = default_idx
+        return
+    if 0 <= default_idx <= option_count:
+        st.session_state[key] = default_idx
+
+
 def _resolve_transcript_selection(
     transcript_options: tuple[str, ...],
     transcript_labels: tuple[str, ...],
 ) -> Path | None:
     """Transcript selectbox + cheap context sync (fragment-local)."""
-    default_idx = SubjectService.index_in_path_options(
-        st.session_state, list(transcript_options)
+    preferred = _preferred_transcript_path()
+    transcript_options, transcript_labels = _transcript_picker_with_preferred(
+        transcript_options, transcript_labels, preferred
     )
+    options_list = list(transcript_options)
+    default_idx = 0
+    if preferred:
+        preferred_path = Path(preferred)
+        for index, option in enumerate(options_list):
+            if paths_match(option, preferred_path):
+                default_idx = index + 1
+                break
+    if default_idx == 0:
+        default_idx = SubjectService.index_in_path_options(
+            st.session_state, options_list
+        )
+    _bind_transcript_picker_index(
+        option_count=len(options_list), default_idx=default_idx
+    )
+    st.session_state.pop(WORKFLOW_NAV_TRANSCRIPT_PATH, None)
     transcript_choice = st.selectbox(
         "Transcript",
-        range(len(transcript_options) + 1),
+        range(len(options_list) + 1),
         format_func=lambda i: (
             SELECTBOX_PLACEHOLDER_TRANSCRIPT
             if i == 0
             else (transcript_labels[i - 1] if i - 1 < len(transcript_labels) else "")
         ),
         index=default_idx,
-        key="run_analysis_transcript",
+        key=_RUN_ANALYSIS_TRANSCRIPT_KEY,
     )
     if transcript_choice <= 0:
         return None
-    transcript_path = Path(transcript_options[transcript_choice - 1])
+    transcript_path = Path(options_list[transcript_choice - 1])
     current = SubjectService.current_transcript_path(st.session_state)
 
     if current is None or not paths_match(current, transcript_path):

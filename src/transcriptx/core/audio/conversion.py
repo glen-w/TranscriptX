@@ -23,6 +23,7 @@ except ImportError:
 
 from transcriptx.core.audio.preprocessing import apply_preprocessing
 from transcriptx.core.audio.tools import _find_ffmpeg_path, check_ffmpeg_available
+from transcriptx.core.audio.utils import load_audio_segment
 from transcriptx.core.utils.logger import get_logger, log_error
 
 logger = get_logger()
@@ -156,7 +157,7 @@ def merge_audio_files(
                     f"Loading {path.name} ({idx + 1}/{total_files})...",
                 )
 
-            audio = AudioSegment.from_file(str(path))  # type: ignore[union-attr]
+            audio = load_audio_segment(path)
 
             if apply_preprocessing_steps:
                 audio, applied_steps = apply_preprocessing(audio, config, None)

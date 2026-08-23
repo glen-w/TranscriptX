@@ -879,6 +879,72 @@ def test_run_analysis_transcript_select_lives_in_fragment() -> None:
     # Helpers that own the selectbox sit above the fragment def; the page body
     # after render_run_analysis_page must not instantiate the transcript widget.
     page_body = source[page_start:]
-    assert 'key="run_analysis_transcript"' not in page_body
+    assert "_RUN_ANALYSIS_TRANSCRIPT_KEY" not in page_body
     assert "_resolve_transcript_selection" in source[frag_start:page_start]
-    assert 'key="run_analysis_transcript"' in source[:page_start]
+    assert "_RUN_ANALYSIS_TRANSCRIPT_KEY" in source[:page_start]
+
+
+@pytest.mark.unit
+def test_transcript_picker_with_preferred_appends_missing_navigated_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Post-library nav must still preselect when discovery lags the subject."""
+    import transcriptx.web.page_modules.run_analysis as mod
+
+    existing = tmp_path / "older.json"
+    existing.write_text("{}", encoding="utf-8")
+    imported = tmp_path / "planning.json"
+    imported.write_text("{}", encoding="utf-8")
+
+    options, labels = mod._transcript_picker_with_preferred(
+        (str(existing),),
+        ("older",),
+        str(imported),
+    )
+    assert len(options) == 2
+    assert any(Path(opt).resolve() == imported.resolve() for opt in options)
+    assert len(labels) == 2
+
+
+@pytest.mark.unit
+def test_bind_transcript_picker_sets_index_when_key_absent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import transcriptx.web.page_modules.run_analysis as mod
+
+    ss: dict = {}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    mod._bind_transcript_picker_index(option_count=2, default_idx=2)
+    assert ss[mod._RUN_ANALYSIS_TRANSCRIPT_KEY] == 2
+    mod._bind_transcript_picker_index(option_count=2, default_idx=1)
+    assert ss[mod._RUN_ANALYSIS_TRANSCRIPT_KEY] == 2
+
+
+@pytest.mark.unit
+def test_bind_transcript_picker_replaces_placeholder_with_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import transcriptx.web.page_modules.run_analysis as mod
+
+    ss = {mod._RUN_ANALYSIS_TRANSCRIPT_KEY: 0}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    mod._bind_transcript_picker_index(option_count=2, default_idx=2)
+    assert ss[mod._RUN_ANALYSIS_TRANSCRIPT_KEY] == 2
+
+
+@pytest.mark.unit
+def test_preferred_transcript_path_uses_workflow_nav(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import transcriptx.web.page_modules.run_analysis as mod
+    from transcriptx.web.state import WORKFLOW_NAV_TRANSCRIPT_PATH
+
+    selected = tmp_path / "meeting.json"
+    selected.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        mod.st,
+        "session_state",
+        {WORKFLOW_NAV_TRANSCRIPT_PATH: str(selected)},
+        raising=False,
+    )
+    assert mod._preferred_transcript_path() == str(selected)

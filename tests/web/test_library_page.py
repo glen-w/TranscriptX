@@ -24,7 +24,9 @@ from transcriptx.web.state import LIBRARY_SELECTED_TRANSCRIPT_PATH
 _DummyStreamlit = DummyStreamlitWithDataframe
 
 
-def _row(name: str, *, duration: float | None = 120.0, speakers: int | None = 2) -> InventoryRow:
+def _row(
+    name: str, *, duration: float | None = 120.0, speakers: int | None = 2
+) -> InventoryRow:
     return InventoryRow(
         transcript_path=Path(f"/tmp/{name}.json"),
         transcript_key=name,
@@ -46,7 +48,9 @@ def _row(name: str, *, duration: float | None = 120.0, speakers: int | None = 2)
             status=AnalysisStatus.UNANALYSED, integrity=FieldIntegrity.MISSING
         ),
         last_activity_at=datetime(2026, 8, 20, tzinfo=timezone.utc),
-        fingerprint=InventoryFingerprint(stamps=(FileStamp(f"/tmp/{name}.json", 1, 1),)),
+        fingerprint=InventoryFingerprint(
+            stamps=(FileStamp(f"/tmp/{name}.json", 1, 1),)
+        ),
     )
 
 
@@ -55,6 +59,7 @@ def _patch_library(monkeypatch, rows) -> None:
 
     _DummyStreamlit.captured_df = None
     _DummyStreamlit.captions = []
+    _DummyStreamlit.audio_calls = []
     monkeypatch.setattr(mod, "st", _DummyStreamlit)
     monkeypatch.setattr(mod, "render_page_shell", lambda *_a, **_k: None)
     monkeypatch.setattr(mod, "get_cached_corpus_inventory", lambda: rows)
@@ -98,7 +103,10 @@ def test_render_library_table_uses_inventory_workflow_columns(monkeypatch) -> No
 
     _DummyStreamlit.session_state = {"library_filter_sort": "name"}
     _DummyStreamlit.selected_rows = []
-    rows = [_row("short", duration=125.0, speakers=2), _row("long", duration=4920.0, speakers=3)]
+    rows = [
+        _row("short", duration=125.0, speakers=2),
+        _row("long", duration=4920.0, speakers=3),
+    ]
     _patch_library(monkeypatch, rows)
     summaries = {"count": 0}
     monkeypatch.setattr(
@@ -188,3 +196,52 @@ def test_library_page_defers_rename_to_rename_transcript_page() -> None:
     assert "render_transcript_rename_form" not in source
     assert "library_transcript_select" not in source
     assert "st.dataframe" in source
+
+
+def test_library_inspector_renders_linked_audio_player(monkeypatch) -> None:
+    import transcriptx.web.page_modules.library as mod
+
+    audio = Path("/tmp/alice.mp3")
+    _DummyStreamlit.session_state = {
+        LIBRARY_SELECTED_TRANSCRIPT_PATH: "/tmp/alice.json",
+    }
+    _DummyStreamlit.selected_rows = []
+    _patch_library(monkeypatch, [_row("alice")])
+    monkeypatch.setattr(mod, "_resolve_audio_for_transcript", lambda _p: audio)
+
+    mod.render_library()
+
+    assert _DummyStreamlit.audio_calls == [audio]
+    assert not any("No linked audio" in cap for cap in _DummyStreamlit.captions)
+
+
+def test_library_inspector_shows_no_linked_audio(monkeypatch) -> None:
+    import transcriptx.web.page_modules.library as mod
+
+    _DummyStreamlit.session_state = {
+        LIBRARY_SELECTED_TRANSCRIPT_PATH: "/tmp/alice.json",
+    }
+    _DummyStreamlit.selected_rows = []
+    _patch_library(monkeypatch, [_row("alice")])
+    monkeypatch.setattr(mod, "_resolve_audio_for_transcript", lambda _p: None)
+
+    mod.render_library()
+
+    assert _DummyStreamlit.audio_calls == []
+    assert any("No linked audio" in cap for cap in _DummyStreamlit.captions)
+
+
+def test_library_delete_lives_in_overflow_allowlist() -> None:
+    from transcriptx.web.action_menus.catalog import (
+        SECTION_ALLOWLISTS,
+        SECTION_DEFAULTS,
+        section_default_actions,
+    )
+    from transcriptx.web.action_menus.ids import ActionId, SectionId
+
+    assert ActionId.DELETE in SECTION_ALLOWLISTS[SectionId.LIBRARY_SELECTED]
+    assert ActionId.DELETE not in section_default_actions(
+        SectionId.LIBRARY_SELECTED, subject_type="transcript", has_run=False
+    )
+    for defaults in SECTION_DEFAULTS.values():
+        assert ActionId.DELETE not in defaults

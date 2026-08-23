@@ -22,6 +22,7 @@ class ActionId(str, Enum):
     INSIGHTS = "insights"
     EXPORT_ZIP = "export_zip"
     RENAME = "rename"
+    DELETE = "delete"
     RUN_SPEAKER_ID = "run_speaker_id"
     RUN_ANALYSIS = "run_analysis"
     CORRECTIONS = "corrections"

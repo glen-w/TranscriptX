@@ -143,9 +143,9 @@ def run_preprocess(
     progress.on_stage_start("preprocessing")
 
     try:
-        from pydub import AudioSegment  # type: ignore[import]
+        from transcriptx.core.audio.utils import load_audio_segment
 
-        audio = AudioSegment.from_file(str(request.input_path))
+        audio = load_audio_segment(request.input_path)
     except Exception as e:
         progress.on_stage_complete("preprocessing")
         return PreprocessResult(

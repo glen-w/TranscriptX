@@ -53,6 +53,7 @@ from transcriptx.web.state import (
     LIBRARY_FILTER_SOURCE_KEY,
     LIBRARY_SELECTED_TRANSCRIPT_PATH,
     LIBRARY_SHOW_PATH_KEY,
+    LIBRARY_TABLE_EPOCH_KEY,
 )
 
 _LIBRARY_DESCRIPTION = (
@@ -79,6 +80,30 @@ _SORT_LABELS: dict[LibrarySort, str] = {
 }
 
 
+_AUDIO_MIME_BY_SUFFIX = {
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
+    ".ogg": "audio/ogg",
+    ".opus": "audio/opus",
+    ".flac": "audio/flac",
+    ".webm": "audio/webm",
+}
+
+
+def _audio_mime_for_path(path: Path) -> str:
+    return _AUDIO_MIME_BY_SUFFIX.get(path.suffix.lower(), "audio/mpeg")
+
+
+def _render_inspector_audio(transcript_path: Path) -> None:
+    audio_path = _resolve_audio_for_transcript(transcript_path)
+    if audio_path is None:
+        st.caption("No linked audio")
+        return
+    st.audio(audio_path, format=_audio_mime_for_path(audio_path))
+
+
 def _resolve_audio_for_transcript(transcript_path: Path) -> Path | None:
     try:
         candidate = find_original_audio_file(str(transcript_path))
@@ -101,7 +126,9 @@ def _resolve_audio_for_transcript(transcript_path: Path) -> Path | None:
     return None
 
 
-def _row_by_path(rows: list[InventoryRow], transcript_path: str | Path | None) -> InventoryRow | None:
+def _row_by_path(
+    rows: list[InventoryRow], transcript_path: str | Path | None
+) -> InventoryRow | None:
     if not transcript_path:
         return None
     target = tolerant_resolve(transcript_path)
@@ -174,7 +201,9 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
             "Search transcripts",
             key=LIBRARY_FILTER_QUERY_KEY,
             placeholder="Title or filename",
-            help=widget_help("Filters the library by title or filename, not transcript text."),
+            help=widget_help(
+                "Filters the library by title or filename, not transcript text."
+            ),
         )
     with preset_col:
         st.pills(
@@ -220,7 +249,7 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
         hide_index=True,
         on_select="rerun",
         selection_mode="single-row",
-        key="library_inventory_table",
+        key=f"library_inventory_table_{int(st.session_state.get(LIBRARY_TABLE_EPOCH_KEY) or 0)}",
     )
     _selection_from_dataframe(event, visible)
 
@@ -242,11 +271,16 @@ def _render_inspector(selected: InventoryRow) -> None:
     st.divider()
     st.subheader(selected.title)
     duration = format_duration_display_from_config(selected.duration_seconds)
-    speakers = "—" if selected.speaker_count is None else f"{selected.speaker_count} speakers"
+    speakers = (
+        "—" if selected.speaker_count is None else f"{selected.speaker_count} speakers"
+    )
     words = (
-        f"{selected.word_count:,} words" if selected.word_count is not None else "— words"
+        f"{selected.word_count:,} words"
+        if selected.word_count is not None
+        else "— words"
     )
     st.caption(f"{duration} · {speakers} · {words}")
+    _render_inspector_audio(selected.transcript_path)
     st.caption(f"Speaker identification: {format_speaker_id_label(selected.speaker)}")
     st.caption(f"Corrections: {format_corrections_label(selected.corrections)}")
     st.caption(f"Analysis: {format_analysis_label(selected.analysis)}")

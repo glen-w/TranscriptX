@@ -61,9 +61,9 @@ class RecordingsService:
         """
         path = Path(path).resolve()
         try:
-            from pydub import AudioSegment  # type: ignore[import]
+            from transcriptx.core.audio.utils import load_audio_segment
 
-            audio = AudioSegment.from_file(str(path))
+            audio = load_audio_segment(path)
             duration_sec = len(audio) / 1000.0
             file_size_mb = path.stat().st_size / (1024 * 1024)
 

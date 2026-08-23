@@ -61,6 +61,7 @@ except ImportError:
     sf = None  # type: ignore[assignment]
 
 from transcriptx.core.audio.types import AudioAssessment, AudioCompliance
+from transcriptx.core.audio.utils import load_audio_segment
 from transcriptx.core.utils.logger import get_logger, log_error
 
 logger = get_logger()
@@ -93,7 +94,7 @@ def assess_audio_noise(audio_path: Path) -> AudioAssessment:
         return assessment
 
     try:
-        audio = AudioSegment.from_file(str(audio_path))
+        audio = load_audio_segment(audio_path)
 
         samples = np.array(audio.get_array_of_samples())
 
@@ -272,7 +273,7 @@ def check_audio_compliance(audio_path: Path, config: Any = None) -> AudioComplia
     missing_requirements: List[str] = compliance["missing_requirements"]  # type: ignore[assignment]
 
     try:
-        audio = AudioSegment.from_file(str(audio_path))
+        audio = load_audio_segment(audio_path)
 
         target_rate = 16000
         if config and hasattr(config, "target_sample_rate"):

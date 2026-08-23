@@ -125,6 +125,7 @@ class DummyStreamlitWithDataframe:
     captured_df = None
     session_state: dict[str, object] = {}
     captions: list[str] = []
+    audio_calls: list[object] = []
     selected_rows: list[int] = []
 
     @staticmethod
@@ -187,6 +188,11 @@ class DummyStreamlitWithDataframe:
 
     @staticmethod
     def rerun():
+        return None
+
+    @classmethod
+    def audio(cls, data, **_kwargs):
+        cls.audio_calls.append(data)
         return None
 
     @classmethod

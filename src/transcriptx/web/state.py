@@ -20,6 +20,7 @@ LIBRARY_NAV_TRANSCRIPT_PATH = "_library_nav_transcript_path"
 LIBRARY_NAV_FILTER = "_library_nav_filter"
 # Persistent Library selection identity (path, never a dataframe row index).
 LIBRARY_SELECTED_TRANSCRIPT_PATH = "library_selected_transcript_path"
+LIBRARY_TABLE_EPOCH_KEY = "library_table_epoch"
 LIBRARY_FILTER_PRESET_KEY = "library_filter_preset"
 LIBRARY_FILTER_QUERY_KEY = "library_filter_query"
 LIBRARY_FILTER_SORT_KEY = "library_filter_sort"

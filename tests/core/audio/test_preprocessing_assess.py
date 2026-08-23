@@ -41,7 +41,7 @@ def test_assess_audio_noise_populates_metrics_and_suggestions(
     monkeypatch.setattr(ap, "PYDUB_AVAILABLE", True)
     monkeypatch.setattr(ap, "WEBRTCVAD_AVAILABLE", False)
     monkeypatch.setattr(ap, "SOUNDFILE_AVAILABLE", False)
-    monkeypatch.setattr(ap, "AudioSegment", SimpleNamespace(from_file=lambda _p: fake))
+    monkeypatch.setattr(ap, "load_audio_segment", lambda _p: fake)
 
     out = ap.assess_audio_noise(Path("/tmp/a.wav"))
 
@@ -58,10 +58,8 @@ def test_assess_audio_noise_handles_decode_errors(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr(ap, "PYDUB_AVAILABLE", True)
     monkeypatch.setattr(
         ap,
-        "AudioSegment",
-        SimpleNamespace(
-            from_file=lambda _p: (_ for _ in ()).throw(ValueError("decode"))
-        ),
+        "load_audio_segment",
+        lambda _p: (_ for _ in ()).throw(ValueError("decode")),
     )
 
     out = ap.assess_audio_noise(Path("/tmp/bad.wav"))

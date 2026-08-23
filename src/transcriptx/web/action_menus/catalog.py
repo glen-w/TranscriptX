@@ -67,6 +67,12 @@ ACTIONS: tuple[ActionDef, ...] = (
         "Rename the transcript (and linked audio) on the Rename Transcript page.",
     ),
     ActionDef(
+        ActionId.DELETE,
+        "Delete",
+        ic.DELETE,
+        "Permanently delete this managed transcript and its companions. Linked recordings and analysis runs are kept.",
+    ),
+    ActionDef(
         ActionId.RUN_SPEAKER_ID,
         "Run Speaker ID",
         ic.TRANSCRIBE,
@@ -123,6 +129,7 @@ SECTION_ALLOWLISTS: dict[SectionId, tuple[ActionId, ...]] = {
         ActionId.EXPORT_ZIP,
         ActionId.OPEN_TRANSCRIPT,
         ActionId.CORRECT_IN_VIEWER,
+        ActionId.DELETE,
     ),
     SectionId.IMPORT_SUCCESS: (
         ActionId.OPEN_LIBRARY,

@@ -53,7 +53,7 @@ Implications:
 ### Details
 
 - **recordings_dir**: User-owned, persistent, mountable, never auto-clean, user-authored content. **Do not commit audio into the repository.** With Docker Compose, set `HOST_RECORDINGS_DIR` to a host directory outside the clone; `data/recordings/` under the repo is gitignored for local/native defaults only. **Settings → Storage → Duplicate library files** may delete extra copies after an explicit preview and typed confirmation; it is never automatic.
-- **transcripts_dir**: User-owned, persistent, mountable, never auto-clean, user-authored content. The same Settings tool may delete extra duplicate transcripts (and companions) after confirmation; admission, rename, and analysis-run cleanup still never auto-delete this tree.  
+- **transcripts_dir**: User-owned, persistent, mountable, never auto-clean, user-authored content. **Settings → Storage → Duplicate library files** may delete extra duplicate transcripts (and companions) after confirmation; **Library** may delete one selected transcript (and companions) after confirmation. Linked recordings and analysis run folders are left in place. Admission, rename, and analysis-run cleanup still never auto-delete this tree.  
   - `readable/` is a derived child within this library (not a peer root).
   - `imports/` is ephemeral staging owned by the managed import workflow.
   - `originals/` stores archived source files for managed imports (never overwritten; disambiguated names). Audio paths under `originals/` (and any archival audio roots) are stable archival references and are intentionally decoupled from transcript filenames.

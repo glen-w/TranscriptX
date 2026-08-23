@@ -62,6 +62,11 @@ def test_catalogue_invariants() -> None:
     for aid in OPTIONAL_ACTIONS:
         for defaults in SECTION_DEFAULTS.values():
             assert aid not in defaults
+    assert ActionId.DELETE in SECTION_ALLOWLISTS[SectionId.LIBRARY_SELECTED]
+    for sid, allow in SECTION_ALLOWLISTS.items():
+        if sid is SectionId.LIBRARY_SELECTED:
+            continue
+        assert ActionId.DELETE not in allow
 
 
 def test_built_in_standard_excludes_optional() -> None:
