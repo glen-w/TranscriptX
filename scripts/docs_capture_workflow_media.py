@@ -119,6 +119,7 @@ def main() -> None:
                 nxt = page.get_by_role("button", name="Next", exact=True)
             if nxt.count() == 0:
                 nxt = page.get_by_role("button", name=re.compile(r"(^|\s)Next$"))
+            # Icon-only CCv2 control keeps accessible name "Next" via aria-label.
             if nxt.count():
                 try:
                     nxt.first.click(force=True)

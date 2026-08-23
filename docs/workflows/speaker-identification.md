@@ -19,8 +19,8 @@ Audio is optional for naming from text lines. If a matching recording is linked 
 
 1. Open **Speaker Identification** for the sample transcript.
 2. Review sample lines for the active speaker (and play a clip when audio is linked).
-3. Assign a clear display name with **Save**, or **Ignore** a junk label.
-4. Switch speakers with **Next** / **Prev** or by clicking another speaker in the list, then continue naming.
+3. Assign a clear display name with the save (✓) control, or ignore (⊘) a junk label.
+4. Switch speakers with the previous/next arrows or by clicking another speaker in the list, then continue naming.
 5. Confirm the names on **Transcript**.
 6. Understand why naming matters for later speaker results.
 
@@ -34,15 +34,15 @@ Audio is optional for naming from text lines. If a matching recording is linked 
 
 3. If audio is linked, use the play controls beside a sample line to load that clip. Clips help when two speakers sound similar or when a short turn is ambiguous from text alone. Without audio, continue from the printed lines — naming still works.
 
-4. Enter a display name in the **Name** field and choose **Save**. The workspace advances to the next unnamed speaker when one remains.
+4. Enter a display name in the **Name** field and choose the save (✓) control. The workspace advances to the next unnamed speaker when one remains.
 
 ![Naming one speaker and advancing to the next candidate in Speaker Identification](../_static/workflows/speaker-identification-naming.gif)
 
-5. Use **Next** and **Prev**, or click another speaker in the left-hand list, to move between diarized IDs without saving. Sample lines and clip targets follow the active speaker so you can compare voices before committing a name. Keyboard shortcuts (workspace focused): `j`/`k` next/prev, `Enter` save, `i` ignore, Space play/pause.
+5. Use the previous/next arrow controls, or click another speaker in the left-hand list, to move between diarized IDs without saving. Sample lines and clip targets follow the active speaker so you can compare voices before committing a name. Keyboard shortcuts (workspace focused): `j`/`k` next/prev, `Enter` save, `i` ignore, Space play/pause.
 
 6. Repeat naming for the remaining speakers. Suggested names for this fixture: **Maya** (`SPEAKER_00`), **Jordan** (`SPEAKER_01`), **Sam** (`SPEAKER_02`). Use any stable names you prefer; consistency matters more than the exact strings.
 
-7. If a diarized ID is clearly noise (rare in this short fixture), choose **Ignore** so it does not pollute speaker summaries. Open that speaker again and choose **Ignore** a second time to clear the ignore flag.
+7. If a diarized ID is clearly noise (rare in this short fixture), choose ignore (⊘) so it does not pollute speaker summaries. Open that speaker again and choose ignore a second time to clear the ignore flag.
 
 8. Open **Transcript** and confirm turns now show your chosen names instead of `SPEAKER_00`-style IDs.
 
@@ -54,14 +54,14 @@ Audio is optional for naming from text lines. If a matching recording is linked 
 > default when `transcriptx-workspaces` is installed. Roll back to the classic
 > UI with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`. The classic path uses
 > **Assign name** / **Save name** / **Jump to speaker** / **Unignore** labels;
-> CCv2 uses **Name** / **Save** / the speaker list / an **Ignore** toggle.
+> CCv2 uses **Name**, icon actions (save / ignore / prev / next), and the speaker list.
 > See [known limitations](../known_limitations.md).
 
 ## What to notice
 
 - Naming speakers makes the transcript readable and unlocks speaker-level modules; it is not a cosmetic rename.
 - Switching speakers refreshes sample lines (and clip targets when audio is present) so you can compare before saving.
-- **Ignore** is for unusable diarization IDs; prefer naming real participants. On CCv2, choose **Ignore** again to restore a previously ignored ID.
+- Ignore is for unusable diarization IDs; prefer naming real participants. On CCv2, choose ignore again to restore a previously ignored ID.
 - Longitudinal profile linking (when offered) is optional; naming alone is enough for single-transcript work.
 - Downstream speaker cards, per-speaker LLM summaries, and interaction-style views depend on these labels being meaningful.
 
