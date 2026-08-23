@@ -117,10 +117,14 @@ def _workspace_env(ws_dirs: dict[str, Path]) -> dict[str, str]:
             "TRANSCRIPTX_DISABLE_DOWNLOADS": "1",
             "STREAMLIT_BROWSER_GATHER_USAGE_STATS": "false",
             "STREAMLIT_SERVER_HEADLESS": "true",
-            # Prefer classic Speaker ID UI (no CCv2 workspace package required).
-            "TX_SPEAKER_ID_WORKSPACE_COMPONENT": "0",
+            # CCv2 Speaker ID is default-on (Theme C). Do not force classic here —
+            # GUI E2E must exercise the Components v2 workspace. Roll back only
+            # when intentionally testing the legacy fragment
+            # (TX_SPEAKER_ID_WORKSPACE_COMPONENT=0).
         }
     )
+    # Ensure a stale rollback from the host env does not pin classic UI.
+    env.pop("TX_SPEAKER_ID_WORKSPACE_COMPONENT", None)
     return env
 
 

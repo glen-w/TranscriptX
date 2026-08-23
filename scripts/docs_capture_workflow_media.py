@@ -109,14 +109,16 @@ def main() -> None:
         shot(page, "investigate-overview.png")
         shot(page, "local-ai-overview-summary.png")
 
-        # Speaker Identification
+        # Speaker Identification (prefer CCv2 Next control)
         nav(page, "Speaker Identification")
         shot(page, "speaker-identification-page.png")
         for i in range(5):
             page.screenshot(path=str(OUT / f"gif_frames_speaker/frame_{i:02d}.png"))
-            nxt = page.get_by_role("button", name="Next", exact=True)
+            nxt = page.locator(".tx-sid-next")
             if nxt.count() == 0:
-                nxt = page.get_by_role("button", name=re.compile(r"^Next"))
+                nxt = page.get_by_role("button", name="Next", exact=True)
+            if nxt.count() == 0:
+                nxt = page.get_by_role("button", name=re.compile(r"(^|\s)Next$"))
             if nxt.count():
                 try:
                     nxt.first.click(force=True)

@@ -1,8 +1,6 @@
-"""Deep Speaker Identification E2E: switch, rename, ignore, load clips."""
+"""Deep Speaker Identification E2E: switch, rename, ignore, load clips (CCv2)."""
 
 from __future__ import annotations
-
-import re
 
 import pytest
 
@@ -20,6 +18,7 @@ from tests.e2e_gui.helpers import (
     page_text,
     play_first_clip,
     select_transcript,
+    speaker_workspace_text,
     wait,
 )
 
@@ -37,12 +36,18 @@ def _assert_active_speaker_lines(page, index: int) -> str:
     """Assert heading + sample lines belong to the expected diarized speaker."""
     heading = active_speaker_heading(page)
     expect_id = f"SPEAKER_0{index}"
-    expect_ord = f"{index + 1} /"
-    assert expect_id in heading or expect_ord in heading, heading
-    body = page_text(page)
+    # Classic: "Speaker 1 / 3"; CCv2 status: "1/3 · …"
+    expect_ord_classic = f"{index + 1} /"
+    expect_ord_ccv2 = f"{index + 1}/"
+    assert (
+        expect_id in heading
+        or expect_ord_classic in heading
+        or expect_ord_ccv2 in heading
+    ), heading
+    # Sample lines live in the CCv2 shadow tree — use workspace text, not stMain.
+    body = speaker_workspace_text(page)
     needle = _SPEAKER_LINES[index]
     assert needle in body, f"missing {needle!r} for {expect_id}; head={body[:900]!r}"
-    # Other speakers' distinctive openers must not remain after a switch.
     for other, other_needle in _SPEAKER_LINES.items():
         if other == index:
             continue
@@ -80,13 +85,16 @@ def test_speaker_rename_and_confirm_on_transcript(seeded_run_app, page) -> None:
     open_speaker_identification(page, needle="planning")
 
     heading_before = active_speaker_heading(page)
-    assert "SPEAKER_00" in heading_before or "1 /" in heading_before
+    assert (
+        "SPEAKER_00" in heading_before
+        or "1 /" in heading_before
+        or "1/" in heading_before
+    )
 
     fill_assign_name(page, display)
-    after = page_text(page)
+    after = speaker_workspace_text(page)
     assert display in after or "Named" in after or "SPEAKER_01" in after
 
-    # Saving should advance toward the next unnamed speaker when one remains.
     heading_after = active_speaker_heading(page)
     assert heading_after != heading_before or display in after
 
@@ -100,33 +108,45 @@ def test_speaker_rename_and_confirm_on_transcript(seeded_run_app, page) -> None:
 
 
 def test_speaker_ignore_and_unignore(seeded_run_app, page) -> None:
-    """Ignore marks a speaker, advances, and Unignore restores it."""
+    """Ignore marks a speaker, advances, and toggling Ignore again restores it."""
     goto_app(page, seeded_run_app.base_url)
     open_speaker_identification(page, needle="planning")
 
     before = active_speaker_heading(page)
     click_ignore_speaker(page)
-    body = page_text(page)
+    body = speaker_workspace_text(page)
     assert (
         "Ignored" in body
         or "ignored" in body.lower()
         or "Unignore" in body
+        or "🔇" in body
         or "SPEAKER_01" in body
     ), body[:800]
 
     after_ignore = active_speaker_heading(page)
-    # Ignore typically advances to the next remaining speaker.
-    assert after_ignore != before or "Ignored" in body or "Unignore" in body
+    assert (
+        after_ignore != before
+        or "Ignored" in body
+        or "Unignore" in body
+        or "🔇" in body
+    )
 
-    # Jump back to the first speaker and unignore if still ignored.
+    # Jump back to the first speaker and clear ignore (CCv2 toggles Ignore;
+    # classic shows an Unignore button).
     jump_to_speaker_index(page, 0)
     wait(page, 2000)
-    body2 = page_text(page)
-    if "Unignore" in body2:
+    body2 = speaker_workspace_text(page)
+    ignored = (
+        "Unignore" in body2
+        or "ignored" in body2.lower()
+        or "🔇" in body2
+    )
+    if ignored:
         click_unignore_speaker(page)
-        restored = page_text(page)
-        assert "Ignore" in restored
-        assert "Unignore" not in restored or restored.count("Unignore") == 0
+        restored = speaker_workspace_text(page)
+        assert "Unignore" not in restored
+        # CCv2 keeps a single Ignore button; ignored badge should clear.
+        assert "🔇" not in restored or "ignored" not in restored.lower()
 
 
 def test_speaker_clip_load_and_play(seeded_audio_run_app, page) -> None:
@@ -150,7 +170,7 @@ def test_speaker_clip_load_and_play(seeded_audio_run_app, page) -> None:
     assert_clip_player_mounted(page)
     assert "feature cut before we leave" in body
 
-    # Jump (click another speaker in the picker) must also swap lines + clips.
+    # Jump (click another speaker in the list) must also swap lines + clips.
     jump_to_speaker_index(page, 2)
     _assert_active_speaker_lines(page, 2)
     assert_playback_available(page)

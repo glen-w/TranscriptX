@@ -139,16 +139,24 @@ def _pick_transcript_on_speaker_id_page(page: Page, needle: str) -> None:
     wait(page, 3500)
 
 
+def _speaker_id_workspace_ready(page: Page) -> bool:
+    """True when CCv2 workspace or classic Speaker ID content is painted."""
+    if speaker_id_workspace(page).count():
+        return True
+    body = page_text(page)
+    return "SPEAKER_" in body or "Assign name" in body or "Name" in body
+
+
 def open_speaker_identification(page: Page, needle: str = "planning") -> None:
     """Open Speaker Identification with a transcript selected.
 
     Prefer the page's own transcript picker (reliable with canvas Library grids).
     Fall back to Library selection + Run Speaker ID when the picker is absent.
+    Targets the CCv2 workspace when ``transcriptx-workspaces`` is installed.
     """
     nav(page, "Speaker Identification")
     wait(page, 2500)
-    body = page_text(page)
-    if "SPEAKER_" not in body and "Assign name" not in body:
+    if not _speaker_id_workspace_ready(page):
         try:
             _pick_transcript_on_speaker_id_page(page, needle)
         except Exception:
@@ -162,9 +170,17 @@ def open_speaker_identification(page: Page, needle: str = "planning") -> None:
                 wait(page, 2500)
                 _pick_transcript_on_speaker_id_page(page, needle)
 
-    body = page_text(page)
-    if "SPEAKER_" not in body and "Assign name" not in body:
+    if not _speaker_id_workspace_ready(page):
         _pick_transcript_on_speaker_id_page(page, needle)
+
+    # CCv2 mounts after the picker selection; wait for the workspace host.
+    ws = speaker_id_workspace(page)
+    if ws.count() or "classic Speaker ID" not in page_text(page).lower():
+        try:
+            expect(ws).to_be_attached(timeout=20000)
+        except Exception:
+            # Classic fallback path still valid when package/flag forces legacy.
+            pass
 
 
 def upload_transcript(page: Page, path: Path) -> None:
@@ -271,8 +287,45 @@ def _main_button_matching(page: Page, label: str):
     return root.get_by_role("button", name=pattern)
 
 
+def speaker_id_workspace(page: Page):
+    """Locate the CCv2 Speaker ID workspace root (pierces open shadow DOM)."""
+    return page.locator(
+        '[data-testid="speaker-id-workspace"], .tx-sid-root'
+    ).first
+
+
+def speaker_workspace_text(page: Page) -> str:
+    """Return Speaker ID content, including CCv2 shadow-DOM sample lines.
+
+    ``stMain.inner_text`` does not include shadow-tree text, so CCv2 sample
+    lines must be read from ``.tx-sid-root`` directly.
+    """
+    ws = speaker_id_workspace(page)
+    if ws.count():
+        try:
+            text = (ws.inner_text(timeout=10000) or "").strip()
+            if text:
+                return text
+        except Exception:
+            pass
+    return page_text(page)
+
+
 def fill_assign_name(page: Page, name: str) -> None:
-    """Fill Speaker Identification 'Assign name' and save."""
+    """Fill Speaker Identification name field and save (CCv2 or classic)."""
+    ws = speaker_id_workspace(page)
+    if ws.count():
+        inp = ws.locator(".tx-sid-name-input")
+        expect(inp.first).to_be_visible(timeout=20000)
+        inp.first.click()
+        inp.first.fill(name)
+        wait(page, 500)
+        save = ws.locator(".tx-sid-save")
+        expect(save.first).to_be_visible(timeout=10000)
+        save.first.click(force=True)
+        wait(page, 3500)
+        return
+
     root = page.locator('[data-testid="stMain"], section.main').first
     # Prefer the text input; get_by_label can match the help tooltip button.
     inp = root.locator('[data-testid="stTextInput"] input')
@@ -291,8 +344,16 @@ def fill_assign_name(page: Page, name: str) -> None:
 
 
 def click_speaker_nav(page: Page, direction: str) -> None:
-    """Click Speaker Identification Prev or Next."""
+    """Click Speaker Identification Prev or Next (CCv2 or classic)."""
     label = {"prev": "Prev", "next": "Next"}[direction.lower()]
+    ws = speaker_id_workspace(page)
+    if ws.count():
+        sel = ".tx-sid-next" if label == "Next" else ".tx-sid-prev"
+        btn = ws.locator(sel)
+        expect(btn.first).to_be_visible(timeout=20000)
+        btn.first.click(force=True)
+        wait(page, 3000)
+        return
     btn = _main_button_matching(page, label)
     expect(btn.first).to_be_visible(timeout=20000)
     btn.first.click(force=True)
@@ -300,7 +361,14 @@ def click_speaker_nav(page: Page, direction: str) -> None:
 
 
 def click_ignore_speaker(page: Page) -> None:
-    """Ignore the active speaker (classic Speaker Identification)."""
+    """Ignore/toggle the active speaker (CCv2 Ignore or classic Ignore)."""
+    ws = speaker_id_workspace(page)
+    if ws.count():
+        btn = ws.locator(".tx-sid-ignore")
+        expect(btn.first).to_be_visible(timeout=20000)
+        btn.first.click(force=True)
+        wait(page, 3500)
+        return
     btn = _main_button_matching(page, "Ignore")
     expect(btn.first).to_be_visible(timeout=20000)
     btn.first.click(force=True)
@@ -308,7 +376,15 @@ def click_ignore_speaker(page: Page) -> None:
 
 
 def click_unignore_speaker(page: Page) -> None:
-    """Unignore the active speaker (classic Speaker Identification)."""
+    """Unignore the active speaker (CCv2 Ignore toggle or classic Unignore)."""
+    ws = speaker_id_workspace(page)
+    if ws.count():
+        # CCv2 uses a single Ignore button that toggles ignore state.
+        btn = ws.locator(".tx-sid-ignore")
+        expect(btn.first).to_be_visible(timeout=20000)
+        btn.first.click(force=True)
+        wait(page, 3500)
+        return
     btn = _main_button_matching(page, "Unignore")
     expect(btn.first).to_be_visible(timeout=20000)
     btn.first.click(force=True)
@@ -316,7 +392,21 @@ def click_unignore_speaker(page: Page) -> None:
 
 
 def active_speaker_heading(page: Page) -> str:
-    """Return the classic 'Speaker N / M — `SPEAKER_XX`' heading text."""
+    """Return active-speaker title/status (CCv2 title+status or classic heading)."""
+    ws = speaker_id_workspace(page)
+    if ws.count():
+        title = ws.locator(".tx-sid-title")
+        status = ws.locator(".tx-sid-status")
+        expect(title.first).to_be_visible(timeout=20000)
+        parts = [(title.first.inner_text() or "").strip()]
+        if status.count():
+            parts.append((status.first.inner_text() or "").strip())
+        # Speaker list current button also encodes SPEAKER_XX.
+        current = ws.locator('.tx-sid-speaker-btn[aria-current="true"]')
+        if current.count():
+            parts.append((current.first.inner_text() or "").strip())
+        return " · ".join(p for p in parts if p)
+
     root = page.locator('[data-testid="stMain"], section.main').first
     heading = root.get_by_text(re.compile(r"Speaker\s+\d+\s*/\s*\d+"))
     expect(heading.first).to_be_visible(timeout=20000)
@@ -324,7 +414,18 @@ def active_speaker_heading(page: Page) -> str:
 
 
 def jump_to_speaker_index(page: Page, index: int) -> None:
-    """Select a speaker via the Jump to speaker selectbox (0-based index)."""
+    """Select a speaker by index (CCv2 speaker list or classic Jump selectbox)."""
+    ws = speaker_id_workspace(page)
+    if ws.count():
+        buttons = ws.locator(".tx-sid-speaker-btn")
+        expect(buttons.first).to_be_visible(timeout=20000)
+        count = buttons.count()
+        if index < 0 or index >= count:
+            raise RuntimeError(f"jump index {index} out of range (count={count})")
+        buttons.nth(index).click(force=True)
+        wait(page, 3500)
+        return
+
     root = page.locator('[data-testid="stMain"], section.main').first
     # Prefer the labeled Jump control; fall back to the last main selectbox.
     jump = root.locator('[data-testid="stSelectbox"]').filter(
@@ -360,7 +461,15 @@ def jump_to_speaker_index(page: Page, index: int) -> None:
 
 
 def play_first_clip(page: Page) -> None:
-    """Click the first Play-this-clip control on Speaker Identification."""
+    """Click the first sample Play control (CCv2 ▶ or classic Play-this-clip)."""
+    ws = speaker_id_workspace(page)
+    if ws.count():
+        play = ws.locator(".tx-sid-sample-play")
+        expect(play.first).to_be_visible(timeout=20000)
+        play.first.click(force=True)
+        wait(page, 4000)
+        return
+
     root = page.locator('[data-testid="stMain"], section.main').first
     # Material icon buttons often expose the icon token as the accessible name.
     candidates = [
@@ -383,15 +492,21 @@ def play_first_clip(page: Page) -> None:
 
 
 def assert_playback_available(page: Page) -> None:
-    """Fail if the classic playback panel reports missing audio/ffmpeg."""
-    body = page_text(page)
+    """Fail if Speaker ID reports missing audio/ffmpeg / playback unavailable."""
+    body = speaker_workspace_text(page) + "\n" + page_text(page)
     assert "audio file not found" not in body.lower(), body[:800]
     assert "ffmpeg not found" not in body.lower(), body[:800]
     assert "Playback unavailable" not in body, body[:800]
+    assert "Protocol mismatch" not in body, body[:800]
 
 
 def assert_clip_player_mounted(page: Page) -> None:
-    """Assert an audio player (or equivalent) is present after Play."""
+    """Assert an audio player is present (CCv2 ``.tx-sid-audio`` or classic)."""
+    ws = speaker_id_workspace(page)
+    if ws.count():
+        audio = ws.locator("audio.tx-sid-audio, audio")
+        expect(audio.first).to_be_attached(timeout=20000)
+        return
     root = page.locator('[data-testid="stMain"], section.main').first
     audio = root.locator("audio")
     # Streamlit may mount HTML5 audio or an iframe/media wrapper.
