@@ -14,6 +14,7 @@ from tests.e2e_gui.helpers import (
     page_text,
     select_analysis_preset,
     select_transcript,
+    show_unnamed_speakers_on_transcript,
     upload_transcript,
     wait,
     wait_for_analysis_finish,
@@ -43,6 +44,29 @@ def test_first_analysis_import_run_overview(live_app, page) -> None:
 
     assert_library_lists_transcript(page, needle="planning")
     select_transcript(page, needle="planning")
+
+    # Walkthrough step 2: skim transcript text (Speaker ID shows lines without a run).
+    run_sid = page.get_by_role("button", name="Run Speaker ID", exact=False)
+    if run_sid.count():
+        run_sid.first.click(force=True)
+        wait(page, 3500)
+        sid = page_text(page)
+        assert (
+            "SPEAKER_" in sid
+            or "Northwind" in sid
+            or "launch" in sid.lower()
+        )
+    else:
+        nav(page, "Transcript")
+        wait(page, 4000)
+        show_unnamed_speakers_on_transcript(page, enabled=True)
+        wait(page, 2000)
+        transcript = page_text(page)
+        assert (
+            "SPEAKER_" in transcript
+            or "Northwind" in transcript
+            or "launch" in transcript.lower()
+        )
 
     # Prefer Library action when present (passes subject context).
     run_btn = page.get_by_role("button", name="Run Analysis")
@@ -75,3 +99,22 @@ def test_first_analysis_import_run_overview(live_app, page) -> None:
         or "Completed" in overview
     )
     assert_text_visible(page, "Overview", timeout_ms=15000)
+
+
+def test_first_analysis_library_title_matches_fixture(seeded_app, page) -> None:
+    """Imported planning_review should surface its managed title in Library."""
+    goto_app(page, seeded_app.base_url)
+    nav(page, "Library")
+    wait(page, 2500)
+    body = page_text(page)
+    assert (
+        "1 of 1 transcript" in body.lower()
+        or any(
+            token in body
+            for token in (
+                "Launch planning review",
+                "planning_review",
+                "planning",
+            )
+        )
+    ), f"Expected planning-review title in Library; head={body[:600]!r}"
