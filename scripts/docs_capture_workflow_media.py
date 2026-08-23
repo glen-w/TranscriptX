@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -110,10 +111,12 @@ def main() -> None:
 
         # Speaker Identification
         nav(page, "Speaker Identification")
-        shot(page, "speaker-trust-page.png")
+        shot(page, "speaker-identification-page.png")
         for i in range(5):
             page.screenshot(path=str(OUT / f"gif_frames_speaker/frame_{i:02d}.png"))
-            nxt = page.get_by_role("button", name="Next →")
+            nxt = page.get_by_role("button", name="Next", exact=True)
+            if nxt.count() == 0:
+                nxt = page.get_by_role("button", name=re.compile(r"^Next"))
             if nxt.count():
                 try:
                     nxt.first.click(force=True)
@@ -125,7 +128,7 @@ def main() -> None:
 
         # Transcript
         nav(page, "Transcript")
-        shot(page, "speaker-trust-transcript.png")
+        shot(page, "speaker-identification-transcript.png")
 
         # Insights
         nav(page, "Insights")
@@ -166,7 +169,7 @@ def main() -> None:
         browser.close()
 
     make_gif("gif_frames_run/frame_*.png", "first-analysis-run-complete.gif")
-    make_gif("gif_frames_speaker/frame_*.png", "speaker-trust-naming.gif")
+    make_gif("gif_frames_speaker/frame_*.png", "speaker-identification-naming.gif")
     make_gif("gif_frames_jump/frame_*.png", "investigate-evidence-jump.gif")
     make_gif("gif_frames_export/frame_*.png", "export-download.gif")
 
@@ -174,8 +177,8 @@ def main() -> None:
         "first-analysis-import.png",
         "first-analysis-run-analysis.png",
         "first-analysis-overview.png",
-        "speaker-trust-page.png",
-        "speaker-trust-transcript.png",
+        "speaker-identification-page.png",
+        "speaker-identification-transcript.png",
         "investigate-overview.png",
         "investigate-highlights.png",
         "local-ai-llm-setup.png",

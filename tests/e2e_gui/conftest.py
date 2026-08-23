@@ -113,6 +113,7 @@ def _workspace_env(ws_dirs: dict[str, Path]) -> dict[str, str]:
             "TRANSCRIPTX_OUTPUT_DIR": str(ws_dirs["outputs_dir"]),
             "TRANSCRIPTX_TRANSCRIPTS_DIR": str(ws_dirs["transcripts_dir"]),
             "TRANSCRIPTX_SPEAKER_PROFILES_DIR": str(ws_dirs["speaker_profiles_dir"]),
+            "TRANSCRIPTX_RECORDINGS_DIR": str(ws_dirs["data_dir"] / "recordings"),
             "TRANSCRIPTX_DISABLE_DOWNLOADS": "1",
             "STREAMLIT_BROWSER_GATHER_USAGE_STATS": "false",
             "STREAMLIT_SERVER_HEADLESS": "true",
@@ -297,6 +298,52 @@ def seed_planning_transcript(ws: E2EWorkspace) -> E2EWorkspace:
         transcript_path=outcome.transcript_path,
         import_id=None,
     )
+
+
+def seed_linked_audio(
+    ws: E2EWorkspace, *, duration_s: float = 240.0, sample_rate: int = 16_000
+) -> E2EWorkspace:
+    """Place a silent WAV in RECORDINGS_DIR so Speaker ID can load clips.
+
+    Path resolution looks for ``{canonical_base}.wav`` under recordings/.
+    Duration covers the planning_review fixture (max end ≈ 226.5s).
+    """
+    if ws.transcript_path is None:
+        raise ValueError("seed_planning_transcript first")
+    _apply_paths_for_seeding(ws)
+    recordings = ws.data_dir / "recordings"
+    recordings.mkdir(parents=True, exist_ok=True)
+    wav_path = recordings / f"{ws.transcript_path.stem}.wav"
+    # Prefer ffmpeg when available (matches production clip extraction).
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg:
+        subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                "-f",
+                "lavfi",
+                "-i",
+                f"anullsrc=r={sample_rate}:cl=mono",
+                "-t",
+                str(duration_s),
+                "-acodec",
+                "pcm_s16le",
+                str(wav_path),
+            ],
+            check=True,
+            capture_output=True,
+        )
+    else:
+        import wave
+
+        n_frames = int(duration_s * sample_rate)
+        with wave.open(str(wav_path), "w") as handle:
+            handle.setnchannels(1)
+            handle.setsampwidth(2)
+            handle.setframerate(sample_rate)
+            handle.writeframes(b"\x00\x00" * n_frames)
+    return ws
 
 
 def seed_succeeded_run(
@@ -484,6 +531,19 @@ def seeded_app(e2e_workspace: E2EWorkspace) -> Iterator[LiveApp]:
 def seeded_run_app(e2e_workspace: E2EWorkspace) -> Iterator[LiveApp]:
     """Workspace with planning_review + completed minimal_run before Streamlit."""
     ws = seed_succeeded_run(seed_planning_transcript(e2e_workspace))
+    app = start_streamlit(ws)
+    try:
+        yield app
+    finally:
+        stop_streamlit(app)
+
+
+@pytest.fixture
+def seeded_audio_run_app(e2e_workspace: E2EWorkspace) -> Iterator[LiveApp]:
+    """Planning transcript + minimal run + linked silent WAV for clip playback."""
+    ws = seed_linked_audio(
+        seed_succeeded_run(seed_planning_transcript(e2e_workspace))
+    )
     app = start_streamlit(ws)
     try:
         yield app

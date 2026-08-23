@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 from pathlib import Path
 from typing import Any, Optional
@@ -244,6 +245,92 @@ def fill_assign_name(page: Page, name: str) -> None:
     expect(save.first).to_be_visible(timeout=10000)
     save.first.click(force=True)
     wait(page, 3000)
+
+
+def click_speaker_nav(page: Page, direction: str) -> None:
+    """Click Speaker Identification Prev or Next."""
+    label = {"prev": "Prev", "next": "Next"}[direction.lower()]
+    click_main_button(page, label, exact=True)
+    wait(page, 2000)
+
+
+def click_ignore_speaker(page: Page) -> None:
+    """Ignore the active speaker (classic Speaker Identification)."""
+    click_main_button(page, "Ignore", exact=True)
+    wait(page, 3000)
+
+
+def click_unignore_speaker(page: Page) -> None:
+    """Unignore the active speaker (classic Speaker Identification)."""
+    click_main_button(page, "Unignore", exact=True)
+    wait(page, 3000)
+
+
+def active_speaker_heading(page: Page) -> str:
+    """Return the classic 'Speaker N / M — `SPEAKER_XX`' heading text."""
+    root = page.locator('[data-testid="stMain"], section.main').first
+    heading = root.get_by_text(re.compile(r"Speaker\s+\d+\s*/\s*\d+"))
+    expect(heading.first).to_be_visible(timeout=20000)
+    return (heading.first.inner_text() or "").strip()
+
+
+def jump_to_speaker_index(page: Page, index: int) -> None:
+    """Select a speaker via the Jump to speaker selectbox (0-based index)."""
+    root = page.locator('[data-testid="stMain"], section.main').first
+    boxes = root.locator('[data-testid="stSelectbox"]')
+    # Prefer the jump control near nav buttons; fall back to last main selectbox.
+    target = boxes.last if boxes.count() else None
+    if target is None:
+        raise RuntimeError("no selectbox found for Jump to speaker")
+    target.click()
+    wait(page, 600)
+    options = page.locator('[role="option"]')
+    expect(options.first).to_be_visible(timeout=10000)
+    count = options.count()
+    if index < 0 or index >= count:
+        raise RuntimeError(f"jump index {index} out of range (count={count})")
+    options.nth(index).click()
+    wait(page, 3000)
+
+
+def play_first_clip(page: Page) -> None:
+    """Click the first Play-this-clip control on Speaker Identification."""
+    root = page.locator('[data-testid="stMain"], section.main').first
+    # Material icon buttons often expose the icon token as the accessible name.
+    candidates = [
+        root.get_by_role("button", name=re.compile(r"play", re.I)),
+        root.locator('button[title*="Play this clip" i]'),
+        root.locator('[data-testid="stTooltipHoverTarget"]').filter(
+            has_text=re.compile(r"play", re.I)
+        ),
+        root.locator("button").filter(has_text=re.compile(r"play_arrow|▶|Play")),
+    ]
+    clicked = False
+    for loc in candidates:
+        if loc.count():
+            loc.first.click(force=True)
+            clicked = True
+            break
+    if not clicked:
+        raise RuntimeError("no Play-this-clip control found on Speaker Identification")
+    wait(page, 3500)
+
+
+def assert_playback_available(page: Page) -> None:
+    """Fail if the classic playback panel reports missing audio/ffmpeg."""
+    body = page_text(page)
+    assert "audio file not found" not in body.lower(), body[:800]
+    assert "ffmpeg not found" not in body.lower(), body[:800]
+    assert "Playback unavailable" not in body, body[:800]
+
+
+def assert_clip_player_mounted(page: Page) -> None:
+    """Assert an audio player (or equivalent) is present after Play."""
+    root = page.locator('[data-testid="stMain"], section.main').first
+    audio = root.locator("audio")
+    # Streamlit may mount HTML5 audio or an iframe/media wrapper.
+    media = root.locator('[data-testid="stAudio"], audio, video')
+    expect(audio.first.or_(media.first)).to_be_attached(timeout=20000)
 
 
 def click_section_tab(page: Page, label: str) -> None:
