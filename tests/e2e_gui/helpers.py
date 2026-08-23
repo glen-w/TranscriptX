@@ -70,17 +70,29 @@ def select_transcript(page: Page, needle: str = "planning_review") -> None:
         wait(page, 800)
     grid = page.locator('[data-testid="stDataFrame"]')
     expect(grid.first).to_be_visible(timeout=20000)
-    # Streamlit/glide cells are often aria-hidden while still clickable.
-    cell = grid.get_by_role("gridcell").filter(has_text=re.compile(re.escape(needle), re.I))
-    if cell.count() == 0:
-        cell = grid.get_by_role("gridcell").filter(has_text=re.compile(r"planning", re.I))
-    if cell.count() == 0:
-        cell = grid.get_by_text(needle, exact=False)
-    if cell.count() == 0:
-        cell = grid.get_by_text("planning", exact=False)
-    expect(cell.first).to_be_attached(timeout=10000)
-    cell.first.click(force=True)
-    wait(page, 2500)
+    # Streamlit glide grids paint on canvas; DOM gridcells are often not hit-testable.
+    canvas = grid.locator("canvas").first
+    if canvas.count():
+        box = canvas.bounding_box()
+        if box:
+            page.mouse.click(box["x"] + min(120, box["width"] * 0.25), box["y"] + 48)
+            wait(page, 2500)
+        else:
+            canvas.click(force=True)
+            wait(page, 2500)
+    else:
+        cell = grid.get_by_role("gridcell").filter(
+            has_text=re.compile(re.escape(needle), re.I)
+        )
+        if cell.count() == 0:
+            cell = grid.get_by_role("gridcell").filter(
+                has_text=re.compile(r"planning", re.I)
+            )
+        if cell.count() == 0:
+            cell = grid.get_by_text(needle, exact=False)
+        expect(cell.first).to_be_attached(timeout=10000)
+        cell.first.evaluate("el => el.click()")
+        wait(page, 2500)
 
     sb_boxes = sidebar(page).locator('[data-testid="stSelectbox"]')
     if sb_boxes.count():
@@ -111,36 +123,48 @@ def assert_library_lists_transcript(page: Page, needle: str = "planning") -> Non
     assert "No transcripts found" not in page_text(page)
 
 
+def _pick_transcript_on_speaker_id_page(page: Page, needle: str) -> None:
+    """Select a transcript from the Speaker Identification page picker."""
+    boxes = page.locator('[data-testid="stMain"] [data-testid="stSelectbox"]')
+    if boxes.count() == 0:
+        boxes = page.locator('[data-testid="stSelectbox"]')
+    expect(boxes.first).to_be_visible(timeout=20000)
+    boxes.first.click()
+    wait(page, 600)
+    opt = page.locator('[role="option"]').filter(has_text=needle)
+    if opt.count() == 0:
+        opt = page.locator('[role="option"]').filter(has_text="planning")
+    expect(opt.first).to_be_visible(timeout=10000)
+    opt.first.click()
+    wait(page, 3500)
+
+
 def open_speaker_identification(page: Page, needle: str = "planning") -> None:
     """Open Speaker Identification with a transcript selected.
 
-    Prefer the Library post-select action (passes subject context). Fall back to
-    the page's own transcript picker when needed.
+    Prefer the page's own transcript picker (reliable with canvas Library grids).
+    Fall back to Library selection + Run Speaker ID when the picker is absent.
     """
-    select_transcript(page, needle=needle)
-    run_sid = page.get_by_role("button", name="Run Speaker ID")
-    if run_sid.count():
-        run_sid.first.click(force=True)
-        wait(page, 3500)
-    else:
-        nav(page, "Speaker Identification")
-        wait(page, 2500)
+    nav(page, "Speaker Identification")
+    wait(page, 2500)
+    body = page_text(page)
+    if "SPEAKER_" not in body and "Assign name" not in body:
+        try:
+            _pick_transcript_on_speaker_id_page(page, needle)
+        except Exception:
+            select_transcript(page, needle=needle)
+            run_sid = page.get_by_role("button", name="Run Speaker ID")
+            if run_sid.count():
+                run_sid.first.click(force=True)
+                wait(page, 3500)
+            else:
+                nav(page, "Speaker Identification")
+                wait(page, 2500)
+                _pick_transcript_on_speaker_id_page(page, needle)
 
     body = page_text(page)
     if "SPEAKER_" not in body and "Assign name" not in body:
-        # Select transcript on the Speaker Identification page itself.
-        boxes = page.locator('[data-testid="stMain"] [data-testid="stSelectbox"]')
-        if boxes.count() == 0:
-            boxes = page.locator('[data-testid="stSelectbox"]')
-        if boxes.count():
-            boxes.first.click()
-            wait(page, 600)
-            opt = page.locator('[role="option"]').filter(has_text=needle)
-            if opt.count() == 0:
-                opt = page.locator('[role="option"]').filter(has_text="planning")
-            if opt.count():
-                opt.first.click()
-                wait(page, 3500)
+        _pick_transcript_on_speaker_id_page(page, needle)
 
 
 def upload_transcript(page: Page, path: Path) -> None:
