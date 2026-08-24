@@ -65,6 +65,8 @@ def build_workspace_data(
     draft_name: str = "",
     ui_status: str = "",
     last_ack: Optional[Mapping[str, Any]] = None,
+    samples_total: Optional[int] = None,
+    samples_page_size: int = 10,
 ) -> dict[str, Any]:
     """Build JSON-serialisable ``data=`` for the Speaker ID CCv2 component."""
     mapping_rev = mapping_revision_from_state(speaker_map, ignored_speakers)
@@ -82,7 +84,8 @@ def build_workspace_data(
         )
 
     sample_rows: list[dict[str, Any]] = []
-    for raw in list(samples)[:MAX_CLIPS_PER_WARM]:
+    warmed = 0
+    for raw in samples:
         start = float(raw.get("start") or 0.0)
         end = float(raw.get("end") or 0.0)
         text = str(raw.get("text") or "")
@@ -90,23 +93,27 @@ def build_workspace_data(
             transcript_path, start, end, audio_path=audio_path
         )
         clip_b64 = None
+        status_name = status.status
         if status.status == "hit":
             blob = controller.get_cached_clip_bytes(
                 transcript_path, start, end, audio_path=audio_path
             )
             if blob and within_clip_budget(len(blob), MAX_BYTES_PER_CLIP):
                 clip_b64 = encode_clip_b64(blob)
+                status_name = "hit"
             elif blob:
                 status_name = "too_large"
             else:
                 status_name = status.status
-        else:
-            status_name = status.status
+        elif status.status in {"miss", "inflight"} and warmed < MAX_CLIPS_PER_WARM:
             if status.status == "miss":
                 controller.enqueue_clip(
                     transcript_path, start, end, audio_path=audio_path
                 )
-                status_name = "pending"
+            status_name = "pending"
+            warmed += 1
+        elif status.status in {"miss", "inflight"}:
+            status_name = "pending"
         sample_rows.append(
             {
                 "clip_id": status.clip_id or f"{start:.3f}-{end:.3f}",
@@ -118,6 +125,8 @@ def build_workspace_data(
             }
         )
 
+    shown = len(sample_rows)
+    total = int(samples_total) if samples_total is not None else shown
     return {
         "protocol_version": PROTOCOL_VERSION,
         "frontend_build_id": FRONTEND_BUILD_ID,
@@ -134,6 +143,11 @@ def build_workspace_data(
             "profile_link": link_profile_allowed,
         },
         "ui": {"status": ui_status, "disabled": False},
+        "paging": {
+            "shown": shown,
+            "total": max(total, shown),
+            "page_size": max(1, int(samples_page_size)),
+        },
         "ack": dict(last_ack) if last_ack else None,
         "budgets": {"max_blob_bytes": MAX_BLOB_BYTES},
     }
@@ -146,6 +160,10 @@ def dispatch_workspace_command(
     speaker_ids: Sequence[str],
     current_speaker_idx: int,
     apply_ack,
+    controller=None,
+    transcript_path: str | None = None,
+    audio_path=None,
+    on_load_more=None,
 ) -> Optional[dict[str, Any]]:
     """Validate + execute a frontend command envelope; apply ack via callback."""
     if not command:
@@ -160,7 +178,40 @@ def dispatch_workspace_command(
         }
         return ack
     if action == "enqueue_clip":
-        # Non-mutating: handled by data rebuild on next run; still ack.
+        payload = dict(command.get("payload") or {})
+        path = transcript_path or str(command.get("transcript_id") or "")
+        if controller is not None and path:
+            try:
+                start = float(payload.get("start") or 0.0)
+                end = float(payload.get("end") or 0.0)
+                controller.enqueue_clip(
+                    path, start, end, audio_path=audio_path
+                )
+            except Exception:
+                # Best-effort warm; data rebuild still reports status.
+                pass
+        return {
+            "action_id": command.get("action_id"),
+            "action_seq": int(command.get("action_seq") or 0),
+            "status": "ok",
+            "message": None,
+        }
+    if action == "load_more_samples":
+        payload = dict(command.get("payload") or {})
+        n = payload.get("n")
+        if on_load_more is not None:
+            try:
+                on_load_more(int(n) if n is not None else None)
+            except Exception:
+                pass
+        return {
+            "action_id": command.get("action_id"),
+            "action_seq": int(command.get("action_seq") or 0),
+            "status": "ok",
+            "message": None,
+        }
+    if action == "refresh_clips":
+        # Frontend heartbeat: force a data rebuild so pending clip_b64 can land.
         return {
             "action_id": command.get("action_id"),
             "action_seq": int(command.get("action_seq") or 0),

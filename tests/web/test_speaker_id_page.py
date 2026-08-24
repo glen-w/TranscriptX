@@ -1914,7 +1914,7 @@ def test_workspace_fragment_drains_navigate_jump_before_ccv2_paint(
         def get_mapping_status(self, *_a, **_k):
             return SimpleNamespace(speaker_map={}, ignored_speakers=[])
 
-    def _fake_apply(path, ids, idx, command):
+    def _fake_apply(path, ids, idx, command, **_kwargs):
         mod.navigate_to_speaker(1, transcript_path=path, speaker_count=len(ids))
         return True, {"active_speaker_id": "SPEAKER_01", "active_speaker_idx": 1}
 

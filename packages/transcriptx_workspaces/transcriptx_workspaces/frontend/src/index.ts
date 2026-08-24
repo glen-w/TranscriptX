@@ -63,6 +63,11 @@ export type WorkspaceData = {
   link_profile_allowed?: boolean;
   capabilities?: { ffmpeg?: boolean; profile_link?: boolean };
   ui?: { status?: string; disabled?: boolean; flash?: string | null };
+  paging?: {
+    shown: number;
+    total: number;
+    page_size: number;
+  };
   ack?: {
     action_id: string;
     action_seq: number;
@@ -76,6 +81,13 @@ export type WorkspaceData = {
 
 type HostElement = HTMLElement | ShadowRoot;
 
+type PendingPlay = {
+  clipId: string;
+  start: number;
+  end: number;
+  attempt: number;
+};
+
 type InstanceState = {
   wired: boolean;
   audio: HTMLAudioElement;
@@ -86,6 +98,11 @@ type InstanceState = {
   mutating: boolean;
   optimisticSpeakerId: string | null;
   retryTimers: number[];
+  pendingPlay: PendingPlay | null;
+  /** Concurrent miss-retry slots (docs: max 2). */
+  activeMissRetries: number;
+  lastTranscriptId: string | null;
+  lastSpeakerId: string | null;
   handlers: {
     onSave: () => void;
     onIgnore: () => void;
@@ -104,6 +121,11 @@ const instances = new WeakMap<object, InstanceState>();
 const FRONTEND_BUILD_ID = "tx-workspaces-0.1.0";
 const PROTOCOL_VERSION = "1";
 const DEFAULT_MAX_BLOB = 8_000_000;
+/** Prefetch budgets — docs/dev/theme_c_workspaces_ccv2.md */
+const CLIP_RETRY_MAX = 4;
+const CLIP_RETRY_BASE_MS = 200;
+const CLIP_RETRY_CAP_MS = 3000;
+const CLIP_RETRY_MAX_CONCURRENT = 2;
 
 function newActionId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -203,6 +225,151 @@ function fireCommand(
   state.setStateValue("ack_seq", envelope.action_seq);
 }
 
+function clearRetryTimers(state: InstanceState): void {
+  for (const t of state.retryTimers) window.clearTimeout(t);
+  state.retryTimers = [];
+  state.activeMissRetries = 0;
+}
+
+function clearPendingPlay(state: InstanceState, root: Element): void {
+  clearRetryTimers(state);
+  state.pendingPlay = null;
+  const status = root.querySelector(".tx-sid-clip-status");
+  if (status) status.textContent = "";
+}
+
+function retryDelayMs(attempt: number): number {
+  return Math.min(CLIP_RETRY_CAP_MS, CLIP_RETRY_BASE_MS * 2 ** attempt);
+}
+
+function playSampleBlob(
+  state: InstanceState,
+  root: Element,
+  sample: SampleRow,
+  maxBlob: number,
+): boolean {
+  if (!sample.clip_b64) return false;
+  const url = ensureBlobUrl(state, sample.clip_id, sample.clip_b64, maxBlob);
+  if (!url) return false;
+  if (state.audio.src !== url) {
+    state.audio.src = url;
+  }
+  void state.audio.play().catch(() => undefined);
+  qs<HTMLElement>(root, ".tx-sid-clip-status").textContent = "";
+  return true;
+}
+
+function scheduleClipRetry(
+  state: InstanceState,
+  root: Element,
+  data: WorkspaceData,
+): void {
+  const pending = state.pendingPlay;
+  if (!pending) return;
+  if (pending.attempt >= CLIP_RETRY_MAX) {
+    qs<HTMLElement>(root, ".tx-sid-clip-status").textContent =
+      "Clip still preparing — click ▶ again.";
+    state.pendingPlay = null;
+    return;
+  }
+  if (state.activeMissRetries >= CLIP_RETRY_MAX_CONCURRENT) return;
+  const delay = retryDelayMs(pending.attempt);
+  pending.attempt += 1;
+  state.activeMissRetries += 1;
+  const timer = window.setTimeout(() => {
+    state.activeMissRetries = Math.max(0, state.activeMissRetries - 1);
+    const current = state.pendingPlay;
+    const latest = state.lastDataRef;
+    if (!current || !latest || current.clipId !== pending.clipId) return;
+    qs<HTMLElement>(root, ".tx-sid-clip-status").textContent = "Preparing clip…";
+    // Heartbeat rebuilds Python data so clip_b64 can land; do not re-enqueue
+    // ffmpeg (warm/enqueue already ran on first click).
+    fireCommand(state, latest, "refresh_clips", {
+      clip_id: current.clipId,
+      start: current.start,
+      end: current.end,
+    });
+    scheduleClipRetry(state, root, latest);
+  }, delay);
+  state.retryTimers.push(timer);
+}
+
+function requestClipPlay(
+  state: InstanceState,
+  root: Element,
+  data: WorkspaceData,
+  sample: SampleRow,
+): void {
+  const maxBlob = data.budgets?.max_blob_bytes ?? DEFAULT_MAX_BLOB;
+  if (playSampleBlob(state, root, sample, maxBlob)) {
+    clearPendingPlay(state, root);
+    return;
+  }
+  const status = sample.clip_status || "";
+  if (status === "unavailable" || status === "too_large") {
+    clearRetryTimers(state);
+    state.pendingPlay = null;
+    qs<HTMLElement>(root, ".tx-sid-clip-status").textContent =
+      status === "too_large" ? "Clip too large to load." : "Clip unavailable.";
+    return;
+  }
+  clearRetryTimers(state);
+  state.pendingPlay = {
+    clipId: sample.clip_id,
+    start: sample.start,
+    end: sample.end,
+    attempt: 0,
+  };
+  qs<HTMLElement>(root, ".tx-sid-clip-status").textContent = "Preparing clip…";
+  fireCommand(state, data, "enqueue_clip", {
+    clip_id: sample.clip_id,
+    start: sample.start,
+    end: sample.end,
+  });
+  scheduleClipRetry(state, root, data);
+}
+
+function findPlayableSample(
+  data: WorkspaceData,
+  pending: PendingPlay,
+): SampleRow | undefined {
+  const rows = data.samples || [];
+  const byId = rows.find((s) => s.clip_id === pending.clipId);
+  if (byId) return byId;
+  return rows.find(
+    (s) =>
+      Math.abs(s.start - pending.start) < 1e-3 &&
+      Math.abs(s.end - pending.end) < 1e-3,
+  );
+}
+
+function tryFulfillPendingPlay(
+  state: InstanceState,
+  root: Element,
+  data: WorkspaceData,
+): void {
+  const pending = state.pendingPlay;
+  if (!pending) return;
+  const sample = findPlayableSample(data, pending);
+  if (!sample) return;
+  const maxBlob = data.budgets?.max_blob_bytes ?? DEFAULT_MAX_BLOB;
+  if (playSampleBlob(state, root, sample, maxBlob)) {
+    clearPendingPlay(state, root);
+    return;
+  }
+  if (
+    sample.clip_status === "unavailable" ||
+    sample.clip_status === "too_large"
+  ) {
+    clearRetryTimers(state);
+    state.pendingPlay = null;
+    qs<HTMLElement>(root, ".tx-sid-clip-status").textContent =
+      sample.clip_status === "too_large"
+        ? "Clip too large to load."
+        : "Clip unavailable.";
+  }
+}
+
 function renderSpeakers(root: Element, data: WorkspaceData, state: InstanceState): void {
   const list = qs<HTMLElement>(root, ".tx-sid-speakers");
   list.replaceChildren();
@@ -227,7 +394,6 @@ function renderSpeakers(root: Element, data: WorkspaceData, state: InstanceState
 function renderSamples(root: Element, data: WorkspaceData, state: InstanceState): void {
   const ol = qs<HTMLOListElement>(root, ".tx-sid-samples");
   ol.replaceChildren();
-  const maxBlob = data.budgets?.max_blob_bytes ?? DEFAULT_MAX_BLOB;
   for (const sample of data.samples || []) {
     const li = document.createElement("li");
     li.className = "tx-sid-sample";
@@ -237,27 +403,7 @@ function renderSamples(root: Element, data: WorkspaceData, state: InstanceState)
     play.textContent = "▶";
     play.setAttribute("aria-label", "Play sample");
     play.addEventListener("click", () => {
-      if (sample.clip_b64) {
-        const url = ensureBlobUrl(state, sample.clip_id, sample.clip_b64, maxBlob);
-        if (url) {
-          // Same <audio> element — only change src.
-          if (state.audio.src !== url) {
-            state.audio.src = url;
-          }
-          void state.audio.play().catch(() => undefined);
-          qs<HTMLElement>(root, ".tx-sid-clip-status").textContent = "";
-          return;
-        }
-      }
-      qs<HTMLElement>(root, ".tx-sid-clip-status").textContent =
-        sample.clip_status === "inflight" || sample.clip_status === "pending"
-          ? "Preparing clip…"
-          : "Clip pending…";
-      fireCommand(state, data, "enqueue_clip", {
-        clip_id: sample.clip_id,
-        start: sample.start,
-        end: sample.end,
-      });
+      requestClipPlay(state, root, data, sample);
     });
     const text = document.createElement("div");
     text.textContent = sample.text || "";
@@ -266,7 +412,37 @@ function renderSamples(root: Element, data: WorkspaceData, state: InstanceState)
   }
 }
 
+function renderPaging(root: Element, data: WorkspaceData, state: InstanceState): void {
+  const host = qs<HTMLElement>(root, ".tx-sid-paging");
+  host.replaceChildren();
+  const paging = data.paging;
+  if (!paging || paging.shown >= paging.total) {
+    host.hidden = true;
+    return;
+  }
+  host.hidden = false;
+  const remaining = paging.total - paging.shown;
+  const nMore = Math.min(paging.page_size, remaining);
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "tx-sid-load-more";
+  btn.textContent = `Show ${nMore} more lines`;
+  btn.addEventListener("click", () => {
+    fireCommand(state, data, "load_more_samples", { n: nMore });
+  });
+  host.appendChild(btn);
+}
+
 function applyData(root: Element, data: WorkspaceData, state: InstanceState): void {
+  if (
+    state.lastTranscriptId !== data.transcript_id ||
+    state.lastSpeakerId !== data.active_speaker_id
+  ) {
+    clearPendingPlay(state, root);
+    state.lastTranscriptId = data.transcript_id;
+    state.lastSpeakerId = data.active_speaker_id;
+  }
+
   qs<HTMLElement>(root, ".tx-sid-title").textContent =
     `Speaker ${data.active_speaker_id}`;
   const status = qs<HTMLElement>(root, ".tx-sid-status");
@@ -306,7 +482,9 @@ function applyData(root: Element, data: WorkspaceData, state: InstanceState): vo
 
   renderSpeakers(root, data, state);
   renderSamples(root, data, state);
+  renderPaging(root, data, state);
   state.lastDataRef = data;
+  tryFulfillPendingPlay(state, root, data);
 }
 
 function wireOnce(
@@ -325,6 +503,10 @@ function wireOnce(
     mutating: false,
     optimisticSpeakerId: null,
     retryTimers: [],
+    pendingPlay: null,
+    activeMissRetries: 0,
+    lastTranscriptId: null,
+    lastSpeakerId: null,
     handlers: {
       onSave: () => undefined,
       onIgnore: () => undefined,
@@ -464,8 +646,8 @@ const SpeakerIdWorkspace: FrontendRenderer<WorkspaceState, WorkspaceData> = (
   return () => {
     const current = instances.get(host);
     if (!current) return;
-    for (const t of current.retryTimers) window.clearTimeout(t);
-    current.retryTimers = [];
+    clearRetryTimers(current);
+    current.pendingPlay = null;
     revokeAllBlobs(current);
     // Do not remove the audio element — parent unmount handles DOM.
     current.audio.removeAttribute("src");
@@ -487,4 +669,5 @@ export const __test = {
   expectedSpeakerForCommand(data: WorkspaceData, _optimistic: string | null): string {
     return data.active_speaker_id;
   },
+  findPlayableSample,
 };

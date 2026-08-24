@@ -47,4 +47,27 @@ describe("Speaker ID workspace lifecycle helpers", () => {
       expect(state.blobBytes).toBe(0);
     }
   });
+
+  it("findPlayableSample matches by start/end when clip_id changes", () => {
+    const data = {
+      samples: [
+        { clip_id: "hash-1", start: 1.0, end: 2.0, text: "a", clip_b64: "xx" },
+      ],
+    } as any;
+    const found = __test.findPlayableSample(data, {
+      clipId: "0.000-1.000",
+      start: 1.0,
+      end: 2.0,
+      attempt: 1,
+    });
+    expect(found?.clip_id).toBe("hash-1");
+    expect(
+      __test.findPlayableSample(data, {
+        clipId: "missing",
+        start: 9,
+        end: 10,
+        attempt: 0,
+      }),
+    ).toBeUndefined();
+  });
 });

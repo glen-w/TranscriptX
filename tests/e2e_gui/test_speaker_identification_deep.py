@@ -7,6 +7,9 @@ import pytest
 from tests.e2e_gui.helpers import (
     active_speaker_heading,
     assert_clip_player_mounted,
+    assert_clip_src_ready,
+    click_load_more_samples,
+    sample_play_count,
     assert_playback_available,
     click_ignore_speaker,
     click_speaker_nav,
@@ -160,6 +163,7 @@ def test_speaker_clip_load_and_play(seeded_audio_run_app, page) -> None:
     play_first_clip(page)
     assert_playback_available(page)
     assert_clip_player_mounted(page)
+    assert_clip_src_ready(page)
 
     # Selecting another speaker must refresh lines *and* reload that speaker's clips.
     click_speaker_nav(page, "next")
@@ -176,3 +180,17 @@ def test_speaker_clip_load_and_play(seeded_audio_run_app, page) -> None:
     assert_playback_available(page)
     play_first_clip(page)
     assert_clip_player_mounted(page)
+
+
+def test_speaker_load_more_lines(seeded_audio_run_app, page) -> None:
+    """CCv2 Show-more reveals additional sample lines for a long-talking speaker."""
+    goto_app(page, seeded_audio_run_app.base_url)
+    open_speaker_identification(page, needle="planning")
+    _assert_active_speaker_lines(page, 0)
+    before = sample_play_count(page)
+    click_load_more_samples(page)
+    after = sample_play_count(page)
+    assert after > before, f"expected more sample play buttons ({before} -> {after})"
+    body = speaker_workspace_text(page)
+    assert "Show" not in body or after >= before
+

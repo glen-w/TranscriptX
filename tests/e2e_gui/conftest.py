@@ -8,6 +8,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -125,6 +126,19 @@ def _workspace_env(ws_dirs: dict[str, Path]) -> dict[str, str]:
     )
     # Ensure a stale rollback from the host env does not pin classic UI.
     env.pop("TX_SPEAKER_ID_WORKSPACE_COMPONENT", None)
+    # Streamlit is a child process, not a pytest test. Inheriting
+    # PYTEST_CURRENT_TEST disables CCv2 clip polling in speaker_id.py
+    # ("Preparing clip…" never resolves in GUI E2E).
+    env.pop("PYTEST_CURRENT_TEST", None)
+    env["TX_SID_CLIP_POLL"] = "1"
+    # CCv2 package + in-tree src: Streamlit must import the workspace
+    # component even when it is not separately pip-installed.
+    src = str(_REPO_ROOT / "src")
+    ws_src = str(_REPO_ROOT / "packages" / "transcriptx_workspaces")
+    existing = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = os.pathsep.join(
+        p for p in (src, ws_src, existing) if p
+    )
     return env
 
 
@@ -470,11 +484,13 @@ def start_streamlit(ws: E2EWorkspace) -> LiveApp:
         f"--server.port={port}",
         "--browser.gatherUsageStats=false",
     ]
+    log_path = ws.root / "streamlit.e2e.log"
+    log_f = log_path.open("w", encoding="utf-8")
     proc = subprocess.Popen(
         cmd,
         cwd=str(_REPO_ROOT),
         env=ws.env,
-        stdout=subprocess.PIPE,
+        stdout=log_f,
         stderr=subprocess.STDOUT,
         text=True,
     )
@@ -483,12 +499,17 @@ def start_streamlit(ws: E2EWorkspace) -> LiveApp:
     except Exception:
         # Dump launcher output for debugging, then re-raise.
         try:
-            out, _ = proc.communicate(timeout=2)
+            proc.kill()
+            proc.wait(timeout=2)
+        except Exception:
+            pass
+        try:
+            log_f.flush()
+            out = log_path.read_text(encoding="utf-8")[-4000:]
         except Exception:
             out = ""
-            proc.kill()
         raise RuntimeError(
-            f"Failed to start Streamlit on {base_url}. Output:\n{out[-4000:]}"
+            f"Failed to start Streamlit on {base_url}. Output:\n{out}"
         ) from None
     return LiveApp(workspace=ws, base_url=base_url, port=port, process=proc)
 
@@ -566,18 +587,40 @@ def seeded_profile_app(e2e_workspace: E2EWorkspace) -> Iterator[LiveApp]:
         stop_streamlit(app)
 
 
-@pytest.fixture
-def page(pytestconfig):
+@pytest.fixture(scope="session")
+def _playwright_browser():
+    """One browser per pytest session. Relaunching Chrome per test is flaky on macOS."""
     pytest.importorskip("playwright")
     from playwright.sync_api import sync_playwright
 
-    with sync_playwright() as p:
+    pw = sync_playwright().start()
+    browser = None
+    last_exc: Exception | None = None
+    # Bundled Playwright Chromium can *launch* then die on newer macOS
+    # (TargetClosedError). Prefer a system Chrome/Edge channel first.
+    for kwargs in (
+        {"headless": True, "channel": "chrome"},
+        {"headless": True, "channel": "msedge"},
+        {"headless": True},
+    ):
         try:
-            browser = p.chromium.launch(headless=True)
+            browser = pw.chromium.launch(**kwargs)
+            break
         except Exception as exc:  # noqa: BLE001 — environment capability gate
-            pytest.skip(f"Playwright Chromium unavailable: {exc}")
-        context = browser.new_context(viewport=DEFAULT_VIEWPORT)
-        pg = context.new_page()
-        yield pg
-        context.close()
+            last_exc = exc
+    if browser is None:
+        pw.stop()
+        pytest.skip(f"Playwright Chromium unavailable: {last_exc}")
+    try:
+        yield browser
+    finally:
         browser.close()
+        pw.stop()
+
+
+@pytest.fixture
+def page(_playwright_browser):
+    context = _playwright_browser.new_context(viewport=DEFAULT_VIEWPORT)
+    pg = context.new_page()
+    yield pg
+    context.close()

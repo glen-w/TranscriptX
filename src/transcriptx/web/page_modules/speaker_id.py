@@ -17,6 +17,8 @@ Voice is a lightweight conditional block, not a sibling/nested fragment.
 from __future__ import annotations
 
 import hashlib
+import os
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -358,6 +360,40 @@ def _rerun_ui() -> None:
         st.rerun(scope="fragment")
     except st.errors.StreamlitAPIException:
         _rerun_app()
+
+
+_CLIP_POLL_MAX = 16
+_CLIP_POLL_SLEEP_S = 0.2
+
+
+def _samples_awaiting_clip(data: dict) -> bool:
+    for row in data.get("samples") or []:
+        if row.get("clip_b64"):
+            continue
+        if str(row.get("clip_status") or "") in {"pending", "inflight", "miss"}:
+            return True
+    return False
+
+
+def _maybe_poll_pending_clips(transcript_path: str | Path, data: dict) -> None:
+    """Fragment-rerun while visible clips are still encoding so CCv2 receives clip_b64.
+
+    Streamlit only pushes new ``data=`` on a rerun. CCv2 timer ``setTriggerValue``
+    calls are not a reliable heartbeat, so we poll here until hit/unavailable or
+    the cap is reached. Skipped under pytest unless ``TX_SID_CLIP_POLL=1``.
+    """
+    if os.environ.get("PYTEST_CURRENT_TEST") and os.environ.get("TX_SID_CLIP_POLL") != "1":
+        return
+    poll_key = widget_key(transcript_path, "ccv2_clip_poll")
+    if not _samples_awaiting_clip(data):
+        st.session_state.pop(poll_key, None)
+        return
+    n = int(st.session_state.get(poll_key, 0) or 0)
+    if n >= _CLIP_POLL_MAX:
+        return
+    st.session_state[poll_key] = n + 1
+    time.sleep(_CLIP_POLL_SLEEP_S)
+    _rerun_ui()
 
 
 def _rerun_app_for_completion() -> None:
@@ -887,6 +923,10 @@ def _apply_ccv2_workspace_command(
     speaker_ids: list[str],
     speaker_idx: int,
     command: dict,
+    *,
+    controller: SpeakerStudioController | None = None,
+    audio_path=None,
+    samples_total: int | None = None,
 ) -> tuple[bool, dict | None]:
     """Dispatch a CCv2 command once; skip duplicate ``action_id`` replays.
 
@@ -902,6 +942,21 @@ def _apply_ccv2_workspace_command(
         stored = st.session_state.get(ack_key)
         return False, stored if isinstance(stored, dict) else None
 
+    ctrl = controller or get_shared_speaker_studio_controller()
+
+    def _on_load_more(n: int | None) -> None:
+        l_key = lines_key(transcript_path)
+        increment = int(n) if n is not None else _LINES_PER_PAGE
+        if increment < 1:
+            increment = _LINES_PER_PAGE
+        current = sanitize_lines_shown(
+            st.session_state.get(l_key, _LINES_PER_PAGE),
+            length=samples_total if samples_total is not None else 10**9,
+            default=_LINES_PER_PAGE,
+        )
+        limit = samples_total if samples_total is not None else current + increment
+        st.session_state[l_key] = min(current + increment, limit)
+
     service = _get_action_service()
     ack_dict = dispatch_workspace_command(
         command,
@@ -913,6 +968,10 @@ def _apply_ccv2_workspace_command(
             transcript_path=transcript_path,
             speaker_count=len(speaker_ids),
         ),
+        controller=ctrl,
+        transcript_path=str(transcript_path),
+        audio_path=audio_path,
+        on_load_more=_on_load_more,
     )
     if ack_dict is not None:
         st.session_state[ack_key] = ack_dict
@@ -952,8 +1011,20 @@ def _cb_ccv2_command(transcript_path: str) -> None:
     if not speaker_ids:
         return
     speaker_idx = _current_speaker_idx(transcript_path, len(speaker_ids))
+    active_id = speaker_ids[speaker_idx] if speaker_ids else ""
+    samples_total = (
+        len(index.segments_by_speaker.get(active_id, [])) if active_id else None
+    )
+    playback_ctx = resolve_playback_context(
+        get_shared_speaker_studio_controller(), transcript_path
+    )
     _apply_ccv2_workspace_command(
-        str(transcript_path), speaker_ids, speaker_idx, command
+        str(transcript_path),
+        speaker_ids,
+        speaker_idx,
+        command,
+        audio_path=getattr(playback_ctx, "audio_path", None),
+        samples_total=samples_total,
     )
 
 
@@ -975,8 +1046,24 @@ def _drain_pending_ccv2_command(
     command = command_from_workspace_result(st.session_state.get(result_key))
     if not command:
         return speaker_idx
+    active_id = speaker_ids[speaker_idx] if speaker_ids else ""
+    samples_total = None
+    try:
+        index = load_speaker_identification_index(transcript_path)
+        if active_id:
+            samples_total = len(index.segments_by_speaker.get(active_id, []))
+    except FileNotFoundError:
+        pass
+    playback_ctx = resolve_playback_context(
+        get_shared_speaker_studio_controller(), transcript_path
+    )
     _apply_ccv2_workspace_command(
-        str(transcript_path), speaker_ids, speaker_idx, command
+        str(transcript_path),
+        speaker_ids,
+        speaker_idx,
+        command,
+        audio_path=getattr(playback_ctx, "audio_path", None),
+        samples_total=samples_total,
     )
     return _current_speaker_idx(transcript_path, len(speaker_ids))
 
@@ -1558,13 +1645,21 @@ def _render_ccv2_speaker_workspace(
         sid: _speaker_label(sid, i, speaker_map, ignored)
         for i, sid in enumerate(speaker_ids)
     }
+    l_key = lines_key(transcript_path)
+    lines_shown = sanitize_lines_shown(
+        st.session_state.get(l_key, _LINES_PER_PAGE),
+        length=len(active_segs),
+        default=_LINES_PER_PAGE,
+    )
+    st.session_state[l_key] = lines_shown
+    visible_segs = active_segs[:lines_shown]
     samples = [
         {
             "start": float(s.start),
             "end": float(s.end),
             "text": s.text or "",
         }
-        for s in active_segs[:10]
+        for s in visible_segs
     ]
     last_ack = st.session_state.get(_ccv2_last_ack_key(transcript_path))
     data = build_workspace_data(
@@ -1581,6 +1676,8 @@ def _render_ccv2_speaker_workspace(
         draft_name=current_name,
         ui_status=f"{speaker_idx + 1}/{total_speakers} · {status_badge}",
         last_ack=last_ack if isinstance(last_ack, dict) else None,
+        samples_total=len(active_segs),
+        samples_page_size=_LINES_PER_PAGE,
     )
 
     result_key = stable_workspace_key(str(Path(transcript_path).resolve()))
@@ -1599,13 +1696,37 @@ def _render_ccv2_speaker_workspace(
 
     if command:
         applied, ack_dict = _apply_ccv2_workspace_command(
-            str(transcript_path), speaker_ids, speaker_idx, command
+            str(transcript_path),
+            speaker_ids,
+            speaker_idx,
+            command,
+            controller=controller,
+            audio_path=getattr(playback_ctx, "audio_path", None),
+            samples_total=len(active_segs),
         )
         new_id = (ack_dict or {}).get("active_speaker_id")
+        action = str(command.get("action") or "")
         # Return-value-only commands land after this paint already used the
-        # previous speaker. Fragment-rerun so samples/title match the jump.
+        # previous speaker / line count. Fragment-rerun so UI matches.
         if applied and new_id and new_id != active_id:
             _rerun_ui()
+        elif applied and action in {
+            "load_more_samples",
+            "enqueue_clip",
+            "refresh_clips",
+        }:
+            _rerun_ui()
+        elif (
+            action == "load_more_samples"
+            and not applied
+            and len(data.get("samples") or [])
+            < int(st.session_state.get(l_key, 0) or 0)
+        ):
+            # Callback already bumped lines_shown after this paint's data=
+            # was built; rerun once so Show-more is not stuck at the old page.
+            _rerun_ui()
+
+    _maybe_poll_pending_clips(transcript_path, data)
 
     if profile_ctx.is_managed:
         with st.expander("Voice suggestions", expanded=False):

@@ -72,6 +72,7 @@ def _get_speaker_id_component():
                 </div>
               </div>
               <ol class="tx-sid-samples" aria-label="Sample lines"></ol>
+              <div class="tx-sid-paging" hidden></div>
             </section>
           </div>
           <div class="tx-sid-help" hidden></div>

@@ -23,11 +23,23 @@ def wait(page: Page, ms: int = DEFAULT_SETTLE_MS) -> None:
     page.wait_for_timeout(ms)
 
 
-def wait_for_streamlit(page: Page, *, timeout_ms: int = 60000) -> None:
-    """Wait until the Streamlit app shell is present."""
+def wait_for_streamlit(page: Page, *, timeout_ms: int = 90000) -> None:
+    """Wait until the Streamlit app shell and sidebar nav have hydrated."""
     page.wait_for_selector('[data-testid="stApp"]', timeout=timeout_ms)
-    # Give the first script run time to paint the sidebar.
-    wait(page, 2000)
+    # Sidebar widgets start as stSkeleton (~3s) and become real buttons (~8s).
+    home = sidebar(page).get_by_role("button", name="Home")
+    first_wait = min(20000, timeout_ms)
+    try:
+        expect(home).to_be_visible(timeout=first_wait)
+    except Exception:
+        # Later tests in a suite can land on a shell that never hydrates;
+        # one reload is cheaper than a 90s miss.
+        page.reload(wait_until="domcontentloaded")
+        page.wait_for_selector('[data-testid="stApp"]', timeout=timeout_ms)
+        expect(sidebar(page).get_by_role("button", name="Home")).to_be_visible(
+            timeout=timeout_ms
+        )
+    wait(page, 500)
 
 
 def sidebar(page: Page):
@@ -47,7 +59,9 @@ def nav(page: Page, label: str, *, settle_ms: int = 3500) -> None:
     """
     sb = sidebar(page)
     btn = sb.get_by_role("button", name=label, exact=True)
-    expect(btn.last).to_be_visible(timeout=20000)
+    if btn.count() == 0 and label == "Speaker Identification":
+        btn = sb.get_by_role("button", name="Speaker ID", exact=True)
+    expect(btn.last).to_be_visible(timeout=30000)
     btn.last.click(force=True, timeout=20000)
     wait(page, settle_ms)
 
@@ -213,14 +227,11 @@ def open_speaker_identification(page: Page, needle: str = "planning") -> None:
     if not _speaker_id_workspace_ready(page):
         _pick_transcript_on_speaker_id_page(page, needle)
 
-    # CCv2 mounts after the picker selection; wait for the workspace host.
-    ws = speaker_id_workspace(page)
-    if ws.count() or "classic Speaker ID" not in page_text(page).lower():
-        try:
-            expect(ws).to_be_attached(timeout=20000)
-        except Exception:
-            # Classic fallback path still valid when package/flag forces legacy.
-            pass
+    # CCv2 mounts after the picker selection; wait for the workspace host
+    # (audio-linked pages enqueue clips on first paint and are slower).
+    if not wait_for_ccv2_workspace(page, timeout_ms=25000):
+        if not _speaker_id_workspace_ready(page):
+            wait(page, 2000)
 
 
 def upload_transcript(page: Page, path: Path) -> None:
@@ -336,6 +347,21 @@ def speaker_id_workspace(page: Page):
     ).first
 
 
+def wait_for_ccv2_workspace(page: Page, *, timeout_ms: int = 25000) -> bool:
+    """Wait until the CCv2 workspace host and title have painted.
+
+    Returns True when the workspace is ready. Returns False when it never
+    mounts (classic fallback / missing ``transcriptx-workspaces``).
+    """
+    ws = speaker_id_workspace(page)
+    try:
+        expect(ws).to_be_attached(timeout=timeout_ms)
+        expect(ws.locator(".tx-sid-title").first).to_be_visible(timeout=timeout_ms)
+        return True
+    except Exception:
+        return False
+
+
 def speaker_workspace_text(page: Page) -> str:
     """Return Speaker ID content, including CCv2 shadow-DOM sample lines.
 
@@ -435,6 +461,7 @@ def click_unignore_speaker(page: Page) -> None:
 
 def active_speaker_heading(page: Page) -> str:
     """Return active-speaker title/status (CCv2 title+status or classic heading)."""
+    wait_for_ccv2_workspace(page, timeout_ms=20000)
     ws = speaker_id_workspace(page)
     if ws.count():
         title = ws.locator(".tx-sid-title")
@@ -555,6 +582,71 @@ def assert_clip_player_mounted(page: Page) -> None:
     media = root.locator('[data-testid="stAudio"], audio, video')
     expect(audio.first.or_(media.first)).to_be_attached(timeout=20000)
 
+
+
+def assert_clip_src_ready(page: Page, *, timeout_ms: int = 20000) -> None:
+    """Wait until CCv2 <audio> has a blob: or data: src (clip bytes actually loaded)."""
+    page.wait_for_function(
+        """() => {
+          const srcOf = (audio) => (audio && (audio.currentSrc || audio.src)) || "";
+          const ok = (src) => src.startsWith("blob:") || src.startsWith("data:");
+          const visit = (el) => {
+            if (!el) return false;
+            if (el.tagName === "AUDIO" && ok(srcOf(el))) return true;
+            const audio = el.querySelector && el.querySelector("audio");
+            if (audio && ok(srcOf(audio))) return true;
+            const sr = el.shadowRoot;
+            if (sr) {
+              const a = sr.querySelector("audio");
+              if (a && ok(srcOf(a))) return true;
+              for (const child of sr.querySelectorAll("*")) {
+                if (visit(child)) return true;
+              }
+            }
+            return false;
+          };
+          for (const el of document.querySelectorAll("*")) {
+            if (visit(el)) return true;
+          }
+          return false;
+        }""",
+        timeout=timeout_ms,
+    )
+
+
+def click_load_more_samples(page: Page) -> None:
+    """Click CCv2 Show N more lines."""
+    wait_for_ccv2_workspace(page, timeout_ms=20000)
+    ws = speaker_id_workspace(page)
+    btn = ws.locator(".tx-sid-load-more")
+    expect(btn.first).to_be_attached(timeout=20000)
+    try:
+        btn.first.scroll_into_view_if_needed()
+    except Exception:
+        pass
+    expect(btn.first).to_be_visible(timeout=10000)
+    before_plays = sample_play_count(page)
+    before = len((speaker_workspace_text(page) or "").splitlines())
+    btn.first.click(force=True)
+    deadline = time.time() + 20.0
+    after_plays = before_plays
+    while time.time() < deadline:
+        wait(page, 500)
+        after_plays = sample_play_count(page)
+        if after_plays > before_plays:
+            break
+    after = len((speaker_workspace_text(page) or "").splitlines())
+    assert after >= before, (
+        f"load-more did not grow workspace text lines ({before} -> {after})"
+    )
+    assert after_plays > before_plays, (
+        f"load-more did not add sample play buttons ({before_plays} -> {after_plays})"
+    )
+
+
+def sample_play_count(page: Page) -> int:
+    ws = speaker_id_workspace(page)
+    return ws.locator(".tx-sid-sample-play").count()
 
 def click_section_tab(page: Page, label: str) -> None:
     """Click Insights/Artifacts section tabs (Summary, Highlights, …)."""

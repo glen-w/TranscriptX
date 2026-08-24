@@ -18,6 +18,7 @@ describe("audio element identity across renderer calls", () => {
         <button class="tx-sid-prev"></button>
         <button class="tx-sid-next"></button>
         <ol class="tx-sid-samples"></ol>
+        <div class="tx-sid-paging" hidden></div>
         <div class="tx-sid-clip-status"></div>
         <div class="tx-sid-help" hidden></div>
       </div>

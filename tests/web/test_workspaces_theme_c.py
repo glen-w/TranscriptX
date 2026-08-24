@@ -152,7 +152,99 @@ def test_build_workspace_data_uses_nonblocking_clips(tmp_path: Path) -> None:
     )
     assert data["protocol_version"] == "1"
     assert data["samples"][0]["clip_status"] == "pending"
+    assert data["paging"]["shown"] == 1
+    assert data["paging"]["total"] == 1
     assert ctrl.joined == 0
+
+
+def test_build_workspace_data_shows_all_samples_but_caps_warm(
+    tmp_path: Path,
+) -> None:
+    """Display is not truncated to MAX_CLIPS_PER_WARM; only warm enqueue is."""
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    enqueued: list[tuple[float, float]] = []
+
+    class _Ctrl:
+        def cached_clip_status(self, *_a, start=None, end=None, **_k):
+            # Positional after transcript: start, end
+            return SimpleNamespace(status="miss", clip_id="c", path=None, reason=None)
+
+        def get_cached_clip_bytes(self, *_a, **_k):
+            return None
+
+        def enqueue_clip(self, _tx, start, end, **_k):
+            enqueued.append((start, end))
+            return SimpleNamespace(status="accepted", clip_id="c")
+
+        def ffmpeg_available(self) -> bool:
+            return True
+
+    samples = [{"start": float(i), "end": float(i) + 0.5, "text": f"t{i}"} for i in range(12)]
+    data = build_workspace_data(
+        transcript_path=str(transcript),
+        speaker_ids=["SPEAKER_00"],
+        active_speaker_id="SPEAKER_00",
+        speaker_labels={"SPEAKER_00": "1. SPEAKER_00"},
+        speaker_map={},
+        ignored_speakers=[],
+        samples=samples,
+        controller=_Ctrl(),
+        samples_total=20,
+        samples_page_size=10,
+    )
+    assert len(data["samples"]) == 12
+    assert len(enqueued) == 8  # MAX_CLIPS_PER_WARM
+    assert data["paging"] == {"shown": 12, "total": 20, "page_size": 10}
+
+
+def test_dispatch_enqueue_clip_calls_controller(tmp_path: Path) -> None:
+    from transcriptx.web.workspaces.speaker_id_bridge import dispatch_workspace_command
+
+    calls: list[tuple] = []
+
+    class _Ctrl:
+        def enqueue_clip(self, path, start, end, **_k):
+            calls.append((path, start, end))
+            return SimpleNamespace(status="accepted")
+
+    out = dispatch_workspace_command(
+        {
+            "action": "enqueue_clip",
+            "action_id": "e1",
+            "action_seq": 1,
+            "payload": {"start": 1.5, "end": 2.5},
+        },
+        service=SimpleNamespace(),  # type: ignore[arg-type]
+        speaker_ids=["SPEAKER_00"],
+        current_speaker_idx=0,
+        apply_ack=lambda *_a, **_k: None,
+        controller=_Ctrl(),
+        transcript_path=str(tmp_path / "t.json"),
+    )
+    assert out is not None and out["status"] == "ok"
+    assert calls == [(str(tmp_path / "t.json"), 1.5, 2.5)]
+
+
+def test_dispatch_load_more_samples_invokes_callback() -> None:
+    from transcriptx.web.workspaces.speaker_id_bridge import dispatch_workspace_command
+
+    seen: list[int | None] = []
+    out = dispatch_workspace_command(
+        {
+            "action": "load_more_samples",
+            "action_id": "m1",
+            "action_seq": 2,
+            "payload": {"n": 10},
+        },
+        service=SimpleNamespace(),  # type: ignore[arg-type]
+        speaker_ids=["SPEAKER_00"],
+        current_speaker_idx=0,
+        apply_ack=lambda *_a, **_k: None,
+        on_load_more=seen.append,
+    )
+    assert out is not None and out["status"] == "ok"
+    assert seen == [10]
 
 
 def test_build_workspace_data_hit_encodes_clip_within_budget(tmp_path: Path) -> None:
@@ -357,3 +449,97 @@ def test_speaker_id_workspace_registers_default_state_callbacks(monkeypatch) -> 
     assert "command" in callback_names
     assert callable(captured["on_ack_seq_change"])
     assert callable(captured["on_command_change"])
+
+
+def test_build_workspace_data_inflight_is_pending_without_reenqueue(tmp_path: Path) -> None:
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    enqueued: list[tuple] = []
+
+    class _Ctrl:
+        def cached_clip_status(self, *_a, **_k):
+            return SimpleNamespace(status="inflight", clip_id="c-in", path=None, reason=None)
+
+        def get_cached_clip_bytes(self, *_a, **_k):
+            return None
+
+        def enqueue_clip(self, *a, **k):
+            enqueued.append((a, k))
+            return SimpleNamespace(status="already_inflight")
+
+        def ffmpeg_available(self) -> bool:
+            return True
+
+    data = build_workspace_data(
+        transcript_path=str(transcript),
+        speaker_ids=["SPEAKER_00"],
+        active_speaker_id="SPEAKER_00",
+        speaker_labels={"SPEAKER_00": "1. SPEAKER_00"},
+        speaker_map={},
+        ignored_speakers=[],
+        samples=[{"start": 0.0, "end": 1.0, "text": "hi"}],
+        controller=_Ctrl(),
+    )
+    assert data["samples"][0]["clip_status"] == "pending"
+    assert data["samples"][0]["clip_b64"] is None
+    assert enqueued == []
+
+
+def test_build_workspace_data_second_pass_hit_includes_b64(tmp_path: Path) -> None:
+    """Miss then hit: the second data build must carry clip_b64 for autoplay."""
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    blob = b"ID3" + b"y" * 32
+    hits = {"n": 0}
+
+    class _Ctrl:
+        def cached_clip_status(self, *_a, **_k):
+            if hits["n"]:
+                return SimpleNamespace(status="hit", clip_id="c1", path=None, reason=None)
+            return SimpleNamespace(status="miss", clip_id="c1", path=None, reason=None)
+
+        def get_cached_clip_bytes(self, *_a, **_k):
+            return blob if hits["n"] else None
+
+        def enqueue_clip(self, *_a, **_k):
+            return SimpleNamespace(status="accepted")
+
+        def ffmpeg_available(self) -> bool:
+            return True
+
+    kwargs = dict(
+        transcript_path=str(transcript),
+        speaker_ids=["SPEAKER_00"],
+        active_speaker_id="SPEAKER_00",
+        speaker_labels={"SPEAKER_00": "1. SPEAKER_00"},
+        speaker_map={},
+        ignored_speakers=[],
+        samples=[{"start": 0.0, "end": 1.0, "text": "hi"}],
+        controller=_Ctrl(),
+    )
+    first = build_workspace_data(**kwargs)
+    assert first["samples"][0]["clip_status"] == "pending"
+    assert first["samples"][0]["clip_b64"] is None
+    hits["n"] = 1
+    second = build_workspace_data(**kwargs)
+    assert second["samples"][0]["clip_status"] == "hit"
+    assert second["samples"][0]["clip_b64"] == encode_clip_b64(blob)
+
+
+def test_dispatch_refresh_clips_is_ok_noop() -> None:
+    from transcriptx.web.workspaces.speaker_id_bridge import dispatch_workspace_command
+
+    out = dispatch_workspace_command(
+        {
+            "action": "refresh_clips",
+            "action_id": "r1",
+            "action_seq": 9,
+        },
+        service=SimpleNamespace(),  # type: ignore[arg-type]
+        speaker_ids=["SPEAKER_00"],
+        current_speaker_idx=0,
+        apply_ack=lambda *_a, **_k: None,
+    )
+    assert out is not None and out["status"] == "ok"
+    assert out["action_id"] == "r1"
+
