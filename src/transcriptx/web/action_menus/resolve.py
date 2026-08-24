@@ -84,3 +84,24 @@ def resolve_section_actions(
         apply_capabilities=True,
         ctx=ctx,
     )
+
+
+def overflow_actions_for_section(
+    section: SectionId,
+    ctx: ActionContext,
+    primary: list[ActionId],
+    *,
+    exclude: frozenset[ActionId] | None = None,
+) -> list[ActionId]:
+    """Allowlisted actions not on the primary strip, filtered by capability."""
+    from transcriptx.web.action_menus.handlers import is_action_available
+
+    caps = capabilities_from_context(ctx)
+    skip = set(primary)
+    if exclude:
+        skip.update(exclude)
+    return [
+        action
+        for action in SECTION_ALLOWLISTS[section]
+        if action not in skip and is_action_available(action, ctx, caps)
+    ]

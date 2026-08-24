@@ -22,7 +22,7 @@ ACTIONS: tuple[ActionDef, ...] = (
         ActionId.OPEN,
         "Open",
         ic.FOLDER_OPEN,
-        "Open Overview for the selected subject (works with a transcript even when no analysis run exists).",
+        "Open Overview for a completed analysis run.",
     ),
     ActionDef(
         ActionId.OPEN_LIBRARY,
@@ -34,7 +34,7 @@ ACTIONS: tuple[ActionDef, ...] = (
         ActionId.OPEN_TRANSCRIPT,
         "Transcript",
         ic.DESCRIPTION,
-        "Open the Transcript viewer for the selected transcript.",
+        "Open the Transcript viewer for a completed analysis run.",
     ),
     ActionDef(
         ActionId.CHARTS,
@@ -94,7 +94,7 @@ ACTIONS: tuple[ActionDef, ...] = (
         ActionId.CORRECT_IN_VIEWER,
         "Correct in viewer",
         ic.SPELLCHECK,
-        "Open the Transcript viewer in Correct mode to propose word-level fixes while reading.",
+        "Open the Transcript viewer in Correct mode (requires a completed analysis run).",
     ),
 )
 
@@ -193,6 +193,7 @@ SECTION_DEFAULTS: dict[SectionDefaultKey, tuple[ActionId, ...]] = {
         ActionId.RUN_ANALYSIS,
         ActionId.RENAME,
         ActionId.EXPORT_ZIP,
+        ActionId.DELETE,
     ),
     SectionDefaultKey(SectionId.IMPORT_SUCCESS, "transcript", None): (
         ActionId.OPEN_LIBRARY,

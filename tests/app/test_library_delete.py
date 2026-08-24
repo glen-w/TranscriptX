@@ -131,3 +131,51 @@ def test_delete_refuses_non_library_path(tmp_path: Path) -> None:
     assert not result.ok
     assert outsider.exists()
     assert result.errors
+
+
+def test_delete_does_not_surface_unrelated_group_manifest_warnings(
+    transcript_roots, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Pre-existing broken group manifests must not flood Library delete feedback."""
+    import transcriptx.core.store.group_manifest_store as group_store_module
+    from transcriptx.core.store.group_manifest_store import GroupManifestStore
+
+    transcripts = transcript_roots["transcripts"]
+    groups_dir = tmp_path / "groups"
+    groups_dir.mkdir()
+    monkeypatch.setattr(group_store_module, "_GROUPS_DIR", groups_dir, raising=False)
+    monkeypatch.setattr(
+        group_store_module,
+        "_TRANSCRIPTS_DIR",
+        transcripts,
+        raising=False,
+    )
+
+    transcript_keep = transcripts / "keep.json"
+    transcript_delete = transcripts / "delete.json"
+    transcript_keep.write_text("{}", encoding="utf-8")
+    transcript_delete.write_text("{}", encoding="utf-8")
+    GroupManifestStore().create_group(
+        name="Good",
+        members=[transcript_keep],
+    )
+    bad_path = groups_dir / "deadbeef-dead-dead-dead-deadbeef0001.group.json"
+    bad_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "group_id": "deadbeef-dead-dead-dead-deadbeef0001",
+                "name": "Broken",
+                "members": ["data/transcripts/a_group_test.json"],
+                "created_at": "2026-01-01T00:00:00Z",
+                "updated_at": "2026-01-01T00:00:00Z",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = delete_managed_library_transcript(transcript_delete)
+    assert result.ok
+    assert not transcript_delete.exists()
+    assert transcript_keep.exists()
+    assert not any("a_group_test" in warn for warn in result.warnings)

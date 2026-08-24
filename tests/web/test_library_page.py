@@ -231,7 +231,7 @@ def test_library_inspector_shows_no_linked_audio(monkeypatch) -> None:
     assert any("No linked audio" in cap for cap in _DummyStreamlit.captions)
 
 
-def test_library_delete_lives_in_overflow_allowlist() -> None:
+def test_library_delete_on_primary_strip_by_default() -> None:
     from transcriptx.web.action_menus.catalog import (
         SECTION_ALLOWLISTS,
         SECTION_DEFAULTS,
@@ -240,8 +240,13 @@ def test_library_delete_lives_in_overflow_allowlist() -> None:
     from transcriptx.web.action_menus.ids import ActionId, SectionId
 
     assert ActionId.DELETE in SECTION_ALLOWLISTS[SectionId.LIBRARY_SELECTED]
-    assert ActionId.DELETE not in section_default_actions(
+    defaults = section_default_actions(
         SectionId.LIBRARY_SELECTED, subject_type="transcript", has_run=False
     )
-    for defaults in SECTION_DEFAULTS.values():
-        assert ActionId.DELETE not in defaults
+    assert ActionId.DELETE in defaults
+    assert defaults[-1] is ActionId.DELETE
+    for key, section_defaults in SECTION_DEFAULTS.items():
+        if key.section is SectionId.LIBRARY_SELECTED:
+            assert ActionId.DELETE in section_defaults
+        else:
+            assert ActionId.DELETE not in section_defaults

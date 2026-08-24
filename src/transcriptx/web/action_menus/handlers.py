@@ -57,10 +57,6 @@ def _nav(ctx: ActionContext, page: str) -> None:
     navigate_with_identity(ctx.identity, page)
 
 
-def _available_open(ctx: ActionContext, caps: ContextCapabilities) -> bool:
-    return caps.has_transcript_path or caps.has_valid_run
-
-
 def _available_run_scoped(_ctx: ActionContext, caps: ContextCapabilities) -> bool:
     return caps.has_valid_run
 
@@ -77,12 +73,20 @@ def _available_rename(_ctx: ActionContext, caps: ContextCapabilities) -> bool:
     return caps.rename_supported
 
 
-def _available_transcript(ctx: ActionContext, caps: ContextCapabilities) -> bool:
+def _available_transcript_file(ctx: ActionContext, caps: ContextCapabilities) -> bool:
     return ctx.identity.subject_type == "transcript" and caps.has_transcript_path
+
+
+def _available_open_transcript(ctx: ActionContext, caps: ContextCapabilities) -> bool:
+    return _available_transcript_file(ctx, caps) and caps.has_valid_run
 
 
 def _available_corrections(ctx: ActionContext, caps: ContextCapabilities) -> bool:
     return caps.corrections_workspace_available
+
+
+def _available_correct_in_viewer(ctx: ActionContext, caps: ContextCapabilities) -> bool:
+    return caps.corrections_workspace_available and caps.has_valid_run
 
 
 def _available_open_library(ctx: ActionContext, caps: ContextCapabilities) -> bool:
@@ -339,20 +343,22 @@ def _post_export(ctx: ActionContext, download_key: str) -> None:
 
 
 HANDLERS: dict[ActionId, ActionHandler] = {
-    ActionId.OPEN: ActionHandler(_available_open, _render_open),
+    ActionId.OPEN: ActionHandler(_available_run_scoped, _render_open),
     ActionId.OPEN_LIBRARY: ActionHandler(_available_open_library, _render_open_library),
-    ActionId.OPEN_TRANSCRIPT: ActionHandler(_available_transcript, _render_transcript),
+    ActionId.OPEN_TRANSCRIPT: ActionHandler(
+        _available_open_transcript, _render_transcript
+    ),
     ActionId.CHARTS: ActionHandler(_available_run_scoped, _render_charts),
     ActionId.ARTIFACTS: ActionHandler(_available_run_scoped, _render_artifacts),
     ActionId.INSIGHTS: ActionHandler(_available_insights, _render_insights),
     ActionId.EXPORT_ZIP: ActionHandler(_available_export, _render_export, _post_export),
     ActionId.RENAME: ActionHandler(_available_rename, _render_rename),
-    ActionId.DELETE: ActionHandler(_available_transcript, _render_delete),
+    ActionId.DELETE: ActionHandler(_available_transcript_file, _render_delete),
     ActionId.RUN_SPEAKER_ID: ActionHandler(_available_workflow, _render_speaker_id),
     ActionId.RUN_ANALYSIS: ActionHandler(_available_workflow, _render_run_analysis),
     ActionId.CORRECTIONS: ActionHandler(_available_corrections, _render_corrections),
     ActionId.CORRECT_IN_VIEWER: ActionHandler(
-        _available_corrections, _render_correct_in_viewer
+        _available_correct_in_viewer, _render_correct_in_viewer
     ),
 }
 

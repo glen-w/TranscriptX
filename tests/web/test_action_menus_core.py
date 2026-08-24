@@ -105,6 +105,7 @@ def test_built_in_standard_excludes_optional() -> None:
                 ActionId.RUN_ANALYSIS,
                 ActionId.RENAME,
                 ActionId.EXPORT_ZIP,
+                ActionId.DELETE,
             ],
         ),
         (
@@ -231,7 +232,7 @@ def test_transcript_identity_with_run_pairs_outputs_path(monkeypatch, tmp_path: 
     assert bare.run_dir is None
 
 
-def test_open_available_without_run(tmp_path: Path) -> None:
+def test_view_actions_require_run(tmp_path: Path) -> None:
     tp = tmp_path / "t.json"
     tp.write_text("{}", encoding="utf-8")
     ident = build_canonical_identity(
@@ -243,13 +244,51 @@ def test_open_available_without_run(tmp_path: Path) -> None:
         nav_style=NavStyle.ON_CLICK,
         instance_prefix="t",
         run_completed=False,
+        corrections_workspace_available=True,
     )
     caps = capabilities_from_context(ctx)
     assert caps.has_transcript_path
     assert not caps.has_valid_run
-    assert is_action_available(ActionId.OPEN, ctx, caps)
+    assert is_action_available(ActionId.RUN_ANALYSIS, ctx, caps)
+    assert is_action_available(ActionId.RUN_SPEAKER_ID, ctx, caps)
+    assert is_action_available(ActionId.RENAME, ctx, caps)
+    assert is_action_available(ActionId.DELETE, ctx, caps)
+    assert is_action_available(ActionId.CORRECTIONS, ctx, caps)
+    assert not is_action_available(ActionId.OPEN, ctx, caps)
+    assert not is_action_available(ActionId.OPEN_TRANSCRIPT, ctx, caps)
     assert not is_action_available(ActionId.CHARTS, ctx, caps)
+    assert not is_action_available(ActionId.ARTIFACTS, ctx, caps)
+    assert not is_action_available(ActionId.INSIGHTS, ctx, caps)
     assert not is_action_available(ActionId.EXPORT_ZIP, ctx, caps)
+    assert not is_action_available(ActionId.CORRECT_IN_VIEWER, ctx, caps)
+
+
+def test_transcript_available_with_run(tmp_path: Path) -> None:
+    tp = tmp_path / "t.json"
+    tp.write_text("{}", encoding="utf-8")
+    run_dir = tmp_path / "slug" / "run-a"
+    run_dir.mkdir(parents=True)
+    ident = build_canonical_identity(
+        subject_type="transcript",
+        subject_id="slug",
+        transcript_path=tp,
+        run_id="run-a",
+        run_dir=run_dir,
+    )
+    ctx = ActionContext(
+        identity=ident,
+        widget_identity="w1",
+        nav_style=NavStyle.ON_CLICK,
+        instance_prefix="t",
+        run_completed=True,
+        corrections_workspace_available=True,
+    )
+    caps = capabilities_from_context(ctx)
+    assert caps.has_valid_run
+    assert is_action_available(ActionId.OPEN, ctx, caps)
+    assert is_action_available(ActionId.OPEN_TRANSCRIPT, ctx, caps)
+    assert is_action_available(ActionId.CHARTS, ctx, caps)
+    assert is_action_available(ActionId.CORRECT_IN_VIEWER, ctx, caps)
 
 
 def test_insights_requires_completed_run(tmp_path: Path) -> None:
@@ -441,7 +480,35 @@ def test_resolve_filters_unavailable(tmp_path: Path) -> None:
         instance_prefix="t",
     )
     resolved = resolve_section_actions(SectionId.SPEAKER_ID_COMPLETE, ctx, prefs=prefs)
-    assert resolved == [ActionId.OPEN]
+    assert resolved == []
+
+
+def test_library_overflow_hides_run_scoped_actions_without_run(tmp_path: Path) -> None:
+    from transcriptx.web.action_menus.resolve import overflow_actions_for_section
+
+    tp = tmp_path / "t.json"
+    tp.write_text("{}", encoding="utf-8")
+    ident = build_canonical_identity(
+        subject_type="transcript", subject_id="slug", transcript_path=tp
+    )
+    ctx = ActionContext(
+        identity=ident,
+        widget_identity="lib_slug",
+        nav_style=NavStyle.CLICK_RERUN,
+        instance_prefix="lib",
+        rename_supported=True,
+    )
+    overflow = overflow_actions_for_section(
+        SectionId.LIBRARY_SELECTED,
+        ctx,
+        primary=[ActionId.RUN_SPEAKER_ID, ActionId.RUN_ANALYSIS, ActionId.RENAME],
+        exclude=frozenset({ActionId.EXPORT_ZIP}),
+    )
+    assert ActionId.OPEN not in overflow
+    assert ActionId.OPEN_TRANSCRIPT not in overflow
+    assert ActionId.CHARTS not in overflow
+    assert ActionId.CORRECT_IN_VIEWER not in overflow
+    assert ActionId.DELETE in overflow
 
 
 def test_no_statistics_action() -> None:

@@ -235,7 +235,8 @@ def render_interface_panel() -> None:
             else:
                 st.caption(
                     "Runtime context may temporarily hide unavailable actions "
-                    "(for example Insights without a completed run) without turning the menu off."
+                    "(for example Transcript, Charts, or Insights without a completed "
+                    "run) without turning the menu off."
                 )
 
     c1, c2, c3 = st.columns(3)

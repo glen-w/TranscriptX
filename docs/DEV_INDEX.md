@@ -63,6 +63,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [dashboard_builder.md](dev/dashboard_builder.md) | Dashboard Builder workflows |
 | [web_blocks.md](dev/web_blocks.md) | Web block architecture |
 | [dependency_audit.md](dev/dependency_audit.md) | Dependency / CVE waiver policy |
+| [security_review_2026-08-23.md](dev/security_review_2026-08-23.md) | Repository-wide security review and prioritized remediation |
 | [bertopic_optional_module.md](dev/bertopic_optional_module.md) | BERTopic optional module |
 | [emotion_family_contracts_2026-07-18.md](dev/emotion_family_contracts_2026-07-18.md) | Emotion-family contracts |
 | [emotion_family_calibration_protocol_2026-07-18.md](dev/emotion_family_calibration_protocol_2026-07-18.md) | Calibration protocol |

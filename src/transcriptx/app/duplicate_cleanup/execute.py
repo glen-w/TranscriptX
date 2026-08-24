@@ -171,13 +171,12 @@ def tidy_group_membership(deleted_transcripts: set[str]) -> tuple[tuple[str, ...
     except Exception as exc:
         warnings.append(f"Could not load groups: {exc}")
         return (), warnings
+    store = GroupManifestStore()
     try:
-        groups, errors = GroupManifestStore().list_groups_best_effort()
+        groups, _skipped = store.list_groups_best_effort()
     except Exception as exc:
         warnings.append(f"Could not list groups: {exc}")
         return (), warnings
-    warnings.extend(errors or [])
-    store = GroupManifestStore()
     for group in groups:
         remaining: list[str] = []
         removed_any = False

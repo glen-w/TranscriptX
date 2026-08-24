@@ -17,7 +17,6 @@ from transcriptx.app.corpus_inventory.query import apply_library_filter
 from transcriptx.core.analysis.voice.audio_io import resolve_audio_path
 from transcriptx.core.utils.rename.audio_association import find_original_audio_file
 from transcriptx.utils.text_utils import format_duration_display_from_config
-from transcriptx.web.action_menus.catalog import SECTION_ALLOWLISTS
 from transcriptx.web.action_menus.context import (
     ActionContext,
     build_transcript_identity_with_run,
@@ -28,6 +27,7 @@ from transcriptx.web.action_menus.render import (
     render_action,
     render_configured_actions,
 )
+from transcriptx.web.action_menus.resolve import overflow_actions_for_section
 from transcriptx.web.cache_helpers import get_cached_corpus_inventory
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.info_tooltip import widget_help
@@ -303,18 +303,17 @@ def _render_inspector(selected: InventoryRow) -> None:
         run_completed=selected.analysis.status.value == "completed",
     )
     primary = render_configured_actions(SectionId.LIBRARY_SELECTED, ctx)
-    overflow = [
-        action
-        for action in SECTION_ALLOWLISTS[SectionId.LIBRARY_SELECTED]
-        if action not in primary
-    ]
+    overflow = overflow_actions_for_section(
+        SectionId.LIBRARY_SELECTED,
+        ctx,
+        primary,
+        exclude=frozenset({ActionId.EXPORT_ZIP}),
+    )
     with st.popover("⋯"):
         st.caption(f"Path: {selected.transcript_path}")
         audio_path = _resolve_audio_for_transcript(selected.transcript_path)
         st.caption(f"Audio: {'✓' if audio_path is not None else '—'}")
         for action in overflow:
-            if action is ActionId.EXPORT_ZIP:
-                continue
             key = action_widget_key(
                 instance_prefix=ctx.instance_prefix,
                 section=SectionId.LIBRARY_SELECTED,
