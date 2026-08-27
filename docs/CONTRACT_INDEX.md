@@ -21,6 +21,7 @@ Concept → Authority:
 - **Run truth & statuses** → `docs/run_outcome_contract.md`
 - **Core pipeline layering & lifecycle** → `docs/dev/pipeline_contracts.md`
 - **Outputs & layout** → `docs/contracts/output-contract-v1.md`
+- **Interface menus (action strips)** → `docs/contracts/interface-menus.md`
 - **Public surfaces & support** → `docs/public_surfaces.md`
 - **Terms (index only)** → `docs/TERMS.md`
 - **Local LLM modules** → `docs/runtime/llm.md`

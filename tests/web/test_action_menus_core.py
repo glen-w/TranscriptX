@@ -23,6 +23,8 @@ from transcriptx.web.action_menus.context import (
 from transcriptx.web.action_menus.handlers import HANDLERS, is_action_available
 from transcriptx.web.action_menus.ids import (
     SECTION_ORDER,
+    ActionDisplay,
+    ActionDisplaySetting,
     ActionId,
     NavStyle,
     SectionId,
@@ -33,6 +35,7 @@ from transcriptx.web.action_menus.prefs import (
     merge_prefs,
     replace_with_built_in_defaults,
     reset_draft_to_built_ins,
+    resolve_action_display,
     save_interface_prefs,
     sanitise_action_ids,
     validate_draft_for_save,
@@ -206,7 +209,9 @@ def test_identity_rejects_mismatched_run(tmp_path: Path) -> None:
         )
 
 
-def test_transcript_identity_with_run_pairs_outputs_path(monkeypatch, tmp_path: Path) -> None:
+def test_transcript_identity_with_run_pairs_outputs_path(
+    monkeypatch, tmp_path: Path
+) -> None:
     from transcriptx.web.action_menus.context import build_transcript_identity_with_run
 
     monkeypatch.setattr(
@@ -438,6 +443,83 @@ def test_merge_show_info_tooltips_defaults_true_and_round_trips() -> None:
     )
     built = built_in_prefs()
     assert built.show_info_tooltips is True
+
+
+def test_built_in_action_display_defaults() -> None:
+    built = built_in_prefs()
+    assert built.action_display == ActionDisplay.BOTH.value
+    for sid in SECTION_ORDER:
+        assert built.sections[sid].action_display == ActionDisplaySetting.INHERIT.value
+        assert resolve_action_display(built, sid) is ActionDisplay.BOTH
+
+
+def test_merge_action_display_missing_invalid_inherit_and_override() -> None:
+    missing = merge_prefs({"sections": {}})
+    assert missing.action_display == ActionDisplay.BOTH.value
+    for sid in SECTION_ORDER:
+        assert (
+            missing.sections[sid].action_display == ActionDisplaySetting.INHERIT.value
+        )
+        assert resolve_action_display(missing, sid) is ActionDisplay.BOTH
+
+    invalid = merge_prefs(
+        {
+            "action_display": "nope",
+            "sections": {
+                SectionId.HOME_RECENT_RUNS.value: {"action_display": "mystery"}
+            },
+        }
+    )
+    assert invalid.action_display == ActionDisplay.BOTH.value
+    assert (
+        invalid.sections[SectionId.HOME_RECENT_RUNS].action_display
+        == ActionDisplaySetting.INHERIT.value
+    )
+
+    overridden = merge_prefs(
+        {
+            "action_display": "text",
+            "sections": {
+                SectionId.LIBRARY_SELECTED.value: {"action_display": "icon"},
+                SectionId.HOME_RECENT_RUNS.value: {"action_display": "inherit"},
+            },
+        }
+    )
+    assert overridden.action_display == ActionDisplay.TEXT.value
+    assert (
+        resolve_action_display(overridden, SectionId.LIBRARY_SELECTED)
+        is ActionDisplay.ICON
+    )
+    assert (
+        resolve_action_display(overridden, SectionId.HOME_RECENT_RUNS)
+        is ActionDisplay.TEXT
+    )
+    assert (
+        resolve_action_display(overridden, SectionId.IMPORT_SUCCESS)
+        is ActionDisplay.TEXT
+    )
+
+
+def test_action_display_round_trips_on_save(tmp_path: Path) -> None:
+    path = tmp_path / "interface_menus.json"
+    _, draft = load_interface_prefs(path)
+    draft.prefs.action_display = ActionDisplay.ICON.value
+    draft.prefs.sections[
+        SectionId.LIBRARY_SELECTED
+    ].action_display = ActionDisplaySetting.TEXT.value
+    assert save_interface_prefs(draft, path=path).ok
+    prefs2, _ = load_interface_prefs(path)
+    assert prefs2.action_display == ActionDisplay.ICON.value
+    assert (
+        prefs2.sections[SectionId.LIBRARY_SELECTED].action_display
+        == ActionDisplaySetting.TEXT.value
+    )
+    assert (
+        resolve_action_display(prefs2, SectionId.HOME_RECENT_RUNS) is ActionDisplay.ICON
+    )
+    assert (
+        resolve_action_display(prefs2, SectionId.LIBRARY_SELECTED) is ActionDisplay.TEXT
+    )
 
 
 def test_export_key_suffix_differs_across_subjects(tmp_path: Path) -> None:

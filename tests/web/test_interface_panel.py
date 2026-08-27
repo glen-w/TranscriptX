@@ -272,3 +272,34 @@ def test_interface_panel_sync_and_pull_show_info_tooltips(monkeypatch) -> None:
     _IfaceStreamlit.session_state["iface_show_info_tooltips"] = True
     mod._pull_widgets_into_draft()
     assert draft.prefs.show_info_tooltips is True
+
+
+@pytest.mark.unit
+def test_interface_panel_sync_and_pull_action_display(monkeypatch) -> None:
+    import transcriptx.web.ui.settings.interface_panel as mod
+    from transcriptx.web.action_menus.ids import SectionId
+    from transcriptx.web.action_menus.prefs import built_in_prefs
+
+    _IfaceStreamlit.reset()
+    prefs = built_in_prefs()
+    prefs.action_display = "icon"
+    prefs.sections[SectionId.LIBRARY_SELECTED].action_display = "text"
+    draft = SimpleNamespace(
+        prefs=prefs,
+        recovery=False,
+        recovery_message=None,
+    )
+    _IfaceStreamlit.session_state[DRAFT_SESSION_KEY] = draft
+    monkeypatch.setattr(mod, "st", _IfaceStreamlit)
+    monkeypatch.setattr(mod, "ACTIONS", ())
+
+    mod._sync_widgets_from_draft()
+    assert _IfaceStreamlit.session_state["iface_action_display"] == "icon"
+    assert _IfaceStreamlit.session_state["iface_display_library_selected"] == "text"
+    assert _IfaceStreamlit.session_state["iface_display_home_recent_runs"] == "inherit"
+
+    _IfaceStreamlit.session_state["iface_action_display"] = "text"
+    _IfaceStreamlit.session_state["iface_display_library_selected"] = "both"
+    mod._pull_widgets_into_draft()
+    assert draft.prefs.action_display == "text"
+    assert draft.prefs.sections[SectionId.LIBRARY_SELECTED].action_display == "both"

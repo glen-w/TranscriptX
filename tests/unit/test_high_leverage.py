@@ -138,6 +138,23 @@ class TestValidationHighLeverage:
         with pytest.raises(ValueError, match="must be a dictionary"):
             validate_segment("not a dict", 0)
 
+    def test_validate_transcript_file_wraps_unexpected_loader_errors(
+        self, tmp_path, monkeypatch
+    ):
+        """Non-ValueError loader failures become explicit validation errors."""
+        path = tmp_path / "ok.json"
+        path.write_text("{}")
+
+        def _boom(_file_path):
+            raise RuntimeError("loader exploded")
+
+        monkeypatch.setattr(
+            "transcriptx.io.transcript_loader.load_segments",
+            _boom,
+        )
+        with pytest.raises(ValueError, match="Error validating transcript file"):
+            validate_transcript_file(str(path))
+
 
 class TestModuleRegistryHighLeverage:
     """Module registry: availability, info, and callable entrypoints."""

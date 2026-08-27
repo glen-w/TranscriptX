@@ -46,6 +46,7 @@ Prefer the [Contract index](CONTRACT_INDEX.md) for invariants. Key user-visible 
 - [Public surfaces](public_surfaces.md)
 - [Storage](runtime/STORAGE.md)
 - [Workspace backup](contracts/workspace-backup.md)
+- [Interface menus](contracts/interface-menus.md)
 - [Run outcomes](run_outcome_contract.md)
 - [Output layout](contracts/output-contract-v1.md)
 

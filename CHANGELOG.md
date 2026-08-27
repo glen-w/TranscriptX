@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Deep Playwright GUI E2E coverage for Speaker Identification: speaker switching (Next/Prev/Jump), rename + Transcript confirm, ignore/unignore, and clip load/play with linked audio (`tests/e2e_gui/test_speaker_identification_deep.py`).
+- Settings → Interface **action appearance**: icon, text, or both, with a global default and per-section override (`inherit`). Icon-only buttons keep the action name as a hover tooltip even when instructional ⓘ tips are off. Contract: [interface-menus.md](docs/contracts/interface-menus.md).
 - Host **`whispermlx-missing --skip-serial`** (and `inbox-watch --skip-serial`) leaves Auto-merge serial parts / voice-note runs untranscribed so you merge first and transcribe the combined file.
 - Run Analysis: **Cancel analysis** and **Skip module** stay available while a run is in progress (cooperative; the current module is abandoned, remaining work is not started on cancel).
 - Playwright **GUI E2E** expanded to **ten key flows** under `tests/e2e_gui/` (`make test-gui-e2e`): workflows 1–5 plus Charts, Groups, Corrections (Correct mode), Rename Transcript, and Speakers.

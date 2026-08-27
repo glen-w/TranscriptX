@@ -13,6 +13,8 @@ from transcriptx.web.action_menus.context import (
     capabilities_from_context,
 )
 from transcriptx.web.action_menus.ids import (
+    ActionDisplay,
+    ActionDisplaySetting,
     ActionId,
     NavStyle,
     SectionId,
@@ -24,6 +26,7 @@ from transcriptx.web.action_menus.prefs import (
     InterfaceMenuPrefs,
     get_cached_runtime_prefs,
     load_interface_prefs,
+    resolve_action_display,
 )
 from transcriptx.web.action_menus.render import render_configured_actions
 from transcriptx.web.action_menus.resolve import resolve_section_actions
@@ -34,6 +37,8 @@ __all__ = [
     "SECTION_ALLOWLISTS",
     "SECTION_DEFAULTS",
     "ActionContext",
+    "ActionDisplay",
+    "ActionDisplaySetting",
     "ActionId",
     "CanonicalIdentity",
     "InterfaceDraft",
@@ -47,5 +52,6 @@ __all__ = [
     "get_cached_runtime_prefs",
     "load_interface_prefs",
     "render_configured_actions",
+    "resolve_action_display",
     "resolve_section_actions",
 ]

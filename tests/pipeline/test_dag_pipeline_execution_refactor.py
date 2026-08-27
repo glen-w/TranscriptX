@@ -29,9 +29,18 @@ class _FakePipeline:
         self.missing_deps: dict[str, list[str]] = {}
 
     def _check_missing_dependencies(
-        self, node: object, _modules_run: list[str]
+        self,
+        node: object,
+        _modules_run: list[str],
+        *,
+        results: dict | None = None,
     ) -> list[str]:
         return self.missing_deps.get(getattr(node, "name", ""), [])
+
+    def _dependency_failure_reason(
+        self, dependency: str, results: dict | None
+    ) -> str | None:
+        return None
 
     def _execute_single_module(self, **kwargs):
         self.execute_calls.append(kwargs)

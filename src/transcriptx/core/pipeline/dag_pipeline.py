@@ -512,14 +512,44 @@ class DAGPipeline:
             )
 
     def _check_missing_dependencies(
-        self, node: DAGNode, executed_modules: List[str]
+        self,
+        node: DAGNode,
+        executed_modules: List[str],
+        *,
+        results: Optional[Dict[str, Any]] = None,
     ) -> List[str]:
-        """Check which dependencies are missing for a module."""
+        """Check which hard dependencies are not yet satisfied."""
         missing = []
         for dep in node.dependencies:
-            if dep not in executed_modules:
-                missing.append(dep)
+            if dep in executed_modules:
+                continue
+            missing.append(dep)
         return missing
+
+    def _dependency_failure_reason(
+        self, dependency: str, results: Optional[Dict[str, Any]]
+    ) -> Optional[str]:
+        """Return a short reason when a hard dep ran but did not succeed."""
+        if not results:
+            return None
+        module_results = results.get("module_results") or {}
+        dep_result = module_results.get(dependency)
+        if isinstance(dep_result, dict):
+            status = str(dep_result.get("status") or "").lower()
+            if status in {"error", "failed"}:
+                err = dep_result.get("error") or {}
+                if isinstance(err, dict):
+                    msg = str(err.get("error_message") or err.get("message") or "")
+                else:
+                    msg = str(err)
+                if msg:
+                    return msg
+                return f"{dependency} failed"
+        for err in results.get("errors") or []:
+            err_s = str(err)
+            if dependency in err_s:
+                return err_s
+        return None
 
     def get_dependency_graph(self, selected_modules: List[str]) -> Dict[str, List[str]]:
         return self._compat_helpers.get_dependency_graph(self, selected_modules)

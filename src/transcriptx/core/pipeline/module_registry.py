@@ -228,6 +228,10 @@ class ModuleRegistry:
         if dep_resolver is None:
 
             def dep_resolver(info: ModuleInfo) -> bool:
+                if info.required_extras:
+                    for extra in info.required_extras:
+                        if not is_extra_distribution_present(extra):
+                            return False
                 if not info.requires_audio:
                     return True
                 if info.requires_audio and audio_available is False:

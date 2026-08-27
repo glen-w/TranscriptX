@@ -203,3 +203,44 @@ def test_mistral_nemo_long_context_guidance():
     row = guidance_for_model("mistral-nemo:latest")
     assert "long" in row.strengths.lower() or "context" in row.strengths.lower()
     assert "llm_summary" in row.best_for.lower()
+
+
+def test_gemma4_catalog_and_guidance():
+    row = guidance_for_model("gemma4:31b")
+    assert row.producer == "Google"
+    assert row.released == "Apr 2026"
+    assert row.size_class == "large"
+    assert "Gemma 4" in row.strengths or "Frontier Gemma" in row.strengths
+
+
+def test_qwen38_has_dedicated_guidance():
+    row = guidance_for_model("qwen3.8:latest")
+    assert row.producer == "Alibaba"
+    assert row.released == "Aug 2026"
+    blob = f"{row.strengths} {row.notes}".lower()
+    assert "json" in blob
+    assert "thinking" in blob
+
+
+def test_devstral_discouraged_for_transcript_modules():
+    row = guidance_for_model("devstral-small-2:latest")
+    assert row.producer == "Mistral AI"
+    assert row.released == "Dec 2025"
+    assert "not recommended" in row.best_for.lower()
+
+
+def test_llava_does_not_match_llama_catalog():
+    assert producer_for_model("llava:7b") == "LLaVA"
+    row = guidance_for_model("llava:7b")
+    assert "not recommended" in row.best_for.lower()
+
+
+def test_prefix_matching_avoids_gemma4_to_gemma_collision():
+    assert released_for_model("gemma4:31b") == "Apr 2026"
+    assert released_for_model("gemma3:12b") == "Mar 2025"
+
+
+def test_vision_models_discouraged_for_transcript_modules():
+    for tag in ("qwen3-vl:8b", "glm-ocr:latest", "minicpm-v:8b"):
+        row = guidance_for_model(tag)
+        assert "not recommended" in row.best_for.lower()

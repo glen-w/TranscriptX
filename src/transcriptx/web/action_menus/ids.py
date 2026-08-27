@@ -56,6 +56,23 @@ class SectionMenuMode(str, Enum):
     MANUAL = "manual"
 
 
+class ActionDisplay(str, Enum):
+    """Resolved appearance for an action strip (never inherit)."""
+
+    ICON = "icon"
+    TEXT = "text"
+    BOTH = "both"
+
+
+class ActionDisplaySetting(str, Enum):
+    """Stored per-section appearance; inherit follows the global default."""
+
+    INHERIT = "inherit"
+    ICON = "icon"
+    TEXT = "text"
+    BOTH = "both"
+
+
 SECTION_ORDER: tuple[SectionId, ...] = tuple(SectionId)
 ACTION_ORDER: tuple[ActionId, ...] = tuple(ActionId)
 

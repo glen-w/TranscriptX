@@ -2414,3 +2414,45 @@ Follow-up: expand testing of knobs-heavy GUI pages (Settings Analysis, Custom QA
 - Focused slice: **31 passed** (`test_serial_group_ui` + `test_tools_page`).
 - **Production code:** none (tests-only).
 - **Quarantined tests:** not re-enabled.
+
+---
+
+## 81. Expansion (2026-08-25) – CCv2 clip budgets + validation/discovery edges
+
+### Trigger
+`/tests` (full suite review + targeted expansion)
+
+### Backup
+- `/Users/89298/Documents/transcriptx backup/260825.zip` (12M); `custom-commands/` mirrored.
+
+### Review
+- **Collection (default filter):** `8284/8662` selected (`378` deselected); no collection/import errors on default gate.
+- **Full collection (`-m ""`):** `8662` tests.
+- **Baseline before expansion:** `8281 passed`, `3 skipped`, `378 deselected` (green).
+- **Cleanup:** disabled (per command).
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0; `-m quarantined` selects nothing); not re-enabled.
+- **Markers / addopts:** unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow/gui_acceptance/gui_e2e/browser/requires_nlp).
+- **Structure:** `tests/{analysis,app,browser,contracts,core,e2e_gui,integration,io,optional,packaging,pipeline,presentation,quarantine,regression,release,scripts,services,smoke,unit,utils,web}` (+ `tests/web/transcript_viewer/`, `tests/web/gui_acceptance/`).
+- **Historical note:** assessment once expected ~1558 tests; default-selected count is now ~8284.
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| CCv2 Speaker ID bridge | `too_large` clip path, hit-without-bytes, ignored speakers, unknown navigate target | Extend `tests/web/test_workspaces_theme_c.py` |
+| Clip transport budget | Negative byte counts unexercised | Extend clip transport roundtrip test |
+| Validation wrapper | Generic loader failures not mapped to `ValueError` | Extend `tests/unit/test_high_leverage.py` |
+| File discovery dedupe | Symlink alias to same resolved path | Extend `tests/core/utils/test_file_discovery_extra.py` |
+
+### Tests added / extended
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/web/test_workspaces_theme_c.py` | **+4 tests, +2 assertions** | too_large clip; hit without bytes; ignored speakers; navigate unknown speaker fallback; blank action rejection; negative clip budget |
+| `tests/unit/test_high_leverage.py` | **+1** | validate_transcript_file wraps unexpected loader errors |
+| `tests/core/utils/test_file_discovery_extra.py` | **+1** | symlink dedupe in discover_all_transcript_paths |
+
+### Validation
+- Focused slice: **59 passed** (`test_workspaces_theme_c` + `test_high_leverage` + `test_file_discovery_extra`).
+- Default suite after expansion: **8287 passed**, `3 skipped`, `378 deselected`.
+- Optional `integration_core` gate: **79 passed**, `1 deselected`.
+- **Production code:** none (tests-only).
+- **Quarantined tests:** not re-enabled.

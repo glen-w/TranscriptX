@@ -109,6 +109,7 @@ config_dir/                     # configuration
   profiles/                     # module/workflow/STT/UI-layout named presets (not speaker profiles)
   install_profile               # optional marker: core | full
   config.json                   # project settings bag
+  interface_menus.json          # Settings → Interface action strips (schema v1; see docs/contracts/interface-menus.md)
 
 data_dir/                       # app-managed working state
   groups/                       # group definition manifests (*.group.json); local user data — not tracked

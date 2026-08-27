@@ -84,6 +84,15 @@ class TestDiscoverAllTranscriptPaths:
         found = fd.discover_all_transcript_paths(tmp_path)
         assert found == sorted(found, key=lambda p: str(p))
 
+    def test_symlink_to_same_file_is_deduped(self, tmp_path: Path):
+        canonical = tmp_path / "talk.json"
+        canonical.write_text("{}", encoding="utf-8")
+        link = tmp_path / "talk_alias.json"
+        link.symlink_to(canonical)
+        found = fd.discover_all_transcript_paths(tmp_path)
+        assert len(found) == 1
+        assert found[0].resolve() == canonical.resolve()
+
 
 @pytest.mark.unit
 class TestDiscoverManagedTranscriptPaths:

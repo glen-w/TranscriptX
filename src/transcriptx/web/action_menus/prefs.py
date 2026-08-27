@@ -21,10 +21,17 @@ from transcriptx.web.action_menus.catalog import (
 from transcriptx.web.action_menus.ids import (
     ACTION_ORDER,
     SECTION_ORDER,
+    ActionDisplay,
+    ActionDisplaySetting,
     ActionId,
     SectionId,
     SectionMenuMode,
     StandardMenuMode,
+)
+
+_GLOBAL_DISPLAY_VALUES: frozenset[str] = frozenset(v.value for v in ActionDisplay)
+_SECTION_DISPLAY_VALUES: frozenset[str] = frozenset(
+    v.value for v in ActionDisplaySetting
 )
 
 INTERFACE_SCHEMA_VERSION = 1
@@ -38,6 +45,7 @@ class SectionMenuPrefs(BaseModel):
     show_menu: bool = True
     mode: Literal["use_standard", "section_default", "manual"] = "section_default"
     selected: list[ActionId] = Field(default_factory=list)
+    action_display: Literal["inherit", "icon", "text", "both"] = "inherit"
 
 
 class InterfaceMenuPrefs(BaseModel):
@@ -46,6 +54,7 @@ class InterfaceMenuPrefs(BaseModel):
     sections: dict[SectionId, SectionMenuPrefs] = Field(default_factory=dict)
     # Instructional ⓘ / Streamlit help= tips. Run-id identity ⓘ stays always on.
     show_info_tooltips: bool = True
+    action_display: Literal["icon", "text", "both"] = "both"
 
 
 @dataclass
@@ -77,6 +86,37 @@ def prefs_integrity_hash(prefs_dict: dict[str, Any]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def sanitise_global_action_display(raw: Any) -> ActionDisplay:
+    value = raw.value if isinstance(raw, ActionDisplay) else raw
+    if value in _GLOBAL_DISPLAY_VALUES:
+        return ActionDisplay(value)
+    return ActionDisplay.BOTH
+
+
+def sanitise_section_action_display(
+    raw: Any, *, default: ActionDisplaySetting = ActionDisplaySetting.INHERIT
+) -> ActionDisplaySetting:
+    value = raw.value if isinstance(raw, ActionDisplaySetting) else raw
+    if value in _SECTION_DISPLAY_VALUES:
+        return ActionDisplaySetting(value)
+    return default
+
+
+def resolve_action_display(
+    prefs: InterfaceMenuPrefs, section: SectionId
+) -> ActionDisplay:
+    """Resolve inherit against the global default; invalid values fall back to both."""
+    section_prefs = prefs.sections.get(section)
+    setting = (
+        sanitise_section_action_display(section_prefs.action_display)
+        if section_prefs is not None
+        else ActionDisplaySetting.INHERIT
+    )
+    if setting is ActionDisplaySetting.INHERIT:
+        return sanitise_global_action_display(prefs.action_display)
+    return ActionDisplay(setting.value)
+
+
 def sanitise_action_ids(raw: list[Any] | None) -> list[ActionId]:
     """Keep known ActionIds, drop duplicates, preserve first-seen then catalogue order."""
     if not raw:
@@ -101,6 +141,7 @@ def built_in_prefs() -> InterfaceMenuPrefs:
             show_menu=True,
             mode=SectionMenuMode.SECTION_DEFAULT.value,
             selected=[],
+            action_display=ActionDisplaySetting.INHERIT.value,
         )
         for sid in SECTION_ORDER
     }
@@ -109,6 +150,7 @@ def built_in_prefs() -> InterfaceMenuPrefs:
         standard_menu=[],
         sections=sections,
         show_info_tooltips=True,
+        action_display=ActionDisplay.BOTH.value,
     )
 
 
@@ -143,17 +185,36 @@ def merge_prefs(partial: dict[str, Any] | None) -> InterfaceMenuPrefs:
         show = raw.get("show_menu", True)
         if not isinstance(show, bool):
             show = True
-        sections[sid] = SectionMenuPrefs(show_menu=show, mode=smode, selected=selected)
+        built_display = sanitise_section_action_display(
+            base.sections[sid].action_display
+        )
+        if "action_display" not in raw:
+            display = built_display
+        else:
+            display = sanitise_section_action_display(
+                raw.get("action_display"), default=built_display
+            )
+        sections[sid] = SectionMenuPrefs(
+            show_menu=show,
+            mode=smode,
+            selected=selected,
+            action_display=display.value,
+        )
 
     show_tips = partial.get("show_info_tooltips", True)
     if not isinstance(show_tips, bool):
         show_tips = True
+    if "action_display" not in partial:
+        global_display = sanitise_global_action_display(base.action_display)
+    else:
+        global_display = sanitise_global_action_display(partial.get("action_display"))
 
     return InterfaceMenuPrefs(
         standard_menu_mode=mode,  # type: ignore[arg-type]
         standard_menu=standard,
         sections=sections,
         show_info_tooltips=show_tips,
+        action_display=global_display.value,
     )
 
 

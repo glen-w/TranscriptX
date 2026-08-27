@@ -15,7 +15,12 @@ from transcriptx.app.library_delete import (
 from transcriptx.web import icons as ic
 from transcriptx.web.action_menus.catalog import help_for, icon_for, label_for
 from transcriptx.web.action_menus.context import ActionContext, ContextCapabilities
-from transcriptx.web.action_menus.ids import ActionId, NavStyle, SectionId
+from transcriptx.web.action_menus.ids import (
+    ActionDisplay,
+    ActionId,
+    NavStyle,
+    SectionId,
+)
 from transcriptx.web.action_menus.services import (
     PAGE_ARTIFACTS,
     PAGE_CHARTS,
@@ -43,7 +48,6 @@ from transcriptx.web.state import (
     set_page_flash,
     try_page_toast,
 )
-from transcriptx.web.components.info_tooltip import widget_help
 
 
 @dataclass(frozen=True)
@@ -108,6 +112,7 @@ def _button(
     section: SectionId,
     key: str,
     on_activate: Callable[[], None],
+    display: str = ActionDisplay.BOTH.value,
 ) -> None:
     label = label_for(action, section)
     icon = icon_for(action)
@@ -118,76 +123,129 @@ def _button(
         # callback is a no-op and surfaces a client warning.
         # Fragment-hosted strips must use NavStyle.CLICK_RERUN instead.
         render_action_link(
-            label, key=key, icon=icon, help=widget_help(help_text), on_click=on_activate
+            label,
+            key=key,
+            icon=icon,
+            help=help_text,
+            display=display,
+            on_click=on_activate,
         )
     else:
-        if render_action_link(label, key=key, icon=icon, help=widget_help(help_text)):
+        if render_action_link(
+            label, key=key, icon=icon, help=help_text, display=display
+        ):
             on_activate()
             st.rerun()
 
 
-def _render_open(ctx: ActionContext, *, section: SectionId, key: str) -> None:
+def _render_open(
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
+) -> None:
     _button(
         ctx,
         action=ActionId.OPEN,
         section=section,
         key=key,
+        display=display,
         on_activate=lambda: _nav(ctx, PAGE_OVERVIEW),
     )
 
 
-def _render_charts(ctx: ActionContext, *, section: SectionId, key: str) -> None:
+def _render_charts(
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
+) -> None:
     _button(
         ctx,
         action=ActionId.CHARTS,
         section=section,
         key=key,
+        display=display,
         on_activate=lambda: _nav(ctx, PAGE_CHARTS),
     )
 
 
-def _render_artifacts(ctx: ActionContext, *, section: SectionId, key: str) -> None:
+def _render_artifacts(
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
+) -> None:
     _button(
         ctx,
         action=ActionId.ARTIFACTS,
         section=section,
         key=key,
+        display=display,
         on_activate=lambda: _nav(ctx, PAGE_ARTIFACTS),
     )
 
 
-def _render_insights(ctx: ActionContext, *, section: SectionId, key: str) -> None:
+def _render_insights(
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
+) -> None:
     _button(
         ctx,
         action=ActionId.INSIGHTS,
         section=section,
         key=key,
+        display=display,
         on_activate=lambda: _nav(ctx, PAGE_INSIGHTS),
     )
 
 
-def _render_transcript(ctx: ActionContext, *, section: SectionId, key: str) -> None:
+def _render_transcript(
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
+) -> None:
     _button(
         ctx,
         action=ActionId.OPEN_TRANSCRIPT,
         section=section,
         key=key,
+        display=display,
         on_activate=lambda: _nav(ctx, PAGE_TRANSCRIPT),
     )
 
 
-def _render_corrections(ctx: ActionContext, *, section: SectionId, key: str) -> None:
+def _render_corrections(
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
+) -> None:
     _button(
         ctx,
         action=ActionId.CORRECTIONS,
         section=section,
         key=key,
+        display=display,
         on_activate=lambda: _nav(ctx, PAGE_CORRECTIONS),
     )
 
 
 def _render_correct_in_viewer(
-    ctx: ActionContext, *, section: SectionId, key: str
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
 ) -> None:
     def _go() -> None:
         st.session_state["transcript_viewer_correct_mode"] = True
@@ -198,31 +256,52 @@ def _render_correct_in_viewer(
         action=ActionId.CORRECT_IN_VIEWER,
         section=section,
         key=key,
+        display=display,
         on_activate=_go,
     )
 
 
-def _render_run_analysis(ctx: ActionContext, *, section: SectionId, key: str) -> None:
+def _render_run_analysis(
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
+) -> None:
     _button(
         ctx,
         action=ActionId.RUN_ANALYSIS,
         section=section,
         key=key,
+        display=display,
         on_activate=lambda: _nav(ctx, PAGE_RUN_ANALYSIS),
     )
 
 
-def _render_speaker_id(ctx: ActionContext, *, section: SectionId, key: str) -> None:
+def _render_speaker_id(
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
+) -> None:
     _button(
         ctx,
         action=ActionId.RUN_SPEAKER_ID,
         section=section,
         key=key,
+        display=display,
         on_activate=lambda: _nav(ctx, PAGE_SPEAKER_ID),
     )
 
 
-def _render_open_library(ctx: ActionContext, *, section: SectionId, key: str) -> None:
+def _render_open_library(
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
+) -> None:
     def _go() -> None:
         if ctx.identity.transcript_path is not None:
             apply_library_rename_navigation(
@@ -238,28 +317,43 @@ def _render_open_library(ctx: ActionContext, *, section: SectionId, key: str) ->
         action=ActionId.OPEN_LIBRARY,
         section=section,
         key=key,
+        display=display,
         on_activate=_go,
     )
 
 
-def _render_rename(ctx: ActionContext, *, section: SectionId, key: str) -> None:
+def _render_rename(
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
+) -> None:
     _button(
         ctx,
         action=ActionId.RENAME,
         section=section,
         key=key,
+        display=display,
         on_activate=lambda: go_rename(ctx.identity),
     )
 
 
-def _render_export(ctx: ActionContext, *, section: SectionId, key: str) -> None:
+def _render_export(
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
+) -> None:
     # Export uses click (not on_click) so prepare runs in the same script path.
     label = label_for(ActionId.EXPORT_ZIP, section)
     if render_action_link(
         label,
         key=key,
         icon=icon_for(ActionId.EXPORT_ZIP),
-        help=widget_help(help_for(ActionId.EXPORT_ZIP)),
+        help=help_for(ActionId.EXPORT_ZIP),
+        display=display,
     ):
         prepare_run_export(ctx.identity)
 
@@ -323,7 +417,13 @@ def _confirm_delete_transcript_dialog(path_str: str) -> None:
             st.rerun()
 
 
-def _render_delete(ctx: ActionContext, *, section: SectionId, key: str) -> None:
+def _render_delete(
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
+) -> None:
     # Dialog must open on the same script path (click return), not on_click.
     path = ctx.identity.transcript_path
     disabled = path is None or not is_managed_library_transcript(path)
@@ -331,7 +431,8 @@ def _render_delete(ctx: ActionContext, *, section: SectionId, key: str) -> None:
         label_for(ActionId.DELETE, section),
         key=key,
         icon=icon_for(ActionId.DELETE),
-        help=widget_help(help_for(ActionId.DELETE)),
+        help=help_for(ActionId.DELETE),
+        display=display,
         disabled=disabled,
     ):
         if path is not None:
@@ -373,9 +474,21 @@ def is_action_available(
 
 
 def render_action(
-    action: ActionId, ctx: ActionContext, *, section: SectionId, key: str
+    action: ActionId,
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str | None = None,
 ) -> None:
-    HANDLERS[action].render(ctx, section=section, key=key)
+    if display is None:
+        from transcriptx.web.action_menus.prefs import (
+            get_cached_runtime_prefs,
+            resolve_action_display,
+        )
+
+        display = resolve_action_display(get_cached_runtime_prefs(), section).value
+    HANDLERS[action].render(ctx, section=section, key=key, display=display)
 
 
 def post_render_action(

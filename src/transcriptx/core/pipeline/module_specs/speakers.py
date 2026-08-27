@@ -26,6 +26,8 @@ def build_speakers_module_definitions(
             "supports_audio": True,
             "cost_tier": "heavy",
             "required_extras": ["voice"],
+            # Long transcripts + deep_mode can exceed the default 600s budget.
+            "timeout_seconds": 3600,
         },
         "voice_mismatch": {
             "description": "Tone–Text mismatch detection (sarcasm/discord moments)",

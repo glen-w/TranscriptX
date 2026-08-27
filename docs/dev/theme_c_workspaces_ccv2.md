@@ -4,7 +4,7 @@ Authority: self
 # Theme C — High-interaction workspaces (Components v2)
 
 Status: active (1.x)  
-Last updated: 2026-08-11
+Last updated: 2026-08-27
 
 **Roadmap home:** [docs/ROADMAP.md](../ROADMAP.md) §C  
 **Product constraint:** Streamlit shell + Python domain; specialised CCv2 workspaces only.
@@ -118,7 +118,9 @@ Avoid browser/AT reserved chords.
 
 ## Invest / narrow / defer (after Phase 3)
 
-Written decision required before Corrections expansion or SPA rewrite. Escalate to local frontend + Python API only with evidence that CCv2 remount/bytes/focus limits block product goals.
+Written decision required before Corrections expansion or SPA rewrite. Escalate to a custom local frontend only with evidence that CCv2 remount/bytes/focus limits block product goals.
+
+**First escalation (if the gate fires):** loopback application API over existing `app.controllers` / workflows, with Streamlit remaining the only client until that API is stable — then grow workspaces off Streamlit hosting. Do **not** jump to Gradio/NiceGUI or an OS-native workbench rewrite. Full Streamlit retirement is a late 1.x / 2.0 programme (theme **I**), not a Theme C deliverable. Roadmap: [ROADMAP.md](../ROADMAP.md) §C (shell review) and §I.
 
 ## Phase 9 legacy retirement
 

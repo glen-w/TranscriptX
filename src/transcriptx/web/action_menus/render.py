@@ -9,7 +9,11 @@ import streamlit as st
 from transcriptx.web.action_menus.context import ActionContext
 from transcriptx.web.action_menus.handlers import post_render_action, render_action
 from transcriptx.web.action_menus.ids import ActionId, SectionId
-from transcriptx.web.action_menus.prefs import InterfaceMenuPrefs
+from transcriptx.web.action_menus.prefs import (
+    InterfaceMenuPrefs,
+    get_cached_runtime_prefs,
+    resolve_action_display,
+)
 from transcriptx.web.action_menus.resolve import resolve_section_actions
 
 
@@ -33,10 +37,12 @@ def render_configured_actions(
     prefs: InterfaceMenuPrefs | None = None,
 ) -> list[ActionId]:
     """Resolve and render the action strip. Returns resolved IDs (may be empty)."""
+    prefs = prefs or get_cached_runtime_prefs()
     actions = resolve_section_actions(section, ctx, prefs=prefs)
     if not actions:
         return []
 
+    display = resolve_action_display(prefs, section).value
     cols = st.columns(len(actions), gap="small")
     for col, action in zip(cols, actions):
         key = action_widget_key(
@@ -46,7 +52,7 @@ def render_configured_actions(
             action=action,
         )
         with col:
-            render_action(action, ctx, section=section, key=key)
+            render_action(action, ctx, section=section, key=key, display=display)
 
     if ActionId.EXPORT_ZIP in actions:
         dl_key = (

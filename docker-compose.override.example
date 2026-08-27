@@ -18,17 +18,26 @@
 #
 # Local LLM defaults: enable Ollama + Corrections Studio discovery when unset in
 # .env (see docs/runtime/corrections-llm.md). Requires Ollama on the host.
+#
+# Full optional stack: base compose sets TRANSCRIPTX_CORE=0 and installs all
+# requirements.txt extras (voice/opensmile/librosa, bertopic, speechbrain, …).
+# Thorough / voice modules need resolvable audio under HOST_RECORDINGS_DIR.
 services:
   transcriptx-web:
     build:
       args:
         TRANSCRIPTX_TORCH_VARIANT: cpu
     environment:
+      # Explicit full install profile (matches requirements.txt image).
+      - TRANSCRIPTX_CORE=0
+      - TRANSCRIPTX_DISABLE_DOWNLOADS=${TRANSCRIPTX_DISABLE_DOWNLOADS:-0}
       - TRANSCRIPTX_LLM_ENABLED=${TRANSCRIPTX_LLM_ENABLED:-1}
       - TRANSCRIPTX_LLM_PROVIDER=${TRANSCRIPTX_LLM_PROVIDER:-ollama}
       - TRANSCRIPTX_LLM_MODEL=${TRANSCRIPTX_LLM_MODEL:-qwen3:8b}
       - TRANSCRIPTX_LLM_BASE_URL=${TRANSCRIPTX_LLM_BASE_URL:-http://host.docker.internal:11434}
       - TRANSCRIPTX_CORRECTIONS_LLM_ENABLED=${TRANSCRIPTX_CORRECTIONS_LLM_ENABLED:-1}
+      # Local/dev: voice matching on when privacy.voice_settings.json is absent.
+      - TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED=${TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED:-1}
     volumes:
       - ./data:/data
       - ${HOST_CONFIG_DIR:-./data/.transcriptx}:/data/.transcriptx

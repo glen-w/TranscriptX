@@ -22,6 +22,8 @@ from transcriptx.web.action_menus.catalog import (
 from transcriptx.web.action_menus.ids import (
     SECTION_LABELS,
     SECTION_ORDER,
+    ActionDisplay,
+    ActionDisplaySetting,
     ActionId,
     SectionId,
 )
@@ -42,6 +44,24 @@ _MODE_LABELS = {
     "manual": "Choose actions manually",
 }
 _MODE_OPTIONS = list(_MODE_LABELS.keys())
+_DISPLAY_LABELS = {
+    ActionDisplay.BOTH.value: "Icon and text",
+    ActionDisplay.ICON.value: "Icon only",
+    ActionDisplay.TEXT.value: "Text only",
+}
+_DISPLAY_OPTIONS = [
+    ActionDisplay.BOTH.value,
+    ActionDisplay.ICON.value,
+    ActionDisplay.TEXT.value,
+]
+_SECTION_DISPLAY_LABELS = {
+    ActionDisplaySetting.INHERIT.value: "Use global default",
+    **_DISPLAY_LABELS,
+}
+_SECTION_DISPLAY_OPTIONS = [
+    ActionDisplaySetting.INHERIT.value,
+    *_DISPLAY_OPTIONS,
+]
 # Mid-script Save/Restore/Reload must not write keyed widget values after those
 # widgets instantiate — defer hydrate to the start of the next run.
 _PENDING_WIDGET_SYNC_KEY = "iface_pending_widget_sync"
@@ -52,6 +72,11 @@ def _sync_widgets_from_draft() -> None:
     draft = st.session_state[DRAFT_SESSION_KEY]
     prefs = draft.prefs
     st.session_state["iface_show_info_tooltips"] = bool(prefs.show_info_tooltips)
+    st.session_state["iface_action_display"] = (
+        prefs.action_display
+        if prefs.action_display in _DISPLAY_OPTIONS
+        else ActionDisplay.BOTH.value
+    )
     st.session_state["iface_std_mode"] = (
         "Built-in" if prefs.standard_menu_mode == "built_in" else "Custom"
     )
@@ -63,6 +88,11 @@ def _sync_widgets_from_draft() -> None:
         sec = prefs.sections[sid]
         st.session_state[f"iface_show_{sid.value}"] = sec.show_menu
         st.session_state[f"iface_mode_{sid.value}"] = sec.mode
+        st.session_state[f"iface_display_{sid.value}"] = (
+            sec.action_display
+            if sec.action_display in _SECTION_DISPLAY_OPTIONS
+            else ActionDisplaySetting.INHERIT.value
+        )
         allow = SECTION_ALLOWLISTS[sid]
         for action_id in allow:
             st.session_state[f"iface_sel_{sid.value}_{action_id.value}"] = (
@@ -81,6 +111,12 @@ def _pull_widgets_into_draft() -> None:
     prefs.show_info_tooltips = bool(
         st.session_state.get("iface_show_info_tooltips", True)
     )
+    global_display = st.session_state.get(
+        "iface_action_display", ActionDisplay.BOTH.value
+    )
+    if global_display not in _DISPLAY_OPTIONS:
+        global_display = ActionDisplay.BOTH.value
+    prefs.action_display = global_display  # type: ignore[assignment]
     std_mode = st.session_state.get("iface_std_mode", "Built-in")
     prefs.standard_menu_mode = "built_in" if std_mode == "Built-in" else "custom"
     selected_std: list[ActionId] = []
@@ -96,6 +132,12 @@ def _pull_widgets_into_draft() -> None:
         if mode not in _MODE_OPTIONS:
             mode = "section_default"
         sec.mode = mode  # type: ignore[assignment]
+        display = st.session_state.get(
+            f"iface_display_{sid.value}", ActionDisplaySetting.INHERIT.value
+        )
+        if display not in _SECTION_DISPLAY_OPTIONS:
+            display = ActionDisplaySetting.INHERIT.value
+        sec.action_display = display  # type: ignore[assignment]
         selected: list[ActionId] = []
         for action_id in SECTION_ALLOWLISTS[sid]:
             if st.session_state.get(f"iface_sel_{sid.value}_{action_id.value}", False):
@@ -120,6 +162,23 @@ def render_interface_panel() -> None:
     st.checkbox(
         "Show info tooltips",
         key="iface_show_info_tooltips",
+        disabled=draft.recovery,
+    )
+
+    st.subheader("Action appearance")
+    st.caption(
+        "Choose whether action-menu links show an icon, a label, or both. "
+        "Each section can keep the global default or override it."
+    )
+    st.radio(
+        "Default appearance",
+        options=_DISPLAY_OPTIONS,
+        format_func=lambda m: _DISPLAY_LABELS[m],
+        key="iface_action_display",
+        horizontal=True,
+        help=widget_help(
+            "Applies to every action strip that is set to Use global default."
+        ),
         disabled=draft.recovery,
     )
 
@@ -209,6 +268,18 @@ def render_interface_panel() -> None:
                 st.caption(f"Built-in for group runs: {group}")
 
             st.radio(
+                "Appearance",
+                options=_SECTION_DISPLAY_OPTIONS,
+                format_func=lambda m: _SECTION_DISPLAY_LABELS[m],
+                key=f"iface_display_{sid.value}",
+                horizontal=True,
+                disabled=draft.recovery or not show,
+                help=widget_help(
+                    "Use global default follows Settings → Interface → Default appearance. "
+                    "Icon-only buttons still show the action name on hover."
+                ),
+            )
+            st.radio(
                 "Menu mode",
                 options=_MODE_OPTIONS,
                 format_func=lambda m: _MODE_LABELS[m],
@@ -249,9 +320,13 @@ def render_interface_panel() -> None:
             disabled=draft.recovery,
         )
     with c2:
-        restore_clicked = st.button("Restore built-in defaults", key="iface_restore", icon=ic.RESET)
+        restore_clicked = st.button(
+            "Restore built-in defaults", key="iface_restore", icon=ic.RESET
+        )
     with c3:
-        reload_clicked = st.button("Reload saved settings", key="iface_reload", icon=ic.REFRESH)
+        reload_clicked = st.button(
+            "Reload saved settings", key="iface_reload", icon=ic.REFRESH
+        )
 
     if save_clicked and not draft.recovery:
         _pull_widgets_into_draft()

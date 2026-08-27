@@ -102,7 +102,7 @@ def run_sequential_execution_phase(
         node = pipeline.nodes[module_name]
 
         missing_deps = pipeline._check_missing_dependencies(
-            node, results["modules_run"]
+            node, results["modules_run"], results=results
         )
         if missing_deps:
             ev_skipped += 1
@@ -118,11 +118,15 @@ def run_sequential_execution_phase(
                 )
             )
             dep_chain = []
+            failed_dep_reasons: list[str] = []
             for dep in missing_deps:
+                failure = pipeline._dependency_failure_reason(dep, results)
+                if failure:
+                    failed_dep_reasons.append(f"{dep}: {failure}")
                 if dep in pipeline.nodes:
                     dep_node = pipeline.nodes[dep]
                     missing_dep_deps = pipeline._check_missing_dependencies(
-                        dep_node, results["modules_run"]
+                        dep_node, results["modules_run"], results=results
                     )
                     if missing_dep_deps:
                         dep_chain.append(f"{dep} (which requires {missing_dep_deps})")
@@ -131,9 +135,15 @@ def run_sequential_execution_phase(
                 else:
                     dep_chain.append(dep)
 
-            error_msg = f"{module_name}: Missing dependencies {missing_deps}"
-            if dep_chain != missing_deps:
-                error_msg += f" ({', '.join(dep_chain)})"
+            if failed_dep_reasons:
+                error_msg = (
+                    f"{module_name}: Dependency not satisfied — "
+                    + "; ".join(failed_dep_reasons)
+                )
+            else:
+                error_msg = f"{module_name}: Missing dependencies {missing_deps}"
+                if dep_chain != missing_deps:
+                    error_msg += f" ({', '.join(dep_chain)})"
 
             pipeline.logger.warning(
                 f"Module '{module_name}' missing dependencies: {missing_deps}"

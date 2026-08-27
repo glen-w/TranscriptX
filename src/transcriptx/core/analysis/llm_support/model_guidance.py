@@ -86,13 +86,20 @@ _SIZE_CLASS_BY_B: tuple[tuple[float, SizeClass], ...] = (
 _CATALOG_BY_PREFIX: tuple[tuple[str, str, str], ...] = (
     ("qwen3-coder", "Alibaba", "2025-04"),
     ("qwen2.5-coder", "Alibaba", "2024-09"),
+    ("qwen3-vl", "Alibaba", "2025-08"),
+    ("qwen2.5vl", "Alibaba", "2025-01"),
+    ("qwen3.8", "Alibaba", "2026-08"),
     ("qwen3.6", "Alibaba", "2026-04"),
     ("qwen3", "Alibaba", "2025-04"),
     ("qwen2.5", "Alibaba", "2024-09"),
     ("qwen2", "Alibaba", "2024-06"),
+    ("devstral-small-2", "Mistral AI", "2025-12"),
+    ("devstral", "Mistral AI", "2025-12"),
+    ("gemma4", "Google", "2026-04"),
     ("gemma3", "Google", "2025-03"),
     ("gemma2", "Google", "2024-06"),
     ("gemma", "Google", "2024-02"),
+    ("llama3.2-vision", "Meta", "2024-11"),
     ("llama3.2", "Meta", "2024-09"),
     ("llama3.1", "Meta", "2024-07"),
     ("llama3", "Meta", "2024-04"),
@@ -110,38 +117,74 @@ _CATALOG_BY_PREFIX: tuple[tuple[str, str, str], ...] = (
     ("command-r", "Cohere", "2024-03"),
     ("command", "Cohere", "2024-03"),
     ("granite3.3", "IBM", "2025-04"),
+    ("granite3.2-vision", "IBM", "2025-02"),
     ("granite3.2", "IBM", "2025-02"),
     ("granite3", "IBM", "2024-10"),
     ("granite", "IBM", "2024-05"),
+    ("deepseek-ocr", "DeepSeek", "2025-10"),
     ("deepseek-r1", "DeepSeek", "2025-01"),
     ("deepseek", "DeepSeek", "2024-05"),
     ("gpt-oss", "OpenAI", "2025-08"),
     ("deepcoder", "Agentica", "2025-04"),
+    ("glm-ocr", "Zhipu AI", "2025-08"),
+    ("minicpm-v", "OpenBMB", "2024-05"),
+    ("llava", "LLaVA", "2024-02"),
 )
 
 # Family strings returned by Ollama ``details.family`` (when tag prefix is vague).
 _PRODUCER_BY_FAMILY: dict[str, str] = {
+    "gemma4": "Google",
     "gemma3": "Google",
     "gemma2": "Google",
     "gemma": "Google",
     "llama": "Meta",
+    "mllama": "Meta",
     "qwen2": "Alibaba",
+    "qwen25vl": "Alibaba",
     "qwen3": "Alibaba",
     "qwen35": "Alibaba",
     "qwen3moe": "Alibaba",
+    "qwen3vl": "Alibaba",
+    "mistral3": "Mistral AI",
     "phi3": "Microsoft",
     "cohere2": "Cohere",
     "granite": "IBM",
+    "glmocr": "Zhipu AI",
     "gptoss": "OpenAI",
 }
 
 _FAMILY_RULES: tuple[_FamilyRule, ...] = (
     _FamilyRule(
-        prefixes=("qwen3-coder", "qwen2.5-coder", "deepcoder"),
+        prefixes=(
+            "qwen3-coder",
+            "qwen2.5-coder",
+            "deepcoder",
+            "devstral-small-2",
+            "devstral",
+        ),
         family_label="code specialist",
         strengths="Code generation and repair.",
         best_for="Not recommended for TranscriptX LLM modules.",
         notes="Prefer a general chat/instruct model for summaries and JSON extraction.",
+    ),
+    _FamilyRule(
+        prefixes=(
+            "qwen3-vl",
+            "qwen2.5vl",
+            "llama3.2-vision",
+            "llava",
+            "minicpm-v",
+            "deepseek-ocr",
+            "glm-ocr",
+            "granite3.2-vision",
+        ),
+        family_label="vision / OCR",
+        strengths="Multimodal vision or OCR specialist.",
+        best_for="Not recommended for TranscriptX LLM modules.",
+        notes=(
+            "TranscriptX analysis is text-only — image input is unused. "
+            "Prefer a text instruct model (gemma3, gemma4, qwen2.5, mistral)."
+        ),
     ),
     _FamilyRule(
         prefixes=("qwen3.6",),
@@ -155,6 +198,32 @@ _FAMILY_RULES: tuple[_FamilyRule, ...] = (
             "Thinking model: often leaves Ollama `response` empty under "
             "format=json — do not use for narrative_summary, llm_action_items, "
             "chart_descriptions, or group_llm_synthesis."
+        ),
+        by_size={
+            "mid": (
+                "Reasoning-heavy; JSON modules are unreliable.",
+                "Plain-text summaries only.",
+                "Prefer gemma3 / qwen2.5 for JSON consumers.",
+            ),
+            "large": (
+                "Highest local reasoning cost; still JSON-unsafe.",
+                "Plain-text digests only.",
+                "Exclude from shared picks when JSON modules are selected.",
+            ),
+        },
+    ),
+    _FamilyRule(
+        prefixes=("qwen3.8",),
+        family_label="Qwen3.8",
+        strengths="Long-context Qwen3.5-class reasoning (thinking family).",
+        best_for=(
+            "Plain-text llm_summary / llm_speaker_summary only when you accept "
+            "thinking-model quirks."
+        ),
+        notes=(
+            "Thinking / vision-capable family: often leaves Ollama `response` "
+            "empty under format=json — do not use for narrative_summary, "
+            "llm_action_items, chart_descriptions, or group_llm_synthesis."
         ),
         by_size={
             "mid": (
@@ -208,6 +277,40 @@ _FAMILY_RULES: tuple[_FamilyRule, ...] = (
         strengths="Solid mid-size generalist; stable JSON for extraction.",
         best_for="llm_summary, llm_speaker_summary, llm_action_items as a shared model.",
         notes="Slightly older than Qwen3; still a strong local workhorse.",
+    ),
+    _FamilyRule(
+        prefixes=("gemma4",),
+        family_label="Gemma 4",
+        strengths=(
+            "Frontier Gemma with long context and strong instruction following "
+            "on larger tags."
+        ),
+        best_for=(
+            "Shared text picks (gemma4:12b+) for narrative_summary, "
+            "llm_action_items, and chart_descriptions when thinking is off."
+        ),
+        notes=(
+            "Configurable thinking modes can leave Ollama `response` empty "
+            "under format=json — prefer gemma3:12b when unsure. Multimodal "
+            "tags are not used by TranscriptX."
+        ),
+        by_size={
+            "small": (
+                "Fast edge-class Gemma 4 (e.g. e4b).",
+                "chart_descriptions; short drafts.",
+                "Validate llm_action_items JSON before production use.",
+            ),
+            "mid": (
+                "Strong structured output on text modules.",
+                "All modules as a shared mid pick (e.g. gemma4:12b).",
+                "Disable thinking for JSON consumers.",
+            ),
+            "large": (
+                "Highest Gemma 4 fidelity; MoE or dense workstation tags.",
+                "llm_summary, narrative_summary, llm_action_items, group synthesis.",
+                "Heavier RAM/latency; confirm thinking is off for JSON modules.",
+            ),
+        },
     ),
     _FamilyRule(
         prefixes=("gemma3", "gemma2", "gemma"),
@@ -550,10 +653,22 @@ def _model_base(model_tag: str) -> str:
     return (model_tag or "").strip().lower().split(":", 1)[0]
 
 
+def _prefix_matches(base: str, prefix: str) -> bool:
+    """Match a catalog/family prefix without ``llava``→``llama``-style collisions."""
+    if base == prefix:
+        return True
+    if not base.startswith(prefix):
+        return False
+    suffix = base[len(prefix) :]
+    if not suffix:
+        return True
+    return suffix[0] in ".-_/"
+
+
 def _match_catalog(model_tag: str) -> tuple[str, str] | None:
     base = _model_base(model_tag)
     for prefix, producer, released in _CATALOG_BY_PREFIX:
-        if base == prefix or base.startswith(prefix):
+        if _prefix_matches(base, prefix):
             return producer, released
     return None
 
@@ -583,7 +698,7 @@ def _match_family(model_tag: str) -> _FamilyRule | None:
     base = _model_base(model_tag)
     for rule in _FAMILY_RULES:
         for prefix in rule.prefixes:
-            if base == prefix or base.startswith(prefix):
+            if _prefix_matches(base, prefix):
                 return rule
     return None
 

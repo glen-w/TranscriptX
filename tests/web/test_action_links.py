@@ -49,6 +49,59 @@ def test_render_action_link_forwards_to_streamlit_button(monkeypatch):
     assert clicked == ["Charts"]
 
 
+def test_action_link_chrome_icon_text_both():
+    icon = ":material/bar_chart:"
+    assert action_links.action_link_chrome("Open", icon, "icon") == ("\u00a0", icon)
+    assert action_links.action_link_chrome("Open", icon, "text") == ("Open", None)
+    assert action_links.action_link_chrome("Open", icon, "both") == ("Open", icon)
+
+
+def test_render_action_link_icon_only_uses_unguarded_name_help(monkeypatch):
+    captured: dict = {}
+
+    class _FakeSt:
+        @staticmethod
+        def button(label, **kwargs):
+            captured["label"] = label
+            captured.update(kwargs)
+            return False
+
+    monkeypatch.setattr(action_links, "st", _FakeSt)
+    action_links.render_action_link(
+        "Open Charts",
+        key="home_icon",
+        icon=":material/bar_chart:",
+        display="icon",
+        help="Instructional tip",
+    )
+    assert captured["label"] == "\u00a0"
+    assert captured["icon"] == ":material/bar_chart:"
+    assert captured["help"] == "Open Charts"
+
+
+def test_render_action_link_text_only_omits_icon(monkeypatch):
+    captured: dict = {}
+
+    class _FakeSt:
+        @staticmethod
+        def button(label, **kwargs):
+            captured["label"] = label
+            captured.update(kwargs)
+            return False
+
+    monkeypatch.setattr(action_links, "st", _FakeSt)
+    action_links.render_action_link(
+        "Open Charts",
+        key="home_text",
+        icon=":material/bar_chart:",
+        display="text",
+        help="Go to charts",
+    )
+    assert captured["label"] == "Open Charts"
+    assert "icon" not in captured
+    assert captured["help"] == "Go to charts"
+
+
 def test_render_download_link_forwards_to_streamlit_download_button(monkeypatch):
     captured: dict = {}
 

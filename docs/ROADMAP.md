@@ -84,13 +84,15 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | F. Library & organisation | Transcript tagging; Groups interaction rules | Mid 1.x |
 | G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher | Mid 1.x (merge = former §1.2) |
 | H. In-app transcription | Local NVIDIA Parakeet/Canary + Whisper; CUDA/CPU; YouTube ingest | Mid–late 1.x (product decision) |
-| I. Installable / native-feeling shell | PWA (or equivalent) for local app install feel | Mid–late 1.x (depends on shell) |
+| I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Mid–late 1.x (depends on shell) |
 | J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 |
 | K. External STT command generation | Broader copyable host CLIs until / beside theme H | Ongoing light |
 | L. Polish & onboarding extras | Coach-marks, bundled demos, aesthetics — only if capacity | Anytime light |
 | M. Research / citeable methods | Optional B4-style methods; multilingual beyond small subset | Later 1.x+ |
 | N. Multi-provider LLM (opt-in) | OpenAI-compatible / LiteLLM gateway beyond Ollama; never silent cloud default | Mid–late 1.x |
 | → 2.0 | Personal audio intelligence companion | Vision |
+
+**GUI / shell path (post-1.0):** Streamlit remains the analysis workbench shell. Theme **C** is the escape hatch for workstation pages, not a prelude to abandoning Streamlit. A fully custom non-Streamlit UI is **architecturally feasible** (`app/` and `core/` are already UI-agnostic) but **timing-poor and high-cost** (no HTTP API today; dual-run of the Streamlit page surface and GUI tests dominates). Theme **I** owns installable-shell spikes and, if capacity exists after 1.0, the only reversible enabling step: a loopback application API over existing controllers. Escalate to a custom local frontend only after the Theme C evidence gate — see §C and §I.
 
 Public positioning today: [comparison.md](comparison.md). Analysis backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
 
@@ -131,11 +133,15 @@ Speaker ID is reaching Streamlit’s architectural edge; TranscriptX as a whole 
 
 **Pre-1.0 stop line:** finish current low-risk Speaker ID fixes until naming/navigation feel acceptably immediate, playback no longer visibly disrupts the whole app, writes are robust and tested, and cold clips have a tolerable fallback. Do **not** pursue endless nested fragments or speculative cache layers merely to remove the last flicker. Do **not** rewrite TranscriptX or abandon Streamlit before 1.0.
 
-**1.x plan:** keep Streamlit as the application shell. Allow a small category of high-interaction workspaces to escape ordinary Streamlit widget trees: **Speaker Identification**, **Corrections Studio**, and possibly rich transcript editing later. Prototype a **Streamlit Components v2** Speaker ID surface against the existing controller. The component owns persistent audio player, play/pause/seek, sample-row paging, active-speaker selection, name input, keyboard shortcuts, optimistic navigation, and loading/disabled states. Python keeps transcript/sidecar reading, mapping mutations, profile creation, voice analysis, clip extraction, validation/locking, and domain services. Meaningful actions still cause Python reruns; routine browser-side interactions can stay local. If it works, migrate only interaction-heavy workspaces. Only if that becomes restrictive, consider a proper local frontend + Python API (later, much larger). Avoid wholesale jumps to Gradio/NiceGUI.
+**1.x plan:** keep Streamlit as the application shell. Allow a small category of high-interaction workspaces to escape ordinary Streamlit widget trees: **Speaker Identification**, **Corrections Studio**, and possibly rich transcript editing later. Prototype a **Streamlit Components v2** Speaker ID surface against the existing controller. The component owns persistent audio player, play/pause/seek, sample-row paging, active-speaker selection, name input, keyboard shortcuts, optimistic navigation, and loading/disabled states. Python keeps transcript/sidecar reading, mapping mutations, profile creation, voice analysis, clip extraction, validation/locking, and domain services. Meaningful actions still cause Python reruns; routine browser-side interactions can stay local. If it works, migrate only interaction-heavy workspaces. Avoid wholesale jumps to Gradio/NiceGUI.
 
-**Trajectory:** Streamlit shell + Python domain services + specialised frontend components for workstation-like interactions.
+**Trajectory:** Streamlit shell + Python domain services + specialised frontend components for workstation-like interactions. CCv2 workspaces are the prototype of any later custom UI (browser owns ephemeral UI and media; Python owns transcripts, sidecars, mappings, clips, validation). They are not a commitment to retire Streamlit.
 
 **Implementation status (2026-08):** Phase −1 `SpeakerIdActionService` shared by legacy + CCv2; non-blocking ClipService APIs; packaged `transcriptx-workspaces` CCv2 Speaker ID surface (**default-on**; rollback with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`; missing package falls through to legacy); Corrections revisioned command protocol wired through `CorrectionsActionService` on the legacy studio page; PlaybackHost handoff for Theme D; legacy fragment path retained until Phase 9 criteria. Design authority: [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
+
+**Shell review (2026-08):** The analysis engine is already UI-agnostic (`app/` workflows/controllers and `core/` have no Streamlit imports). The Streamlit GUI is a large mature surface (~55k Python lines under `web/`; ~100 files import Streamlit; ~40k lines of `tests/web`). There is **no HTTP or IPC application API** to hang a second client on. Analysis/settings pages remain a good Streamlit fit; workstation pages are the constraint Theme C already names. A full custom frontend is a **late 1.x / 2.0-scale** programme (parity plus dual-run), not an early-1.x rewrite. First escalation, if CCv2 remount/bytes/focus limits block product goals: loopback API over existing controllers (theme **I**), then grow workspaces off Streamlit hosting — not a new Python GUI toolkit and not an OS-native (Swift/Qt) workbench.
+
+**Evidence gate before SPA / shell rewrite:** written invest/narrow/defer after Speaker ID Phase 9 and a Corrections CCv2 prototype. Escalate only with measured remount, bytes, or focus failures — [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md) § Invest / narrow / defer. Do not start a second primary GUI while Streamlit remains the supported surface in [public_surfaces.md](public_surfaces.md).
 
 ---
 
@@ -212,7 +218,7 @@ Automatically notice new recordings (and/or transcript files) in a monitored fol
 | **Hardware acceleration** | NVIDIA **CUDA** where available; optimised **CPU** path otherwise; Apple **MLX** remains a host/command path until a coherent native story exists |
 | **YouTube transcription** | Paste a URL → download audio/video → local STT → managed import. Legal/ToS, yt-dlp (or equivalent) ops, size limits, and offline-default honesty are part of the design spike |
 | **Diarization** | Prefer optional/local; align speaker labels with Speaker ID / import contracts |
-| **Job UX** | Queue, progress, cancel, retry; never block the analysis GUI on a stuck STT job |
+| **Job UX** | Queue, progress, cancel, retry; never block the analysis GUI on a stuck STT job. A durable job/progress channel (not Streamlit `session_state` alone) is also the prerequisite if theme **I** ever grows a second client |
 
 **Architecture fork (decide early):**
 
@@ -226,13 +232,26 @@ Automatically notice new recordings (and/or transcript files) in a monitored fol
 
 ---
 
-### I. Installable / native-feeling shell (PWA)
+### I. Installable / native-feeling shell
 
-**PWA support** — install TranscriptX as a native-feeling app on desktop/mobile via Progressive Web App capabilities (or an equally honest local-install story).
+**1.0 stance unchanged:** Streamlit in the browser is the supported primary surface. An installable / native-feeling shell is **not** a 1.0 gate.
 
-- Streamlit’s default hosting model is a **design constraint**: spike whether a credible PWA is possible around the current shell, a thin local wrapper, or only after Components / a local frontend path  
-- Goals: home-screen install, offline *shell* honesty (analysis/STT still need the local backend), dark/light polish  
-- Not a 1.0 gate; do not fake “offline app” if the Python server must be running
+**What “native” means here:** TranscriptX stays a **local Python engine** (file-backed storage, optional local ML). A native-feeling product is a custom local client plus that process — not a Swift/Qt/WinUI rewrite of the analysis workbench, and not wrapping Streamlit in a webview as if that were a new UI.
+
+**1.x intent:** honest local-install feel (home-screen / dock icon, dark/light polish) without faking an offline app while the Python server must be running.
+
+**Candidate slices (design before build; later slices depend on earlier ones):**
+
+| Slice | Notes |
+|-------|--------|
+| **PWA or thin wrapper around Streamlit** | Spike only. Streamlit’s hosting model is a design constraint; a credible PWA may be weak or impossible. A Tauri/Electron webview of the current GUI is a Theme I experiment, not a customised interface. |
+| **Loopback application API** | Optional after 1.0 if capacity exists. Expose `app.controllers` / workflows over loopback HTTP (or equivalent IPC) with existing request models; add job ids and progress events. **Streamlit stays the only client** until the API is boring. This is the reversible enabling step for a later SPA — it does not retire Streamlit. |
+| **Custom local SPA** | Only after the Theme **C** evidence gate (CCv2 remount/bytes/focus limits block product goals), or if installable-shell / theme **H** job UX cannot be honest on Streamlit. Grow `transcriptx-workspaces` (or equivalent) into the real UI; dual-run, then update [public_surfaces.md](public_surfaces.md) only when Streamlit is no longer primary. Treat as **late 1.x / 2.0-scale** (parity + GUI test rewrite), not an early-1.x cutover. |
+| **Desktop wrapper after a real frontend** | Tauri/Electron (or equivalent) around the SPA + Python sidecar. Useful once slice 3 exists; wrapping Streamlit alone does not count as a custom UI. |
+
+**Decision fork:** **Narrow** (honest PWA/wrapper spike around Streamlit; document limits) · **Invest in API** (loopback API, Streamlit remains primary) · **Defer SPA** (default until C evidence) · **Escalate** (custom frontend + wrapper) only with a written Theme C decision. Do not migrate to Gradio/NiceGUI to “escape” Streamlit.
+
+**Non-goals for this theme:** retiring Streamlit before 1.0; two supported primary GUIs indefinitely; OS-native workbench rewrite; hosted multi-user frontend.
 
 ---
 
@@ -304,7 +323,7 @@ Only if capacity remains after core themes:
 
 ## 2.0 vision
 
-**Personal audio intelligence companion:** personal recordings, voice-note workflows, optional local STT, deeper conversational analytics, stronger local AI — still local-first and modular. Themes **G–I** (recording workflows, in-app transcription, installable shell) are the main 1.x bridges toward that vision; themes **A–F** and **J** keep the analysis workbench excellent on the way; theme **N** optionally widens LLM backends without abandoning local-first.
+**Personal audio intelligence companion:** personal recordings, voice-note workflows, optional local STT, deeper conversational analytics, stronger local AI — still local-first and modular. Themes **G–I** (recording workflows, in-app transcription, installable shell) are the main 1.x bridges toward that vision; themes **A–F** and **J** keep the analysis workbench excellent on the way; theme **N** optionally widens LLM backends without abandoning local-first. A **custom local frontend** (theme **I** escalate) belongs here if the companion needs installable-desktop feel that Streamlit + CCv2 cannot provide — it is not a 1.x default.
 
 ---
 
@@ -320,7 +339,8 @@ Still **not** near-term product goals (unless a later roadmap rewrite says other
 - Elaborate interactive marketing-website effects
 - Broader “everything in the DB” library migration (beyond theme **J**)
 - Wholesale GUI rewrite or migration to Gradio/NiceGUI (prefer Components v2 first — theme **C**)
-- Full local frontend + Python API (only after Components v2 for workstation pages proves insufficient)
+- Full custom local frontend replacing Streamlit (late 1.x / 2.0; only after the Theme **C** evidence gate; loopback API first — theme **I**; not an early-1.x project)
+- OS-native workbench rewrite (Swift / Qt / WinUI) — the engine stays Python; a sidecar + custom web client is the native path if one is needed
 
 Historical sprint dumps: [sprint_archive.md](archive/plans/sprint_archive.md) (archived).
 

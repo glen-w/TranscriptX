@@ -92,6 +92,7 @@ def test_clip_transport_roundtrip() -> None:
     assert decode_clip_b64(enc) == raw
     assert within_clip_budget(len(raw), 100)
     assert not within_clip_budget(200, 100)
+    assert not within_clip_budget(-1, 100)
 
 
 def test_stable_workspace_key_is_transcript_scoped() -> None:
@@ -105,6 +106,7 @@ def test_command_from_workspace_result_accepts_dict_and_attr() -> None:
     assert command_from_workspace_result(None) is None
     assert command_from_workspace_result({"command": None}) is None
     assert command_from_workspace_result({"command": {}}) is None
+    assert command_from_workspace_result({"command": {"action": "   "}}) is None
     envelope = {
         "action": "navigate_jump",
         "payload": {"target_speaker_id": "SPEAKER_01"},
@@ -542,4 +544,148 @@ def test_dispatch_refresh_clips_is_ok_noop() -> None:
     )
     assert out is not None and out["status"] == "ok"
     assert out["action_id"] == "r1"
+
+
+def test_build_workspace_data_clip_too_large_skips_b64(tmp_path: Path) -> None:
+    from transcriptx.web.workspaces.speaker_id_bridge import MAX_BYTES_PER_CLIP
+
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+    oversized = b"x" * (MAX_BYTES_PER_CLIP + 1)
+
+    class _Ctrl:
+        def cached_clip_status(self, *_a, **_k):
+            return SimpleNamespace(status="hit", clip_id="c-big", path=None, reason=None)
+
+        def get_cached_clip_bytes(self, *_a, **_k):
+            return oversized
+
+        def enqueue_clip(self, *_a, **_k):
+            raise AssertionError("too_large must not enqueue")
+
+        def ffmpeg_available(self) -> bool:
+            return True
+
+    data = build_workspace_data(
+        transcript_path=str(transcript),
+        speaker_ids=["SPEAKER_00"],
+        active_speaker_id="SPEAKER_00",
+        speaker_labels={"SPEAKER_00": "1. SPEAKER_00"},
+        speaker_map={},
+        ignored_speakers=[],
+        samples=[{"start": 0.0, "end": 1.0, "text": "hi"}],
+        controller=_Ctrl(),
+    )
+    sample = data["samples"][0]
+    assert sample["clip_status"] == "too_large"
+    assert sample["clip_b64"] is None
+
+
+def test_build_workspace_data_hit_without_bytes_keeps_status(tmp_path: Path) -> None:
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+
+    class _Ctrl:
+        def cached_clip_status(self, *_a, **_k):
+            return SimpleNamespace(status="hit", clip_id="c-empty", path=None, reason=None)
+
+        def get_cached_clip_bytes(self, *_a, **_k):
+            return None
+
+        def enqueue_clip(self, *_a, **_k):
+            raise AssertionError("hit must not enqueue")
+
+        def ffmpeg_available(self) -> bool:
+            return True
+
+    data = build_workspace_data(
+        transcript_path=str(transcript),
+        speaker_ids=["SPEAKER_00"],
+        active_speaker_id="SPEAKER_00",
+        speaker_labels={"SPEAKER_00": "1. SPEAKER_00"},
+        speaker_map={},
+        ignored_speakers=[],
+        samples=[{"start": 0.0, "end": 1.0, "text": "hi"}],
+        controller=_Ctrl(),
+    )
+    sample = data["samples"][0]
+    assert sample["clip_status"] == "hit"
+    assert sample["clip_b64"] is None
+
+
+def test_build_workspace_data_marks_ignored_speakers(tmp_path: Path) -> None:
+    transcript = tmp_path / "t.json"
+    transcript.write_text("{}", encoding="utf-8")
+
+    class _Ctrl:
+        def cached_clip_status(self, *_a, **_k):
+            return SimpleNamespace(status="miss", clip_id="c1", path=None, reason=None)
+
+        def get_cached_clip_bytes(self, *_a, **_k):
+            return None
+
+        def enqueue_clip(self, *_a, **_k):
+            return SimpleNamespace(status="accepted")
+
+        def ffmpeg_available(self) -> bool:
+            return True
+
+    data = build_workspace_data(
+        transcript_path=str(transcript),
+        speaker_ids=["SPEAKER_00", "SPEAKER_01"],
+        active_speaker_id="SPEAKER_00",
+        speaker_labels={
+            "SPEAKER_00": "1. SPEAKER_00",
+            "SPEAKER_01": "2. SPEAKER_01",
+        },
+        speaker_map={},
+        ignored_speakers=["SPEAKER_01"],
+        samples=[{"start": 0.0, "end": 1.0, "text": "hi"}],
+        controller=_Ctrl(),
+    )
+    by_id = {row["id"]: row for row in data["speakers"]}
+    assert by_id["SPEAKER_00"]["ignored"] is False
+    assert by_id["SPEAKER_01"]["ignored"] is True
+
+
+def test_dispatch_navigate_jump_unknown_speaker_falls_back() -> None:
+    from transcriptx.app.speaker_id import SpeakerIdAck, SpeakerIdEffects
+    from transcriptx.web.workspaces.speaker_id_bridge import dispatch_workspace_command
+
+    seen = {}
+
+    class _Svc:
+        _expected_builds = set()
+
+        def execute(self, command):
+            seen["payload"] = dict(command.payload)
+            return SpeakerIdAck(
+                action_id=command.action_id,
+                action_seq=command.action_seq,
+                status="ok",
+                transcript_id=command.transcript_id,
+                transcript_revision="tr",
+                mapping_revision="mr",
+                active_speaker_id="SPEAKER_00",
+                active_speaker_idx=0,
+                effects=SpeakerIdEffects(),
+            )
+
+    out = dispatch_workspace_command(
+        {
+            "action": "navigate_jump",
+            "action_id": "nav2",
+            "action_seq": 3,
+            "protocol_version": "1",
+            "frontend_build_id": "legacy",
+            "transcript_id": "/t.json",
+            "payload": {"target_speaker_id": "SPEAKER_99"},
+        },
+        service=_Svc(),  # type: ignore[arg-type]
+        speaker_ids=["SPEAKER_00", "SPEAKER_01"],
+        current_speaker_idx=0,
+        apply_ack=lambda _a: None,
+    )
+    assert out is not None and out["status"] == "ok"
+    assert seen["payload"]["target_idx"] == 0
 

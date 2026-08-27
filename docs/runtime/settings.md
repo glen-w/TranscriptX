@@ -18,6 +18,7 @@ How to change TranscriptX behaviour from the GUI, env, and config files — with
 | Paths, watcher, speakers, LLM models, questions | Other **Settings** tabs (Storage, Watcher, Speakers, Interface, Models, Questions, Corrections) |
 | Duplicate recordings / transcripts | **Settings → Storage** → Duplicate library files (preview, then typed `DELETE DUPLICATES`) |
 | Show/hide instructional ⓘ tips (widget help + Speakers methodology notes) | **Settings → Interface** → Help / info tips (`show_info_tooltips` in `interface_menus.json`; run-id ⓘ stays on) |
+| Action-menu icon vs text | **Settings → Interface** → Action appearance (`action_display`: `icon` / `text` / `both`; per-section may `inherit`) |
 | Install capability (`core` vs `full`) | Env / install marker — see [installation.md](installation.md); **not** the Profiles page |
 
 Speaker identity/voice stores are a separate subsystem (Settings → Speakers). See [speaker_profiles_v1](../contracts/speaker_profiles_v1.md) and [STORAGE.md](STORAGE.md).
