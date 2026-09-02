@@ -96,7 +96,7 @@ def _ensure_lock_dir(path: Path, *, state_dir: Path | None = None) -> None:
     state_root = Path(state_dir) if state_dir is not None else Path(STATE_DIR)
     parent = path.parent
     # Ensure ancestor chain under state_dir
-    if parent.name in {"cleanup", "run_locks"}:
+    if parent.name in {"cleanup", "run_locks", "analysis_locks"}:
         # Verify state_root itself if it exists
         if state_root.exists() or os.path.lexists(str(state_root)):
             _lstat_real_dir(state_root, label="state_dir")
@@ -109,9 +109,9 @@ def _ensure_lock_dir(path: Path, *, state_dir: Path | None = None) -> None:
             _lstat_real_dir(parent, label="cleanup lock dir")
             _ensure_under_state(parent, state_root)
         else:
-            # run_locks
+            # run_locks / analysis_locks
             parent.mkdir(parents=True, exist_ok=True)
-            _lstat_real_dir(parent, label="run_locks dir")
+            _lstat_real_dir(parent, label=f"{parent.name} dir")
             _ensure_under_state(parent, state_root)
     else:
         parent.mkdir(parents=True, exist_ok=True)

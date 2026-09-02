@@ -110,21 +110,15 @@ class SpeakerIdActionService:
         self,
         controller: SpeakerStudioController,
         *,
-        index_loader: Optional[IndexLoader] = None,
+        index_loader: IndexLoader,
         profile_context_resolver: Optional[Callable[[str], object]] = None,
         expected_frontend_build_ids: Optional[Sequence[str]] = None,
     ) -> None:
         self._controller = controller
-        self._index_loader = index_loader or self._default_index_loader
+        self._index_loader = index_loader
         self._profile_context_resolver = profile_context_resolver
         self._expected_builds = set(expected_frontend_build_ids or ("legacy",))
         self._acks: OrderedDict[str, SpeakerIdAck] = OrderedDict()
-
-    @staticmethod
-    def _default_index_loader(transcript_path: str):
-        from transcriptx.web.cache_helpers import load_speaker_identification_index
-
-        return load_speaker_identification_index(transcript_path)
 
     def execute(self, command: SpeakerIdCommand) -> SpeakerIdAck:
         prior = self._acks.get(command.action_id)
@@ -534,7 +528,7 @@ class SpeakerIdActionService:
 
     @staticmethod
     def _summary_sig(path: str) -> tuple[int, int, int]:
-        from transcriptx.web.cache_helpers import transcript_summary_signature
+        from transcriptx.io.transcript_signatures import transcript_summary_signature
 
         return transcript_summary_signature(path)
 

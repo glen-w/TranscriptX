@@ -53,6 +53,7 @@ def persist_canonical_run_outcomes(
     module_results: Optional[Dict[str, Any]] = None,
     terminal_outcomes: Optional[Dict[str, Any]] = None,
     pipeline_status: Optional[str] = None,
+    run_status: Optional[str] = None,
 ) -> Path:
     """Persist canonical normalized run outcomes to run_results.json."""
     return write_run_results_summary(
@@ -67,6 +68,7 @@ def persist_canonical_run_outcomes(
         module_results=module_results,
         terminal_outcomes=terminal_outcomes,
         pipeline_status=pipeline_status,
+        run_status=run_status,
     )
 
 

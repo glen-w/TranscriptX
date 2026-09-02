@@ -14,10 +14,13 @@ Authority: ../run_outcome_contract.md
 | Schema gate (`schema_version >= 2`) | `assert_run_results_schema_supported` in `module_outcomes` |
 | Group rollups | `project_group_outcomes(...)` |
 | Group phase metadata | `load_group_phase_metadata(...)` (file: `aggregation_warnings.json` today) |
+| Incomplete run dirs (Diagnostics) | `incomplete_runs.list_incomplete_run_dirs` — read-only inventory of run directories missing `run_results.json`. Does not consult `processing_state.json` and does not delete anything. |
 
 ## Operator-only heuristics
 
 Reporting or discovery code may infer hints from file presence when `run_results.json` is missing. Those heuristics are **not** canonical execution truth — they assist operators only. Canonical status always comes from typed loaders over `run_results.json` (see the contract).
+
+**Diagnostics → Incomplete analysis runs** lists those directories so an operator can re-run or inspect a folder after a crash or refresh. Presence on that list is not a run status.
 
 ## Decision log anchors
 

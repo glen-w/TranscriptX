@@ -6,6 +6,8 @@ import json
 import os
 from pathlib import Path
 
+import pytest
+
 from transcriptx.core.utils.profile_manager import ProfileManager
 
 
@@ -283,3 +285,31 @@ def test_load_profile_returns_none_on_invalid_json(tmp_path: Path) -> None:
     bad = pm.get_profile_path("acts", "badjson")
     bad.write_text("{not json", encoding="utf-8")
     assert pm.load_profile("acts", "badjson") is None
+
+
+def test_get_profile_path_rejects_traversal(tmp_path: Path) -> None:
+    pm = ProfileManager(profiles_dir=tmp_path)
+    with pytest.raises(ValueError, match="traversal|separator"):
+        pm.get_profile_path("acts", "../escape")
+    with pytest.raises(ValueError, match="separator"):
+        pm.get_profile_path("acts", "foo/bar")
+    with pytest.raises(ValueError, match="traversal|separator"):
+        pm.get_profile_path("../acts", "team")
+    outside = tmp_path.parent / "escape.json"
+    assert not outside.exists()
+    assert not pm.save_profile("acts", "../escape", {"ml_model_name": "x"})
+    assert not any(tmp_path.rglob("escape.json"))
+
+
+def test_save_profile_rejects_path_separators(tmp_path: Path) -> None:
+    pm = ProfileManager(profiles_dir=tmp_path)
+    assert not pm.save_profile("acts", "nested/name", {"ml_model_name": "x"})
+    assert list(tmp_path.rglob("*.json")) == []
+
+
+def test_list_profiles_rejects_traversal(tmp_path: Path) -> None:
+    pm = ProfileManager(profiles_dir=tmp_path)
+    outside = tmp_path.parent / "escape.json"
+    outside.write_text("{}", encoding="utf-8")
+    assert pm.list_profiles("../") == []
+    assert pm.list_profiles("foo/bar") == []

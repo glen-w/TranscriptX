@@ -101,6 +101,20 @@ def load_run_results(path: str | Path) -> Dict[str, Any]:
                 f"run_results at {path} has null for required list field {name!r}"
             )
 
+    run_status = data.get("run_status")
+    if isinstance(run_status, str):
+        run_status = run_status.strip().lower() or None
+    else:
+        run_status = None
+    if run_status is not None and run_status not in {
+        "running",
+        "succeeded",
+        "partial",
+        "failed",
+        "aborted",
+    }:
+        run_status = None
+
     normalized = {
         "schema_version": data.get("schema_version"),
         "run_id": rid,
@@ -113,6 +127,7 @@ def load_run_results(path: str | Path) -> Dict[str, Any]:
         "preset_explanation": data.get("preset_explanation"),
         "analysis_preset": data.get("analysis_preset"),
         "module_outcomes": data.get("module_outcomes"),
+        "run_status": run_status,
     }
     return RunResultsSummary.validate_run_results(normalized).model_dump()
 

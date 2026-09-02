@@ -60,7 +60,7 @@ configure_streamlit_page()
 
 def navigate_to_segment(*args, **kwargs):
     """Lazy re-export — avoids importing the Transcript page on cold start."""
-    from transcriptx.web.page_modules.transcript import (
+    from transcriptx.web.transcript_navigation import (
         navigate_to_segment as _navigate_to_segment,
     )
 

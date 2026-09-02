@@ -155,6 +155,52 @@ def _render_rename_repair_section() -> None:
                     st.error(f"Repair failed: {e}")
 
 
+def _render_incomplete_runs_section() -> None:
+    st.subheader("Incomplete analysis runs")
+    try:
+        from transcriptx.core.pipeline.incomplete_runs import list_incomplete_run_dirs
+    except Exception as e:
+        st.caption(f"Incomplete-run scan unavailable: {e}")
+        return
+
+    try:
+        incomplete = list_incomplete_run_dirs()
+    except Exception as e:
+        st.error(f"Could not scan run directories: {e}")
+        return
+
+    in_progress = [row for row in incomplete if row.state == "in_progress"]
+    broken = [row for row in incomplete if row.state != "in_progress"]
+    if not in_progress and not broken:
+        st.caption("No interrupted or in-progress run directories.")
+        return
+
+    if in_progress:
+        st.info(
+            f"{len(in_progress)} analysis run"
+            f"{'' if len(in_progress) == 1 else 's'} currently in progress."
+        )
+        for row in in_progress:
+            with st.container(border=True):
+                st.markdown(f"**{row.kind}** `{row.slug}` / `{row.run_id}` · in progress")
+                st.caption(str(row.run_dir))
+
+    if broken:
+        st.warning(
+            f"Found {len(broken)} run director"
+            f"{'y' if len(broken) == 1 else 'ies'} that never finished "
+            "(`run_results.json` missing or left `running` after the process "
+            "exited). These are left in place — TranscriptX does not delete "
+            "them. Re-run analysis to produce a complete run, or inspect the "
+            "folder manually."
+        )
+        for row in broken:
+            with st.container(border=True):
+                label = "never finalized" if row.state == "missing" else "interrupted"
+                st.markdown(f"**{row.kind}** `{row.slug}` / `{row.run_id}` · {label}")
+                st.caption(str(row.run_dir))
+
+
 def render_diagnostics_page() -> None:
     """Render the diagnostics page."""
     st.markdown(
@@ -183,6 +229,7 @@ def render_diagnostics_page() -> None:
                 st.code(line, language=None)
 
     _render_rename_repair_section()
+    _render_incomplete_runs_section()
     _render_speaker_profile_ops()
 
     st.subheader("Environment")

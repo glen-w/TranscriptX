@@ -36,18 +36,15 @@ def render_run_scoped_page(
     config: RunScopedPageConfig,
     *,
     render_body: Callable[[RunScopedPageContext], None],
-    on_missing_run_dir: Literal["info", "error", "empty_state"] | None = None,
+    on_missing_run_dir: Literal["info", "error", "empty_state"] | None = "empty_state",
 ) -> bool:
     """
     Render run-scoped page guards and invoke ``render_body`` when context is ready.
 
     Returns True when ``render_body`` was called; False when a guard shell was shown.
 
-    When ``on_missing_run_dir`` is None, missing run directories are not blocked
-    (legacy Overview/Charts/Data behaviour). Pass ``"info"``, ``"error"``, or
-    ``"empty_state"`` to enforce an existing run folder before calling ``render_body``.
-
-    Structure on every path: title → description → content or empty/prereq state.
+    Default ``on_missing_run_dir="empty_state"`` blocks missing run folders.
+    Pass ``None`` only for a legacy escape hatch that still invokes the body.
     """
     subject = SubjectService.resolve_current_subject(st.session_state)
     run_id = st.session_state.get("run_id")

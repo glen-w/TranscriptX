@@ -2,22 +2,22 @@
 
 from __future__ import annotations
 
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 from transcriptx.core.speaker_profiles.errors import SpeakerProfilePathError
+from transcriptx.core.utils import path_safety as _core
 
 
 def resolve_real(path: Path) -> Path:
     """Expanduser + resolve (follows symlinks)."""
-    return Path(path).expanduser().resolve()
+    return _core.resolve_real(path)
 
 
 def assert_not_symlink(path: Path, *, what: str = "path") -> Path:
     """Reject if the given path itself is a symlink (lexically)."""
-    p = Path(path)
-    if p.is_symlink():
-        raise SpeakerProfilePathError(f"symlink rejected for {what}: {p}")
-    return p
+    return _core.assert_not_symlink(
+        path, what=what, error_cls=SpeakerProfilePathError
+    )
 
 
 def assert_safe_relpath(relpath: str, *, what: str = "relpath") -> str:
@@ -26,48 +26,16 @@ def assert_safe_relpath(relpath: str, *, what: str = "relpath") -> str:
     Voice and operation plan paths must be relative POSIX-style segments under
     the speaker_profiles root. Call this before joining onto the root.
     """
-    if not isinstance(relpath, str) or not relpath.strip():
-        raise SpeakerProfilePathError(f"{what} must be a non-empty relative path")
-    raw = relpath.strip()
-    if raw.startswith("/") or raw.startswith("\\"):
-        raise SpeakerProfilePathError(f"absolute path rejected for {what}: {raw!r}")
-    # Windows drive / UNC style
-    if len(raw) >= 2 and raw[1] == ":":
-        raise SpeakerProfilePathError(f"absolute path rejected for {what}: {raw!r}")
-    if raw.startswith("//") or raw.startswith("\\\\"):
-        raise SpeakerProfilePathError(f"absolute path rejected for {what}: {raw!r}")
-    pure = PurePosixPath(raw.replace("\\", "/"))
-    if pure.is_absolute():
-        raise SpeakerProfilePathError(f"absolute path rejected for {what}: {raw!r}")
-    parts = pure.parts
-    if not parts or parts == (".",):
-        raise SpeakerProfilePathError(f"{what} must be a non-empty relative path")
-    for part in parts:
-        if part in ("", ".", ".."):
-            raise SpeakerProfilePathError(
-                f"path traversal rejected for {what}: {raw!r}"
-            )
-    normalised = pure.as_posix()
-    if normalised != raw.replace("\\", "/"):
-        # Allow equivalent normalisation only when no traversal was present;
-        # still return the normalised form for callers that want a canonical key.
-        pass
-    return normalised
+    return _core.assert_safe_relpath(
+        relpath, what=what, error_cls=SpeakerProfilePathError
+    )
 
 
 def assert_path_under_root(path: Path, root: Path, *, what: str = "path") -> Path:
     """Resolve path and require it stays under root (blocks symlink escape)."""
-    root_resolved = resolve_real(root)
-    if root.is_symlink():
-        raise SpeakerProfilePathError(f"symlink rejected for root: {root}")
-    resolved = resolve_real(path)
-    try:
-        resolved.relative_to(root_resolved)
-    except ValueError as exc:
-        raise SpeakerProfilePathError(
-            f"{what} escapes allowed root: {resolved} not under {root_resolved}"
-        ) from exc
-    return resolved
+    return _core.assert_path_under_root(
+        path, root, what=what, error_cls=SpeakerProfilePathError
+    )
 
 
 def assert_speaker_profiles_root(root: Path) -> Path:

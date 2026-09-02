@@ -1,4 +1,10 @@
-"""Processing state helpers for TranscriptX."""
+"""Processing state helpers for TranscriptX.
+
+``processing_state.json`` is a derived index for rename/audio-link/delete
+bookkeeping. It is not run execution truth — consumers that need module
+status must read ``run_results.json`` (see the run outcome contract).
+New features should prefer the filesystem plus ``run_results.json``.
+"""
 
 from __future__ import annotations
 

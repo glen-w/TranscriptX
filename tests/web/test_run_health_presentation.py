@@ -123,6 +123,24 @@ def test_warning_health_maps_to_partial(tmp_path: Path) -> None:
     }
 
 
+def test_running_run_status_is_in_progress(tmp_path: Path) -> None:
+    run = tmp_path / "run"
+    run.mkdir()
+    summary = build_run_status_summary(
+        run,
+        health={"status": "ok", "errors": [], "warnings": []},
+        run_results={
+            "run_status": "running",
+            "modules_enabled": ["stats"],
+            "modules_run": [],
+            "modules_failed": [],
+            "modules_skipped": [],
+        },
+    )
+    assert summary.execution_status == "in_progress"
+    assert summary.user_facing_label == "In progress"
+
+
 def test_module_outcome_state_not_run_and_match(tmp_path: Path) -> None:
     assert module_outcome_state(None, "stats") == "unknown"
     run = tmp_path / "run"

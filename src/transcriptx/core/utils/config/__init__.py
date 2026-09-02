@@ -1,4 +1,11 @@
-"""Config package facade for get/set/load and test resets."""
+"""Config package facade for get/set/load and test resets.
+
+``get_config()`` is a process-wide live snapshot. On-disk schema, Settings
+field metadata, and the resolver live in ``transcriptx.core.config``. Hydrate
+this facade via ``apply_project_config_to_live_facade`` at app start and after
+Settings save. New Settings knobs must land on a Pydantic model (or the frozen
+non-pydantic baseline), not as dataclass-only fields.
+"""
 
 from .analysis import (
     AnalysisConfig,

@@ -331,7 +331,7 @@ def test_hung_bertopic_timeout_allows_later_modules_in_sequential_phase() -> Non
         def _module_progress_heartbeat(self, *_a, **_k) -> None:
             return None
 
-        def _check_missing_dependencies(self, _node, _modules_run):
+        def _check_missing_dependencies(self, _node, _modules_run, **_kwargs):
             return []
 
         def _execute_single_module(self, **kwargs):

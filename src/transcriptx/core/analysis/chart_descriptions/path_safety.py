@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
-def resolve_real(path: Path) -> Path:
-    return Path(path).resolve(strict=False)
+from transcriptx.core.utils.path_safety import resolve_real
 
 
 def is_path_within_roots(path: Path, allowed_roots: list[Path]) -> bool:

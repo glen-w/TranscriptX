@@ -471,6 +471,62 @@ def write_output_manifest(
         return None
 
 
+def derive_terminal_run_status(
+    *,
+    pipeline_status: Optional[str] = None,
+    modules_run: Optional[List[str]] = None,
+    modules_failed: Optional[List[str]] = None,
+    errors: Optional[List[str]] = None,
+) -> str:
+    """Map persist-time lists to a terminal run_status (never ``running``)."""
+    ps = str(pipeline_status or "").strip().lower()
+    ran = list(modules_run or [])
+    failed = list(modules_failed or [])
+    errs = list(errors or [])
+    if ps == "aborted":
+        return "aborted"
+    if ps == "failed":
+        return "failed"
+    if ps == "partial":
+        return "partial"
+    if ps == "succeeded":
+        if failed or errs:
+            return "partial" if ran else "failed"
+        return "succeeded"
+    if failed or errs:
+        return "failed" if not ran else "partial"
+    return "succeeded"
+
+
+def write_running_run_results(
+    *,
+    run_dir: Path,
+    run_id: str,
+    transcript_key: str,
+    modules_enabled: List[str],
+    analysis_lock: Optional[Dict[str, str]] = None,
+) -> Path:
+    """Write non-terminal run_results.json at DAG start. Does not project failures."""
+    payload: Dict[str, Any] = {
+        "schema_version": RUN_RESULTS_SCHEMA_VERSION,
+        "run_id": run_id,
+        "transcript_key": transcript_key,
+        "modules_enabled": list(modules_enabled),
+        "modules_run": [],
+        "modules_skipped": [],
+        "modules_failed": [],
+        "errors": [],
+        "module_outcomes": [],
+        "run_status": "running",
+    }
+    if analysis_lock:
+        payload["analysis_lock"] = dict(analysis_lock)
+    output_path = Path(run_dir).resolve() / "run_results.json"
+    write_json(output_path, payload, indent=2, ensure_ascii=False)
+    logger.info(f"Saved running run results to {output_path}")
+    return output_path
+
+
 def build_run_results_summary(
     run_id: str,
     transcript_key: str,
@@ -483,6 +539,7 @@ def build_run_results_summary(
     module_results: Optional[Dict[str, Any]] = None,
     terminal_outcomes: Optional[Dict[str, Any]] = None,
     pipeline_status: Optional[str] = None,
+    run_status: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Build run-level results summary for machine and human consumption."""
     skipped = normalize_skipped_entries(skipped_modules)
@@ -496,6 +553,19 @@ def build_run_results_summary(
         terminal_outcomes=terminal_outcomes,
         pipeline_status=pipeline_status,
     )
+    status = (run_status or "").strip().lower() or derive_terminal_run_status(
+        pipeline_status=pipeline_status,
+        modules_run=modules_run,
+        modules_failed=failed,
+        errors=errors,
+    )
+    if status == "running":
+        status = derive_terminal_run_status(
+            pipeline_status=pipeline_status,
+            modules_run=modules_run,
+            modules_failed=failed,
+            errors=errors,
+        )
     payload: Dict[str, Any] = {
         "schema_version": RUN_RESULTS_SCHEMA_VERSION,
         "run_id": run_id,
@@ -506,6 +576,7 @@ def build_run_results_summary(
         "modules_failed": failed,
         "errors": errors,
         "module_outcomes": [r.to_dict() for r in canonical_rows],
+        "run_status": status,
     }
     if preset_explanation:
         payload["preset_explanation"] = preset_explanation
@@ -527,6 +598,7 @@ def write_run_results_summary(
     module_results: Optional[Dict[str, Any]] = None,
     terminal_outcomes: Optional[Dict[str, Any]] = None,
     pipeline_status: Optional[str] = None,
+    run_status: Optional[str] = None,
 ) -> Path:
     """Write run_results.json. Raises on failure (no silent None)."""
     payload = build_run_results_summary(
@@ -541,6 +613,7 @@ def write_run_results_summary(
         module_results=module_results,
         terminal_outcomes=terminal_outcomes,
         pipeline_status=pipeline_status,
+        run_status=run_status,
     )
     output_path = Path(run_dir).resolve() / "run_results.json"
     write_json(output_path, payload, indent=2, ensure_ascii=False)

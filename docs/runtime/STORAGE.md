@@ -5,6 +5,8 @@ Authority: self
 
 This document defines the storage contract for path roots and the serialization rule. It is the reference for the path/storage architecture.
 
+**Persistence today is file-backed JSON plus `FileLock`.** Live `src/` has no SQLite, SQLAlchemy, or Alembic. A leftover `data/state/transcriptx.db` on disk is unused. A derived SQLite analytics layer is roadmap Theme J only ([ROADMAP.md](../ROADMAP.md) §J), not current architecture.
+
 ## Serialization rule
 
 **Internally**, filesystem paths are always represented as `Path` objects.
@@ -47,7 +49,7 @@ Implications:
 | **data_dir** | App working state, outputs, cache | app | optional | partially reconstructable | app |
 | **config_dir** | User/app configuration | user/app | optional | no (not safe to auto-delete) | user/app |
 | **outputs_dir** | Analysis run outputs | app | optional | yes (re-run to rebuild) | app |
-| **state_dir** | DB, processing state | app | under data_dir | partially reconstructable | app |
+| **state_dir** | Processing state, locks, rename journal | app | under data_dir | partially reconstructable | app |
 | **wav_backup_dir** | WAV archive / reproducibility | user/app | optional | no (unless explicit) | app |
 
 ### Details
@@ -71,7 +73,7 @@ Implications:
   - `config.json` holds project settings including the Custom Questions library (`analysis.llm_custom_qa.saved_questions`).
   - With Docker Compose, set `HOST_CONFIG_DIR` to a host directory **outside the git clone** (same pattern as `HOST_TRANSCRIPTS_DIR` / `HOST_OUTPUT_DIR`) so Settings survive wiping `./data`. Default remains `./data/.transcriptx`.
 - **outputs_dir**: App-managed analysis outputs, reconstructable by re-running.
-- **state_dir**: App state (DB, processing state), persistent, reconstructable in part. Lives under `data_dir/state/`.
+- **state_dir**: App state (processing state, run/analysis locks, rename journal), persistent, reconstructable in part. Lives under `data_dir/state/`.
 - **wav_backup_dir**: Archive, persistent, not auto-clean unless explicit user action.
 
 ---
@@ -130,9 +132,10 @@ data_dir/                       # app-managed working state
   cache/
     audio_playback/
     voice/
-  state/                        # DB + processing state
-    transcriptx.db
+  state/                        # processing state, locks, rename journal
     processing_state.json
+    run_locks/                  # per-run writer lock files
+    analysis_locks/             # per-transcript / per-group analysis-in-progress claims
     speaker_profiles.lock       # project operation lock for speaker profile mutations
   watcher/                      # directory watcher (G2) job records + activity; optional
     jobs/                       # *.json per watched-file job

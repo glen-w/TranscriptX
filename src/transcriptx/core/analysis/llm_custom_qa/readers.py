@@ -199,7 +199,12 @@ def load_group_member_failures(
     *,
     agg_id: str = "llm_custom_qa",
 ) -> list[dict[str, Any]]:
-    """Load group member failures via the group content loader (no bare path)."""
-    from transcriptx.web.blocks.group_content import load_group_content_rows
-
-    return load_group_content_rows(Path(run_root), agg_id, "qa_member_failures")
+    """Load group member failure rows from the aggregate artifact JSON."""
+    path = Path(run_root) / agg_id / "qa_member_failures.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return []
+    if isinstance(payload, list):
+        return [row for row in payload if isinstance(row, dict)]
+    return []

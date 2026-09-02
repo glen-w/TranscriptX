@@ -14,6 +14,10 @@ Future local-only developer material belongs under **`.local/`** at the reposito
 - Local benchmark output
 - One-off scratch scripts
 
+## Local code reviews (`docs/reviews/`)
+
+Unpublished architecture and code reviews belong under **`docs/reviews/`** (gitignored) so they can be built with `make docs` without entering hosted navigation. They are not a substitute for tracked assessments under `docs/dev/` or `docs/archive/`.
+
 ## What does **not** belong in `.local/`
 
 - Product documentation (use `docs/` and the archive policy)

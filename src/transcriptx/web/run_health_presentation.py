@@ -25,6 +25,7 @@ ExecutionStatus = Literal[
     "completed_with_issues",
     "failed",
     "partial",
+    "in_progress",
     "unknown",
     "not_available",
 ]
@@ -75,6 +76,8 @@ def _user_facing_label(
     *,
     failed_count: int,
 ) -> str:
+    if execution_status == "in_progress":
+        return "In progress"
     if artifact_health == "missing":
         return "Artifacts incomplete"
     if execution_status == "failed" and failed_count:
@@ -126,6 +129,15 @@ def build_run_status_summary(
                 rr = None
 
     if rr:
+        if str(rr.get("run_status") or "").strip().lower() == "running":
+            return RunStatusSummary(
+                artifact_health=artifact_health,
+                execution_status="in_progress",
+                user_facing_label=_user_facing_label(
+                    artifact_health, "in_progress", failed_count=0
+                ),
+                technical_details=tuple(details),
+            )
         try:
             if (root / "group_member_runs.json").exists():
                 try:

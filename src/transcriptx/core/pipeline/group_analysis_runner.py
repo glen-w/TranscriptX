@@ -21,6 +21,7 @@ from transcriptx.core.observability.run_performance.recorder import (
 )
 from transcriptx.core.pipeline.manifest_builder import (
     write_output_manifest,
+    write_running_run_results,
     write_run_results_summary,
 )
 from transcriptx.core.pipeline.module_outcomes import aggregate_group_module_lists
@@ -482,6 +483,13 @@ def finalize_group_analysis(
             member_display_names=member_display_names,
             selected_modules=selected_modules,
             extra_metadata=qa_extra or None,
+        )
+        write_running_run_results(
+            run_dir=Path(group_output_service.base_dir),
+            run_id=group_run_id,
+            transcript_key=str(group_uuid),
+            modules_enabled=list(selected_modules),
+            analysis_lock={"kind": "group", "identity": str(group_uuid)},
         )
         _write_group_member_runs_json(
             Path(group_output_service.base_dir), per_transcript_results

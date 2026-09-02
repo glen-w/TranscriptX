@@ -321,9 +321,9 @@ def test_navigate_highlight_to_transcript_sets_nav(monkeypatch) -> None:
         def rerun():
             called["n"] += 1
 
-    import transcriptx.web.page_modules.transcript as transcript_mod
+    import transcriptx.web.transcript_navigation as transcript_nav
 
-    monkeypatch.setattr(transcript_mod, "st", _St)
+    monkeypatch.setattr(transcript_nav, "st", _St)
 
     nav.navigate_highlight_to_transcript(
         session_slug="sess",

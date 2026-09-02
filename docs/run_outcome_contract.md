@@ -33,10 +33,21 @@ The only allowed canonical statuses are:
 
 These labels are API-level truth for read-side consumers. Do not rename or add new statuses without updating this contract.
 
+### 2.2. Run-level `run_status` (optional)
+
+`run_results.json` may include a **run-level** field `run_status`, distinct from module statuses in §2:
+
+- `running` — workspace exists; DAG has not yet written a terminal summary. Module lists under this status are non-terminal (`modules_failed` must be empty).
+- `succeeded` | `partial` | `failed` | `aborted` — terminal overwrite after persist (same vocab as orchestrator `RunStatus`).
+
+Missing `run_status` on older files means **terminal**: consumers infer from module lists via the projection in §4. Do not treat file presence alone as success. Stay on `schema_version == 1`.
+
+The pipeline writes `run_status=running` after the execution plan and **before** DAG execute, then overwrites with a terminal value at persist. Diagnostics distinguish live vs interrupted `running` files via the analysis lock (flock), not mtime.
+
 ## 3. Write-side vs read-side model
 
 - **Write-side model**:
-  - The pipeline/DAG normalizes execution outcomes and writes `run_results.json` **before** writing manifests or secondary reports.
+  - The pipeline/DAG writes a non-terminal `run_results.json` (`run_status=running`) after planning and **before** execute, then normalizes terminal outcomes and overwrites `run_results.json` **before** writing manifests or secondary reports.
   - Persistence order:
     1. Canonical outcome record (`run_results.json`)
     2. Artifact manifest (`manifest.json`)

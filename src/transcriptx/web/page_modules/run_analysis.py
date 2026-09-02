@@ -252,7 +252,12 @@ def _finish_pending_launch(pending: dict[str, Any], holder: dict[str, Any]) -> N
     clear_run_listing_caches()
 
     if error is not None:
-        set_page_flash("error", f"Analysis failed: {error}")
+        from transcriptx.core.utils.analysis_locks import AnalysisBusyError
+
+        if isinstance(error, AnalysisBusyError):
+            set_page_flash("error", str(error))
+        else:
+            set_page_flash("error", f"Analysis failed: {error}")
         st.rerun()
         return
     if result is None:

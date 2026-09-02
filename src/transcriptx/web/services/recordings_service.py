@@ -21,7 +21,9 @@ import streamlit as st
 
 from transcriptx.core.audio.types import AudioFileMeta, SUPPORTED_AUDIO_EXTENSIONS
 from transcriptx.core.utils.logger import get_logger
+from transcriptx.core.utils.path_safety import assert_path_under_root
 from transcriptx.core.utils.paths import RECORDINGS_IMPORTS_DIR
+from transcriptx.io.import_admission import sanitize_upload_basename
 
 logger = get_logger()
 
@@ -107,7 +109,16 @@ class RecordingsService:
             Path to the saved file
         """
         RECORDINGS_IMPORTS_DIR.mkdir(parents=True, exist_ok=True)
-        dest = RECORDINGS_IMPORTS_DIR / uploaded_file.name  # type: ignore[union-attr]
+        basename = sanitize_upload_basename(
+            getattr(uploaded_file, "name", None)
+        )
+        dest = RECORDINGS_IMPORTS_DIR / basename
+        assert_path_under_root(
+            dest,
+            RECORDINGS_IMPORTS_DIR,
+            what="recording upload",
+            reject_symlink_root=False,
+        )
         dest.write_bytes(uploaded_file.read())  # type: ignore[union-attr]
         logger.info(f"Saved uploaded file to {dest}")
         return dest

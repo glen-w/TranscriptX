@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 
 import transcriptx.web.page_modules.transcript as mod
+import transcriptx.web.transcript_navigation as transcript_nav
 from transcriptx.web.models.search import SegmentRef, TranscriptRef
 from transcriptx.web.state import (
     NAV_REQUEST_KEY,
@@ -32,7 +33,7 @@ def test_navigate_to_segment_sets_canonical_state_and_reruns(monkeypatch) -> Non
         def rerun():
             called["rerun"] += 1
 
-    monkeypatch.setattr(mod, "st", _DummySt)
+    monkeypatch.setattr(transcript_nav, "st", _DummySt)
     ref = SegmentRef(
         transcript_ref=TranscriptRef(session_slug="slug", run_id="run1"),
         primary_locator="index",

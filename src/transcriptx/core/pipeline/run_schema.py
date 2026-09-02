@@ -112,6 +112,8 @@ class RunResultsSummary(BaseModel):
     # UI analysis preset used to launch the run (quick|balanced|thorough|custom).
     analysis_preset: Optional[str] = None
     module_outcomes: Optional[List[Dict[str, Any]]] = None
+    # Run-level execution phase. Missing on pre-2026-09 files → treat as terminal.
+    run_status: Optional[str] = None
 
     @classmethod
     def validate_run_results(cls, data: Dict[str, Any]) -> "RunResultsSummary":

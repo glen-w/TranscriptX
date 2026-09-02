@@ -13,6 +13,7 @@ from transcriptx.core.utils.paths import OUTPUTS_DIR
 ANALYSIS_STATUS_NONE = "no analysis"
 ANALYSIS_STATUS_PARTIAL = "partial analysis"
 ANALYSIS_STATUS_COMPLETE = "analysis complete"
+ANALYSIS_STATUS_IN_PROGRESS = "analysis in progress"
 
 _COMPLETE_PRESET = "thorough"
 
@@ -53,7 +54,9 @@ def format_with_analysis_status(name: str, status: str) -> str:
 
 
 def run_execution_status(run_results: Mapping[str, Any]) -> str:
-    """Mirror run-controller buckets: completed / partial / failed."""
+    """Mirror run-controller buckets: completed / partial / failed / running."""
+    if str(run_results.get("run_status") or "").strip().lower() == "running":
+        return "running"
     rows = project_canonical_outcomes(dict(run_results))
     statuses = {row.status for row in rows}
     if "failed" in statuses and "succeeded" not in statuses:

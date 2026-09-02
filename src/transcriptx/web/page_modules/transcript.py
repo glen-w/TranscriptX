@@ -30,13 +30,13 @@ from transcriptx.web.components.playback_panel import (
     sanitize_lines_shown,
     trigger_clip_warm,
 )
-from transcriptx.web.models.search import NavRequest, SegmentRef
 from transcriptx.web.services import FileService, RunIndex, SubjectService
 from transcriptx.web.speaker_studio_runtime import get_shared_speaker_studio_controller
 from transcriptx.web.state import (
     NAV_REQUEST_KEY,
     PAGE_KEY,
 )
+from transcriptx.web.transcript_navigation import navigate_to_segment as navigate_to_segment
 from transcriptx.web.transcript_view_state import (
     SEGMENTS_PAGE_SIZE,
     consume_nav_request,
@@ -88,26 +88,6 @@ class TranscriptControlsState:
     format_key: str
     show_unnamed_speakers: bool
     correct_mode: bool = False
-
-
-def navigate_to_segment(
-    segment_ref: SegmentRef, highlight_query: str | None = None
-) -> None:
-    """Jump from search results into Transcript page context and rerun."""
-    from transcriptx.web.state import apply_subject_context
-
-    apply_subject_context(
-        st.session_state,
-        subject_type="transcript",
-        subject_id=segment_ref.transcript_ref.session_slug,
-        run_id=segment_ref.transcript_ref.run_id,
-    )
-    st.session_state[PAGE_KEY] = "Transcript"
-    st.session_state[NAV_REQUEST_KEY] = NavRequest(
-        segment_ref=segment_ref,
-        highlight_query=highlight_query,
-    )
-    st.rerun()
 
 
 def _render_group_browser(subject) -> None:

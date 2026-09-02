@@ -147,3 +147,60 @@ def test_happy_path_calls_body_with_context(monkeypatch, st_double, tmp_path):
     assert body_calls[0].run_root == run_root
     assert body_calls[0].subject is subject
     assert "empty" not in captured
+
+
+def test_missing_run_dir_defaults_to_empty_state(monkeypatch, st_double, tmp_path):
+    mod, dummy, captured = st_double
+    subject = SimpleNamespace(
+        scope=SimpleNamespace(scope_type="transcript"),
+        subject_id="slug-1",
+    )
+    missing_root = tmp_path / "missing_run"
+    monkeypatch.setattr(
+        mod.SubjectService, "resolve_current_subject", lambda _ss: subject
+    )
+    monkeypatch.setattr(
+        mod.RunIndex,
+        "get_run_root",
+        lambda *_args, **_kwargs: missing_root,
+    )
+    dummy.session_state["run_id"] = "run-1"
+    body_calls: list[RunScopedPageContext] = []
+
+    result = render_run_scoped_page(
+        _CONFIG,
+        render_body=lambda ctx: body_calls.append(ctx),
+    )
+
+    assert result is False
+    assert body_calls == []
+    assert captured["empty"][0][0] == "error_degraded"
+
+
+def test_missing_run_dir_none_escape_hatch_calls_body(monkeypatch, st_double, tmp_path):
+    mod, dummy, captured = st_double
+    subject = SimpleNamespace(
+        scope=SimpleNamespace(scope_type="transcript"),
+        subject_id="slug-1",
+    )
+    missing_root = tmp_path / "missing_run"
+    monkeypatch.setattr(
+        mod.SubjectService, "resolve_current_subject", lambda _ss: subject
+    )
+    monkeypatch.setattr(
+        mod.RunIndex,
+        "get_run_root",
+        lambda *_args, **_kwargs: missing_root,
+    )
+    dummy.session_state["run_id"] = "run-1"
+    body_calls: list[RunScopedPageContext] = []
+
+    result = render_run_scoped_page(
+        _CONFIG,
+        render_body=lambda ctx: body_calls.append(ctx),
+        on_missing_run_dir=None,
+    )
+
+    assert result is True
+    assert len(body_calls) == 1
+    assert body_calls[0].run_root == missing_root

@@ -10,6 +10,10 @@ from pathlib import Path
 from typing import Any
 
 from transcriptx.core.utils.logger import get_logger
+from transcriptx.core.utils.path_safety import (
+    assert_path_under_root,
+    assert_safe_path_segment,
+)
 from transcriptx.core.utils.paths import PROFILES_DIR
 
 logger = get_logger()
@@ -96,16 +100,35 @@ class ProfileManager:
             return False
 
     def get_profile_path(self, module_name: str, profile_name: str) -> Path:
-        module_dir = self.profiles_dir / module_name
+        module_seg = assert_safe_path_segment(module_name, what="profile module")
+        name_seg = assert_safe_path_segment(profile_name, what="profile name")
+        module_dir = self.profiles_dir / module_seg
         module_dir.mkdir(parents=True, exist_ok=True)
-        return module_dir / f"{profile_name}.json"
+        dest = module_dir / f"{name_seg}.json"
+        assert_path_under_root(
+            dest, self.profiles_dir, what="profile path", reject_symlink_root=False
+        )
+        return dest
+
+    def _profile_path_or_none(
+        self, module_name: str, profile_name: str
+    ) -> Path | None:
+        try:
+            return self.get_profile_path(module_name, profile_name)
+        except ValueError:
+            logger.warning(
+                "Rejected unsafe profile path %s/%s", module_name, profile_name
+            )
+            return None
 
     def load_profile(
         self, module_name: str, profile_name: str
     ) -> dict[str, Any] | None:
         if self._is_virtual_default(profile_name):
             return None
-        profile_path = self.get_profile_path(module_name, profile_name)
+        profile_path = self._profile_path_or_none(module_name, profile_name)
+        if profile_path is None:
+            return None
         if not profile_path.exists():
             logger.debug(
                 f"Profile {profile_name} for {module_name} does not exist at {profile_path}"
@@ -142,7 +165,9 @@ class ProfileManager:
         if self._is_virtual_default(profile_name):
             logger.warning("Cannot persist virtual default profile for %s", module_name)
             return False
-        profile_path = self.get_profile_path(module_name, profile_name)
+        profile_path = self._profile_path_or_none(module_name, profile_name)
+        if profile_path is None:
+            return False
         if profile_path.exists() and not overwrite:
             logger.warning(
                 f"Profile {profile_name} for {module_name} already exists. Use overwrite=True to replace."
@@ -193,7 +218,12 @@ class ProfileManager:
         )
 
     def list_profiles(self, module_name: str) -> list[str]:
-        module_dir = self.profiles_dir / module_name
+        try:
+            module_seg = assert_safe_path_segment(module_name, what="profile module")
+        except ValueError:
+            logger.warning("Rejected unsafe profile module for list: %s", module_name)
+            return []
+        module_dir = self.profiles_dir / module_seg
         if not module_dir.exists():
             return []
         profiles = [p for p in module_dir.glob("*.json") if p.stem != "default"]
@@ -211,7 +241,9 @@ class ProfileManager:
         if self._is_virtual_default(profile_name):
             logger.warning(f"Cannot delete default profile for {module_name}")
             return False
-        profile_path = self.get_profile_path(module_name, profile_name)
+        profile_path = self._profile_path_or_none(module_name, profile_name)
+        if profile_path is None:
+            return False
         if not profile_path.exists():
             logger.warning(f"Profile {profile_name} for {module_name} does not exist")
             return False
@@ -228,7 +260,10 @@ class ProfileManager:
     def profile_exists(self, module_name: str, profile_name: str) -> bool:
         if self._is_virtual_default(profile_name):
             return False
-        return self.get_profile_path(module_name, profile_name).exists()
+        profile_path = self._profile_path_or_none(module_name, profile_name)
+        if profile_path is None:
+            return False
+        return profile_path.exists()
 
     def export_profile(
         self, module_name: str, profile_name: str, export_path: Path
@@ -236,7 +271,9 @@ class ProfileManager:
         if self._is_virtual_default(profile_name):
             logger.warning(f"Cannot export default profile for {module_name}")
             return False
-        profile_path = self.get_profile_path(module_name, profile_name)
+        profile_path = self._profile_path_or_none(module_name, profile_name)
+        if profile_path is None:
+            return False
         if not profile_path.exists():
             logger.warning(f"Profile {profile_name} for {module_name} does not exist")
             return False
@@ -265,7 +302,9 @@ class ProfileManager:
         if not import_path.exists():
             logger.error(f"Import path {import_path} does not exist")
             return False
-        profile_path = self.get_profile_path(module_name, profile_name)
+        profile_path = self._profile_path_or_none(module_name, profile_name)
+        if profile_path is None:
+            return False
         if profile_path.exists() and not overwrite:
             logger.warning(
                 f"Profile {profile_name} for {module_name} already exists. Use overwrite=True to replace."
@@ -299,8 +338,10 @@ class ProfileManager:
         if self._is_virtual_default(old_name) or self._is_virtual_default(new_name):
             logger.warning(f"Cannot rename default profile for {module_name}")
             return False
-        old_path = self.get_profile_path(module_name, old_name)
-        new_path = self.get_profile_path(module_name, new_name)
+        old_path = self._profile_path_or_none(module_name, old_name)
+        new_path = self._profile_path_or_none(module_name, new_name)
+        if old_path is None or new_path is None:
+            return False
         if not old_path.exists():
             logger.warning(f"Profile {old_name} for {module_name} does not exist")
             return False

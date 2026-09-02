@@ -58,6 +58,13 @@ def _summary_status_from_outcomes(run_results: dict | None) -> tuple[str, list[s
     """
     if not run_results:
         return "completed", []
+    if str(run_results.get("run_status") or "").strip().lower() == "running":
+        modules = [
+            str(m)
+            for m in (run_results.get("modules_enabled") or [])
+            if m
+        ]
+        return "running", modules
     rows = project_canonical_outcomes(run_results)
     statuses = {row.status for row in rows}
     modules = [row.module_id for row in rows if row.status != "requested"]

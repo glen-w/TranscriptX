@@ -948,3 +948,40 @@ def test_preferred_transcript_path_uses_workflow_nav(
         raising=False,
     )
     assert mod._preferred_transcript_path() == str(selected)
+
+
+@pytest.mark.unit
+def test_finish_pending_launch_maps_analysis_busy_to_flash(monkeypatch) -> None:
+    """Lock contention surfaces as the busy error text, not a generic failure prefix."""
+    import transcriptx.web.page_modules.run_analysis as mod
+    from transcriptx.core.utils.analysis_locks import AnalysisBusyError
+
+    flashes: list[tuple[str, str]] = []
+    DummyHomeStreamlit.session_state = {}
+    monkeypatch.setattr(mod, "st", DummyHomeStreamlit)
+    monkeypatch.setattr(
+        mod, "set_page_flash", lambda level, msg: flashes.append((level, msg))
+    )
+    monkeypatch.setattr(mod, "_clear_in_progress_run_state", lambda: None)
+    monkeypatch.setattr(
+        "transcriptx.web.cache_helpers.clear_run_listing_caches", lambda: None
+    )
+
+    busy = AnalysisBusyError(
+        "Analysis already running for this transcript.",
+        kind="transcript",
+        identity="/tmp/meeting.json",
+    )
+    mod._finish_pending_launch(
+        pending={"target_type": "Transcript", "transcript_path": "/tmp/meeting.json"},
+        holder={"error": busy, "result": None},
+    )
+    assert flashes == [("error", "Analysis already running for this transcript.")]
+
+    flashes.clear()
+    mod._finish_pending_launch(
+        pending={"target_type": "Transcript"},
+        holder={"error": RuntimeError("boom"), "result": None},
+    )
+    assert flashes == [("error", "Analysis failed: boom")]
+

@@ -194,6 +194,7 @@ class TestBuildRunResultsSummary:
         assert payload["modules_skipped"] == []
         assert payload["modules_failed"] == []
         assert payload["errors"] == []
+        assert payload["run_status"] == "succeeded"
 
     def test_skipped_normalized_and_failed_computed(self) -> None:
         payload = build_run_results_summary(
@@ -323,3 +324,27 @@ def test_record_analysis_preset_patches_run_results(tmp_path: Path) -> None:
 
     loaded = load_run_results(run_dir / "run_results.json")
     assert loaded["analysis_preset"] == "balanced"
+
+
+@pytest.mark.unit
+def test_write_running_run_results_does_not_project_failures(tmp_path: Path) -> None:
+    from transcriptx.core.pipeline.manifest_builder import write_running_run_results
+    from transcriptx.core.pipeline.manifest_loader import load_run_results
+
+    run_dir = tmp_path / "out"
+    run_dir.mkdir()
+    path = write_running_run_results(
+        run_dir=run_dir,
+        run_id="run-1",
+        transcript_key="tkey",
+        modules_enabled=["stats", "sentiment"],
+        analysis_lock={"kind": "transcript", "identity": "/tmp/t.json"},
+    )
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    assert raw["run_status"] == "running"
+    assert raw["modules_failed"] == []
+    assert raw["modules_run"] == []
+    assert raw["analysis_lock"]["kind"] == "transcript"
+    loaded = load_run_results(path)
+    assert loaded["run_status"] == "running"
+    assert loaded["modules_failed"] == []

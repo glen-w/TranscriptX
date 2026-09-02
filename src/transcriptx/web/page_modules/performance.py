@@ -41,7 +41,6 @@ def render_performance() -> None:
             secondary_action=("Overview", "Overview"),
         ),
         render_body=_render_body,
-        on_missing_run_dir="empty_state",
     )
 
 

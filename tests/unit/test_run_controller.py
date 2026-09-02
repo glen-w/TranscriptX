@@ -109,6 +109,21 @@ def test_summary_status_blocked_with_success_is_partial() -> None:
     assert status == "partial"
 
 
+def test_summary_status_running_short_circuits() -> None:
+    status, modules = rc._summary_status_from_outcomes(
+        {
+            "run_status": "running",
+            "modules_enabled": ["stats", "sentiment"],
+            "modules_run": [],
+            "modules_skipped": [],
+            "modules_failed": [],
+            "module_outcomes": [],
+        }
+    )
+    assert status == "running"
+    assert modules == ["stats", "sentiment"]
+
+
 def test_list_recent_runs_prefers_run_results_status_over_manifest(
     tmp_path: Path, monkeypatch
 ) -> None:

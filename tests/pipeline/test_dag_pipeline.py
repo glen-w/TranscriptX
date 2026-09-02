@@ -521,8 +521,11 @@ class TestDAGPipelineEdgeCases:
         assert any(
             isinstance(s, dict)
             and s.get("module") == "needs"
-            and "Missing dependencies" in str(s.get("reason", ""))
             and s.get("execution_status") == "blocked"
+            and (
+                "Missing dependencies" in str(s.get("reason", ""))
+                or "Dependency not satisfied" in str(s.get("reason", ""))
+            )
             for s in skipped
         )
 

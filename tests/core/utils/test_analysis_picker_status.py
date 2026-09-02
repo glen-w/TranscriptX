@@ -84,6 +84,7 @@ def test_run_execution_status_buckets() -> None:
         run_execution_status(_payload(preset="quick", ran=[], failed=["stats"]))
         == "failed"
     )
+    assert run_execution_status({**_payload(preset="quick"), "run_status": "running"}) == "running"
 
 
 def test_analysis_status_by_slug_none_partial_complete(tmp_path: Path) -> None:

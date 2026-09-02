@@ -667,7 +667,8 @@
         "speaker_labels"
       ],
       "requires_audio": true,
-      "supports_audio": true
+      "supports_audio": true,
+      "timeout_seconds": 3600
     },
     "voice_fingerprint": {
       "category": "medium",

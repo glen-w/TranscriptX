@@ -461,6 +461,25 @@ class RunOrchestrator:
                     state.persistence_outcomes.append(
                         state.planned.execution_plan_outcome
                     )
+                    from transcriptx.core.pipeline.manifest_builder import (
+                        write_running_run_results,
+                    )
+                    from transcriptx.core.utils.analysis_locks import (
+                        canonical_transcript_lock_identity,
+                    )
+
+                    write_running_run_results(
+                        run_dir=Path(state.prepared_workspace.output_dir),
+                        run_id=state.prepared_transcript.run_id,
+                        transcript_key=state.prepared_transcript.transcript_key,
+                        modules_enabled=list(request.selected_modules),
+                        analysis_lock={
+                            "kind": "transcript",
+                            "identity": canonical_transcript_lock_identity(
+                                state.prepared_transcript.transcript_path
+                            ),
+                        },
+                    )
                     state.executed = self._execute_plan(
                         state.planned,
                         state.prepared_transcript,
@@ -713,50 +732,65 @@ class RunOrchestrator:
             if on_event is not None:
                 on_event(event)
 
+        from transcriptx.core.utils.analysis_locks import (
+            AnalysisBusyError,
+            transcript_analysis_lock,
+        )
+
         try:
-            self._run_success_path(
-                state,
-                transcript_path=transcript_path,
-                request=request,
-                speaker_options=speaker_options,
-                on_event=on_event_wrapped,
-                recorder=recorder,
-            )
-        except KeyboardInterrupt:
-            self._handle_keyboard_interrupt(state, on_event=on_event)
-        except PipelineSetupError as error:
-            self._handle_setup_error(state, error, on_event=on_event)
-        except Exception as error:
-            self._handle_unexpected_error(state, error, on_event=on_event)
-        finally:
-            # Failure-path required persistence still under a lease when workspace exists.
-            if (
-                state.prepared_workspace is not None
-                and not state.persisted_main
-                and state.execution_status in {"failed", "aborted"}
-            ):
+            with transcript_analysis_lock(transcript_path):
                 try:
-                    with per_run_lock(state.prepared_workspace.output_dir):
+                    self._run_success_path(
+                        state,
+                        transcript_path=transcript_path,
+                        request=request,
+                        speaker_options=speaker_options,
+                        on_event=on_event_wrapped,
+                        recorder=recorder,
+                    )
+                except KeyboardInterrupt:
+                    self._handle_keyboard_interrupt(state, on_event=on_event)
+                except PipelineSetupError as error:
+                    self._handle_setup_error(state, error, on_event=on_event)
+                except Exception as error:
+                    self._handle_unexpected_error(state, error, on_event=on_event)
+                finally:
+                    # Failure-path required persistence still under a lease when workspace exists.
+                    if (
+                        state.prepared_workspace is not None
+                        and not state.persisted_main
+                        and state.execution_status in {"failed", "aborted"}
+                    ):
+                        try:
+                            with per_run_lock(state.prepared_workspace.output_dir):
+                                self._finalize_state(state, request)
+                                if recorder.state.value == "running":
+                                    recorder.stop_wall_clock()
+                                self._write_performance_sidecar_under_lease(
+                                    state=state, request=request, recorder=recorder
+                                )
+                        except Exception:
+                            logger.exception("failure-path performance finalize failed")
+                            try:
+                                self._finalize_state(state, request)
+                            except Exception:
+                                pass
+                    else:
                         self._finalize_state(state, request)
-                        if recorder.state.value == "running":
-                            recorder.stop_wall_clock()
-                        self._write_performance_sidecar_under_lease(
-                            state=state, request=request, recorder=recorder
-                        )
-                except Exception:
-                    logger.exception("failure-path performance finalize failed")
-                    try:
-                        self._finalize_state(state, request)
-                    except Exception:
-                        pass
-            else:
-                self._finalize_state(state, request)
-                try:
-                    if recorder.state.value == "running":
-                        recorder.stop_wall_clock()
-                except Exception:
-                    logger.exception("run performance wall stop failed")
+                        try:
+                            if recorder.state.value == "running":
+                                recorder.stop_wall_clock()
+                        except Exception:
+                            logger.exception("run performance wall stop failed")
+                    recorder.unbind()
+        except AnalysisBusyError:
+            try:
+                if recorder.state.value == "running":
+                    recorder.stop_wall_clock()
+            except Exception:
+                pass
             recorder.unbind()
+            raise
 
         duration = recorder.wall_clock_duration_seconds
         if duration is None:

@@ -522,7 +522,7 @@ def navigate_highlight_to_transcript(
     if segment_index is None:
         return
     from transcriptx.web.models.search import SegmentRef, TranscriptRef
-    from transcriptx.web.page_modules.transcript import navigate_to_segment
+    from transcriptx.web.transcript_navigation import navigate_to_segment
 
     segment_ref = SegmentRef(
         transcript_ref=TranscriptRef(session_slug=session_slug, run_id=run_id),
