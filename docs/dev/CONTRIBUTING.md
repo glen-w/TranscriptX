@@ -87,7 +87,7 @@ To avoid drift between the web launcher, Docker setup, Python API docs, and arch
    Search docs and README for old terminal subcommands (e.g. `transcriptx transcript …`, `transcriptx analyze`) and deprecated entry paths (e.g. `streamlit_app.py`, `transcriptx web-viewer`). Replace runnable examples with supported surfaces from [public_surfaces.md](../public_surfaces.md). Automated coverage: `tests/contracts/test_stale_surface_references.py`.
 
 5. **Confirm version consistency and public-entry parity**  
-   If the package version is displayed anywhere (e.g. in docs or image labels), it should match [pyproject.toml](../pyproject.toml) `version`. Keep [website/index.html](../../website/index.html) public-series badge, README outline (product → screenshot → first analysis → five workflows → install → privacy), and [docs/index.md](../index.md) Start-here toctree in sync with [USER_INDEX.md](../USER_INDEX.md). Voices: user guide vs technical reference vs maintainer — [docs_architecture_1_0.md](docs_architecture_1_0.md).
+   If the package version is displayed anywhere (e.g. in docs or image labels), it should match [pyproject.toml](../pyproject.toml) `version`. Keep [website/index.html](../../website/index.html) footer version, README outline (hero → screenshots → what you can do → privacy → first analysis → install), and [docs/index.md](../index.md) Start-here toctree in sync with [USER_INDEX.md](../USER_INDEX.md). Voices: user guide vs technical reference vs maintainer — [docs_architecture_1_0.md](docs_architecture_1_0.md).
 
 Keep this process lightweight and manual unless a small local helper (e.g. script that runs `--help` and diffs) is clearly justified.
 

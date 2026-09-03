@@ -43,7 +43,7 @@ Three registers — same facts, different density. Do not rewrite archive, revie
 
 README is the user entry, not a release brief. Keep `Type:` / `Authority:` off the README. Schema epoch, install-profile markers, and programme history belong in ROADMAP / `docs/dev/`, not the first screen.
 
-The public landing, README, and Sphinx “Start here” toctree should tell the same story: what it is → whether it is for you → first analysis → install → privacy → advanced links.
+The public landing, README, and Sphinx “Start here” toctree should tell the same story: what it is → screenshots → what you can do → privacy → first analysis → install.
 
 ## Hosted docs / Sphinx
 
@@ -51,7 +51,7 @@ The public landing, README, and Sphinx “Start here” toctree should tell the 
 - [x] Wire `make docs` → [scripts/release/build_docs.sh](../../scripts/release/build_docs.sh); CI `docs` job
 - [x] Add `.readthedocs.yml` scaffold (install `.[docs]`)
 - [x] **Content parity:** Sphinx has no separate doc corpus — it builds the Markdown under `docs/` directly. CI regenerates `docs/generated/` (`make docs-gen`) and fails on drift; every docs-affecting `main` push rebuilds and publishes HTML to GitHub Pages `/guide/` via [assemble_pages_site.sh](../../scripts/release/assemble_pages_site.sh)
-- [x] **Nav parity:** `docs/index.md` toctrees stay aligned with [USER_INDEX.md](../USER_INDEX.md) for user-facing pages (Start here / Workflows / Reference / Module notes); Developers toctree points at [DEV_INDEX.md](../DEV_INDEX.md). Website series badge matches `pyproject.toml` version.
+- [x] **Nav parity:** `docs/index.md` toctrees stay aligned with [USER_INDEX.md](../USER_INDEX.md) for user-facing pages (Start here / Workflows / Using TranscriptX); Developers toctree holds contracts, generated catalogs, and module notes. Footer version on the website matches `pyproject.toml`.
 - [ ] Confirm RTD project + nav when owner supplies slug/domain (§20) — [rtd_go_live_checklist.md](rtd_go_live_checklist.md)
 - [ ] Flip `scripts/release/stale_refs.sh` RTD hostname denylist when a live URL is intentional
 - Keep entry surfaces concise; detail stays in contracts/runtime/dev
