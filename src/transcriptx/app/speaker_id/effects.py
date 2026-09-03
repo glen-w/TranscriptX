@@ -24,8 +24,9 @@ def apply_speaker_id_ack_effects(
 ) -> None:
     """Translate an acknowledgement into legacy session mutations.
 
-    Does not call ``st.rerun`` except via ``rerun_app_for_completion`` when the
-    ack requests a full-app completion refresh.
+    Requests a full-app completion refresh via ``rerun_app_for_completion`` when
+    the ack asks for one. The page adapter must only set a flag from callbacks;
+    the fragment body performs the app rerun.
     """
     effects = ack.effects
     if effects.cache_invalidation_signal is not None:

@@ -42,6 +42,16 @@ print("success:", result.success)
 print("errors:", result.errors)
 ```
 
+## Host library admit helper
+
+`python -m transcriptx.admit_originals` admits raw files already under `transcripts/originals/` (or another host dest) through `admit_and_register`. `inbox-watch --admit` invokes this helper. It is **not** a `transcriptx <subcommand>`.
+
+```bash
+python -m transcriptx.admit_originals \
+  --dir /path/to/transcripts/originals \
+  --transcripts-root /path/to/transcripts
+```
+
 ## Speaker Identification
 
 ```python

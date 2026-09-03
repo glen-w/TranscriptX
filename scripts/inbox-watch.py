@@ -3,8 +3,10 @@
 Host-side inbox watcher — convert new audio and/or copy new transcripts.
 
 This is a companion to whispermlx-missing, not the in-app G2 directory watcher.
-Streamlit never executes it. It does not import transcriptx and does not admit
-files into the managed library (use Import Transcript or Settings → Watcher).
+Streamlit never executes it. It does not import transcriptx. Optional
+``--admit`` subprocesses ``python -m transcriptx.admit_originals`` so new
+originals/ JSON can enter the managed library (same path as Import Transcript).
+Default is off: use Import Transcript or Settings → Watcher, or enable admit.
 
 The transcripts destination must be ``…/transcripts/originals`` (or another
 non-library folder). Config that points at the managed library root (the
@@ -26,8 +28,9 @@ Preview:
 Normal once (cron / launchd):
     inbox-watch --once
 
-Poll:
+Poll (USB volume may be absent; first cycle still runs missing/admit):
     inbox-watch --watch
+    inbox-watch --watch --admit
 
 Config (merge order: portable defaults <- env <- local JSON <- CLI):
     --config /path/to/config.json
@@ -44,6 +47,10 @@ Inbox files are kept by default. After a successful convert/copy you can
 
     --skip-serial forwards to whispermlx-missing so split parts / voice-note
     runs are not transcribed (merge first, then transcribe the merged file).
+
+    --admit (default off) runs python -m transcriptx.admit_originals after
+    convert/copy/missing so originals/ JSON is admitted into the managed library.
+    Requires a Python that can import transcriptx (native venv / --admit-python).
 
 Exit 0 = all ok; 1 = one or more item failures; 2 = CLI/config/validation error.
 """
@@ -96,6 +103,8 @@ KNOWN_CONFIG_KEYS = frozenset(
         "backup_wavs",
         "delete_originals",
         "skip_serial",
+        "admit_to_library",
+        "admit_python",
     }
 )
 
@@ -108,6 +117,7 @@ _PATH_KEYS = (
     "ffmpeg",
     "move_processed",
     "wav_backup",
+    "admit_python",
 )
 
 FFMPEG_CHANNELS = "1"
@@ -126,6 +136,7 @@ class ConfigProvenance:
     ffmpeg: ConfigSource = "unset"
     move_processed: ConfigSource = "unset"
     wav_backup: ConfigSource = "unset"
+    admit_python: ConfigSource = "unset"
 
 
 @dataclass
@@ -145,6 +156,8 @@ class EffectiveConfig:
     backup_wavs: bool
     delete_originals: bool
     skip_serial: bool = False
+    admit_to_library: bool = False
+    admit_python: Path | None = None
     provenance: ConfigProvenance = field(default_factory=ConfigProvenance)
 
 
@@ -165,7 +178,12 @@ class CycleStats:
     would_invoke_missing: int = 0
     would_backup: int = 0
     would_delete: int = 0
+    would_admit: int = 0
+    admitted: int = 0
+    admit_skipped: int = 0
+    admit_failed: int = 0
     converted_names: list[str] = field(default_factory=list)
+    admitted_names: list[str] = field(default_factory=list)
     copied_names: list[str] = field(default_factory=list)
     failed_names: list[str] = field(default_factory=list)
     skipped_names: list[tuple[str, str]] = field(default_factory=list)
@@ -173,7 +191,7 @@ class CycleStats:
 
     @property
     def failed(self) -> int:
-        return self.audio_failed + self.transcripts_failed
+        return self.audio_failed + self.transcripts_failed + self.admit_failed
 
 
 def _log(msg: str = "", *, err: bool = False) -> None:
@@ -215,7 +233,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Watch an inbox for new audio (convert + whispermlx-missing) "
-            "and/or new transcripts (copy if stem missing)."
+            "and/or new transcripts (copy if stem missing). "
+            "Optional --admit admits originals/ JSON into the managed library."
         ),
     )
     parser.add_argument(
@@ -241,6 +260,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Path to whispermlx-missing (binary or scripts/whispermlx-missing.py).",
     )
     parser.add_argument("--ffmpeg", type=Path, default=None)
+    parser.add_argument(
+        "--admit-python",
+        dest="admit_python",
+        type=Path,
+        default=None,
+        help=(
+            "Python interpreter that can import transcriptx "
+            "(used when --admit is on)."
+        ),
+    )
     parser.add_argument(
         "--move-processed",
         dest="move_processed",
@@ -375,6 +404,23 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_false",
         help="Transcribe serial parts (default unless config/env enables skip).",
     )
+    admit_group = parser.add_mutually_exclusive_group()
+    admit_group.add_argument(
+        "--admit",
+        dest="admit_to_library",
+        action="store_true",
+        default=None,
+        help=(
+            "After convert/copy/whispermlx-missing, admit originals/ transcripts "
+            "into the managed library (default: off)."
+        ),
+    )
+    admit_group.add_argument(
+        "--no-admit",
+        dest="admit_to_library",
+        action="store_false",
+        help="Do not admit into the managed library (default).",
+    )
     parser.add_argument(
         "--show-config",
         action="store_true",
@@ -413,6 +459,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         backup_wavs=None,
         delete_originals=None,
         skip_serial=None,
+        admit_to_library=None,
     )
     return parser.parse_args(argv)
 
@@ -560,6 +607,14 @@ def env_derived_config() -> tuple[dict[str, Any], ConfigProvenance]:
         derived["skip_serial"] = _parse_bool_env(
             os.environ.get("INBOX_WATCH_SKIP_SERIAL"), default=False
         )
+    if os.environ.get("INBOX_WATCH_ADMIT", "").strip():
+        derived["admit_to_library"] = _parse_bool_env(
+            os.environ.get("INBOX_WATCH_ADMIT"), default=False
+        )
+    admit_python = os.environ.get("INBOX_WATCH_ADMIT_PYTHON", "").strip()
+    if admit_python:
+        derived["admit_python"] = admit_python
+        provenance.admit_python = "env"
     return derived, provenance
 
 
@@ -573,6 +628,7 @@ def base_config_dict() -> dict[str, Any]:
         "backup_wavs": False,
         "delete_originals": False,
         "skip_serial": False,
+        "admit_to_library": False,
     }
 
 
@@ -677,6 +733,9 @@ def resolve_config(
     if args.ffmpeg is not None:
         merged["ffmpeg"] = str(args.ffmpeg)
         provenance.ffmpeg = "cli"
+    if args.admit_python is not None:
+        merged["admit_python"] = str(args.admit_python)
+        provenance.admit_python = "cli"
     if args.move_processed is not None:
         merged["move_processed"] = str(args.move_processed)
         provenance.move_processed = "cli"
@@ -693,6 +752,8 @@ def resolve_config(
         merged["delete_originals"] = args.delete_originals
     if args.skip_serial is not None:
         merged["skip_serial"] = args.skip_serial
+    if args.admit_to_library is not None:
+        merged["admit_to_library"] = args.admit_to_library
     if args.recursive is not None:
         merged["recursive"] = args.recursive
     if args.interval_seconds is not None:
@@ -708,6 +769,9 @@ def resolve_config(
         merged.get("delete_originals", False), "delete_originals"
     )
     skip_serial = require_bool(merged.get("skip_serial", False), "skip_serial")
+    admit_to_library = require_bool(
+        merged.get("admit_to_library", False), "admit_to_library"
+    )
     interval = merged.get("interval_seconds", 5.0)
     try:
         interval_seconds = float(interval)
@@ -732,6 +796,8 @@ def resolve_config(
         backup_wavs=backup_wavs,
         delete_originals=delete_originals,
         skip_serial=skip_serial,
+        admit_to_library=admit_to_library,
+        admit_python=_as_optional_path(merged.get("admit_python")),
         provenance=provenance,
     )
 
@@ -747,6 +813,7 @@ def config_to_dict(cfg: EffectiveConfig) -> dict[str, Any]:
             str(cfg.whispermlx_missing) if cfg.whispermlx_missing else None
         ),
         "ffmpeg": str(cfg.ffmpeg) if cfg.ffmpeg else None,
+        "admit_python": str(cfg.admit_python) if cfg.admit_python else None,
         "watch_audio": cfg.watch_audio,
         "watch_transcripts": cfg.watch_transcripts,
         "recursive": cfg.recursive,
@@ -756,6 +823,7 @@ def config_to_dict(cfg: EffectiveConfig) -> dict[str, Any]:
         "backup_wavs": cfg.backup_wavs,
         "delete_originals": cfg.delete_originals,
         "skip_serial": cfg.skip_serial,
+        "admit_to_library": cfg.admit_to_library,
     }
 
 
@@ -937,6 +1005,76 @@ def run_whispermlx_missing(cmd: Sequence[str]) -> int:
     return int(result.returncode)
 
 
+def transcripts_root_for_admit(transcripts: Path) -> Path:
+    if transcripts.name == "originals":
+        return transcripts.parent
+    return transcripts
+
+
+def python_can_import_admit(python: Path) -> bool:
+    try:
+        result = subprocess.run(
+            [str(python), "-c", "import transcriptx.admit_originals"],
+            capture_output=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
+def find_admit_python(explicit: Path | None) -> Path | None:
+    candidates: list[Path] = []
+    if explicit is not None:
+        candidates.append(explicit)
+    repo_root = find_repo_root()
+    if repo_root is not None:
+        for rel in (
+            ".transcriptx/bin/python",
+            ".transcriptx/bin/python3",
+            ".venv/bin/python",
+        ):
+            path = repo_root / rel
+            if path.is_file():
+                candidates.append(path)
+    candidates.append(Path(sys.executable))
+    seen: set[str] = set()
+    for python in candidates:
+        key = str(python)
+        if key in seen:
+            continue
+        seen.add(key)
+        if python_can_import_admit(python):
+            return python
+    return None
+
+
+def build_admit_cmd(
+    python: Path,
+    *,
+    transcripts: Path,
+    dry_run: bool = False,
+) -> list[str]:
+    cmd = [
+        str(python),
+        "-m",
+        "transcriptx.admit_originals",
+        "--dir",
+        str(transcripts),
+        "--transcripts-root",
+        str(transcripts_root_for_admit(transcripts)),
+    ]
+    if dry_run:
+        cmd.append("--dry-run")
+    return cmd
+
+
+def run_admit_originals(cmd: Sequence[str]) -> int:
+    result = subprocess.run(cmd, check=False)
+    return int(result.returncode)
+
+
 def _move_processed(src: Path, dest_dir: Path) -> bool:
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / src.name
@@ -947,6 +1085,29 @@ def _move_processed(src: Path, dest_dir: Path) -> bool:
         )
         return False
     shutil.move(str(src), str(dest))
+    return True
+
+
+def wait_for_directory(
+    path: Path,
+    *,
+    interval_seconds: float,
+    timeout_seconds: float | None = None,
+) -> bool:
+    """Block until *path* is a directory. Return False if *timeout_seconds* elapses."""
+    deadline = (
+        None if timeout_seconds is None else time.monotonic() + timeout_seconds
+    )
+    announced = False
+    while not path.is_dir():
+        if deadline is not None and time.monotonic() >= deadline:
+            return False
+        if not announced:
+            _log(f"Waiting for inbox: {path}")
+            announced = True
+        time.sleep(max(interval_seconds, 0.1))
+    if announced:
+        _log(f"Inbox is available: {path}")
     return True
 
 
@@ -1051,13 +1212,15 @@ def validate_layout(cfg: EffectiveConfig) -> str | None:
             return "transcripts is required when watch_audio is on (whispermlx-missing output)."
     if cfg.watch_transcripts and cfg.transcripts is None:
         return "transcripts is required when watch_transcripts is on."
+    if cfg.admit_to_library and cfg.transcripts is None:
+        return "transcripts is required when admit_to_library is on."
 
     if cfg.transcripts is not None and looks_like_managed_library_root(cfg.transcripts):
         return (
             "transcripts must be the originals/ folder (e.g. …/transcripts/originals), "
             "not the managed library root that contains metadata/ or imports/. "
-            "Raw engine JSON in the library root is not admitted until Import Transcript "
-            "or Settings → Watcher runs."
+            "Raw engine JSON in the library root is not admitted until Import Transcript, "
+            "inbox-watch --admit, or Settings → Watcher runs."
         )
 
     dests: list[tuple[str, Path]] = []
@@ -1209,6 +1372,8 @@ def print_review_before_cycle(
         modes.append("audio→mp3 + whispermlx-missing")
     if cfg.watch_transcripts:
         modes.append("transcript copy")
+    if cfg.admit_to_library:
+        modes.append("admit→library")
     _log(f"  Watching:    {', '.join(modes) if modes else '(none)'}")
     _log(f"  Candidates:  {len(work)} ({audio_n} audio, {tx_n} transcript)")
     if work:
@@ -1256,6 +1421,40 @@ def maybe_run_missing(
         stats.audio_failed += 1
     else:
         _log(f"  Finished whispermlx-missing in {elapsed:.1f}s")
+    _log("---")
+
+
+def maybe_run_admit(
+    cfg: EffectiveConfig,
+    stats: CycleStats,
+    *,
+    python: Path,
+    dry_run: bool,
+) -> None:
+    assert cfg.transcripts is not None
+    cmd = build_admit_cmd(python, transcripts=cfg.transcripts, dry_run=dry_run)
+    _print_section("Library admit")
+    if dry_run:
+        _log(f"  Would run: {' '.join(cmd)}")
+        stats.would_admit += 1
+        _log("---")
+        return
+    _log(f"  Running: {' '.join(cmd)}")
+    _log("  (child process output follows)")
+    started = time.perf_counter()
+    rc = run_admit_originals(cmd)
+    elapsed = time.perf_counter() - started
+    if rc != 0:
+        _log(
+            f"WARNING: admit-originals exited {rc} after {elapsed:.1f}s",
+            err=True,
+        )
+        stats.failed_names.append("admit-originals")
+        stats.admit_failed += 1
+    else:
+        stats.admitted += 1
+        stats.admitted_names.append("originals/")
+        _log(f"  Finished library admit in {elapsed:.1f}s")
     _log("---")
 
 
@@ -1377,6 +1576,7 @@ def print_summary(
         _log(f"  Would convert: {stats.would_convert}")
         _log(f"  Would copy:    {stats.would_copy}")
         _log(f"  Would invoke missing: {stats.would_invoke_missing}")
+        _log(f"  Would admit: {stats.would_admit}")
         _log(f"  Would backup:  {stats.would_backup}")
         _log(f"  Would delete:  {stats.would_delete}")
         _print_limited_items("Would convert", stats.converted_names)
@@ -1387,6 +1587,8 @@ def print_summary(
         _log(f"  Backed up: {stats.originals_backed_up}")
         _log(f"  Deleted:   {stats.originals_deleted}")
         _log(f"  Missing runs: {stats.missing_invoked}")
+        if cfg.admit_to_library:
+            _log(f"  Admit runs: {stats.admitted}")
         _print_limited_items("Converted", stats.converted_names)
         _print_limited_items("Copied", stats.copied_names)
 
@@ -1411,7 +1613,10 @@ def print_summary(
         _log(f"  Failed:   {stats.failed}")
 
     if not dry_run and (stats.audio_converted or stats.transcripts_copied):
-        _log("  Next: import transcripts in the web UI if they are not managed yet")
+        if cfg.admit_to_library and stats.admit_failed == 0:
+            _log("  Next: new transcripts should already be in the managed library")
+        else:
+            _log("  Next: import transcripts in the web UI if they are not managed yet")
     _log("---")
     _log()
 
@@ -1457,9 +1662,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
 
     assert cfg.inbox is not None
+    watch_loop = bool(args.watch_loop)
     if not args.dry_run and not cfg.inbox.is_dir():
-        print(f"ERROR: inbox is not a directory: {cfg.inbox}", file=sys.stderr)
-        return 2
+        if watch_loop:
+            _log(f"Waiting for inbox: {cfg.inbox}")
+        else:
+            print(f"ERROR: inbox is not a directory: {cfg.inbox}", file=sys.stderr)
+            return 2
 
     ffmpeg: Path | None = None
     missing: Path | None = None
@@ -1481,11 +1690,34 @@ def main(argv: Sequence[str] | None = None) -> int:
         if missing is None:
             missing = Path("whispermlx-missing")
 
-    watch_loop = bool(args.watch_loop)
+    admit_python: Path | None = None
+    if cfg.admit_to_library:
+        admit_python = find_admit_python(cfg.admit_python)
+        if admit_python is None and not args.dry_run:
+            print(
+                "ERROR: no Python that can import transcriptx "
+                "(set --admit-python to the native TranscriptX venv, "
+                "for example .transcriptx/bin/python).",
+                file=sys.stderr,
+            )
+            return 2
+        if admit_python is None:
+            admit_python = Path(sys.executable)
+
     first = True
     total_failed = 0
+    inbox_absent_logged = not cfg.inbox.is_dir()
     try:
         while True:
+            if watch_loop and not args.dry_run:
+                if cfg.inbox.is_dir():
+                    if inbox_absent_logged:
+                        _log(f"Inbox is available: {cfg.inbox}")
+                        inbox_absent_logged = False
+                else:
+                    if not inbox_absent_logged:
+                        _log(f"Waiting for inbox: {cfg.inbox}")
+                        inbox_absent_logged = True
             stats = process_cycle(
                 cfg,
                 dry_run=args.dry_run,
@@ -1496,10 +1728,16 @@ def main(argv: Sequence[str] | None = None) -> int:
                 stability_timeout_ms=args.stability_timeout_ms,
             )
             wrote_audio = stats.audio_converted > 0 or stats.would_convert > 0
+            wrote_tx = stats.transcripts_copied > 0 or stats.would_copy > 0
             if cfg.watch_audio and missing is not None:
                 if (not watch_loop) or first or wrote_audio:
                     maybe_run_missing(
                         cfg, stats, missing=missing, dry_run=args.dry_run
+                    )
+            if cfg.admit_to_library and admit_python is not None:
+                if (not watch_loop) or first or wrote_audio or wrote_tx:
+                    maybe_run_admit(
+                        cfg, stats, python=admit_python, dry_run=args.dry_run
                     )
             print_summary(stats, cfg, dry_run=args.dry_run)
             total_failed += stats.failed

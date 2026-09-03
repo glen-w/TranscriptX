@@ -13,7 +13,7 @@ from typing import Iterable
 # Keep in sync with live-test diversity helpers; prefer false positives over
 # letting a known-bad family into JSON-format selectors.
 THINKING_MODEL_NAME_MARKERS: tuple[str, ...] = (
-    "qwen3",  # includes qwen3:*, qwen3.6:*, qwen3-coder:*
+    "qwen3",  # qwen3:*, qwen3.6:*, qwen3.8:*, qwen3-coder:*, qwen3-vl:*
     "deepseek-r1",
     "gpt-oss",
 )

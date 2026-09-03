@@ -660,3 +660,128 @@ class TestSkipSerialForwarding:
         cfg = iw.resolve_config(args, config_path=tmp_path / "noconfig.json")
         assert cfg.skip_serial is True
 
+
+@pytest.mark.unit
+class TestAdmit:
+    def test_default_off(self, iw, tmp_path: Path, monkeypatch):
+        monkeypatch.delenv("INBOX_WATCH_ADMIT", raising=False)
+        args = iw.parse_args(
+            [
+                "--once",
+                "--inbox",
+                str(tmp_path / "inbox"),
+                "--recordings",
+                str(tmp_path / "rec"),
+                "--transcripts",
+                str(tmp_path / "tx"),
+            ]
+        )
+        cfg = iw.resolve_config(args, config_path=tmp_path / "noconfig.json")
+        assert cfg.admit_to_library is False
+
+    def test_cli_enables_admit(self, iw, tmp_path: Path):
+        args = iw.parse_args(
+            [
+                "--once",
+                "--inbox",
+                str(tmp_path / "inbox"),
+                "--recordings",
+                str(tmp_path / "rec"),
+                "--transcripts",
+                str(tmp_path / "tx"),
+                "--admit",
+            ]
+        )
+        cfg = iw.resolve_config(args, config_path=tmp_path / "noconfig.json")
+        assert cfg.admit_to_library is True
+
+    def test_env_enables_admit(self, iw, tmp_path: Path, monkeypatch):
+        monkeypatch.setenv("INBOX_WATCH_ADMIT", "1")
+        args = iw.parse_args(
+            [
+                "--once",
+                "--inbox",
+                str(tmp_path / "inbox"),
+                "--recordings",
+                str(tmp_path / "rec"),
+                "--transcripts",
+                str(tmp_path / "tx"),
+            ]
+        )
+        cfg = iw.resolve_config(args, config_path=tmp_path / "noconfig.json")
+        assert cfg.admit_to_library is True
+
+    def test_transcripts_root_parent_of_originals(self, iw, tmp_path: Path):
+        originals = tmp_path / "transcripts" / "originals"
+        assert iw.transcripts_root_for_admit(originals) == tmp_path / "transcripts"
+        other = tmp_path / "inbox-json"
+        assert iw.transcripts_root_for_admit(other) == other
+
+    def test_build_admit_cmd(self, iw, tmp_path: Path):
+        python = tmp_path / "bin" / "python"
+        transcripts = tmp_path / "transcripts" / "originals"
+        cmd = iw.build_admit_cmd(python, transcripts=transcripts)
+        assert cmd[:3] == [str(python), "-m", "transcriptx.admit_originals"]
+        assert "--dir" in cmd
+        assert str(transcripts) in cmd
+        assert "--transcripts-root" in cmd
+        assert str(tmp_path / "transcripts") in cmd
+        assert "--dry-run" not in cmd
+        dry = iw.build_admit_cmd(python, transcripts=transcripts, dry_run=True)
+        assert "--dry-run" in dry
+
+    def test_main_invokes_admit_after_missing(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        (inbox / "clip.m4a").write_bytes(b"audio")
+        monkeypatch.setattr(iw, "run_ffmpeg", _ok_ffmpeg)
+        monkeypatch.setattr(iw, "run_whispermlx_missing", lambda _cmd: 0)
+        monkeypatch.setattr(
+            iw, "find_admit_python", lambda _explicit: Path("/venv/bin/python")
+        )
+        seen: list[list[str]] = []
+
+        def capture(cmd):
+            seen.append(list(cmd))
+            return 0
+
+        monkeypatch.setattr(iw, "run_admit_originals", capture)
+        rc = iw.main(
+            _once_args(
+                inbox, recordings, transcripts, ["--no-watch-transcripts", "--admit"]
+            )
+        )
+        assert rc == 0
+        assert seen
+        assert "transcriptx.admit_originals" in seen[0]
+
+    def test_main_skips_admit_by_default(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        (inbox / "clip.m4a").write_bytes(b"audio")
+        monkeypatch.setattr(iw, "run_ffmpeg", _ok_ffmpeg)
+        monkeypatch.setattr(iw, "run_whispermlx_missing", lambda _cmd: 0)
+
+        def boom(_cmd):
+            raise AssertionError("admit should not run")
+
+        monkeypatch.setattr(iw, "run_admit_originals", boom)
+        rc = iw.main(
+            _once_args(inbox, recordings, transcripts, ["--no-watch-transcripts"])
+        )
+        assert rc == 0
+
+
+@pytest.mark.unit
+class TestWaitForDirectory:
+    def test_returns_true_when_dir_exists(self, iw, tmp_path: Path):
+        assert iw.wait_for_directory(tmp_path, interval_seconds=0.01) is True
+
+    def test_timeout_when_missing(self, iw, tmp_path: Path):
+        missing = tmp_path / "usb-inbox"
+        assert (
+            iw.wait_for_directory(
+                missing, interval_seconds=0.01, timeout_seconds=0.05
+            )
+            is False
+        )
+        assert not missing.exists()
+

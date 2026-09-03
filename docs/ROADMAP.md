@@ -12,6 +12,23 @@
 
 ---
 
+## Now (owner, top priority)
+
+**Clean up local corpus folders before any further import / analysis work on this machine.**
+
+Host STT (`inbox-watch` / `whispermlx-missing`) writes raw JSON under the managed library’s `originals/` subtree. **Import all from folder** scans a *different* directory (`HOST_TRANSCRIPT_INBOX_DIR` → `/mnt/transcript-inbox`) and **refuses** `transcripts/` and `originals/`. Near-homonym host folders (managed library vs a sibling inbox whose name looks like “transcripts originals”) drift: new recordings transcribe successfully and then never appear in the library.
+
+Owner checklist (do this first):
+
+- [ ] Inventory host mounts: managed library, `originals/`, import inbox, recordings, wav backup, outputs — names must not be confusable
+- [ ] Rename the inbox to an unambiguous path (prefer `transcript-inbox`, not a space-variant of `transcripts/originals`)
+- [ ] Decide the copy/sync rule until auto-admit exists: new `originals/` JSON → inbox, then Import eligible
+- [ ] Confirm library listing vs inbox vs `originals/` so “imported all” cannot miss new stems
+
+This is **owner machine hygiene**, not a 1.0 product feature. It still outranks unfamiliar-user prep on this corpus. Layout contracts: [STORAGE.md](runtime/STORAGE.md), [docker.md](runtime/docker.md), [transcription.md](runtime/transcription.md). Programme note: [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) §20 / §21.
+
+---
+
 ## Current state
 
 - Streamlit GUI + typed Python API; managed import; file-backed storage/sidecars
@@ -41,7 +58,8 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Maintainer acceptance | Manual acceptance + a11y/browser; severity-justified fixes | **done** 2026-08-07 (kit journeys closed; see [manual_acceptance_1_0.md](dev/manual_acceptance_1_0.md)) |
 | Overview / results presentation | Retire Insights Analysis tab; redistribute into Summary / Speakers / Actions / Highlights — [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | **0.9.9** (Charts/Overview hierarchy residuals deferred) |
 | Post-0.9.9 wave (interim) | Early 1.x A–D + operator UX — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md) | **0.9.9.5** (pre-unfamiliar-user) |
-| Unfamiliar-user → RC | Clean-room validation; clean-env soak; RTD slug (owner) | next (pre-RC) |
+| **Owner local folder cleanup** | Unambiguous library / `originals/` / inbox / recordings mounts — see **Now** above | **now (top priority)** |
+| Unfamiliar-user → RC | Clean-room validation; clean-env soak; RTD slug (owner) | after folder cleanup (pre-RC) |
 
 **Module freeze:** no new analysis modules in 0.9.x unless required to complete or repair the 1.0 journey. Backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
 
@@ -205,7 +223,7 @@ Automatically notice new recordings (and/or transcript files) in a monitored fol
 
 **1.0 stance unchanged:** transcription remains **external**, with in-app **command generation** only. Built-in STT is **not** a 1.0 gate.
 
-**1.x intent:** make local transcription a **supported product path** so the personal-recording journey (record/download → text → analyse) can stay inside TranscriptX when the user wants it — without abandoning BYO import or analysis-first positioning. Complementary tools ([Scriberr](https://scriberr.app/), WhisperX, …) remain valid upstreams; see [comparison.md](comparison.md).
+**1.x intent:** make local transcription a **supported product path** so the personal-recording journey (record/download → text → analyse) can stay inside TranscriptX when the user wants it — without abandoning BYO import or analysis-first positioning. Complementary tools ([Scriberr](https://scriberr.app/), [noScribe](https://noscribe.de/en/), [aTrain](https://github.com/aTrainTranscription/aTrain), [RiverScript](https://riverscript.com/), WhisperX, …) remain valid upstreams; see [comparison.md](comparison.md).
 
 **Candidate capabilities (design before build):**
 

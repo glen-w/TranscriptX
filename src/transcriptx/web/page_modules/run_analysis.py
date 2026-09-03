@@ -471,7 +471,6 @@ def _resolve_transcript_selection(
             if i == 0
             else (transcript_labels[i - 1] if i - 1 < len(transcript_labels) else "")
         ),
-        index=default_idx,
         key=_RUN_ANALYSIS_TRANSCRIPT_KEY,
     )
     if transcript_choice <= 0:

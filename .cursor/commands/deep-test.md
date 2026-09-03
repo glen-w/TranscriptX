@@ -13,11 +13,12 @@ Do not publish, push, tag, or deploy unless explicitly instructed.
 ## Inputs (resolve before starting)
 
 1. **Plan** (required): the plan just implemented — attached Cursor plan, linked plan file under `.cursor/plans/` / `docs/`, or a path the user names. If none is clear, ask once, then stop.
-2. **Small transcript** (default): `tests/fixtures/mini_transcript.json` (fallback: `data/transcripts/mini_transcript.json` if present and valid).
+2. **Small transcript** (default): `tests/fixtures/mini_transcript.json`.
 3. **Large transcript** (default preference order):
    - Path the user names
-   - A real multi-speaker managed transcript under `data/transcripts/` (e.g. meeting-length JSON used in recent Docker runs)
-   - If none exists, stop and ask — do not invent a synthetic “large” file by duplicating the mini fixture
+   - `tests/fixtures/analysis_probes/large_norm.json` (reusable large probe; speaker map beside it)
+   - A real multi-speaker transcript the user names under their library (`HOST_TRANSCRIPTS_DIR`)
+   - If none of the above is usable, stop and ask — do not invent a synthetic “large” file by duplicating the mini fixture, and **do not copy probes into the user library**
 4. **Group** (default preference order):
    - Group UUID / `.group.json` the user names
    - An existing file-backed group under `data/groups/` with ≥2 resolvable member transcripts
@@ -91,10 +92,12 @@ Goal: prove the happy path on a tiny fixture in both runtimes. Watch logs; fix f
 Run via the Python API, for example:
 
 ```python
+import os
 from pathlib import Path
 from transcriptx.app.models.requests import AnalysisRequest
 from transcriptx.app.workflows.analysis import run_analysis
 
+os.environ["TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS"] = "1"
 result = run_analysis(AnalysisRequest(
     transcript_path=Path("tests/fixtures/mini_transcript.json"),
     mode="quick",   # or "full" if the plan requires it
@@ -104,7 +107,7 @@ result = run_analysis(AnalysisRequest(
 print(result.success, result.errors, getattr(result, "run_dir", None))
 ```
 
-Adjust `transcript_path` / `mode` / `modules` / `output_dir` as needed. Prefer writing under `data/outputs/` with a clear `_deep_test_*` label.
+Adjust `transcript_path` / `mode` / `modules` / `output_dir` as needed. Prefer writing under `data/outputs/` with a clear `_deep_test_*` label. **Never import or copy probe transcripts into `TRANSCRIPTX_TRANSCRIPTS_DIR`.** Fixture JSON is unmanaged; `TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS=1` is required.
 
 **Watch for:** traceback, `success=False`, non-empty `errors`, failed/blocked module outcomes in `run_results.json`, missing `manifest.json` / `run_results.json`.
 
@@ -117,13 +120,16 @@ Ensure the image is usable (`docker compose build` only if needed; prefer existi
 **A. One-shot API in compose (preferred when non-interactive):**
 
 ```bash
-docker compose run --rm transcriptx-web python - <<'PY'
+docker compose run --rm \
+  -e TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS=1 \
+  -v "$(pwd)/tests/fixtures:/mnt/fixtures:ro" \
+  transcriptx-web python - <<'PY'
 from pathlib import Path
 from transcriptx.app.models.requests import AnalysisRequest
 from transcriptx.app.workflows.analysis import run_analysis
 
 result = run_analysis(AnalysisRequest(
-    transcript_path=Path("/mnt/transcripts/mini_transcript.json"),
+    transcript_path=Path("/mnt/fixtures/mini_transcript.json"),
     mode="quick",
     modules=None,
     run_label="_deep_test_mini_docker",
@@ -133,7 +139,7 @@ raise SystemExit(0 if result.success else 1)
 PY
 ```
 
-If the mini fixture is not under the transcripts mount, copy/import it into `data/transcripts/` first (managed import workflow is fine), or mount/pass an equivalent path. Host fixture `tests/fixtures/mini_transcript.json` is not on `/mnt/transcripts` by default.
+Mount `tests/fixtures` at `/mnt/fixtures`. **Do not copy or import probes into `/mnt/transcripts`** (that is the user library). Local `docker-compose.override.yml` may already mount fixtures at `/mnt/fixtures`.
 
 **B. UI path:** `docker compose up` (or attach to a running `transcriptx-web`), run the small analysis in the UI, and **watch compose logs** for ERROR / Traceback / “Pipeline completed … with N errors”.
 
@@ -148,18 +154,22 @@ Record both run dirs and whether Python vs Docker outcomes agree on success.
 Run analysis on the resolved **large** transcript (prefer Python API on host; Docker UI/API optional if the plan or user requires Docker parity for large runs).
 
 ```python
+import os
 from pathlib import Path
 from transcriptx.app.models.requests import AnalysisRequest
 from transcriptx.app.workflows.analysis import run_analysis
 
+os.environ["TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS"] = "1"
 result = run_analysis(AnalysisRequest(
-    transcript_path=Path("PATH/TO/LARGE.json"),
+    transcript_path=Path("tests/fixtures/analysis_probes/large_norm.json"),
     mode="full",  # prefer full for large probe unless user/plan says otherwise
     modules=None,
     run_label="_deep_test_large",
 ))
 print(result.success, result.errors, getattr(result, "run_dir", None))
 ```
+
+Docker large probe: same `/mnt/fixtures` mount as §3.2, path `/mnt/fixtures/analysis_probes/large_norm.json`. Still do not import into the user library.
 
 **Watch the terminal / logs for the entire run.** Treat these as failures to fix:
 

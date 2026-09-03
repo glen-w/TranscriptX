@@ -28,6 +28,7 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **Final Thorough stress pass (speaker-complete)** — Thorough + `qwen2.5:7b` on **all** speaker-complete transcripts **and** qualifying groups **pass** 2026-08-08 (2 tx + 2 groups, corpus wall **68.7 min**, 0 failures) → `artifacts/roadmap_1_0_llm_analysis/stress_pass_20260808/`
 - [x] **0.9.9 — Overview / results presentation polish** — Insights **Analysis** tab retired/redistributed; selection-scoped Overview EPUB; batch progress labels (**cut as 0.9.9**). Overview hierarchy polish + Charts catalogue remain deferred residuals — [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md)
 - [x] **Post-0.9.9 shipped wave → interim `0.9.9.5`** — Early 1.x themes B/C/D + A, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, workflows/assessments, backup/restore, unnamed-speaker ungate, Playwright GUI E2E, CI/docs hygiene — summary below; detail [post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md); **cut as 0.9.9.5** (2026-08-15)
+- [ ] **Owner local folder cleanup (top priority, now)** — Inventory and rename host corpus mounts so managed library, `originals/`, and the Docker import inbox cannot be confused; set an explicit originals→inbox copy rule until auto-admit exists. Not a product feature; blocks reliable local import on this machine. Detail: [ROADMAP.md](../ROADMAP.md) **Now**.
 - [ ] **Unfamiliar-user validation** — Clean-room round (2–5 people, ≥1 non-technical); kit in [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); mandatory before 1.0
 - [ ] **RC → 1.0** — Severity triage clear; gates pass; release ops/support policy published; governance evidence on exact commit
 
@@ -1009,6 +1010,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 - [ ] **RTD project slug / custom domain** — create when docs build is green (**Sphinx CI green in 0.9.5**; slug/domain still owner judgement)
 - [x] **Local scratch directory convention** — `.local/` documented in Phase 0A (`docs/dev/local_scratch.md`)
 - [x] **Exact archive subcategory names** — `docs/archive/{assessments,plans,investigations,migrations}/` from inventory
+- [ ] **Local corpus folder layout (top priority, now)** — owner machine: distinct, non-homonym paths for managed library vs `originals/` vs import inbox vs recordings/wav/outputs; sync rule for new STT JSON until inbox-watch can auto-admit. See [ROADMAP.md](../ROADMAP.md) **Now**.
 - [ ] **Unfamiliar-user cohort** — who / when / consent and recording method
 - [x] **Representative corpus sizes** for performance envelopes (Small/Medium/Large-for-1.0 defined; Medium Balanced + Large-library UI measured 2026-08-07; Thorough named-speaker `qwen2.5:7b` corpus ~42 min effective 2026-08-07; final stress pass 2 tx + 2 groups **68.7 min** 2026-08-08)
 - [ ] **RC duration** default (e.g. minimum soak window) if not already in release governance
@@ -1033,5 +1035,6 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 13. [x] **Maintainer acceptance pass** — kit journeys closed **2026-08-07** ([manual_acceptance_1_0.md](manual_acceptance_1_0.md)); severity-justified fixes only if residual findings remain
 14. [x] **0.9.9 Overview / results presentation polish** — cut **0.9.9**; Analysis IA + EPUB + batch progress landed; Charts/Overview hierarchy residuals deferred ([overview_presentation_0_9_9.md](overview_presentation_0_9_9.md))
 15. [x] **Post-0.9.9 shipped wave → `0.9.9.5`** — early 1.x + operator UX interim cut ([post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md)); does not substitute unfamiliar-user evidence
-16. [ ] **Unfamiliar-user round** — [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); blockers/must-fix prevent RC
-17. [ ] **Final gate review** → RC rehearsal → RC → public **1.0**
+16. [ ] **Owner local folder cleanup (top priority, now)** — unambiguous library / `originals/` / inbox mounts; originals→inbox sync until auto-admit ([ROADMAP.md](../ROADMAP.md) **Now**)
+17. [ ] **Unfamiliar-user round** — [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); blockers/must-fix prevent RC
+18. [ ] **Final gate review** → RC rehearsal → RC → public **1.0**

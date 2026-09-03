@@ -48,6 +48,11 @@ Capture against a disposable data root when practical.
 | `local-ai-*` | Run Analysis (LLM setup) / Overview / Insights (Actions) |
 | `export-*` | Artifacts (Browse / Export) + external HTML preview |
 | `charts-*` | Charts |
+
+Landing gallery (`website/images/`): Overview, Transcript, Speaker ID, Insights.
+A dedicated Charts still is not in the set yet; Insights stands in on the public
+site (Charts is in the same View menu). When capturing Charts, copy it to
+`website/images/` as well.
 | `groups-*` | Groups |
 | `corrections-*` | Transcript (Correct mode) / Corrections Studio |
 | `rename-*` | Rename Transcript |

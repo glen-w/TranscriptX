@@ -128,6 +128,8 @@ def test_import_page_contains_no_auto_transcription_message() -> None:
     assert "A transcript file is still required for transcript text content." in source
     assert "Rename imported transcript + linked audio" in source
     assert "Import all from folder" in source
+    assert "st.session_state[_KEY_FOLDER_PATH] = _DEFAULT_FOLDER_IMPORT_PATH" in source
+    assert mod._DEFAULT_FOLDER_IMPORT_PATH == "/mnt/transcript-inbox"
     assert "ThreadPoolExecutor" not in source
     assert "on_click=_on_scan_folder" in source
 

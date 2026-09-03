@@ -101,8 +101,8 @@ Eligibility: `analysis.insight_eligibility.min_score` default `0.18`; `require_s
 
 | Run | Transcript | Insights status | Notable themes |
 |-----|------------|-----------------|----------------|
-| mini Python | `data/transcripts/mini_transcript.json` | `ok` | google cloud support, new york stakeholders, market street |
-| large Theme A modules | `_deep_test_large_norm.json` (1007 segs / 13 speakers) | `ok` after log-freq + greeting rejects (was `insufficient_signal` with linear freq + min_score 0.28) | kitchen fairy, cape town, south africa, social media |
+| mini Python | `tests/fixtures/mini_transcript.json` | `ok` | google cloud support, new york stakeholders, market street |
+| large Theme A modules | `tests/fixtures/analysis_probes/large_norm.json` (1007 segs / 13 speakers) | `ok` after log-freq + greeting rejects (was `insufficient_signal` with linear freq + min_score 0.28) | kitchen fairy, cape town, south africa, social media |
 | group | mini + large | member runs green; group finalize `partial` with manifest/run_results present | — |
 
 Hardening during deep-test: log1p frequency scoring; greetings/`et cetera` discourse rejects; eligibility/insights floor `0.18`; emblematic-phrase fallback before abstention; `topic_modeling` optional so insights stays on quick/balanced.

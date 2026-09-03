@@ -1,6 +1,3 @@
-Type: RESEARCH
-Authority: self
-
 # Competitive inspiration — open-source + commercial transcript tools vs TranscriptX (2026-07-22)
 
 > **Living research note:** conclusions, learnings, and “do / don’t” rows are **ongoing and changeable**. Revisit when products ship, when [docs/ROADMAP.md](../docs/ROADMAP.md) themes move, or when the analysis backlog is re-ranked. The title date is the first snapshot, not a freeze.  

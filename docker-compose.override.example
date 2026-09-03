@@ -44,6 +44,8 @@ services:
       - transcriptx_cache:/home/transcriptx/.cache
       - ./src/transcriptx:/opt/venv/lib/python3.10/site-packages/transcriptx
       - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts
+      # Reusable analysis probes (deep-test). Not the user library.
+      - ./tests/fixtures:/mnt/fixtures:ro
       - ${HOST_TRANSCRIPT_INBOX_DIR:-./data/transcript-inbox}:/mnt/transcript-inbox:ro
       - ${HOST_OUTPUT_DIR:-./data/outputs}:/mnt/outputs
       - ${HOST_RECORDINGS_DIR:?Set HOST_RECORDINGS_DIR in .env to your host recordings folder outside the repo}:/mnt/recordings

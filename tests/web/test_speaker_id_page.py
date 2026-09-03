@@ -39,7 +39,7 @@ def test_speaker_id_page_invalidates_path_summary_after_mutations() -> None:
 
 
 def test_speaker_id_plain_rerun_whitelist() -> None:
-    """Plain st.rerun() lives only in _rerun_app; completion may full-app rerun."""
+    """Plain st.rerun() lives only in _rerun_app; completion commits from fragment body."""
     import re
 
     import transcriptx.web.page_modules.speaker_id as mod
@@ -49,6 +49,18 @@ def test_speaker_id_plain_rerun_whitelist() -> None:
     assert len(plain) == 1, f"expected one plain st.rerun(), found {len(plain)}"
     assert "_rerun_app" in source
     assert "_rerun_app_for_completion" in source
+    assert "_commit_completion_app_rerun" in source
+    completion = source.split("def _rerun_app_for_completion", 1)[1].split(
+        "\ndef ", 1
+    )[0]
+    # Flag only — the body must not invoke a rerun (docstring may mention st.rerun).
+    assert "_rerun_app()" not in completion
+    body = completion.split('"""', 2)[-1]
+    assert "st.rerun" not in body
+    commit = source.split("def _commit_completion_app_rerun", 1)[1].split(
+        "\ndef ", 1
+    )[0]
+    assert "_rerun_app()" in commit
     assert "Analyse voice" in source
     for needle in (
         "_cb_voice_analyse_one",
@@ -63,6 +75,8 @@ def test_speaker_id_plain_rerun_whitelist() -> None:
         assert needle in source
         block = source.split(f"def {needle}", 1)[1].split("\ndef ", 1)[0]
         assert "_rerun_ui()" not in block
+        assert "_rerun_app()" not in block
+        assert "_commit_completion_app_rerun" not in block
     # Save/Ignore go through the shared action service (Theme C Phase −1).
     save_cb = source.split("def _cb_save_name", 1)[1].split("def _cb_", 1)[0]
     assert "SpeakerIdCommand" in save_cb
@@ -304,6 +318,8 @@ def test_completion_action_strip_lives_inside_workspace_fragment() -> None:
     outer = source.split("def render_speaker_id_page", 1)[1]
     assert "_render_post_speaker_id_actions" in frag
     assert "_render_post_speaker_id_actions" not in outer
+    assert "_commit_completion_app_rerun" in frag
+    assert "_commit_completion_app_rerun" not in outer
     assert "pop(_SPEAKER_ID_COMPLETION_APP_RERUN" in outer
 
 
@@ -424,6 +440,37 @@ def test_voice_pending_stale_path_is_rejected_without_analyse() -> None:
     pending_block = pending_block.split("batch_summary = st.session_state.pop", 1)[0]
     assert "paths_match(pending_path, transcript_path)" in pending_block
     assert pending_block.index("paths_match") < pending_block.index("facade.analyse(")
+
+
+def test_rerun_app_for_completion_sets_flag_without_rerun(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Callbacks may only request completion; st.rerun() is a no-op there."""
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    ss: dict = {}
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    monkeypatch.setattr(
+        mod, "_rerun_app", lambda: (_ for _ in ()).throw(RuntimeError("rerun"))
+    )
+    mod._rerun_app_for_completion()
+    assert ss.get(mod._SPEAKER_ID_COMPLETION_APP_RERUN) is True
+
+
+def test_commit_completion_app_rerun_only_when_flagged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    ss: dict = {}
+    calls: list[str] = []
+    monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
+    monkeypatch.setattr(mod, "_rerun_app", lambda: calls.append("app"))
+    mod._commit_completion_app_rerun()
+    assert calls == []
+    ss[mod._SPEAKER_ID_COMPLETION_APP_RERUN] = True
+    mod._commit_completion_app_rerun()
+    assert calls == ["app"]
 
 
 def test_completion_triggers_one_app_rerun_and_flag_is_consumed(

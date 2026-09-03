@@ -9,7 +9,10 @@ The post-picker workspace runs in ``_speaker_id_workspace_fragment``. Ordinary
 actions (Save / Ignore / Prev / Next / Jump / Voice / CCv2 commands) use
 module-level ``on_click`` / ``on_change`` callbacks so mutations run before
 the natural fragment rerun — no mid-render ``_rerun_ui`` on those paths.
-Transcript selection and completion may full-app rerun. Playback uses
+Callbacks must not rerun the app (no-op + client warning) or display
+elements (fragment-callback warning that paints at the top of the app).
+Completion only sets ``_SPEAKER_ID_COMPLETION_APP_RERUN``; the fragment body
+performs the full-app rerun so the outer picker label refreshes. Playback uses
 ``render_playback_panel_body`` inside the workspace (no nested fragments).
 Voice is a lightweight conditional block, not a sibling/nested fragment.
 """
@@ -345,7 +348,7 @@ def _light_transcript_picker_rows(paths: list[Path]) -> tuple[list[Path], list[s
 
 
 def _rerun_app() -> None:
-    """Full-app rerun (completion only on ordinary action paths)."""
+    """Full-app rerun from page/fragment body (never from a widget callback)."""
     st.rerun()
 
 
@@ -353,8 +356,9 @@ def _rerun_ui() -> None:
     """Legacy fragment-scope rerun helper retained for illegal-scope fallback tests.
 
     Ordinary Save/Ignore/Nav/Voice paths must not call this — callbacks + the
-    natural fragment rerun are the single paint. Completion still uses
-    ``_rerun_app_for_completion``.
+    natural fragment rerun are the single paint. Completion sets a flag via
+    ``_rerun_app_for_completion``; the fragment body calls
+    ``_commit_completion_app_rerun``.
     """
     try:
         st.rerun(scope="fragment")
@@ -397,9 +401,21 @@ def _maybe_poll_pending_clips(transcript_path: str | Path, data: dict) -> None:
 
 
 def _rerun_app_for_completion() -> None:
-    """Single intentional full-app rerun: completion paint + picker label refresh."""
+    """Request a full-app completion refresh; do not rerun from this helper.
+
+    Widget ``on_click`` / ``on_change`` callbacks (including CCv2
+    ``on_command_change``) run inside the workspace fragment. A rerun from a
+    callback is a no-op and Streamlit warns; displaying elements from that
+    callback paints over the top of the app. The fragment body commits via
+    ``_commit_completion_app_rerun``.
+    """
     st.session_state[_SPEAKER_ID_COMPLETION_APP_RERUN] = True
-    _rerun_app()
+
+
+def _commit_completion_app_rerun() -> None:
+    """Full-app rerun from fragment body when completion was requested."""
+    if st.session_state.get(_SPEAKER_ID_COMPLETION_APP_RERUN):
+        _rerun_app()
 
 
 def _load_cached_segments(transcript_path: str | Path) -> List[SegmentInfo]:
@@ -712,6 +728,7 @@ def _apply_mapping_advance(
     Kept for characterisation tests and direct callers. Ordinary Save/Ignore
     callbacks go through ``SpeakerIdActionService`` instead.
     Does **not** call ``_rerun_ui`` — the natural fragment rerun paints.
+    Completion only sets the flag; the fragment body commits the app rerun.
     """
     invalidate_transcript_summary_for_path(
         transcript_path, signature=summary_sig_before
@@ -1706,9 +1723,12 @@ def _render_ccv2_speaker_workspace(
         )
         new_id = (ack_dict or {}).get("active_speaker_id")
         action = str(command.get("action") or "")
+        # Completion must full-app rerun from the fragment body (not a callback).
+        if st.session_state.get(_SPEAKER_ID_COMPLETION_APP_RERUN):
+            _commit_completion_app_rerun()
         # Return-value-only commands land after this paint already used the
         # previous speaker / line count. Fragment-rerun so UI matches.
-        if applied and new_id and new_id != active_id:
+        elif applied and new_id and new_id != active_id:
             _rerun_ui()
         elif applied and action in {
             "load_more_samples",
@@ -1749,6 +1769,8 @@ def _speaker_id_workspace_fragment(
     controller: SpeakerStudioController,
 ) -> None:
     """Post-picker workspace: reload map every run; index from cache."""
+    # Callbacks only set this flag; a rerun from a callback is a no-op.
+    _commit_completion_app_rerun()
     _consume_flash(transcript_path)
 
     try:
@@ -1856,6 +1878,7 @@ def _speaker_id_workspace_fragment(
             status_badge=status_badge,
             total_speakers=total_speakers,
         )
+        _commit_completion_app_rerun()
         if mounted:
             return
 

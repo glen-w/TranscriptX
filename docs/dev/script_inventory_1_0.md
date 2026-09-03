@@ -10,7 +10,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 |--------|------:|
 | supported | 4 |
 | maintainer | 21 |
-| internal | 8 |
+| internal | 9 |
 | archived | 3 |
 | disposable | 8 |
 
@@ -21,7 +21,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | `transcriptx` (`pyproject` console) | Launch Streamlit web app | end user | README, install docs, Docker ENTRYPOINT | yes | yes (indirect) | read-only | any | package | valid | supported | retain supported |
 | `transcriptx.sh` | Native venv install + launch (`.transcriptx`; CUDA left available unless `TRANSCRIPTX_FORCE_CPU=1`) | end user | README, installation.md | yes | partial | mutates venv | macOS/Linux | requirements.txt | valid | supported | retain supported |
 | `scripts/whispermlx-missing.py` | Batch whispermlx for MP3s missing JSON | end user | transcription.md; tests/scripts | yes | yes | writes transcripts | Apple Silicon typical | whispermlx (external) | valid | supported | retain supported |
-| `scripts/inbox-watch.py` | Host inbox watch: convert audio + copy transcripts; delegates STT to whispermlx-missing | end user | transcription.md; directory_watcher.md; tests/scripts | yes | yes | writes recordings + copies transcripts | macOS typical (ffmpeg + whispermlx) | ffmpeg; whispermlx-missing | valid | supported | retain supported |
+| `scripts/inbox-watch.py` | Host inbox watch: convert audio + copy transcripts; optional `--admit` via `python -m transcriptx.admit_originals`; delegates STT to whispermlx-missing | end user | transcription.md; directory_watcher.md; tests/scripts | yes | yes | writes recordings + copies transcripts; optional managed admit | macOS typical (ffmpeg + whispermlx) | ffmpeg; whispermlx-missing; native transcriptx for `--admit` | valid | supported | retain supported |
 | `scripts/audio_preprocess.py` | Assess/preprocess audio before external transcription | power user | System → Tools; transcription.md; ROADMAP theme G1 | yes | yes | writes audio | any | pydub/ffmpeg | valid | maintainer | retain CLI; GUI under System → Tools |
 | `scripts/audio_merge.py` | Merge split recordings into one MP3 | power user | System → Tools; transcription.md; ROADMAP theme G1 | yes | yes | writes audio | any | ffmpeg | valid | maintainer | retain CLI; GUI under System → Tools; **G1** transcript stitch still open |
 | `scripts/release/assert_compose_bind.sh` | Canonical compose bind/port asserts | maintainer | CI | yes (release_governance) | CI | read-only | Docker | compose | valid | maintainer | retain internal |
@@ -47,6 +47,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | `scripts/capture_streamlit_perf_scenarios.py` | Capture Streamlit perf JSONL | developer | perf assessment | partial | no | writes JSONL | any | streamlit | valid | internal | retain internal |
 | `scripts/streamlit_perf_report.py` | Summarize Streamlit perf JSONL | developer | perf assessment | partial | no | read-only | any | — | valid | internal | retain internal |
 | `scripts/log_code_size.py` | Append LOC to code_size.log | developer | none | no | no | writes log | any | — | valid | internal | retain internal |
+| `scripts/count_sloc.py` | Compare SLOC via tokei/scc/cloc/radon; median estimate | developer | count-sloc skill | no | no | read-only | any | tokei/scc/cloc/radon (optional --install) | valid | internal | retain internal |
 | `scripts/install_llvm_macos.sh` | Homebrew LLVM for llvmlite | developer | install docs (macOS) | partial | no | mutates brew | Darwin | Homebrew | valid | internal | retain internal |
 | `scripts/install_librosa_macos.sh` | macOS librosa+LLVM helper | developer | install docs (macOS) | partial | no | mutates env | Darwin | Homebrew | valid | internal | retain internal |
 | `Makefile` targets (`test-*`, `docker-smoke`, `docs*`, `perf-envelopes`, `clean-test-artifacts`) | Dev/CI lanes wrapping scripts | maintainer | CONTRIBUTING / tests README | yes | CI | varies | any | pytest | valid | maintainer | retain internal |

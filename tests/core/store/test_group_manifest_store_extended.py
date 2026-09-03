@@ -4,22 +4,31 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from transcriptx.core.domain.group import Group
+from transcriptx.core.store import group_manifest_store as gms
 from transcriptx.core.store.group_manifest_store import (
     GroupManifestStore,
     canonicalize_group_member_paths,
     manifest_path_for,
 )
-from transcriptx.core.utils.paths import PATHS
 
 
-def test_group_manifest_roundtrip_and_member_resolution(tmp_path: Path) -> None:
+def test_group_manifest_roundtrip_and_member_resolution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    transcripts = tmp_path / "transcripts"
+    groups = tmp_path / "groups"
+    transcripts.mkdir()
+    groups.mkdir()
+    monkeypatch.setattr(gms, "_TRANSCRIPTS_DIR", transcripts)
+    monkeypatch.setattr(gms, "_GROUPS_DIR", groups)
+
     store = GroupManifestStore()
 
-    # Create member transcripts under the real transcripts_dir so helper invariants hold.
-    transcripts_root = PATHS.transcripts_dir
-    a = transcripts_root / "a_group_test.json"
-    b = transcripts_root / "nested" / "b_group_test.json"
+    a = transcripts / "a_group_test.json"
+    b = transcripts / "nested" / "b_group_test.json"
     b.parent.mkdir(parents=True, exist_ok=True)
     a.write_text("{}", encoding="utf-8")
     b.write_text("{}", encoding="utf-8")
@@ -28,6 +37,7 @@ def test_group_manifest_roundtrip_and_member_resolution(tmp_path: Path) -> None:
 
     manifest_path = manifest_path_for(group.group_id)
     assert manifest_path.exists()
+    assert manifest_path.parent == groups
 
     loaded = store.load_by_id(group.group_id)
     assert isinstance(loaded, Group)
@@ -43,15 +53,17 @@ def test_group_manifest_roundtrip_and_member_resolution(tmp_path: Path) -> None:
     assert [Path(m.file_path) for m in members] == [a, b]
 
 
-def test_canonicalize_group_member_paths_dedupes_absolute_and_relative() -> None:
-    transcripts_root = PATHS.transcripts_dir
-    p = transcripts_root / "canon_dedupe_group_test.json"
+def test_canonicalize_group_member_paths_dedupes_absolute_and_relative(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    transcripts = tmp_path / "transcripts"
+    transcripts.mkdir()
+    monkeypatch.setattr(gms, "_TRANSCRIPTS_DIR", transcripts)
+
+    p = transcripts / "canon_dedupe_group_test.json"
     p.write_text("{}", encoding="utf-8")
-    try:
-        abs_s = str(p.resolve())
-        rel_under_tx = str(p.relative_to(transcripts_root.resolve()))
-        merged = canonicalize_group_member_paths([abs_s, rel_under_tx, abs_s])
-        assert len(merged) == 1
-        assert merged == canonicalize_group_member_paths([abs_s])
-    finally:
-        p.unlink(missing_ok=True)
+    abs_s = str(p.resolve())
+    rel_under_tx = str(p.relative_to(transcripts.resolve()))
+    merged = canonicalize_group_member_paths([abs_s, rel_under_tx, abs_s])
+    assert len(merged) == 1
+    assert merged == canonicalize_group_member_paths([abs_s])

@@ -11,18 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Deep Playwright GUI E2E coverage for Speaker Identification: speaker switching (Next/Prev/Jump), rename + Transcript confirm, ignore/unignore, and clip load/play with linked audio (`tests/e2e_gui/test_speaker_identification_deep.py`).
 - Settings → Interface **action appearance**: icon, text, or both, with a global default and per-section override (`inherit`). Icon-only buttons keep the action name as a hover tooltip even when instructional ⓘ tips are off. Contract: [interface-menus.md](docs/contracts/interface-menus.md).
-- Host **`whispermlx-missing --skip-serial`** (and `inbox-watch --skip-serial`) leaves Auto-merge serial parts / voice-note runs untranscribed so you merge first and transcribe the combined file.
+- Host **`inbox-watch --admit`** (default off) admits new `originals/` transcripts into the managed library via `python -m transcriptx.admit_originals` / `admit_and_register`. Config: `"admit_to_library"` / `INBOX_WATCH_ADMIT` / `--admit-python`. Repo `.env.example` lists the `INBOX_WATCH_*` keys.
 - Run Analysis: **Cancel analysis** and **Skip module** stay available while a run is in progress (cooperative; the current module is abandoned, remaining work is not started on cancel).
 - Playwright **GUI E2E** expanded to **ten key flows** under `tests/e2e_gui/` (`make test-gui-e2e`): workflows 1–5 plus Charts, Groups, Corrections (Correct mode), Rename Transcript, and Speakers.
 - Workflow walkthroughs expanded to ten guides under [docs/workflows/](docs/workflows/index.md); root [README](README.md) lists the ten key GUI workflows.
 
 ### Changed
 
+- Public landing and README are a product front door: screenshot gallery, outcome-led “what can I do”, privacy before install, one primary CTA (See how it works). Hosted docs sidebar keeps contracts, storage, and module catalogs under Developers. Workflows intro no longer mentions Playwright. Compare page uses plainer capability labels.
+- Analysis probe transcripts live under `tests/fixtures/` (including `tests/fixtures/analysis_probes/`) instead of the user library. Deep-test analyses those paths in place and must not import them into `TRANSCRIPTX_TRANSCRIPTS_DIR`.
 - [Identify and name speakers](docs/workflows/speaker-identification.md) walkthrough expanded for switch / clip / ignore / rename flows; media promoted to `speaker-identification-*` filenames (legacy `speaker-trust-*` retained).
 - Auto-merge groups start **unchecked**, with **Select all** / **Select none**. **Don't suggest again** persists a false match in `{config_dir}/audio_merge_dismissed.json` (Hide remains session-only). `whispermlx-missing --skip-serial` does not skip dismissed groups.
 - Comparison page: added [nanosamur.ai](https://nanosamur.ai) as a complementary org-grade self-hosted STT upstream (not an analysis substitute).
+- Comparison page: added [RiverScript](https://riverscript.com/) as a complementary hosted capture/STT workspace (desktop live system-audio recording, large-file desktop client; import SRT/VTT — not an analysis substitute).
+- Comparison page: added qualitative-research cluster — [noScribe](https://noscribe.de/en/), [EMCA Transcription Resources](https://emcawiki.net/Transcription_Resources), CAQDAS (NVivo, MAXQDA, ATLAS.ti, Quirkos), [DoReveal](https://doreveal.com/), [Dovetail](https://dovetail.com/), and [Oral History as Data](https://oralhistoryasdata.github.io/).
+- Comparison page: from the [Amical OSS transcription roundup](https://amical.ai/blog/open-source-transcription-software), added [Amical](https://amical.ai/) (dictation app) and noted engines Vosk / Kaldi / DeepSpeech / Whisper (WhisperX already documented).
+- Comparison page: added [aTrain](https://github.com/aTrainTranscription/aTrain) as a complementary offline interview STT upstream (QDA-formatted TXT for MAXQDA / ATLAS.ti / NVivo; import TXT/JSON — not an analysis substitute).
 - Security pins: `cryptography` 48.0.1 → 50.0.0 and `nltk` 3.9.4 → 3.10.3 (fixable pip-audit findings on the clean-env wheel gate).
 - Docs surfaces aligned: Sphinx [docs/index.md](docs/index.md) toctrees match [USER_INDEX](docs/USER_INDEX.md) (backup, corrections viewer/karaoke/LLM, recipes, STORAGE under Reference); PRODUCT/website/inventory say **ten** workflows; public series badge **0.9.9.5**; website install snippet includes `.env` / `HOST_RECORDINGS_DIR`.
+- `docs/reviews/` is tracked (no longer gitignored) and listed under Developers in the Sphinx guide.
 
 ### Fixed
 

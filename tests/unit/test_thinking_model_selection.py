@@ -15,6 +15,9 @@ from transcriptx.core.llm.thinking_models import (
     selection_uses_thinking_for_json,
 )
 from transcriptx.web.components.llm_model_selector import (
+    _hidden_thinking_caption_text,
+    _hidden_thinking_models,
+    _management_thinking_caption_text,
     _options_for_consumer,
     _selected_json_consumers,
     launch_gate_reasons,
@@ -25,6 +28,7 @@ from transcriptx.web.components.llm_model_selector import (
 def test_is_thinking_model_markers() -> None:
     assert is_thinking_model("qwen3:8b") is True
     assert is_thinking_model("qwen3.6:27b") is True
+    assert is_thinking_model("qwen3.8:latest") is True
     assert is_thinking_model("qwen3-coder:30b") is True
     assert is_thinking_model("deepseek-r1:8b") is True
     assert is_thinking_model("gpt-oss:20b") is True
@@ -69,6 +73,37 @@ def test_options_hide_thinking_for_shared_when_json_selected() -> None:
         json_consumers_selected=[],
     )
     assert "qwen3.6:27b" in plain_only
+
+
+@pytest.mark.unit
+def test_settings_shared_picker_keeps_installed_thinking_tags() -> None:
+    installed = ["gemma3:12b", "qwen3.8:latest", "qwen3:8b"]
+    shared = _options_for_consumer(
+        installed,
+        consumer_id=None,
+        json_consumers_selected=["group_llm_synthesis"],
+        hide_thinking_for_shared=False,
+    )
+    assert "qwen3.8:latest" in shared
+    assert "qwen3:8b" in shared
+    note = _management_thinking_caption_text(installed)
+    assert note is not None
+    assert "`qwen3.8:latest`" in note
+
+
+@pytest.mark.unit
+def test_hidden_thinking_caption_names_qwen38() -> None:
+    installed = ["gemma3:12b", "qwen3.8:latest", "llama3.2:3b"]
+    json_safe = _options_for_consumer(
+        installed,
+        consumer_id=None,
+        json_consumers_selected=["narrative_summary"],
+    )
+    assert "qwen3.8:latest" not in json_safe
+    assert _hidden_thinking_models(installed, json_safe) == ("qwen3.8:latest",)
+    note = _hidden_thinking_caption_text(installed, json_safe)
+    assert note is not None
+    assert "`qwen3.8:latest`" in note
 
 
 @pytest.mark.unit

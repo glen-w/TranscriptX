@@ -51,6 +51,7 @@ _KEY_LAST_IMPORTED_TRANSCRIPT_PATH = "import_last_transcript_path"
 _KEY_FOLDER_PATH = "import_folder_path_input"
 _KEY_SCAN_HANDLE = "import_folder_scan_handle"
 _KEY_SCAN_BANNER = "import_folder_scan_banner"
+_DEFAULT_FOLDER_IMPORT_PATH = "/mnt/transcript-inbox"
 
 
 def _save_uploaded_transcript(uploaded_file: Any) -> tuple[Path, str]:
@@ -274,12 +275,14 @@ def _render_folder_import_section() -> None:
     except Exception:
         pass
 
+    if not str(st.session_state.get(_KEY_FOLDER_PATH) or "").strip():
+        st.session_state[_KEY_FOLDER_PATH] = _DEFAULT_FOLDER_IMPORT_PATH
     path_value = st.text_input(
         "Folder path (absolute)",
         key=_KEY_FOLDER_PATH,
         help=widget_help(
             (
-                "Example: /Users/you/Documents/whisper-out. "
+                "Default (Docker): /mnt/transcript-inbox. "
                 "Must be absolute. Relative paths are rejected."
             )
         ),

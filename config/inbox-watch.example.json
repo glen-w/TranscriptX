@@ -14,5 +14,7 @@
   "wav_backup": "/path/to/data/backups/wav",
   "backup_wavs": false,
   "delete_originals": false,
-  "skip_serial": false
+  "skip_serial": false,
+  "admit_to_library": false,
+  "admit_python": ""
 }

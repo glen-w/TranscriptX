@@ -164,10 +164,11 @@ def _options_for_consumer(
     *,
     consumer_id: str | None,
     json_consumers_selected: Sequence[str],
+    hide_thinking_for_shared: bool = True,
 ) -> list[str]:
     """Build selectbox options; hide thinking tags when the pick feeds JSON."""
     if consumer_id is None:
-        needs_json_safe = bool(json_consumers_selected)
+        needs_json_safe = bool(json_consumers_selected) and hide_thinking_for_shared
     else:
         # Always JSON-safe for JSON consumer rows (module may be toggled later).
         needs_json_safe = consumer_id in LLM_JSON_FORMAT_CONSUMER_IDS
@@ -177,6 +178,51 @@ def _options_for_consumer(
             filter_models_for_json_consumers(installed, include_thinking=False)
         )
     return _model_select_options(installed)
+
+
+def _hidden_thinking_models(
+    installed: Sequence[str], visible_options: Sequence[str]
+) -> tuple[str, ...]:
+    """Installed thinking tags omitted from ``visible_options`` (stable input order)."""
+    visible = set(visible_options)
+    hidden: list[str] = []
+    for name in installed:
+        if not isinstance(name, str) or not name.strip():
+            continue
+        if is_thinking_model(name) and name not in visible:
+            hidden.append(name)
+    return tuple(hidden)
+
+
+def _hidden_thinking_caption_text(
+    installed: Sequence[str], visible_options: Sequence[str]
+) -> str | None:
+    hidden = _hidden_thinking_models(installed, visible_options)
+    if not hidden:
+        return None
+    listed = ", ".join(f"`{name}`" for name in hidden)
+    return (
+        "The installed Ollama list is live; thinking-family tags are omitted "
+        f"from this JSON-safe picker: {listed}. They remain in Model information "
+        "and in per-module picks for plain-text `llm_summary` / `llm_speaker_summary`."
+    )
+
+
+def _management_thinking_caption_text(installed: Sequence[str]) -> str | None:
+    thinking = tuple(
+        name
+        for name in installed
+        if isinstance(name, str) and name.strip() and is_thinking_model(name)
+    )
+    if not thinking:
+        return None
+    listed = ", ".join(f"`{name}`" for name in thinking)
+    return (
+        "Installed list is live from Ollama and includes thinking-family tags: "
+        f"{listed}. They are unsafe as a shared default for JSON modules "
+        "(narrative_summary, llm_action_items, chart_descriptions, "
+        "group_llm_synthesis)."
+    )
 
 
 def _ensure_session_model_in_options(
@@ -639,6 +685,7 @@ def _render_assignment_widgets(
     include_group: bool,
     installed: Sequence[str],
     llm_model: str | None,
+    management_surface: bool = False,
 ) -> None:
     mode = st.radio(
         "Model assignment",
@@ -655,7 +702,12 @@ def _render_assignment_widgets(
     )
     if shared_key not in st.session_state:
         seeded = _seed_from_configured(installed, llm_model)
-        if seeded and json_consumers and is_thinking_model(seeded):
+        if (
+            seeded
+            and json_consumers
+            and is_thinking_model(seeded)
+            and not management_surface
+        ):
             seeded = None
         st.session_state[shared_key] = seeded or _UNSET_MODEL
     else:
@@ -676,6 +728,7 @@ def _render_assignment_widgets(
                 installed,
                 consumer_id=None,
                 json_consumers_selected=json_consumers,
+                hide_thinking_for_shared=not management_surface,
             )
             if installed
             else [_UNSET_MODEL]
@@ -689,6 +742,12 @@ def _render_assignment_widgets(
             key=shared_key,
             disabled=not bool(installed),
         )
+        if management_surface:
+            note = _management_thinking_caption_text(installed)
+        else:
+            note = _hidden_thinking_caption_text(installed, shared_options)
+        if note:
+            st.caption(note)
         return
 
     for consumer_id in _consumer_ids(include_group=include_group):
@@ -728,6 +787,15 @@ def _render_assignment_widgets(
             key=mk,
             disabled=not bool(installed),
         )
+
+    json_row_options = _options_for_consumer(
+        installed,
+        consumer_id="narrative_summary",
+        json_consumers_selected=json_consumers,
+    )
+    note = _hidden_thinking_caption_text(installed, json_row_options)
+    if note:
+        st.caption(note)
 
 
 def render_compact_llm_setup(
@@ -918,6 +986,7 @@ def render_llm_models_settings_panel() -> None:
         include_group=True,
         installed=installed,
         llm_model=llm.model,
+        management_surface=True,
     )
 
     st.markdown("##### Model information")
