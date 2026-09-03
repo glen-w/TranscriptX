@@ -3,62 +3,37 @@ Authority: docs/PRODUCT.md
 
 # User documentation index
 
-Curated entry points for people using TranscriptX (not repository historians).
+Curated entry points for people using TranscriptX.
 
 ## Start here
 
 | Doc | Purpose |
 |-----|---------|
-| [README.md](../README.md) | Product landing and quickstart |
-| [Website](../website/index.html) | Modest public landing (GitHub Pages) |
-| [PRODUCT.md](PRODUCT.md) | Product definition |
-| [Comparison](comparison.md) | TranscriptX vs STT, meeting assistants, and CI products |
-| [Installation](runtime/installation.md) | Install profiles and configuration |
-| [Settings & knobs](runtime/settings.md) | GUI scopes, Common vs Advanced, profile taxonomy |
-| [Transcription](runtime/transcription.md) | External transcription workflows |
-| [Directory watcher](runtime/directory_watcher.md) | Optional inbox watch → import (default-off) |
-| [Docker](runtime/docker.md) | Compose-based runtime |
-| [NOTICE](../NOTICE) | Third-party model / dataset notice |
-| [Known limitations](known_limitations.md) | User-facing limits (experimental, optional stacks, AI, privacy, EPUB, Speaker ID CCv2 rollback) |
-| [Export (ZIP / HTML / EPUB)](runtime/export.md) | Overview artifact export packages |
-| [Workspace backup / restore](backup_and_restore.md) | Full-workspace ZIP create / verify / restore |
-| [Using TranscriptX: ten workflows](workflows/index.md) | Outcome-focused walkthroughs (import → export plus Charts, Groups, Corrections, Rename, Speakers) |
+| [README.md](../README.md) | What it is, screenshots, first analysis, install |
+| [Website](../website/index.html) | Public landing (GitHub Pages) |
+| [Comparison](comparison.md) | Is TranscriptX the right tool? |
+| [First analysis](workflows/first-analysis.md) | Import a sample → Balanced run → Overview |
+| [Using TranscriptX](workflows/index.md) | Outcome-led walkthroughs |
+| [Installation](runtime/installation.md) | Docker and native install |
+| [Transcription](runtime/transcription.md) | Bring files from other tools |
 
-## Reference
+## Also useful
 
 | Doc | Purpose |
 |-----|---------|
-| [Models](runtime/models.md) | Analysis models |
+| [PRODUCT.md](PRODUCT.md) | Product definition |
+| [Settings](runtime/settings.md) | GUI scopes and knobs |
+| [Directory watcher](runtime/directory_watcher.md) | Optional inbox watch → import |
+| [Docker](runtime/docker.md) | Compose-based runtime |
+| [Export](runtime/export.md) | ZIP / HTML / EPUB packages |
+| [Workspace backup / restore](backup_and_restore.md) | Full-workspace ZIP |
+| [Known limitations](known_limitations.md) | Optional stacks, AI, privacy |
 | [LLM (Ollama)](runtime/llm.md) | Optional local AI |
-| [Corrections (viewer)](runtime/corrections-viewer.md) | Theme B: propose/apply while reading |
-| [Karaoke playback](runtime/karaoke-playback.md) | Theme D: word highlight while listening |
-| [Corrections Studio LLM](runtime/corrections-llm.md) | Optional Ollama discovery in Studio |
-| [Module catalog](generated/modules.md) | Generated module list |
-| [Web launcher / Python API](generated/cli.md) | Supported entry flags and API |
-| [Terminology](TERMS.md) | Non-authoritative term index |
-| [WhisperX recipe](recipes/whisperx/README.md) | Optional standalone WhisperX Docker recipe |
-| [Whisper-WebUI recipe](recipes/whisper-webui/README.md) | Optional third-party Gradio recipe (ownership disclaimer; SRT/VTT → import) |
-
-## Contracts (rules, not tutorials)
-
-Prefer the [Contract index](CONTRACT_INDEX.md) for invariants. Key user-visible contracts:
-
-- [Public surfaces](public_surfaces.md)
-- [Storage](runtime/STORAGE.md)
-- [Workspace backup](contracts/workspace-backup.md)
-- [Interface menus](contracts/interface-menus.md)
-- [Run outcomes](run_outcome_contract.md)
-- [Output layout](contracts/output-contract-v1.md)
-
-## Module runtime notes
-
-- [Lexical diversity](runtime/lexical_diversity.md)
-- [Keyphrases](runtime/keyphrases.md)
-- [Epistemic markers](runtime/epistemic_markers.md)
-- [Politeness](runtime/politeness.md)
-- [Topic shift](runtime/topic_shift.md)
-- [Transcript quality](runtime/transcript_quality.md)
+| [Corrections](runtime/corrections-viewer.md) | Propose/apply while reading |
+| [Terminology](TERMS.md) | Term index |
+| [WhisperX recipe](recipes/whisperx/README.md) | Optional WhisperX Docker recipe |
+| [Whisper-WebUI recipe](recipes/whisper-webui/README.md) | Optional Gradio recipe |
 
 ## Not in this index
 
-Developer plans, inventories, and historical archives live under [DEV_INDEX.md](DEV_INDEX.md) and [archive/ARCHIVE_INDEX.md](archive/ARCHIVE_INDEX.md).
+Contracts, storage rules, generated module catalogs, and programme notes live under [DEV_INDEX.md](DEV_INDEX.md).

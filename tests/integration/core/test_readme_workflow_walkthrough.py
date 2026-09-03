@@ -102,7 +102,7 @@ def _patch_workflow_roots(monkeypatch: pytest.MonkeyPatch, root: Path) -> Path:
 def test_readme_managed_import_then_stats_analysis(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """README Python snippet: managed import + run_analysis on planning_review."""
+    """generated/cli.md Python snippet: import + run_analysis on planning_review."""
     if not _PLANNING_FIXTURE.is_file():
         pytest.skip(f"workflow fixture missing: {_PLANNING_FIXTURE}")
 

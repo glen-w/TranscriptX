@@ -3,6 +3,8 @@ Authority: runtime/STORAGE.md
 
 # Installation & Configuration
 
+**First-time users:** follow the [README](../README.md) for Docker (or `./transcriptx.sh`), then [First analysis](../workflows/first-analysis.md). This page covers extras, environment variables, and troubleshooting.
+
 Operational guide only (installation, environment, runtime behavior). For authoritative storage and metadata structure, see `STORAGE.md`. For behavior and invariants, see CONTRACT documents.
 
 This document covers detailed installation, NLP setup, gates, core mode, environment variables, and troubleshooting. It is **not** a storage, run-outcome, or support-policy contract; for those rules, see:
@@ -18,10 +20,9 @@ For a quick start, see the [README](../README.md).
 
 ### Docker (recommended)
 
-No local Python required. Build and run:
+No local Python required. Copy `.env.example` to `.env`, set `HOST_RECORDINGS_DIR`, then:
 
 ```bash
-docker build -t transcriptx:latest .
 docker compose up transcriptx-web
 ```
 
@@ -152,6 +153,8 @@ TranscriptX runs in file-first mode by default, with groups, corrections, and ot
 | `TRANSCRIPTX_NO_AUTO_INSTALL` | `1` — disable automatic installation of optional extras (even when core mode is off). |
 | `TRANSCRIPTX_HOST` | Host for the web interface (default `127.0.0.1`; use `0.0.0.0` for Docker). |
 | `TRANSCRIPTX_PORT` | Port for the web interface (default `8501`). |
+| `INBOX_WATCH_ADMIT` | Host USB/inbox watcher: `1` admits `originals/` into the managed library after convert/STT. Default off. See [transcription.md](transcription.md#host-inbox-watcher-inbox-watch). |
+| `INBOX_WATCH_ADMIT_PYTHON` | Python interpreter for that admit step (must `import transcriptx`). |
 
 **Models:** defaults, higher-accuracy presets, and per-module guidance — [models.md](models.md).
 

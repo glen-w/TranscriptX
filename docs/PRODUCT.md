@@ -23,7 +23,7 @@ Import and organise transcripts; explore language, themes, speakers, interaction
 
 **Positioning:** keep contracts, provenance, and exportable structure first-class — **without** framing the product as specialist-only research software. Approachability and a clear GUI remain mandatory; research-grade structure is a product strength, not a gate that excludes general users.
 
-**Not the primary job:** replacing a transcription engine, meeting bot, CRM coach, or hosted team SaaS. Those sit upstream or adjacent — see [comparison.md](comparison.md).
+**Not the primary job:** replacing a transcription engine, meeting bot, CRM coach, hosted team SaaS, or a CAQDAS coding environment. Those sit upstream or adjacent — see [comparison.md](comparison.md).
 
 ## Surfaces
 
@@ -34,7 +34,7 @@ Import and organise transcripts; explore language, themes, speakers, interaction
 | Transcription | External for now (in-app **command-generation** handoff). Optional local in-app STT is a roadmap theme — see [ROADMAP.md](ROADMAP.md) |
 | Operational | Docker Compose; modest `website/` (GitHub Pages); hosted docs pending RTD go-live |
 
-First-run experience relies on **task documentation** (including [ten workflow walkthroughs](workflows/index.md)) and a **clear, complete GUI** — not Guided/Full presentation modes, in-app checklists, or a bundled demo project (those were trialled and removed; see [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) §16). Surfaces: [public surfaces](public_surfaces.md).
+First-run experience relies on **task documentation** (the [README](../README.md) plus [five common workflows](workflows/index.md); full set in the same index) and a **clear, complete GUI** — not Guided/Full presentation modes, in-app checklists, or a bundled demo project (those were trialled and removed; see [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) §16). Surfaces: [public surfaces](public_surfaces.md).
 
 ## AI position
 

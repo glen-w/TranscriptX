@@ -24,6 +24,14 @@ The default compose runs the `transcriptx-web` service as your host user (`user:
 
 ## Quickstart
 
+Copy `.env.example` to `.env` and set **`HOST_RECORDINGS_DIR`** to an absolute path outside the repository. Then:
+
+```bash
+docker compose up transcriptx-web
+```
+
+Open http://localhost:8501. Compose builds the image on first run. First-time path: [README](../../README.md) and [First analysis](../workflows/first-analysis.md).
+
 ### Build
 
 ```bash
@@ -198,7 +206,7 @@ Prefer `HOST_CONFIG_DIR` outside the clone as well (same idea as transcripts/out
 | `HOST_RECORDINGS_DIR/imports` | `/mnt/recordings/imports` | `TRANSCRIPTX_IMPORTS_DIR=/mnt/recordings/imports` | Writable uploads staging |
 | `HOST_WAV_BACKUP_DIR` (default `./data/backups/wav`) | `/mnt/wav` | `TRANSCRIPTX_WAV_BACKUP_DIR=/mnt/wav` | WAV archive |
 
-**Local dev override:** `docker-compose.override.yml` (optional, often gitignored) repeats these mounts but drops `:ro` on transcripts so the web UI can write speaker-map sidecars beside JSON files. For production-like read-only transcripts, use only `docker-compose.yml` or remove the override.
+**Local dev override:** `docker-compose.override.yml` (optional, often gitignored) repeats these mounts but drops `:ro` on transcripts so the web UI can write speaker-map sidecars beside JSON files. It also mounts `./tests/fixtures` at `/mnt/fixtures:ro` for deep-test analysis probes. Analyse those paths in place (`TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS=1`); do not import them into `/mnt/transcripts`. For production-like read-only transcripts, use only `docker-compose.yml` or remove the override.
 
 Canonical storage layout and invariants: [`docs/runtime/STORAGE.md`](../runtime/STORAGE.md).
 

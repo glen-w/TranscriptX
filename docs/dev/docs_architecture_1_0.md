@@ -11,7 +11,8 @@ Authority: self
 
 | Surface | Role | Authority |
 |---------|------|-----------|
-| README | Entry + quickstart | Summarizes; links PRODUCT |
+| README | Public first-run entry (product, screenshot, first analysis, install) | Summarizes; links PRODUCT |
+
 | [PRODUCT.md](../PRODUCT.md) | Product definition | Self |
 | [ROADMAP.md](../ROADMAP.md) | Long-term + 0.9 themes | Self |
 | [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) | Short-term 0.9→1.0 programme | Self |
@@ -19,6 +20,7 @@ Authority: self
 | `docs/runtime/` | Task-oriented user guides | Guide (link contracts) |
 | `docs/workflows/` | Outcome-focused walkthroughs (screenshots/GIFs) | Guide (PRODUCT) |
 | `docs/dev/` | Developer / programme | Developer |
+| `docs/reviews/` | Dated architecture / code assessments | Assessment (not contracts) |
 | `docs/archive/` | Historical (banners) | Historical |
 | Read the Docs (scaffold) | Hosted user/dev nav | Built from docs; Sphinx + `.readthedocs.yml` |
 | `website/` + Pages `/guide/` | Modest public landing **and** auto-published Sphinx HTML from the same `docs/` tree | Marketing + interim hosted guide — GitHub Pages |
@@ -28,6 +30,20 @@ Authority: self
 - User: [USER_INDEX.md](../USER_INDEX.md)
 - Developer: [DEV_INDEX.md](../DEV_INDEX.md)
 - Archive: [ARCHIVE_INDEX.md](../ARCHIVE_INDEX.md)
+
+## Voices
+
+Three registers — same facts, different density. Do not rewrite archive, reviews, or contracts to sound friendly.
+
+| Voice | Audience | Surfaces |
+|-------|----------|----------|
+| **User guide** | First-time and returning operators | README, `website/`, `docs/index.md`, `docs/USER_INDEX.md`, `docs/workflows/`, lead of transcription / installation / llm |
+| **Technical reference** | People configuring or scripting | `docs/runtime/` detail, `docs/generated/`, TERMS, contracts, STORAGE, public_surfaces |
+| **Maintainer** | Contributors and release owners | `docs/dev/`, `docs/archive/`, `docs/reviews/`, internal package/test READMEs |
+
+README is the user entry, not a release brief. Keep `Type:` / `Authority:` off the README. Schema epoch, install-profile markers, and programme history belong in ROADMAP / `docs/dev/`, not the first screen.
+
+The public landing, README, and Sphinx “Start here” toctree should tell the same story: what it is → whether it is for you → first analysis → install → privacy → advanced links.
 
 ## Hosted docs / Sphinx
 
@@ -45,4 +61,4 @@ Authority: self
 
 - [ ] RTD project go-live + hostname allowlist update
 - [x] Modest `website/` / GitHub Pages (**0.9.7**); Sphinx guide auto-publish on Pages (**interim until RTD**)
-- [x] Screenshot-based user guides — ten workflow walkthroughs under [docs/workflows/](../workflows/index.md) with media in `docs/_static/workflows/` (capture notes: [workflow_media_capture.md](workflow_media_capture.md))
+- [x] Screenshot-based user guides — workflow walkthroughs under [docs/workflows/](../workflows/index.md) (five featured on the README; full set in the index) with media in `docs/_static/workflows/` (capture notes: [workflow_media_capture.md](workflow_media_capture.md); public hero also at `website/images/overview.png`)

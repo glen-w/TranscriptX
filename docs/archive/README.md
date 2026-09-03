@@ -58,6 +58,7 @@ Archived files carry an **Archived / superseded** banner and should link to a cu
 
 - [chart_evidence_migration.md](migrations/chart_evidence_migration.md)
 - [rename_corrections_compat_table.md](migrations/rename_corrections_compat_table.md)
+- [whisperx_transcriptionconfig.md](migrations/whisperx_transcriptionconfig.md)
 
 ## Policy
 

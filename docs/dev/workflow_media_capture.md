@@ -116,6 +116,8 @@ Embed images with GitHub-compatible Markdown so they render in the GitHub file v
 
 Paths are relative to `docs/workflows/`. Alt text is required; captions are optional and only when they add information beyond surrounding prose.
 
+The public landing hero is a copy of `first-analysis-overview.png` at [`website/images/overview.png`](../../website/images/overview.png). When you recapture Overview, copy it there as well.
+
 ## Rebuild docs
 
 ```bash

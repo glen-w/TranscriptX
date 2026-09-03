@@ -104,30 +104,27 @@ In all GUIDE and ARCHITECTURE docs:
 
 ⸻
 
-3. README (entry guide only)
+3. README (user-guide entry)
 
-Refactor README.md into a strict entry guide.
+Keep README.md as the public first-run page (no Type:/Authority: headers).
 
-Keep only:
-	•	brief project description
-	•	primary supported entrypoint
-	•	secondary/programmatic entrypoints
-	•	minimal golden path:
-	•	raw transcript → managed import → analysis
-	•	high-level outputs overview
-	•	grouped links to deeper docs
+Keep:
+	•	short product explanation (BYO transcripts; link comparison)
+	•	screenshot (Overview after Balanced)
+	•	what you can do (about five outcomes)
+	•	3–4 step first analysis (GUI labels)
+	•	about five common workflows, linking the full set
+	•	installation (Docker compose up first; native helper second)
+	•	privacy / local AI
+	•	advanced/developer links (Python API, public surfaces, architecture)
 
-Add:
-	•	a short “Public surfaces” section linking to docs/public_surfaces.md
+Remove from the first screen:
+	•	managed-import / public-surfaces / schema-epoch / install-marker jargon
+	•	Python API snippets (those live in docs/generated/cli.md)
+	•	release-history paragraphs (ROADMAP / pre_release_roadmap)
+	•	detailed storage rules, run semantics, and architecture
 
-Remove:
-	•	detailed storage rules
-	•	detailed run semantics
-	•	deep internal architecture details
-	•	stale or removed CLI workflows
-	•	speculative or future-facing features that are not currently supported
-
-Validate that README examples and claims match the actual supported surfaces.  ￼
+Validate that README claims match supported surfaces.  ￼
 
 ⸻
 

@@ -1,51 +1,108 @@
 Type: GUIDE
 Authority: runtime/STORAGE.md
 
-# Transcription (external workflow)
+# Transcription (bring your own files)
 
-TranscriptX is **analysis-first**: transcription produces JSON (or SRT/VTT) elsewhere; the web app **imports** it. The **Transcribe Audio** page is a **parameterised command generator** (copyable shell only — Streamlit never executes transcription). **Import Transcript** is the GUI admission gate. WhisperX Docker and Whisper-WebUI remain external recipes, not orchestrated from Streamlit.
+TranscriptX **analyses** transcripts. It does **not** transcribe audio in the app.
 
-## Design: why transcription stays outside the GUI
+You produce JSON, SRT, or VTT with another tool, then **Import Transcript** in the web UI. The **Transcribe Audio** page only **generates a copyable command** — Streamlit never runs transcription. Optional Docker recipes for WhisperX and Whisper-WebUI stay outside the analysis app.
 
-We intentionally removed in-app transcription forms and `subprocess` orchestration. Transcription runs on the **host** (terminal, `whispermlx-missing`, WhisperX Docker, or Whisper-WebUI Gradio); the GUI only **generates copyable commands**, documents boundaries, and imports the result.
+This is an operational GUIDE. Storage layout, terminology, and run-outcome rules live in [STORAGE.md](STORAGE.md), [TERMS.md](../TERMS.md), and [run_outcome_contract.md](../run_outcome_contract.md).
 
-**Docker vs macOS venv.** The recommended install runs `transcriptx-web` in a **Linux** container. **whispermlx** typically lives in a **macOS** Python venv and depends on Apple MLX. That venv binary cannot be run reliably from inside the container: different OS, no MLX in Linux images, and paths like `~/venvs/whispermlx/bin/whispermlx` refer to the host—not the container filesystem. Mounting the venv or sourcing `whisperx.env` inside `transcriptx-web` does not fix this; at best you get “file not found” or an incompatible executable.
+## First path: the GUI
 
-**Practical split.**
+### If you already have a transcript
 
-| Where | What runs |
-|-------|-----------|
-| Host (Mac terminal) | `whispermlx`, `whispermlx-missing`, `inbox-watch`, optional WhisperX / Whisper-WebUI Docker |
-| `transcriptx-web` (Docker or native) | Import, library, analysis, artifacts |
+1. Open **Import Transcript** and upload the file (JSON, SRT, VTT, TXT, or HTML — see [formats](#what-files-you-can-bring)).
+2. Optionally attach the source recording, or place same-stem audio in the mounted recordings folder so playback can link.
+3. Open **Run Analysis**, keep **Balanced**, and run it.
+4. Read **Overview**. If labels still look like `SPEAKER_00`, [name the speakers](../workflows/speaker-identification.md) and re-run.
 
-**Why not merge stacks?** Transcription jobs are long-running and toolchain-heavy (ffmpeg, HF tokens, model weights, platform quirks). Keeping engines out of the analysis container avoids bloating the image, avoids coupling releases, and matches how most users already arrive (JSON from an external tool).
+Walkthrough with screenshots: [First analysis](../workflows/first-analysis.md).
 
-**Future (1.x):** optional **in-app / host-orchestrated transcription** (NVIDIA Parakeet/Canary + Whisper-class, CUDA/CPU, YouTube ingest, directory watcher) is a post-1.0 product theme — see [ROADMAP.md](../ROADMAP.md) theme **H**. A **host-side HTTP transcribe service** (same pattern as Ollama via `host.docker.internal`) remains a leading architecture option so the GUI can orchestrate jobs without running heavy STT inside every analysis container. Until that ships, 1.0 stays BYO + command generation. Optional **directory watcher** for transcript auto-import (and audio queue) is theme **G2** — see [directory_watcher.md](directory_watcher.md).
+### If you still need to transcribe audio
 
-## Transcribe Audio page (command generator)
+1. Put the audio files in one folder on your computer.
+2. Open **Transcribe Audio** in the web UI.
+3. Choose a tool: **whispermlx** (macOS host), **whispermlx-missing** (skip files that already have JSON), **WhisperX Docker**, or **Whisper-WebUI Docker**.
+4. Set input path, output folder, model, language, diarization, and (for the bulk helper) dry-run / force flags. For Whisper-WebUI, set outputs folder, port, and CPU/CUDA.
+5. **Copy** the generated shell snippet (paths with spaces are quoted). Run it on the host — macOS for whispermlx; the Docker host for WhisperX / Whisper-WebUI. Do **not** expect Streamlit to run it.
+6. Open **Import Transcript** and upload the result (WhisperX/whispermlx JSON, or Whisper-WebUI SRT/VTT).
 
-1. Open **Transcribe Audio** in the web UI.
-2. Choose a tool: **whispermlx** (macOS host), **whispermlx-missing** (skip existing JSON), **WhisperX Docker** (CLI JSON recipe), or **Whisper-WebUI Docker** (Gradio UI → SRT/VTT).
-3. Set input path, output folder, model, language, diarize, and (for the bulk helper) dry-run / force / fuzzy-match flags. For Whisper-WebUI, set outputs folder, port, and CPU/CUDA.
-4. **Copy** the generated shell snippet. Paths with spaces are shell-quoted. Do **not** expect Streamlit to run it.
-5. Run the command on the appropriate host (macOS for whispermlx; Docker host for WhisperX / Whisper-WebUI).
-6. Open **Import Transcript** and upload the result (WhisperX/whispermlx JSON, or Whisper-WebUI SRT/VTT; optionally attach the source recording; same-stem audio in the mounted recordings folder will be linked).
+**Saved presets:** on the same page, save/load/delete command-gen fields (tool, paths, model, language, diarize, tool-specific knobs) under `.transcriptx/profiles/stt_commands/`. Presets store host paths and flags only — never `HF_TOKEN` (tokens stay in `whisperx.env`).
 
-**Saved presets:** use **Saved presets** on the same page to save/load/delete command-gen form fields (tool, paths, model, language, diarize, tool-specific knobs) under `.transcriptx/profiles/stt_commands/`. Presets store host paths and flags only — never `HF_TOKEN` (tokens stay in `whisperx.env`).
-
-### Non-technical corpus path (short)
-
-| Step | Action |
-|------|--------|
-| 1 | Put audio files in one folder on your computer |
-| 2 | Install `whispermlx-missing` once (see below) if needed → Transcribe Audio → pick **whispermlx-missing** → set source + output folders → enable **Dry-run** → copy/run once to preview |
+| Step | Typical corpus path (whispermlx-missing) |
+|------|------------------------------------------|
+| 1 | Put audio files in one folder |
+| 2 | Install `whispermlx-missing` once ([below](#whispermlx-missing-bulk-script)) if needed → Transcribe Audio → **whispermlx-missing** → set source + output folders → enable **Dry-run** → copy/run once to preview |
 | 3 | Re-run without dry-run; already-transcribed stems are skipped (resume-friendly) |
-| 4 | Import Transcript → upload JSON → optionally attach recordings (same-stem audio in the mounted recordings folder is linked) |
+| 4 | Import Transcript → upload JSON → optionally attach recordings |
 | 5 | Run a Balanced or Quick analysis preset |
 
-**Spaces in folder names:** use the generator (quoting is automatic) or wrap paths in quotes yourself.
+Keep analysis in Docker if you like; still run whispermlx on the Mac host. WhisperX Docker and Whisper-WebUI are separate recipes — [WhisperX](../recipes/whisperx/README.md) and [Whisper-WebUI](../recipes/whisper-webui/README.md).
 
-**Docker analysis vs transcription:** keep analysis in Docker if you like; still run whispermlx on the Mac host. WhisperX Docker and Whisper-WebUI are separate container recipes — see [docs/recipes/whisperx/README.md](../recipes/whisperx/README.md) and [docs/recipes/whisper-webui/README.md](../recipes/whisper-webui/README.md).
+## What files you can bring
+
+Compatible JSON from WhisperX, [Scriberr](https://scriberr.app/), AssemblyAI, Deepgram, Otter, Google, Colab, or a manual edit. Subtitle exports (**SRT** / **WebVTT**) from Whisper-WebUI, [RiverScript](https://riverscript.com/), or [noScribe](https://noscribe.de/en/) are importable, as are [aTrain](https://github.com/aTrainTranscription/aTrain) **TXT** (and JSON if it matches the segment shape).
+
+TranscriptX does not run any transcription engine; it consumes files you provide. Where it sits next to STT, meeting, and qualitative-research products: [comparison.md](../comparison.md).
+
+Naming such as `*_transcriptx.json` matches project conventions, but **naming alone is not enough**. Add files through **Import Transcript** (or the Python import API [below](#python-api)) so the library copy, sidecar, and archived original are created. Schema and layout: [STORAGE.md](STORAGE.md).
+
+## Optional recipes
+
+### WhisperX
+
+Standalone reference — not required, not run from Streamlit. GUI: Transcribe Audio → **WhisperX Docker** → copy the `docker run` command → **Import Transcript** on the JSON. Full recipe: [docs/recipes/whisperx/](../recipes/whisperx/README.md).
+
+```bash
+cp whisperx.env.example whisperx.env
+# Edit whisperx.env and set HF_TOKEN
+docker compose -f docker-compose.whisperx.yml up -d
+# Run WhisperX on your audio (see WhisperX docs for the docker exec command).
+```
+
+```bash
+export HOST_RECORDINGS_DIR=/path/to/your/recordings
+docker run --rm \
+  -v "$HOST_RECORDINGS_DIR:/data/input:ro" \
+  -v "$(pwd)/data/transcripts:/data/output" \
+  --env-file whisperx.env \
+  ghcr.io/jim60105/whisperx:no_model \
+  /bin/bash -c "whisperx /data/input/your_audio.wav --output_dir /data/output"
+```
+
+WhisperX JSON is an **import source**. Runtime loaders and analysis accept the library copy produced by Import Transcript (or the Python import API).
+
+### Whisper-WebUI
+
+Third-party Gradio UI. Hand-off is **SRT/VTT → Import Transcript**. Transcribe Audio can generate a localhost-bound deploy snippet. Full recipe (including ownership and Apple Silicon notes): [docs/recipes/whisper-webui/README.md](../recipes/whisper-webui/README.md).
+
+```bash
+cd docs/recipes/whisper-webui
+docker compose -f docker-compose.whisper-webui.yml config
+docker compose -f docker-compose.whisper-webui.yml up -d
+# Open http://127.0.0.1:7860 — download SRT/VTT → Import Transcript
+```
+
+On Apple Silicon the container is expected to use **CPU** inference; prefer host **whispermlx** when Metal/MLX speed matters.
+
+## Import a whole folder
+
+On **Import Transcript**, section **Import all from folder** scans an **absolute** local directory (Docker: mount the host folder — typically `HOST_TRANSCRIPT_INBOX_DIR` → `/mnt/transcript-inbox`; do not scan `/mnt/transcripts` or its subdirs) and imports only eligible files:
+
+- Supported extensions: `.json`, `.srt`, `.vtt`, `.txt`, `.html`, `.htm` (case-insensitive).
+- **Eligible** statuses: new, incomplete (repairable), needs registration. Already-imported stems, stem conflicts, size/symlink/special-file failures, and unrepairable incompletes are blocked (preview uses human labels).
+- Skips stems that are already in the library (canonical JSON + import sidecar). Incomplete JSON without a safe `originals/` provenance is **not** treated as a new import.
+- Duplicate stems in the folder (including case variants) are all marked conflict — none are imported.
+- Source files in the scanned folder are **never** deleted or modified; the app copies into `transcripts/imports/` then admits them.
+- Defaults: **100 MiB** per file (`TRANSCRIPTX_FOLDER_IMPORT_MAX_FILE_BYTES`) and **500** candidates (`TRANSCRIPTX_FOLDER_IMPORT_MAX_CANDIDATES`). Exceeding the candidate limit fails the scan closed (Import eligible stays disabled).
+- Preview is invalidated if the path, transcripts root, limits, or admission policy change. Use **Rescan**; a successful folder import auto-rescans so statuses refresh.
+- Preview includes a read-only **audio** column: same-stem companions under approved recordings roots (`found: stem.mp3` / `none`). No automatic copy — upload via section 3 or place matching audio for playback linking.
+
+Programmatic admission with registration under one lock: `transcriptx.io.admit_and_register.admit_and_register`.
+
+## Host tools (advanced)
 
 ### Finding whispermlx
 
@@ -119,16 +176,16 @@ It processes MP3s in a source folder that lack matching JSON in a transcripts ou
 | Source | Meaning |
 |--------|---------|
 | `TRANSCRIPTX_TRANSCRIPTS_DIR` env | Transcripts **base** directory; script appends `/originals` for batch output |
-| `transcripts` in JSON or `--transcripts` CLI | Exact **output** directory — must be `…/transcripts/originals` (scripts refuse the managed library root that contains `metadata/` / `imports/`) |
+| `transcripts` in JSON or `--transcripts` CLI | Exact **output** directory — must be `…/transcripts/originals` (scripts refuse the library root that contains `metadata/` / `imports/`) |
 | `TRANSCRIPTX_RECORDINGS_DIR` env | Maps directly to `source` (recordings folder) |
 
-Host helpers never admit into the managed library. Raw engine JSON belongs under `originals/`; library admission requires **Import Transcript** or Settings → Watcher (`admit_and_register`), which writes canonical `schema_version` / `source` markers plus an import sidecar.
+Host helpers write raw engine JSON under `originals/` only. Library admission requires **Import Transcript**, Settings → Watcher, or optional `inbox-watch --admit` (`admit_and_register`), which writes canonical `schema_version` / `source` markers plus an import sidecar.
 
 **`whisperx.env`** is used only for the whispermlx **subprocess** environment (`HF_TOKEN`, etc.), not for resolving config paths. Repo `.env` is loaded early (without overriding existing shell env) for `TRANSCRIPTX_*` path overrides — same pattern as Docker/native TranscriptX.
 
 ### Host inbox watcher (`inbox-watch`)
 
-Optional **host-side** companion (not the in-app Settings → Watcher). Watches a drop folder for new **audio** and/or **transcripts**. Streamlit never runs it; it does not admit files into the managed library.
+Optional **host-side** companion (not the in-app Settings → Watcher). Watches a drop folder for new **audio** and/or **transcripts**. Streamlit never runs it. Admission into the library is **off by default**; pass `--admit` (or `"admit_to_library": true`) to run `python -m transcriptx.admit_originals` after convert/copy/`whispermlx-missing`.
 
 Install once from the repo root:
 
@@ -144,6 +201,7 @@ Or run without installing: `python3 scripts/inbox-watch.py --once --dry-run …`
 |------|----------------|-----------|
 | `--watch-audio` (default on) | Convert new inbox audio to 16 kHz mono 64k MP3 in the recordings folder, then run `whispermlx-missing` | Recordings already has that stem (any audio extension). With `--skip-serial`, `whispermlx-missing` also skips Auto-merge serial groups |
 | `--watch-transcripts` (default on) | Copy new JSON/SRT/VTT/txt/html into the transcripts dest | Dest already has that stem (any transcript extension) |
+| `--admit` (default off) | After audio/transcript handling, admit eligible files in the transcripts dest (typically `originals/`) into the library | Already-imported stems; `foo (1).json` archive names. Requires a Python that can `import transcriptx` (`--admit-python` or `.transcriptx/bin/python`) |
 | `--no-watch-audio` / `--no-watch-transcripts` | Disable that mode | At least one mode must stay on |
 
 ```bash
@@ -156,8 +214,12 @@ inbox-watch --once --dry-run \
 # One scan (cron / launchd)
 inbox-watch --once --inbox … --recordings … --transcripts …
 
-# Poll until Ctrl-C
+# Poll until Ctrl-C. If the USB inbox path is missing, --watch keeps running
+# (empty scans) and still runs whispermlx-missing + --admit on the first cycle.
 inbox-watch --watch --interval 5
+
+# Same, and admit new originals/ JSON into the library
+inbox-watch --watch --admit
 ```
 
 ffmpeg (audio mode): `-nostdin -y -ac 1 -ar 16000 -c:a libmp3lame -b:a 64k -f mp3`. Writes a temp `.mp3.partial` file then renames into recordings so `whispermlx-missing` never sees a half-written MP3. `-f mp3` is required so ffmpeg 8+ can mux even when the temp name does not end in `.mp3`.
@@ -169,7 +231,8 @@ Host output mirrors the analysis CLI **Review before run** / **Run summary** sha
 1. **Review before cycle** — inbox / recordings / transcripts paths, modes, and candidate file list
 2. **Processing** — `[i/n] audio|transcript: filename`, then indented convert/copy/skip lines; long encodes print elapsed time and stream ffmpeg `time=` / `speed=` on **stderr**
 3. **Transcription (whispermlx-missing)** — when audio mode ran (child process output follows)
-4. **Run summary** — `Status` (`completed` / `partial` / `failed` / `dry-run`), counts, and limited bullet lists for converted / skipped / failed
+4. **Library admit** — when `--admit` ran (`python -m transcriptx.admit_originals` output follows)
+5. **Run summary** — `Status` (`completed` / `partial` / `failed` / `dry-run`), counts, and limited bullet lists for converted / skipped / failed
 
 Example (abbreviated):
 
@@ -213,7 +276,31 @@ Inbox sources are **kept by default**. After a successful convert (audio) or cop
 
 `--backup-wav` and `--delete-originals` are independent (use either or both). Deleting with no backup prints a warning. A failed WAV backup skips delete for that file.
 
-**Local config (gitignored):** copy [`config/inbox-watch.example.json`](../config/inbox-watch.example.json) to `.transcriptx/inbox-watch.json`. Override with `--config` or `INBOX_WATCH_CONFIG`. Merge order: portable repo defaults ← `TRANSCRIPTX_*` / `INBOX_WATCH_*` env ← local JSON ← CLI. `TRANSCRIPTX_RECORDINGS_DIR` maps to recordings; `TRANSCRIPTX_TRANSCRIPTS_DIR` is the transcripts **base** (script appends `/originals`); `INBOX_WATCH_INBOX` is the drop folder; `TRANSCRIPTX_WAV_BACKUP_DIR` is the WAV archive. Boolean env: `INBOX_WATCH_BACKUP_WAV`, `INBOX_WATCH_DELETE_ORIGINALS`, `INBOX_WATCH_SKIP_SERIAL`.
+**Local config (gitignored):** copy [`config/inbox-watch.example.json`](../config/inbox-watch.example.json) to `.transcriptx/inbox-watch.json`. Repo `.env` is loaded with `setdefault` (existing shell env wins). Merge order: portable repo defaults ← `.env` / `TRANSCRIPTX_*` / `INBOX_WATCH_*` ← local JSON ← CLI.
+
+| Key | JSON | Env |
+|-----|------|-----|
+| Drop folder | `inbox` | `INBOX_WATCH_INBOX` |
+| Recordings | `recordings` | `TRANSCRIPTX_RECORDINGS_DIR` |
+| Transcripts dest | `transcripts` (use `…/originals`) | `TRANSCRIPTX_TRANSCRIPTS_DIR` is the **library base**; the script appends `/originals` |
+| WAV archive | `wav_backup` | `TRANSCRIPTX_WAV_BACKUP_DIR` |
+| Convert audio | `watch_audio` | `INBOX_WATCH_AUDIO` |
+| Copy transcripts | `watch_transcripts` | `INBOX_WATCH_TRANSCRIPTS` |
+| Admit to library (default **off**) | `admit_to_library` | `INBOX_WATCH_ADMIT` |
+| Admit interpreter | `admit_python` | `INBOX_WATCH_ADMIT_PYTHON` |
+| Config path | — | `INBOX_WATCH_CONFIG` / `--config` |
+| Also | `backup_wavs`, `delete_originals`, `skip_serial` | `INBOX_WATCH_BACKUP_WAV`, `INBOX_WATCH_DELETE_ORIGINALS`, `INBOX_WATCH_SKIP_SERIAL` |
+
+Library admit needs a **native** TranscriptX install (the JSON/`--admit-python` interpreter must `import transcriptx`). It does not enter the Docker analysis container. Set `TRANSCRIPTX_TRANSCRIPTS_DIR` and `TRANSCRIPTX_OUTPUT_DIR` to the same host folders Docker mounts so the GUI index stays in sync.
+
+Enable admit in local JSON (and/or `.env` `INBOX_WATCH_ADMIT=1`):
+
+```json
+"admit_to_library": true,
+"admit_python": "/path/to/python3"
+```
+
+**macOS login agent (optional):** [`scripts/macos/inbox-watch-agent.sh`](../../scripts/macos/inbox-watch-agent.sh) plus [`scripts/macos/com.transcriptx.inbox-watch.plist`](../../scripts/macos/com.transcriptx.inbox-watch.plist) can run `--watch` at login. Admit is controlled by local JSON / `.env`, not by the plist. If the USB inbox is unplugged, `--watch` keeps polling empty cycles; the first cycle still catch-up transcribes missing MP3s and admits `originals/`. Logs: `.transcriptx/inbox-watch.launchd.log`.
 
 Do **not** point this inbox at the same folder as the in-app G2 watcher unless you intend both to handle new transcripts (G2 admits; inbox-watch copies). See [directory_watcher.md](directory_watcher.md).
 
@@ -246,77 +333,9 @@ uv run python scripts/audio_merge.py part_1.wav part_2.wav --preprocess -o merge
 
 Requires `ffmpeg` (and typically `pydub` via the project install). Transcribe the resulting files externally, then use **Import Transcript**.
 
----
+## Python API
 
-## External transcription (all platforms)
-
-TranscriptX remains **analysis-first**: you can still bring your own transcript JSON from any tool. The sections below describe external workflows and the managed import API.
-
-
-This is an operational GUIDE. The authoritative storage, terminology, and run-outcome rules live in:
-
-- `docs/runtime/STORAGE.md`
-- `docs/TERMS.md`
-- `docs/run_outcome_contract.md`
-
-## What TranscriptX expects (canonical schema)
-
-TranscriptX expects transcripts to satisfy a canonical JSON schema (schema_version/source/metadata/segments) and to participate in the managed storage contract (canonical JSON + sidecar + archived original). The full schema and storage rules are defined in:
-
-- `docs/runtime/STORAGE.md`
-- `docs/TERMS.md`
-
-Filenames ending with `*_transcriptx.json` (or `*_canonical.json`) match project conventions, but **naming alone is not enough**; for managed library admission, import through the web UI or use the managed import workflow API below so the full managed artifact set is created.
-
-## Generate transcript JSON
-
-You can produce compatible JSON with any tool: WhisperX, [Scriberr](https://scriberr.app/), AssemblyAI, Deepgram, Otter, Google, Colab, or manual edits. Subtitle exports (**SRT** / **WebVTT**) from tools such as Whisper-WebUI are also importable. TranscriptX does not run any transcription engine; it consumes files you provide. How TranscriptX relates to STT and meeting products: [comparison.md](../comparison.md).
-
-### WhisperX (optional reference example)
-
-WhisperX is one example of an external transcription workflow. The recipe below is a **standalone reference** — optional, not required. Run WhisperX yourself (Docker or local), then feed the output into TranscriptX.
-
-**Docker (copy-paste):** Use the reference recipe in [docs/recipes/whisperx/](../recipes/whisperx/README.md). From that directory:
-
-```bash
-cp whisperx.env.example whisperx.env
-# Edit whisperx.env and set HF_TOKEN
-docker compose -f docker-compose.whisperx.yml up -d
-# Run WhisperX on your audio (see WhisperX docs for exact docker exec command).
-```
-
-**Single `docker run` (snippet):**
-
-```bash
-# Use a host audio folder outside the repo (same idea as HOST_RECORDINGS_DIR in compose).
-export HOST_RECORDINGS_DIR=/path/to/your/recordings
-docker run --rm \
-  -v "$HOST_RECORDINGS_DIR:/data/input:ro" \
-  -v "$(pwd)/data/transcripts:/data/output" \
-  --env-file whisperx.env \
-  ghcr.io/jim60105/whisperx:no_model \
-  /bin/bash -c "whisperx /data/input/your_audio.wav --output_dir /data/output"
-```
-
-WhisperX writes JSON with segments (often with `words` arrays). That raw shape is an **import source**, not a library transcript: use the managed workflow API (below) so canonical `schema_version` / `source` / `metadata`, sidecar, and archive are created. Runtime loaders (`load_segments`, Speaker ID, analysis) accept only managed canonical artifacts.
-
-### Whisper-WebUI (optional Gradio example)
-
-[jhj0517/Whisper-WebUI](https://github.com/jhj0517/Whisper-WebUI) is a third-party Gradio UI (faster-whisper + optional diarization). **Ownership, Apple Silicon CPU caveat, pinned image tag, removal, and smoke-test limits** live in [docs/recipes/whisper-webui/README.md](../recipes/whisper-webui/README.md) — read that disclaimer before deploying. TranscriptX does not distribute or guarantee the service; hand-off is **SRT/VTT → Import Transcript**. The Transcribe Audio page can generate a copyable localhost-bound deploy snippet (**Whisper-WebUI Docker** tool).
-
-```bash
-# Prefer the recipe compose (localhost bind + pinned tag):
-cd docs/recipes/whisper-webui
-docker compose -f docker-compose.whisper-webui.yml config
-docker compose -f docker-compose.whisper-webui.yml up -d
-# Open http://127.0.0.1:7860 — download SRT/VTT → Import Transcript
-```
-
-**Apple Silicon:** the container is expected to use **CPU** inference; prefer host **whispermlx** when Metal/MLX speed matters.
-
-## Canonical validation and import (Python API)
-
-There is no `transcriptx transcript …` terminal subcommand. Validate and normalize JSON from code or a short script. Canonical validation is required for library admission and analysis — see [`docs/runtime/STORAGE.md`](STORAGE.md) (canonical transcript validation) for the contract.
+There is no `transcriptx transcript …` terminal subcommand. Validate and import from code or a short script. Canonical validation is required for library admission and analysis — see [STORAGE.md](STORAGE.md).
 
 **Validate** a document already loaded as a dict (raises `ValueError` if invalid):
 
@@ -331,7 +350,7 @@ data = json.loads(path.read_text(encoding="utf-8"))
 validate_transcript_document(data)
 ```
 
-**Managed import** raw or legacy transcript files (e.g. WhisperX JSON, SRT, VTT) into the full managed artifact set:
+**Import** raw or legacy transcript files (e.g. WhisperX JSON, SRT, VTT) into the library:
 
 ```python
 from pathlib import Path
@@ -348,11 +367,11 @@ print(result.sidecar_path)
 print(result.archived_original_path)
 ```
 
-The managed workflow detects the format, normalizes speakers (missing or empty → `SPEAKER_UNKNOWN` where applicable), writes canonical `schema_version/source/metadata`, writes a sidecar, and archives the original source. Web flow does not overwrite existing canonical JSON by default; CLI/programmatic callers may opt into overwrite as a new import attempt.
+The import workflow detects the format, normalizes speakers (missing or empty → `SPEAKER_UNKNOWN` where applicable), writes canonical `schema_version/source/metadata`, writes a sidecar, and archives the original source. Web flow does not overwrite existing canonical JSON by default; programmatic callers may opt into overwrite as a new import attempt.
 
-Downstream analysis APIs (for example `AnalysisRequest` + `run_analysis`) assume the input `transcript_path` refers to a library-valid, canonically validated transcript produced by this workflow or an equivalent canonical loader.
+Downstream analysis APIs (for example `AnalysisRequest` + `run_analysis`) assume `transcript_path` is a library transcript produced by this workflow or an equivalent loader. Then analyse from the web interface or via `AnalysisRequest` + `run_analysis` (see [generated/cli.md](../generated/cli.md)).
 
-Then analyze from the web interface or via `AnalysisRequest` + `run_analysis` (see [generated/cli.md](generated/cli.md)).
+Other engines (AssemblyAI, Deepgram, Google, manual edits): each segment needs `start`, `end`, `speaker`, and `text`. Use **validate** (above) and the import workflow so metadata, sidecar, and archive exist.
 
 ## Multi-language variants
 
@@ -365,10 +384,10 @@ Import alternate-language versions of an existing transcript using a flat filena
 **Workflow:**
 
 1. Import and identify speakers on the base transcript first (Speaker ID page, or segment-derived names on import).
-2. Import the language variant via the same managed import path (web **Import Transcript** or `run_managed_import_workflow`).
+2. Import the language variant via the same path (web **Import Transcript** or `run_managed_import_workflow`).
 3. On import, speaker-map inheritance runs automatically when the base has a speaker-map sidecar and the variant does not yet.
 
-**Requirements:** variant segments should use the same diarized speaker IDs as the base (`SPEAKER_00`, `SPEAKER_01`, …). See [`STORAGE.md`](STORAGE.md) for managed variant rules.
+**Requirements:** variant segments should use the same diarized speaker IDs as the base (`SPEAKER_00`, `SPEAKER_01`, …). See [STORAGE.md](STORAGE.md) for variant rules.
 
 **What is copied:** display names, ignored speakers, and `speaker_id_to_db_id`. Each variant gets its own sidecar under `metadata/speaker_maps/` (see [STORAGE.md](STORAGE.md)).
 
@@ -376,29 +395,17 @@ Import alternate-language versions of an existing transcript using a flat filena
 
 **Fallback:** if inheritance does not apply, segment `original_cue.original_speaker` names are used as on a normal import.
 
-## Folder import (Import Transcript)
+## Why transcription stays outside the GUI
 
-On **Import Transcript**, section **Import all from folder** scans an **absolute** local directory (Docker: mount the host folder into the container — typically `HOST_TRANSCRIPT_INBOX_DIR` → `/mnt/transcript-inbox`; do not scan `/mnt/transcripts` or its subdirs) and imports only eligible files:
+We intentionally removed in-app transcription forms and `subprocess` orchestration. Transcription runs on the **host** (terminal, `whispermlx-missing`, WhisperX Docker, or Whisper-WebUI Gradio); the GUI only **generates copyable commands**, documents boundaries, and imports the result.
 
-- Supported extensions: `.json`, `.srt`, `.vtt`, `.txt`, `.html`, `.htm` (case-insensitive).
-- **Eligible** statuses: new, incomplete (repairable), needs registration. Already-managed stems, stem conflicts, size/symlink/special-file failures, and unrepairable incompletes are blocked (preview uses human labels).
-- Skips stems that are already managed (canonical JSON + import sidecar). Incomplete JSON without a safe `originals/` provenance is **not** treated as a new import.
-- Duplicate stems in the folder (including case variants) are all marked conflict — none are imported.
-- Source files in the scanned folder are **never** deleted or modified; the app copies into `transcripts/imports/` then runs managed admission.
-- Defaults: **100 MiB** per file (`TRANSCRIPTX_FOLDER_IMPORT_MAX_FILE_BYTES`) and **500** candidates (`TRANSCRIPTX_FOLDER_IMPORT_MAX_CANDIDATES`). Exceeding the candidate limit fails the scan closed (Import eligible stays disabled).
-- Preview is invalidated if the path, transcripts root, limits, or admission policy change. Use **Rescan** (same control as Scan once a preview exists); a successful folder import auto-rescans so statuses refresh.
-- Preview includes a read-only **audio** column: same-stem companions under approved recordings roots (`found: stem.mp3` / `none`). No automatic copy — upload via section 3 or place matching audio for playback linking.
+**Docker vs macOS venv.** The recommended install runs `transcriptx-web` in a **Linux** container. **whispermlx** typically lives in a **macOS** Python venv and depends on Apple MLX. That venv binary cannot be run reliably from inside the container: different OS, no MLX in Linux images, and paths like `~/venvs/whispermlx/bin/whispermlx` refer to the host—not the container filesystem. Mounting the venv or sourcing `whisperx.env` inside `transcriptx-web` does not fix this; at best you get “file not found” or an incompatible executable.
 
-Programmatic admission with registration under one lock: `transcriptx.io.admit_and_register.admit_and_register`.
+| Where | What runs |
+|-------|-----------|
+| Host (Mac terminal) | `whispermlx`, `whispermlx-missing`, `inbox-watch`, optional WhisperX / Whisper-WebUI Docker |
+| `transcriptx-web` (Docker or native) | Import, library, analysis, artifacts |
 
-## Other tools
+Transcription jobs are long-running and toolchain-heavy (ffmpeg, HF tokens, model weights, platform quirks). Keeping engines out of the analysis container avoids bloating the image, avoids coupling releases, and matches how most users already arrive (JSON from an external tool).
 
-You can produce compatible JSON from other engines (e.g. AssemblyAI, Deepgram, Google, manual edits). Ensure each segment has `start`, `end`, `speaker`, and `text`. Use **validate** (above) to check structure and the **managed import workflow** to add canonical metadata + sidecar + archive.
-
-## Golden path
-
-1. **Get transcript files** — Use any tool that produces compatible JSON or subtitles: WhisperX, Scriberr, Whisper-WebUI (SRT/VTT), AssemblyAI, Deepgram, Otter, Colab, or manual export. See `docs/recipes/whisperx/README.md` and `docs/recipes/whisper-webui/README.md` for optional recipes; see [comparison.md](../comparison.md) for where TranscriptX sits next to STT and meeting tools.
-2. **Managed import (required for library admission)** — run the managed import workflow (or use the web Import Transcript page) to produce canonical JSON + sidecar + archived original under the managed storage contract (see `docs/runtime/STORAGE.md`).
-3. **Analyze** — open the web interface and select the transcript, or use the Python API (`AnalysisRequest` + `run_analysis`).
-
-For managed library analysis, always use a **library-valid managed transcript** as defined in `docs/TERMS.md` and `docs/runtime/STORAGE.md`. Raw canonicalization via low-level helpers alone does not satisfy managed-library admission rules.
+**Future (1.x):** optional **in-app / host-orchestrated transcription** (NVIDIA Parakeet/Canary + Whisper-class, CUDA/CPU, YouTube ingest, directory watcher) is a post-1.0 product theme — see [ROADMAP.md](../ROADMAP.md) theme **H**. A **host-side HTTP transcribe service** (same pattern as Ollama via `host.docker.internal`) remains a leading architecture option so the GUI can orchestrate jobs without running heavy STT inside every analysis container. Until that ships, 1.0 stays bring-your-own + command generation. Optional **directory watcher** for transcript auto-import (and audio queue) is theme **G2** — see [directory_watcher.md](directory_watcher.md).

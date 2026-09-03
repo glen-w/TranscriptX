@@ -78,7 +78,7 @@ To avoid drift between the web launcher, Docker setup, Python API docs, and arch
    Run `transcriptx --help` (or `python -m transcriptx.web --help`). The installed console script only launches Streamlit (`--host`, `--port`). Update [docs/generated/cli.md](generated/cli.md) so launcher flags and Python API examples match the code. Do not document removed terminal subcommands.
 
 2. **Verify README examples**  
-   Ensure installation (pip/venv and Docker), launcher usage, and “golden path” steps in [README.md](../README.md) are runnable with the current code. README must summarize and link to contracts instead of restating rules.
+   Ensure installation (Docker happy path and native helper) and first-analysis steps in [README.md](../README.md) are runnable with the current code. README is a user-guide entry: outcomes, GUI labels, install, privacy. It must summarize and link to contracts instead of restating rules. Do not put schema-epoch, install-marker, or public-surfaces tables on the README.
 
 3. **Verify Docker examples**  
    Ensure [docs/runtime/docker.md](../runtime/docker.md) and README Docker sections match [docker-compose.yml](../docker-compose.yml) (service names, volume paths, ENTRYPOINT usage). Docker docs must describe operational behavior only; detailed storage layout and output rules belong in contracts.
@@ -86,8 +86,8 @@ To avoid drift between the web launcher, Docker setup, Python API docs, and arch
 4. **Confirm no removed interfaces are referenced**  
    Search docs and README for old terminal subcommands (e.g. `transcriptx transcript …`, `transcriptx analyze`) and deprecated entry paths (e.g. `streamlit_app.py`, `transcriptx web-viewer`). Replace runnable examples with supported surfaces from [public_surfaces.md](../public_surfaces.md). Automated coverage: `tests/contracts/test_stale_surface_references.py`.
 
-5. **Confirm version consistency**  
-   If the package version is displayed anywhere (e.g. in docs or image labels), it should match [pyproject.toml](../pyproject.toml) `version`. Keep [website/index.html](../../website/index.html) public-series badge and [docs/index.md](../index.md) toctrees in sync with [USER_INDEX.md](../USER_INDEX.md) / README entry points when adding user-facing guides.
+5. **Confirm version consistency and public-entry parity**  
+   If the package version is displayed anywhere (e.g. in docs or image labels), it should match [pyproject.toml](../pyproject.toml) `version`. Keep [website/index.html](../../website/index.html) public-series badge, README outline (product → screenshot → first analysis → five workflows → install → privacy), and [docs/index.md](../index.md) Start-here toctree in sync with [USER_INDEX.md](../USER_INDEX.md). Voices: user guide vs technical reference vs maintainer — [docs_architecture_1_0.md](docs_architecture_1_0.md).
 
 Keep this process lightweight and manual unless a small local helper (e.g. script that runs `--help` and diffs) is clearly justified.
 

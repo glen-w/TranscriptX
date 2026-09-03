@@ -3,50 +3,23 @@ Authority: ../../runtime/transcription.md
 
 # Whisper-WebUI (optional interoperability recipe)
 
-## Ownership disclaimer
-
-This is an optional interoperability recipe for independently maintained third-party software. TranscriptX does not distribute, embed, fork or guarantee the Whisper service, its models, images, dependencies, output quality or hardware support. The recipe records a configuration that was manually verified on the stated date. Problems inside the transcription service should be reported upstream; TranscriptX accepts issues concerning only the documented hand-off and import behaviour.
-
-TranscriptX consumes transcripts; it does not own transcription infrastructure. Upstream updates may break this recipe at any time — there is **no guarantee** that a newer image or commit remains compatible.
-
-## Apple Silicon warning
-
-**Apple Silicon users: this container is expected to use CPU inference. Native MLX-based transcription may be substantially faster but is outside this recipe.**
-
-On Mac, the container normally runs Whisper on the CPU, even on arm64. Docker documents generic Docker Desktop GPU access as Windows/WSL2-only, while these Whisper containers generally expose NVIDIA/CUDA acceleration. An M-series container therefore avoids Python dependency hell but does **not** gain native Metal acceleration. Prefer **whispermlx** / **whispermlx-missing** on the Mac host when speed matters; use this recipe when you want a local webpage that transcribes audio.
-
-## Recipe identity
-
-| Field | Value |
-|-------|--------|
-| Upstream repository | [jhj0517/Whisper-WebUI](https://github.com/jhj0517/Whisper-WebUI) |
-| Upstream licence | [Apache License 2.0](https://github.com/jhj0517/Whisper-WebUI/blob/master/LICENSE) |
-| Image tag documented here | `jhj0517/whisper-webui:v1.0.8-4def223` (Hub; also published as moving `latest`) |
-| Upstream commit at recipe authoring | track via image tag / Hub digest — pin the tag above; do not rely on floating `latest` for reproducibility |
-| Last manually verified | **pending** — recipe + `docker compose config` checked **2026-07-27**; full Gradio/import smoke not yet signed off |
-| Expected exports | **SRT**, **WebVTT** (preferred); `.txt` (no timestamps) also possible |
-| TranscriptX hand-off | **Import Transcript** (managed admission) for `.srt` / `.vtt` |
-| Default bind | **localhost only** — `127.0.0.1:7860` (not `0.0.0.0`) |
-| Model cache (host) | `$CLONE_DIR/models` → `/Whisper-WebUI/models` (often **multi‑GB**; large-v3 alone is several GB) |
-| HF token | **Your** responsibility when enabling diarization (gated pyannote models) |
-
-Update **Last manually verified** only after the [maintainer smoke checklist](#maintainer-smoke--release-obligation) below.
+Use this when you want a local webpage that transcribes audio, then import the subtitles into TranscriptX.
 
 ## What this is for
-
-Use it when you want a local Gradio UI (“I just need a webpage that transcribes this”), then import the exported subtitles into TranscriptX.
 
 1. Deploy Whisper-WebUI (Docker below — recommended).
 2. Open `http://127.0.0.1:7860`, upload audio, set model/language/diarization in the UI.
 3. Download **SRT** or **WebVTT**.
 4. In TranscriptX: **Import Transcript** → upload the subtitle file (optionally attach the recording).
 
-### Non-technical path (via TranscriptX GUI)
+### GUI path (via TranscriptX)
 
 1. Open **Transcribe Audio** in TranscriptX.
 2. Choose **Whisper-WebUI Docker (Gradio)**, set the outputs folder, port, and CPU vs CUDA.
 3. Copy the generated deploy snippet and run it on the host.
 4. Transcribe in the browser; import **SRT/VTT** via **Import Transcript**.
+
+**Apple Silicon:** this container is expected to use **CPU** inference. Prefer **whispermlx** on the Mac host when speed matters. Details in [Apple Silicon](#apple-silicon) below.
 
 ## Docker (recommended)
 
@@ -143,6 +116,35 @@ docker stop whisper-webui   # --rm removes the container on stop
 ```
 
 TranscriptX library imports are **not** deleted by stopping the WebUI container. Remove library items separately in the app if desired.
+
+## Ownership and support
+
+This is an optional interoperability recipe for independently maintained third-party software. TranscriptX does not distribute, embed, fork or guarantee the Whisper service, its models, images, dependencies, output quality or hardware support. The recipe records a configuration that was manually verified on the stated date. Problems inside the transcription service should be reported upstream; TranscriptX accepts issues concerning only the documented hand-off and import behaviour.
+
+TranscriptX consumes transcripts; it does not own transcription infrastructure. Upstream updates may break this recipe at any time — there is **no guarantee** that a newer image or commit remains compatible.
+
+## Apple Silicon
+
+**This container is expected to use CPU inference. Native MLX-based transcription may be substantially faster but is outside this recipe.**
+
+On Mac, the container normally runs Whisper on the CPU, even on arm64. Docker documents generic Docker Desktop GPU access as Windows/WSL2-only, while these Whisper containers generally expose NVIDIA/CUDA acceleration. An M-series container therefore avoids Python dependency hell but does **not** gain native Metal acceleration. Prefer **whispermlx** / **whispermlx-missing** on the Mac host when speed matters; use this recipe when you want a local webpage that transcribes audio.
+
+## Recipe identity
+
+| Field | Value |
+|-------|--------|
+| Upstream repository | [jhj0517/Whisper-WebUI](https://github.com/jhj0517/Whisper-WebUI) |
+| Upstream licence | [Apache License 2.0](https://github.com/jhj0517/Whisper-WebUI/blob/master/LICENSE) |
+| Image tag documented here | `jhj0517/whisper-webui:v1.0.8-4def223` (Hub; also published as moving `latest`) |
+| Upstream commit at recipe authoring | track via image tag / Hub digest — pin the tag above; do not rely on floating `latest` for reproducibility |
+| Last manually verified | **pending** — recipe + `docker compose config` checked **2026-07-27**; full Gradio/import smoke not yet signed off |
+| Expected exports | **SRT**, **WebVTT** (preferred); `.txt` (no timestamps) also possible |
+| TranscriptX hand-off | **Import Transcript** for `.srt` / `.vtt` |
+| Default bind | **localhost only** — `127.0.0.1:7860` (not `0.0.0.0`) |
+| Model cache (host) | `$CLONE_DIR/models` → `/Whisper-WebUI/models` (often **multi‑GB**; large-v3 alone is several GB) |
+| HF token | **Your** responsibility when enabling diarization (gated pyannote models) |
+
+Update **Last manually verified** only after the [maintainer smoke checklist](#maintainer-smoke--release-obligation) below.
 
 ## Maintainer smoke / release obligation
 

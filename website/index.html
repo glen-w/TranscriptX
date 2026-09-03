@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TranscriptX — local-first transcript analysis</title>
+    <title>TranscriptX — think with your transcripts</title>
     <meta
       name="description"
-      content="TranscriptX is a local-first personal transcript analysis workbench for people who want to think with transcripts."
+      content="TranscriptX is a local-first workbench for exploring transcripts: themes, speakers, evidence, and exports you keep on your machine."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -32,11 +32,12 @@
           Menu
         </button>
         <nav id="site-nav" class="site-nav" data-nav>
-          <a href="#install">Install</a>
-          <a href="./guide/comparison.html">Compare</a>
-          <a href="https://github.com/glen-w/TranscriptX">GitHub</a>
-          <a href="./guide/">Docs</a>
+          <a href="#product">See how it works</a>
           <a href="./guide/workflows/index.html">Workflows</a>
+          <a href="./guide/comparison.html">Compare</a>
+          <a href="./guide/">Docs</a>
+          <a href="#install">Install</a>
+          <a href="https://github.com/glen-w/TranscriptX">GitHub</a>
         </nav>
       </div>
     </header>
@@ -48,18 +49,117 @@
           <p class="brand-mark">TranscriptX</p>
           <h1>Think with your transcripts — on your machine.</h1>
           <p class="lede">
-            A local-first personal transcript analysis workbench: import,
-            explore language and speakers, run structured analyses with optional
-            local AI, and export results you keep.
+            Import conversations you already have. See themes, speakers, and
+            evidence in one place. Optional local AI stays on your computer.
+            TranscriptX does not transcribe audio — bring files from WhisperX,
+            Scriberr, noScribe, Otter, and similar tools.
           </p>
           <div class="cta-row">
-            <a class="btn primary" href="#install">Get started</a>
-            <a
-              class="btn ghost"
-              href="https://github.com/glen-w/TranscriptX"
-              >View on GitHub</a
-            >
+            <a class="btn primary" href="#product">See how it works</a>
+            <a class="btn ghost" href="#install">Install</a>
           </div>
+        </div>
+      </section>
+
+      <section class="section" id="product">
+        <div class="wrap">
+          <h2>The application</h2>
+          <p class="section-lead">
+            After a run you can read an Overview, open the transcript, name
+            speakers, and scan Insights. Charts lives in the same View menu for
+            visual module outputs.
+          </p>
+          <div class="shot-grid">
+            <figure class="shot">
+              <img
+                src="images/overview.png"
+                alt="Overview: summary, themes, and speaker cards after an analysis run"
+                width="1440"
+                height="900"
+              />
+              <figcaption>Overview — what stood out in this conversation</figcaption>
+            </figure>
+            <figure class="shot">
+              <img
+                src="images/transcript.png"
+                alt="Transcript view with named speakers, timestamps, and search"
+                width="1440"
+                height="900"
+              />
+              <figcaption>Transcript — the lines, with names and search</figcaption>
+            </figure>
+            <figure class="shot">
+              <img
+                src="images/speaker-id.png"
+                alt="Speaker Identification: name diarized speakers from their lines"
+                width="1440"
+                height="900"
+              />
+              <figcaption>Speaker ID — turn SPEAKER_00 into a real name</figcaption>
+            </figure>
+            <figure class="shot">
+              <img
+                src="images/insights.png"
+                alt="Insights: themes, summaries, and highlights for a finished run"
+                width="1440"
+                height="900"
+              />
+              <figcaption>Insights — themes and highlights (Charts is next door)</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section muted" id="what">
+        <div class="wrap narrow">
+          <h2>What can I do with it?</h2>
+          <ul class="outcomes">
+            <li>Understand themes across a conversation</li>
+            <li>Compare speakers — who said what, and how they interact</li>
+            <li>Investigate a question and jump back to the original lines</li>
+            <li>Analyse several conversations together over time</li>
+            <li>Correct the transcript while you read</li>
+            <li>Export findings as HTML or a ZIP you keep</li>
+          </ul>
+          <p>
+            <a href="./guide/workflows/index.html">Explore the workflows</a>
+            for step-by-step jobs, or
+            <a href="./guide/comparison.html">see how it compares</a>
+            to transcription tools, meeting assistants, and research software.
+          </p>
+        </div>
+      </section>
+
+      <section class="section" id="privacy">
+        <div class="wrap narrow">
+          <h2>On your machine</h2>
+          <p>
+            Source files and analysis results stay on your computer. Optional
+            AI uses Ollama locally and stays off until you turn it on. Nothing
+            here is a hosted analysis service.
+          </p>
+        </div>
+      </section>
+
+      <section class="section muted" id="how">
+        <div class="wrap narrow">
+          <h2>From a file to a useful Overview</h2>
+          <ol class="steps">
+            <li>Open <strong>Import Transcript</strong> and upload a JSON file.</li>
+            <li>Open <strong>Run Analysis</strong>, keep <strong>Balanced</strong>, and run it.</li>
+            <li>Open <strong>Overview</strong> and note a couple of useful outputs.</li>
+            <li>
+              If speakers still look like <code>SPEAKER_00</code>, name them
+              next.
+            </li>
+          </ol>
+          <p>
+            <a href="./guide/workflows/first-analysis.html"
+              >Full walkthrough with screenshots</a
+            >
+            ·
+            <a href="./guide/workflows/index.html">All workflows</a>
+          </p>
         </div>
       </section>
 
@@ -67,48 +167,27 @@
         <div class="wrap narrow">
           <h2>Install</h2>
           <p>
-            Recommended path: Docker full analysis. Native install is documented
-            in the repository. TranscriptX does not transcribe audio in-app —
-            use the Transcribe Audio command generator, then import.
+            Docker is the simplest path. Copy <code>.env.example</code> to
+            <code>.env</code> and set <code>HOST_RECORDINGS_DIR</code> to a
+            folder outside the repository.
           </p>
           <pre class="code"><code>git clone https://github.com/glen-w/TranscriptX.git
 cd TranscriptX
-cp .env.example .env   # set HOST_RECORDINGS_DIR to an absolute path outside the repo
+cp .env.example .env   # set HOST_RECORDINGS_DIR
 docker compose up transcriptx-web</code></pre>
+          <p>
+            Open <a href="http://localhost:8501">http://localhost:8501</a>.
+            The first run builds the image.
+          </p>
           <p class="fine">
-            Details:
-            <a
-              href="https://github.com/glen-w/TranscriptX/blob/main/README.md"
+            Native install and troubleshooting:
+            <a href="./guide/runtime/installation.html">Installation</a>
+            ·
+            <a href="./guide/runtime/transcription.html">Bring transcript files</a>
+            ·
+            <a href="https://github.com/glen-w/TranscriptX/blob/main/README.md"
               >README</a
             >
-            ·
-            <a href="./guide/comparison.html">Comparison</a>
-            ·
-            <a href="./guide/workflows/index.html">Workflow walkthroughs</a>
-            ·
-            <a href="./guide/USER_INDEX.html">User docs index</a>
-            · Sphinx HTML guide publishes with this site on each docs push
-            (Read the Docs go-live still owner-gated).
-          </p>
-        </div>
-      </section>
-
-      <section class="section muted">
-        <div class="wrap narrow">
-          <h2>Local-first</h2>
-          <p>
-            Source material and analysis outputs stay on your machine. Optional
-            local AI via Ollama. No hosted SaaS analysis path in 1.0 scope.
-          </p>
-          <p>
-            Not sure if TranscriptX fits?
-            <a href="./guide/comparison.html">See how it compares</a>
-            to transcription tools, meeting assistants, and conversation
-            intelligence products.
-          </p>
-          <p class="status">
-            Current public series: <strong>0.9.9.5</strong> toward a credible
-            <strong>1.0</strong>.
           </p>
         </div>
       </section>
@@ -116,7 +195,7 @@ docker compose up transcriptx-web</code></pre>
 
     <footer class="site-footer">
       <div class="wrap footer-inner">
-        <p>© TranscriptX contributors. Local-first software.</p>
+        <p>© TranscriptX contributors. Local-first software. Version 0.9.9.5.</p>
         <p>
           <a href="https://github.com/glen-w/TranscriptX">GitHub</a>
           ·

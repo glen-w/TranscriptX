@@ -3,33 +3,33 @@ Authority: PRODUCT.md
 
 # TranscriptX documentation
 
-Local-first personal transcript analysis workbench. Start with the product definition, then installation and task guides.
+TranscriptX is a local-first workbench for people who want to think with transcripts. You import files you already have, run analysis on your machine, and keep the results.
 
-Hosted navigation mirrors [USER_INDEX.md](USER_INDEX.md) for user-facing pages (plus a short Developers section). Sphinx builds the same Markdown tree as the repo — there is no separate docs corpus.
+It does **not** transcribe audio in the app. Bring JSON, SRT, VTT, or similar files, then use **Import Transcript**.
+
+**See how it works:** [first analysis](workflows/first-analysis.md) — import the sample, run **Balanced**, read **Overview**.  
+**Everyday jobs:** [Using TranscriptX](workflows/index.md).  
+**Is this for me?** [How TranscriptX compares](comparison.md).  
+**Privacy:** files stay on your computer; optional local AI is [Ollama](runtime/llm.md) and off by default.
+
+The GitHub [README](https://github.com/glen-w/TranscriptX#readme) is the same first-run story.
 
 ```{toctree}
 :maxdepth: 2
 :caption: Start here
 
-PRODUCT
 comparison
-USER_INDEX
-known_limitations
+workflows/first-analysis
+workflows/index
 runtime/installation
-runtime/settings
 runtime/transcription
-runtime/directory_watcher
-runtime/docker
-runtime/export
-backup_and_restore
+PRODUCT
 ```
 
 ```{toctree}
 :maxdepth: 2
-:caption: Workflow walkthroughs
+:caption: Workflows
 
-workflows/index
-workflows/first-analysis
 workflows/speaker-identification
 workflows/investigate-evidence
 workflows/local-ai-synthesis
@@ -43,33 +43,22 @@ workflows/speakers
 
 ```{toctree}
 :maxdepth: 2
-:caption: Reference
+:caption: Using TranscriptX
 
+runtime/settings
+runtime/docker
+runtime/directory_watcher
+runtime/export
+backup_and_restore
+known_limitations
 runtime/models
 runtime/llm
 runtime/corrections-viewer
 runtime/karaoke-playback
 runtime/corrections-llm
-generated/modules
-generated/cli
 TERMS
-public_surfaces
-CONTRACT_INDEX
-runtime/STORAGE
 recipes/whisperx/README
 recipes/whisper-webui/README
-```
-
-```{toctree}
-:maxdepth: 1
-:caption: Module notes
-
-runtime/lexical_diversity
-runtime/keyphrases
-runtime/epistemic_markers
-runtime/politeness
-runtime/topic_shift
-runtime/transcript_quality
 ```
 
 ```{toctree}
@@ -80,12 +69,21 @@ DEV_INDEX
 ROADMAP
 ARCHITECTURE
 developer_quickstart
+reviews/index
+CONTRACT_INDEX
+public_surfaces
+runtime/STORAGE
+generated/modules
+generated/cli
+runtime/lexical_diversity
+runtime/keyphrases
+runtime/epistemic_markers
+runtime/politeness
+runtime/topic_shift
+runtime/transcript_quality
 ```
 
-## Indexes
+## More indexes
 
 - [User documentation index](USER_INDEX.md)
 - [Developer documentation index](DEV_INDEX.md)
-- [Contract index](CONTRACT_INDEX.md)
-
-Historical material is tracked under `docs/archive/` but is excluded from this hosted navigation.

@@ -3,62 +3,31 @@ Authority: ../../runtime/transcription.md
 
 # WhisperX standalone (optional reference recipe)
 
-These files are **optional standalone reference examples** for running WhisperX independently. They are **not** part of the TranscriptX runtime—TranscriptX is analysis-only and does not orchestrate WhisperX. Use any tool that produces compatible transcript JSON; WhisperX is one example.
+Use this when you want diarized WhisperX JSON, then import it into TranscriptX. These files are **optional standalone examples**. They are **not** part of the TranscriptX runtime — TranscriptX does not orchestrate WhisperX. Any tool that produces compatible transcript JSON is fine; WhisperX is one example.
 
-Use them to generate diarized transcript JSON that you can then **canonicalize** and **analyze** with TranscriptX:
+## What this is for
 
-1. Generate transcript JSON (e.g. with WhisperX Docker, or via the Transcribe Audio **command generator** → WhisperX Docker option).
-2. **Import / canonicalize (optional)** — from the repo root with your environment active:
+1. Generate transcript JSON with WhisperX (Docker, or the Transcribe Audio command generator).
+2. In TranscriptX, **Import Transcript** and upload that JSON.
+3. Run analysis in the web UI.
 
-```python
-from pathlib import Path
-
-from transcriptx.io.managed_import_workflow import run_managed_import_workflow
-
-result = run_managed_import_workflow(
-    Path("path/to/whisperx.json"),
-    overwrite=False,
-)
-print(result.json_path)
-print(result.sidecar_path)
-```
-
-3. **Analyze** — open the web UI or call `run_analysis(AnalysisRequest(...))` (see [transcription.md](../../transcription.md)).
-
-## Non-technical path (via TranscriptX GUI)
+## GUI path (recommended)
 
 1. Open **Transcribe Audio** in TranscriptX.
 2. Choose **WhisperX Docker (external recipe)**, set input/output folders, model, language, device, and optional min/max speakers.
 3. Copy the generated `docker run` command and execute it on a Linux/GPU host (not inside `transcriptx-web`).
 4. Import the resulting **WhisperX JSON** via **Import Transcript**.
 
-## Configure WhisperX (advanced / compose)
+## Configure WhisperX (compose / env)
 
 1. Copy the env example and set your values:
    ```bash
    cp whisperx.env.example whisperx.env
    ```
 2. Edit `whisperx.env`: set `HF_TOKEN` for diarization and gated models.
-3. Never commit `whisperx.env` (add it to `.gitignore` if using this recipe in your repo).
+3. Never commit `whisperx.env`.
 
-**Single source of truth for env-configurable settings:** `whisperx.env.example` in this directory. The table below maps every former TranscriptX `TranscriptionConfig` field to its new mechanism so no capability is lost.
-
-### TranscriptionConfig migration table
-
-Every former `TranscriptionConfig` field is mapped below; if you add a new knob, update this table.
-
-| Old TranscriptX field     | Old env var                      | New mechanism                | Default                     | Notes                                                                 |
-|---------------------------|----------------------------------|-------------------------------|-----------------------------|-----------------------------------------------------------------------|
-| `model_name`              | `TRANSCRIPTX_MODEL_NAME`        | `WHISPERX_MODEL` env var      | `large-v2`                  | Set in `whisperx.env`                                                 |
-| `language`                | `TRANSCRIPTX_LANGUAGE`          | `WHISPERX_LANGUAGE` env var   | `en`                        | Set in `whisperx.env`                                                 |
-| `compute_type`            | `TRANSCRIPTX_COMPUTE_TYPE`      | `WHISPERX_COMPUTE_TYPE` env   | `float16`                   | `float16` for GPU, `int8` for CPU                                     |
-| `diarize`                 | (config only)                    | `WHISPERX_DIARIZE` env var    | `true`                      | Requires `HF_TOKEN`                                                    |
-| `huggingface_token`       | `HF_TOKEN`                       | `HF_TOKEN` env var | (none)                      | Required for diarization + gated models                               |
-| `batch_size`              | (config only)                    | WhisperX CLI: `--batch_size 16` | `16`                     | Not env-configurable; pass via docker exec command                    |
-| `min_speakers`            | (config only)                    | WhisperX CLI: `--min_speakers 1` | `1`                      | Not env-configurable; pass via docker exec command                   |
-| `max_speakers`            | (config only)                    | WhisperX CLI: `--max_speakers 20` | `20` (or omit)           | Not env-configurable; pass via docker exec command                    |
-| `model_download_policy`   | (config only)                    | No 1:1 equivalent             | `require_token`             | Gated models require `HF_TOKEN`; set or omit `HF_TOKEN`.              |
-| (device — not in config)  | (not in config)                  | `WHISPERX_DEVICE` env var     | `cpu`                       | `cuda` for GPU                                                        |
+Env-configurable settings live in `whisperx.env.example` in this directory. A historical map from the old in-app `TranscriptionConfig` fields to these env vars is in the [archive migration table](https://github.com/glen-w/TranscriptX/blob/main/docs/archive/migrations/whisperx_transcriptionconfig.md) (not required for new setups; not in the hosted guide).
 
 ## Run WhisperX
 
@@ -88,7 +57,26 @@ docker run --rm --entrypoint /bin/bash \
 
 Replace `your_audio.wav` with your file (e.g. `260225_cursor_presentation.mp3`). With this image, passing arguments directly after the image name does not reach `whisperx`; use the `--entrypoint /bin/bash` form above.
 
-Adjust paths and WhisperX CLI flags to match your setup. Output format: WhisperX JSON; then use `run_managed_import_workflow()` (see [transcription.md](../../transcription.md)) to produce canonical JSON for analysis.
+Adjust paths and WhisperX CLI flags to match your setup. Output format: WhisperX JSON; then **Import Transcript** (or the Python import API in [transcription.md](../../runtime/transcription.md)).
+
+## Python import (optional)
+
+From the repo root with your environment active:
+
+```python
+from pathlib import Path
+
+from transcriptx.io.managed_import_workflow import run_managed_import_workflow
+
+result = run_managed_import_workflow(
+    Path("path/to/whisperx.json"),
+    overwrite=False,
+)
+print(result.json_path)
+print(result.sidecar_path)
+```
+
+Then analyse in the web UI or via `run_analysis(AnalysisRequest(...))` (see [transcription.md](../../runtime/transcription.md)).
 
 ## Troubleshooting
 
