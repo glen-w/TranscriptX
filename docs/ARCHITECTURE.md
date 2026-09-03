@@ -65,4 +65,4 @@ Architecture references these contracts but does not restate their rules.
 
 ## Related indexes
 
-- [USER_INDEX.md](USER_INDEX.md) · [DEV_INDEX.md](DEV_INDEX.md) · [CONTRACT_INDEX.md](CONTRACT_INDEX.md)
+- [USER_INDEX.md](USER_INDEX.md) (sitemap) · [DEV_INDEX.md](DEV_INDEX.md) · [CONTRACT_INDEX.md](CONTRACT_INDEX.md)

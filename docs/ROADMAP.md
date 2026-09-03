@@ -198,7 +198,7 @@ Beyond 1.0 resource envelopes: help users plan and choose runs on *their* machin
 Recorder devices often cut long sessions into chunks. Today:
 
 - GUI **System → Tools → Merge** concatenates parts → one MP3 (ffmpeg); **Preprocessing** assesses/applies DSP before external transcription
-- Host helpers `scripts/audio_merge.py` / `scripts/audio_preprocess.py` remain for CLI/automation (documented in [transcription.md](runtime/transcription.md))
+- Host helpers `scripts/audio_merge.py` / `scripts/audio_preprocess.py` remain for CLI/automation (documented in [audio-prep.md](runtime/audio-prep.md))
 - Serial-group prompts point operators at **System → Tools → Merge** before transcription
 
 **Desired direction (design before build):** inline merge that (1) merges **audio** parts in order into one managed recording, and (2) optionally **stitches transcripts** (timestamp rebase, segment continuity, canonical + sidecars) when parts were already transcribed separately.

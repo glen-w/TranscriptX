@@ -56,4 +56,4 @@ Owned subtree `analysis.keyphrases` (Pydantic pilot `keyphrases`):
 - Group outputs: [`docs/groups/group_analysis_module_outputs.md`](../groups/group_analysis_module_outputs.md)
 - Group pooled chart: [`docs/groups/group_charts_keyphrases_pooled_contract.md`](../groups/group_charts_keyphrases_pooled_contract.md)
 - Models: [`docs/runtime/models.md`](models.md)
-- Install: [`docs/runtime/installation.md`](installation.md)
+- Install: [`docs/runtime/installation.md`](installation.md); extras: [installation details](installation-advanced.md)

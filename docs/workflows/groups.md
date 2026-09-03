@@ -30,7 +30,7 @@ At least one managed transcript is in the library (see [First analysis](first-an
 
 5. Select the group to review **Group details** (name, member count, membership editor). Membership is file-backed and can be edited later without re-importing transcripts.
 
-6. To analyse the group, open **Run Analysis**, set the target to **Group**, pick this group, and choose a preset. Group analysis availability follows Settings / install profile — see [installation](../runtime/installation.md).
+6. To analyse the group, open **Run Analysis**, set the target to **Group**, pick this group, and choose a preset. Group analysis availability follows Settings / install profile — see [settings](../runtime/settings.md#analysis-presets) and [installation details](../runtime/installation-advanced.md).
 
 ## What to notice
 

@@ -307,4 +307,4 @@ Minimum bar before claiming “shipped.” Registration alone is not enough.
 | Keyphrases runtime | [`../runtime/keyphrases.md`](../runtime/keyphrases.md) |
 | Speaker profiles v1 | [`../contracts/speaker_profiles_v1.md`](../contracts/speaker_profiles_v1.md) |
 | Speaker profiles voice | [`../contracts/speaker_profiles_voice_v1.md`](../contracts/speaker_profiles_voice_v1.md) |
-| Analysis presets (runtime) | [`../runtime/installation.md`](../runtime/installation.md) (Analysis presets) |
+| Analysis presets (runtime) | [`../runtime/settings.md`](../runtime/settings.md) (Analysis presets) |

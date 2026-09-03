@@ -61,7 +61,7 @@ Evolve toward a **personal audio intelligence companion**: personal recordings, 
 
 - Living roadmap: [ROADMAP.md](ROADMAP.md)
 - Support policy: [public_surfaces.md](public_surfaces.md)
-- Comparison (public): [comparison.md](comparison.md)
+- Comparison (public): [comparison.md](comparison.md) · [vendor reference](comparison-reference.md)
 - Contracts map: [CONTRACT_INDEX.md](CONTRACT_INDEX.md)
-- Navigation: [USER_INDEX.md](USER_INDEX.md) · [DEV_INDEX.md](DEV_INDEX.md)
+- Navigation: [USER_INDEX.md](USER_INDEX.md) (sitemap) · [DEV_INDEX.md](DEV_INDEX.md)
 - Historical stabilisation programme: [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md)

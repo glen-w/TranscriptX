@@ -92,7 +92,7 @@ TranscriptX uses a dual-stack config system (runtime facade + Pydantic registry/
 
 Modules are loosely grouped into light, medium, and heavy. Heavy modules should be gated and degrade gracefully if optional dependencies are missing.
 
-**BERTopic status:** BERTopic ships in the **default** install (`bertopic` / `hdbscan` / `umap-learn` in base deps; Sentence Transformers already base). The `[bertopic]` extra is a compatibility alias. Catalogue / UI detection still uses non-importing distribution metadata; execution distinguishes `missing_extra:bertopic` vs `broken_extra:bertopic` for degraded installs. Group aggregation refits from pooled source segments. Runtime install markers are **`core` | `full`** only — see [installation.md](runtime/installation.md).
+**BERTopic status:** BERTopic ships in the **default** install (`bertopic` / `hdbscan` / `umap-learn` in base deps; Sentence Transformers already base). The `[bertopic]` extra is a compatibility alias. Catalogue / UI detection still uses non-importing distribution metadata; execution distinguishes `missing_extra:bertopic` vs `broken_extra:bertopic` for degraded installs. Group aggregation refits from pooled source segments. Runtime install markers are **`core` | `full`** only — see [installation details](runtime/installation-advanced.md).
 
 **Keyphrases status:** Module `keyphrases` (B16) ranks noun-chunks always; YAKE/KeyBERT need `pip install -e ".[keyphrases]"` (also in `.[full]`). See [keyphrases.md](runtime/keyphrases.md) and [wave_b16_keyphrases_2026-07-24.md](dev/wave_b16_keyphrases_2026-07-24.md).
 

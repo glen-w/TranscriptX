@@ -98,7 +98,8 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/dev/web_blocks.md | Web blocks | live | developer | current | — | retain | — | DEV_INDEX | ARCHITECTURE.md | no |
 | docs/dev/web_fragment_pr_audit_table.md | Web fragment / rerun audit (PR review aid) | stale | historical | superseded | See inventory destination | archive | docs/archive/assessments/web_fragment_pr_audit_table.md | Update inbound links | docs/dev/web_blocks.md | archive-only |
 | docs/generated/cli.md | Web launcher and Python API | live | user | current | — | retain | — | USER_INDEX | ARCHITECTURE | yes |
-| docs/comparison.md | How TranscriptX compares (STT / meeting / CI) | live | user | current | Public comparison (**2026-08**) | retain | — | README, USER_INDEX, website | docs/PRODUCT.md | yes |
+| docs/comparison.md | How TranscriptX compares (short answer + snapshot) | live | user | current | Split 2026-09: vendor notes → comparison-reference | retain | — | README, USER_INDEX, website | docs/PRODUCT.md | yes |
+| docs/comparison-reference.md | Comparison vendor appendix | live | user | current | Split from comparison.md | retain | — | comparison.md | docs/comparison.md | yes |
 | docs/generated/modules.md | Module Catalog | live | user | current | — | retain | — | USER_INDEX | ARCHITECTURE | yes |
 | docs/groups/group_analysis_module_outputs.md | Group analysis: what each module produces | live | contract | current | — | retain | — | CONTRACT_INDEX / groups | docs/groups/group_analysis_module_outputs.md | yes |
 | docs/groups/group_charts_acts_pooled_contract.md | Acts group charts: pooled single view (audited) | live | contract | current | — | retain | — | CONTRACT_INDEX / groups | docs/groups/group_charts_acts_pooled_contract.md | yes |
@@ -142,7 +143,8 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/runtime/docker.md | Docker | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | runtime/STORAGE.md | yes |
 | docs/runtime/epistemic_markers.md | Epistemic markers (`epistemic_markers`) | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | self | yes |
 | docs/runtime/install_verification_matrix.md | Install verification matrix | live | developer | current | RUNTIME headers → GUIDE in 0A pass | retain | — | DEV_INDEX | docs/runtime/STORAGE.md | no |
-| docs/runtime/installation.md | Installation & Configuration | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | runtime/STORAGE.md | yes |
+| docs/runtime/installation.md | Installation (Docker / launcher) | live | user | current | Split 2026-09: extras/env → installation-advanced | retain | — | USER_INDEX | runtime/STORAGE.md | yes |
+| docs/runtime/installation-advanced.md | Installation extras, profiles, env, gates | live | user | current | Split from installation.md | retain | — | USER_INDEX | runtime/installation.md | yes |
 | docs/runtime/settings.md | Settings, profiles, and analysis knobs | live | user | current | Settings/knobs clarity programme | retain | — | USER_INDEX | runtime/STORAGE.md | yes |
 | docs/runtime/keyphrases.md | Keyphrases (`keyphrases`) | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | self | yes |
 | docs/runtime/lexical_diversity.md | Lexical diversity analysis | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | runtime/STORAGE.md | yes |
@@ -151,7 +153,9 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/runtime/politeness.md | Politeness markers (`politeness`) | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | self | yes |
 | docs/runtime/topic_shift.md | Topic-shift (`topic_shift`) contracts — Wave 1 | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | self | yes |
 | docs/runtime/transcript_quality.md | ASR confidence (`transcript_quality`) | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | self | yes |
-| docs/runtime/transcription.md | Transcription (external workflow) | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | runtime/STORAGE.md | yes |
+| docs/runtime/transcription.md | Transcription (bring a file / host command) | live | user | current | Split 2026-09: host automation → host-stt / audio-prep | retain | — | USER_INDEX | runtime/STORAGE.md | yes |
+| docs/runtime/host-stt.md | Host STT automation (whispermlx-missing, inbox-watch, import API) | live | user | current | Split from transcription.md | retain | — | USER_INDEX | runtime/transcription.md | yes |
+| docs/runtime/audio-prep.md | Audio prep / merge before STT | live | user | current | Split from transcription.md | retain | — | USER_INDEX | runtime/transcription.md | yes |
 | docs/v0.1-canonical-contract.md | TranscriptX v0.1 canonical contract (short) | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/v0.1-canonical-contract.md | yes |
 | tests/README.md | TranscriptX tests: how to run locally | live | developer | current | — | retain | — | DEV_INDEX | tests/README.md | no |
 | tests/TEST_SUITE_ASSESSMENT.md | Pytest Suite Assessment | stale | historical | superseded | See inventory destination | archive | docs/archive/assessments/TEST_SUITE_ASSESSMENT.md | Update inbound links | tests/README.md | archive-only |

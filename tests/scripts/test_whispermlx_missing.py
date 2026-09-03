@@ -1177,6 +1177,7 @@ class TestNoPersonalPathsInTouchedFiles:
         Path("scripts/whispermlx-missing.py"),
         Path("config/whispermlx-missing.example.json"),
         Path("docs/runtime/transcription.md"),
+        Path("docs/runtime/host-stt.md"),
         Path("src/transcriptx/web/page_modules/transcribe_audio.py"),
     )
 

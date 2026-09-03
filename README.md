@@ -69,6 +69,6 @@ Open http://localhost:8501. The first run builds the image.
 
 ## Advanced and developer docs
 
-- [User docs index](docs/USER_INDEX.md) · [Website](website/index.html)
+- [User docs sitemap](docs/USER_INDEX.md) · [Website](website/index.html)
 - [Developer docs](docs/DEV_INDEX.md) · [Roadmap](docs/ROADMAP.md)
 - [Python API / web launcher](docs/generated/cli.md)

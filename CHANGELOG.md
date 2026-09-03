@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Public landing and README are a product front door: screenshot gallery, outcome-led “what can I do”, privacy before install, one primary CTA (See how it works). Hosted docs sidebar keeps contracts, storage, and module catalogs under Developers. Workflows intro no longer mentions Playwright. Compare page uses plainer capability labels.
+- Installation, transcription, and comparison docs split: user-facing leads stay short; extras/env/gates, host STT automation, audio-prep, and vendor research moved to [installation details](docs/runtime/installation-advanced.md), [host-stt.md](docs/runtime/host-stt.md), [audio-prep.md](docs/runtime/audio-prep.md), and [comparison-reference.md](docs/comparison-reference.md). [USER_INDEX](docs/USER_INDEX.md) is an exhaustive sitemap, not a second start page.
 - Analysis probe transcripts live under `tests/fixtures/` (including `tests/fixtures/analysis_probes/`) instead of the user library. Deep-test analyses those paths in place and must not import them into `TRANSCRIPTX_TRANSCRIPTS_DIR`.
 - [Identify and name speakers](docs/workflows/speaker-identification.md) walkthrough expanded for switch / clip / ignore / rename flows; media promoted to `speaker-identification-*` filenames (legacy `speaker-trust-*` retained).
 - Auto-merge groups start **unchecked**, with **Select all** / **Select none**. **Don't suggest again** persists a false match in `{config_dir}/audio_merge_dismissed.json` (Hide remains session-only). `whispermlx-missing --skip-serial` does not skip dismissed groups.
@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Auto-merge / recordings discovery accept **Opus** (`.opus`) so WhatsApp Desktop voice-note bursts appear in Tools → Auto-merge (ffmpeg/pydub already decode them).
 - Managed admit replaces marker-less library JSON (raw WhisperX, including vendor NaNs) instead of failing mid-sidecar-repair; Speakers/Run pickers omit library paths without an import sidecar; `inbox-watch` / `whispermlx-missing` refuse writing into the managed library root (require `…/originals`).
 - `whispermlx-missing` skips stems that already have JSON in the parent library root, as `foo (N).json` archives, or as a sidecar next to the MP3 — not only files inside `--transcripts` (`originals/`).
-- `inbox-watch` audio convert: pass `-f mp3` so ffmpeg 8+ can mux to a `.mp3.partial` temp file (it no longer infers MP3 from that extension). Terminal feedback mirrors analysis Review / Run summary (`[i/n]` progress, elapsed times, streamed ffmpeg stats); Sphinx guide covers the UX under [transcription.md](docs/runtime/transcription.md#terminal-feedback) and links it from [directory_watcher.md](docs/runtime/directory_watcher.md).
+- `inbox-watch` audio convert: pass `-f mp3` so ffmpeg 8+ can mux to a `.mp3.partial` temp file (it no longer infers MP3 from that extension). Terminal feedback mirrors analysis Review / Run summary (`[i/n]` progress, elapsed times, streamed ffmpeg stats); Sphinx guide covers the UX under [host-stt.md](docs/runtime/host-stt.md#terminal-feedback) and links it from [directory_watcher.md](docs/runtime/directory_watcher.md).
 
 ## [0.9.9.5] - 2026-08-15
 

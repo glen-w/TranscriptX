@@ -24,7 +24,7 @@ Local AI is **optional**. Workflows 1–3 and 5 work without it.
 
 ## Walkthrough
 
-1. Open **Run Analysis** for the planning-review transcript. If you only need AI modules on top of an existing core run, choose [**Custom**](../runtime/installation.md#analysis-presets) (or a preset that already includes live-LLM consumers) and ensure transcript summary and meeting-extracts modules are selected. Exact module picker labels follow the registry names surfaced in the UI.
+1. Open **Run Analysis** for the planning-review transcript. If you only need AI modules on top of an existing core run, choose [**Custom**](../runtime/settings.md#analysis-presets) (or a preset that already includes live-LLM consumers) and ensure transcript summary and meeting-extracts modules are selected. Exact module picker labels follow the registry names surfaced in the UI.
 
 2. Expand **LLM setup**. When Ollama is healthy you should see the active model and optional per-run overrides. If LLM is disabled or unreachable, the panel says so clearly — enable Ollama under [**Settings**](../runtime/settings.md) → Configuration and manage models under **Settings → Models** ([LLM](../runtime/llm.md)), then return here.
 
@@ -47,7 +47,7 @@ Local AI is **optional**. Workflows 1–3 and 5 work without it.
 ## What to notice
 
 - **Local AI** marks generated interpretation; it is not the same as deterministic analysis.
-- [Balanced](../runtime/installation.md#analysis-presets) may include a limited LLM summary depending on configuration; Custom makes the choice explicit.
+- [Balanced](../runtime/settings.md#analysis-presets) may include a limited LLM summary depending on configuration; Custom makes the choice explicit.
 - Skipped or failed LLM modules should not wipe the rest of the run.
 - Model choice and timeouts live in settings and LLM docs — not in this walkthrough.
 

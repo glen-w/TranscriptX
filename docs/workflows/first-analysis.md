@@ -4,7 +4,7 @@ The shortest realistic path from importing a transcript to reading your first an
 
 ## Outcome
 
-You will have [imported](../runtime/transcription.md) a transcript, completed a [**Balanced**](../runtime/installation.md#analysis-presets) analysis run, and identified several useful outputs on [**Overview**](../public_surfaces.md).
+You will have [imported](../runtime/transcription.md) a transcript, completed a [**Balanced**](../runtime/settings.md#analysis-presets) analysis run, and identified several useful outputs on [**Overview**](../public_surfaces.md).
 
 ## Starting point
 
@@ -59,4 +59,4 @@ An imported sample transcript, a completed Balanced run, and a mental map of Ove
 
 - [Identify and name speakers](speaker-identification.md)
 - [Investigate a question and trace it back to evidence](investigate-evidence.md)
-- [Installation](../runtime/installation.md) if you still need a durable install profile
+- [Installation](../runtime/installation.md) if the UI is not running yet

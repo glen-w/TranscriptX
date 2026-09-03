@@ -95,7 +95,7 @@ Speaker diarization is optional and uses **gated** pyannote models. TranscriptX 
 | `.txt` (no timestamps) | Supported as text, but loses timing |
 | WhisperX-style JSON | Not the default WebUI export; use the WhisperX recipe if you need that JSON |
 
-Managed library admission still goes through **Import Transcript** (or `run_managed_import_workflow`) so canonical JSON + sidecar + archive are created — see [transcription.md](../../runtime/transcription.md).
+Managed library admission still goes through **Import Transcript** (or `run_managed_import_workflow`) so canonical JSON + sidecar + archive are created — see [transcription.md](../../runtime/transcription.md) and the [Python import API](../../runtime/host-stt.md#python-api).
 
 ## Removal
 

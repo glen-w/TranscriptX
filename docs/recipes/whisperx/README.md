@@ -54,7 +54,7 @@ docker run --rm --entrypoint /bin/bash \
 
 Replace `your_audio.wav` with your file (e.g. `260225_cursor_presentation.mp3`). With this image, passing arguments directly after the image name does not reach `whisperx`; use the `--entrypoint /bin/bash` form above.
 
-Adjust paths and WhisperX CLI flags to match your setup. Output format: WhisperX JSON; then **Import Transcript** (or the Python import API in [transcription.md](../../runtime/transcription.md)).
+Adjust paths and WhisperX CLI flags to match your setup. Output format: WhisperX JSON; then **Import Transcript** (or the Python import API in [host-stt.md](../../runtime/host-stt.md#python-api)).
 
 ## Python import (optional)
 
@@ -73,7 +73,7 @@ print(result.json_path)
 print(result.sidecar_path)
 ```
 
-Then analyse in the web UI or via `run_analysis(AnalysisRequest(...))` (see [transcription.md](../../runtime/transcription.md)).
+Then analyse in the web UI or via `run_analysis(AnalysisRequest(...))` (see [host-stt.md](../../runtime/host-stt.md#python-api)).
 
 ## Troubleshooting
 

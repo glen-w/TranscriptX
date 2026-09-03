@@ -16,9 +16,31 @@ How to change TranscriptX behaviour from the GUI, env, and config files — with
 | Duplicate recordings / transcripts | **Settings → Storage** → Duplicate library files (preview, then typed `DELETE DUPLICATES`) |
 | Show/hide instructional ⓘ tips (widget help + Speakers methodology notes) | **Settings → Interface** → Help / info tips (`show_info_tooltips` in `interface_menus.json`; run-id ⓘ stays on) |
 | Action-menu icon vs text | **Settings → Interface** → Action appearance (`action_display`: `icon` / `text` / `both`; per-section may `inherit`) |
-| Install capability (`core` vs `full`) | Env / install marker — see [installation.md](installation.md); **not** the Profiles page |
+| Install capability (`core` vs `full`) | Env / install marker — see [installation details](installation-advanced.md); **not** the Profiles page |
 
 Speaker identity/voice stores are a separate subsystem (Settings → Speakers). See [speaker_profiles_v1](../contracts/speaker_profiles_v1.md) and [STORAGE.md](STORAGE.md).
+
+## Analysis presets
+
+When you run analysis, choose a **Preset** that determines which modules run:
+
+- **Quick** — no LLM modules and no heavy modules (fast local path). Modules that hard-depend on excluded heavy/LLM modules are omitted so the DAG cannot pull them back in.
+- **Balanced** — recommended default: non-heavy modules plus a limited heavy allowlist (`semantic_similarity`, `fine_grained_emotion`) and **global transcript LLM summary only** (`llm_summary`).
+- **Thorough** — all suitable modules for the target (including LLM and heavy).
+- **Custom** — pick exactly which modules to run for this launch.
+
+Edit Quick / Balanced / Thorough policies (and optional full module overrides) under **Settings → Analysis**. Mode `quick` vs `full` still controls depth knobs (semantic/NER limits) for the chosen preset.
+
+### Single-speaker / unnamed-speaker behavior
+
+By default, modules require **human-named** speakers. Diarized placeholders (`SPEAKER_00`, …) do not count until you name speakers in Speaker Identification. Modules that need multiple speakers (conversation loops, contagion, interactions, semantic similarity, Q&A, echoes, and others) skip when the named-speaker count is below their minimum. For group runs, the module list is filtered by the minimum named speaker count across members.
+
+To run modules on diarized labels without naming speakers:
+
+- **Global:** Settings → `analysis.allow_unnamed_speakers` (or env `TRANSCRIPTX_ANALYSIS_ALLOW_UNNAMED_SPEAKERS`)
+- **Per run:** Run Analysis checkbox **Allow analysis without named speakers**
+
+Either knob ungates the pipeline (global **or** per-run). When ungated, speaker-count gates use turn-taking labels and per-speaker artifacts include unidentified speakers.
 
 ## Configuration scopes
 
@@ -88,7 +110,7 @@ Legacy `TRANSCRIPTX_AUDIO_*_ENABLED` variables are **rejected** — use the corr
 
 ## Related docs
 
-- [installation.md](installation.md) — install profiles and Analysis presets
+- [installation.md](installation.md) — normal install; [installation details](installation-advanced.md) — extras and install profiles
 - [STORAGE.md](STORAGE.md) — config_dir layout and precedence
 - [models.md](models.md) / [llm.md](llm.md) — model and Ollama knobs
 - Developer architecture: [config_architecture.md](../dev/config_architecture.md)

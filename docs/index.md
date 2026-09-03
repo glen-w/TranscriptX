@@ -21,7 +21,6 @@ workflows/index
 runtime/installation
 runtime/transcription
 PRODUCT
-USER_INDEX
 ```
 
 ```{toctree}
@@ -61,6 +60,17 @@ recipes/whisper-webui/README
 
 ```{toctree}
 :maxdepth: 1
+:caption: Advanced
+
+runtime/installation-advanced
+runtime/host-stt
+runtime/audio-prep
+comparison-reference
+USER_INDEX
+```
+
+```{toctree}
+:maxdepth: 1
 :caption: Developers
 
 DEV_INDEX
@@ -82,7 +92,7 @@ runtime/topic_shift
 runtime/transcript_quality
 ```
 
-## More indexes
+## Full lists
 
-- [User documentation index](USER_INDEX.md)
+- [User documentation sitemap](USER_INDEX.md)
 - [Developer documentation index](DEV_INDEX.md)

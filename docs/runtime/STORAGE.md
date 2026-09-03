@@ -57,7 +57,7 @@ Implications:
   - `imports/` is ephemeral staging owned by the managed import workflow.
   - `originals/` stores archived source files for managed imports (never overwritten; disambiguated names). Audio paths under `originals/` (and any archival audio roots) are stable archival references and are intentionally decoupled from transcript filenames.
   - `metadata/` stores managed transcript sidecars under metadata-kind subtrees that mirror the transcript-relative path (for example, `transcripts/foo/bar.json` → `metadata/imports/foo/bar.import_meta.json`).
-  - Language variants (e.g. `meeting_fr.json` beside `meeting.json`) are separate canonical transcripts with separate mirrored speaker-map sidecars. Import may copy the base speaker map into the variant sidecar; see `docs/runtime/transcription.md` (Multi-language variants).
+  - Language variants (e.g. `meeting_fr.json` beside `meeting.json`) are separate canonical transcripts with separate mirrored speaker-map sidecars. Import may copy the base speaker map into the variant sidecar; see `docs/runtime/host-stt.md` (Multi-language variants).
   - A file at `transcripts_dir/*.json` alone is not library-valid; library admission requires a managed artifact set (canonical JSON + valid import sidecar, with archived original path linkage).
   - Host transcription helpers (`whispermlx-missing`, `inbox-watch`) must write raw engine output under `transcripts/originals/` only. They refuse the managed library root (the directory that already contains `metadata/` / `imports/`). They skip a stem when matching JSON already exists in `originals/` or in the library root; they still never write into the library root. Admit via Import Transcript, Settings → Watcher, or optional `inbox-watch --admit` (subprocesses `python -m transcriptx.admit_originals` → `admit_and_register`; default off).
   - Naming leaves room for future subtypes (`diarised/`, `normalized/`, `export/`).
@@ -79,7 +79,7 @@ Implications:
 
 TranscriptX treats canonical transcript JSON as a **typed, validated artifact**, not just \"any JSON file under transcripts_dir\".
 
-- All library-valid transcripts must satisfy the canonical schema described in `docs/runtime/transcription.md` (schema_version/source/metadata/segments invariants).
+- All library-valid transcripts must satisfy the canonical schema in this section (`schema_version` / `source` / `metadata` / `segments` invariants). Operational validate/import: `docs/runtime/host-stt.md` (Python API).
 - **Any API that accepts a \"transcript path\" must either:**
   - receive a pre-validated canonical transcript handle produced by the managed import workflow or a dedicated loader, **or**
   - perform canonical validation itself (for example via `validate_transcript_document`) and fail closed on invalid or ambiguous data.

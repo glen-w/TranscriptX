@@ -202,7 +202,7 @@ def render_transcribe_audio_page() -> None:
             "`install -m 755 scripts/whispermlx-missing.py ~/.local/bin/whispermlx-missing` "
             "(needs `~/.local/bin` on PATH). Or run "
             "`python3 scripts/whispermlx-missing.py …`. "
-            "See Bulk helper below / `docs/runtime/transcription.md`."
+            "See Bulk helper below / `docs/runtime/host-stt.md`."
         )
     if tool is TranscriptionTool.WHISPER_WEBUI_DOCKER:
         st.caption(

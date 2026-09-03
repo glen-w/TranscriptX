@@ -10,7 +10,7 @@ Start here. First-time users should follow **1 → 5** in order.
 
 | # | Workflow | Outcome |
 |---|----------|---------|
-| 1 | [First analysis](first-analysis.md) | [Import](../runtime/transcription.md) a transcript, run [Balanced](../runtime/installation.md#analysis-presets) analysis, and read Overview |
+| 1 | [First analysis](first-analysis.md) | [Import](../runtime/transcription.md) a transcript, run [Balanced](../runtime/settings.md#analysis-presets) analysis, and read Overview |
 | 2 | [Identify and name speakers](speaker-identification.md) | Turn diarized labels into readable names before using speaker-level results |
 | 3 | [Investigate with evidence](investigate-evidence.md) | Answer a concrete question and trace it back to the transcript |
 | 4 | [Local AI synthesis](local-ai-synthesis.md) | Use optional local [AI](../runtime/llm.md) for summary and meeting extracts |

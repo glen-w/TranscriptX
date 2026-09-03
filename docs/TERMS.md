@@ -11,7 +11,7 @@ Where you need the actual definition or invariant, always read the linked CONTRA
 
 - **Canonical transcript**  
   - See storage contract: `docs/runtime/STORAGE.md` (canonical transcript validation).  
-  - See ingestion guide (non-authoritative detail): `docs/runtime/transcription.md`.
+  - See ingestion guide (non-authoritative detail): `docs/runtime/transcription.md`. Host import API: `docs/runtime/host-stt.md`.
 
 - **Managed transcript**  
   - See storage contract: `docs/runtime/STORAGE.md` (managed transcript and metadata layout).
@@ -44,13 +44,13 @@ Where you need the actual definition or invariant, always read the linked CONTRA
   - User guide (Common vs Advanced, Profiles page): `docs/runtime/settings.md`.
 
 - **Install profile** (`core` \| `full`)  
-  - Capability / dependency story — not module presets. See `docs/runtime/installation.md` and `docs/dev/install_profiles_matrix.md`.
+  - Capability / dependency story — not module presets. See `docs/runtime/installation-advanced.md` and `docs/dev/install_profiles_matrix.md`.
 
 - **Module / workflow profile**  
   - Named JSON under `{config_dir}/profiles/<target>/`. See `docs/runtime/settings.md` and `docs/runtime/STORAGE.md`.
 
 - **Analysis UI preset** (Quick / Balanced / Thorough)  
-  - Module-set policies for Run Analysis. See `docs/runtime/installation.md` and `docs/runtime/settings.md`.
+  - Module-set policies for Run Analysis. See `docs/runtime/settings.md`.
 
 - **Speaker profile**  
   - Longitudinal identity / voice store (separate from analysis knobs). See `docs/contracts/speaker_profiles_v1.md` and `docs/contracts/speaker_profiles_voice_v1.md`.

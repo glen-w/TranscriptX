@@ -24,7 +24,7 @@
 
 ## Indexes
 
-- User: [USER_INDEX.md](../USER_INDEX.md)
+- User sitemap: [USER_INDEX.md](../USER_INDEX.md) (exhaustive list, not a start page)
 - Developer: [DEV_INDEX.md](../DEV_INDEX.md)
 - Archive: [ARCHIVE_INDEX.md](../ARCHIVE_INDEX.md)
 
@@ -34,7 +34,7 @@ Three registers — same facts, different density. Do not rewrite archive, revie
 
 | Voice | Audience | Surfaces |
 |-------|----------|----------|
-| **User guide** | First-time and returning operators | README, `website/`, `docs/index.md`, `docs/USER_INDEX.md`, `docs/workflows/`, lead of transcription / installation / llm |
+| **User guide** | First-time and returning operators | README, `website/`, `docs/index.md`, `docs/workflows/`, lead of transcription / installation / llm |
 | **Technical reference** | People configuring or scripting | `docs/runtime/` detail, `docs/generated/`, TERMS, contracts, STORAGE, public_surfaces |
 | **Maintainer** | Contributors and release owners | `docs/dev/`, `docs/archive/`, `docs/reviews/`, internal package/test READMEs |
 
@@ -48,7 +48,7 @@ The public landing, README, and Sphinx “Start here” toctree should tell the 
 - [x] Wire `make docs` → [scripts/release/build_docs.sh](../../scripts/release/build_docs.sh); CI `docs` job
 - [x] Add `.readthedocs.yml` scaffold (install `.[docs]`)
 - [x] **Content parity:** Sphinx has no separate doc corpus — it builds the Markdown under `docs/` directly. CI regenerates `docs/generated/` (`make docs-gen`) and fails on drift; every docs-affecting `main` push rebuilds and publishes HTML to GitHub Pages `/guide/` via [assemble_pages_site.sh](../../scripts/release/assemble_pages_site.sh)
-- [x] **Nav parity:** `docs/index.md` toctrees stay aligned with [USER_INDEX.md](../USER_INDEX.md) for user-facing pages (Start here / Workflows / Using TranscriptX); Developers toctree holds contracts, generated catalogs, and module notes. Footer version on the website matches `pyproject.toml`.
+- [x] **Nav parity:** `docs/index.md` Start-here / Workflows / Using TranscriptX toctrees stay aligned with the README and website first-run story. Advanced toctree holds split reference pages; [USER_INDEX.md](../USER_INDEX.md) is the exhaustive sitemap. Developers toctree holds contracts, generated catalogs, and module notes. Footer version on the website matches `pyproject.toml`.
 - [ ] Confirm RTD project + nav when owner supplies slug/domain (§20) — [rtd_go_live_checklist.md](rtd_go_live_checklist.md)
 - [ ] Flip `scripts/release/stale_refs.sh` RTD hostname denylist when a live URL is intentional
 - Keep entry surfaces concise; detail stays in contracts/runtime/dev

@@ -40,7 +40,7 @@ Mitigations shipped in runtime:
 
 The package is **not on PyPI**; install from this repository (see [install_verification_matrix.md](../runtime/install_verification_matrix.md)).
 
-> **Public release:** runtime install markers are **`core` | `full` only**. See [installation.md](../runtime/installation.md) and [dependency_audit.md](dependency_audit.md). Host `.[bertopic]` / `.[full]` is **not** a blocking clean-env proof when `llvmlite` cannot install; Docker `image_pip_check` is the production-image proof for the fuller stack.
+> **Public release:** runtime install markers are **`core` | `full` only**. See [installation details](../runtime/installation-advanced.md) and [dependency_audit.md](dependency_audit.md). Host `.[bertopic]` / `.[full]` is **not** a blocking clean-env proof when `llvmlite` cannot install; Docker `image_pip_check` is the production-image proof for the fuller stack.
 
 ## Lifecycle states
 
