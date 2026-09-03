@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/dev/composition_platform.md
-
 # Dashboard Builder
 
 Settings → **Dashboard Builder** edits **layout profiles**: which panels (blocks) appear on **Overview** and **Insights**, and in what order.

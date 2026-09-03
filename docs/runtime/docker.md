@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: runtime/STORAGE.md
-
 # Docker
 
 Operational guide only. For authoritative storage and metadata structure, see `STORAGE.md`. For behavior and invariants, see CONTRACT documents.

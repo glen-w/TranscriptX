@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Manual acceptance suite (1.0) — maintainer runbook
 
 **Status:** executable kit for the human-testing wave (implementation for Guided/demo/onboarding shipped **0.9.6**; kits prepared **0.9.8**)  

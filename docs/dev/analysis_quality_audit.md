@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Analysis quality audit (1.0)
 
 **Status:** scaffolded (**0.9.5**) — registry rows generated; provisional judgements in [analysis_quality_audit_judgements.md](analysis_quality_audit_judgements.md) (**0.9.7**); owner sign-off open  

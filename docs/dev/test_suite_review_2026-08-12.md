@@ -1,6 +1,3 @@
-Type: ASSESSMENT
-Authority: tests/README.md
-
 # TranscriptX test suite review (2026-08-12)
 
 Living assessment of the pytest / Vitest / Playwright testing system.  

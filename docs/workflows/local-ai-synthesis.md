@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/runtime/llm.md
-
 # Use local AI for synthesis
 
 After core analysis, optional local-LLM modules can summarise and extract commitments. This walkthrough assumes Ollama is already configured.

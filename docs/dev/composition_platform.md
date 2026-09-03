@@ -1,6 +1,3 @@
-Type: ARCHITECTURE
-Authority: ARCHITECTURE.md
-
 # Composition platform
 
 TranscriptX viewing pages are composed from **blocks** (reusable render units) and **layout profiles** (YAML ordering of block placements).

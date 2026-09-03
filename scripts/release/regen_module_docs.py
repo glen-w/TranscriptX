@@ -44,10 +44,7 @@ def render_modules_md(defs: dict[str, dict]) -> str:
         tier = str(spec.get("determinism_tier") or "")
         rows.append(f"| {mid} | {desc} | {cat} | {deps} | {tier} |")
     body = "\n".join(rows)
-    return f"""Type: GUIDE
-Authority: ../ARCHITECTURE.md
-
-# Module Catalog
+    return f"""# Module Catalog
 
 *This catalog is generated from the ModuleRegistry.*
 *Regenerate: `python3 scripts/release/regen_module_docs.py` (or `make docs-gen`).*
@@ -91,10 +88,7 @@ def render_audit_scaffold(defs: dict[str, dict]) -> str:
             f"| `{mid}` | {desc} | {cat} | {deps} | {tier} | | | |"
         )
     body = "\n".join(rows)
-    return f"""Type: PRODUCT
-Authority: analysis_quality_audit.md
-
-# Analysis quality audit scaffold (generated)
+    return f"""# Analysis quality audit scaffold (generated)
 
 **Status:** machine scaffold from `MODULE_REGISTRY_ORDER` (**0.9.5**)  
 **Do not hand-edit rows** — regenerate with `python3 scripts/release/regen_module_docs.py`.  

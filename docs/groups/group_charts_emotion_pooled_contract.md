@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Emotion group charts: pooled single view
 
 ## Inputs

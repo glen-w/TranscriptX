@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Analysis module backlog (ranked) — 2026-07-17
 
 > **Living document:** ranks, modes, waves, and non-adds are **ongoing and changeable**. Revisit after 1.0 and whenever [ROADMAP.md](../ROADMAP.md) themes or competitive research shift capacity. Date in the title is the original stocktake snapshot, not a freeze on content.

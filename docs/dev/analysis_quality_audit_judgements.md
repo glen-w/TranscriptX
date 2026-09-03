@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: analysis_quality_audit.md
-
 # Analysis quality audit judgements (0.9.7 draft)
 
 **Status:** provisional agent draft; Hub-card residual dropped 2026-08-07 — not a blocking owner Hub pass 

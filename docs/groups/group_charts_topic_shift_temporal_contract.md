@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Contract: group aggregate topic_shift temporal overlay (Tier 2)
 
 Authority for the cross-session **topic-shift boundary** marker chart emitted by `TopicShiftGroupChartGenerator` when `per_transcript_results` are available. One line per session (session-level only). The same module also emits **session bar** charts from aggregated `session_rows` within one provenance cohort (separate family; see `GROUP_AGGREGATE_CHART_FAMILIES`).

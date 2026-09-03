@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: self
-
 # Emotion family threshold calibration protocol
 
 `threshold_profile_v1` must not be published from a single small fixture.

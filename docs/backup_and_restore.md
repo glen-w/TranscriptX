@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: user flows and examples — summarizes [contracts/workspace-backup.md](contracts/workspace-backup.md); does not redefine schemas
-
 # Workspace backup and restore
 
 Full-workspace ZIP archives let you copy transcripts, durable app state, and config between machines or recover after a bad change. TranscriptX never uploads these files.

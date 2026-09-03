@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Output Contract v1
 
 Single source of truth for TranscriptX analysis **output layout**, naming, manifest schemas, and speaker-exclusion rules. Implementation: `output_standards.py`, `manifest_builder.py`, `run_manifest.py`, `run_schema.py`.

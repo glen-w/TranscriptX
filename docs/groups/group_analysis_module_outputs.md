@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Group analysis: what each module produces
 
 When you run analysis on a **group**, outputs fall into four **product-facing** classes. The same module id can mean different things depending on whether you run on one transcript or a group.

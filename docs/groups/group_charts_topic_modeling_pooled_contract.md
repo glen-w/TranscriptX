@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Topic modeling group charts: pooled single view
 
 ## Inputs

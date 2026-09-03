@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: self
-
 # Politeness markers (`politeness`)
 
 Speakers & Interaction module (B7) for **politeness / lexical formality / directiveness**.

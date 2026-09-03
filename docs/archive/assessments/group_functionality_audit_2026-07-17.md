@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 > **Archived / superseded.** Historical context only. Current authority: [group_analysis_module_outputs.md](../../groups/group_analysis_module_outputs.md). Do not treat as live roadmap or support policy.
 
 # Group functionality audit — 2026-07-17

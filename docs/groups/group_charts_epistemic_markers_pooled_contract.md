@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Epistemic markers group charts: pooled single view
 
 ## Inputs

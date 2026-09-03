@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Contagion group charts: pooled single view (edge-pooled)
 
 See [`group_charts_relational_pooling_model.md`](group_charts_relational_pooling_model.md) (edge-pooled class, parsing, self-edges, display labels, roster semantics, empty payload).

@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Emotion family contracts — 2026-07-18
 
 Three analytically independent modules:

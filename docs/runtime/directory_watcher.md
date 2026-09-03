@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: runtime/STORAGE.md
-
 # Directory watcher
 
 Optional **directory watcher** (roadmap G2) notices new files in a monitored inbox and runs **New → Import** for transcripts (and queues audio for later **Transcribe → Import**). Default **off**. Configure in **Settings → Watcher** or via `config_dir/watcher.json` / `TRANSCRIPTX_WATCHER_*` env.

@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Politeness group charts: pooled single view
 
 ## Inputs

@@ -995,7 +995,6 @@ Selected critical-path modules with remaining uncovered loader/hashing/compat br
 - **Production code:** none changed (tests-only expansion).
 - **Quarantined tests:** remain quarantined / none active to re-enable.
 
-
 ## 44. Expansion (2026-07-13) – group module aggregations
 
 ### Backup
@@ -2278,7 +2277,6 @@ Follow-up: expand testing of knobs-heavy GUI pages (Settings Analysis, Custom QA
 - Streamlit AppTest for Highlights filter expander + Show more interaction.
 - Narrow-viewport nav (AppTest-blind).
 - Full in-browser playback wiring from Insights Play (still navigates to Transcript).
-
 
 ## 77. Expansion (2026-07-27) – deep-test / Insights layout + offline topic_shift
 

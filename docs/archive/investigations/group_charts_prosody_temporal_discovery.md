@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: group_charts_prosody_temporal_contract.md
-
 > **Archived / superseded.** Historical context only. Current authority: [group_charts_prosody_temporal_contract.md](../../groups/group_charts_prosody_temporal_contract.md). Do not treat as live roadmap or support policy.
 
 # Discovery: group prosody temporal overlay (Phase 9 gate)

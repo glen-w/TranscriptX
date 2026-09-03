@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Wave B16 — Keyphrases module + wordclouds deepen (2026-07-24)
 
 **Status:** shipped in packaging line **0.8.0**; deep-test hardened **2026-07-24** (suite green; small/large/group analysis probes green).

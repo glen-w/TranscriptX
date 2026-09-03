@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/PRODUCT.md
-
 # Correct wording while reading
 
 Use **Correct mode** in the Transcript viewer to propose (and optionally apply) word/span fixes without leaving the reading surface.

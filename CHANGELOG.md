@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: self
-
 # Changelog
 
 All notable changes to TranscriptX will be documented in this file.
@@ -395,7 +392,6 @@ Pre-pre-release. Stabilising ahead of the pre-release programme, targeting 1.0.
 
 - Run Analysis / Batch preset help copy points at Settings → Analysis; heavy-module counting treats registry `category` or `cost_tier` as heavy.
 - Speakers voice UX / privacy defaults and contract docs updated for the residual voice match work.
-
 
 ## [0.7.4] - 2026-07-23
 

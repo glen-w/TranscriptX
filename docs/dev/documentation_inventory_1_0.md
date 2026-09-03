@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Documentation inventory (1.0 / Phase 0A)
 
 Planning matrix for repository documentation classification. Created under Phase 0A; actions are executed in follow-on PRs.
@@ -25,7 +22,7 @@ Planning matrix for repository documentation classification. Created under Phase
 
 1. Dual roadmaps resolved: programme plan moved to `docs/dev/pre_release_roadmap_1_0.md`; `docs/ROADMAP.md` rewritten for 0.9→1.0 outcomes (Phase 0B).
 2. Archive paradox resolved: `docs/archive/` is tracked with banners (no longer gitignored).
-3. Missing `Type:`/`Authority:` headers addressed on retained live docs; archived files use archive banners.
+3. `Type:`/`Authority:` classification headers removed from Markdown pages (they rendered on hosted docs). Archived files use archive banners.
 4. Stocktake retargeted to 0.9→1.0 stabilisation (not Wave 3 as default next capacity).
 
 ## Inventory rows

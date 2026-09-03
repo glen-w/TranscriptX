@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Tics group charts: pooled single view
 
 ## Inputs

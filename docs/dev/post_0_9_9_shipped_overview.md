@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: docs/dev/pre_release_roadmap_1_0.md
-
 # Post-0.9.9 shipped wave — overview
 
 **Status:** summary of work on `main` **after** the **0.9.9** cut, packaged as interim **`0.9.9.5`**  

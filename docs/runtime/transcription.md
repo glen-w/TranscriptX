@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: runtime/STORAGE.md
-
 # Transcription (bring your own files)
 
 TranscriptX **analyses** transcripts. It does **not** transcribe audio in the app.

@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Contract: group aggregate pauses temporal overlay (Tier 2)
 
 Authority for the cross-session **long pause** line chart emitted by `PausesGroupChartGenerator` when `per_transcript_results` are available. One line per session (session-level only; no per-speaker split in v1). The same module also emits **session summary bar** charts from aggregated `session_rows` (separate family; see `GROUP_AGGREGATE_CHART_FAMILIES`).

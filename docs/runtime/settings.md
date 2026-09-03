@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/runtime/STORAGE.md + docs/public_surfaces.md
-
 # Settings, profiles, and analysis knobs
 
 How to change TranscriptX behaviour from the GUI, env, and config files — without mixing up the several things named “profile”.

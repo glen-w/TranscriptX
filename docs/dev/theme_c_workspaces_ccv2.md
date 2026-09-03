@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Theme C — High-interaction workspaces (Components v2)
 
 Status: active (1.x)  

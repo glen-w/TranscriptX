@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Interactions semantics and turn-taking equity
 
 Companion to [`group_charts_interactions_pooled_contract.md`](group_charts_interactions_pooled_contract.md) and [`group_charts_relational_pooling_model.md`](group_charts_relational_pooling_model.md).

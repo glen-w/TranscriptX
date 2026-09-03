@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/PRODUCT.md
-
 # Identify and name speakers
 
 Replace diarized speaker IDs with readable names so the transcript and speaker-level results are legible and meaningful.

@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Speaker profiles v1 (Phase 1)
 
 Longitudinal speaker records are **canonical versioned project files** under

@@ -96,10 +96,6 @@ htmlcov/
 docs/_build/
 _site/
 
-# Local-only code / architecture reviews (built by Sphinx when present; not published)
-docs/reviews/
-
-
 # Local reports archive (run dumps; docs archive is tracked under docs/archive/)
 reports/archive/
 

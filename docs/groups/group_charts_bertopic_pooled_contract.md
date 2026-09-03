@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Group charts — bertopic pooled
 
 - **`bertopic_pooled`** from `aggregate_bertopic_group`, after a **group-level BERTopic refit** on merged preprocessed **source segments** from all transcripts (not joined transcript topic IDs).

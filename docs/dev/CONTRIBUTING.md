@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: ARCHITECTURE.md
-
 # Contributing to TranscriptX
 
 This document covers contribution workflow and how to keep documentation in sync with the codebase.
@@ -16,6 +13,7 @@ TranscriptX documentation is structured into explicit layers:
 
 Hard rules:
 
+- Do **not** put `Type:` / `Authority:` rows at the top of Markdown files. The CONTRACT / GUIDE / ARCHITECTURE / PRODUCT layers are writing rules, not page headers. They rendered on hosted Sphinx pages. Authority lives in [CONTRACT_INDEX.md](../CONTRACT_INDEX.md) and the contract files themselves.
 - Every major concept must have **one authoritative home**.
 - Guides must **not** define rules.
 - Architecture docs must **not** define rules.

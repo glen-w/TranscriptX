@@ -2,7 +2,6 @@
 
 # Chart evidence sidecar migration
 
-Type: GUIDE
 Status: **Done** (primary path)
 
 Chart LLM descriptions ground prompts in **plotted evidence** written beside

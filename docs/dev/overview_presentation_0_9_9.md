@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: docs/dev/pre_release_roadmap_1_0.md
-
 # 0.9.9 — Overview / results presentation polish
 
 **Status:** cut as **`0.9.9`** (2026-08-09) — Analysis tab retired; Overview EPUB + batch progress honesty landed; Overview hierarchy + Charts catalogue residuals deferred for pre-unfamiliar-user follow-up  

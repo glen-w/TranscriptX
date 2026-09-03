@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/runtime/STORAGE.md
-
 # Corrections in the Transcript viewer
 
 Theme B adds word/span propose–apply while reading. Corrections Studio remains the batch detector/LLM review surface.

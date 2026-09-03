@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: self
-
 # Wave 2 lexicon linguistics — B6 + B7
 
 Companion to [`analysis_module_backlog_2026-07-17.md`](analysis_module_backlog_2026-07-17.md). Shared kit + two new module IDs; lexicon-only v1 (T0).

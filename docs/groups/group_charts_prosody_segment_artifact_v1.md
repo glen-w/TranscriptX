@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Contract: prosody overlay segment artifact (v1)
 
 **Machine artifact** consumed by `group.prosody.temporal_overlay.global` after Phase 13B. Written by `prosody_dashboard` when voice features are available.

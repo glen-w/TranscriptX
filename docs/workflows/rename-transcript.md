@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/PRODUCT.md
-
 # Rename a managed transcript
 
 Give a managed library transcript a clearer file name (and rename linked working-copy audio when present) from **Rename Transcript**.

@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Run outcome contract
 
 This document defines the canonical **run outcome contract** for TranscriptX. It is the single source of truth for how `run_results.json` represents execution outcomes.  

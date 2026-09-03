@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs_architecture_1_0.md
-
 # Read the Docs go-live checklist
 
 **Status:** prep only (**0.9.7**) — do **not** publish a live RTD project hostname in-repo until the project exists.  

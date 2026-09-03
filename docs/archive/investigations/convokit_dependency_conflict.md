@@ -1,6 +1,3 @@
-Type: ARCHIVE
-Authority: historical
-
 > **Archived / superseded.** Historical context only. Current authority: [dependency_audit.md](../../dev/dependency_audit.md). Do not treat as live roadmap or support policy.
 
 # ConvoKit dependency conflict (historical)

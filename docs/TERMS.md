@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: runtime/STORAGE.md + run_outcome_contract.md + contracts/output-contract-v1.md + public_surfaces.md
-
 # TranscriptX terminology index (non-authoritative)
 
 This document is an **index of terms only**. It aggregates terminology from the authoritative CONTRACT documents and points back to them.

@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: PRODUCT.md
-
 # TranscriptX documentation
 
 TranscriptX is a local-first workbench for people who want to think with transcripts. You import files you already have, run analysis on your machine, and keep the results.
@@ -24,6 +21,7 @@ workflows/index
 runtime/installation
 runtime/transcription
 PRODUCT
+USER_INDEX
 ```
 
 ```{toctree}
@@ -69,6 +67,7 @@ DEV_INDEX
 ROADMAP
 ARCHITECTURE
 developer_quickstart
+dev/packages
 reviews/index
 CONTRACT_INDEX
 public_surfaces

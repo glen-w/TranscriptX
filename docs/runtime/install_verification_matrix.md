@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/runtime/installation.md
-
 # Install verification matrix
 
 **Authority:** This document is the authoritative install-verification matrix for TranscriptX **0.9.4**. Do not advertise an install command that cannot pass its stated cell.

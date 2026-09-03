@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Performance and resource envelopes (1.0)
 
 **Status:** measurement recipe + baseline notes (**0.9.7**); large-library UI soak **pass** 2026-08-07 (200+ transcripts); Medium Balanced batch **pass** 2026-08-07 (~9.3 min / 6 transcripts on Docker Compose); thorough full-preset LLM timings on speaker-complete corpus **pass** 2026-08-07 (`qwen2.5:7b`); final Thorough stress pass (2 tx + 2 groups) **pass** 2026-08-08 (corpus **68.7 min**)

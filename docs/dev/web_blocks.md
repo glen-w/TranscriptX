@@ -1,6 +1,3 @@
-Type: ARCHITECTURE
-Authority: ARCHITECTURE.md
-
 # Web blocks
 
 ## BlockSpec

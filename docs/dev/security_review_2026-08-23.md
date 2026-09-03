@@ -1,6 +1,3 @@
-Type: ASSESSMENT
-Authority: SECURITY.md
-
 # TranscriptX security review (2026-08-23)
 
 ## 1. Executive verdict

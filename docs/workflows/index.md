@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/PRODUCT.md
-
 # Using TranscriptX
 
 Short, outcome-focused walkthroughs for real jobs in the web UI. They complement the reference guides; they do not replace them.

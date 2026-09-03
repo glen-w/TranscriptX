@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: runtime/STORAGE.md
-
 # Installation & Configuration
 
 **First-time users:** follow the [README](../README.md) for Docker (or `./transcriptx.sh`), then [First analysis](../workflows/first-analysis.md). This page covers extras, environment variables, and troubleshooting.

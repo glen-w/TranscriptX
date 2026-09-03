@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/PRODUCT.md
-
 # First analysis: from transcript to useful results
 
 The shortest realistic path from importing a transcript to reading your first analysis results.

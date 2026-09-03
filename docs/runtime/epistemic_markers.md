@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: self
-
 # Epistemic markers (`epistemic_markers`)
 
 Language & Meaning module (B6) for **hedging / certainty / epistemic marker density**.

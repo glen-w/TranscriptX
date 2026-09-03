@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Unfamiliar-user validation (1.0) — run kit
 
 **Status:** executable kit prepared in **0.9.8**; cohort who/when remains owner judgement ([pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) §20)  

@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Complexity and performance gates (pipeline / reporting)
 
 - **Radon (optional):** `radon cc src/transcriptx/core/pipeline -a -nc` — watch for new `F` ranks in hot paths touched by changes.

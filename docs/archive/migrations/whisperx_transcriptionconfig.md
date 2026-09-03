@@ -2,9 +2,6 @@
 
 # WhisperX TranscriptionConfig migration
 
-Type: GUIDE
-Authority: docs/recipes/whisperx/README.md
-
 When in-app transcription was removed, former TranscriptX `TranscriptionConfig` fields moved to WhisperX env vars and CLI flags. The table is kept so no old knob is silently lost. New setups should use `whisperx.env.example` and the recipe README — not this page.
 
 If you add a new WhisperX knob, update `whisperx.env.example` first; only extend this table when documenting a former TranscriptX field.

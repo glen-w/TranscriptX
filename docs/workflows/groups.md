@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/PRODUCT.md
-
 # Bundle transcripts into a group
 
 Create a file-backed **group** so you can analyse related transcripts together and keep membership editable.

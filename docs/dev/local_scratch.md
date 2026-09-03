@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/developer_quickstart.md
-
 # Local scratch convention
 
 Future local-only developer material belongs under **`.local/`** at the repository root.

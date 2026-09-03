@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Release severity triage (1.0)
 
 **Status:** planning / published rules  

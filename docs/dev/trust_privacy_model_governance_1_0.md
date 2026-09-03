@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Trust, privacy, and model governance (1.0)
 
 **Status:** gate closed for programme purposes (**0.9.7** drafts; Hub-card residual **dropped** 2026-08-07)  

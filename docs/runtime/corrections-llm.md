@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/runtime/llm.md
-
 # Corrections Studio LLM discovery
 
 Optional Ollama-assisted correction **candidate discovery** for Corrections Studio.

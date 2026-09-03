@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: runtime/STORAGE.md
-
 # Lexical diversity analysis
 
 Deterministic module (`lexical_diversity`, tier **T0**, category **light**) that measures vocabulary variety per speaker and globally. It does **not** call an LLM and has **no** pydantic config — thresholds and bucket size are module constants.

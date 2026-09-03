@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: ../../runtime/transcription.md
-
 # WhisperX standalone (optional reference recipe)
 
 Use this when you want diarized WhisperX JSON, then import it into TranscriptX. These files are **optional standalone examples**. They are **not** part of the TranscriptX runtime — TranscriptX does not orchestrate WhisperX. Any tool that produces compatible transcript JSON is fine; WhisperX is one example.

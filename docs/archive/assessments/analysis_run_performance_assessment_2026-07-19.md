@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 > **Archived / superseded.** Historical context only. Current authority: [run_performance.md](../../dev/run_performance.md). Do not treat as live roadmap or support policy.
 
 # Assessing analysis-run performance (low custom code)

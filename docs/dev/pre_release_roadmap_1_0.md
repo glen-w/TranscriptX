@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # TranscriptX pre-release roadmap (0.9.x → 1.0)
 
 **Scope:** short-term only — current work through public **1.0**. When 1.0 ships, retire or archive this file; do not grow it into a permanent product roadmap.

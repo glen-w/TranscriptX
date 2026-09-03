@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # TranscriptX Roadmap
 
 **Current version:** see [pyproject.toml](../pyproject.toml) (package version).

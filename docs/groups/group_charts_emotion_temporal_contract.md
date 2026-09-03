@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Contract: group aggregate emotion temporal overlay (Tier 2)
 
 Authority for the cross-session line chart emitted by `EmotionGroupChartGenerator` when `per_transcript_results` are available. Tier 1 session bar charts read aggregated `session_rows.global_emotions` (separate family).

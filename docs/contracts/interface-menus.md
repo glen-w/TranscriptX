@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Interface menus v1
 
 Persisted Streamlit action-strip configuration. Edited under **Settings →

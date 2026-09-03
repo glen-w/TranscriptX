@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: runtime/STORAGE.md
-
 # Analysis models
 
 Operational guide for choosing NLP/ML models used during analysis. This does not change storage or output contracts.

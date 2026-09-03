@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Install profiles matrix (1.0)
 
 **Status:** audited for **0.9.4**  

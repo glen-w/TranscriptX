@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Documentation architecture (1.0)
 
 **Status:** Sphinx revived (**0.9.5**); modest `website/` + Pages workflow (**0.9.7**); screenshot workflow walkthroughs (**2026-08**); RTD project go-live still owner-gated  
@@ -41,7 +38,7 @@ Three registers — same facts, different density. Do not rewrite archive, revie
 | **Technical reference** | People configuring or scripting | `docs/runtime/` detail, `docs/generated/`, TERMS, contracts, STORAGE, public_surfaces |
 | **Maintainer** | Contributors and release owners | `docs/dev/`, `docs/archive/`, `docs/reviews/`, internal package/test READMEs |
 
-README is the user entry, not a release brief. Keep `Type:` / `Authority:` off the README. Schema epoch, install-profile markers, and programme history belong in ROADMAP / `docs/dev/`, not the first screen.
+README is the user entry, not a release brief. Do not put `Type:` / `Authority:` headers on Markdown pages (they render on hosted docs). Schema epoch, install-profile markers, and programme history belong in ROADMAP / `docs/dev/`, not the first screen.
 
 The public landing, README, and Sphinx “Start here” toctree should tell the same story: what it is → screenshots → what you can do → privacy → first analysis → install.
 

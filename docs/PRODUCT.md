@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # TranscriptX product definition
 
 **One sentence:** TranscriptX is a local-first personal transcript analysis workbench for people who want to think with transcripts.

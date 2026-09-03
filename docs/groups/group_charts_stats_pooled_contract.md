@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Stats group charts: pooled single view (totals only)
 
 ## Inputs

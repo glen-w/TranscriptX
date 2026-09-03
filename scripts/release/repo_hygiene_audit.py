@@ -6,7 +6,7 @@ Checks (warn by default; exit 0 unless --strict):
   2. owner_paths — Owner absolute paths (/Users/...) in tracked scripts/tools/docs
      (archive hits are expected; live hits must stay clean)
   3. archive_banners — Archive banners under docs/archive/ and archive/scripts/
-  4. type_headers — Live docs under docs/ (excl. archive) missing Type: header
+  4. type_headers — Markdown docs that still have Type:/Authority: classification headers
   5. dated_dev_index — Dated docs/dev/*_20*.md not mentioned in docs/DEV_INDEX.md
   6. supported_scripts — Supported public scripts mentioned in user-facing docs
 
@@ -150,17 +150,36 @@ def check_archive_banners() -> list[str]:
     return warns
 
 
+_TYPE_HEADER_RE = re.compile(
+    r"^Type:\s*(CONTRACT|GUIDE|ARCHITECTURE|PRODUCT|ASSESSMENT|DECISION|ARCHIVE|DEVELOPER)\b",
+    re.M | re.I,
+)
+_AUTHORITY_HEADER_RE = re.compile(r"^Authority:\s", re.M)
+
+
+def _text_outside_fences(text: str) -> str:
+    parts: list[str] = []
+    in_fence = False
+    for line in text.splitlines(keepends=True):
+        if line.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if not in_fence:
+            parts.append(line)
+    return "".join(parts)
+
+
 def check_type_headers() -> list[str]:
     warns: list[str] = []
-    for rel in _tracked(["docs/**/*.md"]):
-        if rel.startswith("docs/archive/"):
-            continue
+    for rel in _tracked(
+        ["docs/**/*.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md"]
+    ):
         path = ROOT / rel
         if not path.is_file():
             continue
-        text = path.read_text(encoding="utf-8", errors="replace")[:400]
-        if not re.search(r"^Type:\s*\S+", text, re.M):
-            warns.append(f"live doc missing Type: header: {rel}")
+        body = _text_outside_fences(path.read_text(encoding="utf-8", errors="replace"))
+        if _TYPE_HEADER_RE.search(body) or _AUTHORITY_HEADER_RE.search(body):
+            warns.append(f"doc still has Type:/Authority: header: {rel}")
     return warns
 
 
@@ -202,7 +221,7 @@ CHECK_TITLES = {
     "root_md": "root markdown allowlist",
     "owner_paths": "owner absolute paths",
     "archive_banners": "archive banners",
-    "type_headers": "Type: headers",
+    "type_headers": "Type:/Authority: headers absent",
     "dated_dev_index": "dated plans in DEV_INDEX",
     "supported_scripts": "supported scripts in user docs",
 }

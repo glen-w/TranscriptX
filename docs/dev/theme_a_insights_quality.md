@@ -1,7 +1,5 @@
 # Theme A — Insights & analysis quality
 
-Type: DEVELOPER  
-Authority: self  
 Status: active (1.x)  
 Last updated: 2026-08-10
 
@@ -98,7 +96,6 @@ Eligibility: `analysis.insight_eligibility.min_score` default `0.18`; `require_s
 - SQLite analytics (Theme J)
 - Reintroducing Insights → Analysis tab
 - Full B18 Local-AI insight narratives (follow-on after P2-lite)
-
 
 ## Corpus probe notes (deep-test 2026-08-10)
 

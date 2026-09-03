@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Public surfaces contract
 
 This document defines which TranscriptX surfaces are **supported** and which are explicitly **not supported**. It is the contract for how users and contributors are expected to interact with the system.

@@ -1,6 +1,3 @@
-Type: ARCHITECTURE
-Authority: self
-
 # TranscriptX Architecture
 
 This document gives a high-level mental model for how TranscriptX works today.  
@@ -8,7 +5,8 @@ It describes **system shape and typical data flow only** and is **non-authoritat
 **All invariants, rules, and behavioral guarantees live in CONTRACT documents.**
 
 **Product definition:** [PRODUCT.md](PRODUCT.md) (what TranscriptX is for).  
-**Support policy:** [public_surfaces.md](public_surfaces.md).
+**Support policy:** [public_surfaces.md](public_surfaces.md).  
+**Evidence snapshot (2026-09-02):** [architecture review](reviews/architecture-review-2026-09-02.md) — reconstruction from the tree; not a contract.
 
 ## Core flow
 

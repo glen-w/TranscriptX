@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/PRODUCT.md
-
 # Explore Charts for a finished run
 
 Open the run-scoped **Charts** view to see visual module outputs without leaving the analysis context.

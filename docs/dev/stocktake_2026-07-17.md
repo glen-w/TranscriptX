@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # TranscriptX Codebase Stocktake — 2026-07-17
 
 > Living decision foundation for the **0.9.x → 1.0** stabilisation programme. Supersedes the historical assessment in [`docs/archive/assessments/assessment-2026-03-10.md`](../archive/assessments/assessment-2026-03-10.md).  

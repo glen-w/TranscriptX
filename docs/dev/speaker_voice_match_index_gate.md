@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: advisory
-
 # Speaker voice match — reference-environment index gate (Stage 9)
 
 Voice matching prefers a rebuildable file matrix under

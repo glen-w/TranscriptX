@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: contracts/output-contract-v1.md
-
 # Output conventions
 
 **Authority:** For the formal output contract (layout, manifests, speaker exclusion), see **[docs/contracts/output-contract-v1.md](contracts/output-contract-v1.md)**.

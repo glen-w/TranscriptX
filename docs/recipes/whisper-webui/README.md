@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: ../../runtime/transcription.md
-
 # Whisper-WebUI (optional interoperability recipe)
 
 Use this when you want a local webpage that transcribes audio, then import the subtitles into TranscriptX.

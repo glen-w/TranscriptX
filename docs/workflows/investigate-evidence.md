@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/PRODUCT.md
-
 # Investigate a question and trace it back to evidence
 
 Use TranscriptX as an analysis workbench: start from a question, follow results to supporting excerpts, then return to the transcript.

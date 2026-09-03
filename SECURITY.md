@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: self
-
 # Security Policy
 
 TranscriptX is a **local-first, single-user beta**. The trust domain is the machine user who runs the process, plus the default loopback web bind.

@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: analysis_quality_audit.md
-
 # Analysis quality audit scaffold (generated)
 
 **Status:** machine scaffold from `MODULE_REGISTRY_ORDER` (**0.9.5**)  

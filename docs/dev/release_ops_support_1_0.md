@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Release operations and support (1.0)
 
 **Status:** drafted (**0.9.7**); publish with public 1.0 tag  

@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: tests/README.md
-
 # GUI acceptance — residual manual checklist
 
 **Purpose:** Behaviours the Streamlit AppTest lane (`make test-gui-acceptance`) cannot credibly validate.  

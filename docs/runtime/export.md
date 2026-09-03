@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/contracts/output-contract-v1.md
-
 # Exporting runs (ZIP, HTML, EPUB)
 
 How Overview / Artifacts export packages selected run artifacts for offline use.

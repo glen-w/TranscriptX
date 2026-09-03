@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: self
-
 # BERTopic module
 
 BERTopic is a first-class topic-modeling path alongside LDA/NMF `topic_modeling`.

@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/dev/CONTRIBUTING.md
-
 # Workflow walkthrough media capture
 
 Maintainer notes for regenerating screenshots and GIFs under `docs/_static/workflows/`.

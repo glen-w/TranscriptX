@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Contract: group aggregate prosody temporal overlay (Tier 2)
 
 Authority for the cross-session line chart emitted by `ProsodyGroupChartGenerator` when `per_transcript_results` are available. Reads only the v1 segment artifact; see [`group_charts_prosody_segment_artifact_v1.md`](group_charts_prosody_segment_artifact_v1.md).

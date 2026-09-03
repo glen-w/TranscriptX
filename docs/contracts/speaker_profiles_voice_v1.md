@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Speaker profiles — voice phase v1 (R2)
 
 Local voice fingerprinting and suggested speaker matches. Confirmed

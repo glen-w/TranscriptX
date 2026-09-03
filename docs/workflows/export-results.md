@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/runtime/export.md
-
 # Export a finished analysis
 
 Take a completed run out of TranscriptX as a portable package.

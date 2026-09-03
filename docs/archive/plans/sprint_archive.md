@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: ROADMAP.md
-
 > **Archived / superseded.** Historical context only. Current authority: [ROADMAP.md](../../ROADMAP.md). Do not treat as live roadmap or support policy.
 
 # Sprint plan (archived backlog)

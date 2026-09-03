@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Interactions group charts: pooled single view
 
 See [`group_charts_relational_pooling_model.md`](group_charts_relational_pooling_model.md) (speaker-pooled relational class, dominance rule, `speaker_rows` vs `interactions_pooled`).

@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 > **Archived / superseded.** Historical context only. Current authority: [group_charts_default_overview.md](../../groups/group_charts_default_overview.md). Do not treat as live roadmap or support policy.
 
 # Phase 4: group generic chart curation — outcome table

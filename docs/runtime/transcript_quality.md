@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: self
-
 # ASR confidence (`transcript_quality`)
 
 Foundations module that surfaces **word-level ASR confidence** as reviewable evidence.

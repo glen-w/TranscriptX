@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Keyphrases group charts: pooled single view
 
 ## Inputs

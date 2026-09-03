@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/PRODUCT.md
-
 # How TranscriptX compares
 
 A plain-language map of where TranscriptX sits next to transcription tools, meeting assistants, and conversation-intelligence products.

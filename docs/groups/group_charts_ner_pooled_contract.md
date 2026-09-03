@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # NER group charts: pooled single view
 
 ## Inputs

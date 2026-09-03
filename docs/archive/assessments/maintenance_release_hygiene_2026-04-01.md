@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 > **Archived / superseded.** Historical context only. Current authority: [release_governance.md](../../dev/release_governance.md). Do not treat as live roadmap or support policy.
 
 # Release-hygiene cleanup — 2026-04-01

@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self — full-workspace backup ZIP package and restore semantics. Peers: [runtime/STORAGE.md](../runtime/STORAGE.md), [speaker_profiles_v1.md](speaker_profiles_v1.md), [speaker_profiles_voice_v1.md](speaker_profiles_voice_v1.md). Does not redefine per-transcript or analysis-run schemas.
-
 # Workspace backup
 
 ## Purpose

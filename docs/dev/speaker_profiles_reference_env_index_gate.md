@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: advisory
-
 # Speaker profiles — reference-environment index gate (Stage 8)
 
 Phase 1 keeps longitudinal speaker profiles as portable files under

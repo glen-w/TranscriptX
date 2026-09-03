@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Theme C invest / narrow / defer decision
 
 Status: provisional after Phase 3 scaffolding  

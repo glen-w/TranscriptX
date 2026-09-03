@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/PRODUCT.md
-
 # User documentation index
 
 Curated entry points for people using TranscriptX.

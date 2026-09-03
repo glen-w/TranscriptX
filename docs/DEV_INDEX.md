@@ -1,9 +1,15 @@
-Type: GUIDE
-Authority: docs/dev/CONTRIBUTING.md
-
 # Developer documentation index
 
 Active developer and maintainer docs. Historical material is listed only via [ARCHIVE_INDEX](archive/ARCHIVE_INDEX.md).
+
+## Snapshot
+
+| Topic | Where |
+|-------|--------|
+| **Packages** | [packages.md](dev/packages.md) — extras and the workspaces package. Pins: `pyproject.toml`. CVE policy: [dependency_audit.md](dev/dependency_audit.md). Model IDs: [models.md](runtime/models.md). |
+| **Known issues** | User-facing: [known_limitations.md](known_limitations.md). Maintainer: [security_review_2026-08-23.md](dev/security_review_2026-08-23.md), [test_suite_review_2026-08-12.md](dev/test_suite_review_2026-08-12.md). Tracker: [GitHub Issues](https://github.com/glen-w/TranscriptX/issues). |
+| **SLOC** | [sloc-estimate-2026-09-02.md](reviews/sloc-estimate-2026-09-02.md) — measured with [`scripts/count_sloc.py`](../scripts/count_sloc.py). |
+| **Code reviews** | [reviews/index.md](reviews/index.md) — dated architecture / SLOC assessments (evidence, not contracts). |
 
 ## Phase 0A / 0B programme
 
@@ -35,10 +41,14 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | Doc | Purpose |
 |-----|---------|
 | [developer_quickstart.md](developer_quickstart.md) | Mental model and extension points |
+| [packages.md](dev/packages.md) | Install extras and workspace packages |
 | [CONTRIBUTING.md](dev/CONTRIBUTING.md) | Docs authority model and sync checklist |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System shape (non-authoritative for rules) |
+| [reviews/index.md](reviews/index.md) | Dated architecture / SLOC assessments (evidence, not contracts) |
 | [ADR-IMPORT-ORCHESTRATION.md](ADR-IMPORT-ORCHESTRATION.md) | Import orchestration ADR |
 | [PRODUCT.md](PRODUCT.md) | Product definition |
+| [CONTRACT_INDEX.md](CONTRACT_INDEX.md) | Contract map (storage, surfaces, run outcomes) |
+| [public_surfaces.md](public_surfaces.md) | Supported interfaces |
 | [ROADMAP.md](ROADMAP.md) | Product roadmap (0.9.x → 1.0 → 2.0) |
 | [theme_a_insights_quality.md](dev/theme_a_insights_quality.md) | Theme A insights quality (deterministic/hybrid, less noise) |
 | [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md) | Theme C CCv2 workspaces design (Speaker ID / Corrections) |

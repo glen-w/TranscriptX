@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Contract: group aggregate acts temporal overlay (Tier 2)
 
 This document is the authority for the **single** cross-session acts line chart emitted by `ActsGroupChartGenerator` when per-member run results are available. Other modules or chart families must not reuse this contract without their own document and review.

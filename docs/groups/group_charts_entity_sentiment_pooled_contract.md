@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Entity sentiment group charts: pooled single view
 
 ## Inputs

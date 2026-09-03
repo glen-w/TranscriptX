@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # TranscriptX Storage Policy
 
 This document defines the storage contract for path roots and the serialization rule. It is the reference for the path/storage architecture.

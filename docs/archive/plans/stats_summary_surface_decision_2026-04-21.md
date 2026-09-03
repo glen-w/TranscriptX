@@ -1,6 +1,3 @@
-Type: DECISION
-Authority: maintainer
-
 > **Archived / superseded.** Historical context only. Current authority: [DEV_INDEX.md](../../DEV_INDEX.md). Do not treat as live roadmap or support policy.
 
 # Stats Summary Surface Decision (PR0)

@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Acts group charts: pooled single view (audited)
 
 ## Existing charts

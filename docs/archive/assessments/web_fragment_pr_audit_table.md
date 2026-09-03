@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 > **Archived / superseded.** Historical context only. Current authority: [web_blocks.md](../../dev/web_blocks.md). Do not treat as live roadmap or support policy.
 
 # Web fragment / rerun audit (PR review aid)

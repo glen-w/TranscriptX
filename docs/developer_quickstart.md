@@ -1,11 +1,10 @@
-Type: GUIDE
-Authority: ARCHITECTURE.md
-
 # Developer Quick Start — TranscriptX
 
 This guide is for developers who want to understand how TranscriptX is structured internally and how to extend it safely, without reading the entire codebase.
 
 It prioritises mental models, execution flow, and stable extension points over exhaustive reference.
+
+**Also see:** [packages used](dev/packages.md) · [known limitations](known_limitations.md) · [SLOC estimate](reviews/sloc-estimate-2026-09-02.md) · [code reviews](reviews/index.md)
 
 ## 1. Mental model
 

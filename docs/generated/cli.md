@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: ../ARCHITECTURE.md
-
 # Web launcher and Python API
 
 The **`transcriptx` console script** only starts the Streamlit web application (same as `python -m transcriptx.web`). There are no `transcriptx <subcommand>` analysis commands.

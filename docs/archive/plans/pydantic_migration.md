@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 > **Archived / superseded.** Historical context only. Current authority: [developer_quickstart.md](../../developer_quickstart.md). Do not treat as live roadmap or support policy.
 
 # Pydantic config migration checklist

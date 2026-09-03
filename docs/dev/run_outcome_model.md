@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: ../run_outcome_contract.md
-
 # Run outcome model (developer notes)
 
 **Authority:** All execution-truth rules (statuses, precedence, loaders, group projection) live in **[`docs/run_outcome_contract.md`](../run_outcome_contract.md)**. This guide collects implementation pointers for contributors; it does not define contract rules.

@@ -1,8 +1,5 @@
 > **Archived / superseded.** Historical context only. Current authority: [performance_envelopes_1_0.md](../../dev/performance_envelopes_1_0.md). Do not treat as live roadmap or support policy.
 
-Type: PRODUCT
-Authority: self
-
 > Historical assessment. Live envelopes: [performance_envelopes_1_0.md](../../dev/performance_envelopes_1_0.md). Analysis-run timing is a separate track: [run_performance.md](../../dev/run_performance.md). Do not treat this document as a release gate by itself.
 
 # GUI Performance Assessment

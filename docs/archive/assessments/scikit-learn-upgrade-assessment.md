@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 > **Archived / superseded.** Historical context only. Current authority: [dependency_audit.md](../../dev/dependency_audit.md). Do not treat as live roadmap or support policy.
 
 # Scikit-learn upgrade assessment (1.3 → ≥1.6 for BERTopic)

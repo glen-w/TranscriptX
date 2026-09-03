@@ -38,28 +38,16 @@ Lint rules (must fail #docs)
 
 ⸻
 
-1. Classify docs and add headers
+1. Classify docs without page headers
 
-Ensure each core doc begins with:
+Do **not** add `Type:` / `Authority:` rows. They render on hosted Sphinx pages. Classification is by location and index, not a file header:
 
-Type: CONTRACT | GUIDE | ARCHITECTURE | PRODUCT
-Authority: 
+	•	CONTRACT — `docs/contracts/`, `docs/runtime/STORAGE.md`, `docs/run_outcome_contract.md`, `docs/public_surfaces.md`, listed in `docs/CONTRACT_INDEX.md`
+	•	GUIDE — `docs/workflows/`, runtime how-tos, `docs/USER_INDEX.md`, README
+	•	ARCHITECTURE — `docs/ARCHITECTURE.md`, ADRs, composition/config architecture notes
+	•	PRODUCT — `docs/PRODUCT.md`, `docs/ROADMAP.md`, programme docs under `docs/dev/`
 
-**Exception:** `README.md` does **not** require `Type:` / `Authority:` headers (keep the repo landing page lightweight). It should still behave as an entry guide in substance (see §3): link to contracts, avoid duplicating normative rules.
-
-Apply or verify at minimum:
-	•	docs/runtime/STORAGE.md → Type: CONTRACT → Authority: self
-	•	docs/run_outcome_contract.md → Type: CONTRACT → Authority: self
-	•	docs/contracts/output-contract-v1.md → Type: CONTRACT → Authority: self
-	•	docs/runtime/transcription.md → Type: GUIDE → Authority: docs/runtime/STORAGE.md
-	•	docs/runtime/installation.md → Type: GUIDE → Authority: docs/runtime/STORAGE.md
-	•	docs/runtime/docker.md → Type: GUIDE → Authority: docs/runtime/STORAGE.md and/or docs/public_surfaces.md where relevant
-	•	docs/developer_quickstart.md → Type: GUIDE → Authority: contracts + architecture
-	•	docs/ARCHITECTURE.md → Type: ARCHITECTURE → Authority: self
-	•	docs/ROADMAP.md and other roadmap/assessment/archive docs → Type: PRODUCT → Authority: self
-	•	docs/CONTRACT_INDEX.md → Type: GUIDE → Authority: contracts
-
-Also classify any remaining docs/*.md files, especially group-chart docs, ADRs, inventories, and archived planning docs.
+Authority lives in CONTRACT_INDEX and the contract files themselves. Do not restore classification headers on any Markdown page, including archive.
 
 ⸻
 
@@ -106,7 +94,7 @@ In all GUIDE and ARCHITECTURE docs:
 
 3. README (user-guide entry)
 
-Keep README.md as the public first-run page (no Type:/Authority: headers).
+Keep README.md as the public first-run page. Do not put Type:/Authority: headers on any Markdown page.
 
 Keep:
 	•	short product explanation (BYO transcripts; link comparison)

@@ -1,6 +1,3 @@
-Type: ARCHITECTURE
-Authority: self
-
 # ADR: Transcript Import Orchestration Architecture
 
 ## Status

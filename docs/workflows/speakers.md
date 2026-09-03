@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: docs/PRODUCT.md
-
 # Browse longitudinal speaker profiles
 
 Open the **Speakers** directory to review profiles linked across managed transcripts (when you enrol speakers during identification).

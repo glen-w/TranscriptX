@@ -1,8 +1,5 @@
 # Group charts — semantic similarity motifs (B14)
 
-Type: CONTRACT  
-Authority: self
-
 ## Scope
 
 Cross-session recurring motifs and drift for aggregation id `semantic_similarity`

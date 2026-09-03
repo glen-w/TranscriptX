@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Settings / profiles / knobs — assessment and programme
 
 **Date:** 2026-08-11  

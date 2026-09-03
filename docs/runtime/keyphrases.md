@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: self
-
 # Keyphrases (`keyphrases`)
 
 Language & Meaning module (B16) for **method-separated keyphrase ranking**. Visual clouds are owned by `wordclouds` (optional consumer).

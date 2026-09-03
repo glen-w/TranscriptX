@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Group LLM synthesis contract
 
 Cross-session synthesis of per-member `llm_summary` / `llm_speaker_summary` texts during group finalize. **Not** a new analysis module ID.

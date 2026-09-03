@@ -1,6 +1,3 @@
-Type: ARCHITECTURE
-Authority: self
-
 > **Archived / superseded.** Historical context only. Current authority: [documentation_inventory_1_0.md](../../dev/documentation_inventory_1_0.md). Do not treat as live roadmap or support policy.
 
 # Phase 0: Design and Inventory

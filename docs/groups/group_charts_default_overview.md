@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: group_analysis_module_outputs.md
-
 # Group charts: default overview vs gallery (operator guide)
 
 Short reference for **what shows first** on a group run versus **what exists in the full chart gallery**. This doc stays product-facing; it does not describe internal pipeline architecture.

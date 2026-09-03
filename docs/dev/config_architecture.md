@@ -1,6 +1,3 @@
-Type: ARCHITECTURE
-Authority: docs/ARCHITECTURE.md + docs/runtime/STORAGE.md
-
 # Config / settings architecture
 
 Live map of how TranscriptX resolves, validates, and exposes knobs. Historical migration plans live under `docs/archive/plans/` (`config_knobs_refactor_plan.md`, `config_ownership_collapse_plan.md`, `pydantic_migration.md`) — **do not treat archived metrics as current**.

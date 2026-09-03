@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 > **Archived / superseded.** Historical context only. Current authority: [stocktake_2026-07-17.md](../../dev/stocktake_2026-07-17.md). Do not treat as live roadmap or support policy.
 
 # TranscriptX Codebase Assessment — 2026-03-10

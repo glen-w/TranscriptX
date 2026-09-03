@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # Contract: group aggregate sentiment cross-session speaker (gallery)
 
 **Stable viz_id pattern:** `group.sentiment.cross_session_speaker.speaker_{canonical_speaker_id}`

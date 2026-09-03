@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: ../ARCHITECTURE.md
-
 # Module Catalog
 
 *This catalog is generated from the ModuleRegistry.*

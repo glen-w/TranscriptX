@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Analysis-run performance telemetry
 
 Streamlit UI load profiling (`core/observability/perf.py`, `TRANSCRIPTX_STREAMLIT_PERF`) is **unrelated**. This document covers analysis-run wall time, module `duration_ms`, and `.transcriptx/run_performance.json`.

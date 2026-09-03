@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Script inventory (1.0 / Phase 0A)
 
 Planning matrix for scripts and helpers. Support statuses: **supported** | **maintainer** | **internal** | **archived** | **disposable**.

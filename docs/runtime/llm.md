@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: runtime/docker.md
-
 # Local LLM integration (Ollama)
 
 Optional local AI stays on your machine unless you point it at a remote URL. Transcript text can appear in prompts — enable it only when that is acceptable. Modules that need a live model are **off by default**.
@@ -118,7 +115,6 @@ All LLM modules except finalize-phase `chart_descriptions` are included in the *
 - Layout: `.chart_descriptions/LATEST_ATTEMPT.json`, `ACTIVE.json`, `generations/<id>/` with COMMIT/index/outcome/descriptions.
 - Resolvers require ACTIVE.attempt_epoch to match LATEST_ATTEMPT (suppresses stale text after crash).
 - Ordering: chart-description publish → group LLM synthesis → single manifest write under one run-finalization lock.
-
 
 **Privacy:** transcript text for LLM modules (`llm_summary`, `llm_speaker_summary`, `llm_action_items`, and structured input to `narrative_summary`) is sent only through the configured Ollama path (`llm.provider=ollama`). TranscriptX does not block non-local `base_url` values, but you are responsible for where your data is sent; the default is loopback (`http://localhost:11434`). Group LLM synthesis sends **member summary texts only** (not raw transcripts) over the same Ollama path.
 

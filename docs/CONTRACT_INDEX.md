@@ -1,6 +1,3 @@
-Type: GUIDE
-Authority: contracts
-
 # Contract boundary map
 
 **Product definition (non-contract):** [PRODUCT.md](PRODUCT.md)  

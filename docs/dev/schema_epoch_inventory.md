@@ -1,6 +1,3 @@
-Type: PRODUCT
-Authority: self
-
 # Schema epoch inventory (1.0)
 
 **Status:** **implemented in 0.9.3** — public schema targets are integer **`1`** only (no dotted `.x` forms); data-root marker + remediation UX shipped  

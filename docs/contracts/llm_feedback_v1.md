@@ -1,6 +1,3 @@
-Type: CONTRACT
-Authority: self
-
 # LLM feedback v1 (collect-only)
 
 Local-first, append-only user ratings of LLM analysis outputs shown in the
