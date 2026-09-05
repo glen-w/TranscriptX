@@ -12,6 +12,13 @@ from typing import Any, Dict, List, Optional
 import questionary
 from rich.console import Console
 
+from transcriptx.io.tag_validation import (
+    build_tag_details,
+    sanitize_tag,
+    sanitize_tag_list,
+    validate_tag,
+)
+
 console = Console()
 
 
@@ -51,15 +58,19 @@ def prompt_add_tag() -> Optional[str]:
     Prompt user to add a new tag.
 
     Returns:
-        The new tag string, or None if cancelled
+        The new tag string, or None if cancelled or invalid
     """
     tag = questionary.text(
         "Enter a new tag:",
-        validate=lambda text: len(text.strip()) > 0 if text else False,
+        validate=lambda text: validate_tag(text or "")[0],
     ).ask()
 
     if tag:
-        return tag.strip().lower()
+        sanitized = sanitize_tag(tag)
+        if sanitized is None:
+            console.print("  [red]Invalid tag format[/red]")
+            return None
+        return sanitized
     return None
 
 
@@ -77,14 +88,19 @@ def prompt_remove_tag(tags: List[str]) -> List[str]:
         console.print("  [dim]No tags to remove[/dim]")
         return []
 
-    # Create choices with indicators
-    choices = []
-    for tag in tags:
-        choices.append(tag)
-
-    selected = questionary.checkbox("Select tags to remove:", choices=choices).ask()
+    selected = questionary.checkbox("Select tags to remove:", choices=tags).ask()
 
     return selected if selected else []
+
+
+def _resolve_initial_tags(
+    auto_tags: List[str],
+    current_tags: Optional[List[str]],
+) -> List[str]:
+    """Choose starting tag list: explicit current_tags wins over auto_tags."""
+    if current_tags is not None:
+        return sanitize_tag_list(current_tags)
+    return sanitize_tag_list(auto_tags)
 
 
 def manage_tags_interactive(
@@ -101,7 +117,7 @@ def manage_tags_interactive(
         transcript_path: Path to the transcript file
         auto_tags: List of auto-generated tags
         tag_details: Dictionary with tag details (confidence, indicators, etc.)
-        current_tags: Optional list of current tags (to preserve manual tags)
+        current_tags: Optional list of current tags (None = use auto_tags)
         batch_mode: If True, skip interactive prompts
 
     Returns:
@@ -109,38 +125,27 @@ def manage_tags_interactive(
             - tags: Final list of tags
             - tag_details: Updated tag details with source information
     """
-    if batch_mode:
-        # In batch mode, return current tags or auto tags
-        tags_to_return = current_tags.copy() if current_tags else auto_tags.copy()
-        return {"tags": tags_to_return, "tag_details": tag_details.copy()}
+    safe_auto_tags = sanitize_tag_list(auto_tags or [])
+    safe_details = dict(tag_details or {})
+    working_tags = _resolve_initial_tags(safe_auto_tags, current_tags)
 
-    # Start with current tags if provided and non-empty, otherwise auto-generated tags
-    working_tags = (
-        current_tags.copy()
-        if (current_tags and len(current_tags) > 0)
-        else auto_tags.copy()
+    if batch_mode:
+        return {
+            "tags": working_tags,
+            "tag_details": build_tag_details(
+                working_tags, safe_auto_tags, safe_details
+            ),
+        }
+
+    updated_tag_details = build_tag_details(
+        working_tags, safe_auto_tags, safe_details
     )
 
-    # Create tag_details with source information
-    updated_tag_details = {}
-    for tag in working_tags:
-        if tag in auto_tags:
-            # Auto-generated tag
-            updated_tag_details[tag] = {**tag_details.get(tag, {}), "source": "auto"}
-        else:
-            # Manual tag
-            updated_tag_details[tag] = {
-                **tag_details.get(tag, {}),
-                "source": "manual",
-                "confidence": tag_details.get(tag, {}).get("confidence", 1.0),
-            }
-
     while True:
-        # Display current tags
         console.print("\n[bold cyan]🏷️  Tag Management[/bold cyan]")
-        display_tags(working_tags, auto_tags, updated_tag_details)
+        console.print(f"  [dim]Transcript: {transcript_path}[/dim]")
+        display_tags(working_tags, safe_auto_tags, updated_tag_details)
 
-        # Show menu options
         choices = [
             "✅ Done - proceed with current tags",
             "➕ Add a new tag",
@@ -153,7 +158,7 @@ def manage_tags_interactive(
 
         if not action or "done" in action.lower() or "proceed" in action.lower():
             break
-        elif "add" in action.lower():
+        if "add" in action.lower():
             new_tag = prompt_add_tag()
             if new_tag and new_tag not in working_tags:
                 working_tags.append(new_tag)
@@ -166,10 +171,14 @@ def manage_tags_interactive(
             if tags_to_remove:
                 for tag in tags_to_remove:
                     working_tags.remove(tag)
-                    if tag in updated_tag_details:
-                        del updated_tag_details[tag]
+                    updated_tag_details.pop(tag, None)
                 console.print(
                     f"  [yellow]Removed {len(tags_to_remove)} tag(s)[/yellow]"
                 )
 
-    return {"tags": working_tags, "tag_details": updated_tag_details}
+    return {
+        "tags": sanitize_tag_list(working_tags),
+        "tag_details": build_tag_details(
+            working_tags, safe_auto_tags, updated_tag_details
+        ),
+    }

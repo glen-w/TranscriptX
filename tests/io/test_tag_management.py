@@ -159,7 +159,7 @@ class TestManageTagsInteractive:
     """Tests for manage_tags_interactive function."""
 
     def test_returns_auto_tags_in_batch_mode(self):
-        """Test that auto tags are returned in batch mode."""
+        """Test that auto tags are returned in batch mode with enriched details."""
         auto_tags = ["meeting", "discussion"]
         tag_details = {"meeting": {"confidence": 0.95}}
 
@@ -168,7 +168,9 @@ class TestManageTagsInteractive:
         )
 
         assert result["tags"] == auto_tags
-        assert result["tag_details"] == tag_details
+        assert result["tag_details"]["meeting"]["confidence"] == 0.95
+        assert result["tag_details"]["meeting"]["source"] == "auto"
+        assert result["tag_details"]["discussion"]["source"] == "auto"
 
     def test_preserves_manual_tags_in_batch_mode(self):
         """Test that manual tags are preserved in batch mode."""
@@ -322,3 +324,60 @@ class TestManageTagsInteractive:
 
             assert result["tag_details"]["custom"]["source"] == "manual"
             assert result["tag_details"]["custom"]["confidence"] == 1.0
+
+    def test_batch_mode_sanitizes_tags(self):
+        """Test that batch mode normalizes and deduplicates tags."""
+        result = manage_tags_interactive(
+            "test.json",
+            auto_tags=["Meeting", "meeting"],
+            tag_details={},
+            batch_mode=True,
+        )
+
+        assert result["tags"] == ["meeting"]
+
+    def test_empty_current_tags_preserved_not_replaced_by_auto(self):
+        """Test that explicit empty current_tags is preserved in batch mode."""
+        result = manage_tags_interactive(
+            "test.json",
+            auto_tags=["meeting"],
+            tag_details={},
+            current_tags=[],
+            batch_mode=True,
+        )
+
+        assert result["tags"] == []
+
+    def test_handles_none_inputs(self):
+        """Test that None auto_tags and tag_details are handled safely."""
+        result = manage_tags_interactive(
+            "test.json",
+            auto_tags=None,
+            tag_details=None,
+            batch_mode=True,
+        )
+
+        assert result["tags"] == []
+        assert result["tag_details"] == {}
+
+    def test_rejects_invalid_tag_on_add(self):
+        """Test that invalid tags are not added during interactive flow."""
+        auto_tags: list[str] = []
+        tag_details: dict = {}
+
+        with (
+            patch("transcriptx.io.tag_management.questionary") as mock_q,
+            patch("transcriptx.io.tag_management.console") as mock_console,
+        ):
+            mock_q.select.return_value.ask.side_effect = [
+                "➕ Add a new tag",
+                "✅ Done - proceed with current tags",
+            ]
+            mock_q.text.return_value.ask.return_value = "../bad"
+
+            result = manage_tags_interactive(
+                "test.json", auto_tags, tag_details, batch_mode=False
+            )
+
+            assert result["tags"] == []
+            mock_console.print.assert_any_call("  [red]Invalid tag format[/red]")

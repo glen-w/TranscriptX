@@ -146,6 +146,49 @@ class TestValidateStateEntry:
         assert not is_valid
         assert any("must be lists" in e for e in errors)
 
+    def test_valid_tags_field(self):
+        entry = _minimal_completed_entry(
+            tags=["meeting", "voice note"],
+            tag_details={
+                "meeting": {"confidence": 0.9, "source": "auto"},
+                "voice note": {"confidence": 1.0, "source": "manual"},
+            },
+        )
+        is_valid, errors = validate_state_entry(entry)
+        assert is_valid, errors
+
+    def test_invalid_tags_not_list(self):
+        entry = _minimal_completed_entry(tags="meeting")
+        is_valid, errors = validate_state_entry(entry)
+        assert not is_valid
+        assert any("tags must be a list" in e for e in errors)
+
+    def test_invalid_tag_value(self):
+        entry = _minimal_completed_entry(tags=["../bad"])
+        is_valid, errors = validate_state_entry(entry)
+        assert not is_valid
+        assert any("Invalid tag" in e for e in errors)
+
+    def test_duplicate_tags_rejected(self):
+        entry = _minimal_completed_entry(tags=["meeting", "Meeting"])
+        is_valid, errors = validate_state_entry(entry)
+        assert not is_valid
+        assert any("duplicates" in e for e in errors)
+
+    def test_invalid_tag_details_confidence(self):
+        entry = _minimal_completed_entry(
+            tag_details={"meeting": {"confidence": 2.0, "source": "auto"}}
+        )
+        is_valid, errors = validate_state_entry(entry)
+        assert not is_valid
+        assert any("confidence" in e for e in errors)
+
+    def test_invalid_type_confidence(self):
+        entry = _minimal_completed_entry(type_confidence=1.5)
+        is_valid, errors = validate_state_entry(entry)
+        assert not is_valid
+        assert any("type_confidence" in e for e in errors)
+
 
 # ---------------------------------------------------------------------------
 # migrate_state_entry
