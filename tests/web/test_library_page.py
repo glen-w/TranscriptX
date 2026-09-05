@@ -95,6 +95,7 @@ def test_inventory_table_row_includes_workflow_marks() -> None:
     assert data["Speaker ID"] == "✓"
     assert data["Corrections"] == "—"
     assert data["Analysis"] == "—"
+    assert data["Tags"] == "—"
     assert "Path" not in data
 
 
@@ -126,6 +127,7 @@ def test_render_library_table_uses_inventory_workflow_columns(monkeypatch) -> No
         "Speaker ID",
         "Corrections",
         "Analysis",
+        "Tags",
         "Last activity",
     ]
     assert "-" not in list(_DummyStreamlit.captured_df["Duration"])
@@ -148,6 +150,7 @@ def test_library_row_selection_sets_path_identity(monkeypatch) -> None:
     assert selected is not None
     assert Path(str(selected)).name == "alice.json"
     assert any("Speaker identification:" in cap for cap in _DummyStreamlit.captions)
+    assert any(cap.startswith("Tags:") for cap in _DummyStreamlit.captions)
 
 
 def test_library_inspector_accepts_latest_run_id(monkeypatch) -> None:

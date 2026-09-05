@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -98,6 +99,16 @@ def test_query_matches_title_not_body() -> None:
     rows = [_row("Interview Alice"), _row("Standup")]
     filtered = apply_library_filter(rows, LibraryFilter(query="alice"))
     assert [row.title for row in filtered] == ["Interview Alice"]
+
+
+def test_query_matches_tags() -> None:
+    tagged = replace(_row("standup"), tags=("meeting",))
+    other = _row("notes")
+    rows = [tagged, other]
+    filtered = apply_library_filter(rows, LibraryFilter(query="meeting"))
+    assert [row.title for row in filtered] == ["standup"]
+    filtered_tag = apply_library_filter(rows, LibraryFilter(tag="meeting"))
+    assert [row.title for row in filtered_tag] == ["standup"]
 
 
 def test_continue_working_prefers_resumable_over_recency() -> None:

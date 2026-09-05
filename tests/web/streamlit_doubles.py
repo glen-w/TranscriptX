@@ -173,6 +173,12 @@ class DummyStreamlitWithDataframe:
             return str(cls.session_state[key] or "")
         return str(_kwargs.get("value") or "")
 
+    @classmethod
+    def multiselect(cls, _label, options, default=None, key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            return list(cls.session_state[key] or [])
+        return list(default or [])
+
     @staticmethod
     def popover(*_args, **_kwargs):
         return DummyForm()

@@ -130,6 +130,19 @@ class TagExtractor(AnalysisModule):
         }
         output_service.save_summary(global_stats, {}, analysis_metadata=tag_details)
 
+        transcript_path = getattr(output_service, "transcript_path", None)
+        if transcript_path:
+            try:
+                from transcriptx.services.transcript_tags import TranscriptTagService
+
+                TranscriptTagService().initialize_from_extraction(
+                    transcript_path, results
+                )
+            except Exception as exc:
+                self.logger.debug(
+                    "Library tag persistence skipped after extraction: %s", exc
+                )
+
     def extract_tags(
         self,
         transcript_data: List[Dict[str, Any]],

@@ -72,6 +72,7 @@ class LibraryFilter:
     query: str = ""
     sort: LibrarySort = LibrarySort.RECENTLY_WORKED
     source_id: str | None = None
+    tag: str | None = None
 
 
 @dataclass(frozen=True)
@@ -151,6 +152,7 @@ class InventoryRow:
     analysis: AnalysisState
     last_activity_at: datetime | None
     fingerprint: InventoryFingerprint = field(repr=False)
+    tags: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

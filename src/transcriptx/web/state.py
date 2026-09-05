@@ -25,6 +25,7 @@ LIBRARY_FILTER_PRESET_KEY = "library_filter_preset"
 LIBRARY_FILTER_QUERY_KEY = "library_filter_query"
 LIBRARY_FILTER_SORT_KEY = "library_filter_sort"
 LIBRARY_FILTER_SOURCE_KEY = "library_filter_source"
+LIBRARY_FILTER_TAG_KEY = "library_filter_tag"
 LIBRARY_SHOW_PATH_KEY = "library_show_path"
 IMPORT_LAST_TRANSCRIPT_PATH = "import_last_transcript_path"
 # One-shot: action-menu identity navigation → workflow picker pages (Speaker ID, etc.).

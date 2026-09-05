@@ -52,12 +52,15 @@ def test_supports_group_modules_have_aggregation_coverage() -> None:
 
 @pytest.mark.unit
 def test_all_registered_modules_support_group() -> None:
+    # tag_extraction is library organisation metadata, not a group cohort module.
+    allowed_unsupported = {"tag_extraction"}
     unsupported = [
         module_id
         for module_id in get_available_modules()
         if (info := get_module_info(module_id)) is not None and not info.supports_group
     ]
-    assert not unsupported, f"unexpected supports_group=false: {unsupported}"
+    unexpected = sorted(set(unsupported) - allowed_unsupported)
+    assert not unexpected, f"unexpected supports_group=false: {unexpected}"
 
 
 @pytest.mark.unit

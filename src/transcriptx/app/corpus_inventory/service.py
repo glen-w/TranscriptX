@@ -33,6 +33,8 @@ from transcriptx.app.corpus_inventory.models import (
     TranscriptRef,
 )
 from transcriptx.core.utils._path_core import get_canonical_base_name, get_transcript_dir
+from transcriptx.core.utils.paths import PROCESSING_STATE_FILE
+from transcriptx.core.utils.processing_state import load_processing_state
 from transcriptx.core.utils.transcript_picker import list_transcript_picker_options
 from transcriptx.io.import_metadata.paths import (
     find_existing_import_sidecar,
@@ -182,6 +184,7 @@ def fingerprint_contributors(
     paths.extend(
         corrections_session_candidates(ref.path, extra=corrections_extra)
     )
+    paths.append(Path(PROCESSING_STATE_FILE))
     unique: list[Path] = []
     for path in paths:
         if path not in unique:
@@ -218,7 +221,12 @@ def corpus_fingerprint_digest(refs: Iterable[TranscriptRef]) -> tuple[Any, ...]:
         for ref in refs
     )
     index_stamp = _corpus_index_stamp()
-    return ((index_stamp.path, index_stamp.mtime_ns, index_stamp.size), row_digests)
+    state_stamp = _stamp(Path(PROCESSING_STATE_FILE))
+    return (
+        (index_stamp.path, index_stamp.mtime_ns, index_stamp.size),
+        (state_stamp.path, state_stamp.mtime_ns, state_stamp.size),
+        row_digests,
+    )
 
 
 def discover_transcript_refs() -> list[TranscriptRef]:
@@ -303,6 +311,7 @@ class CorpusInventory:
     ) -> list[InventoryRow]:
         refs = refs if refs is not None else self._discover()
         corr_map = corrections_paths_by_transcript()
+        tags_by_path = self._load_tags_by_path()
         rows: list[InventoryRow] = []
         live_keys: set[str] = set()
         for ref in refs:
@@ -316,7 +325,7 @@ class CorpusInventory:
                 self.cache_hits += 1
                 rows.append(cached[1])
                 continue
-            row = self._build_row(ref, fp)
+            row = self._build_row(ref, fp, tags=tags_by_path.get(str(ref.path), ()))
             self._cache[key] = (fp, row)
             self.rows_rebuilt += 1
             rows.append(row)
@@ -350,8 +359,22 @@ class CorpusInventory:
             return None, True
         return payload, False
 
+    def _load_tags_by_path(self) -> dict[str, tuple[str, ...]]:
+        from transcriptx.services.transcript_tags import TranscriptTagService
+
+        try:
+            return TranscriptTagService().tags_by_transcript_path(
+                load_processing_state(validate=False)
+            )
+        except Exception:
+            return {}
+
     def _build_row(
-        self, ref: TranscriptRef, fingerprint: InventoryFingerprint
+        self,
+        ref: TranscriptRef,
+        fingerprint: InventoryFingerprint,
+        *,
+        tags: tuple[str, ...] = (),
     ) -> InventoryRow:
         duration, speaker_count, word_count, listing_integrity = (
             self._read_listing_stats(ref.path)
@@ -387,6 +410,7 @@ class CorpusInventory:
             analysis=analysis,
             last_activity_at=last_activity,
             fingerprint=fingerprint,
+            tags=tags,
         )
 
     def _read_listing_stats(

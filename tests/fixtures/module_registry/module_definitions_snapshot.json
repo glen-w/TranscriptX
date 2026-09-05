@@ -30,6 +30,7 @@
     "pauses",
     "echoes",
     "politeness",
+    "tag_extraction",
     "momentum",
     "topic_shift",
     "moments",
@@ -62,53 +63,17 @@
         "speaker_labels"
       ]
     },
-    "affect_tension": {
-      "category": "medium",
-      "dependencies": [
-        "emotion",
-        "sentiment"
-      ],
-      "description": "Emotion + Sentiment mismatch and tension indices",
-      "determinism_tier": "T1",
+    "conversation_loops": {
+      "category": "light",
+      "dependencies": [],
+      "description": "Conversation Loop Detection",
+      "determinism_tier": "T0",
       "enhancements": [],
-      "optional_dependencies": [
-        "contextual_emotion"
-      ],
-      "required_extras": [
-        "emotion_lexical"
-      ],
       "requirements": [
         "segments",
         "speaker_labels"
-      ]
-    },
-    "bertopic": {
-      "category": "heavy",
-      "dependencies": [
-        "insight_eligibility"
       ],
-      "description": "BERTopic topic modeling (optional [bertopic]/[full] stack \u2014 see docs/dev/bertopic_optional_module.md)",
-      "determinism_tier": "T2",
-      "enhancements": [],
-      "required_extras": [
-        "bertopic"
-      ],
-      "requirements": [
-        "segments"
-      ],
-      "timeout_seconds": 3600
-    },
-    "chart_descriptions": {
-      "category": "medium",
-      "dependencies": [],
-      "description": "Per-chart LLM narratives (finalize-phase; after all charts)",
-      "determinism_tier": "T2",
-      "enhancements": [],
-      "finalize_phase": true,
-      "requirements": [
-        "segments"
-      ],
-      "requires_llm": true
+      "requires_multiple_speakers": true
     },
     "contagion": {
       "category": "heavy",
@@ -130,6 +95,20 @@
       ],
       "requires_multiple_speakers": true
     },
+    "emotion": {
+      "category": "medium",
+      "dependencies": [],
+      "description": "Emotion-associated vocabulary (NRC lexicon)",
+      "determinism_tier": "T1",
+      "enhancements": [],
+      "required_extras": [
+        "emotion_lexical"
+      ],
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
+    },
     "contextual_emotion": {
       "category": "heavy",
       "dependencies": [],
@@ -144,38 +123,14 @@
         "speaker_labels"
       ]
     },
-    "conversation_loops": {
-      "category": "light",
+    "fine_grained_emotion": {
+      "category": "heavy",
       "dependencies": [],
-      "description": "Conversation Loop Detection",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "speaker_labels"
-      ],
-      "requires_multiple_speakers": true
-    },
-    "echoes": {
-      "category": "medium",
-      "dependencies": [],
-      "description": "Quote/Echo/Paraphrase Detection",
-      "determinism_tier": "T1",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "speaker_labels"
-      ],
-      "requires_multiple_speakers": true
-    },
-    "emotion": {
-      "category": "medium",
-      "dependencies": [],
-      "description": "Emotion-associated vocabulary (NRC lexicon)",
-      "determinism_tier": "T1",
+      "description": "Fine-grained multi-label emotion (experimental)",
+      "determinism_tier": "T2",
       "enhancements": [],
       "required_extras": [
-        "emotion_lexical"
+        "emotion_transformers"
       ],
       "requirements": [
         "segments",
@@ -199,73 +154,23 @@
         "speaker_labels"
       ]
     },
-    "epistemic_markers": {
-      "category": "light",
-      "dependencies": [],
-      "description": "Hedging / certainty / epistemic markers",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "speaker_labels"
-      ]
-    },
-    "fine_grained_emotion": {
-      "category": "heavy",
-      "dependencies": [],
-      "description": "Fine-grained multi-label emotion (experimental)",
-      "determinism_tier": "T2",
-      "enhancements": [],
-      "required_extras": [
-        "emotion_transformers"
-      ],
-      "requirements": [
-        "segments",
-        "speaker_labels"
-      ]
-    },
-    "highlights": {
-      "category": "light",
+    "affect_tension": {
+      "category": "medium",
       "dependencies": [
-        "insight_eligibility"
+        "emotion",
+        "sentiment"
       ],
-      "description": "Highlights and conflict moments (quote-forward)",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "segment_timestamps",
-        "speaker_labels"
-      ]
-    },
-    "insight_eligibility": {
-      "category": "light",
-      "dependencies": [
-        "tics"
-      ],
-      "description": "Shared content-vs-style insight eligibility pipeline",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "speaker_labels"
-      ]
-    },
-    "insights": {
-      "category": "light",
-      "dependencies": [
-        "insight_eligibility",
-        "highlights"
-      ],
-      "description": "Content-first insights layer separated from style markers",
-      "determinism_tier": "T0",
+      "description": "Emotion + Sentiment mismatch and tension indices",
+      "determinism_tier": "T1",
       "enhancements": [],
       "optional_dependencies": [
-        "topic_modeling"
+        "contextual_emotion"
+      ],
+      "required_extras": [
+        "emotion_lexical"
       ],
       "requirements": [
         "segments",
-        "segment_timestamps",
         "speaker_labels"
       ]
     },
@@ -280,6 +185,52 @@
         "speaker_labels"
       ],
       "requires_multiple_speakers": true
+    },
+    "ner": {
+      "category": "medium",
+      "dependencies": [],
+      "description": "Named Entity Recognition",
+      "determinism_tier": "T1",
+      "enhancements": [],
+      "required_extras": [
+        "nlp"
+      ],
+      "requirements": [
+        "segments"
+      ]
+    },
+    "semantic_similarity": {
+      "category": "heavy",
+      "dependencies": [],
+      "description": "Semantic similarity (batched embeddings, vectorized similarity)",
+      "determinism_tier": "T1",
+      "enhancements": [],
+      "requirements": [
+        "segments"
+      ],
+      "requires_multiple_speakers": true
+    },
+    "sentiment": {
+      "category": "medium",
+      "dependencies": [],
+      "description": "Sentiment Analysis",
+      "determinism_tier": "T1",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
+    },
+    "epistemic_markers": {
+      "category": "light",
+      "dependencies": [],
+      "description": "Hedging / certainty / epistemic markers",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
     },
     "keyphrases": {
       "category": "medium",
@@ -297,6 +248,79 @@
         "speaker_labels"
       ]
     },
+    "stats": {
+      "category": "light",
+      "dependencies": [],
+      "description": "Statistical Analysis",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
+    },
+    "topic_modeling": {
+      "category": "heavy",
+      "dependencies": [
+        "insight_eligibility"
+      ],
+      "description": "Topic Modeling",
+      "determinism_tier": "T2",
+      "enhancements": [],
+      "requirements": [
+        "segments"
+      ]
+    },
+    "bertopic": {
+      "category": "heavy",
+      "dependencies": [
+        "insight_eligibility"
+      ],
+      "description": "BERTopic topic modeling (optional [bertopic]/[full] stack \u2014 see docs/dev/bertopic_optional_module.md)",
+      "determinism_tier": "T2",
+      "enhancements": [],
+      "required_extras": [
+        "bertopic"
+      ],
+      "requirements": [
+        "segments"
+      ],
+      "timeout_seconds": 3600
+    },
+    "transcript_output": {
+      "category": "light",
+      "dependencies": [],
+      "description": "Generate human readable transcripts",
+      "determinism_tier": "T0",
+      "enhancements": [
+        "speaker_display_names"
+      ],
+      "requirements": [
+        "segments"
+      ]
+    },
+    "simplified_transcript": {
+      "category": "light",
+      "dependencies": [],
+      "description": "Simplified transcript (tics, agreements, repetitions removed)",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
+    },
+    "understandability": {
+      "category": "medium",
+      "dependencies": [],
+      "description": "Understandability Analysis",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
+    },
     "lexical_diversity": {
       "category": "light",
       "dependencies": [],
@@ -307,6 +331,235 @@
         "segments",
         "speaker_labels"
       ]
+    },
+    "wordclouds": {
+      "category": "light",
+      "dependencies": [
+        "insight_eligibility"
+      ],
+      "description": "Word Cloud Generation",
+      "determinism_tier": "T1",
+      "enhancements": [],
+      "optional_dependencies": [
+        "keyphrases"
+      ],
+      "requirements": [
+        "segments"
+      ]
+    },
+    "tics": {
+      "category": "light",
+      "dependencies": [],
+      "description": "Verbal Tics Analysis",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
+    },
+    "transcript_quality": {
+      "category": "light",
+      "dependencies": [],
+      "description": "ASR Confidence",
+      "determinism_tier": "T0",
+      "enhancements": [
+        "word_confidence"
+      ],
+      "requirements": [
+        "segments"
+      ]
+    },
+    "insight_eligibility": {
+      "category": "light",
+      "dependencies": [
+        "tics"
+      ],
+      "description": "Shared content-vs-style insight eligibility pipeline",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
+    },
+    "temporal_dynamics": {
+      "category": "medium",
+      "dependencies": [],
+      "description": "Temporal Dynamics Analysis",
+      "determinism_tier": "T1",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "segment_timestamps",
+        "speaker_labels"
+      ]
+    },
+    "qa_analysis": {
+      "category": "medium",
+      "dependencies": [
+        "acts"
+      ],
+      "description": "Question-Answer Pairing and Response Quality",
+      "determinism_tier": "T1",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ],
+      "requires_multiple_speakers": true
+    },
+    "pauses": {
+      "category": "light",
+      "dependencies": [],
+      "description": "Silence and Timing Analysis",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "segment_timestamps",
+        "speaker_labels"
+      ]
+    },
+    "echoes": {
+      "category": "medium",
+      "dependencies": [],
+      "description": "Quote/Echo/Paraphrase Detection",
+      "determinism_tier": "T1",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ],
+      "requires_multiple_speakers": true
+    },
+    "politeness": {
+      "category": "light",
+      "dependencies": [],
+      "description": "Politeness / formality / directiveness markers",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ]
+    },
+    "tag_extraction": {
+      "category": "light",
+      "dependencies": [],
+      "description": "Library kind / semantic tags from early transcript",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "exclude_from_default": true,
+      "requirements": [
+        "segments"
+      ],
+      "supports_group": false
+    },
+    "momentum": {
+      "category": "medium",
+      "dependencies": [
+        "pauses"
+      ],
+      "description": "Stall/Flow Index Analysis",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "segment_timestamps",
+        "speaker_labels"
+      ]
+    },
+    "topic_shift": {
+      "category": "medium",
+      "dependencies": [],
+      "description": "Topic-shift chapter segmentation",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "segment_timestamps"
+      ]
+    },
+    "moments": {
+      "category": "light",
+      "dependencies": [
+        "momentum"
+      ],
+      "description": "Ranked Moments Worth Revisiting",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "segment_timestamps"
+      ]
+    },
+    "highlights": {
+      "category": "light",
+      "dependencies": [
+        "insight_eligibility"
+      ],
+      "description": "Highlights and conflict moments (quote-forward)",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "segment_timestamps",
+        "speaker_labels"
+      ]
+    },
+    "summary": {
+      "category": "light",
+      "dependencies": [
+        "highlights"
+      ],
+      "description": "Executive brief summary derived from highlights",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "segment_timestamps",
+        "speaker_labels"
+      ]
+    },
+    "narrative_summary": {
+      "category": "medium",
+      "dependencies": [
+        "summary"
+      ],
+      "description": "Grounded executive narrative from deterministic summary (LLM)",
+      "determinism_tier": "T2",
+      "enhancements": [],
+      "requirements": [
+        "segments",
+        "segment_timestamps",
+        "speaker_labels"
+      ],
+      "requires_llm": true
+    },
+    "llm_summary": {
+      "category": "medium",
+      "dependencies": [],
+      "description": "Abstractive transcript summary via local LLM",
+      "determinism_tier": "T2",
+      "enhancements": [],
+      "requirements": [
+        "segments"
+      ],
+      "requires_llm": true
+    },
+    "llm_speaker_summary": {
+      "category": "medium",
+      "dependencies": [],
+      "description": "Abstractive per-speaker summaries via local LLM",
+      "determinism_tier": "T2",
+      "enhancements": [],
+      "min_named_speakers": 1,
+      "requirements": [
+        "segments",
+        "speaker_labels"
+      ],
+      "requires_llm": true
     },
     "llm_action_items": {
       "category": "medium",
@@ -331,107 +584,116 @@
       ],
       "requires_llm": true
     },
-    "llm_speaker_summary": {
+    "chart_descriptions": {
       "category": "medium",
       "dependencies": [],
-      "description": "Abstractive per-speaker summaries via local LLM",
+      "description": "Per-chart LLM narratives (finalize-phase; after all charts)",
       "determinism_tier": "T2",
       "enhancements": [],
-      "min_named_speakers": 1,
-      "requirements": [
-        "segments",
-        "speaker_labels"
-      ],
-      "requires_llm": true
-    },
-    "llm_summary": {
-      "category": "medium",
-      "dependencies": [],
-      "description": "Abstractive transcript summary via local LLM",
-      "determinism_tier": "T2",
-      "enhancements": [],
+      "finalize_phase": true,
       "requirements": [
         "segments"
       ],
       "requires_llm": true
     },
-    "moments": {
+    "insights": {
       "category": "light",
       "dependencies": [
-        "momentum"
+        "insight_eligibility",
+        "highlights"
       ],
-      "description": "Ranked Moments Worth Revisiting",
+      "description": "Content-first insights layer separated from style markers",
       "determinism_tier": "T0",
       "enhancements": [],
+      "optional_dependencies": [
+        "topic_modeling"
+      ],
+      "requirements": [
+        "segments",
+        "segment_timestamps",
+        "speaker_labels"
+      ]
+    },
+    "voice_features": {
+      "category": "heavy",
+      "cost_tier": "heavy",
+      "dependencies": [],
+      "description": "Voice feature extraction and caching",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "required_extras": [
+        "voice"
+      ],
+      "requirements": [
+        "segments",
+        "segment_timestamps",
+        "speaker_labels"
+      ],
+      "requires_audio": true,
+      "supports_audio": true,
+      "timeout_seconds": 3600
+    },
+    "voice_mismatch": {
+      "category": "medium",
+      "cost_tier": "normal",
+      "dependencies": [
+        "voice_features"
+      ],
+      "description": "Tone\u2013Text mismatch detection (sarcasm/discord moments)",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "exclude_from_default": true,
+      "required_extras": [
+        "voice"
+      ],
+      "requirements": [
+        "segments",
+        "segment_timestamps",
+        "speaker_labels"
+      ],
+      "requires_audio": true,
+      "supports_audio": true
+    },
+    "voice_tension": {
+      "category": "medium",
+      "cost_tier": "normal",
+      "dependencies": [
+        "voice_features"
+      ],
+      "description": "Conversation tension curve from voice",
+      "determinism_tier": "T0",
+      "enhancements": [],
+      "exclude_from_default": true,
+      "required_extras": [
+        "voice"
+      ],
       "requirements": [
         "segments",
         "segment_timestamps"
-      ]
-    },
-    "momentum": {
-      "category": "medium",
-      "dependencies": [
-        "pauses"
       ],
-      "description": "Stall/Flow Index Analysis",
+      "requires_audio": true,
+      "supports_audio": true
+    },
+    "voice_fingerprint": {
+      "category": "medium",
+      "cost_tier": "normal",
+      "dependencies": [
+        "voice_features"
+      ],
+      "description": "Per-speaker voice fingerprint baseline and drift",
       "determinism_tier": "T0",
       "enhancements": [],
-      "requirements": [
-        "segments",
-        "segment_timestamps",
-        "speaker_labels"
-      ]
-    },
-    "narrative_summary": {
-      "category": "medium",
-      "dependencies": [
-        "summary"
-      ],
-      "description": "Grounded executive narrative from deterministic summary (LLM)",
-      "determinism_tier": "T2",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "segment_timestamps",
-        "speaker_labels"
-      ],
-      "requires_llm": true
-    },
-    "ner": {
-      "category": "medium",
-      "dependencies": [],
-      "description": "Named Entity Recognition",
-      "determinism_tier": "T1",
-      "enhancements": [],
+      "exclude_from_default": true,
       "required_extras": [
-        "nlp"
+        "voice"
       ],
-      "requirements": [
-        "segments"
-      ]
-    },
-    "pauses": {
-      "category": "light",
-      "dependencies": [],
-      "description": "Silence and Timing Analysis",
-      "determinism_tier": "T0",
-      "enhancements": [],
       "requirements": [
         "segments",
         "segment_timestamps",
         "speaker_labels"
-      ]
-    },
-    "politeness": {
-      "category": "light",
-      "dependencies": [],
-      "description": "Politeness / formality / directiveness markers",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "speaker_labels"
-      ]
+      ],
+      "requires_audio": true,
+      "supports_audio": true
     },
     "prosody_dashboard": {
       "category": "medium",
@@ -452,159 +714,6 @@
       ],
       "requires_audio": true,
       "supports_audio": true
-    },
-    "qa_analysis": {
-      "category": "medium",
-      "dependencies": [
-        "acts"
-      ],
-      "description": "Question-Answer Pairing and Response Quality",
-      "determinism_tier": "T1",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "speaker_labels"
-      ],
-      "requires_multiple_speakers": true
-    },
-    "semantic_similarity": {
-      "category": "heavy",
-      "dependencies": [],
-      "description": "Semantic similarity (batched embeddings, vectorized similarity)",
-      "determinism_tier": "T1",
-      "enhancements": [],
-      "requirements": [
-        "segments"
-      ],
-      "requires_multiple_speakers": true
-    },
-    "sentiment": {
-      "category": "medium",
-      "dependencies": [],
-      "description": "Sentiment Analysis",
-      "determinism_tier": "T1",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "speaker_labels"
-      ]
-    },
-    "simplified_transcript": {
-      "category": "light",
-      "dependencies": [],
-      "description": "Simplified transcript (tics, agreements, repetitions removed)",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "speaker_labels"
-      ]
-    },
-    "stats": {
-      "category": "light",
-      "dependencies": [],
-      "description": "Statistical Analysis",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "speaker_labels"
-      ]
-    },
-    "summary": {
-      "category": "light",
-      "dependencies": [
-        "highlights"
-      ],
-      "description": "Executive brief summary derived from highlights",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "segment_timestamps",
-        "speaker_labels"
-      ]
-    },
-    "temporal_dynamics": {
-      "category": "medium",
-      "dependencies": [],
-      "description": "Temporal Dynamics Analysis",
-      "determinism_tier": "T1",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "segment_timestamps",
-        "speaker_labels"
-      ]
-    },
-    "tics": {
-      "category": "light",
-      "dependencies": [],
-      "description": "Verbal Tics Analysis",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "speaker_labels"
-      ]
-    },
-    "topic_modeling": {
-      "category": "heavy",
-      "dependencies": [
-        "insight_eligibility"
-      ],
-      "description": "Topic Modeling",
-      "determinism_tier": "T2",
-      "enhancements": [],
-      "requirements": [
-        "segments"
-      ]
-    },
-    "topic_shift": {
-      "category": "medium",
-      "dependencies": [],
-      "description": "Topic-shift chapter segmentation",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "segment_timestamps"
-      ]
-    },
-    "transcript_output": {
-      "category": "light",
-      "dependencies": [],
-      "description": "Generate human readable transcripts",
-      "determinism_tier": "T0",
-      "enhancements": [
-        "speaker_display_names"
-      ],
-      "requirements": [
-        "segments"
-      ]
-    },
-    "transcript_quality": {
-      "category": "light",
-      "dependencies": [],
-      "description": "ASR Confidence",
-      "determinism_tier": "T0",
-      "enhancements": [
-        "word_confidence"
-      ],
-      "requirements": [
-        "segments"
-      ]
-    },
-    "understandability": {
-      "category": "medium",
-      "dependencies": [],
-      "description": "Understandability Analysis",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "requirements": [
-        "segments",
-        "speaker_labels"
-      ]
     },
     "voice_charts_core": {
       "category": "medium",
@@ -650,102 +759,6 @@
       ],
       "requires_audio": true,
       "supports_audio": true
-    },
-    "voice_features": {
-      "category": "heavy",
-      "cost_tier": "heavy",
-      "dependencies": [],
-      "description": "Voice feature extraction and caching",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "required_extras": [
-        "voice"
-      ],
-      "requirements": [
-        "segments",
-        "segment_timestamps",
-        "speaker_labels"
-      ],
-      "requires_audio": true,
-      "supports_audio": true,
-      "timeout_seconds": 3600
-    },
-    "voice_fingerprint": {
-      "category": "medium",
-      "cost_tier": "normal",
-      "dependencies": [
-        "voice_features"
-      ],
-      "description": "Per-speaker voice fingerprint baseline and drift",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "exclude_from_default": true,
-      "required_extras": [
-        "voice"
-      ],
-      "requirements": [
-        "segments",
-        "segment_timestamps",
-        "speaker_labels"
-      ],
-      "requires_audio": true,
-      "supports_audio": true
-    },
-    "voice_mismatch": {
-      "category": "medium",
-      "cost_tier": "normal",
-      "dependencies": [
-        "voice_features"
-      ],
-      "description": "Tone\u2013Text mismatch detection (sarcasm/discord moments)",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "exclude_from_default": true,
-      "required_extras": [
-        "voice"
-      ],
-      "requirements": [
-        "segments",
-        "segment_timestamps",
-        "speaker_labels"
-      ],
-      "requires_audio": true,
-      "supports_audio": true
-    },
-    "voice_tension": {
-      "category": "medium",
-      "cost_tier": "normal",
-      "dependencies": [
-        "voice_features"
-      ],
-      "description": "Conversation tension curve from voice",
-      "determinism_tier": "T0",
-      "enhancements": [],
-      "exclude_from_default": true,
-      "required_extras": [
-        "voice"
-      ],
-      "requirements": [
-        "segments",
-        "segment_timestamps"
-      ],
-      "requires_audio": true,
-      "supports_audio": true
-    },
-    "wordclouds": {
-      "category": "light",
-      "dependencies": [
-        "insight_eligibility"
-      ],
-      "description": "Word Cloud Generation",
-      "determinism_tier": "T1",
-      "enhancements": [],
-      "optional_dependencies": [
-        "keyphrases"
-      ],
-      "requirements": [
-        "segments"
-      ]
     }
   }
 }

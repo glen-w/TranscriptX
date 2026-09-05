@@ -51,6 +51,7 @@ from transcriptx.web.state import (
     LIBRARY_FILTER_QUERY_KEY,
     LIBRARY_FILTER_SORT_KEY,
     LIBRARY_FILTER_SOURCE_KEY,
+    LIBRARY_FILTER_TAG_KEY,
     LIBRARY_SELECTED_TRANSCRIPT_PATH,
     LIBRARY_SHOW_PATH_KEY,
     LIBRARY_TABLE_EPOCH_KEY,
@@ -156,11 +157,15 @@ def _current_library_filter() -> LibraryFilter:
     source = st.session_state.get(LIBRARY_FILTER_SOURCE_KEY) or None
     if source in {"", "All"}:
         source = None
+    tag = st.session_state.get(LIBRARY_FILTER_TAG_KEY) or None
+    if tag in {"", "All"}:
+        tag = None
     return LibraryFilter(
         preset=preset,
         query=str(st.session_state.get(LIBRARY_FILTER_QUERY_KEY) or ""),
         sort=sort,
         source_id=source,
+        tag=tag,
     )
 
 
@@ -222,12 +227,21 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
         )
 
     sources = sorted({row.source_id for row in rows if row.source_id})
+    all_tags = sorted({tag for row in rows for tag in row.tags})
     with st.expander("Property filters", expanded=False):
         st.selectbox(
             "Source",
             options=["All", *sources],
             key=LIBRARY_FILTER_SOURCE_KEY,
             help=widget_help("Import adapter / source type."),
+        )
+        st.selectbox(
+            "Tag",
+            options=["All", *all_tags],
+            key=LIBRARY_FILTER_TAG_KEY,
+            help=widget_help(
+                "Library organisation tags. Tags never create Groups."
+            ),
         )
 
     library_filter = _current_library_filter()
@@ -286,6 +300,7 @@ def _render_inspector(selected: InventoryRow) -> None:
     st.caption(f"Analysis: {format_analysis_label(selected.analysis)}")
     last_analysed = format_short_date(selected.analysis.last_analysed_at)
     st.caption(f"Last analysed: {last_analysed}")
+    _render_inspector_tags(selected)
 
     subject_id = selected.slug or selected.transcript_path.stem
     identity = build_transcript_identity_with_run(
@@ -321,6 +336,66 @@ def _render_inspector(selected: InventoryRow) -> None:
                 action=action,
             )
             render_action(action, ctx, section=SectionId.LIBRARY_SELECTED, key=key)
+
+
+def _render_inspector_tags(selected: InventoryRow) -> None:
+    from transcriptx.io.tag_validation import sanitize_tag
+    from transcriptx.services.transcript_tags import TranscriptTagService
+    from transcriptx.web.cache_helpers import clear_corpus_inventory_cache
+
+    service = TranscriptTagService()
+    current = list(selected.tags)
+    known = sorted({*current, *service.corpus_tag_names([selected.tags])})
+    st.caption(
+        "Tags: " + (", ".join(current) if current else "none")
+    )
+    edited = st.multiselect(
+        "Library tags",
+        options=known,
+        default=current,
+        key=f"library_tags_{selected.transcript_path}",
+        help=widget_help(
+            "Organisation labels for this transcript. Distinct from Groups."
+        ),
+    )
+    new_tag = st.text_input(
+        "Add tag",
+        key=f"library_tag_add_{selected.transcript_path}",
+        placeholder="meeting",
+        help=widget_help("Letters, digits, spaces, hyphens, underscores."),
+    )
+    save_col, suggest_col = st.columns(2)
+    with save_col:
+        if st.button("Save tags", key=f"library_tags_save_{selected.transcript_path}"):
+            merged = list(edited)
+            if new_tag.strip():
+                sanitized = sanitize_tag(new_tag)
+                if sanitized is None:
+                    st.error("Invalid tag format.")
+                    return
+                if sanitized not in merged:
+                    merged.append(sanitized)
+            details = {
+                tag: {"source": "manual", "confidence": 1.0}
+                for tag in merged
+            }
+            service.save_tags(selected.transcript_path, merged, details)
+            clear_corpus_inventory_cache()
+            st.rerun()
+    with suggest_col:
+        if st.button(
+            "Suggest tags",
+            key=f"library_tags_suggest_{selected.transcript_path}",
+        ):
+            try:
+                from transcriptx.io import load_segments
+
+                segments = load_segments(str(selected.transcript_path))
+                service.suggest_auto_tags(selected.transcript_path, segments)
+                clear_corpus_inventory_cache()
+                st.rerun()
+            except Exception as exc:
+                st.error(f"Could not suggest tags: {exc}")
 
 
 def render_library() -> None:

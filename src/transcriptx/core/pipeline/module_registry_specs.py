@@ -96,6 +96,10 @@ MODULE_CLASS_MAP: Dict[str, tuple[str, str]] = {
         "transcriptx.core.analysis.politeness",
         "PolitenessAnalysis",
     ),
+    "tag_extraction": (
+        "transcriptx.core.analysis.tag_extraction",
+        "TagExtractor",
+    ),
     "insight_eligibility": (
         "transcriptx.core.analysis.insight_eligibility",
         "InsightEligibilityAnalysis",
