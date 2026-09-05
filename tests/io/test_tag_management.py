@@ -381,3 +381,28 @@ class TestManageTagsInteractive:
 
             assert result["tags"] == []
             mock_console.print.assert_any_call("  [red]Invalid tag format[/red]")
+
+
+def test_offer_and_edit_tags_batch_persists(tmp_path, monkeypatch) -> None:
+    from transcriptx.io.tag_management import offer_and_edit_tags
+
+    state_file = tmp_path / "processing_state.json"
+    monkeypatch.setattr(
+        "transcriptx.core.utils.processing_state.PROCESSING_STATE_FILE",
+        state_file,
+    )
+    transcript = tmp_path / "talk.json"
+    transcript.write_text("{}", encoding="utf-8")
+    result = offer_and_edit_tags(
+        str(transcript),
+        [
+            {
+                "speaker": "Alice",
+                "text": "Let's discuss this in our meeting.",
+                "start": 0.0,
+                "end": 2.0,
+            }
+        ],
+        batch_mode=True,
+    )
+    assert "meeting" in result["tags"]

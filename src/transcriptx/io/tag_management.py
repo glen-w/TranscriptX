@@ -182,3 +182,17 @@ def manage_tags_interactive(
             working_tags, safe_auto_tags, updated_tag_details
         ),
     }
+
+
+def offer_and_edit_tags(
+    transcript_path: str,
+    segments: List[Dict[str, Any]],
+    *,
+    batch_mode: bool = False,
+) -> Dict[str, Any]:
+    """Extract (and optionally review) tags, then persist to processing state."""
+    from transcriptx.services.transcript_tags import TranscriptTagService
+
+    return TranscriptTagService().extract_and_persist(
+        transcript_path, segments, batch_mode=batch_mode
+    )

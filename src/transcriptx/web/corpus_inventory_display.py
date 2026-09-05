@@ -143,6 +143,7 @@ def inventory_table_row(row: InventoryRow, *, include_path: bool = False) -> dic
         "Speaker ID": format_speaker_id_mark(row.speaker),
         "Corrections": format_corrections_mark(row.corrections),
         "Analysis": format_analysis_mark(row.analysis),
+        "Tags": ", ".join(row.tags) if row.tags else "—",
         "Last activity": format_relative_age(row.last_activity_at),
     }
     if include_path:

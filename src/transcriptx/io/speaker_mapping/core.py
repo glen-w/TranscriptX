@@ -446,4 +446,14 @@ def build_speaker_map(
             "[dim]Mapping is stored in the sidecar file alongside the transcript.[/dim]"
         )
 
+    if transcript_path:
+        try:
+            from transcriptx.io.tag_management import offer_and_edit_tags
+
+            offer_and_edit_tags(
+                transcript_path, segments, batch_mode=False
+            )
+        except Exception as exc:
+            logger.debug("Tag management after speaker mapping skipped: %s", exc)
+
     return final_map

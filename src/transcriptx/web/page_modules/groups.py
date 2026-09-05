@@ -120,6 +120,41 @@ def _render_edit_membership_fragment(
     available_for_add = [
         p for p in transcript_options if transcript_canonical[p] not in working_canon
     ]
+    tag_filter_key = f"membership_tag_filter_{group.group_id}"
+    try:
+        from transcriptx.services.transcript_tags import TranscriptTagService
+
+        tags_by_path = TranscriptTagService().tags_by_transcript_path()
+    except Exception:
+        tags_by_path = {}
+    tag_names = sorted(
+        {
+            tag
+            for path in available_for_add
+            for tag in tags_by_path.get(path, ())
+            + tags_by_path.get(str(Path(path).expanduser()), ())
+        }
+    )
+    if tag_names:
+        selected_tag = st.selectbox(
+            "Filter add list by tag",
+            options=["All", *tag_names],
+            key=tag_filter_key,
+            help=widget_help(
+                "Tags only filter which transcripts you can pick. "
+                "They never add a Group automatically."
+            ),
+        )
+        if selected_tag and selected_tag != "All":
+            available_for_add = [
+                p
+                for p in available_for_add
+                if selected_tag
+                in (
+                    tags_by_path.get(p, ())
+                    + tags_by_path.get(str(Path(p).expanduser()), ())
+                )
+            ]
     st.caption(
         "**Add selected** writes new transcripts to the group file immediately. "
         "**Save membership** re-syncs the manifest from the list above if needed."

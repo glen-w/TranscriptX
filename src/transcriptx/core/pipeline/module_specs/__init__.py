@@ -48,6 +48,7 @@ MODULE_REGISTRY_ORDER: tuple[str, ...] = (
     "pauses",
     "echoes",
     "politeness",
+    "tag_extraction",
     "momentum",
     "topic_shift",
     "moments",

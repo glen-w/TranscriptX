@@ -153,3 +153,14 @@ def test_module_class_map_keys_exist_in_definitions() -> None:
     definitions = build_module_definitions(_DEFAULT_REQUIREMENTS)
     for module_id in MODULE_CLASS_MAP:
         assert module_id in definitions, module_id
+
+
+def test_tag_extraction_registered_and_excluded_from_default() -> None:
+    from transcriptx.core.pipeline.module_registry import get_module_registry
+
+    assert "tag_extraction" in MODULE_REGISTRY_ORDER
+    assert MODULE_CLASS_MAP["tag_extraction"][1] == "TagExtractor"
+    info = get_module_registry().get_module_info("tag_extraction")
+    assert info.exclude_from_default is True
+    assert info.supports_group is False
+    assert info.category == "light"

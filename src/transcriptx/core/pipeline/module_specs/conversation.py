@@ -75,4 +75,14 @@ def build_conversation_module_definitions(
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
         },
+        "tag_extraction": {
+            "description": "Library kind / semantic tags from early transcript",
+            "dependencies": [],
+            "category": "light",
+            "determinism_tier": "T0",
+            "requirements": [Requirement.SEGMENTS],
+            "enhancements": [],
+            "exclude_from_default": True,
+            "supports_group": False,
+        },
     }

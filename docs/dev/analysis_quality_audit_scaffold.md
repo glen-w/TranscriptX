@@ -36,6 +36,7 @@ Human judgements (meaningfulness, recommendation, severity) live in empty column
 | `pauses` | Silence and Timing Analysis | light | None | T0 | | | |
 | `echoes` | Quote/Echo/Paraphrase Detection | medium | None | T1 | | | |
 | `politeness` | Politeness / formality / directiveness markers | light | None | T0 | | | |
+| `tag_extraction` | Library kind / semantic tags from early transcript | light | None | T0 | | | |
 | `momentum` | Stall/Flow Index Analysis | medium | pauses | T0 | | | |
 | `topic_shift` | Topic-shift chapter segmentation | medium | None | T0 | | | |
 | `moments` | Ranked Moments Worth Revisiting | light | momentum | T0 | | | |

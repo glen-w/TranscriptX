@@ -56,6 +56,15 @@ def identify_speakers(
 
             if speaker_map_result:
                 total_speakers += len(speaker_map_result)
+                try:
+                    from transcriptx.io.tag_management import offer_and_edit_tags
+
+                    offer_and_edit_tags(path_str, segments, batch_mode=True)
+                except Exception as e:
+                    progress.on_log(
+                        f"Tag extraction skipped for {path.name}: {e}",
+                        level="warning",
+                    )
                 if not request.skip_rename:
                     rename_transcript_after_speaker_mapping(path_str)
                 final_path = (

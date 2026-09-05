@@ -39,6 +39,7 @@ def row_matches_query(row: InventoryRow, query: str) -> bool:
         row.transcript_path.stem,
         row.transcript_path.name,
         row.slug or "",
+        *row.tags,
     ]
     return any(needle in item.casefold() for item in haystacks if item)
 
@@ -54,6 +55,10 @@ def apply_library_filter(
         and (
             not library_filter.source_id
             or row.source_id == library_filter.source_id
+        )
+        and (
+            not library_filter.tag
+            or library_filter.tag in row.tags
         )
     ]
     return sort_inventory_rows(matched, library_filter.sort)
