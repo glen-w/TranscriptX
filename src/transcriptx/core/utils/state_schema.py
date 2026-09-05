@@ -11,6 +11,11 @@ from typing import Any, Dict, List, Tuple
 
 from transcriptx.core.utils._path_core import get_canonical_base_name
 from transcriptx.core.utils.paths import OUTPUTS_DIR
+from transcriptx.io.tag_validation import (
+    sanitize_tag_list,
+    validate_tag,
+    validate_tag_details,
+)
 
 # Schema version (public epoch-1 integer)
 STATE_SCHEMA_VERSION = 1
@@ -124,6 +129,41 @@ def validate_state_entry(entry: Dict[str, Any]) -> Tuple[bool, List[str]]:
                 errors.append(
                     "analysis_modules_run must be a subset of analysis_modules_requested"
                 )
+
+    if "tags" in entry:
+        tags = entry.get("tags")
+        if tags is None:
+            pass
+        elif not isinstance(tags, list):
+            errors.append("tags must be a list")
+        else:
+            normalized_tags: List[str] = []
+            for tag in tags:
+                if not isinstance(tag, str):
+                    errors.append("tags must contain only strings")
+                    break
+                is_valid, err = validate_tag(tag)
+                if not is_valid:
+                    errors.append(f"Invalid tag: {err}")
+                else:
+                    sanitized = sanitize_tag_list([tag])[0]
+                    normalized_tags.append(sanitized)
+            else:
+                if len(normalized_tags) != len(set(normalized_tags)):
+                    errors.append("tags must not contain duplicates")
+
+    if "tag_details" in entry:
+        details_valid, detail_errors = validate_tag_details(entry.get("tag_details"))
+        if not details_valid:
+            errors.extend(detail_errors)
+
+    if "type_confidence" in entry:
+        tc = entry.get("type_confidence")
+        if tc is not None:
+            if not isinstance(tc, (int, float)):
+                errors.append("type_confidence must be numeric")
+            elif not 0.0 <= float(tc) <= 1.0:
+                errors.append("type_confidence must be between 0 and 1")
 
     return len(errors) == 0, errors
 
