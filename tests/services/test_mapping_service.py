@@ -72,3 +72,22 @@ def test_bulk_update(tmp_path) -> None:
     sidecar = SpeakerMapResolver().load_mapping(path)
     assert sidecar.speaker_map == {"SPEAKER_00": "Alice", "SPEAKER_01": "Bob"}
     assert sidecar.has_sidecar is True
+
+
+def test_assign_speaker_auto_identified_method(tmp_path) -> None:
+    path = tmp_path / "t.json"
+    path.write_text(json.dumps({"segments": [{"speaker": "SPEAKER_00", "text": "Hi"}]}))
+    svc = SpeakerMappingService()
+    state = svc.assign_speaker(
+        str(path),
+        "SPEAKER_00",
+        "Maya",
+        method="auto_identified",
+        speaker_map_source={"kind": "auto_identified", "channels": ["mention"]},
+    )
+    assert state.provenance is not None
+    assert state.provenance.get("method") == "auto_identified"
+    assert state.speaker_map_source == {
+        "kind": "auto_identified",
+        "channels": ["mention"],
+    }

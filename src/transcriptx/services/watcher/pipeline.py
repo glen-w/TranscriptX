@@ -31,6 +31,24 @@ _SUCCESS_ADMIT = frozenset(
 )
 
 
+def _try_identify_imported(transcript_path: Path) -> str:
+    """Best-effort auto-identify using Settings knobs; never fail import."""
+    try:
+        from transcriptx.core.speaker_profiles.identify.service import (
+            maybe_identify_admitted,
+        )
+
+        result = maybe_identify_admitted(transcript_path)
+    except Exception as exc:
+        logger.info("Watcher identify skipped: %s", exc)
+        return ""
+    if result is None:
+        return ""
+    if result.error:
+        return f"Identify warning: {result.error}"
+    return f"Identified named={result.named_count} linked={result.linked_count}."
+
+
 def process_watched_path(
     path: Path | str,
     *,
@@ -155,10 +173,15 @@ def process_watched_path(
 
     outcome = admit_inbox_candidate(candidate)
     if outcome.kind in _SUCCESS_ADMIT:
+        detail = outcome.user_safe_detail
+        if outcome.transcript_path is not None:
+            ident = _try_identify_imported(outcome.transcript_path)
+            if ident:
+                detail = f"{detail} {ident}".strip()
         return store.update(
             job,
             state=JobState.IMPORTED,
-            detail=outcome.user_safe_detail,
+            detail=detail,
             transcript_path=(
                 str(outcome.transcript_path) if outcome.transcript_path else None
             ),

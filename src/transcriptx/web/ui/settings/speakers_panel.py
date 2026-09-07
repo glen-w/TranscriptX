@@ -314,6 +314,64 @@ def render_speakers_panel() -> None:
         ),
     )
 
+    st.subheader("Auto-identify on ingest")
+    from transcriptx.core.speaker_profiles.identify.settings import (
+        load_identify_settings,
+        save_identify_settings,
+    )
+
+    ident = load_identify_settings()
+    auto_name = st.checkbox(
+        "Auto-name speakers after import / admit",
+        value=ident.auto_name,
+        key="identify_auto_name",
+        help=widget_help(
+            "Write display names onto the speaker map when voice or text "
+            "identification is confident. Fail-open: unnamed labels stay "
+            "SPEAKER_00 when unsure. Host inbox-watch --auto-name overrides."
+        ),
+    )
+    auto_link = st.checkbox(
+        "Auto-link matched longitudinal profiles",
+        value=ident.auto_link,
+        key="identify_auto_link",
+        help=widget_help(
+            "Create profile links for strong matches to enrolled / named "
+            "profiles. Does not enrol voice samples. Does not create new "
+            "profiles from first-meeting names."
+        ),
+    )
+    style_only = st.checkbox(
+        "Allow style-only auto-apply (experimental)",
+        value=ident.style_only_apply,
+        key="identify_style_only",
+        help=widget_help(
+            "Apply a name/link from speech-pattern similarity alone when the "
+            "score is uniquely strong. Off by default; voice and in-transcript "
+            "names still corroborate."
+        ),
+    )
+    if (
+        auto_name != ident.auto_name
+        or auto_link != ident.auto_link
+        or style_only != ident.style_only_apply
+    ):
+        from transcriptx.core.speaker_profiles.identify.settings import IdentifySettings
+
+        save_identify_settings(
+            IdentifySettings(
+                auto_name=bool(auto_name),
+                auto_link=bool(auto_link),
+                style_only_apply=bool(style_only),
+            )
+        )
+        st.caption("Saved ingest auto-identify defaults.")
+
+    st.caption(
+        "Probabilistic local match — not identity verification. "
+        "USB path: inbox-watch --watch --auto-name."
+    )
+
     st.subheader("Local voice matching")
     try:
         from uuid import uuid4

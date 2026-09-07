@@ -31,7 +31,7 @@ Prefer completing [Identify and name speakers](speaker-identification.md) and ch
 
 ## What to notice
 
-- Speakers profiles are longitudinal; diarized `SPEAKER_00` labels on a transcript are local until named and optionally linked.
+- Speakers profiles are longitudinal; diarized `SPEAKER_00` labels on a transcript are local until named and optionally linked. Ingest auto-link creates `auto_identified` links (review on Speaker Identification; promote before those appearances enrol as trusted voice) — [auto-identify.md](../runtime/auto-identify.md).
 - Empty Speakers is normal on a brand-new library — create links from Speaker Identification rather than inventing profiles here.
 - Privacy-sensitive voice evidence (when enabled) follows Speakers / Settings policy — keep disposable data roots for experiments.
 

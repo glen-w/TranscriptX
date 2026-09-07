@@ -50,7 +50,7 @@ Use the sample [planning_review.json](docs/workflows/fixtures/planning_review.js
 
 Full walkthrough: [First analysis](docs/workflows/first-analysis.md).
 
-Five everyday jobs: [first analysis](docs/workflows/first-analysis.md), [name speakers](docs/workflows/speaker-identification.md), [investigate evidence](docs/workflows/investigate-evidence.md), [local AI](docs/workflows/local-ai-synthesis.md) (optional), [export](docs/workflows/export-results.md). More: [all workflows](docs/workflows/index.md).
+Five everyday jobs: [first analysis](docs/workflows/first-analysis.md), [name speakers](docs/workflows/speaker-identification.md), [investigate evidence](docs/workflows/investigate-evidence.md), [local AI](docs/workflows/local-ai-synthesis.md) (optional), [export](docs/workflows/export-results.md). USB ingest can auto-name after admit: [auto-identify](docs/runtime/auto-identify.md). More: [all workflows](docs/workflows/index.md).
 
 ## Installation
 

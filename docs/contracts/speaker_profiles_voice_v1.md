@@ -14,7 +14,11 @@ Related storage: `docs/runtime/STORAGE.md`.
 
 ## Product rules (frozen)
 
-- Assistive only — never auto-create, replace, or confirm a profile link from scores.
+- Assistive by default — never auto-create, replace, or confirm a profile link from scores **unless** operator ingest `auto_link` is enabled and fusion apply gates pass (`link_method: auto_identified`).
+- Auto-identified links do **not** enrol voice samples. Query audio stays out of the ECAPA reference corpus until explicit enrol / promote (`auto_identified` maps to ineligible `suggestion_assisted` trust).
+- Operator ingest knobs `auto_name` and `auto_link` are **orthogonal** and default **false**. `identify.json` is not consent — `privacy.voice_settings.json` remains the sole voice activation authority.
+- Auto-identify **must** fail open: conflict, collision, ignored IDs, missing audio, or analyse errors leave `SPEAKER_*` and skip the link. Admit / import still succeeds if identify fails.
+- Auto-identify **must not** overwrite an effective human display name or a live profile link, auto-create a profile from a first-meeting mention, or enrol query audio.
 - `privacy.voice_settings.json` is the **sole** activation and consent authority.
   No parallel config/env enable flag may disagree with it.
 - Single `ActivationBarrier`: production analyse, Settings enablement, enrolment,
@@ -51,6 +55,8 @@ speaker_profiles_dir/
     suggestions/
     summaries/
     indexes/
+  .cache/identify/                         # disposable fusion artefacts (not identity authority)
+    {managed_transcript_id}.identify.v1.json
 ```
 
 Path policy: reject absolute paths and `..` **before** any `stat`, read, staging,
@@ -71,6 +77,7 @@ or backup (`assert_safe_relpath`). Same symlink / containment rules as Phase 1.
 | Match decision | `transcriptx.voice_match_decision.v1` |
 | Suggestion cache | `transcriptx.voice_match_suggestion.v1` |
 | Profile voice summary | `transcriptx.profile_voice_summary.v1` |
+| Auto-identify artefact | `transcriptx.speaker_identify_artefact.v1` |
 
 Privacy notice version (user-facing copy pin): `voice_privacy_notice.v2`.
 Bump requires re-consent. Authoritative user-facing text:
@@ -84,9 +91,41 @@ Bump requires re-consent. Authoritative user-facing text:
 supersede. Methods accept this model only — never an unrestricted UI dict.
 
 `link_method`: `manual` | `suggestion_assisted` | `choose_other` | `create_new` |
-`relink` | `supersede`.
+`relink` | `supersede` | `auto_identified`.
 
 Suggestion-assisted requires `suggestion_id` and `suggestion_digest`.
+`auto_identified` may carry suggestion fields when the voice channel supplied them;
+otherwise they stay empty. Trust mapping for `auto_identified` is the same as
+`suggestion_assisted` (`ineligible_trust` until promote).
+
+---
+
+## Auto-identify ingest
+
+Operator surfaces (Settings → Speakers, `inbox-watch --auto-name` / `--auto-link`,
+`python -m transcriptx.admit_originals`, `python -m transcriptx.identify_speakers`,
+Speaker Identification **Apply auto-identify**) share `SpeakerIdentifyService`.
+Guide: [`docs/runtime/auto-identify.md`](../runtime/auto-identify.md).
+
+Fusion apply table (v1):
+
+| Condition | Action |
+|-----------|--------|
+| Strong unique voice, mention absent or agreeing | apply voice name / profile |
+| Strong unique voice, mention disagrees on name or profile | skip (`conflict`) |
+| No strong voice, unique in-transcript mention | apply mention (profile id only if a unique existing profile name matches) |
+| No voice/mention, `style_only_apply` and strong style | apply style |
+| Else | skip (`abstain`) |
+| Two apply rows claim the same profile id or normalized display name | skip both (`collision`) |
+
+`auto_name` writes the speaker-map sidecar with mapping method `auto_identified`.
+`auto_link` calls `link_existing_profile` with `link_method: auto_identified` and
+**no** `extra_writes` (does not enrol). Mention-only first meetings may name; they
+**must not** create a new profile.
+
+Identify artefacts (`schema_id`: `transcriptx.speaker_identify_artefact.v1`) under
+`.cache/identify/` are review dumps only. Confirmed `speaker_profile_link.v1` rows
+and speaker-map sidecars remain the identity / display authorities.
 
 ---
 
