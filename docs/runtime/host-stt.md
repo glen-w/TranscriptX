@@ -200,7 +200,7 @@ Enable admit in local JSON (and/or `.env` `INBOX_WATCH_ADMIT=1`):
 "admit_python": "/path/to/python3"
 ```
 
-**macOS login agent (optional):** [`scripts/macos/inbox-watch-agent.sh`](../../scripts/macos/inbox-watch-agent.sh) plus [`scripts/macos/com.transcriptx.inbox-watch.plist`](../../scripts/macos/com.transcriptx.inbox-watch.plist) can run `--watch` at login. Admit is controlled by local JSON / `.env`, not by the plist. If the USB inbox is unplugged, `--watch` keeps polling empty cycles; the first cycle still catch-up transcribes missing MP3s and admits `originals/`. Logs: `.transcriptx/inbox-watch.launchd.log`.
+**macOS login agent (optional):** [`scripts/macos/inbox-watch-agent.sh`](../../scripts/macos/inbox-watch-agent.sh) plus [`scripts/macos/com.transcriptx.inbox-watch.plist`](../../scripts/macos/com.transcriptx.inbox-watch.plist) can run `--watch` at login. The plist is a template (`/Users/you/...`); copy it to `~/Library/LaunchAgents` and replace those paths. The agent script uses the repo `.venv` / `.transcriptx` interpreter when present, otherwise `python3` on `PATH`. Admit is controlled by local JSON / `.env`, not by the plist. If the USB inbox is unplugged, `--watch` keeps polling empty cycles; the first cycle still catch-up transcribes missing MP3s and admits `originals/`. Logs: `.transcriptx/inbox-watch.launchd.log`.
 
 Do **not** point this inbox at the same folder as the in-app G2 watcher unless you intend both to handle new transcripts (G2 admits; inbox-watch copies). See [directory_watcher.md](directory_watcher.md).
 

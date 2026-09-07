@@ -28,9 +28,18 @@ def test_is_retryable_hub_error_rejects_wall_clock_timeout() -> None:
     assert is_retryable_hub_error(HubLoadTimeoutError("timed out after 25s")) is False
 
 
+def _run_load_fn_inline(load_fn, timeout_seconds: float):
+    del timeout_seconds
+    return load_fn()
+
+
 def test_load_from_hub_retries_then_succeeds(monkeypatch) -> None:
     monkeypatch.setattr(
         "transcriptx.core.utils.hf_hub_load.HUB_RETRY_BACKOFF_SECONDS", 0
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.hf_hub_load._call_with_timeout",
+        _run_load_fn_inline,
     )
     calls = {"n": 0}
 
@@ -49,6 +58,10 @@ def test_load_from_hub_retries_then_succeeds(monkeypatch) -> None:
 def test_load_from_hub_raises_after_retry_exhausted(monkeypatch) -> None:
     monkeypatch.setattr(
         "transcriptx.core.utils.hf_hub_load.HUB_RETRY_BACKOFF_SECONDS", 0
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.hf_hub_load._call_with_timeout",
+        _run_load_fn_inline,
     )
     monkeypatch.setattr("transcriptx.core.utils.hf_hub_load.HUB_LOAD_ATTEMPTS", 2)
 

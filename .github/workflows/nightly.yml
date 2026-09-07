@@ -1,6 +1,8 @@
 name: Nightly
 
 # Scheduled integration_core lane (documented in tests/README.md).
+# Docker image smokes stay on PR release-checks / make test-optional — nightly
+# does not pre-build transcriptx-web, so requires_docker is excluded.
 # Manual: Actions → Nightly → Run workflow.
 
 on:

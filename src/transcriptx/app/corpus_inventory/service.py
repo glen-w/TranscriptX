@@ -23,6 +23,7 @@ from transcriptx.app.corpus_inventory.mapping import (
 )
 from transcriptx.app.corpus_inventory.models import (
     AnalysisState,
+    CorrectionsState,
     FieldIntegrity,
     FileStamp,
     InventoryBuildStats,

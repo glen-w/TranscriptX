@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Copy to ~/Library/LaunchAgents and replace /Users/you with your home path. -->
 <plist version="1.0">
 <dict>
   <key>Label</key>
   <string>com.transcriptx.inbox-watch</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/89298/Documents/transcriptx/scripts/macos/inbox-watch-agent.sh</string>
+    <string>/Users/you/Documents/transcriptx/scripts/macos/inbox-watch-agent.sh</string>
   </array>
   <key>WorkingDirectory</key>
-  <string>/Users/89298/Documents/transcriptx</string>
+  <string>/Users/you/Documents/transcriptx</string>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
@@ -17,23 +18,23 @@
   <key>ThrottleInterval</key>
   <integer>10</integer>
   <key>StandardOutPath</key>
-  <string>/Users/89298/Documents/transcriptx/.transcriptx/inbox-watch.launchd.log</string>
+  <string>/Users/you/Documents/transcriptx/.transcriptx/inbox-watch.launchd.log</string>
   <key>StandardErrorPath</key>
-  <string>/Users/89298/Documents/transcriptx/.transcriptx/inbox-watch.launchd.log</string>
+  <string>/Users/you/Documents/transcriptx/.transcriptx/inbox-watch.launchd.log</string>
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key>
-    <string>/Users/89298/.pyenv/shims:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
     <key>TRANSCRIPTX_TRANSCRIPTS_DIR</key>
-    <string>/Users/89298/Documents/transcripts</string>
+    <string>/Users/you/Documents/transcripts</string>
     <key>TRANSCRIPTX_OUTPUT_DIR</key>
-    <string>/Users/89298/Documents/transcriptx outputs</string>
+    <string>/Users/you/Documents/transcriptx-outputs</string>
     <key>TRANSCRIPTX_RECORDINGS_DIR</key>
-    <string>/Users/89298/Documents/recordings</string>
+    <string>/Users/you/Documents/recordings</string>
     <key>TRANSCRIPTX_WAV_BACKUP_DIR</key>
-    <string>/Users/89298/Documents/wav</string>
+    <string>/Users/you/Documents/wav</string>
     <key>TRANSCRIPTX_CONFIG_DIR</key>
-    <string>/Users/89298/Documents/transcriptx-config</string>
+    <string>/Users/you/Documents/transcriptx-config</string>
   </dict>
 </dict>
 </plist>
