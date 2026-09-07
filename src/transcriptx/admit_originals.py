@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import sys
 from pathlib import Path
 from typing import Sequence
 
@@ -52,6 +51,34 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="List candidates; do not admit.",
     )
+    name_group = parser.add_mutually_exclusive_group()
+    name_group.add_argument(
+        "--auto-name",
+        dest="auto_name",
+        action="store_true",
+        default=None,
+        help="After admit, auto-write speaker display names (implies identify).",
+    )
+    name_group.add_argument(
+        "--no-auto-name",
+        dest="auto_name",
+        action="store_false",
+        help="Do not auto-name speakers after admit.",
+    )
+    link_group = parser.add_mutually_exclusive_group()
+    link_group.add_argument(
+        "--auto-link",
+        dest="auto_link",
+        action="store_true",
+        default=None,
+        help="After admit, auto-link matched longitudinal profiles.",
+    )
+    link_group.add_argument(
+        "--no-auto-link",
+        dest="auto_link",
+        action="store_false",
+        help="Do not auto-link profiles after admit.",
+    )
     return parser.parse_args(argv)
 
 
@@ -71,6 +98,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.directory.expanduser(),
         only=args.only,
         dry_run=bool(args.dry_run),
+        auto_name=args.auto_name,
+        auto_link=args.auto_link,
     )
 
 

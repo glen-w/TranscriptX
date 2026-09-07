@@ -22,6 +22,7 @@ Related storage roots: `docs/runtime/STORAGE.md`.
 | Profiles, live links, events, operation journals | `speaker_profiles_dir` (default `data_dir/speaker_profiles/`) | Yes — canonical (PII; do not commit) |
 | Project operation lock | `state_dir/speaker_profiles.lock` | Lock only |
 | Listing / aggregate caches / optional file index | `data_dir/speaker_profiles/.cache/` | No — disposable |
+| Auto-identify fusion artefacts | `data_dir/speaker_profiles/.cache/identify/` | No — review dumps only (`transcriptx.speaker_identify_artefact.v1`); not identity authority. Map writes and `auto_identified` links: [`speaker_profiles_voice_v1.md`](speaker_profiles_voice_v1.md) |
 | Managed transcript JSON | `transcripts_dir` (library-admitted) | Canonical for content/metrics |
 | Speaker-map sidecars | `transcripts/metadata/speaker_maps/` | Current display labels / ignore lists only |
 
@@ -44,6 +45,7 @@ speaker_profiles_dir/   # default: data_dir/speaker_profiles/; env: TRANSCRIPTX_
   operations/{operation_id}/staging/            # after-images while active
   operations/{operation_id}/backup/             # before-images while active
   .cache/                                       # disposable only
+    identify/{managed_transcript_id}.identify.v1.json
 
 state_dir/
   speaker_profiles.lock                         # project operation lock only

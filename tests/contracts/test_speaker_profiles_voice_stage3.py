@@ -121,6 +121,10 @@ def test_trust_mapping() -> None:
     )
     assert eligibility_for_trust("suggestion_assisted") == "ineligible_trust"
     assert eligibility_for_trust("manual") == "eligible"
+    assert (
+        trust_from_link_provenance({"link_method": "auto_identified"})
+        == "suggestion_assisted"
+    )
 
 
 def test_enrol_gated_by_activation_barrier(

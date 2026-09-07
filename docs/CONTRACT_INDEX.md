@@ -13,6 +13,7 @@ Concept → Authority:
 - **Workspace backup / restore** → `docs/contracts/workspace-backup.md`
 - **Speaker profiles (longitudinal)** → `docs/contracts/speaker_profiles_v1.md`
 - **Speaker profiles voice phase (local matching)** → `docs/contracts/speaker_profiles_voice_v1.md`
+- **Auto-identify ingest (auto-name / auto-link)** → `docs/contracts/speaker_profiles_voice_v1.md` (operator guide: `docs/runtime/auto-identify.md`)
 - **Speaker voice match index gate (Stage 9)** → `docs/dev/speaker_voice_match_index_gate.md`
 - **Speaker profiles reference-env index gate** → `docs/dev/speaker_profiles_reference_env_index_gate.md`
 - **Run truth & statuses** → `docs/run_outcome_contract.md`

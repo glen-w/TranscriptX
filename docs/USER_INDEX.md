@@ -15,7 +15,7 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 | [Comparison](comparison.md) | Is TranscriptX the right tool? |
 | [Comparison reference](comparison-reference.md) | Vendor-by-vendor notes |
 | [Known limitations](known_limitations.md) | Optional stacks, AI, privacy |
-| [Terminology](TERMS.md) | Term index |
+| [Terminology](TERMS.md) | Term index (includes auto-name / auto_identified) |
 
 ## Workflows
 
@@ -23,7 +23,7 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 |-----|---------|
 | [Using TranscriptX](workflows/index.md) | Outcome-led walkthrough index |
 | [First analysis](workflows/first-analysis.md) | Import a sample → Balanced run → Overview |
-| [Identify and name speakers](workflows/speaker-identification.md) | Name diarized labels |
+| [Identify and name speakers](workflows/speaker-identification.md) | Name diarized labels (optional Apply auto-identify) |
 | [Investigate with evidence](workflows/investigate-evidence.md) | Question → transcript lines |
 | [Local AI synthesis](workflows/local-ai-synthesis.md) | Optional Ollama summary / extracts |
 | [Export results](workflows/export-results.md) | ZIP / HTML / EPUB |
@@ -51,6 +51,7 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 |-----|---------|
 | [Transcription](runtime/transcription.md) | Bring a file, or generate a host STT command |
 | [Host STT automation](runtime/host-stt.md) | whispermlx-missing, inbox-watch, Python import |
+| [Auto-identify speakers](runtime/auto-identify.md) | Auto-name / auto-link after ingest (Settings, inbox-watch, CLI) |
 | [Audio prep](runtime/audio-prep.md) | Tools → Preprocessing / Auto-merge |
 | [Directory watcher](runtime/directory_watcher.md) | In-app inbox → import |
 | [WhisperX recipe](recipes/whisperx/README.md) | Optional WhisperX Docker |

@@ -15,6 +15,7 @@ LinkMethod = Literal[
     "create_new",
     "relink",
     "supersede",
+    "auto_identified",
 ]
 
 ConfidenceCategory = Literal["strong", "possible", "weak"]

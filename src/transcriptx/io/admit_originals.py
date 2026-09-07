@@ -97,7 +97,12 @@ def admit_originals_file(path: Path) -> AdmitOutcome:
     )
 
 
-def admit_originals_files(paths: Sequence[Path]) -> AdmitOriginalsStats:
+def admit_originals_files(
+    paths: Sequence[Path],
+    *,
+    auto_name: bool | None = None,
+    auto_link: bool | None = None,
+) -> AdmitOriginalsStats:
     """Admit each path sequentially; already-managed files count as skipped."""
     stats = AdmitOriginalsStats()
     for path in paths:
@@ -109,10 +114,66 @@ def admit_originals_files(paths: Sequence[Path]) -> AdmitOriginalsStats:
         elif outcome.kind in _SUCCESS_KINDS:
             stats.admitted += 1
             stats.admitted_names.append(path.name)
+            _maybe_identify_after_admit(
+                outcome,
+                auto_name=auto_name,
+                auto_link=auto_link,
+            )
         else:
             stats.failed += 1
             stats.failed_names.append(f"{path.name}: {outcome.user_safe_detail}")
     return stats
+
+
+def _maybe_identify_after_admit(
+    outcome: AdmitOutcome,
+    *,
+    auto_name: bool | None,
+    auto_link: bool | None,
+) -> None:
+    """Best-effort identify; never fail admit if identification errors."""
+    if outcome.transcript_path is None:
+        return
+    try:
+        from transcriptx.core.speaker_profiles.identify.service import (
+            maybe_identify_admitted,
+        )
+        from transcriptx.core.speaker_profiles.identify.settings import (
+            load_identify_settings,
+        )
+
+        settings = load_identify_settings()
+        name_on = settings.auto_name if auto_name is None else bool(auto_name)
+        link_on = settings.auto_link if auto_link is None else bool(auto_link)
+        if auto_name is True and auto_link is None:
+            link_on = True
+        if not name_on and not link_on:
+            return
+        result = maybe_identify_admitted(
+            outcome.transcript_path,
+            auto_name=name_on,
+            auto_link=link_on,
+        )
+        if result is None:
+            return
+        if result.error:
+            print(
+                f"  WARNING: identify {outcome.transcript_path.name}: {result.error}",
+                file=sys.stderr,
+                flush=True,
+            )
+            return
+        print(
+            f"  Identified {outcome.transcript_path.name}: "
+            f"named={result.named_count} linked={result.linked_count}",
+            flush=True,
+        )
+    except Exception as exc:
+        print(
+            f"  WARNING: identify skipped ({exc})",
+            file=sys.stderr,
+            flush=True,
+        )
 
 
 def run_admit_originals(
@@ -120,6 +181,8 @@ def run_admit_originals(
     *,
     only: Sequence[str] | None = None,
     dry_run: bool = False,
+    auto_name: bool | None = None,
+    auto_link: bool | None = None,
 ) -> int:
     """Scan *directory* and admit eligible files. Return process exit code."""
     if not directory.is_dir():
@@ -146,7 +209,9 @@ def run_admit_originals(
         print("---", flush=True)
         return 0
 
-    stats = admit_originals_files(candidates)
+    stats = admit_originals_files(
+        candidates, auto_name=auto_name, auto_link=auto_link
+    )
     for path, outcome in stats.outcomes:
         if outcome.kind in _SKIP_KINDS:
             print(f"  Skipping ({outcome.kind.value}): {path.name}", flush=True)

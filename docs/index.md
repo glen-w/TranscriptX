@@ -45,6 +45,7 @@ workflows/speakers
 runtime/settings
 runtime/docker
 runtime/directory_watcher
+runtime/auto-identify
 runtime/export
 backup_and_restore
 known_limitations

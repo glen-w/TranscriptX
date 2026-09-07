@@ -41,6 +41,14 @@ def dirs(tmp_path: Path, iw):
     return inbox, recordings, transcripts
 
 
+@pytest.fixture(autouse=True)
+def _isolate_identify_env(monkeypatch):
+    """Keep developer .env admit/identify flags from leaking into script tests."""
+    monkeypatch.setenv("INBOX_WATCH_ADMIT", "0")
+    monkeypatch.setenv("INBOX_WATCH_AUTO_NAME", "0")
+    monkeypatch.setenv("INBOX_WATCH_AUTO_LINK", "0")
+
+
 def _once_args(
     inbox: Path,
     recordings: Path,
@@ -663,8 +671,7 @@ class TestSkipSerialForwarding:
 
 @pytest.mark.unit
 class TestAdmit:
-    def test_default_off(self, iw, tmp_path: Path, monkeypatch):
-        monkeypatch.delenv("INBOX_WATCH_ADMIT", raising=False)
+    def test_default_off(self, iw, tmp_path: Path):
         args = iw.parse_args(
             [
                 "--once",
@@ -753,6 +760,84 @@ class TestAdmit:
         assert rc == 0
         assert seen
         assert "transcriptx.admit_originals" in seen[0]
+
+
+    def test_auto_name_implies_admit_and_link(self, iw, tmp_path: Path, monkeypatch):
+        monkeypatch.delenv("INBOX_WATCH_AUTO_LINK", raising=False)
+        monkeypatch.delenv("INBOX_WATCH_AUTO_NAME", raising=False)
+        args = iw.parse_args(
+            [
+                "--once",
+                "--inbox",
+                str(tmp_path / "inbox"),
+                "--recordings",
+                str(tmp_path / "rec"),
+                "--transcripts",
+                str(tmp_path / "tx"),
+                "--auto-name",
+            ]
+        )
+        cfg = iw.resolve_config(args, config_path=tmp_path / "noconfig.json")
+        assert cfg.auto_name is True
+        assert cfg.auto_link is True
+        assert cfg.admit_to_library is True
+
+    def test_auto_name_no_auto_link(self, iw, tmp_path: Path):
+        args = iw.parse_args(
+            [
+                "--once",
+                "--inbox",
+                str(tmp_path / "inbox"),
+                "--recordings",
+                str(tmp_path / "rec"),
+                "--transcripts",
+                str(tmp_path / "tx"),
+                "--auto-name",
+                "--no-auto-link",
+            ]
+        )
+        cfg = iw.resolve_config(args, config_path=tmp_path / "noconfig.json")
+        assert cfg.auto_name is True
+        assert cfg.auto_link is False
+        assert cfg.admit_to_library is True
+
+    def test_auto_link_only(self, iw, tmp_path: Path):
+        args = iw.parse_args(
+            [
+                "--once",
+                "--inbox",
+                str(tmp_path / "inbox"),
+                "--recordings",
+                str(tmp_path / "rec"),
+                "--transcripts",
+                str(tmp_path / "tx"),
+                "--auto-link",
+                "--no-auto-name",
+            ]
+        )
+        cfg = iw.resolve_config(args, config_path=tmp_path / "noconfig.json")
+        assert cfg.auto_name is False
+        assert cfg.auto_link is True
+        assert cfg.admit_to_library is True
+
+    def test_build_admit_cmd_identify_flags(self, iw, tmp_path: Path):
+        python = tmp_path / "bin" / "python"
+        transcripts = tmp_path / "transcripts" / "originals"
+        both = iw.build_admit_cmd(
+            python, transcripts=transcripts, auto_name=True, auto_link=True
+        )
+        assert "--auto-name" in both
+        assert "--auto-link" in both
+        name_only = iw.build_admit_cmd(
+            python, transcripts=transcripts, auto_name=True, auto_link=False
+        )
+        assert "--auto-name" in name_only
+        assert "--no-auto-link" in name_only
+        neither = iw.build_admit_cmd(
+            python, transcripts=transcripts, auto_name=False, auto_link=False
+        )
+        assert "--auto-name" not in neither
+        assert "--auto-link" not in neither
 
     def test_main_skips_admit_by_default(self, iw, dirs, monkeypatch):
         inbox, recordings, transcripts = dirs

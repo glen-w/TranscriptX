@@ -55,4 +55,13 @@ Where you need the actual definition or invariant, always read the linked CONTRA
 - **Speaker profile**  
   - Longitudinal identity / voice store (separate from analysis knobs). See `docs/contracts/speaker_profiles_v1.md` and `docs/contracts/speaker_profiles_voice_v1.md`.
 
+- **Auto-name / auto-link**  
+  - Orthogonal ingest knobs that may write speaker-map display names and/or `auto_identified` profile links after admit. See `docs/contracts/speaker_profiles_voice_v1.md`. Operator guide: `docs/runtime/auto-identify.md`.
+
+- **auto_identified**  
+  - `link_method` (and speaker-map mapping method) for fusion-applied ingest. Trust maps like `suggestion_assisted` until promote. See `docs/contracts/speaker_profiles_voice_v1.md`.
+
+- **Speaker-map sidecar**  
+  - Per-transcript display names / ignore lists under `transcripts/metadata/speaker_maps/`. See `docs/runtime/STORAGE.md` and `docs/contracts/speaker_profiles_v1.md`.
+
 This index may grow as new terms are introduced in CONTRACT docs, but each term here must always **delegate meaning** to those documents rather than redefining it.

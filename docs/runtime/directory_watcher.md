@@ -29,6 +29,7 @@ The in-app watcher does **not** convert audio or run STT. For that, use the host
 - `--watch-audio` — ffmpeg 16 kHz mono 64k MP3 into recordings, then `whispermlx-missing` (optional `--skip-serial` leaves Auto-merge groups untranscribed)
 - `--watch-transcripts` — copy new JSON/SRT/VTT/txt/html into a transcripts dest if the stem is missing
 - `--admit` (default off) — after the above, run `python -m transcriptx.admit_originals` so new `originals/` files enter the managed library (`admit_and_register`). Enable with `--admit`, `"admit_to_library": true` in `.transcriptx/inbox-watch.json`, or `INBOX_WATCH_ADMIT=1` in repo `.env`. Needs a native TranscriptX Python (`admit_python` / `--admit-python` / `INBOX_WATCH_ADMIT_PYTHON`).
+- `--auto-name` / `--auto-link` — after admit, auto-write speaker-map names and/or create `auto_identified` profile links when voice + text fusion is confident (`INBOX_WATCH_AUTO_NAME` / `INBOX_WATCH_AUTO_LINK`). `--auto-name` implies admit and defaults auto-link on. In-app Settings → Speakers knobs (`config_dir/identify.json`) apply to G2 auto-import. Operator reference: [auto-identify.md](auto-identify.md).
 - Terminal UX — same Review / Processing / Run summary shape as analysis CLI feedback ([Terminal feedback](host-stt.md#terminal-feedback))
 
 It runs on the Mac host (outside `transcriptx-web`) and does not import `transcriptx` in-process. G2 stays the in-app auto-import path. Both can run; do not point them at the same inbox unless you intend double handling of transcripts (G2 admits, host copies — and `--admit` would admit the copies).
@@ -37,4 +38,5 @@ It runs on the Mac host (outside `transcriptx-web`) and does not import `transcr
 
 - Folder scan (manual): Import Transcript → Import all from folder
 - Transcription remains external for 1.0: [transcription.md](transcription.md)
+- Auto-identify after admit: [auto-identify.md](auto-identify.md)
 - Product roadmap: [ROADMAP.md](../ROADMAP.md) theme G2 / H

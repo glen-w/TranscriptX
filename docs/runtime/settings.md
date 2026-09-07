@@ -13,12 +13,13 @@ How to change TranscriptX behaviour from the GUI, env, and config files — with
 | Full registry of knobs | **Settings → Configuration** → enable **Show advanced/raw settings editor** |
 | Named module/workflow presets (disk JSON) | **Profiles** page (sidebar) — activate from Configuration for Project / Run |
 | Paths, watcher, speakers, LLM models, questions | Other **Settings** tabs (Storage, Watcher, Speakers, Interface, Models, Questions, Corrections) |
+| Auto-name / auto-link after ingest | **Settings → Speakers** — [auto-identify.md](auto-identify.md) (`config_dir/identify.json`) |
 | Duplicate recordings / transcripts | **Settings → Storage** → Duplicate library files (preview, then typed `DELETE DUPLICATES`) |
 | Show/hide instructional ⓘ tips (widget help + Speakers methodology notes) | **Settings → Interface** → Help / info tips (`show_info_tooltips` in `interface_menus.json`; run-id ⓘ stays on) |
 | Action-menu icon vs text | **Settings → Interface** → Action appearance (`action_display`: `icon` / `text` / `both`; per-section may `inherit`) |
 | Install capability (`core` vs `full`) | Env / install marker — see [installation details](installation-advanced.md); **not** the Profiles page |
 
-Speaker identity/voice stores are a separate subsystem (Settings → Speakers). See [speaker_profiles_v1](../contracts/speaker_profiles_v1.md) and [STORAGE.md](STORAGE.md).
+Speaker identity/voice stores are a separate subsystem (**Settings → Speakers**), including ingest **auto-name / auto-link** defaults (`config_dir/identify.json`, all off until you enable them). Operator guide: [auto-identify.md](auto-identify.md). Contracts: [speaker_profiles_v1](../contracts/speaker_profiles_v1.md), [speaker_profiles_voice_v1](../contracts/speaker_profiles_voice_v1.md), [STORAGE.md](STORAGE.md).
 
 ## Analysis presets
 
@@ -112,6 +113,7 @@ Legacy `TRANSCRIPTX_AUDIO_*_ENABLED` variables are **rejected** — use the corr
 
 - [installation.md](installation.md) — normal install; [installation details](installation-advanced.md) — extras and install profiles
 - [STORAGE.md](STORAGE.md) — config_dir layout and precedence
+- [auto-identify.md](auto-identify.md) — Speakers ingest knobs (`identify.json`)
 - [models.md](models.md) / [llm.md](llm.md) — model and Ollama knobs
 - Developer architecture: [config_architecture.md](../dev/config_architecture.md)
 - Assessment / backlog: [settings_knobs_assessment.md](../dev/settings_knobs_assessment.md)

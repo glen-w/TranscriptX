@@ -31,6 +31,7 @@ Normal once (cron / launchd):
 Poll (USB volume may be absent; first cycle still runs missing/admit):
     inbox-watch --watch
     inbox-watch --watch --admit
+    inbox-watch --watch --auto-name
 
 Config (merge order: portable defaults <- env <- local JSON <- CLI):
     --config /path/to/config.json
@@ -51,6 +52,8 @@ Inbox files are kept by default. After a successful convert/copy you can
     --admit (default off) runs python -m transcriptx.admit_originals after
     convert/copy/missing so originals/ JSON is admitted into the managed library.
     Requires a Python that can import transcriptx (native venv / --admit-python).
+    --auto-name / --auto-link (independent; --auto-name defaults auto-link on)
+    pass through to admit_originals after a successful admit.
 
 Exit 0 = all ok; 1 = one or more item failures; 2 = CLI/config/validation error.
 """
@@ -105,6 +108,8 @@ KNOWN_CONFIG_KEYS = frozenset(
         "skip_serial",
         "admit_to_library",
         "admit_python",
+        "auto_name",
+        "auto_link",
     }
 )
 
@@ -158,6 +163,8 @@ class EffectiveConfig:
     skip_serial: bool = False
     admit_to_library: bool = False
     admit_python: Path | None = None
+    auto_name: bool = False
+    auto_link: bool = False
     provenance: ConfigProvenance = field(default_factory=ConfigProvenance)
 
 
@@ -421,6 +428,37 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_false",
         help="Do not admit into the managed library (default).",
     )
+    name_group = parser.add_mutually_exclusive_group()
+    name_group.add_argument(
+        "--auto-name",
+        dest="auto_name",
+        action="store_true",
+        default=None,
+        help=(
+            "After admit, auto-name diarized speakers (implies --admit; "
+            "also auto-link unless --no-auto-link)."
+        ),
+    )
+    name_group.add_argument(
+        "--no-auto-name",
+        dest="auto_name",
+        action="store_false",
+        help="Do not auto-write speaker names after admit.",
+    )
+    link_group = parser.add_mutually_exclusive_group()
+    link_group.add_argument(
+        "--auto-link",
+        dest="auto_link",
+        action="store_true",
+        default=None,
+        help="After admit, auto-link matched longitudinal speaker profiles.",
+    )
+    link_group.add_argument(
+        "--no-auto-link",
+        dest="auto_link",
+        action="store_false",
+        help="Do not auto-link longitudinal profiles after admit.",
+    )
     parser.add_argument(
         "--show-config",
         action="store_true",
@@ -460,6 +498,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         delete_originals=None,
         skip_serial=None,
         admit_to_library=None,
+        auto_name=None,
+        auto_link=None,
     )
     return parser.parse_args(argv)
 
@@ -611,6 +651,14 @@ def env_derived_config() -> tuple[dict[str, Any], ConfigProvenance]:
         derived["admit_to_library"] = _parse_bool_env(
             os.environ.get("INBOX_WATCH_ADMIT"), default=False
         )
+    if os.environ.get("INBOX_WATCH_AUTO_NAME", "").strip():
+        derived["auto_name"] = _parse_bool_env(
+            os.environ.get("INBOX_WATCH_AUTO_NAME"), default=False
+        )
+    if os.environ.get("INBOX_WATCH_AUTO_LINK", "").strip():
+        derived["auto_link"] = _parse_bool_env(
+            os.environ.get("INBOX_WATCH_AUTO_LINK"), default=False
+        )
     admit_python = os.environ.get("INBOX_WATCH_ADMIT_PYTHON", "").strip()
     if admit_python:
         derived["admit_python"] = admit_python
@@ -754,6 +802,10 @@ def resolve_config(
         merged["skip_serial"] = args.skip_serial
     if args.admit_to_library is not None:
         merged["admit_to_library"] = args.admit_to_library
+    if args.auto_name is not None:
+        merged["auto_name"] = args.auto_name
+    if args.auto_link is not None:
+        merged["auto_link"] = args.auto_link
     if args.recursive is not None:
         merged["recursive"] = args.recursive
     if args.interval_seconds is not None:
@@ -769,9 +821,19 @@ def resolve_config(
         merged.get("delete_originals", False), "delete_originals"
     )
     skip_serial = require_bool(merged.get("skip_serial", False), "skip_serial")
+    auto_name = require_bool(merged.get("auto_name", False), "auto_name")
+    auto_link_raw = merged.get("auto_link", None)
+    if args.auto_name is True and args.auto_link is None:
+        auto_link = True
+    elif auto_link_raw is None:
+        auto_link = auto_name
+    else:
+        auto_link = require_bool(auto_link_raw, "auto_link")
     admit_to_library = require_bool(
         merged.get("admit_to_library", False), "admit_to_library"
     )
+    if auto_name or auto_link:
+        admit_to_library = True
     interval = merged.get("interval_seconds", 5.0)
     try:
         interval_seconds = float(interval)
@@ -798,6 +860,8 @@ def resolve_config(
         skip_serial=skip_serial,
         admit_to_library=admit_to_library,
         admit_python=_as_optional_path(merged.get("admit_python")),
+        auto_name=auto_name,
+        auto_link=auto_link,
         provenance=provenance,
     )
 
@@ -824,6 +888,8 @@ def config_to_dict(cfg: EffectiveConfig) -> dict[str, Any]:
         "delete_originals": cfg.delete_originals,
         "skip_serial": cfg.skip_serial,
         "admit_to_library": cfg.admit_to_library,
+        "auto_name": cfg.auto_name,
+        "auto_link": cfg.auto_link,
     }
 
 
@@ -1055,6 +1121,8 @@ def build_admit_cmd(
     *,
     transcripts: Path,
     dry_run: bool = False,
+    auto_name: bool = False,
+    auto_link: bool = False,
 ) -> list[str]:
     cmd = [
         str(python),
@@ -1067,6 +1135,14 @@ def build_admit_cmd(
     ]
     if dry_run:
         cmd.append("--dry-run")
+    if auto_name:
+        cmd.append("--auto-name")
+    elif auto_link:
+        cmd.append("--no-auto-name")
+    if auto_link:
+        cmd.append("--auto-link")
+    elif auto_name:
+        cmd.append("--no-auto-link")
     return cmd
 
 
@@ -1374,6 +1450,10 @@ def print_review_before_cycle(
         modes.append("transcript copy")
     if cfg.admit_to_library:
         modes.append("admit→library")
+    if cfg.auto_name:
+        modes.append("auto-name")
+    if cfg.auto_link:
+        modes.append("auto-link")
     _log(f"  Watching:    {', '.join(modes) if modes else '(none)'}")
     _log(f"  Candidates:  {len(work)} ({audio_n} audio, {tx_n} transcript)")
     if work:
@@ -1432,7 +1512,13 @@ def maybe_run_admit(
     dry_run: bool,
 ) -> None:
     assert cfg.transcripts is not None
-    cmd = build_admit_cmd(python, transcripts=cfg.transcripts, dry_run=dry_run)
+    cmd = build_admit_cmd(
+        python,
+        transcripts=cfg.transcripts,
+        dry_run=dry_run,
+        auto_name=cfg.auto_name,
+        auto_link=cfg.auto_link,
+    )
     _print_section("Library admit")
     if dry_run:
         _log(f"  Would run: {' '.join(cmd)}")

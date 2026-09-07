@@ -426,6 +426,9 @@ def test_speaker_id_page_wires_voice_match_knobs() -> None:
         "facade.reject(",
         "SpeakerIdVoiceFacade",
         "Load voice suggestions",
+        "Apply auto-identify",
+        "_cb_apply_auto_identify",
+        "auto-named",
     ):
         assert needle in src, needle
 
@@ -452,6 +455,9 @@ def test_speakers_panel_wires_voice_privacy_knobs() -> None:
     src = Path("src/transcriptx/web/ui/settings/speakers_panel.py").read_text()
     for needle in (
         "Local voice matching",
+        "Auto-identify on ingest",
+        "identify_auto_name",
+        "identify_auto_link",
         "voice_privacy_enable",
         "voice_privacy_revoke",
         "voice_privacy_revoke_confirm",

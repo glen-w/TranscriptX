@@ -11,7 +11,7 @@ This page is the mainstream path: you already have a transcript, or you have aud
 1. Open **Import Transcript** and upload the file (JSON, SRT, VTT, TXT, or HTML — [formats](#what-files-you-can-bring)).
 2. Optionally attach the source recording, or place same-stem audio in the mounted recordings folder so playback can link.
 3. Open **Run Analysis**, keep **Balanced**, and run it.
-4. Read **Overview**. If labels still look like `SPEAKER_00`, [name the speakers](../workflows/speaker-identification.md) and re-run.
+4. Read **Overview**. If labels still look like `SPEAKER_00`, [name the speakers](../workflows/speaker-identification.md) and re-run. Host USB ingest can auto-name after admit: [auto-identify.md](auto-identify.md).
 
 Walkthrough with screenshots: [First analysis](../workflows/first-analysis.md).
 

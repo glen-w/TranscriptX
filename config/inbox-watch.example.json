@@ -16,5 +16,7 @@
   "delete_originals": false,
   "skip_serial": false,
   "admit_to_library": false,
-  "admit_python": ""
+  "admit_python": "",
+  "auto_name": false,
+  "auto_link": false
 }
