@@ -353,6 +353,20 @@ def test_profile_save_mutation_order_commits_before_advance() -> None:
     assert "_rerun_ui()" not in page_save
 
 
+def test_speaker_id_exposes_link_target_panel_not_checkbox() -> None:
+    import transcriptx.web.page_modules.speaker_id as mod
+
+    page = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "Also link to longitudinal speaker profile" not in page
+    assert "_render_link_target_panel" in page
+    assert "link_mode" in page
+    page_save = page.split("def _cb_save_name", 1)[1].split("def _cb_ignore_toggle", 1)[
+        0
+    ]
+    assert '"link_mode"' in page_save
+    assert '"profile_id"' in page_save
+
+
 def test_voice_pending_exception_leaves_pending_cleared(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -2010,6 +2024,7 @@ def _stub_fragment_chrome(monkeypatch: pytest.MonkeyPatch, mod) -> None:
     monkeypatch.setattr(mod.st, "caption", lambda *_a, **_k: None)
     monkeypatch.setattr(mod.st, "text_input", lambda *_a, **_k: "")
     monkeypatch.setattr(mod.st, "checkbox", lambda *_a, **_k: False)
+    monkeypatch.setattr(mod.st, "radio", lambda _label, options, **_k: options[0] if options else "none")
     monkeypatch.setattr(mod.st, "button", lambda *_a, **_k: False)
     monkeypatch.setattr(mod.st, "number_input", lambda *_a, **_k: 0)
     monkeypatch.setattr(mod, "_consume_flash", lambda *_a, **_k: None)

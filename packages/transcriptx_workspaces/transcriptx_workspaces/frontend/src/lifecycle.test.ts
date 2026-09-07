@@ -12,7 +12,8 @@ describe("audio element identity across renderer calls", () => {
         <div class="tx-sid-status"></div>
         <aside class="tx-sid-speakers"></aside>
         <input class="tx-sid-name-input" />
-        <input class="tx-sid-link-profile" type="checkbox" />
+        <select class="tx-sid-link-select"></select>
+        <p class="tx-sid-link-chip"></p>
         <button class="tx-sid-save"></button>
         <button class="tx-sid-ignore"></button>
         <button class="tx-sid-prev"></button>

@@ -179,6 +179,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/workflows/corrections.md | Workflow 8 — correct while reading | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
 | docs/workflows/rename-transcript.md | Workflow 9 — rename a transcript | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
 | docs/workflows/speakers.md | Workflow 10 — browse speaker profiles | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
+| docs/workflows/speaker-voice-matching.md | Workflow 11 — enrol-all / pre-load assisted naming | live | user | current | Confirm-to-apply | retain | — | workflows/index | docs/contracts/speaker_profiles_voice_v1.md | yes |
 | docs/backup_and_restore.md | Workspace backup / restore operator guide | live | user | current | — | retain | — | USER_INDEX, index.md | docs/contracts/workspace-backup.md | yes |
 | docs/contracts/workspace-backup.md | Workspace backup contract | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/contracts/workspace-backup.md | yes |
 | docs/runtime/karaoke-playback.md | Theme D karaoke playback | live | user | current | Theme D MVP | retain | — | USER_INDEX, index.md | docs/ROADMAP.md | yes |

@@ -138,6 +138,10 @@ def link_profile_key(transcript_path: str | Path, speaker_id: str) -> str:
     return f"sid:{_transcript_ns(transcript_path)}:link:{speaker_id}"
 
 
+def link_mode_key(transcript_path: str | Path, speaker_id: str) -> str:
+    return f"sid:{_transcript_ns(transcript_path)}:link_mode:{speaker_id}"
+
+
 def voice_pending_key(transcript_path: str | Path) -> str:
     return f"sid:{_transcript_ns(transcript_path)}:voice_pending"
 
@@ -219,6 +223,179 @@ def _voice_display_from_result(result, *, profile_name_lookup) -> dict:
         "detail": getattr(result, "detail", None),
         "candidates": candidates,
     }
+
+
+def _voice_candidates_for_active(
+    transcript_path: str | Path, active_id: str
+) -> list[dict]:
+    display = st.session_state.get(voice_display_key(transcript_path, active_id))
+    if not isinstance(display, dict):
+        return []
+    if display.get("outcome") != "SuggestionAvailable":
+        return []
+    return list(display.get("candidates") or [])
+
+
+def _voice_recipe_hint(*, profile_ctx: TranscriptProfileContext) -> str | None:
+    if not profile_ctx.is_managed:
+        return (
+            "Longitudinal linking is available for managed library transcripts only. "
+            "Local naming still works here."
+        )
+    try:
+        from transcriptx.core.speaker_profiles.layout import speaker_profiles_dir
+        from transcriptx.core.speaker_profiles.voice.activation import ActivationBarrier
+        from transcriptx.core.speaker_profiles.voice.versioning import (
+            FEATURE_GATE_COMPLETE,
+        )
+
+        if not FEATURE_GATE_COMPLETE:
+            return None
+        status = ActivationBarrier(speaker_profiles_dir()).status()
+        if not status.allowed:
+            reason = status.block_reason or "unavailable"
+            if reason in {
+                "privacy_disabled",
+                "privacy_consent_required",
+                "privacy_settings_missing",
+            }:
+                return (
+                    "Voice suggestions need Settings → Speakers: enable voice matching, "
+                    "then Enrol trusted voice for all profiles, then Pre-load voice "
+                    "suggestions. Confirming a suggestion still names the speaker — "
+                    "nothing is applied automatically."
+                )
+            return (
+                "Local voice suggestions are not available yet "
+                f"({reason}). You can still attach this speaker to a profile by name."
+            )
+    except Exception:
+        pass
+    return (
+        "To get voice suggestions on the next transcript: name and link a seed cast, "
+        "then Settings → Speakers → Enrol trusted voice for all profiles, then "
+        "Pre-load voice suggestions. Confirm each suggestion in Speaker ID — "
+        "scores never auto-name."
+    )
+
+
+def _profile_listing_items():
+    from transcriptx.core.speaker_profiles.aggregates import list_profiles
+    from transcriptx.core.speaker_profiles.layout import speaker_profiles_dir
+
+    try:
+        return list_profiles(root=speaker_profiles_dir())
+    except Exception:
+        return []
+
+
+def _live_link_for_active(
+    *,
+    profile_ctx: TranscriptProfileContext,
+    active_id: str,
+):
+    from transcriptx.core.speaker_profiles.service import SpeakerProfileService
+    from transcriptx.services.speaker_profiles.link_targets import (
+        live_link_for_occurrence,
+    )
+
+    if not profile_ctx.is_managed:
+        return None
+    try:
+        svc = SpeakerProfileService()
+        return live_link_for_occurrence(
+            managed_transcript_id=profile_ctx.managed_transcript_id,
+            raw_speaker=active_id,
+            get_live_link=svc.get_live_link,
+        )
+    except Exception:
+        return None
+
+
+def _link_targets_for_active(
+    *,
+    transcript_path: str | Path,
+    active_id: str,
+    draft_name: str,
+    profile_ctx: TranscriptProfileContext,
+):
+    from transcriptx.services.speaker_profiles.link_targets import suggest_link_targets
+
+    return suggest_link_targets(
+        display_name=draft_name,
+        managed=profile_ctx.is_managed,
+        listing=_profile_listing_items(),
+        live_link=_live_link_for_active(profile_ctx=profile_ctx, active_id=active_id),
+        voice_candidates=_voice_candidates_for_active(transcript_path, active_id),
+        recipe_hint=_voice_recipe_hint(profile_ctx=profile_ctx),
+    )
+
+
+def _target_token(target) -> str:
+    if target.mode == "existing" and target.profile_id:
+        return f"existing:{target.profile_id}"
+    return str(target.mode)
+
+
+def _render_link_target_panel(
+    *,
+    transcript_path: str | Path,
+    active_id: str,
+    draft_name: str,
+    profile_ctx: TranscriptProfileContext,
+) -> None:
+    """Explicit profile destination (create / attach / name only)."""
+    from transcriptx.web.navigation import navigate_to_speaker_profile
+
+    targets = _link_targets_for_active(
+        transcript_path=transcript_path,
+        active_id=active_id,
+        draft_name=draft_name,
+        profile_ctx=profile_ctx,
+    )
+    tokens = [_target_token(t) for t in targets.targets]
+    labels = {_target_token(t): t.label for t in targets.targets}
+    default = targets.default_target()
+    default_token = _target_token(default) if default is not None else "none"
+    mode_key = link_mode_key(transcript_path, active_id)
+    if st.session_state.get(mode_key) not in tokens:
+        st.session_state[mode_key] = default_token if default_token in tokens else (
+            tokens[0] if tokens else "none"
+        )
+    if targets.recipe_hint:
+        st.caption(targets.recipe_hint)
+    chosen = st.radio(
+        "Link to speaker profile",
+        options=tokens,
+        format_func=lambda tok: labels.get(tok, tok),
+        key=mode_key,
+        help=widget_help(
+            "Choose the longitudinal person this diarized speaker should attach to. "
+            "Create new starts a profile; Name only updates this transcript. "
+            "Voice suggestions are assistive — confirm to apply."
+        ),
+    )
+    selected = next(
+        (t for t in targets.targets if _target_token(t) == chosen),
+        default,
+    )
+    if selected is not None:
+        if selected.duplicate_name_warning:
+            st.warning(
+                "A profile with this display name already exists. "
+                "Attach to it unless you intend to create a duplicate."
+            )
+        elif selected.detail:
+            st.caption(selected.detail)
+        if selected.mode == "existing" and selected.profile_id:
+            if st.button(
+                "Open this profile",
+                key=widget_key(transcript_path, f"open_profile_{active_id}"),
+                icon=ic.OPEN_IN_NEW,
+            ):
+                st.session_state["speakers_selected_profile"] = selected.profile_id
+                navigate_to_speaker_profile(selected.profile_id)
+
 
 
 # ── flash ─────────────────────────────────────────────────────────────────────
@@ -827,9 +1004,17 @@ def _cb_save_name(transcript_path: str, expected_speaker_id: str) -> None:
     name = str(
         st.session_state.get(name_widget_key(transcript_path, active_id)) or ""
     ).strip()
-    link_profile = bool(
-        st.session_state.get(link_profile_key(transcript_path, active_id), False)
-    )
+    token = str(
+        st.session_state.get(link_mode_key(transcript_path, active_id)) or ""
+    ).strip()
+    link_mode = "none"
+    profile_id = None
+    if token.startswith("existing:"):
+        link_mode = "existing"
+        profile_id = token.split(":", 1)[1].strip() or None
+    elif token in {"create", "none"}:
+        link_mode = token
+    link_profile = link_mode in {"create", "existing"}
     controller = get_shared_speaker_studio_controller()
     map_state = controller.get_mapping_status(transcript_path)
     service = _get_action_service()
@@ -845,7 +1030,12 @@ def _cb_save_name(transcript_path: str, expected_speaker_id: str) -> None:
             expected_mapping_revision=mapping_revision_from_state(
                 map_state.speaker_map, map_state.ignored_speakers
             ),
-            payload={"display_name": name, "link_profile": link_profile},
+            payload={
+                "display_name": name,
+                "link_profile": link_profile,
+                "link_mode": link_mode,
+                "profile_id": profile_id,
+            },
         )
     )
     st.session_state["sid_action_seq"] = ack.action_seq
@@ -1679,6 +1869,12 @@ def _render_ccv2_speaker_workspace(
         for s in visible_segs
     ]
     last_ack = st.session_state.get(_ccv2_last_ack_key(transcript_path))
+    link_set = _link_targets_for_active(
+        transcript_path=transcript_path,
+        active_id=active_id,
+        draft_name=current_name,
+        profile_ctx=profile_ctx,
+    )
     data = build_workspace_data(
         transcript_path=str(transcript_path),
         speaker_ids=speaker_ids,
@@ -1695,6 +1891,8 @@ def _render_ccv2_speaker_workspace(
         last_ack=last_ack if isinstance(last_ack, dict) else None,
         samples_total=len(active_segs),
         samples_page_size=_LINES_PER_PAGE,
+        link_targets=link_set.to_workspace_payload(),
+        recipe_hint=link_set.recipe_hint,
     )
 
     result_key = stable_workspace_key(str(Path(transcript_path).resolve()))
@@ -1938,22 +2136,17 @@ def _speaker_id_workspace_fragment(
                 "Local display name for this diarization speaker key in the transcript map."
             ),
         )
-    if is_managed_for_profiles:
-        st.checkbox(
-            "Also link to longitudinal speaker profile",
-            value=True,
-            key=link_profile_key(transcript_path, active_id),
-            help=widget_help(
-                (
-                    "Creates a durable cross-transcript profile link for this managed "
-                    "library speaker. Ad-hoc / run-output JSON supports local naming only."
-                )
-            ),
-        )
-    else:
-        st.caption(
-            "Longitudinal profile linking is available for managed library "
-            "transcripts only. Local naming still works here."
+    draft_name = str(
+        st.session_state.get(name_widget_key(transcript_path, active_id))
+        or current_name
+        or ""
+    )
+    if not is_ignored:
+        _render_link_target_panel(
+            transcript_path=transcript_path,
+            active_id=active_id,
+            draft_name=draft_name,
+            profile_ctx=profile_ctx,
         )
     with col_save:
         st.button(

@@ -94,9 +94,12 @@ def _render_bulk_voice_ops() -> None:
 
     st.subheader("Library voice batch")
     st.caption(
-        "Explicit batch ops for Speaker Identification. Enrol trusted voice for "
-        "active profiles first so suggestion pre-load has a reference corpus; "
-        "an empty corpus still analyses but usually returns no match."
+        "Two-step recipe for assisted naming on later transcripts: "
+        "(1) Enrol trusted voice for all profiles builds the reference corpus from "
+        "confirmed links; (2) Pre-load voice suggestions samples every managed "
+        "speaker into caches used by Speaker Identification. "
+        "Enable voice matching above first. Privacy opt-in enrols nothing. "
+        "Suggestions are confirm-to-apply — scores never auto-name."
     )
 
     pending_enrol = st.session_state.pop(_ENROL_RESULT_KEY, None)

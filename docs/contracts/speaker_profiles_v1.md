@@ -320,6 +320,10 @@ Streamlit.
 - Migrate-on-read
 - Rename-transaction coupling for link keys
 
+GUI ranking of name/alias/voice **candidates** at Speaker Identification is
+display-only. Writes remain confirmed live links (`create_profile_and_link`,
+`link_existing_profile`, `relink`). Voice scores never auto-confirm.
+
 ---
 
 ## Phase 1.6 profile analytics pack

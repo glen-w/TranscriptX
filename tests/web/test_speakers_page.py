@@ -302,3 +302,24 @@ def test_surname_sort_key_orders_by_surname() -> None:
     alan = _list_item(profile_id="b", name="Alan Turing")
     ordered = sorted([alan, ada], key=mod._surname_sort_key)
     assert [i.profile_id for i in ordered] == ["a", "b"]
+
+
+@pytest.mark.unit
+def test_item_matches_search_name_alias_and_notes() -> None:
+    import transcriptx.web.page_modules.speakers as mod
+
+    item = _list_item(name="Maya Chen")
+    item = ProfileListItem(
+        profile_id=item.profile_id,
+        display_name=item.display_name,
+        status=item.status,
+        merged_into_profile_id=item.merged_into_profile_id,
+        updated_at=item.updated_at,
+        link_count=item.link_count,
+        aliases=("Facilitator",),
+    )
+    assert mod._item_matches_search(item, "maya")
+    assert mod._item_matches_search(item, "facilitator")
+    assert not mod._item_matches_search(item, "jordan")
+    assert mod._item_matches_search(item, "studio", extra="records from studio 12")
+    assert not mod._item_matches_search(item, "studio")

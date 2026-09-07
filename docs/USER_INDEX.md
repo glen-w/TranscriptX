@@ -32,6 +32,7 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 | [Correct while reading](workflows/corrections.md) | Propose/apply in Transcript |
 | [Rename a transcript](workflows/rename-transcript.md) | Clearer library name |
 | [Browse speaker profiles](workflows/speakers.md) | Longitudinal speaker pages |
+| [Assist naming with voice](workflows/speaker-voice-matching.md) | Enrol-all / Pre-load assisted naming |
 
 ## Install and run
 

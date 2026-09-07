@@ -156,13 +156,17 @@ include this extra. Stage 8 lifecycle gate is **open**
 privacy consent via `ActivationBarrier` (voice privacy defaults off).
 
 Privacy consent **does not** enrol a reference corpus. Confirmed speaker links
-alone are not voice evidence. Until you run Speakers detail → **Enrol trusted
-voice from confirmed links** (writes under `speaker_profiles/voice/samples/`,
-`embeddings/`, `vectors/`), analyse can succeed and still return no suggestion
-(`NoReliableMatch`). That is expected with an empty corpus — not a SpeechBrain
-failure. Enrol walks confirmed links up to the Settings → Storage
-**Max confirmed links per voice enrol** cap
-(`operator.voice_settings.json`, default 40).
+alone are not voice evidence. Enrol trusted voice from confirmed links — either
+per profile on Speakers → Voice, or library-wide **Enrol trusted voice for all
+profiles** on Settings → Speakers — so files exist under
+`speaker_profiles/voice/samples/`, `embeddings/`, and `vectors/`. Until then,
+analyse can succeed and still return no suggestion (`NoReliableMatch`). That is
+expected with an empty corpus — not a SpeechBrain failure. Enrol walks confirmed
+links up to **Max confirmed links per voice enrol**
+(`operator.voice_settings.json`, default 40). After enrol, **Pre-load voice
+suggestions** (or Speaker ID **Analyse all speakers**) fills query caches.
+Confirm each suggestion in Speaker Identification; nothing is auto-named.
+See [Assist naming with voice](../workflows/speaker-voice-matching.md).
 
 | Field | Value |
 |-------|--------|
@@ -180,4 +184,4 @@ Never silently swap embedding models; a change creates a new `model_generation_i
 - **spaCy `OSError` model not found** — run `python -m spacy download <model>` in the container or allow auto-download.
 - **Out of memory** — `en_core_web_trf`, large sentence-transformers, and transformer sentiment/emotion need more RAM; stay on `md` + MiniLM if constrained.
 - **Strict env** — `TRANSCRIPTX_CONFIG_STRICT=1` rejects unknown `TRANSCRIPTX_*` keys; use only documented names.
-- **Voice match runs but finds no match** — confirm eligible embeddings exist under `speaker_profiles/voice/`; if only `active_generation.json` / `generations/` are present, enrol trusted voice from confirmed links first. Streamlit’s file watcher may probe SpeechBrain optional integrations (`k2`, `flair`); the web app collapses that into one WARNING and keeps full traces at DEBUG — unrelated to match quality.
+- **Voice match runs but finds no match** — confirm eligible embeddings exist under `speaker_profiles/voice/`; if only `active_generation.json` / `generations/` are present, run **Enrol trusted voice for all profiles** (Settings → Speakers) or per-profile enrol first, then Pre-load. Streamlit’s file watcher may probe SpeechBrain optional integrations (`k2`, `flair`); the web app collapses that into one WARNING and keeps full traces at DEBUG — unrelated to match quality.

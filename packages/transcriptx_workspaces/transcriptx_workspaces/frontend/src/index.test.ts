@@ -4,10 +4,28 @@ import { __test } from "./index";
 describe("Speaker ID workspace lifecycle helpers", () => {
   it("exports stable protocol/build ids", () => {
     expect(__test.PROTOCOL_VERSION).toBe("1");
-    expect(__test.FRONTEND_BUILD_ID).toBe("tx-workspaces-0.1.0");
+    expect(__test.FRONTEND_BUILD_ID).toBe("tx-workspaces-0.2.0");
   });
 
-  it("uses authoritative active speaker for stale checks, not optimistic target", () => {
+  it("parses link target tokens for save_name", () => {
+    expect(__test.parseLinkToken("none")).toEqual({
+      link_mode: "none",
+      profile_id: null,
+      link_profile: false,
+    });
+    expect(__test.parseLinkToken("create")).toEqual({
+      link_mode: "create",
+      profile_id: null,
+      link_profile: true,
+    });
+    expect(__test.parseLinkToken("existing:p-maya")).toEqual({
+      link_mode: "existing",
+      profile_id: "p-maya",
+      link_profile: true,
+    });
+  });
+
+  it("keeps expected speaker as the current active id", () => {
     const data = {
       active_speaker_id: "SPEAKER_00",
     } as any;

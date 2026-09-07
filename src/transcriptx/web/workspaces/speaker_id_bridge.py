@@ -19,7 +19,7 @@ from transcriptx.web.workspaces.clip_transport import (
 try:
     from transcriptx_workspaces import FRONTEND_BUILD_ID
 except Exception:  # pragma: no cover - package may be optional during import
-    FRONTEND_BUILD_ID = "tx-workspaces-0.1.0"
+    FRONTEND_BUILD_ID = "tx-workspaces-0.2.0"
 
 # Prefetch budgets (docs/dev/theme_c_workspaces_ccv2.md)
 MAX_CLIPS_PER_WARM = 8
@@ -67,6 +67,8 @@ def build_workspace_data(
     last_ack: Optional[Mapping[str, Any]] = None,
     samples_total: Optional[int] = None,
     samples_page_size: int = 10,
+    link_targets: Sequence[Mapping[str, Any]] | None = None,
+    recipe_hint: str | None = None,
 ) -> dict[str, Any]:
     """Build JSON-serialisable ``data=`` for the Speaker ID CCv2 component."""
     mapping_rev = mapping_revision_from_state(speaker_map, ignored_speakers)
@@ -138,6 +140,8 @@ def build_workspace_data(
         "samples": sample_rows,
         "draft_name": draft_name,
         "link_profile_allowed": link_profile_allowed,
+        "link_targets": [dict(row) for row in (link_targets or ())],
+        "recipe_hint": recipe_hint or "",
         "capabilities": {
             "ffmpeg": bool(controller.ffmpeg_available()),
             "profile_link": link_profile_allowed,
