@@ -6,6 +6,10 @@ module and logs a full WARNING traceback when those lazy imports fail.
 
 This filter keeps one summary WARNING and moves per-module stack traces to
 DEBUG on the ``transcriptx`` logger.
+
+SpeechBrain 1.0 also emits ``UserWarning`` from deprecated shim modules when
+the same watcher reads ``__file__``. Those are not filtered here (harmless;
+we do not import the old paths). Operator note: ``docs/runtime/models.md``.
 """
 
 from __future__ import annotations

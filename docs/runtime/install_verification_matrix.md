@@ -21,7 +21,7 @@
 |----|--------|-------|
 | macOS (Apple Silicon / Intel) | Supported-with-caveats | Prefer **Docker CPU** for predictable installs. Native Apple **MPS** is not universally validated for every optional model — see [installation.md](installation.md). If MPS init or model execution fails, use `TRANSCRIPTX_FORCE_CPU=1`. Host `.[bertopic]`/`[full]` may fail when `llvmlite` wheels are unavailable; Docker `image_pip_check` remains the fuller-stack image proof. |
 | Linux (x86_64 / aarch64) | Supported | GPU via NVIDIA toolkit when available |
-| Windows | Best-effort | Native Windows is not a primary CI target; WSL2 + Docker recommended |
+| Windows | Best-effort | Native Windows is not a primary CI target; WSL2 + Docker recommended. Native `inbox-watch` / `whispermlx-missing` on Windows is **not** a 1.0 cell (1.x theme **G3**). |
 
 ## Install paths
 

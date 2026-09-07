@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -127,6 +128,166 @@ class TestDiscoverMp3s:
         found = wm.discover_mp3s(tmp_path)
         names = {p.name for p in found}
         assert names == {"a.mp3", "B.MP3", "my recording.mp3"}
+
+
+@pytest.mark.unit
+class TestDiscoverWavs:
+    def test_finds_wav_files(self, wm, tmp_path: Path):
+        (tmp_path / "a.wav").write_bytes(b"x")
+        (tmp_path / "B.WAV").write_bytes(b"x")
+        (tmp_path / "clip.mp3").write_bytes(b"x")
+
+        found = wm.discover_wavs(tmp_path)
+        names = {p.name for p in found}
+        assert names == {"a.wav", "B.WAV"}
+
+
+@pytest.mark.unit
+class TestConvertWavs:
+    def _cfg(self, wm, tmp_path: Path, source: Path, wav_backup: Path):
+        return wm.EffectiveConfig(
+            source=source,
+            transcripts=tmp_path / "transcripts",
+            env_file=tmp_path / "env",
+            whispermlx=tmp_path / "bin",
+            model="large-v3",
+            language="en",
+            diarize=False,
+            output_format="json",
+            use_output_format_flag=False,
+            clean_non_json=True,
+            extra_whisper_args=[],
+            pass_hf_token_arg=False,
+            fuzzy_json_match=False,
+            follow_output=True,
+            wav_backup=wav_backup,
+            convert_wavs=True,
+        )
+
+    def test_convert_and_move_wav(self, wm, tmp_path: Path, monkeypatch):
+        source = tmp_path / "recordings"
+        wav_backup = tmp_path / "wav"
+        source.mkdir()
+        wav = source / "clip.wav"
+        wav.write_bytes(b"wav-bytes")
+
+        def ok_ffmpeg(cmd, **kwargs):
+            dest = Path(cmd[-1])
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(b"mp3")
+            return subprocess.CompletedProcess(cmd, 0)
+
+        monkeypatch.setattr(wm, "run_ffmpeg", ok_ffmpeg)
+        cfg = self._cfg(wm, tmp_path, source, wav_backup)
+        stats = wm.RunStats()
+        stems = wm.convert_wavs_in_source(
+            cfg, ffmpeg=Path("ffmpeg"), force=False, dry_run=False, stats=stats
+        )
+
+        assert stems == {"clip"}
+        assert stats.wav_converted == 1
+        assert (source / "clip.mp3").read_bytes() == b"mp3"
+        assert (wav_backup / "clip.wav").read_bytes() == b"wav-bytes"
+        assert not wav.exists()
+
+    def test_skips_when_mp3_exists(self, wm, tmp_path: Path, monkeypatch):
+        source = tmp_path / "recordings"
+        wav_backup = tmp_path / "wav"
+        source.mkdir()
+        (source / "clip.wav").write_bytes(b"wav")
+        (source / "clip.mp3").write_bytes(b"old")
+
+        def boom(*args, **kwargs):
+            raise AssertionError("ffmpeg should not run")
+
+        monkeypatch.setattr(wm, "run_ffmpeg", boom)
+        cfg = self._cfg(wm, tmp_path, source, wav_backup)
+        stats = wm.RunStats()
+        stems = wm.convert_wavs_in_source(
+            cfg, ffmpeg=Path("ffmpeg"), force=False, dry_run=False, stats=stats
+        )
+
+        assert stems == set()
+        assert stats.wav_skipped == 1
+        assert (source / "clip.wav").exists()
+
+    def test_dry_run_would_convert_and_move(self, wm, tmp_path: Path, capsys):
+        source = tmp_path / "recordings"
+        wav_backup = tmp_path / "wav"
+        source.mkdir()
+        (source / "clip.wav").write_bytes(b"wav")
+
+        cfg = self._cfg(wm, tmp_path, source, wav_backup)
+        stats = wm.RunStats()
+        stems = wm.convert_wavs_in_source(
+            cfg, ffmpeg=Path("ffmpeg"), force=False, dry_run=True, stats=stats
+        )
+
+        assert stems == {"clip"}
+        assert stats.would_convert_wavs == 1
+        out = capsys.readouterr().out
+        assert "Would convert:" in out
+        assert "Would move WAV:" in out
+        assert (source / "clip.wav").exists()
+
+    def test_main_converts_wav_then_transcribes(
+        self, wm, tmp_path: Path, monkeypatch
+    ):
+        source = tmp_path / "recordings"
+        transcripts = tmp_path / "transcripts"
+        wav_backup = tmp_path / "wav"
+        source.mkdir()
+        transcripts.mkdir()
+        (source / "clip.wav").write_bytes(b"wav")
+
+        env_file = tmp_path / "whisperx.env"
+        env_file.write_text("HF_TOKEN=hf_test_token\n", encoding="utf-8")
+        fake_bin = tmp_path / "whispermlx"
+        fake_bin.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        fake_bin.chmod(0o755)
+        monkeypatch.setattr(wm, "CONFIG_PATH", tmp_path / "noconfig.json")
+
+        def ok_ffmpeg(cmd, **kwargs):
+            dest = Path(cmd[-1])
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(b"mp3")
+            return subprocess.CompletedProcess(cmd, 0)
+
+        proc = MagicMock()
+        proc.returncode = 0
+
+        def _run_side_effect(cmd, **kwargs):
+            if cmd[0] == "ffmpeg" or (len(cmd) > 1 and "ffmpeg" in cmd[0]):
+                return ok_ffmpeg(cmd, **kwargs)
+            out_idx = cmd.index("--output_dir") + 1
+            temp_dir = Path(cmd[out_idx])
+            (temp_dir / "clip.json").write_text('{"segments": []}', encoding="utf-8")
+            return proc
+
+        with (
+            patch.object(wm, "probe_output_format_support", return_value=True),
+            patch.object(wm.subprocess, "run", side_effect=_run_side_effect),
+        ):
+            rc = wm.main(
+                [
+                    "--source",
+                    str(source),
+                    "--transcripts",
+                    str(transcripts),
+                    "--wav-backup",
+                    str(wav_backup),
+                    "--env-file",
+                    str(env_file),
+                    "--whispermlx",
+                    str(fake_bin),
+                    "--no-diarize",
+                ]
+            )
+
+        assert rc == 0
+        assert (source / "clip.mp3").is_file()
+        assert (wav_backup / "clip.wav").read_bytes() == b"wav"
+        assert (transcripts / "clip.json").is_file()
 
 
 @pytest.mark.unit
@@ -256,6 +417,7 @@ class TestDryRun:
                     "--whispermlx",
                     str(fake_bin),
                     "--no-diarize",
+                    "--no-convert-wavs",
                     "--dry-run",
                 ]
             )
@@ -292,6 +454,7 @@ class TestDryRun:
                     "--whispermlx",
                     str(fake_bin),
                     "--no-diarize",
+                    "--no-convert-wavs",
                     "--dry-run",
                 ]
             )
@@ -688,6 +851,7 @@ class TestDryRunSummaryLists:
                     "--whispermlx",
                     str(fake_bin),
                     "--no-diarize",
+                    "--no-convert-wavs",
                     "--dry-run",
                 ]
             )
@@ -819,6 +983,7 @@ class TestCleanFailedSummary:
 class TestPortableConfig:
     def test_portable_defaults_do_not_trigger_processing(self, wm, monkeypatch):
         monkeypatch.setattr(wm, "CONFIG_PATH", Path("/nonexistent/config.json"))
+        monkeypatch.setattr(wm, "bootstrap_repo_env", lambda _root: None)
         monkeypatch.delenv("TRANSCRIPTX_RECORDINGS_DIR", raising=False)
         monkeypatch.delenv("TRANSCRIPTX_TRANSCRIPTS_DIR", raising=False)
         cfg = wm.resolve_config(wm.parse_args([]))

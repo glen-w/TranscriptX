@@ -479,8 +479,34 @@ def test_speakers_panel_wires_voice_privacy_knobs() -> None:
         "voice_bulk_enrol_all_btn",
         "voice_bulk_preload_btn",
         "_render_bulk_voice_ops",
+        "disabled_voice_matching_info",
+        "on_click=_cb_voice_privacy_enable",
+        "status.allowed",
     ):
         assert needle in src, needle
+
+
+@pytest.mark.unit
+def test_disabled_voice_matching_info_does_not_contradict_file_authority() -> None:
+    from transcriptx.web.ui.settings.speakers_panel import disabled_voice_matching_info
+
+    revoked = disabled_voice_matching_info(
+        revoked_at="2026-09-07T13:14:30Z", settings_file_exists=True
+    )
+    assert "consent revoked" in revoked
+    assert "TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED=1" not in revoked
+
+    existing = disabled_voice_matching_info(
+        revoked_at=None, settings_file_exists=True
+    )
+    assert "does not override" in existing
+    assert "disabled (default)" not in existing
+
+    missing = disabled_voice_matching_info(
+        revoked_at=None, settings_file_exists=False
+    )
+    assert "no consent file" in missing
+    assert "TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED=1" in missing
 
 
 @pytest.mark.unit

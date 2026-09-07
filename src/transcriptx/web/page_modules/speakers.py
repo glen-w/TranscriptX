@@ -804,8 +804,11 @@ def _render_voice_controls(
     with st.expander("Voice evidence", expanded=False):
         if not status.allowed:
             st.caption(
-                "Local voice matching is not active "
-                f"({status.block_reason or 'unavailable'})."
+                status.detail
+                or (
+                    "Local voice matching is not active "
+                    f"({status.block_reason or 'unavailable'})."
+                )
             )
             return
 

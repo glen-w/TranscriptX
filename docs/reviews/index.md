@@ -8,5 +8,6 @@ These pages are tracked and appear under **Developers** in the Sphinx guide (`ma
 :maxdepth: 1
 
 architecture-review-2026-09-02
+host-side-windows-linux-compat-2026-09-03
 sloc-estimate-2026-09-02
 ```

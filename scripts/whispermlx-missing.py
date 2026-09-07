@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Batch transcription orchestrator for whispermlx — process MP3s missing JSON transcripts.
+Batch transcription orchestrator for whispermlx — convert WAVs in source, then process
+MP3s missing JSON transcripts.
 
 Install:
     install -m 755 scripts/whispermlx-missing.py ~/.local/bin/whispermlx-missing
@@ -38,6 +39,13 @@ Dry run:
 
 Dry-run uses lightweight validation (source/transcripts paths and source folder only).
 It does not require env file, HF_TOKEN, or a working whispermlx binary.
+
+WAV conversion (default on when ``convert_wavs`` is true):
+    Before transcription, convert ``.wav`` files in --source to 16 kHz mono 64k MP3 in the
+    same folder (same ffmpeg settings as inbox-watch), then move the WAV into
+    ``--wav-backup`` (default: TRANSCRIPTX_WAV_BACKUP_DIR / data/backups/wav).
+    Skips when an MP3 with the same stem already exists (use ``--force`` to replace).
+    Disable with ``--no-convert-wavs`` or JSON ``"convert_wavs": false``.
 
 Already-processed detection (flat folders, JSON only):
     For MP3 stem ``foo``, skip if any of these exist in --transcripts:
@@ -126,8 +134,19 @@ KNOWN_CONFIG_KEYS = frozenset(
         "fuzzy_json_match",
         "skip_serial",
         "follow_output",
+        "ffmpeg",
+        "wav_backup",
+        "convert_wavs",
     }
 )
+
+WAV_EXTENSIONS = frozenset({".wav"})
+MP3_EXTENSIONS = frozenset({".mp3"})
+
+FFMPEG_CHANNELS = "1"
+FFMPEG_SAMPLE_RATE = "16000"
+FFMPEG_CODEC = "libmp3lame"
+FFMPEG_BITRATE = "64k"
 
 _EXACT_SUFFIXES = (
     ".json",
@@ -157,6 +176,10 @@ class RunStats:
     skipped: int = 0
     skipped_serial: int = 0
     failed: int = 0
+    wav_converted: int = 0
+    wav_skipped: int = 0
+    wav_failed: int = 0
+    would_convert_wavs: int = 0
     would_process_names: list[str] = field(default_factory=list)
     skipped_serial_names: list[str] = field(default_factory=list)
     failed_items: list[FailedItem] = field(default_factory=list)
@@ -168,6 +191,8 @@ class ConfigProvenance:
     transcripts: ConfigSource = "unset"
     env_file: ConfigSource = "unset"
     whispermlx: ConfigSource = "unset"
+    ffmpeg: ConfigSource = "unset"
+    wav_backup: ConfigSource = "unset"
 
 
 @dataclass
@@ -187,12 +212,18 @@ class EffectiveConfig:
     fuzzy_json_match: bool
     skip_serial: bool = False
     follow_output: bool = True
+    ffmpeg: Path | None = None
+    wav_backup: Path | None = None
+    convert_wavs: bool = True
     provenance: ConfigProvenance = field(default_factory=ConfigProvenance)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Transcribe MP3s that are missing JSON transcripts (whispermlx batch).",
+        description=(
+            "Convert WAVs in source to MP3 (optional), then transcribe MP3s missing "
+            "JSON transcripts (whispermlx batch)."
+        ),
     )
     parser.add_argument(
         "--config",
@@ -212,6 +243,28 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--env-file", dest="env_file", type=Path, default=None)
     parser.add_argument("--whispermlx", dest="whispermlx", type=Path, default=None)
+    parser.add_argument("--ffmpeg", type=Path, default=None)
+    parser.add_argument(
+        "--wav-backup",
+        dest="wav_backup",
+        type=Path,
+        default=None,
+        help="WAV archive folder after convert (default: TRANSCRIPTX_WAV_BACKUP_DIR).",
+    )
+    convert_group = parser.add_mutually_exclusive_group()
+    convert_group.add_argument(
+        "--convert-wavs",
+        dest="convert_wavs",
+        action="store_true",
+        default=None,
+        help="Convert .wav in --source to MP3, then move WAV to --wav-backup (default).",
+    )
+    convert_group.add_argument(
+        "--no-convert-wavs",
+        dest="convert_wavs",
+        action="store_false",
+        help="Do not convert or move WAV files in --source.",
+    )
     parser.add_argument("--model", default=None)
     parser.add_argument("--language", default=None)
     parser.add_argument(
@@ -386,6 +439,8 @@ def portable_defaults(
     provenance.transcripts = "portable"
     defaults["env_file"] = str(repo_root / "whisperx.env")
     provenance.env_file = "portable"
+    defaults["wav_backup"] = str(repo_root / "data" / "backups" / "wav")
+    provenance.wav_backup = "portable"
 
     whispermlx_bin = shutil.which("whispermlx")
     if whispermlx_bin:
@@ -443,6 +498,20 @@ def env_derived_config() -> tuple[dict[str, Any], ConfigProvenance]:
         derived["skip_serial"] = _parse_bool_env(
             os.environ.get("WHISPERMLX_SKIP_SERIAL"), default=False
         )
+    if os.environ.get("WHISPERMLX_CONVERT_WAVS", "").strip():
+        derived["convert_wavs"] = _parse_bool_env(
+            os.environ.get("WHISPERMLX_CONVERT_WAVS"), default=True
+        )
+
+    ffmpeg = os.environ.get("WHISPERMLX_FFMPEG", "").strip()
+    if ffmpeg:
+        derived["ffmpeg"] = ffmpeg
+        provenance.ffmpeg = "env"
+
+    wav_backup = os.environ.get("TRANSCRIPTX_WAV_BACKUP_DIR", "").strip()
+    if wav_backup:
+        derived["wav_backup"] = wav_backup
+        provenance.wav_backup = "env"
 
     return derived, provenance
 
@@ -461,10 +530,11 @@ def base_config_dict() -> dict[str, Any]:
         "fuzzy_json_match": False,
         "skip_serial": False,
         "follow_output": True,
+        "convert_wavs": True,
     }
 
 
-_PATH_KEYS = ("source", "transcripts", "env_file", "whispermlx")
+_PATH_KEYS = ("source", "transcripts", "env_file", "whispermlx", "ffmpeg", "wav_backup")
 
 
 def _apply_path_layer(
@@ -532,6 +602,9 @@ def config_to_dict(cfg: EffectiveConfig) -> dict[str, Any]:
         "fuzzy_json_match": cfg.fuzzy_json_match,
         "skip_serial": cfg.skip_serial,
         "follow_output": cfg.follow_output,
+        "ffmpeg": str(cfg.ffmpeg) if cfg.ffmpeg else None,
+        "wav_backup": str(cfg.wav_backup) if cfg.wav_backup else None,
+        "convert_wavs": cfg.convert_wavs,
     }
 
 
@@ -609,6 +682,14 @@ def resolve_config(
         merged["clean_non_json"] = False
     if args.quiet:
         merged["follow_output"] = False
+    if args.ffmpeg is not None:
+        merged["ffmpeg"] = str(args.ffmpeg)
+        provenance.ffmpeg = "cli"
+    if args.wav_backup is not None:
+        merged["wav_backup"] = str(args.wav_backup)
+        provenance.wav_backup = "cli"
+    if args.convert_wavs is not None:
+        merged["convert_wavs"] = args.convert_wavs
 
     source = Path(merged["source"]).expanduser() if merged.get("source") else None
     transcripts = (
@@ -647,8 +728,20 @@ def resolve_config(
         fuzzy_json_match=require_bool(merged["fuzzy_json_match"], "fuzzy_json_match"),
         skip_serial=require_bool(merged.get("skip_serial", False), "skip_serial"),
         follow_output=require_bool(merged["follow_output"], "follow_output"),
+        ffmpeg=_as_optional_path(merged.get("ffmpeg")),
+        wav_backup=_as_optional_path(merged.get("wav_backup")),
+        convert_wavs=require_bool(merged.get("convert_wavs", True), "convert_wavs"),
         provenance=provenance,
     )
+
+
+def _as_optional_path(value: Any) -> Path | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    return Path(text).expanduser()
 
 
 def print_effective_config(cfg: EffectiveConfig) -> None:
@@ -708,9 +801,224 @@ def discover_mp3s(source_dir: Path) -> list[Path]:
     if not source_dir.is_dir():
         return []
     mp3s = [
-        p for p in source_dir.iterdir() if p.is_file() and p.suffix.lower() == ".mp3"
+        p
+        for p in source_dir.iterdir()
+        if p.is_file() and p.suffix.lower() in MP3_EXTENSIONS
     ]
     return sorted(mp3s, key=lambda p: p.name.lower())
+
+
+def discover_wavs(source_dir: Path) -> list[Path]:
+    if not source_dir.is_dir():
+        return []
+    wavs = [
+        p
+        for p in source_dir.iterdir()
+        if p.is_file() and p.suffix.lower() in WAV_EXTENSIONS
+    ]
+    return sorted(wavs, key=lambda p: p.name.lower())
+
+
+def is_same_or_under(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except (ValueError, OSError):
+        return False
+
+
+def find_stem_match(
+    directory: Path, stem: str, extensions: frozenset[str]
+) -> Path | None:
+    if not directory.is_dir():
+        return None
+    stem_l = stem.lower()
+    for candidate in directory.iterdir():
+        if not candidate.is_file():
+            continue
+        if candidate.suffix.lower() not in extensions:
+            continue
+        if candidate.stem.lower() == stem_l:
+            return candidate
+    return None
+
+
+def unique_backup_path(directory: Path, src: Path) -> Path:
+    suffix = src.suffix.lower() or src.suffix
+    dest = directory / f"{src.stem}{suffix}"
+    counter = 1
+    while dest.exists():
+        dest = directory / f"{src.stem}_{counter}{suffix}"
+        counter += 1
+        if counter > 1000:
+            raise OSError(f"too many name conflicts in {directory} for {src.stem}")
+    return dest
+
+
+def build_ffmpeg_cmd(ffmpeg: str | Path, src: Path, dest: Path) -> list[str]:
+    return [
+        str(ffmpeg),
+        "-nostdin",
+        "-y",
+        "-i",
+        str(src),
+        "-ac",
+        FFMPEG_CHANNELS,
+        "-ar",
+        FFMPEG_SAMPLE_RATE,
+        "-c:a",
+        FFMPEG_CODEC,
+        "-b:a",
+        FFMPEG_BITRATE,
+        "-f",
+        "mp3",
+        str(dest),
+    ]
+
+
+def find_ffmpeg(explicit: Path | None) -> Path | None:
+    if explicit is not None:
+        return explicit
+    found = shutil.which("ffmpeg")
+    return Path(found) if found else None
+
+
+def run_ffmpeg(cmd: Sequence[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(cmd, check=False)
+
+
+def _human_bytes(n: int) -> str:
+    if n >= 1024 * 1024 * 1024:
+        return f"{n / (1024 * 1024 * 1024):.1f} GiB"
+    if n >= 1024 * 1024:
+        return f"{n / (1024 * 1024):.1f} MiB"
+    if n >= 1024:
+        return f"{n / 1024:.1f} KiB"
+    return f"{n} B"
+
+
+def validate_wav_conversion_paths(cfg: EffectiveConfig) -> None:
+    if not cfg.convert_wavs:
+        return
+    if cfg.wav_backup is None:
+        raise SystemExit(
+            "ERROR: wav_backup is required when convert_wavs is on "
+            "(set --wav-backup, TRANSCRIPTX_WAV_BACKUP_DIR, or config)."
+        )
+    assert cfg.source is not None
+    source = cfg.source
+    wav_backup = cfg.wav_backup
+    if source.resolve() == wav_backup.resolve() or is_same_or_under(source, wav_backup):
+        raise SystemExit(
+            "ERROR: source must not be wav_backup or a path under wav_backup."
+        )
+    if is_same_or_under(wav_backup, source):
+        raise SystemExit("ERROR: wav_backup must not be under source.")
+
+
+def move_wav_to_backup(src: Path, wav_backup: Path) -> Path:
+    wav_backup.mkdir(parents=True, exist_ok=True)
+    dest = unique_backup_path(wav_backup, src)
+    shutil.move(str(src), dest)
+    print(f"  Moved WAV: {src.name} -> {dest}")
+    return dest
+
+
+def convert_wavs_in_source(
+    cfg: EffectiveConfig,
+    *,
+    ffmpeg: Path,
+    force: bool,
+    dry_run: bool,
+    stats: RunStats,
+) -> set[str]:
+    """Convert WAVs in source to MP3 and move originals to wav_backup.
+
+    Returns stems converted (or that would be converted on dry-run).
+    """
+    assert cfg.source is not None
+    assert cfg.wav_backup is not None
+    source = cfg.source
+    converted_stems: set[str] = set()
+    wavs = discover_wavs(source)
+    if not wavs:
+        return converted_stems
+
+    for wav_path in wavs:
+        stem = wav_path.stem
+        dest = source / f"{stem}.mp3"
+        existing_mp3 = find_stem_match(source, stem, MP3_EXTENSIONS)
+        if existing_mp3 is not None and not force:
+            print(f"Skipping WAV (MP3 exists): {wav_path.name} -> {existing_mp3.name}")
+            stats.wav_skipped += 1
+            continue
+
+        if dry_run:
+            cmd = build_ffmpeg_cmd(ffmpeg, wav_path, dest)
+            backup_dest = unique_backup_path(cfg.wav_backup, wav_path)
+            print(f"Would convert: {' '.join(cmd)}")
+            print(f"Would move WAV: {wav_path} -> {backup_dest}")
+            stats.would_convert_wavs += 1
+            converted_stems.add(stem)
+            continue
+
+        source.mkdir(parents=True, exist_ok=True)
+        partial = source / f".whispermlx-missing.{stem}.mp3.partial"
+        try:
+            size = f" ({_human_bytes(wav_path.stat().st_size)})"
+        except OSError:
+            size = ""
+        print(f"Converting WAV: {wav_path.name} -> {dest.name}{size}")
+        print("  ffmpeg progress on stderr (time=/speed=)…")
+        started = time.perf_counter()
+        result = run_ffmpeg(build_ffmpeg_cmd(ffmpeg, wav_path, partial))
+        elapsed = time.perf_counter() - started
+        if result.returncode != 0:
+            if partial.exists():
+                partial.unlink(missing_ok=True)
+            print(
+                f"ERROR: ffmpeg failed for {wav_path.name} "
+                f"(exit {result.returncode}, {elapsed:.1f}s)",
+                file=sys.stderr,
+            )
+            stats.wav_failed += 1
+            continue
+
+        try:
+            os.replace(partial, dest)
+        except OSError as exc:
+            if partial.exists():
+                partial.unlink(missing_ok=True)
+            print(
+                f"ERROR: could not finalize MP3 for {wav_path.name}: {exc}",
+                file=sys.stderr,
+            )
+            stats.wav_failed += 1
+            continue
+
+        try:
+            out_size = f" ({_human_bytes(dest.stat().st_size)})"
+        except OSError:
+            out_size = ""
+        print(
+            f"  Converted WAV: {wav_path.name} -> {dest.name}{out_size} "
+            f"in {elapsed:.1f}s"
+        )
+
+        try:
+            move_wav_to_backup(wav_path, cfg.wav_backup)
+        except OSError as exc:
+            print(
+                f"ERROR: could not move WAV {wav_path.name} to backup: {exc}",
+                file=sys.stderr,
+            )
+            stats.wav_failed += 1
+            continue
+
+        stats.wav_converted += 1
+        converted_stems.add(stem)
+
+    return converted_stems
 
 
 # --- serial skip (same groups Auto-merge would join) ---
@@ -1424,6 +1732,7 @@ def looks_like_managed_library_root(path: Path) -> bool:
 def validate_for_dry_run(cfg: EffectiveConfig) -> tuple[dict[str, str], str | None]:
     """Lightweight validation for --dry-run (no HF_TOKEN/env-file requirements)."""
     validate_config_shape(cfg)
+    validate_wav_conversion_paths(cfg)
 
     if cfg.source is None:
         raise SystemExit("ERROR: --source is required (or save it in config)")
@@ -1468,6 +1777,7 @@ def validate_for_dry_run(cfg: EffectiveConfig) -> tuple[dict[str, str], str | No
 
 def validate_for_processing(cfg: EffectiveConfig) -> tuple[dict[str, str], str | None]:
     validate_config_shape(cfg)
+    validate_wav_conversion_paths(cfg)
 
     if cfg.source is None:
         raise SystemExit("ERROR: --source is required (or save it in config)")
@@ -1500,7 +1810,14 @@ def validate_for_processing(cfg: EffectiveConfig) -> tuple[dict[str, str], str |
     if cfg.diarize and not token:
         raise SystemExit("ERROR: HF_TOKEN required for diarization (set in env file)")
 
-    if shutil.which("ffmpeg") is None:
+    if cfg.convert_wavs and discover_wavs(cfg.source):
+        ffmpeg = find_ffmpeg(cfg.ffmpeg)
+        if ffmpeg is None:
+            raise SystemExit(
+                "ERROR: ffmpeg not found (set --ffmpeg or PATH) "
+                "for WAV conversion in source."
+            )
+    elif shutil.which("ffmpeg") is None:
         print("WARNING: ffmpeg not found on PATH; whispermlx may fail", file=sys.stderr)
 
     return proc_env, token
@@ -1658,12 +1975,18 @@ def print_summary(
     if dry_run:
         print(f"  would process: {stats.would_process}")
         _print_limited_items("would process", stats.would_process_names)
+        print(f"  would convert WAV: {stats.would_convert_wavs}")
         print(f"  skipped:   {stats.skipped}")
         if stats.skipped_serial:
             print(f"  skipped likely serial: {stats.skipped_serial}")
             _print_limited_items("skipped likely serial", stats.skipped_serial_names)
     else:
         print(f"  processed: {stats.processed}")
+        print(f"  converted WAV: {stats.wav_converted}")
+        if stats.wav_skipped:
+            print(f"  skipped WAV: {stats.wav_skipped}")
+        if stats.wav_failed:
+            print(f"  failed WAV: {stats.wav_failed}")
         print(f"  skipped:   {stats.skipped}")
         if stats.skipped_serial:
             print(f"  skipped likely serial: {stats.skipped_serial}")
@@ -1740,15 +2063,56 @@ def main(argv: Sequence[str] | None = None) -> int:
                 file=sys.stderr,
             )
 
-        assert cfg.source is not None
-        mp3s = discover_mp3s(cfg.source)
-        if not mp3s:
-            print(f"No MP3 files found in {cfg.source}")
-            print_summary(RunStats(), cfg.transcripts, dry_run=args.dry_run)
-            return 0
-
         stats = RunStats()
+        assert cfg.source is not None
         assert cfg.transcripts is not None
+
+        converted_stems: set[str] = set()
+        if cfg.convert_wavs:
+            ffmpeg: Path | None = find_ffmpeg(cfg.ffmpeg)
+            if not args.dry_run and ffmpeg is None and discover_wavs(cfg.source):
+                print(
+                    "ERROR: ffmpeg not found (set --ffmpeg or PATH) "
+                    "for WAV conversion in source.",
+                    file=sys.stderr,
+                )
+                return 2
+            if ffmpeg is None:
+                ffmpeg = Path("ffmpeg")
+            converted_stems = convert_wavs_in_source(
+                cfg,
+                ffmpeg=ffmpeg,
+                force=args.force,
+                dry_run=args.dry_run,
+                stats=stats,
+            )
+
+        mp3s = discover_mp3s(cfg.source)
+        if args.dry_run:
+            existing = {p.resolve() for p in mp3s}
+            for stem in converted_stems:
+                synthetic = cfg.source / f"{stem}.mp3"
+                try:
+                    resolved = synthetic.resolve()
+                except OSError:
+                    resolved = synthetic
+                if resolved not in existing:
+                    mp3s.append(synthetic)
+                    existing.add(resolved)
+            mp3s = sorted(mp3s, key=lambda p: p.name.lower())
+
+        if not mp3s:
+            if discover_wavs(cfg.source) and not cfg.convert_wavs:
+                print(
+                    f"WAV files found in {cfg.source} but convert_wavs is off; "
+                    "no MP3 files to transcribe.",
+                    file=sys.stderr,
+                )
+            else:
+                print(f"No MP3 files found in {cfg.source}")
+            print_summary(stats, cfg.transcripts, dry_run=args.dry_run)
+            return 1 if stats.wav_failed > 0 else 0
+
         skip_dirs = skip_search_dirs(cfg.transcripts, source=cfg.source)
         serial_reasons: dict[Path, str] = {}
         if cfg.skip_serial:
@@ -1812,7 +2176,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 stats.failed_items.append(failed)
 
         print_summary(stats, cfg.transcripts, dry_run=args.dry_run)
-        return 1 if stats.failed > 0 else 0
+        return 1 if stats.failed > 0 or stats.wav_failed > 0 else 0
 
     print(
         "Nothing to do. Set paths via CLI, .transcriptx/whispermlx-missing.json, "

@@ -14,5 +14,8 @@
   "pass_hf_token_arg": false,
   "fuzzy_json_match": false,
   "skip_serial": false,
-  "follow_output": true
+  "follow_output": true,
+  "ffmpeg": "",
+  "wav_backup": "/path/to/data/backups/wav",
+  "convert_wavs": true
 }
