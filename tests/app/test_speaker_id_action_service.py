@@ -218,3 +218,154 @@ def test_navigate_jump_ok_when_expected_matches_current(transcript: Path) -> Non
     assert ack.status == "ok"
     assert ack.active_speaker_idx == 1
     assert ack.active_speaker_id == "SPEAKER_01"
+
+
+def _managed_service(ctrl: _FakeController, ids=("SPEAKER_00", "SPEAKER_01")):
+    return SpeakerIdActionService(
+        ctrl,  # type: ignore[arg-type]
+        index_loader=lambda _p: _FakeIndex(ids),
+        profile_context_resolver=lambda _p: SimpleNamespace(is_managed=True),
+    )
+
+
+def test_save_name_create_mode_calls_create_profile(transcript: Path, monkeypatch) -> None:
+    calls: list[dict] = []
+
+    def _fake_create(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(
+            effective_signal=None,
+            is_partial=False,
+            naming_error="",
+            link_already_existed=False,
+        )
+
+    monkeypatch.setattr(
+        "transcriptx.services.speaker_profiles.create_and_name.create_profile_link_and_name",
+        _fake_create,
+    )
+    ctrl = _FakeController()
+    svc = _managed_service(ctrl)
+    ack = svc.execute(
+        SpeakerIdCommand(
+            action="save_name",
+            transcript_id=str(transcript),
+            action_id=new_action_id(),
+            action_seq=1,
+            current_speaker_idx=0,
+            expected_speaker_id="SPEAKER_00",
+            transcript_revision=transcript_revision_from_path(transcript),
+            expected_mapping_revision=mapping_revision_from_state({}, []),
+            payload={"display_name": "Maya", "link_mode": "create"},
+        )
+    )
+    assert ack.status == "ok"
+    assert len(calls) == 1
+    assert calls[0]["display_name"] == "Maya"
+    assert calls[0]["create_profile"] is True
+
+
+def test_save_name_existing_mode_calls_link_existing(
+    transcript: Path, monkeypatch
+) -> None:
+    calls: list[dict] = []
+
+    def _fake_link(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(
+            effective_signal=None,
+            is_partial=False,
+            naming_error="",
+            link_already_existed=False,
+        )
+
+    monkeypatch.setattr(
+        "transcriptx.services.speaker_profiles.create_and_name.link_existing_profile_and_name",
+        _fake_link,
+    )
+    ctrl = _FakeController()
+    svc = _managed_service(ctrl)
+    ack = svc.execute(
+        SpeakerIdCommand(
+            action="save_name",
+            transcript_id=str(transcript),
+            action_id=new_action_id(),
+            action_seq=1,
+            current_speaker_idx=0,
+            expected_speaker_id="SPEAKER_00",
+            transcript_revision=transcript_revision_from_path(transcript),
+            expected_mapping_revision=mapping_revision_from_state({}, []),
+            payload={
+                "display_name": "Maya",
+                "link_mode": "existing",
+                "profile_id": "p-maya",
+            },
+        )
+    )
+    assert ack.status == "ok"
+    assert len(calls) == 1
+    assert calls[0]["profile_id"] == "p-maya"
+    assert calls[0]["display_name"] == "Maya"
+    assert ctrl.mutations == []  # naming is inside the patched helper
+
+
+def test_save_name_none_mode_skips_profile_write(
+    transcript: Path, monkeypatch
+) -> None:
+    def _boom(**_kwargs):
+        raise AssertionError("profile write should not run")
+
+    monkeypatch.setattr(
+        "transcriptx.services.speaker_profiles.create_and_name.create_profile_link_and_name",
+        _boom,
+    )
+    monkeypatch.setattr(
+        "transcriptx.services.speaker_profiles.create_and_name.link_existing_profile_and_name",
+        _boom,
+    )
+    ctrl = _FakeController()
+    svc = _managed_service(ctrl)
+    ack = svc.execute(
+        SpeakerIdCommand(
+            action="save_name",
+            transcript_id=str(transcript),
+            action_id=new_action_id(),
+            action_seq=1,
+            current_speaker_idx=0,
+            expected_speaker_id="SPEAKER_00",
+            transcript_revision=transcript_revision_from_path(transcript),
+            expected_mapping_revision=mapping_revision_from_state({}, []),
+            payload={"display_name": "Maya", "link_mode": "none"},
+        )
+    )
+    assert ack.status == "ok"
+    assert ctrl.speaker_map["SPEAKER_00"] == "Maya"
+
+
+def test_save_name_unmanaged_create_falls_back_to_name_only(
+    transcript: Path, monkeypatch
+) -> None:
+    def _boom(**_kwargs):
+        raise AssertionError("unmanaged transcripts must not write profiles")
+
+    monkeypatch.setattr(
+        "transcriptx.services.speaker_profiles.create_and_name.create_profile_link_and_name",
+        _boom,
+    )
+    ctrl = _FakeController()
+    svc = _service(ctrl)
+    ack = svc.execute(
+        SpeakerIdCommand(
+            action="save_name",
+            transcript_id=str(transcript),
+            action_id=new_action_id(),
+            action_seq=1,
+            current_speaker_idx=0,
+            expected_speaker_id="SPEAKER_00",
+            transcript_revision=transcript_revision_from_path(transcript),
+            expected_mapping_revision=mapping_revision_from_state({}, []),
+            payload={"display_name": "Maya", "link_mode": "create", "link_profile": True},
+        )
+    )
+    assert ack.status == "ok"
+    assert ctrl.speaker_map["SPEAKER_00"] == "Maya"

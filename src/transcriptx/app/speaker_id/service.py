@@ -273,6 +273,10 @@ class SpeakerIdActionService:
             )
 
         link_profile = bool(command.payload.get("link_profile", False))
+        from transcriptx.services.speaker_profiles.link_targets import (
+            resolve_save_link_mode,
+        )
+
         summary_sig = self._summary_sig(path)
         flashes: list[SpeakerIdFlash] = []
         cache_signal = None
@@ -286,7 +290,14 @@ class SpeakerIdActionService:
             else:
                 profile_managed = self._default_is_managed(path)
 
-            if link_profile and profile_managed:
+            link_mode, target_profile_id = resolve_save_link_mode(
+                command.payload, profile_managed=profile_managed
+            )
+            # Compat: callers that only send link_profile still create.
+            if link_mode == "none" and link_profile and profile_managed:
+                link_mode = "create"
+
+            if link_mode == "create" and profile_managed:
                 from transcriptx.services.speaker_profiles.create_and_name import (
                     create_profile_link_and_name,
                 )
@@ -310,6 +321,44 @@ class SpeakerIdActionService:
                                 "Profile link saved, but local naming failed: "
                                 f"{getattr(partial, 'naming_error', '')}"
                             ),
+                        )
+                    )
+                new_state = self._controller.get_mapping_status(path)
+            elif link_mode == "existing" and profile_managed and target_profile_id:
+                from transcriptx.core.speaker_profiles.provenance import (
+                    LinkProvenanceV1,
+                )
+                from transcriptx.services.speaker_profiles.create_and_name import (
+                    link_existing_profile_and_name,
+                )
+
+                partial = link_existing_profile_and_name(
+                    transcript_path=path,
+                    raw_speaker=active_id,
+                    display_name=name,
+                    profile_id=target_profile_id,
+                    controller=self._controller,
+                    apply_sidecar_name=True,
+                    method="web",
+                    provenance=LinkProvenanceV1(link_method="choose_other"),
+                )
+                cache_signal = getattr(partial, "effective_signal", None)
+                if getattr(partial, "is_partial", False):
+                    status = "partial"
+                    flashes.append(
+                        SpeakerIdFlash(
+                            level="warning",
+                            message=(
+                                "Profile link saved, but local naming failed: "
+                                f"{getattr(partial, 'naming_error', '')}"
+                            ),
+                        )
+                    )
+                elif getattr(partial, "link_already_existed", False):
+                    flashes.append(
+                        SpeakerIdFlash(
+                            level="success",
+                            message="Already linked to this profile. Name saved.",
                         )
                     )
                 new_state = self._controller.get_mapping_status(path)

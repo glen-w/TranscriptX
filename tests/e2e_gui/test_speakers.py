@@ -31,6 +31,11 @@ def test_speakers_open_profile(seeded_profile_app, page) -> None:
         or "profile" in body.lower()
         or "Maya" in body
     ), f"Expected seeded speaker profile on Speakers; head={body[:800]!r}"
+    assert (
+        "Search people" in body
+        or "Jump to profile" in body
+        or "Open" in body
+    )
 
 
 def test_speakers_profile_detail_surface(seeded_profile_app, page) -> None:
@@ -46,6 +51,13 @@ def test_speakers_profile_detail_surface(seeded_profile_app, page) -> None:
         or "profile" in detail.lower()
         or "display" in detail.lower()
         or "active" in detail.lower()
+    )
+    assert (
+        "Overview" in detail
+        or "Appearances" in detail
+        or "Identity" in detail
+        or "Voice & lifecycle" in detail
+        or "Display name" in detail
     )
 
 

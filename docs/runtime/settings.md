@@ -98,7 +98,7 @@ Device stems understood include `RYYYYMMDD-HHMMSS`, `YYYYMMDDHHMMSS`, and `YYMMD
 | **STT command profiles** | Named JSON under `profiles/` | Transcribe Audio |
 | **Merge source profile** | Match + day/gap rules for Tools → Merge suggestions / auto-merge | Merge tab expander; `{config_dir}/audio_merge_profiles.json` |
 | **Merge dismissed groups** | Auto-merge **Don't suggest again** keys (rule + stem) | Auto-merge tab; `{config_dir}/audio_merge_dismissed.json` |
-| **Speaker profile** | Longitudinal identity (+ optional voice) | Settings → Speakers — **out of scope** for knob docs |
+| **Speaker profile** | Longitudinal identity (+ optional voice) | Settings → Speakers — see [Speakers](#speakers) |
 
 Tracked files under repo `data/profiles/*/default.json` are **fixtures / allowlisted samples**. Runtime defaults are virtual (dataclass/Pydantic); ProfileManager does not treat disk `default` as loadable user presets. Runtime profiles live under `{config_dir}/profiles/` (override with `TRANSCRIPTX_PROFILES_DIR`).
 
@@ -107,6 +107,21 @@ Tracked files under repo `data/profiles/*/default.json` are **fixtures / allowli
 Copy [`.env.example`](../../.env.example) to `.env`. Infra path keys (`TRANSCRIPTX_*_DIR`, host/port, downloads, …) are separate from config-bag overrides. Set `TRANSCRIPTX_CONFIG_STRICT=1` to reject unknown `TRANSCRIPTX_*` keys.
 
 Legacy `TRANSCRIPTX_AUDIO_*_ENABLED` variables are **rejected** — use the corresponding `*_MODE` keys.
+
+## Speakers
+
+Settings → Speakers controls the Speakers directory filters and optional local voice matching. Canonical files live under `speaker_profiles/` ([STORAGE.md](STORAGE.md), [speaker_profiles_v1](../contracts/speaker_profiles_v1.md)).
+
+**Directory toggles** (session): include ignored appearances in headline totals; show archived; show merged.
+
+**Local voice matching** (optional extra `speaker_match`):
+
+1. Read the privacy notice and **enable** matching. Consent is `privacy.voice_settings.json`. Defaults off. Opt-in enrols nothing.
+2. Set **Max confirmed links per voice enrol** (default 40) if you need a larger bootstrap.
+3. **Enrol trusted voice for all profiles** — reference samples from every active profile that already has confirmed links. Per-profile enrol also exists on the Speakers dossier Voice tab.
+4. **Pre-load voice suggestions** — analyse every non-ignored managed occurrence into `.cache/voice` for Speaker Identification. Speaker ID **Analyse all speakers** does the same for the open transcript only.
+
+Order: name and **link** a seed cast → Enrol all → Pre-load → confirm suggestions in Speaker Identification. Empty corpus → analyse succeeds with no match. Scores never auto-name. Full walkthrough: [Assist naming with voice](../workflows/speaker-voice-matching.md).
 
 ## Related docs
 

@@ -49,6 +49,20 @@ export type SpeakerRow = {
   ignored: boolean;
 };
 
+export type LinkTargetRow = {
+  mode: string;
+  reason?: string;
+  label: string;
+  profile_id?: string | null;
+  display_name?: string;
+  appearance_count?: number;
+  last_appearance_date?: string | null;
+  already_linked?: boolean;
+  duplicate_name_warning?: boolean;
+  is_default?: boolean;
+  detail?: string;
+};
+
 export type WorkspaceData = {
   protocol_version: string;
   frontend_build_id: string;
@@ -61,6 +75,8 @@ export type WorkspaceData = {
   samples: SampleRow[];
   draft_name?: string;
   link_profile_allowed?: boolean;
+  link_targets?: LinkTargetRow[];
+  recipe_hint?: string;
   capabilities?: { ffmpeg?: boolean; profile_link?: boolean };
   ui?: { status?: string; disabled?: boolean; flash?: string | null };
   paging?: {
@@ -118,7 +134,7 @@ type InstanceState = {
 };
 
 const instances = new WeakMap<object, InstanceState>();
-const FRONTEND_BUILD_ID = "tx-workspaces-0.1.0";
+const FRONTEND_BUILD_ID = "tx-workspaces-0.2.0";
 const PROTOCOL_VERSION = "1";
 const DEFAULT_MAX_BLOB = 8_000_000;
 /** Prefetch budgets — docs/dev/theme_c_workspaces_ccv2.md */
@@ -433,6 +449,72 @@ function renderPaging(root: Element, data: WorkspaceData, state: InstanceState):
   host.appendChild(btn);
 }
 
+function linkToken(row: LinkTargetRow): string {
+  if (row.mode === "existing" && row.profile_id) {
+    return `existing:${row.profile_id}`;
+  }
+  return row.mode || "none";
+}
+
+function parseLinkToken(token: string): {
+  link_mode: string;
+  profile_id: string | null;
+  link_profile: boolean;
+} {
+  if (token.startsWith("existing:")) {
+    const profile_id = token.slice("existing:".length).trim() || null;
+    return {
+      link_mode: profile_id ? "existing" : "none",
+      profile_id,
+      link_profile: Boolean(profile_id),
+    };
+  }
+  if (token === "create") {
+    return { link_mode: "create", profile_id: null, link_profile: true };
+  }
+  return { link_mode: "none", profile_id: null, link_profile: false };
+}
+
+function renderLinkTargets(root: Element, data: WorkspaceData): void {
+  const select = qs<HTMLSelectElement>(root, ".tx-sid-link-select");
+  const chip = qs<HTMLElement>(root, ".tx-sid-link-chip");
+  const allowed = Boolean(
+    data.link_profile_allowed ?? data.capabilities?.profile_link,
+  );
+  const rows = data.link_targets || [];
+  const previous = select.value;
+  select.replaceChildren();
+  for (const row of rows) {
+    const opt = document.createElement("option");
+    opt.value = linkToken(row);
+    opt.textContent = row.label;
+    if (row.is_default) opt.selected = true;
+    select.appendChild(opt);
+  }
+  if (!rows.length) {
+    const opt = document.createElement("option");
+    opt.value = "none";
+    opt.textContent = "Name only — this transcript";
+    select.appendChild(opt);
+  }
+  const tokens = Array.from(select.options).map((o) => o.value);
+  if (previous && tokens.includes(previous)) {
+    select.value = previous;
+  } else {
+    const def = rows.find((r) => r.is_default);
+    if (def) select.value = linkToken(def);
+  }
+  select.disabled = !allowed && tokens.every((t) => t === "none" || t === "");
+  const selected = rows.find((r) => linkToken(r) === select.value);
+  const bits: string[] = [];
+  if (selected?.detail) bits.push(selected.detail);
+  if (selected?.duplicate_name_warning) {
+    bits.push("A profile with this name already exists.");
+  }
+  if (data.recipe_hint) bits.push(data.recipe_hint);
+  chip.textContent = bits.join(" ");
+}
+
 function applyData(root: Element, data: WorkspaceData, state: InstanceState): void {
   if (
     state.lastTranscriptId !== data.transcript_id ||
@@ -473,8 +555,7 @@ function applyData(root: Element, data: WorkspaceData, state: InstanceState): vo
   if (document.activeElement !== nameInput) {
     nameInput.value = data.draft_name || "";
   }
-  const link = qs<HTMLInputElement>(root, ".tx-sid-link-profile");
-  link.disabled = !(data.link_profile_allowed ?? data.capabilities?.profile_link);
+  renderLinkTargets(root, data);
   const disabled = Boolean(data.ui?.disabled || state.mutating);
   for (const sel of [".tx-sid-save", ".tx-sid-ignore", ".tx-sid-prev", ".tx-sid-next"]) {
     qs<HTMLButtonElement>(root, sel).disabled = disabled;
@@ -526,12 +607,18 @@ function wireOnce(
       const data = state.lastDataRef;
       if (!data) return;
       const name = qs<HTMLInputElement>(root, ".tx-sid-name-input").value.trim();
-      const link = qs<HTMLInputElement>(root, ".tx-sid-link-profile").checked;
+      const token = qs<HTMLSelectElement>(root, ".tx-sid-link-select").value;
+      const link = parseLinkToken(token);
       fireCommand(
         state,
         data,
         "save_name",
-        { display_name: name, link_profile: link },
+        {
+          display_name: name,
+          link_profile: link.link_profile,
+          link_mode: link.link_mode,
+          profile_id: link.profile_id,
+        },
         { mutating: true },
       );
     };
@@ -665,7 +752,7 @@ export const __test = {
   revokeAllBlobs,
   PROTOCOL_VERSION,
   FRONTEND_BUILD_ID,
-  /** Mirrors fireCommand expected_speaker_id selection (authoritative only). */
+  parseLinkToken,
   expectedSpeakerForCommand(data: WorkspaceData, _optimistic: string | null): string {
     return data.active_speaker_id;
   },

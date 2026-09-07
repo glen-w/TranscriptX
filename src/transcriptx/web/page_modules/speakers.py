@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 from math import floor
+from pathlib import Path
 from typing import Any, Mapping, Sequence
 from uuid import uuid4
 
@@ -66,6 +67,10 @@ from transcriptx.web.components.info_tooltip import (
 from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.core.utils.paths import PATHS
 from transcriptx.core.utils.speaker import parse_speaker_name
+from transcriptx.io.speaker_map_resolver import (
+    SpeakerMapResolver,
+    normalize_diarized_id,
+)
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
 from transcriptx.web.navigation import (
@@ -164,11 +169,15 @@ def _section_heading_with_info_html(title: str, tip_html: str) -> str:
 
 _SPEAKERS_DESCRIPTION = (
     "Longitudinal speaker profiles linked across managed library transcripts. "
-    "Headline totals exclude needs-review, missing-source, collision, and ignored appearances "
-    "(toggle inclusion under Settings → Speakers)."
+    "Open a person to edit identity and appearances. "
+    "Headline totals exclude needs-review, missing-source, collision, and ignored "
+    "appearances (toggle inclusion under Settings → Speakers). "
+    "Voice suggestions: enable matching, Enrol trusted voice for all profiles, "
+    "then Pre-load voice suggestions — confirm in Speaker Identification."
 )
 
 _SELECTED_KEY = "speakers_selected_profile"
+_SEARCH_KEY = "speakers_directory_search"
 
 
 def _service() -> SpeakerProfileService:
@@ -208,6 +217,47 @@ def _clear_idempotency(action: str) -> None:
 def _rerun_ui() -> None:
     """Rerun only the nearest fragment (preview / confirm toggles)."""
     st.rerun(scope="fragment")
+
+
+def _appearance_samples(
+    snap: AggregationSnapshot, row: AppearanceRow, *, limit: int = 2
+) -> list[str]:
+    bundle = snap.bundles.get(row.managed_transcript_id)
+    if bundle is None:
+        return []
+    lines: list[str] = []
+    for segment in bundle.segments:
+        key = normalize_diarized_id(segment.get("speaker"))
+        if key != row.local_speaker_key:
+            continue
+        text = str(segment.get("text") or "").strip()
+        if not text:
+            continue
+        lines.append(text)
+        if len(lines) >= limit:
+            break
+    return lines
+
+
+def _item_matches_search(
+    item: ProfileListItem, query: str, *, extra: str = ""
+) -> bool:
+    needle = " ".join((query or "").split()).casefold()
+    if not needle:
+        return True
+    hay = " ".join([item.display_name, *item.aliases, extra])
+    return needle in hay.casefold()
+
+
+def _gallery_meta(item: ProfileListItem, agg: ProfileAggregate | None) -> str:
+    bits = [f"{item.link_count} appearance{'s' if item.link_count != 1 else ''}"]
+    if item.status != "active":
+        bits.append(item.status)
+    if item.needs_repair:
+        bits.append("repair")
+    if agg is not None and agg.pending_review_count:
+        bits.append(f"{agg.pending_review_count} review")
+    return " · ".join(bits)
 
 
 def _surname_sort_key(item: ProfileListItem) -> tuple[str, str, str, str]:
@@ -336,7 +386,8 @@ def render_speakers_page() -> None:
             "No speaker profiles yet",
             (
                 "Create profiles from Speaker Identification on a managed library "
-                "transcript (enable “Also link to longitudinal speaker profile”)."
+                "transcript: assign a name and choose Create new profile (or attach "
+                "to an existing person). Then return here."
             ),
             primary_action=("Speaker Identification", "Speaker ID"),
         )
@@ -404,8 +455,55 @@ def _speakers_browser_fragment(
     include_ignored: bool,
 ) -> None:
     """Profile select + overview + detail; avoids snapshot rebuild on selection change."""
+    visible_items = [i for i in items if i.profile_id in options]
+    query = st.text_input(
+        "Search people",
+        value=str(st.session_state.get(_SEARCH_KEY) or ""),
+        key=_SEARCH_KEY,
+        placeholder="Name, alias, or notes…",
+        help=widget_help("Filter the directory by display name, alias, or notes."),
+    )
+    notes_by_id = {
+        p.profile_id: str(getattr(p, "notes", "") or "") for p in snap.profiles
+    }
+    matched = [
+        i
+        for i in visible_items
+        if _item_matches_search(
+            i, str(query or ""), extra=notes_by_id.get(i.profile_id, "")
+        )
+    ]
+    if query and not matched:
+        st.info("No profiles match that search.")
+    elif matched:
+        cols = st.columns(min(3, max(1, len(matched[:12]))))
+        for idx, item in enumerate(matched[:12]):
+            with cols[idx % len(cols)]:
+                with st.container(border=True):
+                    agg = snap.aggregates_by_profile.get(item.profile_id)
+                    st.markdown(
+                        speaker_heading_with_avatar_html(
+                            item.display_name,
+                            meta=_gallery_meta(item, agg),
+                            accent=item.accent_color,
+                            profile_id=item.profile_id,
+                        ),
+                        unsafe_allow_html=True,
+                    )
+                    if item.aliases:
+                        st.caption("Also: " + ", ".join(item.aliases[:4]))
+                    if st.button(
+                        "Open",
+                        key=f"speakers_open_card_{item.profile_id}",
+                        icon=ic.OPEN_IN_NEW,
+                    ):
+                        st.session_state[_SELECTED_KEY] = item.profile_id
+                        _rerun_ui()
+        if len(matched) > 12:
+            st.caption(f"Showing 12 of {len(matched)}. Narrow the search or use Jump.")
+
     selected = st.selectbox(
-        "Select profile",
+        "Jump to profile",
         options=[""] + options,
         format_func=lambda pid: (
             SELECTBOX_PLACEHOLDER_SPEAKER if pid == "" else labels.get(pid, pid)
@@ -414,7 +512,12 @@ def _speakers_browser_fragment(
     )
 
     name_by_id = {i.profile_id: i.display_name for i in items}
-    chart_profile_ids = [selected] if selected else list(active_ids)
+    matched_ids = [i.profile_id for i in matched]
+    chart_profile_ids = (
+        [selected]
+        if selected
+        else [pid for pid in matched_ids if pid in set(active_ids)]
+    )
     _render_directory_overview(
         snap,
         chart_profile_ids=chart_profile_ids,
@@ -609,54 +712,73 @@ def _render_profile_detail(
         p4.metric("Collisions", agg.collision_count)
         p5.metric("Repair required", agg.repair_required_count)
 
-    _render_detail_charts(
-        snap,
-        profile.profile_id,
-        appearances,
-        include_ignored=include_ignored,
+    tab_ov, tab_app, tab_tr, tab_id, tab_life = st.tabs(
+        ["Overview", "Appearances", "Trends", "Identity", "Voice & lifecycle"]
     )
+    with tab_ov:
+        if profile.notes:
+            st.markdown(profile.notes)
+        else:
+            st.caption("No notes yet — add them on the Identity tab.")
+        st.caption(
+            "Voice suggestions across the library: Settings → Speakers → "
+            "Enrol trusted voice for all profiles, then Pre-load voice suggestions. "
+            "Confirm matches in Speaker Identification; scores never auto-name."
+        )
 
-    _render_locations_map(
-        snap,
-        profile,
-        include_ignored=include_ignored,
-    )
-    _render_interactions_equity(
-        snap,
-        profile,
-        include_ignored=include_ignored,
-    )
-    _render_sentiment_trends(
-        snap,
-        profile,
-        include_ignored=include_ignored,
-    )
+    with tab_app:
+        links_by_id = {
+            link.link_id: link
+            for link in snap.links_by_profile.get(profile.profile_id, ())
+        }
+        _render_appearances_table(
+            snap=snap,
+            profile=profile,
+            appearances=appearances,
+            links_by_id=links_by_id,
+            profile_blocked=profile_blocked,
+        )
 
-    links_by_id = {
-        link.link_id: link for link in snap.links_by_profile.get(profile.profile_id, ())
-    }
-    _render_appearances_table(
-        snap=snap,
-        profile=profile,
-        appearances=appearances,
-        links_by_id=links_by_id,
-        profile_blocked=profile_blocked,
-    )
+    with tab_tr:
+        _render_detail_charts(
+            snap,
+            profile.profile_id,
+            appearances,
+            include_ignored=include_ignored,
+        )
+        _render_locations_map(
+            snap,
+            profile,
+            include_ignored=include_ignored,
+        )
+        _render_interactions_equity(
+            snap,
+            profile,
+            include_ignored=include_ignored,
+        )
+        _render_sentiment_trends(
+            snap,
+            profile,
+            include_ignored=include_ignored,
+        )
 
-    if not profile_blocked and profile.status == "active":
-        _render_voice_controls(snap=snap, profile=profile)
+    with tab_id:
+        if not profile_blocked:
+            _render_edit_form(profile, root=snap.root)
+        else:
+            st.caption("Identity edits disabled while this profile is blocked.")
 
-    if not profile_blocked:
-        _render_edit_form(profile, root=snap.root)
-        if profile.status == "active":
+    with tab_life:
+        if not profile_blocked and profile.status == "active":
+            _render_voice_controls(snap=snap, profile=profile)
+        if not profile_blocked and profile.status == "active":
             _render_link_another(snap=snap, profile=profile)
-
-    _render_lifecycle(
-        snap=snap,
-        profile=profile,
-        directory_items=directory_items,
-        profile_blocked=profile_blocked,
-    )
+        _render_lifecycle(
+            snap=snap,
+            profile=profile,
+            directory_items=directory_items,
+            profile_blocked=profile_blocked,
+        )
 
 
 @st.fragment
@@ -1393,7 +1515,7 @@ def _render_appearances_table(
     links_by_id: Mapping[str, Any],
     profile_blocked: bool,
 ) -> None:
-    with st.expander("Appearances", expanded=False):
+    with st.expander("Appearances", expanded=True):
         if not appearances:
             st.info("No linked appearances.")
             return
@@ -1418,9 +1540,14 @@ def _render_appearances_table(
                 )
                 st.markdown(
                     f"**{date_label}** · `{transcript_label}` · "
-                    f"flag=`{row.flag}` · words={row.metrics.words:,} · "
-                    f"turns={row.metrics.turns:,} · share={share}"
+                    f"{row.local_speaker_key} · {row.flag} · "
+                    f"{row.metrics.words:,} words · {row.metrics.turns:,} turns · "
+                    f"share {share}"
                 )
+                samples = _appearance_samples(snap, row)
+                if samples:
+                    for line in samples:
+                        st.caption(f"“{line}”")
                 cols = st.columns([1, 1, 1, 2])
                 with cols[0]:
                     if st.button(
@@ -1550,7 +1677,7 @@ def _render_appearances_table(
 
 @st.fragment
 def _render_edit_form(profile: SpeakerProfileV1, *, root) -> None:
-    with st.expander("Edit profile", expanded=False):
+    with st.expander("Edit profile", expanded=True):
         form_prefix = f"speakers_edit_{profile.profile_id}"
         display_name = st.text_input(
             "Display name",
@@ -1753,7 +1880,11 @@ def _render_link_another(
             return
 
         labels = {
-            r.managed_transcript_id: f"{r.current_relpath} ({r.managed_transcript_id[:8]}…)"
+            r.managed_transcript_id: (
+                Path(r.current_relpath).stem
+                if getattr(r, "current_relpath", None)
+                else r.managed_transcript_id
+            )
             for r in admitted
         }
         options = [r.managed_transcript_id for r in admitted]
@@ -1784,15 +1915,37 @@ def _render_link_another(
             st.info("No speaker occurrences in this transcript.")
             return
 
-        occ_labels = {
-            o.local_speaker_key: (
-                f"{o.local_speaker_key} ({o.segment_count} segs"
-                f"{' · collision' if o.collision else ''})"
-            )
-            for o in occurrences
-        }
+        map_state = None
+        try:
+            map_state = SpeakerMapResolver().load_mapping(str(resolved.transcript_path))
+        except Exception:
+            map_state = None
+        occ_labels = {}
+        bundle = snap.bundles.get(chosen_tid)
+        for o in occurrences:
+            mapped = ""
+            if map_state is not None:
+                mapped = str((map_state.speaker_map or {}).get(o.local_speaker_key) or "")
+            label = mapped or o.local_speaker_key
+            extra = f"{o.segment_count} lines"
+            if o.collision:
+                extra += " · collision"
+            sample = ""
+            if bundle is not None:
+                for segment in bundle.segments:
+                    key = normalize_diarized_id(segment.get("speaker"))
+                    if key != o.local_speaker_key:
+                        continue
+                    sample = str(segment.get("text") or "").strip()
+                    if sample:
+                        break
+            if sample:
+                snippet = sample if len(sample) <= 72 else sample[:69] + "…"
+                occ_labels[o.local_speaker_key] = f"{label} — {snippet} ({extra})"
+            else:
+                occ_labels[o.local_speaker_key] = f"{label} ({extra})"
         chosen_key = st.selectbox(
-            "Local speaker key",
+            "Speaker in this transcript",
             options=[""] + [o.local_speaker_key for o in occurrences],
             format_func=lambda key: (
                 "— Select occurrence —" if key == "" else occ_labels.get(key, key)

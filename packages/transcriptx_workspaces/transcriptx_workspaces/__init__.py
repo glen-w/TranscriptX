@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Mapping, Optional
 
-FRONTEND_BUILD_ID = "tx-workspaces-0.1.0"
+FRONTEND_BUILD_ID = "tx-workspaces-0.2.0"
 PROTOCOL_VERSION = "1"
 
 _speaker_id_component = None
@@ -45,9 +45,10 @@ def _get_speaker_id_component():
                   <input type="text" class="tx-sid-name-input" autocomplete="off" />
                 </label>
                 <label class="tx-sid-link-label">
-                  <input type="checkbox" class="tx-sid-link-profile" />
-                  <span>Link profile</span>
+                  <span>Profile</span>
+                  <select class="tx-sid-link-select"></select>
                 </label>
+                <p class="tx-sid-link-chip" aria-live="polite"></p>
                 <div class="tx-sid-actions">
                   <button type="button" class="tx-sid-save tx-sid-icon-btn" aria-label="Save" title="Save">
                     <svg class="tx-sid-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">

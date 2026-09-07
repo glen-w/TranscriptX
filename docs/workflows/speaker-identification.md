@@ -31,7 +31,9 @@ Audio is optional for naming from text lines. If a matching recording is linked 
 
 3. If audio is linked, use the play controls beside a sample line to load that clip. Clips help when two speakers sound similar or when a short turn is ambiguous from text alone. Without audio, continue from the printed lines — naming still works.
 
-4. Enter a display name in the **Name** field and choose the save (✓) control. The workspace advances to the next unnamed speaker when one remains.
+4. Enter a display name in the **Name** field. Under **Link to speaker profile**, choose who this diarized ID should attach to: an existing person (name, alias, or voice match), **Create new profile**, or **Name only — this transcript**. Then choose the save (✓) control. The workspace advances to the next unnamed speaker when one remains.
+
+A unique name match preselects the existing person. If several profiles share the name, nothing is auto-picked — choose deliberately so you do not create a second Maya.
 
 ![Naming one speaker and advancing to the next candidate in Speaker Identification](../_static/workflows/speaker-identification-naming.gif)
 
@@ -59,7 +61,8 @@ Audio is optional for naming from text lines. If a matching recording is linked 
 - Naming speakers makes the transcript readable and unlocks speaker-level modules; it is not a cosmetic rename.
 - Switching speakers refreshes sample lines (and clip targets when audio is present) so you can compare before saving.
 - Ignore is for unusable diarization IDs; prefer naming real participants. On CCv2, choose ignore again to restore a previously ignored ID.
-- Longitudinal profile linking (when offered) is optional; naming alone is enough for single-transcript work.
+- Longitudinal profile linking is optional; naming alone is enough for single-transcript work. When you do link, the control shows **which person** you are attaching to (or that you are creating a new profile).
+- Voice suggestions appear in that same list when you have enrolled a reference corpus and pre-loaded queries — see [Assist naming with voice](speaker-voice-matching.md). Confirming still saves the name; nothing is applied automatically.
 - Downstream speaker cards, per-speaker LLM summaries, and interaction-style views depend on these labels being meaningful.
 
 ## You should now have…
@@ -68,6 +71,7 @@ A multi-speaker transcript with stable human-readable names confirmed in the tra
 
 ## Next
 
+- [Assist naming with voice](speaker-voice-matching.md)
 - [Investigate a question and trace it back to evidence](investigate-evidence.md)
 - [First analysis](first-analysis.md) if you still need a [Balanced](../runtime/settings.md#analysis-presets) run after renaming
 - [Known limitations](../known_limitations.md) for diarization and naming caveats

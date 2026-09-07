@@ -439,6 +439,16 @@ class DummyHomeStreamlit:
             return bool(cls.session_state[key])
         return value
 
+    @classmethod
+    def text_input(cls, _label, value="", key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            return cls.session_state[key]
+        return value
+
+    @staticmethod
+    def tabs(labels):
+        return tuple(DummyExpander() for _ in labels)
+
 
 class DummyRenameStreamlit:
     """Class-level session_state for rename service tests."""

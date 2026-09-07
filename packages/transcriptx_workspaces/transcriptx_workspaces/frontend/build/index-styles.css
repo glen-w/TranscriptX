@@ -92,6 +92,29 @@
   color: inherit;
 }
 
+.tx-sid-link-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1 1 16rem;
+}
+
+.tx-sid-link-select {
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--tx-sid-border);
+  background: transparent;
+  color: inherit;
+  min-width: 12rem;
+}
+
+.tx-sid-link-chip {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--tx-sid-muted);
+  flex: 1 1 100%;
+}
+
 .tx-sid-actions {
   display: flex;
   flex-wrap: wrap;

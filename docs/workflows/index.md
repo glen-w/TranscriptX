@@ -29,9 +29,11 @@ Jump in when you need these tasks.
 | 8 | [Correct while reading](corrections.md) | Propose word/span fixes in Transcript [Correct mode](../runtime/corrections-viewer.md) |
 | 9 | [Rename a transcript](rename-transcript.md) | Give a library transcript a clearer file name |
 | 10 | [Browse speaker profiles](speakers.md) | Open speaker profiles linked across transcripts |
+| 11 | [Assist naming with voice](speaker-voice-matching.md) | Enrol all + Pre-load so later transcripts propose people to confirm |
 
 ## Prerequisites
 
 - TranscriptX web UI installed and running ([Installation](../runtime/installation.md) or [Docker](../runtime/docker.md)).
 - For workflow 4 only: local Ollama configured ([LLM](../runtime/llm.md)).
-- For workflow 10: at least one longitudinal profile (create via Speaker Identification link), or follow the empty-state path in that guide.
+- For workflow 10: at least one longitudinal profile (create via Speaker Identification), or follow the empty-state path in that guide.
+- For workflow 11: `speaker_match` extra, voice privacy enabled, seed named+linked profiles, and audio on managed transcripts.

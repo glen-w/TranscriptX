@@ -683,6 +683,15 @@ def render_speaker_summary_cards(ctx: BlockContext, _placement: BlockPlacement) 
                     segments = 0
                 m3.metric("Segments", str(segments) if segments else "—")
                 m4.metric(fourth_label, fourth_value)
+                from transcriptx.web.navigation import navigate_to_speaker_profile
+                from transcriptx.web.speaker_accent import resolve_speaker_profile_id
+
+                profile_id = resolve_speaker_profile_id(name, context=accent_ctx)
+                if profile_id and st.button(
+                    "Open profile",
+                    key=f"overview_open_profile_{i}_{profile_id}",
+                ):
+                    navigate_to_speaker_profile(profile_id)
     if len(ranked) > 6:
         st.caption(f"+{len(ranked) - 6} more speakers in the report")
 
