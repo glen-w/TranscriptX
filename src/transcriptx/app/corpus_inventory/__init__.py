@@ -23,6 +23,7 @@ from transcriptx.app.corpus_inventory.query import (
     continue_working_action,
     corpus_summary,
     needs_attention_counts,
+    row_matches_tags,
     select_continue_working,
 )
 from transcriptx.app.corpus_inventory.service import (
@@ -57,5 +58,6 @@ __all__ = [
     "discover_transcript_refs",
     "fingerprint_for",
     "needs_attention_counts",
+    "row_matches_tags",
     "select_continue_working",
 ]

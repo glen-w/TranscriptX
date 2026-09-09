@@ -57,6 +57,63 @@ class ExportService:
         return result
 
     @staticmethod
+    def zip_library_selection(
+        items: list,
+        *,
+        zip_basename: str = "library_tag_export",
+        manifest: dict | None = None,
+    ) -> Path | None:
+        """Zip multi-transcript library export items (no HTML/EPUB index)."""
+        from transcriptx.export.library_by_tag import LibraryExportItem
+        from transcriptx.export.zipping import assert_under_hard_cap, stage_copy_and_zip
+
+        if not items:
+            return None
+
+        copy_pairs: list[tuple[Path, Path]] = []
+        total_bytes = 0
+        for item in items:
+            if isinstance(item, LibraryExportItem):
+                src, dest = item.src, item.dest_rel
+            else:
+                src, dest = item[0], item[1]
+            if not Path(src).is_file():
+                continue
+            try:
+                total_bytes += Path(src).stat().st_size
+            except OSError:
+                continue
+            copy_pairs.append((Path(src), Path(dest)))
+
+        if not copy_pairs:
+            return None
+
+        assert_under_hard_cap(total_bytes)
+
+        write_index = None
+        if manifest is not None:
+
+            def _write_manifest(staging_dir: Path) -> None:
+                import json
+
+                (staging_dir / "manifest.json").write_text(
+                    json.dumps(manifest, indent=2, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+
+            write_index = _write_manifest
+
+        result = stage_copy_and_zip(
+            copy_pairs,
+            zip_basename=zip_basename,
+            write_index=write_index,
+            return_bytes=False,
+            staging_prefix="transcriptx_library_export_",
+        )
+        assert isinstance(result, Path)
+        return result
+
+    @staticmethod
     def _write_export_index(
         staging_dir: Path,
         run_title: str,

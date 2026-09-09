@@ -23,6 +23,7 @@ from transcriptx.app.corpus_inventory.mapping import (
 )
 from transcriptx.app.corpus_inventory.models import (
     AnalysisState,
+    CorrectionsState,
     FieldIntegrity,
     FileStamp,
     InventoryBuildStats,
@@ -208,8 +209,14 @@ def _corpus_index_stamp() -> FileStamp:
     return _stamp(Path(INDEX_FILE))
 
 
+def _processing_state_stamp() -> FileStamp:
+    from transcriptx.core.utils.paths import PROCESSING_STATE_FILE
+
+    return _stamp(Path(PROCESSING_STATE_FILE))
+
+
 def corpus_fingerprint_digest(refs: Iterable[TranscriptRef]) -> tuple[Any, ...]:
-    """Cheap hash inputs for a Streamlit wrapper: index + every row fingerprint."""
+    """Cheap hash inputs for a Streamlit wrapper: index + state + every row fingerprint."""
     corr_map = corrections_paths_by_transcript()
     row_digests = tuple(
         fingerprint_for(
@@ -218,7 +225,12 @@ def corpus_fingerprint_digest(refs: Iterable[TranscriptRef]) -> tuple[Any, ...]:
         for ref in refs
     )
     index_stamp = _corpus_index_stamp()
-    return ((index_stamp.path, index_stamp.mtime_ns, index_stamp.size), row_digests)
+    state_stamp = _processing_state_stamp()
+    return (
+        (index_stamp.path, index_stamp.mtime_ns, index_stamp.size),
+        (state_stamp.path, state_stamp.mtime_ns, state_stamp.size),
+        row_digests,
+    )
 
 
 def discover_transcript_refs() -> list[TranscriptRef]:
@@ -301,8 +313,16 @@ class CorpusInventory:
     def list_rows(
         self, refs: list[TranscriptRef] | None = None
     ) -> list[InventoryRow]:
+        from dataclasses import replace
+
+        from transcriptx.core.utils.processing_state import (
+            get_tags_for_path,
+            load_processing_state,
+        )
+
         refs = refs if refs is not None else self._discover()
         corr_map = corrections_paths_by_transcript()
+        processing_state = load_processing_state(validate=False)
         rows: list[InventoryRow] = []
         live_keys: set[str] = set()
         for ref in refs:
@@ -311,12 +331,17 @@ class CorpusInventory:
             fp = fingerprint_for(
                 ref, corrections_extra=corr_map.get(key, [])
             )
+            tags = tuple(get_tags_for_path(ref.path, state=processing_state))
             cached = self._cache.get(key)
             if cached is not None and cached[0].digest() == fp.digest():
                 self.cache_hits += 1
-                rows.append(cached[1])
+                row = cached[1]
+                if row.tags != tags:
+                    row = replace(row, tags=tags)
+                    self._cache[key] = (fp, row)
+                rows.append(row)
                 continue
-            row = self._build_row(ref, fp)
+            row = self._build_row(ref, fp, tags=tags)
             self._cache[key] = (fp, row)
             self.rows_rebuilt += 1
             rows.append(row)
@@ -351,7 +376,11 @@ class CorpusInventory:
         return payload, False
 
     def _build_row(
-        self, ref: TranscriptRef, fingerprint: InventoryFingerprint
+        self,
+        ref: TranscriptRef,
+        fingerprint: InventoryFingerprint,
+        *,
+        tags: tuple[str, ...] = (),
     ) -> InventoryRow:
         duration, speaker_count, word_count, listing_integrity = (
             self._read_listing_stats(ref.path)
@@ -386,6 +415,7 @@ class CorpusInventory:
             corrections=corrections,
             analysis=analysis,
             last_activity_at=last_activity,
+            tags=tags,
             fingerprint=fingerprint,
         )
 

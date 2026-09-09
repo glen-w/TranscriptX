@@ -143,6 +143,27 @@ inbox-watch --watch --auto-name --no-auto-link
 
 ffmpeg (audio mode): `-nostdin -y -ac 1 -ar 16000 -c:a libmp3lame -b:a 64k -f mp3`. Writes a temp `.mp3.partial` file then renames into recordings so `whispermlx-missing` never sees a half-written MP3. `-f mp3` is required so ffmpeg 8+ can mux even when the temp name does not end in `.mp3`.
 
+### Local staging (removable inbox)
+
+`--inbox` is still the drop folder (USB volume or any configured path). When that folder is on a **removable / ejectable** volume, audio is copied to a local staging directory **before** ffmpeg runs, so a flaky USB stick is not held open for a multi-hour convert.
+
+| Setting | Default | Override |
+|---------|---------|----------|
+| When to stage | Auto: macOS `diskutil` Ejectable/Removable; Linux `/media/` or `/run/media/` (sysfs `removable` when available). Detection failure does **not** stage | `--stage-local` / `--no-stage-local`, JSON `stage_local`, env `INBOX_WATCH_STAGE_LOCAL` |
+| Stage dir | `{recordings}/.inbox-staging/` (hidden from `whispermlx-missing`, which only scans the recordings top level) | `--stage-dir`, JSON `stage_dir`, env `INBOX_WATCH_STAGE_DIR` |
+
+A complete staged file with the same size as the inbox original is **reused** on the next cycle (resume after a failed convert). A half-written `.inbox-staging.{name}.partial` is discarded and the copy is retried. After a successful convert, the staged copy is moved into the WAV backup folder when `--backup-wav` is on; otherwise it is deleted. Inbox sources are still kept unless `--delete-originals` / `--move-processed`.
+
+Local/internal inbox folders skip staging unless you pass `--stage-local`.
+
+```bash
+# Force staging even when the inbox is already on local disk
+inbox-watch --once --stage-local --inbox ~/Drop --recordings ~/Documents/recordings …
+
+# Never stage (ffmpeg reads the inbox path, as before)
+inbox-watch --once --no-stage-local --inbox /Volumes/USB-DISK/RECORD …
+```
+
 ### Terminal feedback
 
 Host output mirrors the analysis CLI **Review before run** / **Run summary** shape (plain text; the script does not import `transcriptx` or Rich):
@@ -169,6 +190,8 @@ Review before cycle
 Processing
 ---
 [1/1] audio: R20260814-175320.WAV
+  Staging: R20260814-175320.WAV -> R20260814-175320.WAV (… GiB)
+  Staged: R20260814-175320.WAV (… GiB) in 12.3s
   Converting: R20260814-175320.WAV -> R20260814-175320.mp3 (… GiB)
   ffmpeg progress on stderr (time=/speed=)…
   Converted: R20260814-175320.WAV -> R20260814-175320.mp3 (… MiB) in 123.4s
@@ -182,13 +205,13 @@ Run summary
 ---
 ```
 
-Long WAV→MP3 converts can take minutes with little stdout while ffmpeg prints progress on stderr — that is expected. Ctrl-C stops the cycle (`Stopped.`); a half-written `.mp3.partial` is discarded on the next failed/interrupted convert.
+Long WAV→MP3 converts can take minutes with little stdout while ffmpeg prints progress on stderr — that is expected. Ctrl-C stops the cycle (`Stopped.`); a half-written `.mp3.partial` is discarded on the next failed/interrupted convert. A finished local staged copy is kept so the next cycle can skip the USB copy.
 
 Inbox sources are **kept by default**. After a successful convert (audio) or copy (transcript):
 
 | Option | Effect |
 |--------|--------|
-| `--backup-wav` | Copy the **audio** inbox original into the WAV backup folder (`--wav-backup`, or `TRANSCRIPTX_WAV_BACKUP_DIR`) |
+| `--backup-wav` | Copy (or **move the staged local copy** when staging ran) the **audio** original into the WAV backup folder (`--wav-backup`, or `TRANSCRIPTX_WAV_BACKUP_DIR`) |
 | `--delete-originals` | Delete the inbox source (after backup, if backup was requested and succeeded) |
 | `--move-processed DIR` | Relocate the inbox source instead of deleting (mutually exclusive with `--delete-originals`) |
 | `--force` | Overwrite an existing destination stem |
@@ -210,6 +233,8 @@ Inbox sources are **kept by default**. After a successful convert (audio) or cop
 | Auto-link matched profiles | `auto_link` | `INBOX_WATCH_AUTO_LINK` |
 | Admit interpreter | `admit_python` | `INBOX_WATCH_ADMIT_PYTHON` |
 | Config path | — | `INBOX_WATCH_CONFIG` / `--config` |
+| Stage off removable inbox first | `stage_local` (`null` = auto) | `INBOX_WATCH_STAGE_LOCAL` |
+| Staging folder | `stage_dir` | `INBOX_WATCH_STAGE_DIR` |
 | Also | `backup_wavs`, `delete_originals`, `skip_serial` | `INBOX_WATCH_BACKUP_WAV`, `INBOX_WATCH_DELETE_ORIGINALS`, `INBOX_WATCH_SKIP_SERIAL` |
 
 Library admit needs a **native** TranscriptX install (the JSON/`--admit-python` interpreter must `import transcriptx`). It does not enter the Docker analysis container. Set `TRANSCRIPTX_TRANSCRIPTS_DIR` and `TRANSCRIPTX_OUTPUT_DIR` to the same host folders Docker mounts so the GUI index stays in sync.

@@ -41,6 +41,7 @@ def _row(
     speaker_count: int | None = 2,
     last_activity: datetime | None = None,
     pending: int | None = None,
+    tags: tuple[str, ...] = (),
 ) -> InventoryRow:
     return InventoryRow(
         transcript_path=Path(f"/tmp/{name}.json"),
@@ -67,6 +68,7 @@ def _row(
             modules_eligible=1 if analysis is AnalysisStatus.COMPLETED else None,
         ),
         last_activity_at=last_activity,
+        tags=tags,
         fingerprint=_fp(),
     )
 
@@ -98,6 +100,22 @@ def test_query_matches_title_not_body() -> None:
     rows = [_row("Interview Alice"), _row("Standup")]
     filtered = apply_library_filter(rows, LibraryFilter(query="alice"))
     assert [row.title for row in filtered] == ["Interview Alice"]
+
+
+def test_tags_filter_and_match() -> None:
+    rows = [
+        _row("a", tags=("meeting", "todo")),
+        _row("b", tags=("meeting",)),
+        _row("c", tags=("idea",)),
+        _row("d", tags=()),
+    ]
+    filtered = apply_library_filter(
+        rows, LibraryFilter(tags=("meeting", "todo"))
+    )
+    assert [row.title for row in filtered] == ["a"]
+
+    meeting_only = apply_library_filter(rows, LibraryFilter(tags=("meeting",)))
+    assert {row.title for row in meeting_only} == {"a", "b"}
 
 
 def test_continue_working_prefers_resumable_over_recency() -> None:
