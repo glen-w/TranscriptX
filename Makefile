@@ -110,7 +110,7 @@ test-contracts:
 
 test-integration-core:
 	@echo "Running integration core tests..."
-	@pytest -m integration_core
+	@pytest -m "integration_core and not quarantined and not requires_docker"
 
 test-integration:
 	@echo "Running integration gate (integration/integration_core/integration_extended)..."

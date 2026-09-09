@@ -82,6 +82,10 @@ def _run_load_classifier(
                 "transcriptx.core.utils.hf_hub_load.HUB_RETRY_BACKOFF_SECONDS",
                 0,
             ),
+            patch(
+                "transcriptx.core.utils.hf_hub_load._call_with_timeout",
+                lambda load_fn, timeout_seconds: load_fn(),
+            ),
         ):
             return load_classifier(profile)
     finally:

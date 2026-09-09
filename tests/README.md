@@ -24,7 +24,7 @@
 
 **Install note:** PR `tests` / `tests-nlp` install `.[dev,web]` / `.[dev,nlp,web]` so Streamlit web modules collect under contracts/fast. Smoke still skips spaCy-gated modules unless `[nlp]` is present.
 
-**Nightly:** `.github/workflows/nightly.yml` runs `make test-integration-core` on a schedule (`cron` 06:00 UTC) and via `workflow_dispatch`.
+**Nightly:** `.github/workflows/nightly.yml` runs `make test-integration-core` on a schedule (`cron` 06:00 UTC) and via `workflow_dispatch`. That target is `integration_core` excluding `requires_docker` (no image pre-build on the nightly runner).
 
 Time budgets (target ceilings):
 - `test-smoke` ≤ 5 min
