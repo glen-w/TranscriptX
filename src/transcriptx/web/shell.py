@@ -286,12 +286,28 @@ def inject_global_styles() -> None:
         height: auto !important;
         line-height: 1.3 !important;
     }
-    /* Sidebar nav — theme-aware (Streamlit light/dark; browsers differ on default) */
+    /* Sidebar nav — chrome-aware. Streamlit 1.55+ no longer exposes --text-color,
+       so var(--text-color, #31333F) painted dark labels on dark chrome. JS sets
+       data-tx-chrome from live sidebar luminance (same as the brand wordmark). */
+    section[data-testid="stSidebar"] {
+        --tx-nav-fg: #31333F;
+    }
+    section[data-testid="stSidebar"][data-tx-chrome="dark"] {
+        --tx-nav-fg: #e8eef6;
+    }
+    section[data-testid="stSidebar"][data-tx-chrome="light"] {
+        --tx-nav-fg: #31333F;
+    }
+    @media (prefers-color-scheme: dark) {
+        section[data-testid="stSidebar"]:not([data-tx-chrome]) {
+            --tx-nav-fg: #e8eef6;
+        }
+    }
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="secondary"] {
-        background: color-mix(in srgb, var(--text-color, #31333F) 8%, transparent) !important;
-        border: 1px solid color-mix(in srgb, var(--text-color, #31333F) 18%, transparent) !important;
+        background: color-mix(in srgb, var(--tx-nav-fg) 8%, transparent) !important;
+        border: 1px solid color-mix(in srgb, var(--tx-nav-fg) 18%, transparent) !important;
         border-radius: 6px !important;
-        color: var(--text-color, #31333F) !important;
+        color: var(--tx-nav-fg) !important;
         text-align: center;
         padding: 0.35rem 0.55rem;
         font-weight: 500;
@@ -302,7 +318,7 @@ def inject_global_styles() -> None:
         transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
     }
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="secondary"]:hover {
-        color: var(--text-color, #31333F) !important;
+        color: var(--tx-nav-fg) !important;
         background: color-mix(in srgb, #1f77b4 22%, transparent) !important;
         border-color: color-mix(in srgb, #1f77b4 40%, transparent) !important;
         text-decoration: none;
@@ -313,9 +329,9 @@ def inject_global_styles() -> None:
         box-shadow: none !important;
     }
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="secondary"]:disabled {
-        background: color-mix(in srgb, var(--text-color, #31333F) 5%, transparent) !important;
-        border-color: color-mix(in srgb, var(--text-color, #31333F) 12%, transparent) !important;
-        color: color-mix(in srgb, var(--text-color, #31333F) 55%, transparent) !important;
+        background: color-mix(in srgb, var(--tx-nav-fg) 5%, transparent) !important;
+        border-color: color-mix(in srgb, var(--tx-nav-fg) 12%, transparent) !important;
+        color: color-mix(in srgb, var(--tx-nav-fg) 55%, transparent) !important;
         opacity: 1 !important;
     }
     /* Active nav — brighter fill, same size/spacing as inactive */
@@ -323,7 +339,7 @@ def inject_global_styles() -> None:
         background: color-mix(in srgb, #1f77b4 28%, var(--secondary-background-color, transparent)) !important;
         border: 1px solid color-mix(in srgb, #1f77b4 45%, transparent) !important;
         border-radius: 6px !important;
-        color: var(--text-color, #31333F) !important;
+        color: var(--tx-nav-fg) !important;
         text-align: center;
         padding: 0.35rem 0.55rem;
         font-weight: 600;
@@ -335,7 +351,7 @@ def inject_global_styles() -> None:
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="primary"]:hover {
         background: color-mix(in srgb, #1f77b4 38%, var(--secondary-background-color, transparent)) !important;
         border-color: color-mix(in srgb, #1f77b4 55%, transparent) !important;
-        color: var(--text-color, #31333F) !important;
+        color: var(--tx-nav-fg) !important;
     }
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="primary"]:focus-visible {
         outline: 2px solid #1f77b4;
@@ -1073,6 +1089,10 @@ def inject_global_styles() -> None:
         };
         const apply = function() {
             const chrome = resolveChrome();
+            const sidebar = document.querySelector('section[data-testid="stSidebar"]');
+            if (sidebar && sidebar.getAttribute('data-tx-chrome') !== chrome) {
+                sidebar.setAttribute('data-tx-chrome', chrome);
+            }
             document.querySelectorAll('.tx-sidebar-brand').forEach(function(node) {
                 if (node.getAttribute('data-tx-chrome') !== chrome) {
                     node.setAttribute('data-tx-chrome', chrome);

@@ -31,6 +31,7 @@ Normal once (cron / launchd):
 Poll (USB volume may be absent; first cycle still runs missing/admit):
     inbox-watch --watch
     inbox-watch --watch --admit
+    inbox-watch --watch --auto-name
 
 Config (merge order: portable defaults <- env <- local JSON <- CLI):
     --config /path/to/config.json
@@ -45,12 +46,19 @@ Inbox files are kept by default. After a successful convert/copy you can
     --backup-wav (copy audio originals into the WAV backup folder),
     --delete-originals (remove the inbox source), both, or --move-processed DIR.
 
+    Audio on a removable inbox (USB / ejectable volume) is copied to a local
+    staging folder first, then ffmpeg reads that copy. Override with
+    --stage-local / --no-stage-local (env INBOX_WATCH_STAGE_LOCAL). Default
+    stage dir: {recordings}/.inbox-staging/ (hidden from whispermlx-missing).
+
     --skip-serial forwards to whispermlx-missing so split parts / voice-note
     runs are not transcribed (merge first, then transcribe the merged file).
 
     --admit (default off) runs python -m transcriptx.admit_originals after
     convert/copy/missing so originals/ JSON is admitted into the managed library.
     Requires a Python that can import transcriptx (native venv / --admit-python).
+    --auto-name / --auto-link (independent; --auto-name defaults auto-link on)
+    pass through to admit_originals after a successful admit.
 
 Exit 0 = all ok; 1 = one or more item failures; 2 = CLI/config/validation error.
 """
@@ -60,6 +68,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import plistlib
 import shutil
 import stat
 import subprocess
@@ -105,6 +114,10 @@ KNOWN_CONFIG_KEYS = frozenset(
         "skip_serial",
         "admit_to_library",
         "admit_python",
+        "auto_name",
+        "auto_link",
+        "stage_local",
+        "stage_dir",
     }
 )
 
@@ -118,12 +131,14 @@ _PATH_KEYS = (
     "move_processed",
     "wav_backup",
     "admit_python",
+    "stage_dir",
 )
 
 FFMPEG_CHANNELS = "1"
 FFMPEG_SAMPLE_RATE = "16000"
 FFMPEG_CODEC = "libmp3lame"
 FFMPEG_BITRATE = "64k"
+STAGE_DIR_NAME = ".inbox-staging"
 
 
 @dataclass
@@ -137,6 +152,7 @@ class ConfigProvenance:
     move_processed: ConfigSource = "unset"
     wav_backup: ConfigSource = "unset"
     admit_python: ConfigSource = "unset"
+    stage_dir: ConfigSource = "unset"
 
 
 @dataclass
@@ -158,6 +174,10 @@ class EffectiveConfig:
     skip_serial: bool = False
     admit_to_library: bool = False
     admit_python: Path | None = None
+    auto_name: bool = False
+    auto_link: bool = False
+    stage_local: bool | None = None
+    stage_dir: Path | None = None
     provenance: ConfigProvenance = field(default_factory=ConfigProvenance)
 
 
@@ -170,6 +190,10 @@ class CycleStats:
     transcripts_skipped: int = 0
     transcripts_failed: int = 0
     unstable: int = 0
+    staged: int = 0
+    staged_reused: int = 0
+    stage_failed: int = 0
+    would_stage: int = 0
     missing_invoked: int = 0
     originals_backed_up: int = 0
     originals_deleted: int = 0
@@ -188,10 +212,16 @@ class CycleStats:
     failed_names: list[str] = field(default_factory=list)
     skipped_names: list[tuple[str, str]] = field(default_factory=list)
     unstable_names: list[str] = field(default_factory=list)
+    staged_names: list[str] = field(default_factory=list)
 
     @property
     def failed(self) -> int:
-        return self.audio_failed + self.transcripts_failed + self.admit_failed
+        return (
+            self.audio_failed
+            + self.transcripts_failed
+            + self.admit_failed
+            + self.stage_failed
+        )
 
 
 def _log(msg: str = "", *, err: bool = False) -> None:
@@ -283,6 +313,31 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=None,
         help="WAV backup folder (default: TRANSCRIPTX_WAV_BACKUP_DIR / data/backups/wav).",
+    )
+    parser.add_argument(
+        "--stage-dir",
+        dest="stage_dir",
+        type=Path,
+        default=None,
+        help=(
+            "Local folder for inbox audio copies before ffmpeg "
+            "(default: {recordings}/.inbox-staging)."
+        ),
+    )
+
+    stage_group = parser.add_mutually_exclusive_group()
+    stage_group.add_argument(
+        "--stage-local",
+        dest="stage_local",
+        action="store_true",
+        default=None,
+        help="Always copy inbox audio to local staging before convert.",
+    )
+    stage_group.add_argument(
+        "--no-stage-local",
+        dest="stage_local",
+        action="store_false",
+        help="Never stage; ffmpeg reads the inbox path (default: auto on removable volumes).",
     )
 
     backup_group = parser.add_mutually_exclusive_group()
@@ -421,6 +476,37 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_false",
         help="Do not admit into the managed library (default).",
     )
+    name_group = parser.add_mutually_exclusive_group()
+    name_group.add_argument(
+        "--auto-name",
+        dest="auto_name",
+        action="store_true",
+        default=None,
+        help=(
+            "After admit, auto-name diarized speakers (implies --admit; "
+            "also auto-link unless --no-auto-link)."
+        ),
+    )
+    name_group.add_argument(
+        "--no-auto-name",
+        dest="auto_name",
+        action="store_false",
+        help="Do not auto-write speaker names after admit.",
+    )
+    link_group = parser.add_mutually_exclusive_group()
+    link_group.add_argument(
+        "--auto-link",
+        dest="auto_link",
+        action="store_true",
+        default=None,
+        help="After admit, auto-link matched longitudinal speaker profiles.",
+    )
+    link_group.add_argument(
+        "--no-auto-link",
+        dest="auto_link",
+        action="store_false",
+        help="Do not auto-link longitudinal profiles after admit.",
+    )
     parser.add_argument(
         "--show-config",
         action="store_true",
@@ -460,6 +546,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         delete_originals=None,
         skip_serial=None,
         admit_to_library=None,
+        auto_name=None,
+        auto_link=None,
+        stage_local=None,
     )
     return parser.parse_args(argv)
 
@@ -587,6 +676,11 @@ def env_derived_config() -> tuple[dict[str, Any], ConfigProvenance]:
         derived["wav_backup"] = wav_backup
         provenance.wav_backup = "env"
 
+    stage_dir = os.environ.get("INBOX_WATCH_STAGE_DIR", "").strip()
+    if stage_dir:
+        derived["stage_dir"] = stage_dir
+        provenance.stage_dir = "env"
+
     if os.environ.get("INBOX_WATCH_AUDIO", "").strip():
         derived["watch_audio"] = _parse_bool_env(
             os.environ.get("INBOX_WATCH_AUDIO"), default=True
@@ -610,6 +704,18 @@ def env_derived_config() -> tuple[dict[str, Any], ConfigProvenance]:
     if os.environ.get("INBOX_WATCH_ADMIT", "").strip():
         derived["admit_to_library"] = _parse_bool_env(
             os.environ.get("INBOX_WATCH_ADMIT"), default=False
+        )
+    if os.environ.get("INBOX_WATCH_AUTO_NAME", "").strip():
+        derived["auto_name"] = _parse_bool_env(
+            os.environ.get("INBOX_WATCH_AUTO_NAME"), default=False
+        )
+    if os.environ.get("INBOX_WATCH_AUTO_LINK", "").strip():
+        derived["auto_link"] = _parse_bool_env(
+            os.environ.get("INBOX_WATCH_AUTO_LINK"), default=False
+        )
+    if os.environ.get("INBOX_WATCH_STAGE_LOCAL", "").strip():
+        derived["stage_local"] = _parse_bool_env(
+            os.environ.get("INBOX_WATCH_STAGE_LOCAL"), default=False
         )
     admit_python = os.environ.get("INBOX_WATCH_ADMIT_PYTHON", "").strip()
     if admit_python:
@@ -742,6 +848,9 @@ def resolve_config(
     if args.wav_backup is not None:
         merged["wav_backup"] = str(args.wav_backup)
         provenance.wav_backup = "cli"
+    if args.stage_dir is not None:
+        merged["stage_dir"] = str(args.stage_dir)
+        provenance.stage_dir = "cli"
     if args.watch_audio is not None:
         merged["watch_audio"] = args.watch_audio
     if args.watch_transcripts is not None:
@@ -754,6 +863,12 @@ def resolve_config(
         merged["skip_serial"] = args.skip_serial
     if args.admit_to_library is not None:
         merged["admit_to_library"] = args.admit_to_library
+    if args.auto_name is not None:
+        merged["auto_name"] = args.auto_name
+    if args.auto_link is not None:
+        merged["auto_link"] = args.auto_link
+    if args.stage_local is not None:
+        merged["stage_local"] = args.stage_local
     if args.recursive is not None:
         merged["recursive"] = args.recursive
     if args.interval_seconds is not None:
@@ -769,9 +884,26 @@ def resolve_config(
         merged.get("delete_originals", False), "delete_originals"
     )
     skip_serial = require_bool(merged.get("skip_serial", False), "skip_serial")
+    auto_name = require_bool(merged.get("auto_name", False), "auto_name")
+    auto_link_raw = merged.get("auto_link", None)
+    if args.auto_name is True and args.auto_link is None:
+        auto_link = True
+    elif auto_link_raw is None:
+        auto_link = auto_name
+    else:
+        auto_link = require_bool(auto_link_raw, "auto_link")
     admit_to_library = require_bool(
         merged.get("admit_to_library", False), "admit_to_library"
     )
+    if auto_name or auto_link:
+        admit_to_library = True
+    stage_local_raw = merged.get("stage_local", None)
+    if stage_local_raw is None or (
+        isinstance(stage_local_raw, str) and not stage_local_raw.strip()
+    ):
+        stage_local: bool | None = None
+    else:
+        stage_local = require_bool(stage_local_raw, "stage_local")
     interval = merged.get("interval_seconds", 5.0)
     try:
         interval_seconds = float(interval)
@@ -798,6 +930,10 @@ def resolve_config(
         skip_serial=skip_serial,
         admit_to_library=admit_to_library,
         admit_python=_as_optional_path(merged.get("admit_python")),
+        auto_name=auto_name,
+        auto_link=auto_link,
+        stage_local=stage_local,
+        stage_dir=_as_optional_path(merged.get("stage_dir")),
         provenance=provenance,
     )
 
@@ -824,6 +960,10 @@ def config_to_dict(cfg: EffectiveConfig) -> dict[str, Any]:
         "delete_originals": cfg.delete_originals,
         "skip_serial": cfg.skip_serial,
         "admit_to_library": cfg.admit_to_library,
+        "auto_name": cfg.auto_name,
+        "auto_link": cfg.auto_link,
+        "stage_local": cfg.stage_local,
+        "stage_dir": str(cfg.stage_dir) if cfg.stage_dir else None,
     }
 
 
@@ -848,6 +988,15 @@ def is_same_or_under(path: Path, root: Path) -> bool:
         return True
     except (ValueError, OSError):
         return False
+
+
+def effective_stage_dir(cfg: EffectiveConfig) -> Path | None:
+    """Return the staging folder, defaulting to {recordings}/.inbox-staging."""
+    if cfg.stage_dir is not None:
+        return cfg.stage_dir
+    if cfg.recordings is not None:
+        return cfg.recordings / STAGE_DIR_NAME
+    return None
 
 
 def find_stem_match(
@@ -895,6 +1044,193 @@ def wait_until_stable(
                 return True
         time.sleep(interval_s)
     return previous is not None and stable_count >= max(checks, 1)
+
+
+def _existing_ancestor(path: Path) -> Path | None:
+    current = path.expanduser()
+    try:
+        current = current.resolve()
+    except OSError:
+        pass
+    while True:
+        try:
+            if current.exists():
+                return current
+        except OSError:
+            return None
+        parent = current.parent
+        if parent == current:
+            return None
+        current = parent
+
+
+def _macos_volume_is_removable(mount: Path) -> bool | None:
+    """Return True/False from diskutil, or None if detection failed."""
+    try:
+        result = subprocess.run(
+            ["diskutil", "info", "-plist", str(mount)],
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0 or not result.stdout:
+        return None
+    try:
+        info = plistlib.loads(result.stdout)
+    except Exception:
+        return None
+    if not isinstance(info, dict):
+        return None
+    for key in ("Ejectable", "Removable", "RemovableMedia"):
+        if info.get(key) is True:
+            return True
+    return False
+
+
+def _linux_sysfs_removable(device: str) -> bool | None:
+    name = Path(device).name
+    if not name:
+        return None
+    sysfs = Path("/sys/class/block") / name / "removable"
+    try:
+        raw = sysfs.read_text(encoding="utf-8").strip()
+    except OSError:
+        parent = name.rstrip("0123456789")
+        if parent == name:
+            return None
+        sysfs = Path("/sys/class/block") / parent / "removable"
+        try:
+            raw = sysfs.read_text(encoding="utf-8").strip()
+        except OSError:
+            return None
+    return raw == "1"
+
+
+def _linux_path_is_removable(path: Path) -> bool | None:
+    posix = path.as_posix()
+    if posix.startswith("/media/") or posix.startswith("/run/media/"):
+        return True
+    try:
+        mounts = Path("/proc/mounts").read_text(encoding="utf-8")
+    except OSError:
+        return None
+    best: tuple[int, str] | None = None
+    for line in mounts.splitlines():
+        parts = line.split()
+        if len(parts) < 2:
+            continue
+        device, mount_point = parts[0], parts[1]
+        mount_point = mount_point.replace("\\040", " ")
+        if posix == mount_point or posix.startswith(mount_point.rstrip("/") + "/"):
+            length = len(mount_point)
+            if best is None or length > best[0]:
+                best = (length, device)
+    if best is None:
+        return None
+    return _linux_sysfs_removable(best[1])
+
+
+def inbox_on_removable_volume(inbox: Path) -> bool:
+    """True when *inbox* is on an ejectable/removable volume.
+
+    Detection failure returns False (ffmpeg keeps reading the inbox path)
+    unless the operator forces staging with --stage-local.
+    """
+    mount = _existing_ancestor(inbox)
+    if mount is None:
+        return False
+    if sys.platform == "darwin":
+        detected = _macos_volume_is_removable(mount)
+        return bool(detected)
+    if sys.platform.startswith("linux"):
+        detected = _linux_path_is_removable(mount)
+        return bool(detected)
+    return False
+
+
+def should_stage_audio(
+    cfg: EffectiveConfig,
+    inbox: Path,
+    *,
+    removable: bool | None = None,
+) -> bool:
+    if not cfg.watch_audio:
+        return False
+    if cfg.stage_local is True:
+        return True
+    if cfg.stage_local is False:
+        return False
+    if removable is None:
+        removable = inbox_on_removable_volume(inbox)
+    return removable
+
+
+def stage_inbox_audio(
+    inbox_src: Path,
+    stage_dir: Path,
+    *,
+    force: bool,
+    dry_run: bool,
+) -> tuple[Path | None, str]:
+    """Copy inbox audio to *stage_dir*. Return (path, staged|reused|failed|dry_run)."""
+    dest = stage_dir / inbox_src.name
+    if dry_run:
+        try:
+            size = f" ({_human_bytes(inbox_src.stat().st_size)})"
+        except OSError:
+            size = ""
+        _log(f"  Would stage: {inbox_src} -> {dest}{size}")
+        return dest, "dry_run"
+
+    src_size: int | None
+    try:
+        src_size = int(inbox_src.stat().st_size)
+    except OSError:
+        src_size = None
+
+    if dest.is_file() and not force:
+        try:
+            dest_size = int(dest.stat().st_size)
+        except OSError:
+            dest_size = -1
+        if src_size is None or dest_size == src_size:
+            _log(f"  Using staged: {dest.name}")
+            return dest, "reused"
+
+    stage_dir.mkdir(parents=True, exist_ok=True)
+    partial = stage_dir / f".inbox-staging.{inbox_src.name}.partial"
+    try:
+        size = f" ({_human_bytes(src_size)})" if src_size is not None else ""
+    except OSError:
+        size = ""
+    _log(f"  Staging: {inbox_src.name} -> {dest.name}{size}")
+    started = time.perf_counter()
+    try:
+        shutil.copy2(inbox_src, partial)
+        copied = int(partial.stat().st_size)
+        if src_size is not None and copied != src_size:
+            partial.unlink(missing_ok=True)
+            _log(
+                f"ERROR: staged size mismatch for {inbox_src.name} "
+                f"(expected {src_size}, got {copied})",
+                err=True,
+            )
+            return None, "failed"
+        os.replace(partial, dest)
+    except OSError as exc:
+        if partial.exists():
+            partial.unlink(missing_ok=True)
+        _log(f"ERROR: staging failed for {inbox_src.name}: {exc}", err=True)
+        return None, "failed"
+    elapsed = time.perf_counter() - started
+    try:
+        out_size = f" ({_human_bytes(dest.stat().st_size)})"
+    except OSError:
+        out_size = ""
+    _log(f"  Staged: {inbox_src.name}{out_size} in {elapsed:.1f}s")
+    return dest, "staged"
 
 
 def discover_inbox_files(
@@ -1055,6 +1391,8 @@ def build_admit_cmd(
     *,
     transcripts: Path,
     dry_run: bool = False,
+    auto_name: bool = False,
+    auto_link: bool = False,
 ) -> list[str]:
     cmd = [
         str(python),
@@ -1067,6 +1405,14 @@ def build_admit_cmd(
     ]
     if dry_run:
         cmd.append("--dry-run")
+    if auto_name:
+        cmd.append("--auto-name")
+    elif auto_link:
+        cmd.append("--no-auto-name")
+    if auto_link:
+        cmd.append("--auto-link")
+    elif auto_name:
+        cmd.append("--no-auto-link")
     return cmd
 
 
@@ -1131,6 +1477,14 @@ def backup_original_to_wav(src: Path, wav_backup: Path) -> Path | None:
     return dest
 
 
+def move_staged_to_wav_backup(staged: Path, wav_backup: Path) -> Path:
+    wav_backup.mkdir(parents=True, exist_ok=True)
+    dest = unique_backup_path(wav_backup, staged)
+    shutil.move(str(staged), str(dest))
+    print(f"Backed up: {staged.name} -> {dest}")
+    return dest
+
+
 def finalize_inbox_source(
     src: Path,
     cfg: EffectiveConfig,
@@ -1138,19 +1492,28 @@ def finalize_inbox_source(
     kind: Kind,
     dry_run: bool,
     stats: CycleStats,
+    staged_path: Path | None = None,
 ) -> None:
     """Backup / move / delete an inbox source after a successful convert or copy."""
     if kind == "audio" and cfg.backup_wavs:
         if cfg.wav_backup is None:
             print("ERROR: backup_wavs is on but wav_backup is unset", file=sys.stderr)
             return
+        backup_src = (
+            staged_path
+            if staged_path is not None and (dry_run or staged_path.is_file())
+            else src
+        )
         if dry_run:
-            dest = unique_backup_path(cfg.wav_backup, src)
-            print(f"Would backup: {src} -> {dest}")
+            dest = unique_backup_path(cfg.wav_backup, backup_src)
+            print(f"Would backup: {backup_src} -> {dest}")
             stats.would_backup += 1
         else:
             try:
-                backup_original_to_wav(src, cfg.wav_backup)
+                if staged_path is not None and staged_path.is_file():
+                    move_staged_to_wav_backup(staged_path, cfg.wav_backup)
+                else:
+                    backup_original_to_wav(src, cfg.wav_backup)
                 stats.originals_backed_up += 1
             except OSError as exc:
                 print(f"ERROR: wav backup failed for {src.name}: {exc}", file=sys.stderr)
@@ -1160,6 +1523,11 @@ def finalize_inbox_source(
                         file=sys.stderr,
                     )
                 return
+    elif kind == "audio" and staged_path is not None and not dry_run:
+        try:
+            staged_path.unlink(missing_ok=True)
+        except OSError:
+            pass
 
     if cfg.move_processed is not None:
         if dry_run:
@@ -1247,6 +1615,24 @@ def validate_layout(cfg: EffectiveConfig) -> str | None:
             return "inbox must not be wav_backup or a path under wav_backup."
         if is_same_or_under(wav_backup, inbox):
             return "wav_backup must not be under inbox."
+    stage_dir = effective_stage_dir(cfg)
+    if cfg.watch_audio and stage_dir is not None:
+        if inbox.resolve() == stage_dir.resolve() or is_same_or_under(inbox, stage_dir):
+            return "inbox must not be stage_dir or a path under stage_dir."
+        if is_same_or_under(stage_dir, inbox):
+            return "stage_dir must not be under inbox."
+        if cfg.recordings is not None and stage_dir.resolve() == cfg.recordings.resolve():
+            return (
+                "stage_dir must not be recordings "
+                "(use a subdirectory such as recordings/.inbox-staging)."
+            )
+        if cfg.wav_backup is not None and stage_dir.resolve() == cfg.wav_backup.resolve():
+            return "stage_dir must not be wav_backup."
+        if (
+            cfg.move_processed is not None
+            and stage_dir.resolve() == cfg.move_processed.resolve()
+        ):
+            return "stage_dir must not be move_processed."
     return None
 
 
@@ -1273,26 +1659,40 @@ def convert_audio(
     dry_run: bool,
     cfg: EffectiveConfig,
     stats: CycleStats,
+    inbox_src: Path | None = None,
+    staged_path: Path | None = None,
 ) -> str:
-    """Return converted / skipped / failed / dry_run."""
-    existing = find_stem_match(recordings, src.stem, AUDIO_EXTENSIONS)
-    dest = recordings / f"{src.stem}.mp3"
+    """Return converted / skipped / failed / dry_run.
+
+    *src* is the ffmpeg input (staged local copy or inbox file).
+    *inbox_src* is the original inbox path used for logging and finalize.
+    """
+    display = inbox_src or src
+    existing = find_stem_match(recordings, display.stem, AUDIO_EXTENSIONS)
+    dest = recordings / f"{display.stem}.mp3"
     if existing is not None and not force:
-        _log(f"  Skipping (stem exists): {src.name} -> {existing.name}")
+        _log(f"  Skipping (stem exists): {display.name} -> {existing.name}")
         return "skipped"
     if dry_run:
         cmd = build_ffmpeg_cmd(ffmpeg, src, dest)
         _log(f"  Would convert: {' '.join(cmd)}")
-        finalize_inbox_source(src, cfg, kind="audio", dry_run=True, stats=stats)
+        finalize_inbox_source(
+            display,
+            cfg,
+            kind="audio",
+            dry_run=True,
+            stats=stats,
+            staged_path=staged_path,
+        )
         return "dry_run"
 
     recordings.mkdir(parents=True, exist_ok=True)
-    partial = recordings / f".inbox-watch.{src.stem}.mp3.partial"
+    partial = recordings / f".inbox-watch.{display.stem}.mp3.partial"
     try:
         size = f" ({_human_bytes(src.stat().st_size)})"
     except OSError:
         size = ""
-    _log(f"  Converting: {src.name} -> {dest.name}{size}")
+    _log(f"  Converting: {display.name} -> {dest.name}{size}")
     _log("  ffmpeg progress on stderr (time=/speed=)…")
     started = time.perf_counter()
     cmd = build_ffmpeg_cmd(ffmpeg, src, partial)
@@ -1306,7 +1706,7 @@ def convert_audio(
             tail = "\n".join(result.stderr.splitlines()[-20:])
             extra = f": {tail}"
         _log(
-            f"ERROR: ffmpeg failed for {src.name} "
+            f"ERROR: ffmpeg failed for {display.name} "
             f"(exit {result.returncode}, {elapsed:.1f}s){extra}",
             err=True,
         )
@@ -1316,8 +1716,15 @@ def convert_audio(
         out_size = f" ({_human_bytes(dest.stat().st_size)})"
     except OSError:
         out_size = ""
-    _log(f"  Converted: {src.name} -> {dest.name}{out_size} in {elapsed:.1f}s")
-    finalize_inbox_source(src, cfg, kind="audio", dry_run=False, stats=stats)
+    _log(f"  Converted: {display.name} -> {dest.name}{out_size} in {elapsed:.1f}s")
+    finalize_inbox_source(
+        display,
+        cfg,
+        kind="audio",
+        dry_run=False,
+        stats=stats,
+        staged_path=staged_path,
+    )
     return "converted"
 
 
@@ -1357,6 +1764,8 @@ def print_review_before_cycle(
     work: Sequence[tuple[Path, Kind]],
     *,
     dry_run: bool,
+    staging: bool = False,
+    staging_reason: str | None = None,
 ) -> None:
     audio_n = sum(1 for _, kind in work if kind == "audio")
     tx_n = sum(1 for _, kind in work if kind == "transcript")
@@ -1367,13 +1776,25 @@ def print_review_before_cycle(
         _log(f"  Recordings:  {cfg.recordings}")
     if cfg.watch_transcripts or cfg.watch_audio:
         _log(f"  Transcripts: {cfg.transcripts}")
+    if staging:
+        stage_dir = effective_stage_dir(cfg)
+        reason = staging_reason or "on"
+        _log(f"  Staging:     {reason}")
+        if stage_dir is not None:
+            _log(f"  Stage dir:   {stage_dir}")
     modes: list[str] = []
     if cfg.watch_audio:
         modes.append("audio→mp3 + whispermlx-missing")
+        if staging:
+            modes.append("stage-local")
     if cfg.watch_transcripts:
         modes.append("transcript copy")
     if cfg.admit_to_library:
         modes.append("admit→library")
+    if cfg.auto_name:
+        modes.append("auto-name")
+    if cfg.auto_link:
+        modes.append("auto-link")
     _log(f"  Watching:    {', '.join(modes) if modes else '(none)'}")
     _log(f"  Candidates:  {len(work)} ({audio_n} audio, {tx_n} transcript)")
     if work:
@@ -1432,7 +1853,13 @@ def maybe_run_admit(
     dry_run: bool,
 ) -> None:
     assert cfg.transcripts is not None
-    cmd = build_admit_cmd(python, transcripts=cfg.transcripts, dry_run=dry_run)
+    cmd = build_admit_cmd(
+        python,
+        transcripts=cfg.transcripts,
+        dry_run=dry_run,
+        auto_name=cfg.auto_name,
+        auto_link=cfg.auto_link,
+    )
     _print_section("Library admit")
     if dry_run:
         _log(f"  Would run: {' '.join(cmd)}")
@@ -1470,10 +1897,23 @@ def process_cycle(
 ) -> CycleStats:
     assert cfg.inbox is not None
     stats = CycleStats()
+    stage_dir = effective_stage_dir(cfg)
+    removable = inbox_on_removable_volume(cfg.inbox)
+    stage_audio = should_stage_audio(cfg, cfg.inbox, removable=removable)
+    if cfg.stage_local is True:
+        staging_reason = "forced"
+    elif stage_audio:
+        staging_reason = "removable inbox"
+    else:
+        staging_reason = None
     files = discover_inbox_files(
         cfg.inbox,
         recursive=cfg.recursive,
-        skip_under=[p for p in (cfg.move_processed, cfg.wav_backup) if p is not None],
+        skip_under=[
+            p
+            for p in (cfg.move_processed, cfg.wav_backup, stage_dir)
+            if p is not None
+        ],
     )
     work: list[tuple[Path, Kind]] = []
     for src in files:
@@ -1486,7 +1926,13 @@ def process_cycle(
             continue
         work.append((src, kind))
 
-    print_review_before_cycle(cfg, work, dry_run=dry_run)
+    print_review_before_cycle(
+        cfg,
+        work,
+        dry_run=dry_run,
+        staging=stage_audio,
+        staging_reason=staging_reason,
+    )
     total = len(work)
     if total == 0:
         _log("No inbox candidates this cycle.")
@@ -1508,14 +1954,45 @@ def process_cycle(
         if kind == "audio":
             assert cfg.recordings is not None
             assert ffmpeg is not None
+            convert_src = src
+            staged_path: Path | None = None
+            existing = find_stem_match(cfg.recordings, src.stem, AUDIO_EXTENSIONS)
+            if (
+                stage_audio
+                and stage_dir is not None
+                and (existing is None or force)
+            ):
+                staged_path, stage_outcome = stage_inbox_audio(
+                    src,
+                    stage_dir,
+                    force=force,
+                    dry_run=dry_run,
+                )
+                if stage_outcome == "failed":
+                    stats.stage_failed += 1
+                    stats.failed_names.append(src.name)
+                    continue
+                if stage_outcome == "staged":
+                    stats.staged += 1
+                    stats.staged_names.append(src.name)
+                elif stage_outcome == "reused":
+                    stats.staged_reused += 1
+                    stats.staged_names.append(src.name)
+                elif stage_outcome == "dry_run":
+                    stats.would_stage += 1
+                    stats.staged_names.append(src.name)
+                if staged_path is not None:
+                    convert_src = staged_path
             outcome = convert_audio(
-                src,
+                convert_src,
                 cfg.recordings,
                 ffmpeg=ffmpeg,
                 force=force,
                 dry_run=dry_run,
                 cfg=cfg,
                 stats=stats,
+                inbox_src=src,
+                staged_path=staged_path,
             )
             if outcome == "converted":
                 stats.audio_converted += 1
@@ -1575,15 +2052,20 @@ def print_summary(
     if dry_run:
         _log(f"  Would convert: {stats.would_convert}")
         _log(f"  Would copy:    {stats.would_copy}")
+        _log(f"  Would stage:   {stats.would_stage}")
         _log(f"  Would invoke missing: {stats.would_invoke_missing}")
         _log(f"  Would admit: {stats.would_admit}")
         _log(f"  Would backup:  {stats.would_backup}")
         _log(f"  Would delete:  {stats.would_delete}")
         _print_limited_items("Would convert", stats.converted_names)
         _print_limited_items("Would copy", stats.copied_names)
+        _print_limited_items("Would stage", stats.staged_names)
     else:
         _log(f"  Converted: {stats.audio_converted}")
         _log(f"  Copied:    {stats.transcripts_copied}")
+        _log(f"  Staged:    {stats.staged}")
+        if stats.staged_reused:
+            _log(f"  Reused staged: {stats.staged_reused}")
         _log(f"  Backed up: {stats.originals_backed_up}")
         _log(f"  Deleted:   {stats.originals_deleted}")
         _log(f"  Missing runs: {stats.missing_invoked}")
@@ -1591,6 +2073,7 @@ def print_summary(
             _log(f"  Admit runs: {stats.admitted}")
         _print_limited_items("Converted", stats.converted_names)
         _print_limited_items("Copied", stats.copied_names)
+        _print_limited_items("Staged", stats.staged_names)
 
     if stats.skipped_names:
         _log("  Skipped:")

@@ -45,6 +45,13 @@ python3 scripts/whispermlx-missing.py --dry-run …
 ```
 
 It processes MP3s in a source folder that lack matching JSON in a transcripts output folder.
+When ``convert_wavs`` is on (default), it first converts ``.wav`` files in the source folder to
+16 kHz mono 64k MP3 (same settings as inbox-watch), then moves the WAV into the WAV backup folder.
+
+**WAV → MP3 + archive:** On by default. Converts ``.wav`` in ``--source`` to MP3 in the same folder,
+then **moves** the WAV to ``--wav-backup`` (``TRANSCRIPTX_WAV_BACKUP_DIR`` / portable default).
+Skips when an MP3 with the same stem already exists. Disable with ``--no-convert-wavs`` or
+``"convert_wavs": false`` in JSON.
 
 **Resume / duplicates:** stems with matching JSON are skipped by default — in `--transcripts` (typically `…/originals`), in the parent library root when that folder is named `originals` (already-imported canonical JSON), as `foo (N).json` import-archive names, or as a sidecar next to the MP3. Use `--force` / `--rerun` to replace after a valid new JSON is produced. `--fuzzy-json-match` also treats `foo-….json` / `foo_….json` / `foo.….json` as already done. Writes still go only to `originals/` (see [STORAGE.md](STORAGE.md)).
 
@@ -78,6 +85,9 @@ It processes MP3s in a source folder that lack matching JSON in a transcripts ou
 | `TRANSCRIPTX_TRANSCRIPTS_DIR` env | Transcripts **base** directory; script appends `/originals` for batch output |
 | `transcripts` in JSON or `--transcripts` CLI | Exact **output** directory — must be `…/transcripts/originals` (scripts refuse the library root that contains `metadata/` / `imports/`) |
 | `TRANSCRIPTX_RECORDINGS_DIR` env | Maps directly to `source` (recordings folder) |
+| WAV archive | `wav_backup` | `TRANSCRIPTX_WAV_BACKUP_DIR` |
+| Convert WAV in source | `convert_wavs` (default **on**) | `WHISPERMLX_CONVERT_WAVS` |
+| ffmpeg for WAV convert | `ffmpeg` | `WHISPERMLX_FFMPEG` |
 
 Host helpers write raw engine JSON under `originals/` only. Library admission requires **Import Transcript**, Settings → Watcher, or optional `inbox-watch --admit` (`admit_and_register`), which writes canonical `schema_version` / `source` markers plus an import sidecar.
 
@@ -102,6 +112,8 @@ Or run without installing: `python3 scripts/inbox-watch.py --once --dry-run …`
 | `--watch-audio` (default on) | Convert new inbox audio to 16 kHz mono 64k MP3 in the recordings folder, then run `whispermlx-missing` | Recordings already has that stem (any audio extension). With `--skip-serial`, `whispermlx-missing` also skips Auto-merge serial groups |
 | `--watch-transcripts` (default on) | Copy new JSON/SRT/VTT/txt/html into the transcripts dest | Dest already has that stem (any transcript extension) |
 | `--admit` (default off) | After audio/transcript handling, admit eligible files in the transcripts dest (typically `originals/`) into the library | Already-imported stems; `foo (1).json` archive names. Requires a Python that can `import transcriptx` (`--admit-python` or `.transcriptx/bin/python`) |
+| `--auto-name` | After admit, auto-write speaker display names (implies `--admit`; also `--auto-link` unless `--no-auto-link`) | Fail-open: leaves `SPEAKER_*` when voice/text fusion is unsure. Needs enrolled voices for returning speakers; in-transcript names can still label first meetings |
+| `--auto-link` | After admit, create longitudinal profile links for matched enrolled / named profiles (`link_method: auto_identified`) | No new profiles from first-meeting names; does not enrol voice samples |
 | `--no-watch-audio` / `--no-watch-transcripts` | Disable that mode | At least one mode must stay on |
 
 ```bash
@@ -120,9 +132,37 @@ inbox-watch --watch --interval 5
 
 # Same, and admit new originals/ JSON into the library
 inbox-watch --watch --admit
+
+# USB → diarized transcript with named speakers (and profile links)
+inbox-watch --watch --auto-name
+# names only:
+inbox-watch --watch --auto-name --no-auto-link
 ```
 
+`--auto-name` / `--auto-link` pass through to `python -m transcriptx.admit_originals`. Standalone: `python -m transcriptx.identify_speakers --path FILE --auto-name --auto-link`. Settings → Speakers stores ingest defaults in `config_dir/identify.json`. Full operator reference (knobs, fusion, review): [Auto-identify speakers](auto-identify.md).
+
 ffmpeg (audio mode): `-nostdin -y -ac 1 -ar 16000 -c:a libmp3lame -b:a 64k -f mp3`. Writes a temp `.mp3.partial` file then renames into recordings so `whispermlx-missing` never sees a half-written MP3. `-f mp3` is required so ffmpeg 8+ can mux even when the temp name does not end in `.mp3`.
+
+### Local staging (removable inbox)
+
+`--inbox` is still the drop folder (USB volume or any configured path). When that folder is on a **removable / ejectable** volume, audio is copied to a local staging directory **before** ffmpeg runs, so a flaky USB stick is not held open for a multi-hour convert.
+
+| Setting | Default | Override |
+|---------|---------|----------|
+| When to stage | Auto: macOS `diskutil` Ejectable/Removable; Linux `/media/` or `/run/media/` (sysfs `removable` when available). Detection failure does **not** stage | `--stage-local` / `--no-stage-local`, JSON `stage_local`, env `INBOX_WATCH_STAGE_LOCAL` |
+| Stage dir | `{recordings}/.inbox-staging/` (hidden from `whispermlx-missing`, which only scans the recordings top level) | `--stage-dir`, JSON `stage_dir`, env `INBOX_WATCH_STAGE_DIR` |
+
+A complete staged file with the same size as the inbox original is **reused** on the next cycle (resume after a failed convert). A half-written `.inbox-staging.{name}.partial` is discarded and the copy is retried. After a successful convert, the staged copy is moved into the WAV backup folder when `--backup-wav` is on; otherwise it is deleted. Inbox sources are still kept unless `--delete-originals` / `--move-processed`.
+
+Local/internal inbox folders skip staging unless you pass `--stage-local`.
+
+```bash
+# Force staging even when the inbox is already on local disk
+inbox-watch --once --stage-local --inbox ~/Drop --recordings ~/Documents/recordings …
+
+# Never stage (ffmpeg reads the inbox path, as before)
+inbox-watch --once --no-stage-local --inbox /Volumes/USB-DISK/RECORD …
+```
 
 ### Terminal feedback
 
@@ -150,6 +190,8 @@ Review before cycle
 Processing
 ---
 [1/1] audio: R20260814-175320.WAV
+  Staging: R20260814-175320.WAV -> R20260814-175320.WAV (… GiB)
+  Staged: R20260814-175320.WAV (… GiB) in 12.3s
   Converting: R20260814-175320.WAV -> R20260814-175320.mp3 (… GiB)
   ffmpeg progress on stderr (time=/speed=)…
   Converted: R20260814-175320.WAV -> R20260814-175320.mp3 (… MiB) in 123.4s
@@ -163,13 +205,13 @@ Run summary
 ---
 ```
 
-Long WAV→MP3 converts can take minutes with little stdout while ffmpeg prints progress on stderr — that is expected. Ctrl-C stops the cycle (`Stopped.`); a half-written `.mp3.partial` is discarded on the next failed/interrupted convert.
+Long WAV→MP3 converts can take minutes with little stdout while ffmpeg prints progress on stderr — that is expected. Ctrl-C stops the cycle (`Stopped.`); a half-written `.mp3.partial` is discarded on the next failed/interrupted convert. A finished local staged copy is kept so the next cycle can skip the USB copy.
 
 Inbox sources are **kept by default**. After a successful convert (audio) or copy (transcript):
 
 | Option | Effect |
 |--------|--------|
-| `--backup-wav` | Copy the **audio** inbox original into the WAV backup folder (`--wav-backup`, or `TRANSCRIPTX_WAV_BACKUP_DIR`) |
+| `--backup-wav` | Copy (or **move the staged local copy** when staging ran) the **audio** original into the WAV backup folder (`--wav-backup`, or `TRANSCRIPTX_WAV_BACKUP_DIR`) |
 | `--delete-originals` | Delete the inbox source (after backup, if backup was requested and succeeded) |
 | `--move-processed DIR` | Relocate the inbox source instead of deleting (mutually exclusive with `--delete-originals`) |
 | `--force` | Overwrite an existing destination stem |
@@ -187,8 +229,12 @@ Inbox sources are **kept by default**. After a successful convert (audio) or cop
 | Convert audio | `watch_audio` | `INBOX_WATCH_AUDIO` |
 | Copy transcripts | `watch_transcripts` | `INBOX_WATCH_TRANSCRIPTS` |
 | Admit to library (default **off**) | `admit_to_library` | `INBOX_WATCH_ADMIT` |
+| Auto-name speakers after admit | `auto_name` | `INBOX_WATCH_AUTO_NAME` |
+| Auto-link matched profiles | `auto_link` | `INBOX_WATCH_AUTO_LINK` |
 | Admit interpreter | `admit_python` | `INBOX_WATCH_ADMIT_PYTHON` |
 | Config path | — | `INBOX_WATCH_CONFIG` / `--config` |
+| Stage off removable inbox first | `stage_local` (`null` = auto) | `INBOX_WATCH_STAGE_LOCAL` |
+| Staging folder | `stage_dir` | `INBOX_WATCH_STAGE_DIR` |
 | Also | `backup_wavs`, `delete_originals`, `skip_serial` | `INBOX_WATCH_BACKUP_WAV`, `INBOX_WATCH_DELETE_ORIGINALS`, `INBOX_WATCH_SKIP_SERIAL` |
 
 Library admit needs a **native** TranscriptX install (the JSON/`--admit-python` interpreter must `import transcriptx`). It does not enter the Docker analysis container. Set `TRANSCRIPTX_TRANSCRIPTS_DIR` and `TRANSCRIPTX_OUTPUT_DIR` to the same host folders Docker mounts so the GUI index stays in sync.
@@ -286,4 +332,5 @@ Import alternate-language versions of an existing transcript using a flat filena
 - [Transcription](transcription.md) — bring a file / generate a host command
 - [Audio prep](audio-prep.md) — merge split recordings before STT
 - [Directory watcher](directory_watcher.md) — in-app G2 watcher
+- [Auto-identify speakers](auto-identify.md) — auto-name / auto-link after admit
 - [WhisperX recipe](../recipes/whisperx/README.md) · [Whisper-WebUI recipe](../recipes/whisper-webui/README.md)

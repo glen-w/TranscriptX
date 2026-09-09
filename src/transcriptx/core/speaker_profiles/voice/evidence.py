@@ -63,7 +63,7 @@ def trust_from_link_provenance(provenance: dict[str, Any] | None) -> EvidenceTru
         return "manual"
     if parsed.link_method in ("manual", "choose_other", "create_new", "relink"):
         return "manual"
-    if parsed.link_method == "suggestion_assisted":
+    if parsed.link_method in ("suggestion_assisted", "auto_identified"):
         return "suggestion_assisted"
     return "manual"
 

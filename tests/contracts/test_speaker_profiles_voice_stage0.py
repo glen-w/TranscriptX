@@ -162,6 +162,13 @@ def test_suggestion_assisted_requires_digest() -> None:
 
 
 @pytest.mark.unit
+def test_auto_identified_provenance_does_not_require_suggestion() -> None:
+    prov = LinkProvenanceV1(link_method="auto_identified", confidence_category="strong")
+    assert prov.to_storage_dict()["link_method"] == "auto_identified"
+    assert "suggestion_id" not in prov.to_storage_dict()
+
+
+@pytest.mark.unit
 def test_assert_safe_relpath_rejects_absolute_and_traversal() -> None:
     assert assert_safe_relpath("voice/privacy.voice_settings.json") == (
         "voice/privacy.voice_settings.json"

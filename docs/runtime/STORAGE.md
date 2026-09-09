@@ -62,12 +62,13 @@ Implications:
   - Host transcription helpers (`whispermlx-missing`, `inbox-watch`) must write raw engine output under `transcripts/originals/` only. They refuse the managed library root (the directory that already contains `metadata/` / `imports/`). They skip a stem when matching JSON already exists in `originals/` or in the library root; they still never write into the library root. Admit via Import Transcript, Settings → Watcher, or optional `inbox-watch --admit` (subprocesses `python -m transcriptx.admit_originals` → `admit_and_register`; default off).
   - Naming leaves room for future subtypes (`diarised/`, `normalized/`, `export/`).
 - **data_dir**: App-owned, persistent but partially reconstructable, not user-authored.  
-  - `groups/` and `speaker_profiles/` are durable local project state (not safe to auto-delete). Speaker profile `.cache/` is disposable; profiles/links/events/operations **and** `profiles/assets/` (optional avatar WebP photos — face PII) are canonical (see `docs/contracts/speaker_profiles_v1.md`). Canonical voice evidence under `speaker_profiles/voice/` is biometric-derived local state (see `docs/contracts/speaker_profiles_voice_v1.md`); `.cache/voice/` is disposable. Ordinary exports must exclude `voice/` and `.cache/voice/`.
+  - `groups/` and `speaker_profiles/` are durable local project state (not safe to auto-delete). Speaker profile `.cache/` is disposable; profiles/links/events/operations **and** `profiles/assets/` (optional avatar WebP photos — face PII) are canonical (see `docs/contracts/speaker_profiles_v1.md`). Canonical voice evidence under `speaker_profiles/voice/` is biometric-derived local state (see `docs/contracts/speaker_profiles_voice_v1.md`); `.cache/voice/` and `.cache/identify/` (fusion review dumps) are disposable. Ordinary exports must exclude `voice/` and `.cache/voice/`. Auto-identify knobs: [auto-identify.md](auto-identify.md).
   - **Speaker profiles contain real display names (PII) and may contain avatar photos and voice embeddings.** Do not commit them. The in-repo default `data/speaker_profiles/` is gitignored. For real use, point `TRANSCRIPTX_SPEAKER_PROFILES_DIR` (or `TRANSCRIPTX_DATA_DIR`) at a directory **outside the git clone**, the same way `TRANSCRIPTX_TRANSCRIPTS_DIR` / `TRANSCRIPTX_OUTPUT_DIR` keep metadata and outputs mountable off the repo root.
   - Other subtrees (outputs, preprocessing, cache) remain reconstructable by re-running.
 - **config_dir**: User/app config, persistent, not safe to auto-delete.  
   - `profiles/` lives under config_dir (user-editable config presets).
   - `config.json` holds project settings including the Custom Questions library (`analysis.llm_custom_qa.saved_questions`).
+  - `identify.json` holds Settings → Speakers ingest defaults (`auto_name` / `auto_link` / `style_only_apply`; all default false). Not voice consent.
   - With Docker Compose, set `HOST_CONFIG_DIR` to a host directory **outside the git clone** (same pattern as `HOST_TRANSCRIPTS_DIR` / `HOST_OUTPUT_DIR`) so Settings survive wiping `./data`. Default remains `./data/.transcriptx`.
 - **outputs_dir**: App-managed analysis outputs, reconstructable by re-running.
 - **state_dir**: App state (processing state, run/analysis locks, rename journal), persistent, reconstructable in part. Lives under `data_dir/state/`.
@@ -108,6 +109,7 @@ config_dir/                     # configuration
   profiles/                     # module/workflow/STT/UI-layout named presets (not speaker profiles)
   install_profile               # optional marker: core | full
   config.json                   # project settings bag
+  identify.json                 # Settings → Speakers ingest defaults (auto_name / auto_link / style_only_apply; default all false)
   interface_menus.json          # Settings → Interface action strips (schema v1; see docs/contracts/interface-menus.md)
 
 data_dir/                       # app-managed working state
@@ -122,7 +124,7 @@ data_dir/                       # app-managed working state
       samples/ embeddings/ vectors/
       privacy.voice_settings.json
       active_generation.json generations/
-    .cache/                     # disposable listing/aggregate caches only (.cache/voice/ disposable)
+    .cache/                     # disposable listing/aggregate caches only (.cache/voice/ and .cache/identify/ disposable)
   outputs/
     groups/                     # group analysis run outputs (per group uuid / run id)
   preprocessing/

@@ -21,6 +21,8 @@ Audio is optional for naming from text lines. If a matching recording is linked 
 5. Confirm the names on **Transcript**.
 6. Understand why naming matters for later speaker results.
 
+On a managed library transcript you can also use **Apply auto-identify** (voice match plus names in the dialogue). For USB ingest, `inbox-watch --auto-name` does the same after admit — [auto-identify.md](../runtime/auto-identify.md).
+
 ## Walkthrough
 
 1. From **Library** or the post-import actions, open **Speaker Identification**. Select the planning-review transcript if it is not already selected.
@@ -63,6 +65,7 @@ A unique name match preselects the existing person. If several profiles share th
 - Ignore is for unusable diarization IDs; prefer naming real participants. On CCv2, choose ignore again to restore a previously ignored ID.
 - Longitudinal profile linking is optional; naming alone is enough for single-transcript work. When you do link, the control shows **which person** you are attaching to (or that you are creating a new profile).
 - Voice suggestions appear in that same list when you have enrolled a reference corpus and pre-loaded queries — see [Assist naming with voice](speaker-voice-matching.md). Confirming still saves the name; nothing is applied automatically.
+- Optional **Apply auto-identify** (managed library) runs local voice match plus names found in the dialogue and can write names and profile links when confident. Review badges show auto-named / auto-linked. It is probabilistic — not identity verification. Host ingest: `inbox-watch --auto-name`. Operator reference: [Auto-identify speakers](../runtime/auto-identify.md). Settings → Speakers stores ingest defaults (`auto_name` / `auto_link`).
 - Downstream speaker cards, per-speaker LLM summaries, and interaction-style views depend on these labels being meaningful.
 
 ## You should now have…
@@ -75,3 +78,4 @@ A multi-speaker transcript with stable human-readable names confirmed in the tra
 - [Investigate a question and trace it back to evidence](investigate-evidence.md)
 - [First analysis](first-analysis.md) if you still need a [Balanced](../runtime/settings.md#analysis-presets) run after renaming
 - [Known limitations](../known_limitations.md) for diarization and naming caveats
+- [Auto-identify speakers](../runtime/auto-identify.md) for ingest knobs, CLI, and fusion review

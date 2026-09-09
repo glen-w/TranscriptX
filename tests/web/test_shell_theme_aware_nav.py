@@ -15,10 +15,15 @@ _SHELL_PATH = (
 def test_sidebar_nav_buttons_use_theme_text_color() -> None:
     source = _SHELL_PATH.read_text(encoding="utf-8")
     assert 'button[kind="secondary"]' in source
-    assert "var(--text-color" in source
-    # Hardcoded near-white labels break light Streamlit chrome.
+    assert "--tx-nav-fg" in source
+    assert '[data-tx-chrome="dark"]' in source
+    assert '[data-tx-chrome="light"]' in source
+    assert "section[data-testid=\"stSidebar\"]" in source
+    # Unscoped near-white labels break light Streamlit chrome.
     assert "color: #d7dee8 !important" not in source
     assert "color: #f3f9fd !important" not in source
+    # Dark chrome must not inherit the light-theme fallback.
+    assert "--tx-nav-fg: #e8eef6" in source
 
 
 @pytest.mark.unit

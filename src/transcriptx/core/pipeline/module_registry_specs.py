@@ -43,6 +43,7 @@ MODULE_CLASS_MAP: Dict[str, tuple[str, str]] = {
         "InteractionsAnalysis",
     ),
     "ner": ("transcriptx.core.analysis.ner", "NERAnalysis"),
+    "names": ("transcriptx.core.analysis.names", "NamesAnalysis"),
     "entity_sentiment": (
         "transcriptx.core.analysis.entity_sentiment",
         "EntitySentimentAnalysis",

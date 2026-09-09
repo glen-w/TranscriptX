@@ -532,6 +532,7 @@ class AnalysisConfig:
     epistemic_markers: "EpistemicMarkersConfig" = field(
         default_factory=lambda: EpistemicMarkersConfig()
     )
+    names: "NamesConfig" = field(default_factory=lambda: NamesConfig())
     keyphrases: "KeyphrasesConfig" = field(default_factory=lambda: KeyphrasesConfig())
     politeness: "PolitenessConfig" = field(default_factory=lambda: PolitenessConfig())
     topic_shift: "TopicShiftConfig" = field(default_factory=lambda: TopicShiftConfig())
@@ -1008,6 +1009,22 @@ class EpistemicMarkersConfig:
         )
 
         _hydrate_dataclass_from_pydantic(self, EpistemicMarkersSettingsModel())
+
+
+@dataclass
+class NamesConfig:
+    """Names module settings. Defaults owned by AnalysisNamesSettingsModel."""
+
+    min_mentions: int = field(init=False, repr=True)
+    exclude_known_speakers: bool = field(init=False, repr=True)
+    max_mentions_per_person: int = field(init=False, repr=True)
+
+    def __post_init__(self) -> None:
+        from transcriptx.core.config.models.analysis_names import (
+            AnalysisNamesSettingsModel,
+        )
+
+        _hydrate_dataclass_from_pydantic(self, AnalysisNamesSettingsModel())
 
 
 @dataclass

@@ -426,6 +426,9 @@ def test_speaker_id_page_wires_voice_match_knobs() -> None:
         "facade.reject(",
         "SpeakerIdVoiceFacade",
         "Load voice suggestions",
+        "Apply auto-identify",
+        "_cb_apply_auto_identify",
+        "auto-named",
     ):
         assert needle in src, needle
 
@@ -452,6 +455,9 @@ def test_speakers_panel_wires_voice_privacy_knobs() -> None:
     src = Path("src/transcriptx/web/ui/settings/speakers_panel.py").read_text()
     for needle in (
         "Local voice matching",
+        "Auto-identify on ingest",
+        "identify_auto_name",
+        "identify_auto_link",
         "voice_privacy_enable",
         "voice_privacy_revoke",
         "voice_privacy_revoke_confirm",
@@ -473,8 +479,34 @@ def test_speakers_panel_wires_voice_privacy_knobs() -> None:
         "voice_bulk_enrol_all_btn",
         "voice_bulk_preload_btn",
         "_render_bulk_voice_ops",
+        "disabled_voice_matching_info",
+        "on_click=_cb_voice_privacy_enable",
+        "status.allowed",
     ):
         assert needle in src, needle
+
+
+@pytest.mark.unit
+def test_disabled_voice_matching_info_does_not_contradict_file_authority() -> None:
+    from transcriptx.web.ui.settings.speakers_panel import disabled_voice_matching_info
+
+    revoked = disabled_voice_matching_info(
+        revoked_at="2026-09-07T13:14:30Z", settings_file_exists=True
+    )
+    assert "consent revoked" in revoked
+    assert "TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED=1" not in revoked
+
+    existing = disabled_voice_matching_info(
+        revoked_at=None, settings_file_exists=True
+    )
+    assert "does not override" in existing
+    assert "disabled (default)" not in existing
+
+    missing = disabled_voice_matching_info(
+        revoked_at=None, settings_file_exists=False
+    )
+    assert "no consent file" in missing
+    assert "TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED=1" in missing
 
 
 @pytest.mark.unit

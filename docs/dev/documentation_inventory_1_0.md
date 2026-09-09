@@ -15,7 +15,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | archive | 29 |
 | delete | 2 |
 | move | 0 |
-| retain | 109 |
+| retain | 110 |
 | rewrite | 1 |
 
 ## High-priority authority conflicts
@@ -155,6 +155,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/runtime/transcript_quality.md | ASR confidence (`transcript_quality`) | live | user | current | RUNTIME headers → GUIDE in 0A pass | retain | — | USER_INDEX | self | yes |
 | docs/runtime/transcription.md | Transcription (bring a file / host command) | live | user | current | Split 2026-09: host automation → host-stt / audio-prep | retain | — | USER_INDEX | runtime/STORAGE.md | yes |
 | docs/runtime/host-stt.md | Host STT automation (whispermlx-missing, inbox-watch, import API) | live | user | current | Split from transcription.md | retain | — | USER_INDEX | runtime/transcription.md | yes |
+| docs/runtime/auto-identify.md | Auto-name / auto-link after ingest | live | user | current | Operator guide; invariants in voice contract | retain | — | USER_INDEX, index.md | docs/contracts/speaker_profiles_voice_v1.md | yes |
 | docs/runtime/audio-prep.md | Audio prep / merge before STT | live | user | current | Split from transcription.md | retain | — | USER_INDEX | runtime/transcription.md | yes |
 | docs/v0.1-canonical-contract.md | TranscriptX v0.1 canonical contract (short) | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/v0.1-canonical-contract.md | yes |
 | tests/README.md | TranscriptX tests: how to run locally | live | developer | current | — | retain | — | DEV_INDEX | tests/README.md | no |

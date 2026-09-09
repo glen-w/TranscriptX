@@ -22,6 +22,8 @@ Documented corpus sizes and a measurement recipe ship in developer performance e
 
 Voice fingerprint / speaker-match features are identity-sensitive. Read the in-app voice privacy notice before enabling. Local processing does not remove the sensitivity of biometric-like embeddings stored on disk.
 
+Optional **auto-name / auto-link** on ingest writes display names and may create `auto_identified` profile links when fusion is confident. It does not enrol new voice samples. Thresholds remain provisional; conflicts and collisions leave `SPEAKER_*` labels. Style-only apply is off by default. Operator guide: [auto-identify.md](runtime/auto-identify.md).
+
 ## Stochastic Local AI output
 
 Optional Ollama / Local AI modules are stochastic. Re-runs can differ. Artifacts carry model identity fields where available; treat Local AI text as assistive, not ground truth. Principal surfaces label Local AI vs deterministic summaries.

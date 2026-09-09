@@ -56,6 +56,15 @@ def build_nlp_module_definitions(
             "enhancements": [],
             "required_extras": ["nlp"],
         },
+        "names": {
+            "description": "People mentioned (PERSON entities catalog)",
+            "dependencies": ["ner"],
+            "category": "medium",
+            "determinism_tier": "T1",
+            "requirements": default_requirements,
+            "enhancements": [],
+            "required_extras": ["nlp"],
+        },
         "sentiment": {
             "description": "Sentiment Analysis",
             "dependencies": [],

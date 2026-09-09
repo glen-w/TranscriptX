@@ -829,6 +829,55 @@ def _speaker_label(
     return f"{idx + 1}. {sid} ❓"
 
 
+def _identify_artefact_row(transcript_path: Path | str, speaker_id: str):
+    """Return the identify artefact row for this speaker, if any."""
+    try:
+        from transcriptx.core.speaker_profiles.identify.artefact import (
+            artefact_row_for_speaker,
+            load_identify_artefact,
+        )
+
+        ctx = _resolve_profile_context(transcript_path)
+        if not ctx.is_managed or not ctx.managed_transcript_id:
+            return None
+        artefact = load_identify_artefact(ctx.managed_transcript_id)
+        return artefact_row_for_speaker(artefact, speaker_id)
+    except Exception:
+        return None
+
+
+def _identify_badge_suffix(transcript_path: Path | str, speaker_id: str) -> str:
+    row = _identify_artefact_row(transcript_path, speaker_id)
+    if not row:
+        return ""
+    bits: list[str] = []
+    if row.get("named"):
+        bits.append("auto-named")
+    if row.get("linked"):
+        bits.append("auto-linked")
+    if not bits and row.get("action") == "skip" and row.get("skip_reason"):
+        return ""
+    if not bits:
+        return ""
+    return " · " + " / ".join(bits)
+
+
+def _cb_apply_auto_identify(transcript_path: str) -> None:
+    from transcriptx.core.speaker_profiles.identify.service import (
+        SpeakerIdentifyService,
+    )
+    from transcriptx.core.utils.logger import get_logger
+
+    try:
+        SpeakerIdentifyService().identify_transcript(
+            transcript_path,
+            auto_name=True,
+            auto_link=True,
+        )
+    except Exception as exc:
+        get_logger().warning("Auto-identify failed: %s", exc)
+
+
 def _next_unnamed_idx(
     speaker_ids: List[str],
     speaker_map: Dict[str, str],
@@ -1955,6 +2004,22 @@ def _render_ccv2_speaker_workspace(
                 active_id=active_id,
                 profile_ctx=profile_ctx,
             )
+        st.button(
+            "Apply auto-identify",
+            key=widget_key(transcript_path, "apply_auto_identify"),
+            icon=ic.CHECK_ALL,
+            help=widget_help(
+                "Run voice + text identification on unnamed speakers and write "
+                "display names and profile links when confident. Does not enrol "
+                "voice samples. Probabilistic — review names after."
+            ),
+            on_click=_cb_apply_auto_identify,
+            args=(str(transcript_path),),
+        )
+        st.caption(
+            "Auto-identify uses enrolled voices and names in the dialogue. "
+            "It is not identity verification."
+        )
     return True
 
 
@@ -2060,6 +2125,10 @@ def _speaker_id_workspace_fragment(
         if is_ignored
         else (f"✅ **{current_name}**" if current_name.strip() else "❓ unnamed")
     )
+    if not is_ignored:
+        status_badge = status_badge + _identify_badge_suffix(
+            transcript_path, active_id
+        )
 
     if ccv2_on:
         mounted = _render_ccv2_speaker_workspace(
@@ -2122,6 +2191,24 @@ def _speaker_id_workspace_fragment(
             ignored=ignored,
             active_id=active_id,
             profile_ctx=profile_ctx,
+        )
+
+    if is_managed_for_profiles:
+        st.button(
+            "Apply auto-identify",
+            key=widget_key(transcript_path, "apply_auto_identify"),
+            icon=ic.CHECK_ALL,
+            help=widget_help(
+                "Run voice + text identification on unnamed speakers and write "
+                "display names and profile links when confident. Does not enrol "
+                "voice samples. Probabilistic — review names after."
+            ),
+            on_click=_cb_apply_auto_identify,
+            args=(str(transcript_path),),
+        )
+        st.caption(
+            "Auto-identify uses enrolled voices and names in the dialogue. "
+            "It is not identity verification."
         )
 
     col_name, col_save, col_ignore = st.columns([3, 1, 1])

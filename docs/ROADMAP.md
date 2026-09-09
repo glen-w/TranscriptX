@@ -97,7 +97,7 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | D. Playback & reading UX | Karaoke-style word highlight; reader polish that Components unlock | With / after C — **[~] Transcript karaoke MVP** |
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
 | F. Library & organisation | Transcript tagging; Groups interaction rules | Mid 1.x |
-| G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher | Mid 1.x (merge = former §1.2) |
+| G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts | Mid 1.x (merge = former §1.2; **G3** host-script OS portability parked) |
 | H. In-app transcription | Local NVIDIA Parakeet/Canary + Whisper; CUDA/CPU; YouTube ingest | Mid–late 1.x (product decision) |
 | I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Mid–late 1.x (depends on shell) |
 | J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 |
@@ -217,6 +217,27 @@ Automatically notice new recordings (and/or transcript files) in a monitored fol
 - Prefer explicit user enablement; default-off on shared machines
 - **Next:** audio → host STT → import once theme **H** (or a host STT service) exists; optional host-side watcher helper if in-process lifecycle is insufficient
 
+#### G3. Host companion scripts on Windows / Linux (parked; post-1.0)
+
+**1.0 stance:** `inbox-watch` / `whispermlx-missing` stay **macOS-typical** (Apple MLX + Unix venv paths + bash install docs). Linux analysis is Docker; Windows is WSL2 + Docker. Copyable Transcribe Audio snippets stay POSIX shell. Not a 1.0 gate.
+
+Evidence (do not implement from this list before 1.0): [host-side Windows/Linux compatibility review](reviews/host-side-windows-linux-compat-2026-09-03.md).
+
+**1.x intent:** make the **host Python scripts** actually runnable on Windows (and honest on Linux without whispermlx), without pretending MLX exists off Darwin.
+
+**Candidate slices (design before build):**
+
+| Slice | Notes |
+|-------|--------|
+| **Convert / copy / admit on Windows** | `py -3 scripts\inbox-watch.py`; discover `.transcriptx\Scripts\python.exe`; `ffmpeg.exe` on PATH; `--admit` without Unix `bin/python` only. STT remains optional when whispermlx is absent. |
+| **Pluggable host STT** | `--transcribe-cmd` / config so Windows/Linux can call WhisperX Docker (or another host command) instead of hard-requiring `whispermlx-missing`. Overlaps themes **H** / **K** — pick one owner before coding. |
+| **Copyable commands** | Theme **K**: PowerShell or Git-Bash-safe snippets; case-insensitive audio extensions; strip `\` as well as `/`. |
+| **Service samples** | Templated Task Scheduler / systemd user unit — not a personal `scripts/macos/*.plist` with absolute home paths. |
+
+**Decision fork:** **Narrow** (Windows convert/copy/admit + docs) · **Invest** (pluggable STT + command-gen shells) · **Defer** (stay Mac host STT + WSL2). Do not make Windows a silent 1.0 support cell.
+
+**Non-goals for 1.0:** native `transcriptx.ps1` GUI launcher; CI `windows-latest` matrix; shipping whispermlx on Windows.
+
 ---
 
 ### H. In-app transcription (product decision)
@@ -288,6 +309,8 @@ Automatically notice new recordings (and/or transcript files) in a monitored fol
 ### K. External STT command generation (bridge)
 
 Until/beside theme **H**, keep improving **copyable host commands** on Transcribe Audio: whispermlx / whispermlx-missing (Apple MLX), WhisperX Docker, Whisper-WebUI, plus further CUDA Linux / CPU CLIs as needed. Still copy/run-on-host only (no in-container MLX; no silent orchestration). Import remains the GUI admission gate for BYO files.
+
+**Windows / PowerShell snippets** (and making generated paths survive `C:\…` / `.MP3`) are parked with theme **G3** — not a 1.0 Transcribe Audio change.
 
 **Saved presets:** Transcribe Audio can save/load/delete command-gen form presets under `.transcriptx/profiles/stt_commands/` (host paths and flags only — never `HF_TOKEN`; tokens stay in `whisperx.env`).
 

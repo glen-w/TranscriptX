@@ -9,7 +9,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | **Packages** | [packages.md](dev/packages.md) — extras and the workspaces package. Pins: `pyproject.toml`. CVE policy: [dependency_audit.md](dev/dependency_audit.md). Model IDs: [models.md](runtime/models.md). |
 | **Known issues** | User-facing: [known_limitations.md](known_limitations.md). Maintainer: [security_review_2026-08-23.md](dev/security_review_2026-08-23.md), [test_suite_review_2026-08-12.md](dev/test_suite_review_2026-08-12.md). Tracker: [GitHub Issues](https://github.com/glen-w/TranscriptX/issues). |
 | **SLOC** | [sloc-estimate-2026-09-02.md](reviews/sloc-estimate-2026-09-02.md) — measured with [`scripts/count_sloc.py`](../scripts/count_sloc.py). |
-| **Code reviews** | [reviews/index.md](reviews/index.md) — dated architecture / SLOC assessments (evidence, not contracts). |
+| **Code reviews** | [reviews/index.md](reviews/index.md) — dated architecture / SLOC / host-OS assessments (evidence, not contracts). |
 
 ## Phase 0A / 0B programme
 
@@ -44,7 +44,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [packages.md](dev/packages.md) | Install extras and workspace packages |
 | [CONTRIBUTING.md](dev/CONTRIBUTING.md) | Docs authority model and sync checklist |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System shape (non-authoritative for rules) |
-| [reviews/index.md](reviews/index.md) | Dated architecture / SLOC assessments (evidence, not contracts) |
+| [reviews/index.md](reviews/index.md) | Dated architecture / SLOC / host-OS assessments (evidence, not contracts) |
 | [ADR-IMPORT-ORCHESTRATION.md](ADR-IMPORT-ORCHESTRATION.md) | Import orchestration ADR |
 | [PRODUCT.md](PRODUCT.md) | Product definition |
 | [CONTRACT_INDEX.md](CONTRACT_INDEX.md) | Contract map (storage, surfaces, run outcomes) |

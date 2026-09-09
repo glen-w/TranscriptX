@@ -28,6 +28,16 @@ The Charts page “export visible charts” path remains a **charts ZIP + `index
 
 Generated presentation files (`index.html`, `index.epub`, other `*.epub`) are **not** treated as transcript/summary/chart inputs if re-selected in a later export.
 
+## Export by tag (Library)
+
+From **Library**, open **Export by tag** to package artifacts across many transcripts that share organisation tags (stored on `processing_state`, not chart tags or Groups).
+
+1. Choose one or more **library tags** (AND match).
+2. Choose **artifact kinds** — defaults are readable TXT / CSV / SRT / VTT from each match’s **latest analysis run**. Optional kinds: managed transcript JSON, summaries, static charts, data outputs.
+3. Preview matching / included / skipped counts and estimated size, then **Create ZIP**.
+
+The ZIP layout is `{slug_or_stem}/{filename}` plus a `manifest.json` describing the selection. This path does **not** generate `index.html` / `index.epub` (those remain Overview / Artifacts / Charts export only). The same 2 GB hard-cap applies to selected source file bytes.
+
 ## Hard-cap
 
 Export enforces a size cap on **selected source artifact bytes** before staging. Generated `index.html` / `index.epub` are **exempt** from that pre-check (EPUB may re-embed static chart images already in the ZIP).

@@ -96,6 +96,7 @@ class NERAnalysis(AnalysisModule):
         location_mentions_per_speaker: dict[str, dict[str, list[dict[str, Any]]]] = (
             defaultdict(lambda: defaultdict(list))
         )
+        person_mentions: list[dict[str, Any]] = []
 
         # Process segments in batches
         for i in range(0, total_segments, batch_size):
@@ -137,6 +138,16 @@ class NERAnalysis(AnalysisModule):
                                 "text": text,
                                 "segment_index": segment_index,
                                 "start": start_val,
+                            }
+                        )
+                    if label == "PERSON":
+                        person_mentions.append(
+                            {
+                                "segment_index": segment_index,
+                                "start": start_val,
+                                "speaker": speaker,
+                                "text": text,
+                                "surface": ent_text,
                             }
                         )
 
@@ -195,6 +206,7 @@ class NERAnalysis(AnalysisModule):
                 speaker: {ent: list(mentions) for ent, mentions in ents.items()}
                 for speaker, ents in location_mentions_per_speaker.items()
             },
+            "person_mentions": person_mentions,
             "summary_json": summary_json,
             "speaker_csv_rows": speaker_csv_rows,
             "all_rows": all_rows,

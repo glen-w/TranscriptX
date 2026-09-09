@@ -52,6 +52,19 @@ python -m transcriptx.admit_originals \
   --transcripts-root /path/to/transcripts
 ```
 
+Optional `--auto-name` / `--auto-link` (and `--no-auto-*`) run speaker auto-identify after each successful admit. `--auto-name` with no link flag defaults auto-link on. Identify failure does not fail admit. Operator guide: [auto-identify.md](../runtime/auto-identify.md).
+
+## Auto-identify speakers (host helper)
+
+`python -m transcriptx.identify_speakers` fuses local voice match with in-transcript names and can write speaker-map names and/or `auto_identified` profile links. It is **not** a `transcriptx <subcommand>` and is distinct from the Python API `identify_speakers` below (that API is the Speaker Identification workspace rename path).
+
+```bash
+python -m transcriptx.identify_speakers --path FILE.json --auto-name --auto-link
+python -m transcriptx.identify_speakers --all-unnamed --dry-run
+```
+
+Flags override `{config_dir}/identify.json` for that run. `--dry-run` prints decisions and writes nothing. Host USB path: `inbox-watch --auto-name`.
+
 ## Speaker Identification
 
 ```python

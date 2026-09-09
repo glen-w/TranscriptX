@@ -18,6 +18,7 @@ _GALLERY_MODULE_DISPLAY_NAMES: dict[str, str] = {
     "prosody_dashboard": "Prosody dashboard",
     "wordclouds": "Word clouds",
     "ner": "Named entities",
+    "names": "People mentioned",
     "acts": "Dialogue acts",
     "llm_summary": "LLM summary",
     "llm_speaker_summary": "LLM speaker summary",

@@ -16,6 +16,122 @@ _ENROL_PREVIEW_KEY = "_voice_bulk_enrol_preview"
 _ENROL_RESULT_KEY = "_voice_bulk_enrol_last_result"
 _PRELOAD_PREVIEW_KEY = "_voice_bulk_preload_preview"
 _PRELOAD_RESULT_KEY = "_voice_bulk_preload_last_result"
+_VOICE_PRIVACY_FLASH = "_voice_privacy_flash"
+_VOICE_PRIVACY_ERROR = "_voice_privacy_error"
+
+
+def disabled_voice_matching_info(*, revoked_at: str | None, settings_file_exists: bool) -> str:
+    """Status copy when matching is off. Env default is mentioned only if no file."""
+    if revoked_at:
+        return (
+            "Local voice matching is disabled (consent revoked). "
+            "Enable below to record consent again."
+        )
+    if settings_file_exists:
+        return (
+            "Local voice matching is disabled. "
+            "Enable below to record consent. "
+            "TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED only applies when "
+            "privacy.voice_settings.json is missing — it does not override "
+            "this file."
+        )
+    return (
+        "Local voice matching is disabled (no consent file). "
+        "Enable below, or set TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED=1 "
+        "for a local/dev missing-file default."
+    )
+
+
+def _voice_privacy_flash(kind: str) -> None:
+    st.session_state[_VOICE_PRIVACY_FLASH] = kind
+
+
+def _voice_privacy_error(exc: BaseException) -> None:
+    st.session_state[_VOICE_PRIVACY_ERROR] = str(exc)
+
+
+def _cb_voice_privacy_enable() -> None:
+    from transcriptx.core.speaker_profiles.voice.privacy_service import (
+        VoicePrivacyService,
+    )
+    from transcriptx.services.speaker_profiles.voice_facade import (
+        ensure_idempotency_key,
+    )
+
+    try:
+        key = ensure_idempotency_key(st.session_state, "voice_privacy_enable_op")
+        VoicePrivacyService().enable(operation_idempotency_key=key)
+        st.session_state.pop("voice_privacy_enable_op", None)
+        _voice_privacy_flash("enabled")
+    except Exception as exc:
+        _voice_privacy_error(exc)
+
+
+def _cb_voice_privacy_enable_replace() -> None:
+    from transcriptx.core.speaker_profiles.voice.privacy_service import (
+        VoicePrivacyService,
+    )
+    from transcriptx.services.speaker_profiles.voice_facade import (
+        ensure_idempotency_key,
+    )
+
+    try:
+        key = ensure_idempotency_key(
+            st.session_state, "voice_privacy_enable_replace_op"
+        )
+        VoicePrivacyService().enable(operation_idempotency_key=key)
+        st.session_state.pop("voice_privacy_enable_replace_op", None)
+        _voice_privacy_flash("enabled")
+    except Exception as exc:
+        _voice_privacy_error(exc)
+
+
+def _cb_voice_privacy_revoke() -> None:
+    from transcriptx.core.speaker_profiles.voice.privacy_service import (
+        VoicePrivacyService,
+    )
+    from transcriptx.services.speaker_profiles.voice_facade import (
+        ensure_idempotency_key,
+    )
+
+    try:
+        key = ensure_idempotency_key(st.session_state, "voice_privacy_revoke_op")
+        VoicePrivacyService().revoke(operation_idempotency_key=key)
+        st.session_state.pop("voice_privacy_revoke_op", None)
+        st.session_state.pop("voice_privacy_revoke_confirm", None)
+        _voice_privacy_flash("revoked")
+    except Exception as exc:
+        _voice_privacy_error(exc)
+
+
+def _cb_voice_privacy_wipe_resume() -> None:
+    from uuid import uuid4
+
+    from transcriptx.core.speaker_profiles.voice.privacy_service import (
+        VoicePrivacyService,
+    )
+    from transcriptx.core.speaker_profiles.voice.wipe import VoiceWipeService
+    from transcriptx.services.speaker_profiles.voice_facade import (
+        ensure_idempotency_key,
+    )
+
+    try:
+        key = ensure_idempotency_key(st.session_state, "voice_privacy_wipe_resume_op")
+        VoiceWipeService().wipe_until_complete(base_idempotency_key=key)
+        VoicePrivacyService().clear_wipe_required(
+            operation_idempotency_key=str(uuid4())
+        )
+        st.session_state.pop("voice_privacy_wipe_resume_op", None)
+        _voice_privacy_flash("wiped")
+    except Exception as exc:
+        _voice_privacy_error(exc)
+
+
+def _render_voice_privacy_alerts() -> str | None:
+    err = st.session_state.pop(_VOICE_PRIVACY_ERROR, None)
+    if err:
+        st.error(err)
+    return st.session_state.pop(_VOICE_PRIVACY_FLASH, None)
 
 
 def _render_enrol_all_result(result) -> None:
@@ -314,18 +430,71 @@ def render_speakers_panel() -> None:
         ),
     )
 
+    st.subheader("Auto-identify on ingest")
+    from transcriptx.core.speaker_profiles.identify.settings import (
+        load_identify_settings,
+        save_identify_settings,
+    )
+
+    ident = load_identify_settings()
+    auto_name = st.checkbox(
+        "Auto-name speakers after import / admit",
+        value=ident.auto_name,
+        key="identify_auto_name",
+        help=widget_help(
+            "Write display names onto the speaker map when voice or text "
+            "identification is confident. Fail-open: unnamed labels stay "
+            "SPEAKER_00 when unsure. Host inbox-watch --auto-name overrides."
+        ),
+    )
+    auto_link = st.checkbox(
+        "Auto-link matched longitudinal profiles",
+        value=ident.auto_link,
+        key="identify_auto_link",
+        help=widget_help(
+            "Create profile links for strong matches to enrolled / named "
+            "profiles. Does not enrol voice samples. Does not create new "
+            "profiles from first-meeting names."
+        ),
+    )
+    style_only = st.checkbox(
+        "Allow style-only auto-apply (experimental)",
+        value=ident.style_only_apply,
+        key="identify_style_only",
+        help=widget_help(
+            "Apply a name/link from speech-pattern similarity alone when the "
+            "score is uniquely strong. Off by default; voice and in-transcript "
+            "names still corroborate."
+        ),
+    )
+    if (
+        auto_name != ident.auto_name
+        or auto_link != ident.auto_link
+        or style_only != ident.style_only_apply
+    ):
+        from transcriptx.core.speaker_profiles.identify.settings import IdentifySettings
+
+        save_identify_settings(
+            IdentifySettings(
+                auto_name=bool(auto_name),
+                auto_link=bool(auto_link),
+                style_only_apply=bool(style_only),
+            )
+        )
+        st.caption("Saved ingest auto-identify defaults.")
+
+    st.caption(
+        "Probabilistic local match — not identity verification. "
+        "USB path: inbox-watch --watch --auto-name."
+    )
+
     st.subheader("Local voice matching")
     try:
-        from uuid import uuid4
-
         from transcriptx.core.speaker_profiles.layout import speaker_profiles_dir
         from transcriptx.core.speaker_profiles.voice.activation import ActivationBarrier
         from transcriptx.core.speaker_profiles.voice.privacy import (
             VOICE_PRIVACY_USER_NOTICE,
             VoicePrivacyStore,
-        )
-        from transcriptx.core.speaker_profiles.voice.privacy_service import (
-            VoicePrivacyService,
         )
         from transcriptx.core.speaker_profiles.voice.versioning import (
             FEATURE_GATE_COMPLETE,
@@ -335,6 +504,8 @@ def render_speakers_panel() -> None:
         )
 
         root = speaker_profiles_dir()
+        flash = _render_voice_privacy_alerts()
+        # Mutations run in on_click before this script; status is post-action.
         status = ActivationBarrier(root).status()
         if not FEATURE_GATE_COMPLETE:
             st.caption(
@@ -352,24 +523,19 @@ def render_speakers_panel() -> None:
                 )
             )
             st.info(VOICE_PRIVACY_USER_NOTICE)
-            enable_key = ensure_idempotency_key(
-                st.session_state, "voice_privacy_enable_replace"
+            ensure_idempotency_key(
+                st.session_state, "voice_privacy_enable_replace_op"
             )
-            if st.button(
+            st.button(
                 "Replace settings and enable voice matching",
                 key="voice_privacy_enable_replace",
                 icon=ic.APPLY,
                 type="primary",
-            ):
-                try:
-                    VoicePrivacyService().enable(operation_idempotency_key=enable_key)
-                    st.session_state.pop("voice_privacy_enable_replace", None)
-                    st.success("Voice matching enabled with current privacy settings.")
-                    st.rerun()
-                except Exception as exc:
-                    st.error(str(exc))
+                on_click=_cb_voice_privacy_enable_replace,
+            )
         else:
-            privacy = VoicePrivacyStore(root).read()
+            store = VoicePrivacyStore(root)
+            privacy = store.read()
             st.info(VOICE_PRIVACY_USER_NOTICE)
             st.caption(
                 "Voice matching consent is controlled solely by "
@@ -433,24 +599,31 @@ def render_speakers_panel() -> None:
                     st.rerun()
                 except Exception as exc:
                     st.error(str(exc))
-            if privacy.enabled and not privacy.wipe_required:
+            if flash == "revoked":
+                st.warning(
+                    "Consent revoked and voice artefacts wiped. "
+                    "Profiles and confirmed links were kept. "
+                    "Re-enable and re-enrol to restore matching."
+                )
+            elif flash == "wiped":
+                st.warning("Voice wipe finished. Matching stays off until you re-enable.")
+            if status.allowed:
                 st.success("Local voice matching is enabled.")
                 _render_bulk_voice_ops()
-                revoke_key = ensure_idempotency_key(
-                    st.session_state, "voice_privacy_revoke"
-                )
+                ensure_idempotency_key(st.session_state, "voice_privacy_revoke_op")
                 st.checkbox(
                     "I understand revoke permanently deletes all enrolled "
                     "voice samples, embeddings, and vectors",
                     key="voice_privacy_revoke_confirm",
                 )
-                if st.button(
+                st.button(
                     "Revoke voice matching consent",
                     key="voice_privacy_revoke",
                     icon=ic.REJECT,
                     disabled=not st.session_state.get(
                         "voice_privacy_revoke_confirm", False
                     ),
+                    on_click=_cb_voice_privacy_revoke,
                     help=widget_help(
                         (
                             "Disables voice matching and runs a bounded wipe of "
@@ -459,65 +632,47 @@ def render_speakers_panel() -> None:
                             "does not wipe voice data — this button does."
                         )
                     ),
-                ):
-                    try:
-                        VoicePrivacyService().revoke(
-                            operation_idempotency_key=revoke_key
-                        )
-                        st.session_state.pop("voice_privacy_revoke", None)
-                        st.session_state.pop("voice_privacy_revoke_confirm", None)
-                        st.warning(
-                            "Consent revoked and voice artefacts wiped. "
-                            "Profiles and confirmed links were kept. "
-                            "Re-enable and re-enrol to restore matching."
-                        )
-                        st.rerun()
-                    except Exception as exc:
-                        st.error(str(exc))
-            elif privacy.wipe_required:
-                st.warning("Voice wipe required after revocation.")
-                wipe_key = ensure_idempotency_key(
-                    st.session_state, "voice_privacy_wipe_resume"
                 )
-                if st.button("Resume voice wipe", key="voice_wipe_resume", icon=ic.REPLAY):
-                    try:
-                        from transcriptx.core.speaker_profiles.voice.wipe import (
-                            VoiceWipeService,
-                        )
-
-                        VoiceWipeService().wipe_until_complete(
-                            base_idempotency_key=wipe_key
-                        )
-                        VoicePrivacyService().clear_wipe_required(
-                            operation_idempotency_key=str(uuid4())
-                        )
-                        st.session_state.pop("voice_privacy_wipe_resume", None)
-                        st.rerun()
-                    except Exception as exc:
-                        st.error(str(exc))
-            else:
-                st.info(
-                    "Local voice matching is disabled (default). "
-                    "Set TRANSCRIPTX_VOICE_PRIVACY_DEFAULT_ENABLED=1 for a "
-                    "local/dev missing-file default, or enable below."
+            elif status.block_reason == "privacy_consent_required":
+                st.warning(
+                    status.detail
+                    or "Privacy notice version outdated; re-consent required."
                 )
-                enable_key = ensure_idempotency_key(
-                    st.session_state, "voice_privacy_enable"
-                )
-                if st.button(
+                ensure_idempotency_key(st.session_state, "voice_privacy_enable_op")
+                st.button(
                     "Enable local voice matching",
                     key="voice_privacy_enable",
                     icon=ic.CHECK_CIRCLE,
                     type="primary",
-                ):
-                    try:
-                        VoicePrivacyService().enable(
-                            operation_idempotency_key=enable_key
-                        )
-                        st.session_state.pop("voice_privacy_enable", None)
-                        st.success("Voice matching enabled.")
-                        st.rerun()
-                    except Exception as exc:
-                        st.error(str(exc))
+                    on_click=_cb_voice_privacy_enable,
+                )
+            elif status.wipe_required or status.block_reason == "wipe_required":
+                st.warning(
+                    status.detail or "Voice wipe required after revocation."
+                )
+                ensure_idempotency_key(
+                    st.session_state, "voice_privacy_wipe_resume_op"
+                )
+                st.button(
+                    "Resume voice wipe",
+                    key="voice_wipe_resume",
+                    icon=ic.REPLAY,
+                    on_click=_cb_voice_privacy_wipe_resume,
+                )
+            else:
+                st.info(
+                    disabled_voice_matching_info(
+                        revoked_at=privacy.revoked_at,
+                        settings_file_exists=store.path().is_file(),
+                    )
+                )
+                ensure_idempotency_key(st.session_state, "voice_privacy_enable_op")
+                st.button(
+                    "Enable local voice matching",
+                    key="voice_privacy_enable",
+                    icon=ic.CHECK_CIRCLE,
+                    type="primary",
+                    on_click=_cb_voice_privacy_enable,
+                )
     except Exception:
         st.caption("Voice matching status unavailable.")

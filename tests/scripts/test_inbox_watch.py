@@ -41,6 +41,16 @@ def dirs(tmp_path: Path, iw):
     return inbox, recordings, transcripts
 
 
+@pytest.fixture(autouse=True)
+def _isolate_identify_env(monkeypatch):
+    """Keep developer .env admit/identify flags from leaking into script tests."""
+    monkeypatch.setenv("INBOX_WATCH_ADMIT", "0")
+    monkeypatch.setenv("INBOX_WATCH_AUTO_NAME", "0")
+    monkeypatch.setenv("INBOX_WATCH_AUTO_LINK", "0")
+    monkeypatch.delenv("INBOX_WATCH_STAGE_LOCAL", raising=False)
+    monkeypatch.delenv("INBOX_WATCH_STAGE_DIR", raising=False)
+
+
 def _once_args(
     inbox: Path,
     recordings: Path,
@@ -663,8 +673,7 @@ class TestSkipSerialForwarding:
 
 @pytest.mark.unit
 class TestAdmit:
-    def test_default_off(self, iw, tmp_path: Path, monkeypatch):
-        monkeypatch.delenv("INBOX_WATCH_ADMIT", raising=False)
+    def test_default_off(self, iw, tmp_path: Path):
         args = iw.parse_args(
             [
                 "--once",
@@ -754,6 +763,84 @@ class TestAdmit:
         assert seen
         assert "transcriptx.admit_originals" in seen[0]
 
+
+    def test_auto_name_implies_admit_and_link(self, iw, tmp_path: Path, monkeypatch):
+        monkeypatch.delenv("INBOX_WATCH_AUTO_LINK", raising=False)
+        monkeypatch.delenv("INBOX_WATCH_AUTO_NAME", raising=False)
+        args = iw.parse_args(
+            [
+                "--once",
+                "--inbox",
+                str(tmp_path / "inbox"),
+                "--recordings",
+                str(tmp_path / "rec"),
+                "--transcripts",
+                str(tmp_path / "tx"),
+                "--auto-name",
+            ]
+        )
+        cfg = iw.resolve_config(args, config_path=tmp_path / "noconfig.json")
+        assert cfg.auto_name is True
+        assert cfg.auto_link is True
+        assert cfg.admit_to_library is True
+
+    def test_auto_name_no_auto_link(self, iw, tmp_path: Path):
+        args = iw.parse_args(
+            [
+                "--once",
+                "--inbox",
+                str(tmp_path / "inbox"),
+                "--recordings",
+                str(tmp_path / "rec"),
+                "--transcripts",
+                str(tmp_path / "tx"),
+                "--auto-name",
+                "--no-auto-link",
+            ]
+        )
+        cfg = iw.resolve_config(args, config_path=tmp_path / "noconfig.json")
+        assert cfg.auto_name is True
+        assert cfg.auto_link is False
+        assert cfg.admit_to_library is True
+
+    def test_auto_link_only(self, iw, tmp_path: Path):
+        args = iw.parse_args(
+            [
+                "--once",
+                "--inbox",
+                str(tmp_path / "inbox"),
+                "--recordings",
+                str(tmp_path / "rec"),
+                "--transcripts",
+                str(tmp_path / "tx"),
+                "--auto-link",
+                "--no-auto-name",
+            ]
+        )
+        cfg = iw.resolve_config(args, config_path=tmp_path / "noconfig.json")
+        assert cfg.auto_name is False
+        assert cfg.auto_link is True
+        assert cfg.admit_to_library is True
+
+    def test_build_admit_cmd_identify_flags(self, iw, tmp_path: Path):
+        python = tmp_path / "bin" / "python"
+        transcripts = tmp_path / "transcripts" / "originals"
+        both = iw.build_admit_cmd(
+            python, transcripts=transcripts, auto_name=True, auto_link=True
+        )
+        assert "--auto-name" in both
+        assert "--auto-link" in both
+        name_only = iw.build_admit_cmd(
+            python, transcripts=transcripts, auto_name=True, auto_link=False
+        )
+        assert "--auto-name" in name_only
+        assert "--no-auto-link" in name_only
+        neither = iw.build_admit_cmd(
+            python, transcripts=transcripts, auto_name=False, auto_link=False
+        )
+        assert "--auto-name" not in neither
+        assert "--auto-link" not in neither
+
     def test_main_skips_admit_by_default(self, iw, dirs, monkeypatch):
         inbox, recordings, transcripts = dirs
         (inbox / "clip.m4a").write_bytes(b"audio")
@@ -784,4 +871,346 @@ class TestWaitForDirectory:
             is False
         )
         assert not missing.exists()
+
+
+def _ffmpeg_input_path(cmd: list[str]) -> Path:
+    idx = cmd.index("-i")
+    return Path(cmd[idx + 1])
+
+
+@pytest.mark.unit
+class TestStaging:
+    def test_removable_inbox_stages_before_ffmpeg(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        (inbox / "clip.wav").write_bytes(b"wav-bytes")
+        seen: list[list[str]] = []
+
+        def capture(cmd):
+            seen.append(list(cmd))
+            Path(cmd[-1]).write_bytes(b"mp3")
+            return MagicMock(returncode=0, stderr="")
+
+        monkeypatch.setattr(iw, "inbox_on_removable_volume", lambda _p: True)
+        monkeypatch.setattr(iw, "run_ffmpeg", capture)
+        monkeypatch.setattr(iw, "run_whispermlx_missing", lambda _cmd: 0)
+        rc = iw.main(
+            _once_args(inbox, recordings, transcripts, ["--no-watch-transcripts"])
+        )
+        assert rc == 0
+        assert seen
+        staged = recordings / ".inbox-staging" / "clip.wav"
+        assert _ffmpeg_input_path(seen[0]) == staged
+        assert (recordings / "clip.mp3").is_file()
+        assert not staged.exists()
+
+    def test_local_inbox_skips_staging(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        (inbox / "clip.wav").write_bytes(b"wav-bytes")
+        seen: list[list[str]] = []
+
+        def capture(cmd):
+            seen.append(list(cmd))
+            Path(cmd[-1]).write_bytes(b"mp3")
+            return MagicMock(returncode=0, stderr="")
+
+        monkeypatch.setattr(iw, "inbox_on_removable_volume", lambda _p: False)
+        monkeypatch.setattr(iw, "run_ffmpeg", capture)
+        monkeypatch.setattr(iw, "run_whispermlx_missing", lambda _cmd: 0)
+        rc = iw.main(
+            _once_args(inbox, recordings, transcripts, ["--no-watch-transcripts"])
+        )
+        assert rc == 0
+        assert seen
+        assert _ffmpeg_input_path(seen[0]) == inbox / "clip.wav"
+        assert not (recordings / ".inbox-staging").exists()
+
+    def test_no_stage_local_overrides_removable(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        (inbox / "clip.wav").write_bytes(b"wav-bytes")
+        seen: list[list[str]] = []
+
+        def capture(cmd):
+            seen.append(list(cmd))
+            Path(cmd[-1]).write_bytes(b"mp3")
+            return MagicMock(returncode=0, stderr="")
+
+        monkeypatch.setattr(iw, "inbox_on_removable_volume", lambda _p: True)
+        monkeypatch.setattr(iw, "run_ffmpeg", capture)
+        monkeypatch.setattr(iw, "run_whispermlx_missing", lambda _cmd: 0)
+        rc = iw.main(
+            _once_args(
+                inbox,
+                recordings,
+                transcripts,
+                ["--no-watch-transcripts", "--no-stage-local"],
+            )
+        )
+        assert rc == 0
+        assert _ffmpeg_input_path(seen[0]) == inbox / "clip.wav"
+
+    def test_reuses_matching_staged_file(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        payload = b"wav-bytes"
+        (inbox / "clip.wav").write_bytes(payload)
+        staged_dir = recordings / ".inbox-staging"
+        staged_dir.mkdir()
+        (staged_dir / "clip.wav").write_bytes(payload)
+        copies = {"n": 0}
+        original = iw.shutil.copy2
+
+        def counting_copy(src, dst, *args, **kwargs):
+            copies["n"] += 1
+            return original(src, dst, *args, **kwargs)
+
+        monkeypatch.setattr(iw.shutil, "copy2", counting_copy)
+        monkeypatch.setattr(iw, "inbox_on_removable_volume", lambda _p: True)
+        monkeypatch.setattr(iw, "run_ffmpeg", _ok_ffmpeg)
+        monkeypatch.setattr(iw, "run_whispermlx_missing", lambda _cmd: 0)
+        rc = iw.main(
+            _once_args(inbox, recordings, transcripts, ["--no-watch-transcripts"])
+        )
+        assert rc == 0
+        assert copies["n"] == 0
+        assert (recordings / "clip.mp3").is_file()
+
+    def test_failed_stage_skips_ffmpeg(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        (inbox / "clip.wav").write_bytes(b"wav-bytes")
+        monkeypatch.setattr(iw, "inbox_on_removable_volume", lambda _p: True)
+
+        def boom_copy(*_a, **_k):
+            raise OSError("device not configured")
+
+        monkeypatch.setattr(iw.shutil, "copy2", boom_copy)
+        monkeypatch.setattr(
+            iw,
+            "run_ffmpeg",
+            lambda _cmd: (_ for _ in ()).throw(AssertionError("ffmpeg")),
+        )
+        monkeypatch.setattr(iw, "run_whispermlx_missing", lambda _cmd: 0)
+        rc = iw.main(
+            _once_args(inbox, recordings, transcripts, ["--no-watch-transcripts"])
+        )
+        assert rc == 1
+        assert not (recordings / "clip.mp3").exists()
+
+    def test_backup_moves_staged_file(self, iw, dirs, tmp_path: Path, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        wav_backup = tmp_path / "wav"
+        payload = b"wav-bytes"
+        (inbox / "clip.wav").write_bytes(payload)
+        monkeypatch.setattr(iw, "inbox_on_removable_volume", lambda _p: True)
+        monkeypatch.setattr(iw, "run_ffmpeg", _ok_ffmpeg)
+        monkeypatch.setattr(iw, "run_whispermlx_missing", lambda _cmd: 0)
+        rc = iw.main(
+            _once_args(
+                inbox,
+                recordings,
+                transcripts,
+                [
+                    "--no-watch-transcripts",
+                    "--backup-wav",
+                    "--wav-backup",
+                    str(wav_backup),
+                ],
+            )
+        )
+        assert rc == 0
+        assert (wav_backup / "clip.wav").read_bytes() == payload
+        assert (inbox / "clip.wav").is_file()
+        assert not (recordings / ".inbox-staging" / "clip.wav").exists()
+
+    def test_dry_run_would_stage_without_writing(self, iw, dirs, monkeypatch, capsys):
+        inbox, recordings, transcripts = dirs
+        (inbox / "clip.wav").write_bytes(b"wav-bytes")
+        monkeypatch.setattr(iw, "inbox_on_removable_volume", lambda _p: True)
+        monkeypatch.setattr(
+            iw,
+            "run_ffmpeg",
+            lambda _cmd: (_ for _ in ()).throw(AssertionError("ffmpeg")),
+        )
+        monkeypatch.setattr(
+            iw,
+            "run_whispermlx_missing",
+            lambda _cmd: (_ for _ in ()).throw(AssertionError("missing")),
+        )
+        rc = iw.main(
+            _once_args(
+                inbox,
+                recordings,
+                transcripts,
+                ["--no-watch-transcripts", "--dry-run"],
+            )
+        )
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "Would stage:" in out
+        assert not (recordings / ".inbox-staging").exists()
+        assert not (recordings / "clip.mp3").exists()
+
+    def test_stage_dir_under_inbox_rejected(self, iw, tmp_path: Path):
+        inbox = tmp_path / "inbox"
+        recordings = tmp_path / "recordings"
+        transcripts = tmp_path / "transcripts"
+        inbox.mkdir()
+        recordings.mkdir()
+        transcripts.mkdir()
+        cfg = iw.EffectiveConfig(
+            inbox=inbox,
+            recordings=recordings,
+            transcripts=transcripts,
+            env_file=tmp_path / "whisperx.env",
+            whispermlx_missing=tmp_path / "whispermlx-missing.py",
+            ffmpeg=None,
+            watch_audio=True,
+            watch_transcripts=False,
+            recursive=False,
+            interval_seconds=5,
+            move_processed=None,
+            wav_backup=None,
+            backup_wavs=False,
+            delete_originals=False,
+            stage_dir=inbox / "staged",
+            provenance=iw.ConfigProvenance(),
+        )
+        err = iw.validate_layout(cfg)
+        assert err is not None
+        assert "stage_dir" in err
+
+    def test_size_mismatch_skips_ffmpeg(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        (inbox / "clip.wav").write_bytes(b"wav-bytes")
+        monkeypatch.setattr(iw, "inbox_on_removable_volume", lambda _p: True)
+
+        def trunc_copy(_src, dst, *_a, **_k):
+            Path(dst).write_bytes(b"x")
+
+        monkeypatch.setattr(iw.shutil, "copy2", trunc_copy)
+        monkeypatch.setattr(
+            iw,
+            "run_ffmpeg",
+            lambda _cmd: (_ for _ in ()).throw(AssertionError("ffmpeg")),
+        )
+        monkeypatch.setattr(iw, "run_whispermlx_missing", lambda _cmd: 0)
+        rc = iw.main(
+            _once_args(inbox, recordings, transcripts, ["--no-watch-transcripts"])
+        )
+        assert rc == 1
+        assert not (recordings / "clip.mp3").exists()
+        assert not list((recordings / ".inbox-staging").glob("clip.wav"))
+        assert not list((recordings / ".inbox-staging").glob("*.partial"))
+
+    def test_macos_ejectable_plist(self, iw, tmp_path: Path, monkeypatch):
+        plist = (
+            b"<?xml version='1.0' encoding='UTF-8'?>"
+            b"<!DOCTYPE plist PUBLIC '-//Apple//DTD PLIST 1.0//EN' "
+            b"'http://www.apple.com/DTDs/PropertyList-1.0.dtd'>"
+            b"<plist version='1.0'><dict>"
+            b"<key>Ejectable</key><true/>"
+            b"<key>Internal</key><false/>"
+            b"</dict></plist>"
+        )
+        monkeypatch.setattr(iw.sys, "platform", "darwin")
+
+        def fake_run(cmd, **_kwargs):
+            assert cmd[:3] == ["diskutil", "info", "-plist"]
+            return MagicMock(returncode=0, stdout=plist)
+
+        monkeypatch.setattr(iw.subprocess, "run", fake_run)
+        assert iw.inbox_on_removable_volume(tmp_path) is True
+
+        def fake_run_internal(cmd, **_kwargs):
+            return MagicMock(
+                returncode=0,
+                stdout=(
+                    b"<?xml version='1.0' encoding='UTF-8'?>"
+                    b"<!DOCTYPE plist PUBLIC '-//Apple//DTD PLIST 1.0//EN' "
+                    b"'http://www.apple.com/DTDs/PropertyList-1.0.dtd'>"
+                    b"<plist version='1.0'><dict>"
+                    b"<key>Ejectable</key><false/>"
+                    b"<key>Removable</key><false/>"
+                    b"<key>Internal</key><true/>"
+                    b"</dict></plist>"
+                ),
+            )
+
+        monkeypatch.setattr(iw.subprocess, "run", fake_run_internal)
+        assert iw.inbox_on_removable_volume(tmp_path) is False
+
+    def test_linux_media_path_is_removable(self, iw, tmp_path: Path, monkeypatch):
+        monkeypatch.setattr(iw.sys, "platform", "linux")
+        media = Path("/media/user/USB-DISK/RECORD")
+        monkeypatch.setattr(iw, "_existing_ancestor", lambda _p: media)
+        assert iw.inbox_on_removable_volume(media) is True
+        monkeypatch.setattr(iw, "_existing_ancestor", lambda _p: tmp_path)
+        monkeypatch.setattr(iw, "_linux_path_is_removable", lambda _p: False)
+        assert iw.inbox_on_removable_volume(tmp_path) is False
+
+    def test_cli_stage_flags_resolve(self, iw, tmp_path: Path, monkeypatch):
+        monkeypatch.setattr(iw, "CONFIG_PATH", tmp_path / "noconfig.json")
+        args = iw.parse_args(
+            [
+                "--once",
+                "--inbox",
+                str(tmp_path / "inbox"),
+                "--recordings",
+                str(tmp_path / "rec"),
+                "--transcripts",
+                str(tmp_path / "tx"),
+                "--stage-local",
+                "--stage-dir",
+                str(tmp_path / "stage"),
+            ]
+        )
+        cfg = iw.resolve_config(args, config_path=tmp_path / "noconfig.json")
+        assert cfg.stage_local is True
+        assert cfg.stage_dir == (tmp_path / "stage")
+        assert iw.effective_stage_dir(cfg) == tmp_path / "stage"
+
+    def test_default_stage_dir_under_recordings(self, iw, tmp_path: Path):
+        cfg = iw.EffectiveConfig(
+            inbox=tmp_path / "inbox",
+            recordings=tmp_path / "recordings",
+            transcripts=tmp_path / "transcripts",
+            env_file=None,
+            whispermlx_missing=None,
+            ffmpeg=None,
+            watch_audio=True,
+            watch_transcripts=False,
+            recursive=False,
+            interval_seconds=5,
+            move_processed=None,
+            wav_backup=None,
+            backup_wavs=False,
+            delete_originals=False,
+            provenance=iw.ConfigProvenance(),
+        )
+        assert iw.effective_stage_dir(cfg) == tmp_path / "recordings" / ".inbox-staging"
+
+    def test_should_stage_audio_respects_override(self, iw, tmp_path: Path):
+        inbox = tmp_path / "inbox"
+        cfg = iw.EffectiveConfig(
+            inbox=inbox,
+            recordings=tmp_path / "recordings",
+            transcripts=tmp_path / "transcripts",
+            env_file=None,
+            whispermlx_missing=None,
+            ffmpeg=None,
+            watch_audio=True,
+            watch_transcripts=False,
+            recursive=False,
+            interval_seconds=5,
+            move_processed=None,
+            wav_backup=None,
+            backup_wavs=False,
+            delete_originals=False,
+            stage_local=True,
+            provenance=iw.ConfigProvenance(),
+        )
+        assert iw.should_stage_audio(cfg, inbox, removable=False) is True
+        cfg.stage_local = False
+        assert iw.should_stage_audio(cfg, inbox, removable=True) is False
+        cfg.stage_local = None
+        assert iw.should_stage_audio(cfg, inbox, removable=True) is True
+        assert iw.should_stage_audio(cfg, inbox, removable=False) is False
 

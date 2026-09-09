@@ -293,3 +293,101 @@ def get_current_transcript_path_from_state(transcript_path: str) -> Optional[str
                 if candidate and _normalize_path(candidate) == normalized:
                     return candidate
     return normalized if Path(normalized).exists() else None
+
+
+def get_tags_for_path(
+    path: str | Path,
+    state: Optional[Dict[str, Any]] = None,
+) -> list[str]:
+    """Return sanitized library tags for a transcript path from processing state."""
+    from transcriptx.io.tag_validation import sanitize_tag_list
+
+    _, entry = find_processed_entry_for_path(str(path), state=state)
+    if not isinstance(entry, dict):
+        return []
+    raw = entry.get("tags")
+    if not isinstance(raw, list):
+        return []
+    return sanitize_tag_list([str(t) for t in raw if isinstance(t, str)])
+
+
+def set_tags_for_path(
+    path: str | Path,
+    tags: list[str] | None,
+    *,
+    auto_tags: list[str] | None = None,
+) -> list[str]:
+    """Persist sanitized library tags (and tag_details) for a transcript path."""
+    from transcriptx.io.tag_validation import build_tag_details, sanitize_tag_list
+
+    normalized = _normalize_path(path)
+    clean = sanitize_tag_list(list(tags or []))
+    auto_clean = sanitize_tag_list(list(auto_tags or []))
+
+    state = load_processing_state(validate=False)
+    key, entry = find_processed_entry_for_path(normalized, state=state)
+    existing = dict(entry) if isinstance(entry, dict) else {}
+    existing_details = existing.get("tag_details")
+    if not isinstance(existing_details, dict):
+        existing_details = {}
+
+    details = build_tag_details(clean, auto_clean, existing_details)
+    existing["tags"] = clean
+    existing["tag_details"] = details
+    existing.setdefault("transcript_path", normalized)
+    existing.setdefault("current_transcript_path", normalized)
+    existing.setdefault("original_transcript_path", normalized)
+
+    if key is None:
+        mark_file_processed(Path(normalized), existing)
+    else:
+        processed_files = state.setdefault("processed_files", {})
+        uuid_key = key if _is_uuid_format(key) else _ensure_transcript_uuid(normalized)
+        existing.setdefault("transcript_uuid", uuid_key)
+        if uuid_key != key and key in processed_files:
+            del processed_files[key]
+        processed_files[uuid_key] = existing
+        save_processing_state(state)
+
+    return clean
+
+
+def list_entries_by_tags(
+    required: list[str] | tuple[str, ...] | None,
+    *,
+    match: str = "all",
+    state: Optional[Dict[str, Any]] = None,
+) -> list[tuple[str, dict]]:
+    """Return ``(state_key, entry)`` pairs whose tags match ``required``.
+
+    ``match="all"`` requires every required tag; ``match="any"`` requires one.
+    """
+    from transcriptx.io.tag_validation import sanitize_tag_list
+
+    needed = sanitize_tag_list(list(required or []))
+    if not needed:
+        return []
+    if match not in {"all", "any"}:
+        raise ValueError('match must be "all" or "any"')
+
+    current_state = (
+        state if state is not None else load_processing_state(validate=False)
+    )
+    processed_files = current_state.get("processed_files", {}) or {}
+    needed_set = set(needed)
+    matched: list[tuple[str, dict]] = []
+    for key, entry in processed_files.items():
+        if not isinstance(entry, dict):
+            continue
+        entry_tags = set(
+            sanitize_tag_list(
+                [str(t) for t in (entry.get("tags") or []) if isinstance(t, str)]
+            )
+        )
+        if match == "all":
+            if not needed_set.issubset(entry_tags):
+                continue
+        elif not needed_set.intersection(entry_tags):
+            continue
+        matched.append((key, entry))
+    return matched

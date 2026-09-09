@@ -13,10 +13,18 @@ from transcriptx.app.corpus_inventory.models import (
     LibrarySort,
     LibraryWorkflowPreset,
 )
-from transcriptx.app.corpus_inventory.query import apply_library_filter
+from transcriptx.app.corpus_inventory.query import apply_library_filter, row_matches_tags
 from transcriptx.core.analysis.voice.audio_io import resolve_audio_path
+from transcriptx.core.utils.processing_state import set_tags_for_path
 from transcriptx.core.utils.rename.audio_association import find_original_audio_file
+from transcriptx.export.library_by_tag import (
+    LIBRARY_EXPORT_KIND_IDS,
+    build_library_export_manifest,
+    resolve_library_export_items,
+)
+from transcriptx.io.tag_validation import sanitize_tag, sanitize_tag_list
 from transcriptx.utils.text_utils import format_duration_display_from_config
+from transcriptx.web import icons as ic
 from transcriptx.web.action_menus.context import (
     ActionContext,
     build_transcript_identity_with_run,
@@ -28,7 +36,10 @@ from transcriptx.web.action_menus.render import (
     render_configured_actions,
 )
 from transcriptx.web.action_menus.resolve import overflow_actions_for_section
-from transcriptx.web.cache_helpers import get_cached_corpus_inventory
+from transcriptx.web.cache_helpers import (
+    clear_corpus_inventory_cache,
+    get_cached_corpus_inventory,
+)
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.info_tooltip import widget_help
 from transcriptx.web.components.page_shell import render_page_shell
@@ -41,16 +52,21 @@ from transcriptx.web.corpus_inventory_display import (
 )
 from transcriptx.web.navigation import consume_library_nav
 from transcriptx.web.perf import instrument_cached_call
+from transcriptx.web.services.artifact_service import ArtifactService
+from transcriptx.web.services.export_service import ExportService
 from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.web.services.transcript_context_resolver import (
     paths_match,
     tolerant_resolve,
 )
 from transcriptx.web.state import (
+    LIBRARY_EXPORT_KINDS_KEY,
+    LIBRARY_EXPORT_TAGS_KEY,
     LIBRARY_FILTER_PRESET_KEY,
     LIBRARY_FILTER_QUERY_KEY,
     LIBRARY_FILTER_SORT_KEY,
     LIBRARY_FILTER_SOURCE_KEY,
+    LIBRARY_FILTER_TAGS_KEY,
     LIBRARY_SELECTED_TRANSCRIPT_PATH,
     LIBRARY_SHOW_PATH_KEY,
     LIBRARY_TABLE_EPOCH_KEY,
@@ -78,6 +94,24 @@ _SORT_LABELS: dict[LibrarySort, str] = {
     LibrarySort.DURATION: "Duration",
     LibrarySort.ANALYSIS_COMPLETION: "Analysis completion",
 }
+
+_EXPORT_KIND_LABELS: dict[str, str] = {
+    "readable_txt": "Readable TXT",
+    "readable_csv": "Readable CSV",
+    "readable_srt": "Readable SRT",
+    "readable_vtt": "Readable VTT",
+    "transcript_json": "Transcript JSON",
+    "summaries": "Summaries",
+    "charts_static": "Static charts",
+    "data": "Data outputs",
+}
+
+_DEFAULT_EXPORT_KINDS = (
+    "readable_txt",
+    "readable_csv",
+    "readable_srt",
+    "readable_vtt",
+)
 
 
 _AUDIO_MIME_BY_SUFFIX = {
@@ -156,12 +190,31 @@ def _current_library_filter() -> LibraryFilter:
     source = st.session_state.get(LIBRARY_FILTER_SOURCE_KEY) or None
     if source in {"", "All"}:
         source = None
+    tags_raw = st.session_state.get(LIBRARY_FILTER_TAGS_KEY) or []
+    tags = tuple(sanitize_tag_list([str(t) for t in tags_raw]))
     return LibraryFilter(
         preset=preset,
         query=str(st.session_state.get(LIBRARY_FILTER_QUERY_KEY) or ""),
         sort=sort,
         source_id=source,
+        tags=tags,
     )
+
+
+def _corpus_tag_options(rows: list[InventoryRow]) -> list[str]:
+    return sorted({tag for row in rows for tag in row.tags})
+
+
+def _bump_library_table_epoch() -> None:
+    st.session_state[LIBRARY_TABLE_EPOCH_KEY] = (
+        int(st.session_state.get(LIBRARY_TABLE_EPOCH_KEY) or 0) + 1
+    )
+
+
+def _persist_row_tags(transcript_path: Path, tags: list[str]) -> None:
+    set_tags_for_path(transcript_path, tags)
+    clear_corpus_inventory_cache()
+    _bump_library_table_epoch()
 
 
 def _selection_from_dataframe(event: object, visible: list[InventoryRow]) -> None:
@@ -222,12 +275,21 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
         )
 
     sources = sorted({row.source_id for row in rows if row.source_id})
+    tag_options = _corpus_tag_options(rows)
     with st.expander("Property filters", expanded=False):
         st.selectbox(
             "Source",
             options=["All", *sources],
             key=LIBRARY_FILTER_SOURCE_KEY,
             help=widget_help("Import adapter / source type."),
+        )
+        st.multiselect(
+            "Tags",
+            options=tag_options,
+            key=LIBRARY_FILTER_TAGS_KEY,
+            help=widget_help(
+                "AND-filter by library organisation tags (not Groups, not chart tags)."
+            ),
         )
 
     library_filter = _current_library_filter()
@@ -252,6 +314,8 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
         key=f"library_inventory_table_{int(st.session_state.get(LIBRARY_TABLE_EPOCH_KEY) or 0)}",
     )
     _selection_from_dataframe(event, visible)
+
+    _render_export_by_tag(rows, library_filter.tags)
 
     selected = _row_by_path(
         rows, st.session_state.get(LIBRARY_SELECTED_TRANSCRIPT_PATH)
@@ -287,6 +351,8 @@ def _render_inspector(selected: InventoryRow) -> None:
     last_analysed = format_short_date(selected.analysis.last_analysed_at)
     st.caption(f"Last analysed: {last_analysed}")
 
+    _render_inspector_tags(selected)
+
     subject_id = selected.slug or selected.transcript_path.stem
     identity = build_transcript_identity_with_run(
         subject_id=subject_id,
@@ -321,6 +387,163 @@ def _render_inspector(selected: InventoryRow) -> None:
                 action=action,
             )
             render_action(action, ctx, section=SectionId.LIBRARY_SELECTED, key=key)
+
+
+def _render_inspector_tags(selected: InventoryRow) -> None:
+    path_key = str(selected.transcript_path)
+    st.markdown("**Tags**")
+    st.caption(
+        "Library organisation tags for finding and exporting transcripts. "
+        "These are not Groups and not chart tags."
+    )
+    current = list(selected.tags)
+    if current:
+        st.write(", ".join(current))
+    else:
+        st.caption("No tags yet")
+
+    add_col, btn_col = st.columns([3, 1])
+    with add_col:
+        new_tag = st.text_input(
+            "Add tag",
+            key=f"library_tag_add_input_{path_key}",
+            label_visibility="collapsed",
+            placeholder="Add a tag…",
+            help=widget_help(
+                "Organisation tags (meeting, idea, …). Not the same as Groups."
+            ),
+        )
+    with btn_col:
+        if st.button("Add", key=f"library_tag_add_btn_{path_key}", icon=ic.ADD):
+            cleaned = sanitize_tag(new_tag or "")
+            if cleaned and cleaned not in current:
+                _persist_row_tags(selected.transcript_path, [*current, cleaned])
+                st.rerun()
+            elif new_tag and not cleaned:
+                st.warning("Invalid tag.")
+
+    if current:
+        keep = st.multiselect(
+            "Remove tags",
+            options=current,
+            default=current,
+            key=f"library_tag_edit_{path_key}",
+            help=widget_help("Deselect a tag to remove it from this transcript."),
+        )
+        if set(keep) != set(current):
+            _persist_row_tags(selected.transcript_path, list(keep))
+            st.rerun()
+
+
+def _render_export_by_tag(
+    rows: list[InventoryRow], filter_tags: tuple[str, ...]
+) -> None:
+    tag_options = _corpus_tag_options(rows)
+    st.session_state.setdefault(LIBRARY_EXPORT_TAGS_KEY, list(filter_tags))
+    st.session_state.setdefault(LIBRARY_EXPORT_KINDS_KEY, list(_DEFAULT_EXPORT_KINDS))
+
+    # Keep export tag selector in sync when the property filter changes and
+    # the export selector still mirrors the previous filter selection.
+    prev_filter = st.session_state.get("_library_export_synced_filter_tags")
+    if prev_filter != list(filter_tags):
+        st.session_state["_library_export_synced_filter_tags"] = list(filter_tags)
+        if filter_tags and (
+            not st.session_state.get(LIBRARY_EXPORT_TAGS_KEY)
+            or st.session_state.get(LIBRARY_EXPORT_TAGS_KEY) == prev_filter
+        ):
+            st.session_state[LIBRARY_EXPORT_TAGS_KEY] = list(filter_tags)
+
+    with st.expander("Export by tag", expanded=bool(filter_tags)):
+        st.caption(
+            "ZIP artifacts from each matching transcript’s latest run. "
+            "Uses library tags (not Groups)."
+        )
+        export_tags = st.multiselect(
+            "Export tags (AND)",
+            options=tag_options,
+            key=LIBRARY_EXPORT_TAGS_KEY,
+            help=widget_help("Transcripts must have all selected tags."),
+        )
+        kind_labels = [
+            _EXPORT_KIND_LABELS.get(kind, kind) for kind in LIBRARY_EXPORT_KIND_IDS
+        ]
+        label_to_kind = {
+            _EXPORT_KIND_LABELS.get(kind, kind): kind
+            for kind in LIBRARY_EXPORT_KIND_IDS
+        }
+        st.session_state.setdefault(
+            "library_export_kind_labels",
+            [_EXPORT_KIND_LABELS[k] for k in _DEFAULT_EXPORT_KINDS],
+        )
+        selected_labels = st.multiselect(
+            "Artifact kinds",
+            options=kind_labels,
+            key="library_export_kind_labels",
+            help=widget_help(
+                "Defaults to readable TXT/CSV/SRT/VTT from each latest run."
+            ),
+        )
+        selected_kinds = [
+            label_to_kind[label] for label in selected_labels if label in label_to_kind
+        ]
+        st.session_state[LIBRARY_EXPORT_KINDS_KEY] = selected_kinds
+
+        clean_tags = tuple(sanitize_tag_list([str(t) for t in export_tags]))
+        if not clean_tags:
+            st.info("Select one or more tags to preview an export.")
+            return
+        if not selected_kinds:
+            st.info("Select at least one artifact kind.")
+            return
+
+        matching = [row for row in rows if row_matches_tags(row, clean_tags)]
+        resolved = resolve_library_export_items(matching, selected_kinds)
+        size_mb = resolved.estimated_bytes / (1024 * 1024)
+        st.caption(
+            f"{resolved.matching_rows} matching · "
+            f"{resolved.included_rows} included · "
+            f"{resolved.skipped_rows} skipped · "
+            f"~{size_mb:.1f} MB"
+        )
+
+        if st.button(
+            "Create ZIP",
+            key="library_export_create_zip",
+            icon=ic.FOLDER_ZIP,
+            disabled=resolved.included_rows == 0,
+        ):
+            manifest = build_library_export_manifest(
+                tags=clean_tags,
+                kinds=selected_kinds,
+                items=resolved.items,
+                matching_rows=resolved.matching_rows,
+                included_rows=resolved.included_rows,
+                skipped_rows=resolved.skipped_rows,
+            )
+            try:
+                zip_path = ExportService.zip_library_selection(
+                    list(resolved.items),
+                    zip_basename="library_tag_export",
+                    manifest=manifest,
+                )
+            except ValueError as exc:
+                st.error(str(exc))
+                return
+            if zip_path is None:
+                st.warning("Nothing to export.")
+                return
+            try:
+                payload = ArtifactService.read_for_download(zip_path)
+                st.download_button(
+                    "Download export",
+                    data=payload,
+                    file_name=zip_path.name,
+                    mime="application/zip",
+                    key="library_export_download",
+                    icon=ic.DOWNLOAD,
+                )
+            except Exception as exc:
+                st.error(f"Export failed: {exc}")
 
 
 def render_library() -> None:

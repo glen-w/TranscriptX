@@ -19,7 +19,7 @@ from transcriptx.io.speaker_map_resolver import (
 _sidecar_store = SidecarStore()
 _resolver = SpeakerMapResolver(_sidecar_store)
 
-_SPEAKER_MAP_METHODS = ("interactive", "web", "batch")
+_SPEAKER_MAP_METHODS = ("interactive", "web", "batch", "auto_identified")
 
 
 def _sidecar_provenance(method: str) -> Dict[str, Any]:
@@ -53,6 +53,7 @@ class SpeakerMappingService:
         display_name: str,
         *,
         method: str = "web",
+        speaker_map_source: Optional[Dict[str, Any]] = None,
     ) -> SpeakerMapState:
         """Set one diarized ID to a display name in the sidecar."""
         did = normalize_diarized_id(diarized_id)
@@ -71,6 +72,8 @@ class SpeakerMappingService:
             data["ignored_speakers"] = list(dict.fromkeys([s for s in ignored if s]))
             data["speaker_map_schema_version"] = 1
             data["speaker_map_provenance"] = _sidecar_provenance(method)
+            if speaker_map_source is not None:
+                data["speaker_map_source"] = speaker_map_source
             if "speaker_id_to_db_id" not in data:
                 data["speaker_id_to_db_id"] = {}
 

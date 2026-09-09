@@ -43,6 +43,15 @@ def row_matches_query(row: InventoryRow, query: str) -> bool:
     return any(needle in item.casefold() for item in haystacks if item)
 
 
+def row_matches_tags(row: InventoryRow, required: tuple[str, ...] | list[str]) -> bool:
+    """AND-match required tags against ``row.tags`` (already normalized lowercase)."""
+    needed = tuple(t for t in required if t)
+    if not needed:
+        return True
+    have = set(row.tags)
+    return all(tag in have for tag in needed)
+
+
 def apply_library_filter(
     rows: list[InventoryRow], library_filter: LibraryFilter
 ) -> list[InventoryRow]:
@@ -55,6 +64,7 @@ def apply_library_filter(
             not library_filter.source_id
             or row.source_id == library_filter.source_id
         )
+        and row_matches_tags(row, library_filter.tags)
     ]
     return sort_inventory_rows(matched, library_filter.sort)
 
