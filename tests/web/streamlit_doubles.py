@@ -222,6 +222,18 @@ class DummyStreamlitWithDataframe:
             return bool(cls.session_state[key])
         return value
 
+    @classmethod
+    def multiselect(cls, _label, options=None, default=None, key=None, **_kwargs):
+        options = list(options or [])
+        if key is not None and key in cls.session_state:
+            current = cls.session_state[key]
+            if isinstance(current, (list, tuple)):
+                return [item for item in current if item in options]
+            return []
+        if default is not None:
+            return list(default)
+        return []
+
     @staticmethod
     def expander(*_args, **_kwargs):
         return DummyForm()

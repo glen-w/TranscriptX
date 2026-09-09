@@ -18,5 +18,7 @@
   "admit_to_library": false,
   "admit_python": "",
   "auto_name": false,
-  "auto_link": false
+  "auto_link": false,
+  "stage_local": null,
+  "stage_dir": ""
 }
