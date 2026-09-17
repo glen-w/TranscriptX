@@ -17,6 +17,7 @@
 | affect_tension | Emotion + Sentiment mismatch and tension indices | medium | emotion, sentiment | T1 |
 | interactions | Speaker Interaction Analysis | medium | None | T0 |
 | ner | Named Entity Recognition | medium | None | T1 |
+| names | People mentioned (PERSON entities catalog) | medium | ner | T1 |
 | semantic_similarity | Semantic similarity (batched embeddings, vectorized similarity) | heavy | None | T1 |
 | sentiment | Sentiment Analysis | medium | None | T1 |
 | epistemic_markers | Hedging / certainty / epistemic markers | light | None | T0 |
