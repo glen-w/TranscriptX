@@ -203,6 +203,20 @@
     "sensitivity": "normal",
     "type": "list"
   },
+  "dashboard.overview_enabled": {
+    "advanced": false,
+    "category": "dashboard",
+    "choices": null,
+    "default": false,
+    "description": "Show Charts page Overview section and strip.",
+    "key": "dashboard.overview_enabled",
+    "max": null,
+    "min": null,
+    "path": "dashboard.overview_enabled",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
   "dashboard.overview_max_items": {
     "advanced": false,
     "category": "dashboard",

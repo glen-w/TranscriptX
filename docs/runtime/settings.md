@@ -7,7 +7,7 @@ How to change TranscriptX behaviour from the GUI, env, and config files — with
 | Goal | Where |
 |------|--------|
 | Everyday analysis depth (which modules run) | **Run Analysis** preset: Quick / Balanced / Thorough / Custom — edit policies under **Settings → Analysis** |
-| Charts page **Overview** strip (which charts, order) | **Settings → Configuration** → **Charts overview** (`dashboard.overview_charts`) — not Dashboard Builder |
+| Charts page **Overview** strip (enable, which charts, order) | **Settings → Configuration** → **Charts overview** (`dashboard.overview_enabled`, `dashboard.overview_charts`) — off by default; not Dashboard Builder |
 | Overview / Insights **page panels** (layout profiles) | **Settings → Dashboard Builder** — see [dashboard_builder.md](../dev/dashboard_builder.md) |
 | Common model and similarity knobs | **Settings → Configuration** → Common Settings |
 | Full registry of knobs | **Settings → Configuration** → enable **Show advanced/raw settings editor** |
@@ -67,7 +67,7 @@ Draft overrides are reported with run-layer provenance (`source: run`) by design
 
 ## Common vs advanced knobs
 
-- **Charts overview** (Configuration, edit mode): checkbox + ordered list for `dashboard.overview_charts`. Empty list → registry defaults for the run kind (transcript vs group). See [group_charts_default_overview.md](../groups/group_charts_default_overview.md).
+- **Charts overview** (Configuration, edit mode): master enable (`dashboard.overview_enabled`, **off by default**) plus checkbox + ordered list for `dashboard.overview_charts`. When enabled, empty list → registry defaults for the run kind (transcript vs group). See [group_charts_default_overview.md](../groups/group_charts_default_overview.md).
 - **Common Settings** are a curated allowlist (`COMMON_SETTINGS_SCHEMA`): models, semantic similarity, a few workflow/output/display keys.
   - Speakers: `analysis.allow_unnamed_speakers` — when on, analysis runs on diarized labels (`SPEAKER_00`, …) without naming; default off. Per-run override: Run Analysis checkbox.
 - **Advanced/raw** exposes every registered config leaf (except profile activation keys). Registry fields may mark `advanced=True` for documentation; the GUI does not yet use that flag to partition the form — the toggle is the partition.

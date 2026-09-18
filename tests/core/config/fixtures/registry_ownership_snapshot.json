@@ -1,6 +1,6 @@
 {
-  "total_registry_keys": 740,
-  "pydantic_owned_keys": 724,
+  "total_registry_keys": 741,
+  "pydantic_owned_keys": 725,
   "non_pydantic_baseline_keys": 16,
   "pilot_count": 55,
   "per_pilot_key_counts": {
@@ -9,7 +9,7 @@
     "dashboard_display": 3,
     "llm": 14,
     "acts": 21,
-    "dashboard_overview": 4,
+    "dashboard_overview": 5,
     "output": 9,
     "input": 8,
     "logging": 6,

@@ -14,6 +14,7 @@ from transcriptx.core.utils.chart_registry import (
 )
 from transcriptx.web.components.info_tooltip import widget_help
 
+OVERVIEW_ENABLED_KEY = "dashboard.overview_enabled"
 OVERVIEW_CHARTS_KEY = "dashboard.overview_charts"
 OVERVIEW_MAX_ITEMS_KEY = "dashboard.overview_max_items"
 OVERVIEW_MISSING_KEY = "dashboard.overview_missing_behavior"
@@ -91,13 +92,37 @@ def render_charts_overview_selector(
     """
     st.markdown("**Charts overview**")
     st.caption(
-        "Checked charts appear in the Charts page **Overview** section (in order below). "
-        "The full gallery is unchanged. Empty selection = registry defaults for the run kind "
-        "(transcript vs group)."
+        "Optional curated strip on the Charts page (**Overview** | **All**). "
+        "Off by default. When enabled, checked charts appear in order below; "
+        "empty selection uses registry defaults for the run kind (transcript vs group). "
+        "The full gallery is unchanged."
     )
+
+    overview_enabled = bool(draft_dot.get(OVERVIEW_ENABLED_KEY, False))
+    overview_enabled = st.checkbox(
+        "Enable Charts Overview section",
+        value=overview_enabled,
+        key=f"{scope_key}_ov_enabled",
+        help=widget_help(
+            "When off, the Charts page shows only the full gallery (All). "
+            "When on, the Overview strip uses the chart list below."
+        ),
+    )
+    draft_dot[OVERVIEW_ENABLED_KEY] = overview_enabled
 
     selected = normalize_overview_selection(draft_dot.get(OVERVIEW_CHARTS_KEY))
     registry = get_chart_registry()
+
+    if not overview_enabled:
+        st.caption(
+            "Overview is disabled — customisation below is inactive until you enable it."
+        )
+        return {
+            OVERVIEW_ENABLED_KEY: False,
+            OVERVIEW_CHARTS_KEY: draft_dot.get(OVERVIEW_CHARTS_KEY, []),
+            OVERVIEW_MAX_ITEMS_KEY: draft_dot.get(OVERVIEW_MAX_ITEMS_KEY),
+            OVERVIEW_MISSING_KEY: draft_dot.get(OVERVIEW_MISSING_KEY, "skip"),
+        }
 
     st.markdown("##### Selected (ordered)")
     if not selected:
@@ -207,6 +232,7 @@ def render_charts_overview_selector(
         )
 
     return {
+        OVERVIEW_ENABLED_KEY: True,
         OVERVIEW_CHARTS_KEY: draft_dot.get(OVERVIEW_CHARTS_KEY, []),
         OVERVIEW_MAX_ITEMS_KEY: draft_dot.get(OVERVIEW_MAX_ITEMS_KEY),
         OVERVIEW_MISSING_KEY: draft_dot.get(OVERVIEW_MISSING_KEY, "skip"),
