@@ -41,6 +41,7 @@ def test_dashboard_display_defaults_match_golden() -> None:
 
 def test_dashboard_overview_fields_use_pydantic_metadata() -> None:
     reg = build_registry()
+    assert reg["dashboard.overview_enabled"].default is False
     assert reg["dashboard.overview_max_items"].min == 1
     assert "skip" in reg["dashboard.overview_missing_behavior"].choices
     assert reg["dashboard.overview_charts"].description

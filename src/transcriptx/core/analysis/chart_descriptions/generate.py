@@ -278,11 +278,24 @@ def run_chart_descriptions(
     request_timeout = float(getattr(cd_cfg, "request_timeout", 120.0) or 120.0)
     temperature = 0.0
 
+    dashboard = getattr(config, "dashboard", None)
+    overview_enabled = (
+        bool(getattr(dashboard, "overview_enabled", True)) if dashboard else True
+    )
+    max_overview_items = (
+        getattr(dashboard, "overview_max_items", None) if dashboard else None
+    )
+    effective_user_overview = user_overview
+    if effective_user_overview is None and dashboard is not None:
+        effective_user_overview = getattr(dashboard, "overview_charts", None) or None
+
     selected_charts = select_charts_for_set(
         inventory.charts,
         chart_set=chart_set,  # type: ignore[arg-type]
         run_kind=inventory.run_kind,
-        user_overview=user_overview,
+        user_overview=effective_user_overview,
+        max_items=max_overview_items,
+        overview_enabled=overview_enabled,
     )
     counts.selected = len(selected_charts)
 
