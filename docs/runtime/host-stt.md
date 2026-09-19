@@ -250,6 +250,44 @@ Enable admit in local JSON (and/or `.env` `INBOX_WATCH_ADMIT=1`):
 
 Do **not** point this inbox at the same folder as the in-app G2 watcher unless you intend both to handle new transcripts (G2 admits; inbox-watch copies). See [directory_watcher.md](directory_watcher.md).
 
+## Voice notes (`voice-note-watch`)
+
+Optional **host-side** sibling for a short personal note (roadmap **G4**). Not a Streamlit page, not Settings → Watcher, and not a second `inbox-watch` config. A morning recording in the library inbox (on the owner machine, `/Volumes/USB-DISK/RECORD`) stays a library item. Do not turn library admit off to make notes fit, and do not point G2 at that same folder.
+
+This script has **no** library admission and **no** `--auto-name`. It does not import `transcriptx`. Output is plain text, not diarized JSON under `originals/`. Default off: nothing starts it. Do **not** add it to the login agent that runs `inbox-watch --watch`.
+
+Install once from the repo root:
+
+```bash
+mkdir -p ~/.local/bin
+install -m 755 scripts/voice-note-watch.py ~/.local/bin/voice-note-watch
+```
+
+Or run without installing: `python3 scripts/voice-note-watch.py --once --dry-run …`.
+
+| Piece | Rule |
+|-------|------|
+| Inbox | Own folder. A subdirectory such as `RECORD/braindump` is allowed only when `inbox-watch` is not recursive. The same path as the library inbox is rejected. |
+| Audio | Removable volume → local stage → ffmpeg 16 kHz mono 64k MP3, same settings as inbox-watch. MP3s go to `audio_dir`, not the library recordings folder. |
+| Text | `whispermlx -f txt`. Never `--diarize`. If the binary does not advertise `txt`, the script exits rather than writing JSON. |
+| Length cap | `max_duration_seconds` is required (no product default). Longer files are not transcribed and not truncated. The example value `180` is only a starting point, not the 20-minute merge gap. |
+| Overflow | Optional `library_inbox` must be the inbox-watch inbox. The untouched source is copied there once and left in the voice-note inbox. |
+| Triage | `--triage` (default off) writes `{stem}.draft.md` with todos, questions, and unverified claims. No mail, no git, no other app. |
+
+```bash
+voice-note-watch --once --dry-run \
+  --inbox /Volumes/USB-DISK/RECORD/braindump \
+  --audio-dir /path/to/voice-notes/audio \
+  --notes-dir /path/to/voice-notes/text \
+  --max-duration-seconds 180 \
+  --library-watch-config .transcriptx/inbox-watch.json \
+  --library-inbox /Volumes/USB-DISK/RECORD
+```
+
+**Local config (gitignored):** copy [`config/voice-note-watch.example.json`](../../config/voice-note-watch.example.json) to `.transcriptx/voice-note-watch.json`. Env prefix is `VOICE_NOTE_WATCH_*` only, so `INBOX_WATCH_ADMIT` cannot turn admission on. Merge order: portable defaults ← `VOICE_NOTE_WATCH_*` ← local JSON ← CLI.
+
+Library admission of a note, if you want it later, is a separate act (Import Transcript or `inbox-watch`). This script will not do it.
+
 ## Import a whole folder (details)
 
 On **Import Transcript**, section **Import all from folder** scans an **absolute** local directory (Docker: mount the host folder — typically `HOST_TRANSCRIPT_INBOX_DIR` → `/mnt/transcript-inbox`; do not scan `/mnt/transcripts` or its subdirs) and imports only eligible files:

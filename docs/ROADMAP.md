@@ -97,7 +97,7 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | D. Playback & reading UX | Karaoke-style word highlight; reader polish that Components unlock | With / after C — **[~] Transcript karaoke MVP** |
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
 | F. Library & organisation | Transcript tagging; Groups interaction rules | Mid 1.x |
-| G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts | Mid 1.x (merge = former §1.2; **G3** host-script OS portability parked) |
+| G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** host-script OS portability parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
 | H. In-app transcription | Local NVIDIA Parakeet/Canary + Whisper; CUDA/CPU; YouTube ingest | Mid–late 1.x (product decision) |
 | I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Mid–late 1.x (depends on shell) |
 | J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 |
@@ -215,7 +215,7 @@ Automatically notice new recordings (and/or transcript files) in a monitored fol
 - Today: folder import also exists for **manual** transcript admission — watcher reuses the same admission primitives
 - Design: watch scope, debounce + stability, size limits, failure surfacing, Docker bind-mount honesty, no silent library corruption
 - Prefer explicit user enablement; default-off on shared machines
-- **Next:** audio → host STT → import once theme **H** (or a host STT service) exists; optional host-side watcher helper if in-process lifecycle is insufficient
+- **Next:** audio → host STT → import once theme **H** (or a host STT service) exists. The host helper for **library** admit is `inbox-watch`. Short voice notes are **G4**, not this bullet and not a second G2 on the same folder.
 
 #### G3. Host companion scripts on Windows / Linux (parked; post-1.0)
 
@@ -237,6 +237,28 @@ Evidence (do not implement from this list before 1.0): [host-side Windows/Linux 
 **Decision fork:** **Narrow** (Windows convert/copy/admit + docs) · **Invest** (pluggable STT + command-gen shells) · **Defer** (stay Mac host STT + WSL2). Do not make Windows a silent 1.0 support cell.
 
 **Non-goals for 1.0:** native `transcriptx.ps1` GUI launcher; CI `windows-latest` matrix; shipping whispermlx on Windows.
+
+#### G4. Voice-notes side-script (companion)
+
+Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is one config: one inbox, JSON under `originals/`, admit as a single switch. On the owner machine that switch is already on for `/Volumes/USB-DISK/RECORD`. A morning recording dropped there becomes a library item. Do not turn that admit off to make notes fit. Do not point G2 at the same folder.
+
+**Not a 1.0 gate.** Sibling of `inbox-watch` / `whispermlx-missing`, not a Streamlit page and not theme **H**. Bridge toward the 2.0 voice-note workflow; the script does not wait for 2.0 to be named.
+
+**Status:** host script [`scripts/voice-note-watch.py`](../scripts/voice-note-watch.py) (default off). Operator notes: [host-stt.md](runtime/host-stt.md).
+
+**Intent:** turn a short recording into reviewed text and stop. Library admission stays an explicit later act. Default off.
+
+**Shape:**
+
+- Own inbox, not the live `RECORD` root. `inbox-watch` is not recursive, so `RECORD/braindump` is invisible to the library watcher only when the recorder can write that folder. If the device only writes the root, this script must not share that inbox.
+- Reuse the host path that already works: removable volume → local stage → ffmpeg → whispermlx. No second STT engine. Audio stays on the machine.
+- Output is plain text. Not the diarized JSON `originals/` contract. A length cap, set in config, refuses an oversized file into this path and leaves it for the library watcher. Do not silently truncate.
+- Optional local triage of that text into a draft file (todos, questions, claims still unverified). Draft only. No mail, no git, no auto-admit, no `--auto-name`.
+- Do not load it via the login agent that runs `inbox-watch --watch` against the library config.
+
+**Decision fork:** **Invest** (called). A second config of `inbox-watch` will keep getting pointed at the library inbox. **Narrow** (docs only) and **Defer** (wait for theme H) are rejected for that reason.
+
+**Non-goals:** replacing `inbox-watch`; an in-app recorder (theme **H** / 2.0); meeting bots; cloud STT; filing the note into another app's task list; OS hotkeys (operator machine, not this repo). Theme **F** tags may later label a note that was deliberately admitted. Tags do not replace this script.
 
 ---
 
@@ -361,7 +383,7 @@ Only if capacity remains after core themes:
 
 ## 2.0 vision
 
-**Personal audio intelligence companion:** personal recordings, voice-note workflows, optional local STT, deeper conversational analytics, stronger local AI — still local-first and modular. Themes **G–I** (recording workflows, in-app transcription, installable shell) are the main 1.x bridges toward that vision; themes **A–F** and **J** keep the analysis workbench excellent on the way; theme **N** optionally widens LLM backends without abandoning local-first. A **custom local frontend** (theme **I** escalate) belongs here if the companion needs installable-desktop feel that Streamlit + CCv2 cannot provide — it is not a 1.x default.
+**Personal audio intelligence companion:** personal recordings, voice-note workflows, optional local STT, deeper conversational analytics, stronger local AI — still local-first and modular. Themes **G–I** (recording workflows, in-app transcription, installable shell) are the main 1.x bridges toward that vision; **G4** is the voice-note bridge (host side-script, admit off, not a second library watcher). Themes **A–F** and **J** keep the analysis workbench excellent on the way; theme **N** optionally widens LLM backends without abandoning local-first. A **custom local frontend** (theme **I** escalate) belongs here if the companion needs installable-desktop feel that Streamlit + CCv2 cannot provide — it is not a 1.x default.
 
 ---
 

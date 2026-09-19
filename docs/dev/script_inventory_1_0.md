@@ -8,7 +8,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 
 | Status | Count |
 |--------|------:|
-| supported | 4 |
+| supported | 5 |
 | maintainer | 21 |
 | internal | 9 |
 | archived | 3 |
@@ -22,6 +22,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | `transcriptx.sh` | Native venv install + launch (`.transcriptx`; CUDA left available unless `TRANSCRIPTX_FORCE_CPU=1`) | end user | README, installation.md | yes | partial | mutates venv | macOS/Linux | requirements.txt | valid | supported | retain supported |
 | `scripts/whispermlx-missing.py` | Batch whispermlx for MP3s missing JSON | end user | host-stt.md; tests/scripts | yes | yes | writes transcripts | Apple Silicon typical | whispermlx (external) | valid | supported | retain supported |
 | `scripts/inbox-watch.py` | Host inbox watch: convert audio + copy transcripts; optional `--admit` / `--auto-name` / `--auto-link` via `python -m transcriptx.admit_originals`; delegates STT to whispermlx-missing | end user | host-stt.md; directory_watcher.md; tests/scripts | yes | yes | writes recordings + copies transcripts; optional managed admit + identify | macOS typical (ffmpeg + whispermlx) | ffmpeg; whispermlx-missing; native transcriptx for `--admit` | valid | supported | retain supported |
+| `scripts/voice-note-watch.py` | Host voice-note watch: own inbox, stage + ffmpeg, whispermlx plain text; length cap; optional local draft. No library admit | end user | host-stt.md; directory_watcher.md; tests/scripts | yes | yes | writes private audio + plain text; optional overflow copy into the library inbox | macOS typical (ffmpeg + whispermlx) | ffmpeg; whispermlx; inbox-watch helpers (no admit) | valid | supported | retain supported |
 | `scripts/audio_preprocess.py` | Assess/preprocess audio before external transcription | power user | System → Tools; audio-prep.md; ROADMAP theme G1 | yes | yes | writes audio | any | pydub/ffmpeg | valid | maintainer | retain CLI; GUI under System → Tools |
 | `scripts/audio_merge.py` | Merge split recordings into one MP3 | power user | System → Tools; audio-prep.md; ROADMAP theme G1 | yes | yes | writes audio | any | ffmpeg | valid | maintainer | retain CLI; GUI under System → Tools; **G1** transcript stitch still open |
 | `scripts/release/assert_compose_bind.sh` | Canonical compose bind/port asserts | maintainer | CI | yes (release_governance) | CI | read-only | Docker | compose | valid | maintainer | retain internal |
