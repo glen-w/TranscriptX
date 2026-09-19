@@ -267,7 +267,7 @@ CHARTS_FILTER_DEFAULTS: dict[str, Any] = {
 # Persistent view preference (not resettable, not dirty).
 CHARTS_VIEW_PREF_DEFAULTS: dict[str, Any] = {
     CHARTS_KEY_CHART_TEXT: CHARTS_CHART_TEXT_BOTH,
-    CHARTS_KEY_SECTION: CHARTS_SECTION_OVERVIEW,
+    CHARTS_KEY_SECTION: CHARTS_SECTION_BROWSE,
 }
 
 

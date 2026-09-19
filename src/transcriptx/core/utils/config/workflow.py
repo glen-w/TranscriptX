@@ -206,6 +206,7 @@ class DashboardConfig:
     """Defaults owned by dashboard_display + dashboard_overview pilots."""
 
     schema_version: int = field(init=False, repr=True)
+    overview_enabled: bool = field(init=False, repr=True)
     overview_charts: list[str] = field(init=False, repr=True)
     overview_missing_behavior: str = field(init=False, repr=True)
     overview_max_items: int | None = field(init=False, repr=True)

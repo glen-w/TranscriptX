@@ -31,6 +31,10 @@ class DashboardOverviewSettingsModel(BaseModel):
     schema_version: int = Field(
         default=2, ge=1, description="Dashboard config schema version."
     )
+    overview_enabled: bool = Field(
+        default=False,
+        description="Show Charts page Overview section and strip.",
+    )
     overview_charts: list[str] = Field(
         default_factory=_default_overview_charts,
         description="Ordered list of chart registry IDs for the overview.",

@@ -618,6 +618,7 @@ def _build_view_from_session(
     user_overview: Sequence[Any],
     missing_behavior: str,
     max_items: Optional[int],
+    overview_enabled: bool = True,
 ):
     chart_source = st.session_state.get(CHARTS_KEY_SOURCE_PRESET, "All") or "All"
     _apply_source_tag_coupling(chart_source)
@@ -636,6 +637,7 @@ def _build_view_from_session(
         user_overview=user_overview,
         missing_behavior=missing_behavior,
         max_items=max_items,
+        overview_enabled=overview_enabled,
     )
 
 
@@ -665,6 +667,7 @@ def _charts_filters_and_gallery_fragment(
     user_overview: Sequence[Any],
     max_items: Optional[int],
     missing_behavior: str,
+    overview_enabled: bool = True,
 ) -> None:
     _sync_derived_filter_keys()
 
@@ -673,6 +676,7 @@ def _charts_filters_and_gallery_fragment(
         user_overview=user_overview,
         missing_behavior=missing_behavior,
         max_items=max_items,
+        overview_enabled=overview_enabled,
     )
     visible_module_ids = [g.module_id for g in view.module_groups]
     st.session_state["_charts_visible_module_ids"] = list(visible_module_ids)
@@ -926,6 +930,7 @@ def _render_charts_body(ctx: RunScopedPageContext) -> None:
     user_overview = getattr(dashboard_config, "overview_charts", []) or []
     max_ov_items = getattr(dashboard_config, "overview_max_items", None)
     missing_behavior = getattr(dashboard_config, "overview_missing_behavior", "skip")
+    overview_enabled = bool(getattr(dashboard_config, "overview_enabled", False))
 
     _charts_filters_and_gallery_fragment(
         run_root,
@@ -937,6 +942,7 @@ def _render_charts_body(ctx: RunScopedPageContext) -> None:
         user_overview,
         max_ov_items,
         missing_behavior,
+        overview_enabled,
     )
 
 

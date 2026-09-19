@@ -137,6 +137,7 @@ def render_chart_overview_slots(ctx: BlockContext, _placement: BlockPlacement) -
     user_overview = getattr(dashboard_config, "overview_charts", None) or []
     max_items = getattr(dashboard_config, "overview_max_items", None)
     missing_behavior = getattr(dashboard_config, "overview_missing_behavior", "skip")
+    overview_enabled = bool(getattr(dashboard_config, "overview_enabled", False))
 
     view = build_charts_gallery_view(
         all_charts,
@@ -153,6 +154,7 @@ def render_chart_overview_slots(ctx: BlockContext, _placement: BlockPlacement) -
         user_overview=user_overview,
         missing_behavior=missing_behavior,
         max_items=max_items,
+        overview_enabled=overview_enabled,
     )
     if not view.overview_slots:
         st.caption("No overview slots for the current filters.")
