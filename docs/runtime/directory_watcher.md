@@ -34,6 +34,8 @@ The in-app watcher does **not** convert audio or run STT. For that, use the host
 
 It runs on the Mac host (outside `transcriptx-web`) and does not import `transcriptx` in-process. G2 stays the in-app auto-import path. Both can run; do not point them at the same inbox unless you intend double handling of transcripts (G2 admits, host copies — and `--admit` would admit the copies).
 
+Short voice notes are roadmap **G4** ([`scripts/voice-note-watch.py`](../../scripts/voice-note-watch.py)), not a second G2 on the library folder and not a second `inbox-watch` config. See [Voice notes](host-stt.md#voice-notes-voice-note-watch).
+
 ## Related
 
 - Folder scan (manual): Import Transcript → Import all from folder
