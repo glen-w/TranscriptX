@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "inbox": "/Volumes/USB-DISK/RECORD/braindump",
+  "audio_dir": "/path/to/voice-notes/audio",
+  "notes_dir": "/path/to/voice-notes/text",
+  "max_duration_seconds": 180,
+  "library_watch_config": ".transcriptx/inbox-watch.json",
+  "library_inbox": "/Volumes/USB-DISK/RECORD",
+  "env_file": "whisperx.env",
+  "whispermlx": "",
+  "ffmpeg": "",
+  "model": "",
+  "language": "",
+  "triage": false,
+  "interval_seconds": 5,
+  "stage_local": null,
+  "stage_dir": "",
+  "recursive": false
+}
