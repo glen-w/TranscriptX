@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Names group aggregation (`names` pooled people catalog across sessions) plus pydantic config goldens so the new module passes Gate B drift / group-support contracts.
+- v1 launch readiness snapshot: [docs/dev/v1_launch_readiness_2026-09-20.md](docs/dev/v1_launch_readiness_2026-09-20.md).
 - **Auto-identify speakers** on ingest: `inbox-watch --auto-name` / `--auto-link` (independent; `--auto-name` implies `--admit` and defaults auto-link on) fuses ECAPA voice match with in-transcript names and speech-pattern corroboration, then can write speaker-map names and `auto_identified` profile links. Fail-open; no auto-enrol of voice samples. CLI: `python -m transcriptx.identify_speakers`. Settings → Speakers stores defaults in `config_dir/identify.json`. Speaker Identification shows auto-named / auto-linked badges and **Apply auto-identify**. Contract: [speaker_profiles_voice_v1.md](docs/contracts/speaker_profiles_voice_v1.md); operator guide: [auto-identify.md](docs/runtime/auto-identify.md); host path: [host-stt.md](docs/runtime/host-stt.md).
 - Deep Playwright GUI E2E coverage for Speaker Identification: speaker switching (Next/Prev/Jump), rename + Transcript confirm, ignore/unignore, and clip load/play with linked audio (`tests/e2e_gui/test_speaker_identification_deep.py`).
 - Settings → Interface **action appearance**: icon, text, or both, with a global default and per-section override (`inherit`). Icon-only buttons keep the action name as a hover tooltip even when instructional ⓘ tips are off. Contract: [interface-menus.md](docs/contracts/interface-menus.md).
@@ -19,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Dependency pin tightening for launch: `beautifulsoup4==4.15.0`, `ebooklib==0.20`, `rapidfuzz`/`webrtcvad` upper bounds; `speechbrain==1.0.2` + `torchaudio>=2.6.0` aligned with extras; Docker Compose adds `no-new-privileges`; `.dockerignore` excludes local venvs / website / artifacts; `requirements-lock.txt` retired (pointer only).
+- Documented nltk **CVE-2026-81726** as a no-fix finding until a PyPI release beyond 3.10.3 ships ([dependency_audit.md](docs/dev/dependency_audit.md)).
+- Security / architecture reviews mark SR-01 / SR-02 / SR-07 / SR-13 (merge output path) as fixed; host-compat review redacts owner absolute paths for hygiene.
 - Installation, transcription, and comparison docs split: user-facing leads stay short; extras/env/gates, host STT automation, audio-prep, and vendor research moved to [installation details](docs/runtime/installation-advanced.md), [host-stt.md](docs/runtime/host-stt.md), [audio-prep.md](docs/runtime/audio-prep.md), and [comparison-reference.md](docs/comparison-reference.md). [USER_INDEX](docs/USER_INDEX.md) is an exhaustive sitemap, not a second start page.
 - Analysis probe transcripts live under `tests/fixtures/` (including `tests/fixtures/analysis_probes/`) instead of the user library. Deep-test analyses those paths in place and must not import them into `TRANSCRIPTX_TRANSCRIPTS_DIR`.
 - [Identify and name speakers](docs/workflows/speaker-identification.md) walkthrough expanded for switch / clip / ignore / rename flows; media promoted to `speaker-identification-*` filenames (legacy `speaker-trust-*` retained).
@@ -34,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Merge `output_filename` confined under `output_dir` (basename + path-safety); audio preprocessing loudness/denoise paths unlink temp WAVs in `finally` (SR-07); Overview “Open profile” declares an icon; flaky whispermlx JSON discovery and cleanup signature tests made mtime/size-stable.
 - Auto-merge / recordings discovery accept **Opus** (`.opus`) so WhatsApp Desktop voice-note bursts appear in Tools → Auto-merge (ffmpeg/pydub already decode them).
 - Managed admit replaces marker-less library JSON (raw WhisperX, including vendor NaNs) instead of failing mid-sidecar-repair; Speakers/Run pickers omit library paths without an import sidecar; `inbox-watch` / `whispermlx-missing` refuse writing into the managed library root (require `…/originals`).
 - `whispermlx-missing` skips stems that already have JSON in the parent library root, as `foo (N).json` archives, or as a sidecar next to the MP3 — not only files inside `--transcripts` (`originals/`).

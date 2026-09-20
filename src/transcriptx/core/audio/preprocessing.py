@@ -346,6 +346,7 @@ def normalize_loudness(
 
     try:
         if PYLoudnorm_AVAILABLE and SOUNDFILE_AVAILABLE:
+            tmp_path: str | None = None
             try:
                 import tempfile
 
@@ -367,12 +368,17 @@ def normalize_loudness(
                     sf.write(tmp_path, normalized, rate)
 
                     normalized_audio = AudioSegment.from_wav(tmp_path)
-                    os.unlink(tmp_path)
                     return normalized_audio
             except Exception as e:
                 logger.warning(
                     f"pyloudnorm normalization failed, falling back to RMS: {e}"
                 )
+            finally:
+                if tmp_path is not None:
+                    try:
+                        os.unlink(tmp_path)
+                    except OSError:
+                        pass
 
         target_rms_db = target_lufs + 3.0
         target_rms_linear = 10 ** (target_rms_db / 20)
@@ -429,6 +435,7 @@ def denoise_audio(audio: "AudioSegment", strength: str = "medium") -> "AudioSegm
 
     try:
         if NOISEREDUCE_AVAILABLE and SOUNDFILE_AVAILABLE:
+            tmp_path: str | None = None
             try:
                 import tempfile
 
@@ -460,12 +467,17 @@ def denoise_audio(audio: "AudioSegment", strength: str = "medium") -> "AudioSegm
 
                     sf.write(tmp_path, denoised, rate)
                     denoised_audio = AudioSegment.from_wav(tmp_path)
-                    os.unlink(tmp_path)
                     return denoised_audio
             except Exception as e:
                 logger.warning(
                     f"noisereduce denoising failed, using spectral gating: {e}"
                 )
+            finally:
+                if tmp_path is not None:
+                    try:
+                        os.unlink(tmp_path)
+                    except OSError:
+                        pass
 
         samples = np.array(audio.get_array_of_samples())
         if audio.channels == 2:

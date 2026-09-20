@@ -289,6 +289,8 @@ class TestPlanBuilder:
         assert es.candidates == ()
 
     def test_signature_changes_when_fingerprint_changes(self, tmp_path):
+        import time
+
         outputs = tmp_path / "outputs"
         groups = tmp_path / "groups"
         outputs.mkdir()
@@ -299,6 +301,9 @@ class TestPlanBuilder:
             _root_identity(SubjectType.group, groups),
         ]
         a = build_execution_set(CleanupMode.DELETE_ALL, roots, [], outputs, groups)
-        (run / "artifact.txt").write_text("v2", encoding="utf-8")
+        # Size + mtime must both change: fingerprint hashes size|mtime_ns and
+        # same-length rewrites can share a coarse timestamp on some filesystems.
+        time.sleep(0.02)
+        (run / "artifact.txt").write_text("v2-longer-content", encoding="utf-8")
         b = build_execution_set(CleanupMode.DELETE_ALL, roots, [], outputs, groups)
         assert execution_set_signature(a) != execution_set_signature(b)

@@ -35,6 +35,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [unfamiliar_user_validation_1_0.md](dev/unfamiliar_user_validation_1_0.md) | Unfamiliar-user validation protocol |
 | [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | 0.9.9 Overview/results presentation polish (post-maintainer, pre-unfamiliar-user) |
 | [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md) | Post-0.9.9 wave cut as interim **0.9.9.5** (early 1.x + operator UX before unfamiliar-user) |
+| [v1_launch_readiness_2026-09-20.md](dev/v1_launch_readiness_2026-09-20.md) | v1 launch readiness snapshot (fixes, audits, open gates) |
 
 ## Orientation
 
