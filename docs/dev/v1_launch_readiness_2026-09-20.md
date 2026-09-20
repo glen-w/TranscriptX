@@ -18,7 +18,7 @@ and human-validation work still blocking the public **1.0** tag.
 | Clean-env `pip check` | Pass |
 | Clean-env `pip-audit` | One **no-fix** finding: nltk 3.10.3 / CVE-2026-81726 (no PyPI fix yet) — [dependency_audit.md](dependency_audit.md) |
 | Smoke + previously red fast-lane failures | Pass |
-| Fast suite (Gate B) | 8465+ passed after fixing names/module/icon/hygiene flakes |
+| Fast suite (Gate B) | **8475 passed** after fixing names/module/icon/hygiene flakes. One intermittent `hypothesis.FlakyFailure` on `test_normalize_property_dedupe_and_limits` when `speechbrain` is installed (lazy `k2` import during Hypothesis module introspection) — passes in isolation; not a product defect. |
 | Docker image build / image pip-check | Skipped (Docker unavailable in this environment) |
 | Unfamiliar-user round | Open (mandatory) |
 | RTD project slug | Owner-gated |
