@@ -1,0 +1,5 @@
+{
+  "exclude_known_speakers": false,
+  "max_mentions_per_person": 50,
+  "min_mentions": 1
+}

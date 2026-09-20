@@ -690,6 +690,7 @@ def render_speaker_summary_cards(ctx: BlockContext, _placement: BlockPlacement) 
                 if profile_id and st.button(
                     "Open profile",
                     key=f"overview_open_profile_{i}_{profile_id}",
+                    icon=ic.SPEAKER,
                 ):
                     navigate_to_speaker_profile(profile_id)
     if len(ranked) > 6:
