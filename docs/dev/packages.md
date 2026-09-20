@@ -6,7 +6,7 @@ CVE / waiver policy: [dependency_audit.md](dependency_audit.md). Analysis model 
 
 ## Core wheel
 
-`pip install transcriptx` (no extras) is the analysis core plus the Streamlit launcher entry point. It deliberately omits compiled NLP / voice / BERTopic stacks so a clean host install is not blocked by `llvmlite` / CUDA wheels. Exact pins: `pyproject.toml` `[project.dependencies]`.
+From a TranscriptX git checkout (not on PyPI): `pip install -e .` (no extras) is the analysis core plus the Streamlit launcher entry point. It deliberately omits compiled NLP / voice / BERTopic stacks so a clean host install is not blocked by `llvmlite` / CUDA wheels. Exact pins: `pyproject.toml` `[project.dependencies]`.
 
 The GUI extra is separate: Streamlit is **`[web]`**, not in `[full]`. Docker / `transcriptx.sh` install the GUI via `requirements.txt`.
 

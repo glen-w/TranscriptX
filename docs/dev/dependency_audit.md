@@ -40,4 +40,4 @@ Document as warnings with owner + review date. Do not silently ignore.
 
 | CVE | Package | Owner | Review date | Notes |
 |-----|---------|-------|-------------|-------|
-| — | — | — | — | — |
+| CVE-2026-81726 / PYSEC-2026-3740 / GHSA-8mgp-746c-j5xp | nltk 3.10.3 | maintainer | 2026-10-20 | No published fix yet (pip-audit `fix_versions` empty; latest PyPI still 3.10.3). Affects model import/export APIs that bypass `pathsec` when callers supply outside-root paths. TranscriptX does not expose those APIs to untrusted UI input; NLTK is used for VADER/punkt/cmudict corpora. Re-audit before 1.0 tag; bump when a fix ships. |
