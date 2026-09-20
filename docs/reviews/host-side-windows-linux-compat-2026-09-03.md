@@ -170,8 +170,8 @@ Linux/Windows operators who want bulk “skip existing JSON” need a different 
 
 `scripts/macos/inbox-watch-agent.sh` and `com.transcriptx.inbox-watch.plist` are **machine-local**, not repo-portable:
 
-- Absolute Python: `/Users/89298/.pyenv/versions/3.10.13/bin/python3`
-- Absolute repo, logs, and `TRANSCRIPTX_*` dirs under `/Users/89298/Documents/…`
+- Absolute Python: `$HOME/.pyenv/versions/3.10.13/bin/python3` (owner machine path redacted)
+- Absolute repo, logs, and `TRANSCRIPTX_*` dirs under an owner Documents tree
 - PATH: pyenv shims + Homebrew
 - Comment: waits for `/Volumes/USB-DISK/RECORD`
 
@@ -302,7 +302,7 @@ They are **not** wired to inbox-watch. A Linux operator merging serial parts sti
 
 **Hygiene**
 
-11. **`scripts/macos/*.plist` is a personal LaunchAgent** (absolute `/Users/89298/...`). Do not treat as a distribution artefact; it will confuse Linux/Windows readers who open `scripts/macos/`.
+11. **`scripts/macos/*.plist` is a personal LaunchAgent** (absolute owner `$HOME/...` paths). Do not treat as a distribution artefact; it will confuse Linux/Windows readers who open `scripts/macos/`.
 12. **CI never runs host scripts on Windows** (or macOS). `tests/scripts/test_inbox_watch.py` is stdlib-mockable and will pass on Ubuntu while `#4` stays latent.
 
 ---

@@ -304,19 +304,21 @@ def test_json_discovery_prefers_exact_stem(tmp_path: Path):
 
 
 @pytest.mark.unit
-def test_json_discovery_newest_since_started_at(tmp_path: Path, monkeypatch):
-    import time
+def test_json_discovery_newest_since_started_at(tmp_path: Path):
+    import os
 
     out = tmp_path / "out"
     out.mkdir()
     old = out / "old.json"
     old.write_text("{}", encoding="utf-8")
-    started = time.time()
+    # Pin mtimes so coarse filesystem timestamps cannot make both files look new.
+    os.utime(old, (1_700_000_000.0, 1_700_000_000.0))
+    started = 1_700_000_100.0
     new = out / "new.json"
     new.write_text("{}", encoding="utf-8")
+    os.utime(new, (1_700_000_200.0, 1_700_000_200.0))
     found = _discover_json(out, "missing", started_at=started)
     assert found == new
-
 
 @pytest.mark.unit
 @patch("transcriptx.services.transcription.whispermlx_provider.subprocess.Popen")
