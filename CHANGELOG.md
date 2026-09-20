@@ -21,9 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Dependency pin tightening for launch: `beautifulsoup4==4.15.0`, `ebooklib==0.20`, `rapidfuzz`/`webrtcvad` upper bounds; Docker Compose adds `no-new-privileges`; `.dockerignore` excludes local venvs / website / artifacts from build context.
+- Dependency pin tightening for launch: `beautifulsoup4==4.15.0`, `ebooklib==0.20`, `rapidfuzz`/`webrtcvad` upper bounds; `speechbrain==1.0.2` + `torchaudio>=2.6.0` aligned with extras; Docker Compose adds `no-new-privileges`; `.dockerignore` excludes local venvs / website / artifacts; `requirements-lock.txt` retired (pointer only).
 - Documented nltk **CVE-2026-81726** as a no-fix finding until a PyPI release beyond 3.10.3 ships ([dependency_audit.md](docs/dev/dependency_audit.md)).
-- Security / architecture reviews mark SR-01 / SR-02 / SR-07 as fixed; host-compat review redacts owner absolute paths for hygiene.
+- Security / architecture reviews mark SR-01 / SR-02 / SR-07 / SR-13 (merge output path) as fixed; host-compat review redacts owner absolute paths for hygiene.
 - Installation, transcription, and comparison docs split: user-facing leads stay short; extras/env/gates, host STT automation, audio-prep, and vendor research moved to [installation details](docs/runtime/installation-advanced.md), [host-stt.md](docs/runtime/host-stt.md), [audio-prep.md](docs/runtime/audio-prep.md), and [comparison-reference.md](docs/comparison-reference.md). [USER_INDEX](docs/USER_INDEX.md) is an exhaustive sitemap, not a second start page.
 - Analysis probe transcripts live under `tests/fixtures/` (including `tests/fixtures/analysis_probes/`) instead of the user library. Deep-test analyses those paths in place and must not import them into `TRANSCRIPTX_TRANSCRIPTS_DIR`.
 - [Identify and name speakers](docs/workflows/speaker-identification.md) walkthrough expanded for switch / clip / ignore / rename flows; media promoted to `speaker-identification-*` filenames (legacy `speaker-trust-*` retained).
@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Audio preprocessing loudness/denoise paths unlink temp WAVs in `finally` (SR-07); Overview “Open profile” declares an icon; flaky whispermlx JSON discovery and cleanup signature tests made mtime/size-stable.
+- Merge `output_filename` confined under `output_dir` (basename + path-safety); audio preprocessing loudness/denoise paths unlink temp WAVs in `finally` (SR-07); Overview “Open profile” declares an icon; flaky whispermlx JSON discovery and cleanup signature tests made mtime/size-stable.
 - Auto-merge / recordings discovery accept **Opus** (`.opus`) so WhatsApp Desktop voice-note bursts appear in Tools → Auto-merge (ffmpeg/pydub already decode them).
 - Managed admit replaces marker-less library JSON (raw WhisperX, including vendor NaNs) instead of failing mid-sidecar-repair; Speakers/Run pickers omit library paths without an import sidecar; `inbox-watch` / `whispermlx-missing` refuse writing into the managed library root (require `…/originals`).
 - `whispermlx-missing` skips stems that already have JSON in the parent library root, as `foo (N).json` archives, or as a sidecar next to the MP3 — not only files inside `--transcripts` (`originals/`).
