@@ -26,8 +26,8 @@ was found in production code.
 | Priority | At discovery | Remaining open | Meaning |
 |---|---:|---:|---|
 | P0 | 2 | 0 | Fixed before recommending any shared or non-loopback deployment |
-| P1 | 5 | 4 (SR-04–06 open; SR-07 fixed) | Address before 1.0 or explicitly accept and document |
-| P2 | 5 | 5 | Defense-in-depth, privacy, and release-process hardening |
+| P1 | 5 (+ SR-13 merge path) | 4 (SR-04–06 open; SR-07 + SR-13 fixed) | Address before 1.0 or explicitly accept and document |
+| P2 | 5 | 5 (SR-09 partially: `no-new-privileges` landed) | Defense-in-depth, privacy, and release-process hardening |
 
 ## 2. Scope and method
 
@@ -184,6 +184,17 @@ transcript-derived audio in the system temporary directory.
 **Current control:** `tmp_path` is initialized before the nested operation and
 unlinked in `finally`, tolerating a missing file.
 
+### SR-13 — Merge output filename path escape
+
+**Status:** **Fixed** (v1 launch readiness follow-up).  
+**Priority (at discovery):** P1-class path  
+**Evidence (historical):** `src/transcriptx/app/workflows/merge.py` joined
+`output_dir / output_filename` without sanitizing UI-supplied names.
+
+**Current control:** basename via `Path(...).name`, `assert_safe_path_segment`,
+and `assert_path_under_root` under `output_dir`. Tests in
+`tests/app/test_merge_workflow.py`.
+
 ### SR-08 — Production dependency/image scanning is incomplete
 
 **Priority:** P2  
@@ -209,12 +220,13 @@ shipped components.
 **Evidence:** `Dockerfile:7`, `:97`, `docker-compose.yml:17-95`.
 
 The Python base image uses a floating tag rather than an immutable digest.
-Compose runs as a non-root host UID, but does not set
-`no-new-privileges`, capability drops, or a read-only root filesystem.
+Compose runs as a non-root host UID. **`no-new-privileges` is now set** on
+`transcriptx-web` (v1 launch readiness). Capability drops and a read-only root
+filesystem remain open.
 
-**Remediation:** Pin release builds by digest, add image provenance/SBOM
-evidence, enable `no-new-privileges`, drop capabilities, and test a read-only
-root filesystem with explicit writable mounts or `tmpfs`.
+**Remediation (remaining):** Pin release builds by digest, add image
+provenance/SBOM evidence, drop capabilities, and test a read-only root
+filesystem with explicit writable mounts or `tmpfs`.
 
 ### SR-10 — Performance telemetry records full local paths by default
 

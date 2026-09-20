@@ -26,9 +26,11 @@ and human-validation work still blocking the public **1.0** tag.
 
 ## Fixes landed this pass
 
-- Pin tightening: `beautifulsoup4==4.15.0`, `ebooklib==0.20`, `rapidfuzz`/`webrtcvad` upper bounds in `pyproject.toml` + `requirements.txt`
+- Pin tightening: `beautifulsoup4==4.15.0`, `ebooklib==0.20`, `rapidfuzz`/`webrtcvad` upper bounds in `pyproject.toml` + `requirements.txt`; `speechbrain==1.0.2` / `torchaudio>=2.6.0` aligned with extras
 - `.dockerignore`: exclude `.venv`, `venv`, `.transcriptx`, `artifacts`, `.local`, `website`
 - Compose: `security_opt: no-new-privileges:true`
+- **`requirements-lock.txt` retired** (stale freeze; install from `requirements.txt` + `constraints.txt`)
+- Merge output filename path containment (SR-13)
 - Names module completeness: group aggregation, pydantic goldens, UI pin order, Overview “Open profile” icon
 - Flaky tests: whispermlx JSON discovery mtimes; cleanup signature size+mtime change
 - Docs honesty: install caveat, security/architecture review status sync, owner-path redaction in host-compat review
@@ -56,7 +58,7 @@ and human-validation work still blocking the public **1.0** tag.
 - Dockerfile already multi-stage, pip cache mounts, runtime without pip — solid.
 - Context hygiene improved via `.dockerignore` (local venvs and website no longer enter build context).
 - Playwright OS libs in the production image remain large; acceptable for maps PNG; revisit if image size becomes a release pain.
-- `requirements-lock.txt` is a partial/stale freeze (pydantic 2.11.7 vs project 2.9.2) and is **not** used by Docker — prefer `constraints.txt` + `requirements.txt` + `uv.lock` for reproducibility narratives.
+- `requirements-lock.txt` is **retired** (pointer file only). Prefer `constraints.txt` + `requirements.txt` + `uv.lock` for reproducibility narratives.
 
 ## Suggested next owner actions
 

@@ -27,6 +27,10 @@ from transcriptx.core.audio.tools import check_ffmpeg_available
 from transcriptx.core.audio.types import SUPPORTED_AUDIO_EXTENSIONS
 from transcriptx.core.utils.rename.date_prefix import extract_date_prefix
 from transcriptx.core.utils.logger import get_logger
+from transcriptx.core.utils.path_safety import (
+    assert_path_under_root,
+    assert_safe_path_segment,
+)
 from transcriptx.core.utils.paths import RECORDINGS_DIR
 
 logger = get_logger()
@@ -153,8 +157,16 @@ def run_merge(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if request.output_filename:
-        output_filename = request.output_filename
-        if not output_filename.endswith(".mp3"):
+        # Basename only — UI/API must not escape output_dir via ../ or separators.
+        try:
+            output_filename = assert_safe_path_segment(
+                Path(request.output_filename).name,
+                what="merge output filename",
+            )
+        except ValueError as exc:
+            progress.on_stage_complete("validating")
+            return MergeResult(success=False, errors=[str(exc)])
+        if not output_filename.lower().endswith(".mp3"):
             output_filename += ".mp3"
     else:
         date_prefix = extract_date_prefix(file_paths[0])
@@ -164,6 +176,16 @@ def run_merge(
             output_filename = f"merged_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3"
 
     output_path = output_dir / output_filename
+    try:
+        assert_path_under_root(
+            output_path,
+            output_dir,
+            what="merge output",
+            reject_symlink_root=False,
+        )
+    except ValueError as exc:
+        progress.on_stage_complete("validating")
+        return MergeResult(success=False, errors=[str(exc)])
 
     # Output must not be one of the inputs
     resolved_inputs = {p.resolve() for p in file_paths}

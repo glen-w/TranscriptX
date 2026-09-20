@@ -13,6 +13,19 @@ Scripts:
 
 Artefacts land under `artifacts/pre-release/` (gitignored).
 
+## Pin authority (v1)
+
+| Source | Role |
+|--------|------|
+| `pyproject.toml` | Core + extras metadata |
+| `requirements.txt` + `constraints.txt` | Docker / `transcriptx.sh` full stack |
+| `uv.lock` | Resolved mirror of pyproject for `uv` users |
+| `requirements-lock.txt` | **Retired** — pointer only; do not install |
+
+Do not treat the retired lock file as a freeze. Regenerate a complete freeze from
+`requirements.txt` under `constraints.txt` if bit-reproducible Docker builds
+become a hard gate.
+
 ## Fixable CVE policy
 
 Any CVE with a **published fix** **blocks the next public tag** unless an exceptional, time-bounded waiver below is complete and approved.
