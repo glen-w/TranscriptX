@@ -142,6 +142,10 @@ def test_generate_charts_index_html_structure_and_ordering() -> None:
     )
     assert "cdn.jsdelivr.net" not in html
     assert "<style>" in html
+    assert "class='tx-nav-scroll'" in html
+    assert "max-height:calc(100vh - 32px)" in html
+    assert "overflow-y:auto" in html
+    assert 'alt="TranscriptX"' in html
     assert "2 charts were unavailable and omitted" in html
     assert 'src="zmod/charts/global/z.png"' in html
     assert 'loading="lazy"' in html
