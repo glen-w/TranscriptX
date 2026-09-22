@@ -32,6 +32,8 @@ python -m spacy download en_core_web_md
 
 Both the extra and the model are required for those modules. Docker images already include this.
 
+**Balanced analysis and charts:** A minimal `pip install -e .` omits plotting libraries. Many **Balanced** modules write charts; without them, those modules can fail and block downstream results (for example summary and highlights). Prefer `./transcriptx.sh`, `pip install -r requirements.txt` plus `pip install -e .`, or at least `pip install -e ".[visualization,web]"` when you run the web UI from a venv. Details: [Installation details](installation-advanced.md).
+
 ## After install
 
 1. Follow [First analysis](../workflows/first-analysis.md).
