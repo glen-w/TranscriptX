@@ -65,9 +65,27 @@ def prepare_chart_export_view(
     groups: list[ChartModuleGroup] = []
     for module_name in ordered_modules:
         cards: list[ChartExportCard] = []
+        # Prefer static PNG when the same chart also has a dynamic HTML twin
+        # (e.g. Folium location maps). Live OSM tiles often 403 in file:// exports.
+        static_titles = {
+            (item.artifact.title or Path(item.artifact.rel_path).stem)
+            for item in grouped[module_name]
+            if item.artifact.kind == "chart_static"
+        }
         for item in grouped[module_name]:
             artifact = item.artifact
             title = artifact.title or Path(artifact.rel_path).name
+            title_key = artifact.title or Path(artifact.rel_path).stem
+            if (
+                artifact.kind == "chart_dynamic"
+                and title_key in static_titles
+                and (
+                    (artifact.meta or {}).get("renderer") == "folium"
+                    or "location" in artifact.rel_path.lower()
+                    or "locations-" in Path(artifact.rel_path).name.lower()
+                )
+            ):
+                continue
             tags_s = ", ".join(sorted(artifact.tags)) if artifact.tags else "—"
             meta = (
                 f"{artifact.module or '—'} · {artifact.scope or '—'} · "
