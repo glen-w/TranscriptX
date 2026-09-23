@@ -1112,7 +1112,9 @@ def _build_locations_folium_html(
     except ImportError:
         return None
 
-    fmap = folium.Map(zoom_start=2)
+    from transcriptx.core.maps_folium import create_location_map
+
+    fmap = create_location_map(folium, zoom_start=2)
     # Slight jitter when multiple mentions share coordinates.
     seen: dict[tuple[float, float], int] = {}
     for mention in mentions:
