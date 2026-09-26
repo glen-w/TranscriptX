@@ -61,6 +61,7 @@ export type LinkTargetRow = {
   duplicate_name_warning?: boolean;
   is_default?: boolean;
   detail?: string;
+  aliases?: string[];
 };
 
 export type WorkspaceData = {
@@ -475,13 +476,47 @@ function parseLinkToken(token: string): {
   return { link_mode: "none", profile_id: null, link_profile: false };
 }
 
+function normalizeNameKey(value: string): string {
+  return value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
+function matchScore(row: LinkTargetRow, key: string): number {
+  const names = [row.display_name || "", ...(row.aliases || [])].map(normalizeNameKey);
+  if (names.some((name) => name === key)) return 0;
+  if (names.some((name) => name.startsWith(key))) return 1;
+  return 3;
+}
+
+/** Matches first, then create/name-only, then the rest of the catalog. */
+export function rankLinkRows(rows: LinkTargetRow[], draftName: string): LinkTargetRow[] {
+  const key = normalizeNameKey(draftName);
+  const existing = rows.filter((row) => row.mode === "existing");
+  const actions = rows.filter((row) => row.mode !== "existing");
+  const scored = existing.map((row, index) => ({
+    row,
+    index,
+    score: key ? matchScore(row, key) : 3,
+  }));
+  const matches = scored
+    .filter((item) => key && item.score < 3)
+    .sort((a, b) => a.score - b.score || a.index - b.index)
+    .map((item) => item.row);
+  const rest = scored
+    .filter((item) => !key || item.score >= 3)
+    .sort((a, b) => a.index - b.index)
+    .map((item) => item.row);
+  return [...matches, ...actions, ...rest];
+}
+
 function renderLinkTargets(root: Element, data: WorkspaceData): void {
   const select = qs<HTMLSelectElement>(root, ".tx-sid-link-select");
   const chip = qs<HTMLElement>(root, ".tx-sid-link-chip");
   const allowed = Boolean(
     data.link_profile_allowed ?? data.capabilities?.profile_link,
   );
-  const rows = data.link_targets || [];
+  const nameInput = root.querySelector<HTMLInputElement>(".tx-sid-name-input");
+  const draft = nameInput?.value || data.draft_name || "";
+  const rows = rankLinkRows(data.link_targets || [], draft);
   const previous = select.value;
   select.replaceChildren();
   for (const row of rows) {
@@ -695,6 +730,11 @@ function wireOnce(
   qs<HTMLButtonElement>(root, ".tx-sid-next").addEventListener("click", () =>
     state.handlers.onNext(),
   );
+  qs<HTMLInputElement>(root, ".tx-sid-name-input").addEventListener("input", () => {
+    const data = state.lastDataRef;
+    if (!data) return;
+    renderLinkTargets(root, data);
+  });
   const keyTarget: EventTarget =
     "addEventListener" in host ? host : (root as HTMLElement);
   keyTarget.addEventListener("keydown", (ev) =>
@@ -753,6 +793,7 @@ export const __test = {
   PROTOCOL_VERSION,
   FRONTEND_BUILD_ID,
   parseLinkToken,
+  rankLinkRows,
   expectedSpeakerForCommand(data: WorkspaceData, _optimistic: string | null): string {
     return data.active_speaker_id;
   },

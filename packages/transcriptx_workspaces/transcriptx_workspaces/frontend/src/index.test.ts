@@ -7,6 +7,27 @@ describe("Speaker ID workspace lifecycle helpers", () => {
     expect(__test.FRONTEND_BUILD_ID).toBe("tx-workspaces-0.2.0");
   });
 
+  it("ranks typed names ahead of the rest of the profile catalog", () => {
+    const rows = [
+      { mode: "existing", profile_id: "p-hugo", label: "Hugo", display_name: "Hugo" },
+      { mode: "existing", profile_id: "p-ana", label: "Ana", display_name: "Ana" },
+      { mode: "create", label: "Create new profile" },
+      { mode: "none", label: "Name only — this transcript" },
+    ];
+    expect(__test.rankLinkRows(rows, "").map((row) => row.mode === "existing" ? row.profile_id : row.mode)).toEqual([
+      "create",
+      "none",
+      "p-hugo",
+      "p-ana",
+    ]);
+    expect(__test.rankLinkRows(rows, "Ana").map((row) => row.profile_id || row.mode)).toEqual([
+      "p-ana",
+      "create",
+      "none",
+      "p-hugo",
+    ]);
+  });
+
   it("parses link target tokens for save_name", () => {
     expect(__test.parseLinkToken("none")).toEqual({
       link_mode: "none",

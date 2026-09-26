@@ -364,13 +364,14 @@ def _render_link_target_panel(
         )
     if targets.recipe_hint:
         st.caption(targets.recipe_hint)
-    chosen = st.radio(
+    chosen = st.selectbox(
         "Link to speaker profile",
         options=tokens,
         format_func=lambda tok: labels.get(tok, tok),
         key=mode_key,
         help=widget_help(
             "Choose the longitudinal person this diarized speaker should attach to. "
+            "The menu lists existing profiles; name, alias, and voice matches come first. "
             "Create new starts a profile; Name only updates this transcript. "
             "Voice suggestions are assistive — confirm to apply."
         ),

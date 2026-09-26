@@ -1,4 +1,4 @@
-"""Ranked Speaker ID link targets (name/alias/voice/create/none).
+"""Ranked Speaker ID link targets (name/alias/voice/catalog/create/none).
 
 Read-only helper for the naming UI. Writes still go through journalled
 ``SpeakerProfileService`` ops. Voice scores never auto-confirm a link.
@@ -6,7 +6,7 @@ Read-only helper for the naming UI. Writes still go through journalled
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Literal, Mapping, Sequence
 
 from transcriptx.core.speaker_profiles.aggregates import (
@@ -29,6 +29,7 @@ LinkReason = Literal[
     "name_match",
     "alias_match",
     "voice",
+    "catalog",
     "create",
     "name_only",
 ]
@@ -225,6 +226,27 @@ def suggest_link_targets(
         )
         seen_ids.add(pid)
 
+    if managed:
+        catalog = [
+            item for item in active if item.profile_id not in seen_ids
+        ]
+        catalog.sort(
+            key=lambda item: (_normalize_name_key(item.display_name), item.profile_id)
+        )
+        for item in catalog:
+            targets.append(
+                _existing_target(
+                    item=item,
+                    profile_id=item.profile_id,
+                    display_name=item.display_name,
+                    reason="catalog",
+                    already_linked=False,
+                    appearances_by_profile=appearances_by_profile,
+                    detail="Existing speaker profile.",
+                )
+            )
+            seen_ids.add(item.profile_id)
+
     duplicate_name = bool(name_key) and any(
         _normalize_name_key(item.display_name) == name_key for item in active
     )
@@ -297,7 +319,7 @@ def suggest_link_targets(
         )
 
     return LinkTargetSet(
-        targets=tuple(marked),
+        targets=tuple(_disambiguate_existing_labels(marked)),
         default_mode=default_mode,
         default_profile_id=default_pid,
         managed=managed,
@@ -324,6 +346,40 @@ def live_link_for_occurrence(
         return get_live_link(key)
     except Exception:
         return None
+
+
+def _disambiguate_existing_labels(targets: Sequence[LinkTarget]) -> list[LinkTarget]:
+    """Keep duplicate display names distinguishable in the Profile menu."""
+
+    def collisions(rows: Sequence[LinkTarget]) -> set[str]:
+        counts: dict[str, int] = {}
+        for row in rows:
+            if row.mode != "existing":
+                continue
+            counts[row.label] = counts.get(row.label, 0) + 1
+        return {label for label, count in counts.items() if count > 1}
+
+    current = list(targets)
+    colliding = collisions(current)
+    if not colliding:
+        return current
+    widened: list[LinkTarget] = []
+    for row in current:
+        if row.mode == "existing" and row.profile_id and row.label in colliding:
+            widened.append(replace(row, label=f"{row.label} · {row.profile_id[:8]}"))
+        else:
+            widened.append(row)
+    still = collisions(widened)
+    if not still:
+        return widened
+    final: list[LinkTarget] = []
+    for row in widened:
+        if row.mode == "existing" and row.profile_id and row.label in still:
+            base = row.label.rsplit(" · ", 1)[0]
+            final.append(replace(row, label=f"{base} · {row.profile_id}"))
+        else:
+            final.append(row)
+    return final
 
 
 def _name_matches(item: ProfileListItem, name_key: str) -> bool:
