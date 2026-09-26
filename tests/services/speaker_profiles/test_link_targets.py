@@ -136,6 +136,63 @@ def test_archived_excluded_and_unmanaged_is_name_only() -> None:
 
 
 @pytest.mark.unit
+def test_other_active_profiles_remain_attachable() -> None:
+    listing = (
+        _item(profile_id="p-ana", name="Ana"),
+        _item(profile_id="p-hugo", name="Hugo"),
+        _item(profile_id="p-old", name="Old", status="archived"),
+    )
+    result = suggest_link_targets(
+        display_name="Ana",
+        managed=True,
+        listing=listing,
+    )
+    existing = [t for t in result.targets if t.mode == "existing"]
+    assert [t.profile_id for t in existing] == ["p-ana", "p-hugo"]
+    assert existing[0].reason == "name_match"
+    assert existing[1].reason == "catalog"
+    assert result.default_profile_id == "p-ana"
+    assert [t.mode for t in result.targets] == ["existing", "existing", "create", "none"]
+
+
+@pytest.mark.unit
+def test_empty_name_still_lists_active_profiles() -> None:
+    listing = (
+        _item(profile_id="p-hugo", name="Hugo"),
+        _item(profile_id="p-ana", name="Ana"),
+    )
+    result = suggest_link_targets(
+        display_name="",
+        managed=True,
+        listing=listing,
+    )
+    assert [t.display_name for t in result.targets if t.mode == "existing"] == [
+        "Ana",
+        "Hugo",
+    ]
+    assert all(t.reason == "catalog" for t in result.targets if t.mode == "existing")
+    assert result.default_mode == "create"
+
+
+@pytest.mark.unit
+def test_duplicate_profile_labels_include_id() -> None:
+    listing = (
+        _item(profile_id="aaaaaaaa-1111", name="Ana", link_count=1),
+        _item(profile_id="bbbbbbbb-2222", name="Ana", link_count=1),
+    )
+    result = suggest_link_targets(
+        display_name="Ana",
+        managed=True,
+        listing=listing,
+    )
+    labels = [t.label for t in result.targets if t.reason == "name_match"]
+    assert len(labels) == 2
+    assert len(set(labels)) == 2
+    assert any(label.endswith("aaaaaaaa") for label in labels)
+    assert any(label.endswith("bbbbbbbb") for label in labels)
+
+
+@pytest.mark.unit
 def test_voice_candidate_listed_but_not_default() -> None:
     listing = (_item(profile_id="p-voice", name="Jordan"),)
     result = suggest_link_targets(

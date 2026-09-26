@@ -33,7 +33,7 @@ On a managed library transcript you can also use **Apply auto-identify** (voice 
 
 3. If audio is linked, use the play controls beside a sample line to load that clip. Clips help when two speakers sound similar or when a short turn is ambiguous from text alone. Without audio, continue from the printed lines — naming still works.
 
-4. Enter a display name in the **Name** field. Under **Link to speaker profile**, choose who this diarized ID should attach to: an existing person (name, alias, or voice match), **Create new profile**, or **Name only — this transcript**. Then choose the save (✓) control. The workspace advances to the next unnamed speaker when one remains.
+4. Enter a display name in the **Name** field. Under **Profile** (classic UI: **Link to speaker profile**), choose who this diarized ID should attach to. The menu lists existing speaker profiles, with name, alias, and voice matches first, then **Create new profile** or **Name only — this transcript**. Then choose the save (✓) control. The workspace advances to the next unnamed speaker when one remains.
 
 A unique name match preselects the existing person. If several profiles share the name, nothing is auto-picked — choose deliberately so you do not create a second Maya.
 
