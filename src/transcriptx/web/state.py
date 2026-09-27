@@ -81,6 +81,16 @@ def get_current_subject_context() -> tuple[SubjectType | None, str | None, str |
     return subject_type, subject_id, run_id
 
 
+def _is_locked_sidebar_widget_error(exc: BaseException) -> bool:
+    """True when Streamlit rejects a write to an already-instantiated widget.
+
+    Live Streamlit raises ``StreamlitWidgetAlreadyInstantiatedError``, which
+    subclasses ``StreamlitAPIException``. Match the base name on the MRO so
+    tests can inject either class without importing Streamlit.
+    """
+    return any(cls.__name__ == "StreamlitAPIException" for cls in type(exc).__mro__)
+
+
 def _sync_sidebar_widget(
     session_state: dict[str, Any], key: str, value: Any | None
 ) -> None:
@@ -98,9 +108,7 @@ def _sync_sidebar_widget(
         else:
             session_state[key] = value
     except Exception as exc:
-        # Avoid importing Streamlit here: tests pass a plain dict; the live
-        # app raises StreamlitAPIException only for already-instantiated keys.
-        if type(exc).__name__ != "StreamlitAPIException":
+        if not _is_locked_sidebar_widget_error(exc):
             raise
         session_state.pop(key, None)
 

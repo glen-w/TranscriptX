@@ -115,3 +115,9 @@ data/transcript-inbox/**
 packages/**/node_modules/
 packages/**/frontend/build/.vite/
 .local/
+
+# Local watch / assessment run logs
+assessments/
+
+# Cursor commands that name machine-specific folders (tracked playbooks stay committed)
+.cursor/commands/ingest.md
