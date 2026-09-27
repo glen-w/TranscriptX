@@ -54,7 +54,6 @@ class NERAnalysis(AnalysisModule):
         super().__init__(config)
         self.module_name = "ner"
         self.config = get_config()
-        self.nlp = _get_ner_nlp()
 
     def analyze(self, segments: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
