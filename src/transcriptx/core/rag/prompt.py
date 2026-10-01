@@ -5,7 +5,7 @@ so each timestamped citation jumps to a specific segment.
 """
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Tuple
 
 from transcriptx.core.models.navigation import SegmentRef

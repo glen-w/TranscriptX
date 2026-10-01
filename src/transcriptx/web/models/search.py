@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from transcriptx.core.models.navigation import SegmentRef, TranscriptRef
 
