@@ -47,27 +47,29 @@ def render_ask_page() -> None:
 def _ask_interaction() -> None:
     """Q&A interaction (fragment-wrapped to preserve thread on navigate)."""
     api = RagAPI()
+
+    # Parse session/run from current subject
     current_subject = st.session_state.get("current_subject_id")
+    if "/" not in str(current_subject):
+        st.error("Invalid subject format.")
+        return
+
+    session_slug, run_id = str(current_subject).split("/", 1)
 
     # Question input
     question = st.chat_input("Ask a question about this transcript...")
     if not question:
         return
 
-    # Get segments for current transcript (for context)
-    # TODO: Wire current_subject to get transcript path
-    # For now, placeholder
-    # segments = get_segments(transcript_path)
-
     # Search and answer
     try:
-        hits = api.search(question, session_slug=None, run_id=None, k=5)
+        hits = api.search(question, session_slug=session_slug, run_id=run_id, k=5)
 
         if not hits:
             st.info("No relevant passages found.")
             return
 
-        answer_stream = api.answer(question, session_slug=None, run_id=None, k=5)
+        answer_stream = api.answer(question, session_slug=session_slug, run_id=run_id, k=5)
 
         # Stream answer text
         st.write_stream(answer_stream)
