@@ -61,6 +61,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+rag = [
+    "lancedb>=0.39,<1",
+    "httpx>=0.25.0",
+]
 dev = [
     "black>=26.3.1",
     "flake8>=6.0.0",
