@@ -83,6 +83,9 @@ services:
       - TRANSCRIPTX_LLM_SEED=${TRANSCRIPTX_LLM_SEED:-}
       # Corrections Studio LLM discovery (see docs/runtime/corrections-llm.md).
       - TRANSCRIPTX_CORRECTIONS_LLM_ENABLED=${TRANSCRIPTX_CORRECTIONS_LLM_ENABLED:-}
+      # RAG/Ask (optional; requires TRANSCRIPTX_LLM_ENABLED above).
+      - TRANSCRIPTX_RAG_ENABLED=${TRANSCRIPTX_RAG_ENABLED:-}
+      - TRANSCRIPTX_RAG_EMBED_MODEL=${TRANSCRIPTX_RAG_EMBED_MODEL:-}
     ports:
       # Default loopback only. LAN: TRANSCRIPTX_BIND_HOST=0.0.0.0 (unauthenticated).
       - "${TRANSCRIPTX_BIND_HOST:-127.0.0.1}:8501:8501"

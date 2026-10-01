@@ -86,6 +86,7 @@ def build_page_renderers(
         "Overview": _lazy_renderer("overview", "render_overview"),
         "Transcript": _lazy_renderer("transcript", "render_transcript_viewer"),
         "Search": _lazy_renderer("search", "render_search"),
+        "Ask": _lazy_renderer("ask", "render_ask_page"),
         "Insights": _lazy_renderer("insights", "render_insights"),
         "Charts": _lazy_renderer("charts", "render_charts"),
         "Performance": _lazy_renderer("performance", "render_performance"),
