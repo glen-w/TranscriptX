@@ -4,11 +4,10 @@ Ingest pipeline: load segments → chunk → embed → index → ledger.
 Orchestrates the full cycle for one transcript. Called on admit/corrections/rebuild.
 """
 
-import os
 from pathlib import Path
 from typing import List
 
-from .chunk import Chunk, chunk_segments
+from .chunk import chunk_segments
 from .embed import EmbedError, OllamaEmbedder
 from .index import Index
 from .ledger import Ledger, LedgerEntry, file_mtime, file_sha256

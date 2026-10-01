@@ -8,14 +8,13 @@ from pathlib import Path
 from typing import List, Optional
 
 from transcriptx.core.llm import get_llm_client
-from transcriptx.core.utils.config import get_config
 
 from .answer import AnswerStream, answer as _answer
 from .embed import OllamaEmbedder
 from .index import Index, IndexMissing
 from .ingest import ingest_transcript
 from .ledger import Ledger
-from .retrieve import Hit, search as _search
+from .retrieve import Hit
 from .settings import RagSettings
 
 
@@ -132,8 +131,6 @@ class RagAPI:
             # Return empty answer
             def empty_gen():
                 yield "RAG is not enabled."
-
-            from .prompt import Source
 
             return AnswerStream(empty_gen(), [], [])
 

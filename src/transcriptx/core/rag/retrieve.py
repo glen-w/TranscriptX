@@ -4,10 +4,9 @@ Returns Hit objects with segment references for citation.
 """
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import Any, List, Optional
 
-if TYPE_CHECKING:
-    from transcriptx.web.models.search import SegmentRef
+from transcriptx.core.models.navigation import SegmentRef
 
 
 @dataclass
@@ -54,13 +53,12 @@ class Hit:
     """Citation marker e.g. 'S1' (assigned during prompt building)."""
 
     @property
-    def segment_ref(self) -> "SegmentRef":
+    def segment_ref(self) -> SegmentRef:
         """Build SegmentRef for navigate_to_segment().
 
         Uses segment_index_start as the primary locator.
-        Lazy import to avoid core→web cycle.
         """
-        from transcriptx.web.models.search import SegmentRef, TranscriptRef
+        from transcriptx.core.models.navigation import TranscriptRef
 
         transcript_ref = TranscriptRef(
             session_slug=self.session_slug,

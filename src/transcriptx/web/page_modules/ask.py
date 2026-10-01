@@ -7,8 +7,6 @@ Fragment-wrapped to prevent rerun on navigation. Cite chips jump via SegmentRef.
 import streamlit as st
 
 from transcriptx.core.rag import RagAPI
-from transcriptx.core.segments import get_segments
-from transcriptx.web.models.search import SegmentRef
 from transcriptx.web.transcript_navigation import navigate_to_segment
 
 

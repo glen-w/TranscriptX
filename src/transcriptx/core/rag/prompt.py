@@ -5,13 +5,12 @@ so each timestamped citation jumps to a specific segment.
 """
 
 import re
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, List, Tuple
+from dataclasses import dataclass
+from typing import List, Tuple
+
+from transcriptx.core.models.navigation import SegmentRef
 
 from .retrieve import Hit
-
-if TYPE_CHECKING:
-    from transcriptx.web.models.search import SegmentRef
 
 
 # System prompt for RAG (adapted from Paperful for transcripts)
@@ -63,9 +62,8 @@ class Source:
         return " · ".join(parts)
 
     @property
-    def segment_ref(self) -> "SegmentRef":
-        """Lazy import of SegmentRef to avoid core→web cycle."""
-        # Import here to avoid circular dependency
+    def segment_ref(self) -> SegmentRef:
+        """Return the SegmentRef from the underlying hit."""
         return self.hit.segment_ref
 
 
