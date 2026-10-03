@@ -110,8 +110,5 @@ def search(
     Raises:
         IndexMissing: If index not found.
     """
-    # TODO(impl): Query embedding and hybrid search via LanceDB.
-    # For now, return empty list (placeholder).
-    # Paperful's retrieve.search takes (cfg, question, k, keys, embedder, index, ledger).
-    # TX version scopes to (session_slug, run_id) instead of (collections, item_keys).
+    # Live retrieve is RagAPI.search → Index.search. This helper remains a stub.
     return []

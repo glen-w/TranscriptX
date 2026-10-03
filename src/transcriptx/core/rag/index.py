@@ -33,6 +33,33 @@ class RagUnavailable(Exception):
     pass
 
 
+class RagScopeMissing(Exception):
+    """Ask retrieve requires session_slug and run_id when RAG is enabled."""
+
+    MESSAGE = "Ask requires session_slug and run_id."
+
+    def __init__(self, message: str = MESSAGE) -> None:
+        super().__init__(message)
+
+
+def sql_string(value: str) -> str:
+    """Quote a value for a LanceDB SQL where clause."""
+    escaped = value.replace("\\", "\\\\").replace("'", "''")
+    return f"'{escaped}'"
+
+
+def scope_where(session_slug: str, run_id: str) -> str:
+    """Filter chunks to one transcript (session + run)."""
+    return (
+        f"session_slug = {sql_string(session_slug)} AND run_id = {sql_string(run_id)}"
+    )
+
+
+def session_where(session_slug: str) -> str:
+    """Filter chunks to every run of one session (library delete)."""
+    return f"session_slug = {sql_string(session_slug)}"
+
+
 def _lancedb() -> Any:
     """Lazy import of lancedb (optional dependency)."""
     try:
@@ -40,7 +67,8 @@ def _lancedb() -> Any:
         return lancedb
     except ImportError:
         raise RagUnavailable(
-            "lancedb not installed. Install with: pip install 'transcriptx[rag]'"
+            "lancedb not installed. Install with: pip install -e '.[rag]' "
+            "(from a TranscriptX git checkout; not on PyPI)"
         )
 
 
@@ -121,10 +149,14 @@ class Index:
 
         try:
             table = db.open_table(table_name)
-        except (FileNotFoundError, RuntimeError):
+        except (FileNotFoundError, RuntimeError, ValueError) as exc:
+            missing = isinstance(exc, (FileNotFoundError, RuntimeError)) or (
+                "not found" in str(exc).lower()
+            )
+            if not missing:
+                raise
             if not create:
-                raise IndexMissing(f"table {table_name} not found")
-            # Will be created on first add_chunks call
+                raise IndexMissing(f"table {table_name} not found") from exc
             table = None
 
         return cls(table, meta, settings.index_dir)
@@ -177,16 +209,10 @@ class Index:
         if self._table is None:
             return []
 
-        try:
-            if where:
-                results = self._table.search(query_vector).where(where).limit(k).to_list()
-            else:
-                results = self._table.search(query_vector).limit(k).to_list()
-            return results
-        except Exception as e:
-            # Log and return empty (P0 simple; P1 observability)
-            print(f"Index search error: {e}")
-            return []
+        query = self._table.search(query_vector)
+        if where:
+            query = query.where(where, prefilter=True)
+        return query.limit(k).to_list()
 
     def delete_where(self, where: str) -> None:
         """
@@ -196,11 +222,13 @@ class Index:
         """
         if self._table is None:
             return
+        self._table.delete(where)
 
-        try:
-            self._table.delete(where)
-        except Exception as e:
-            print(f"Index delete error: {e}")
+    def count_rows(self) -> int:
+        """Number of indexed chunks, or 0 if the table does not exist yet."""
+        if self._table is None:
+            return 0
+        return int(self._table.count_rows())
 
 
 def _load_meta(settings: RagSettings) -> Optional[Dict[str, Any]]:

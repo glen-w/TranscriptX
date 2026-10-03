@@ -111,8 +111,7 @@ class Ledger:
     def remove(self, session_slug: str, run_id: str) -> None:
         """Remove an entry (e.g., on transcript delete).
 
-        TODO(P1): Implement rewriting ledger to exclude the entry
-        (for now, entries accumulate and are shadowed by newer versions).
+        Ledger rewrite on disk is deferred; newer entries shadow older ones.
         """
         key = (session_slug, run_id)
         if key in self.entries:
