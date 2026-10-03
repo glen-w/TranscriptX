@@ -33,6 +33,7 @@ from transcriptx.core.analysis.epistemic_markers.aggregation import (
     aggregate_epistemic_markers,
 )
 from transcriptx.core.analysis.keyphrases.aggregation import aggregate_keyphrases
+from transcriptx.core.analysis.names.aggregation import aggregate_names
 from transcriptx.core.analysis.politeness.aggregation import aggregate_politeness
 from transcriptx.core.domain.transcript_set import TranscriptSet
 from transcriptx.core.pipeline.result_envelope import PerTranscriptResult
@@ -914,7 +915,6 @@ def build_registry() -> List[AggregationEntry]:
         aggregate_sentiment_group,
     )
     from transcriptx.core.analysis.aggregation.ner import aggregate_ner_group
-    from transcriptx.core.analysis.names.aggregation import aggregate_names_group
     from transcriptx.core.analysis.aggregation.entity_sentiment import (
         aggregate_entity_sentiment_group,
     )
@@ -993,7 +993,7 @@ def build_registry() -> List[AggregationEntry]:
             agg_id="names",
             selector=any_of(["names"]),
             deps=["ner"],
-            aggregate_fn=aggregate_names_group,
+            aggregate_fn=aggregate_names,
         ),
         AggregationEntry(
             agg_id="entity_sentiment",
