@@ -244,9 +244,11 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 
 **Not a 1.0 gate.** Sibling of `inbox-watch` / `whispermlx-missing`, not a Streamlit page and not theme **H**. Bridge toward the 2.0 voice-note workflow; the script does not wait for 2.0 to be named.
 
+**Status:** host script [`scripts/voice-note-watch.py`](../scripts/voice-note-watch.py) (default off). Operator notes: [host-stt.md](runtime/host-stt.md).
+
 **Intent:** turn a short recording into reviewed text and stop. Library admission stays an explicit later act. Default off.
 
-**Shape (design before build):**
+**Shape:**
 
 - Own inbox, not the live `RECORD` root. `inbox-watch` is not recursive, so `RECORD/braindump` is invisible to the library watcher only when the recorder can write that folder. If the device only writes the root, this script must not share that inbox.
 - Reuse the host path that already works: removable volume → local stage → ffmpeg → whispermlx. No second STT engine. Audio stays on the machine.
