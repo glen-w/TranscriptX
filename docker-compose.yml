@@ -7,8 +7,9 @@
 #     saved custom questions and other Settings survive wiping ./data.
 #   HOST_*_DIR mounts — map host folders into TRANSCRIPTX_*_DIR paths (see environment).
 #   HOST_RECORDINGS_DIR is required — point at a folder outside the repo (see .env.example).
-#   Transcripts default to read-only at /mnt/transcripts; use docker-compose.override.yml
-#   locally if you need the web UI to write .speaker_map.json sidecars beside JSON files.
+#   Transcripts at /mnt/transcripts are writable so Import and Admit can update the
+#   library. The import inbox stays read-only. Recordings root stays read-only
+#   except the writable imports/ submount.
 #
 # Non-root: services run as host user (UID/GID) so mounted dirs stay owned correctly.
 #
@@ -35,12 +36,12 @@ services:
       # HOST_*_DIR vars (from .env) set the host-side mount source.
       # TRANSCRIPTX_*_DIR vars in environment: set the container-side paths.
       # Separate names avoid Docker Compose .env-vs-environment precedence issues.
-      - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts:ro
+      - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts
       # External inbox for Import Transcript → Import all from folder (must not be under /mnt/transcripts).
       - ${HOST_TRANSCRIPT_INBOX_DIR:-./data/transcript-inbox}:/mnt/transcript-inbox:ro
       - ${HOST_OUTPUT_DIR:-./data/outputs}:/mnt/outputs
       # Source audio lives only on the host outside the repo; set HOST_RECORDINGS_DIR in .env (see .env.example).
-      - ${HOST_RECORDINGS_DIR:?Set HOST_RECORDINGS_DIR in .env to your host recordings folder outside the repo}:/mnt/recordings
+      - ${HOST_RECORDINGS_DIR:?Set HOST_RECORDINGS_DIR in .env to your host recordings folder outside the repo}:/mnt/recordings:ro
       # Imports (uploaded files) are writable so we can delete after backup; recordings root stays :ro.
       - ${HOST_RECORDINGS_DIR:?Set HOST_RECORDINGS_DIR in .env to your host recordings folder outside the repo}/imports:/mnt/recordings/imports
       - ${HOST_WAV_BACKUP_DIR:-./data/backups/wav}:/mnt/wav

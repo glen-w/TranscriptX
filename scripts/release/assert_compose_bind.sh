@@ -84,4 +84,37 @@ export TRANSCRIPTX_BIND_HOST=0.0.0.0
 _assert_ports "lan opt-in" "0.0.0.0:8501:8501"
 unset TRANSCRIPTX_BIND_HOST || true
 
+_assert_library_mounts() {
+  local json
+  json="$("${COMPOSE_BIN[@]}" config --format json)"
+  python3 - "$json" <<'PY'
+import json, sys
+data = json.loads(sys.argv[1])
+vols = data.get("services", {}).get("transcriptx-web", {}).get("volumes") or []
+by_target = {}
+for vol in vols:
+    if isinstance(vol, dict) and vol.get("target"):
+        by_target[vol["target"]] = vol
+transcripts = by_target.get("/mnt/transcripts")
+inbox = by_target.get("/mnt/transcript-inbox")
+if transcripts is None:
+    raise SystemExit("ERROR: /mnt/transcripts mount missing")
+if transcripts.get("read_only"):
+    raise SystemExit("ERROR: /mnt/transcripts must be writable so Admit can update the library")
+if inbox is None:
+    raise SystemExit("ERROR: /mnt/transcript-inbox mount missing")
+if not inbox.get("read_only"):
+    raise SystemExit("ERROR: /mnt/transcript-inbox must stay read-only")
+recordings = by_target.get("/mnt/recordings")
+if recordings is None or not recordings.get("read_only"):
+    raise SystemExit("ERROR: /mnt/recordings must stay read-only")
+imports = by_target.get("/mnt/recordings/imports")
+if imports is None or imports.get("read_only"):
+    raise SystemExit("ERROR: /mnt/recordings/imports must stay writable")
+print("OK: transcripts writable; inbox and recordings read-only; imports writable")
+PY
+}
+
+_assert_library_mounts
+
 echo "OK: canonical compose bind assertions passed"

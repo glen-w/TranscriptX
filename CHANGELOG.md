@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - An informal try by someone new to the app (October 2026) is noted and is not a release gate. The old unfamiliar-user protocol is retired.
+- Import Transcript can **Admit from originals/**. Base Compose mounts `/mnt/transcripts` writable so that admit can update the library. The import inbox stays read-only.
 
 ### Fixed
 
