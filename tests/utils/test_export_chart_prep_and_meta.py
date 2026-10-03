@@ -117,6 +117,54 @@ def test_prepare_chart_export_view_groups_and_orders(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
+def test_prepare_chart_export_view_prefers_static_folium_twin(tmp_path: Path) -> None:
+    static = _artifact(
+        artifact_id="s",
+        rel_path="ner/maps/images/tx-locations-Glen.png",
+        kind="chart_static",
+        module="ner",
+        title="Location Map: Glen",
+    )
+    dynamic = Artifact.from_dict(
+        {
+            "id": "d",
+            "kind": "chart_dynamic",
+            "module": "ner",
+            "scope": "speaker",
+            "speaker": "Glen",
+            "subview": None,
+            "slice_id": None,
+            "rel_path": "ner/maps/html/tx-locations-Glen.html",
+            "bytes": 0,
+            "mtime": "2026-03-23T00:00:00Z",
+            "mime": "text/html",
+            "tags": [],
+            "title": "Location Map: Glen",
+            "meta": {"renderer": "folium"},
+            "storage_root": None,
+        }
+    )
+    items = [
+        ExportableItem(
+            artifact=static,
+            source_path=tmp_path / static.rel_path,
+            export_rel_path=Path(static.rel_path),
+            size_bytes=1,
+        ),
+        ExportableItem(
+            artifact=dynamic,
+            source_path=tmp_path / dynamic.rel_path,
+            export_rel_path=Path(dynamic.rel_path),
+            size_bytes=1,
+        ),
+    ]
+    groups = prepare_chart_export_view(items)
+    assert len(groups) == 1
+    assert len(groups[0].cards) == 1
+    assert groups[0].cards[0].kind == "static"
+
+
+@pytest.mark.unit
 def test_prepare_chart_export_view_description_fn_exception_is_ignored(
     tmp_path: Path,
 ) -> None:

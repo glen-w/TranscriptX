@@ -108,6 +108,10 @@ data/transcripts/**
 # Inbox drop folder (local; never commit)
 data/transcript-inbox/**
 
+# Local queue and one-off runners (not product code)
+data/queue-state.json
+data/run_angela_*.py
+
 # Hypothesis database / examples
 .hypothesis/
 

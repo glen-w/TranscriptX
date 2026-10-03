@@ -790,8 +790,9 @@ def test_write_export_index_first_transcript_in_selected_order(
     ]
     html = _write_index(staging, copied)
     assert html is not None
-    assert "Alice" in html
-    assert "Bob" not in html
+    assert '<span class="tx-speaker-chip">Alice</span>' in html
+    assert '<span class="tx-speaker-chip">Bob</span>' not in html
+    assert '<p class="tx-text">yo</p>' not in html
 
 
 def test_normalize_transcript_payload_accepts_simplified_list() -> None:
@@ -1027,3 +1028,29 @@ def test_zip_artifacts_includes_index_html(tmp_path: Path) -> None:
     assert 'id="transcript"' in index_html
     assert "Hello there." in index_html
     assert 'class="card-grid"' in index_html
+    assert "class='tx-nav-scroll'" in index_html
+
+
+def test_export_shell_nav_scrolls_and_shows_wordmark() -> None:
+    from transcriptx.export.html_shell import EXPORT_INDEX_CSS, render_wordmark_html
+
+    html = build_export_index_html(
+        page_title="Angela interview",
+        transcript_data=_transcript_data(),
+        chart_items=[],
+    )
+    assert html is not None
+    assert "class='tx-nav-head'" in html
+    assert "class='tx-nav-scroll'" in html
+    assert "<strong class='tx-nav-label'>Contents</strong>" in html
+    assert "<div class='content'><h1>Angela interview</h1>" in html
+    assert "max-height:calc(100vh - 32px)" in EXPORT_INDEX_CSS
+    assert "overflow-y:auto" in EXPORT_INDEX_CSS
+    assert "grid-template-columns:280px 1fr" in EXPORT_INDEX_CSS
+    assert "max-height:50vh" in EXPORT_INDEX_CSS
+    assert 'alt="TranscriptX"' in html
+    assert "data:image/png;base64," in html
+    assert "from transcriptx.web.shell" not in html
+
+    missing = render_wordmark_html(Path("/tmp/transcriptx-missing-logo.png"))
+    assert missing == '<span class="tx-wordmark-text">TranscriptX</span>'
