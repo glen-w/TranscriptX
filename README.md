@@ -17,6 +17,8 @@ Not sure if this is the right tool? [How TranscriptX compares](docs/comparison.m
 
 ## The application
 
+![Home: corpus totals and recent runs](docs/_static/workflows/home.png)
+
 ![Overview after a Balanced run: summary and at-a-glance metrics](docs/_static/workflows/first-analysis-overview.png)
 
 ![Transcript view with named speakers, timestamps, and search](docs/_static/workflows/speaker-identification-transcript.png)
@@ -27,7 +29,7 @@ Not sure if this is the right tool? [How TranscriptX compares](docs/comparison.m
 
 ![Charts gallery for the finished run](docs/_static/workflows/charts-gallery.png)
 
-These shots are a **Balanced** run of *Rapid Response Webinar Analysing the Biodiversity Beyond National Jurisdiction Treaty*. Display names were assigned in Speaker Identification.
+Home is the library landing page. The other shots are a **Balanced** run of *Rapid Response Webinar Analysing the Biodiversity Beyond National Jurisdiction Treaty*. Display names were assigned in Speaker Identification.
 
 ## What can I do with it?
 
