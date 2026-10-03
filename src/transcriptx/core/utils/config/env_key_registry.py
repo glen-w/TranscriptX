@@ -46,6 +46,8 @@ INFRA_ENV_ALLOWLIST = frozenset(
         "TRANSCRIPTX_PORT",
         "TRANSCRIPTX_MPL_MAX_OPEN_WARNING",
         "TRANSCRIPTX_ENABLE_CORRECTIONS_STUDIO",
+        "TRANSCRIPTX_RAG_ENABLED",
+        "TRANSCRIPTX_RAG_EMBED_MODEL",
         "TRANSCRIPTX_CACHE_DIR",
         "TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS",
         # Missing-file default only; never overrides privacy.voice_settings.json.

@@ -224,6 +224,7 @@ def test_app_workflow_menu_order_under_workflow() -> None:
         "Home",
         "Library",
         "Search",
+        "Ask",
         "Speakers",
         "Groups",
     ]
