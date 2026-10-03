@@ -1,6 +1,6 @@
 # Audio prep (before transcription)
 
-Host-side recording cleanup **before** you transcribe elsewhere. TranscriptX does not transcribe in the app — after merge/preprocess, use [Transcribe Audio](transcription.md#if-you-still-need-to-transcribe-audio) then **Import Transcript**.
+Host-side recording cleanup **before** transcription. After merge/preprocess, use [Transcribe Audio](transcription.md#if-you-still-need-to-transcribe-audio) then **Import Transcript**.
 
 Interactive GUI: **System → Tools** (tabs **Preprocessing**, **Auto-merge**, **Manual merge**). Requires host `ffmpeg` and `pydub`. Supported inputs include WAV, MP3, OGG, **Opus** (WhatsApp Desktop voice notes), M4A, FLAC, AAC, and WMA.
 

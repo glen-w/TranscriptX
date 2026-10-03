@@ -171,8 +171,8 @@ def test_import_page_contains_no_auto_transcription_message() -> None:
     import transcriptx.web.page_modules.upload_transcript as mod
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
-    assert "does not transcribe audio" in source
     assert "A transcript file is still required for transcript text content." in source
+    assert "Optional recordings are used only by speaker identification" in source
     assert "Rename imported transcript + linked audio" in source
     assert "Import all from folder" in source
     assert "st.session_state[_KEY_FOLDER_PATH] = _DEFAULT_FOLDER_IMPORT_PATH" in source

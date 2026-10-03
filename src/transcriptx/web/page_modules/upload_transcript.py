@@ -552,7 +552,6 @@ def render_upload_transcript_page() -> None:
 
     st.subheader("3. Optional recording upload")
     st.info(
-        "Uploading a recording here does not transcribe audio. "
         "A transcript file is still required for transcript text content. "
         "Optional recordings are used only by speaker identification and audio-derived modules."
     )

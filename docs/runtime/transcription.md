@@ -1,8 +1,8 @@
 # Transcription (bring your own files)
 
-TranscriptX **analyses** transcripts. It does **not** transcribe audio in the app.
+TranscriptX **analyses** transcripts after you bring them into the library.
 
-You produce JSON, SRT, or VTT with another tool, then **Import Transcript** in the web UI. The **Transcribe Audio** page only **generates a copyable command** — Streamlit never runs transcription.
+**Import Transcript** admits JSON, SRT, VTT, and other supported files in the web UI. The **Transcribe Audio** page **generates a copyable command** for host-side tools — Streamlit does not run transcription for you.
 
 This page is the mainstream path: you already have a transcript, or you have audio and will run a command on the host. Host watchers, bulk scripts, merge profiles, and the Python import API are under [Host STT automation](host-stt.md) and [Audio prep](audio-prep.md).
 
