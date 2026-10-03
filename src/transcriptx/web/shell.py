@@ -90,8 +90,153 @@ def configure_streamlit_page() -> None:
     )
 
 
+# Executed via st.html(unsafe_allow_javascript=True). st.markdown sanitizes
+# <script>, so chrome-sync never ran and OS dark + Streamlit Light painted a
+# white wordmark and light nav labels on a light sidebar.
+_SHELL_RUNTIME_JS = """
+<div class="tx-chrome-sync-slot" data-tx-chrome-sync="1" hidden></div>
+<script>
+    (function() {
+        if (window.__txBrandChromeSync) return;
+        window.__txBrandChromeSync = true;
+        const exclusiveScheme = function(el) {
+            if (!el) return '';
+            const scheme = (window.getComputedStyle(el).colorScheme || '')
+                .toLowerCase();
+            const hasDark = scheme.indexOf('dark') !== -1;
+            const hasLight = scheme.indexOf('light') !== -1;
+            if (hasDark && !hasLight) return 'dark';
+            if (hasLight && !hasDark) return 'light';
+            return '';
+        };
+        const opaqueLuminance = function(el) {
+            if (!el) return null;
+            const bg = window.getComputedStyle(el).backgroundColor || '';
+            if (!bg || bg === 'transparent') return null;
+            const m = bg.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+            if (!m) return null;
+            const a = bg.match(
+                /rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)/i
+            );
+            if (a && +a[1] < 0.5) return null;
+            return (0.2126 * +m[1]) + (0.7152 * +m[2]) + (0.0722 * +m[3]);
+        };
+        const resolveChrome = function() {
+            const sidebar = document.querySelector(
+                'section[data-testid="stSidebar"]'
+            );
+            const root = document.querySelector(
+                '[data-testid="stAppViewContainer"]'
+            ) || document.querySelector('.stApp') || document.documentElement;
+            const fromScheme = exclusiveScheme(sidebar)
+                || exclusiveScheme(root)
+                || exclusiveScheme(document.documentElement);
+            if (fromScheme) return fromScheme;
+            let lum = opaqueLuminance(sidebar);
+            if (lum === null && sidebar) {
+                const kids = sidebar.querySelectorAll('div');
+                for (let i = 0; i < Math.min(kids.length, 16); i++) {
+                    lum = opaqueLuminance(kids[i]);
+                    if (lum !== null) break;
+                }
+            }
+            if (lum !== null) return lum > 140 ? 'light' : 'dark';
+            return 'light';
+        };
+        const apply = function() {
+            const chrome = resolveChrome();
+            const sidebar = document.querySelector(
+                'section[data-testid="stSidebar"]'
+            );
+            if (sidebar && sidebar.getAttribute('data-tx-chrome') !== chrome) {
+                sidebar.setAttribute('data-tx-chrome', chrome);
+            }
+            document.querySelectorAll('.tx-sidebar-brand').forEach(function(node) {
+                if (node.getAttribute('data-tx-chrome') !== chrome) {
+                    node.setAttribute('data-tx-chrome', chrome);
+                }
+            });
+        };
+        apply();
+        const obs = new MutationObserver(apply);
+        obs.observe(document.documentElement, {
+            attributes: true,
+            childList: true,
+            subtree: true,
+        });
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener(
+            'change', apply
+        );
+    })();
+
+    (function() {
+        const ensureBtn = function() {
+            if (document.getElementById('scroll-to-top-btn')) return;
+            const btn = document.createElement('button');
+            btn.id = 'scroll-to-top-btn';
+            btn.innerHTML = '↑';
+            btn.title = 'Return to top';
+            btn.onclick = function() {
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            };
+            document.body.appendChild(btn);
+            window.addEventListener('scroll', function() {
+                if (window.pageYOffset > 300) {
+                    btn.classList.add('show');
+                } else {
+                    btn.classList.remove('show');
+                }
+            });
+        };
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', ensureBtn);
+        } else {
+            ensureBtn();
+        }
+    })();
+
+    (function() {
+        if (window.__txPlayScrollPreserve) return;
+        window.__txPlayScrollPreserve = true;
+        const KEY = 'txPreserveScrollY';
+        const isPlayControl = function(el) {
+            const btn = el && el.closest ? el.closest('button') : null;
+            if (!btn) return false;
+            const text = (btn.innerText || btn.textContent || '').trim();
+            return text === '▶';
+        };
+        const restore = function() {
+            const raw = sessionStorage.getItem(KEY);
+            if (raw === null) return;
+            const y = parseInt(raw, 10);
+            if (!Number.isFinite(y)) return;
+            window.scrollTo(0, y);
+        };
+        document.addEventListener('pointerdown', function(e) {
+            if (!isPlayControl(e.target)) return;
+            sessionStorage.setItem(
+                KEY,
+                String(window.scrollY || window.pageYOffset || 0)
+            );
+            let frames = 0;
+            const tick = function() {
+                restore();
+                frames += 1;
+                if (frames < 45) {
+                    window.requestAnimationFrame(tick);
+                } else {
+                    sessionStorage.removeItem(KEY);
+                }
+            };
+            window.requestAnimationFrame(tick);
+        }, true);
+    })();
+</script>
+"""
+
+
 def inject_global_styles() -> None:
-    """Inject shared CSS and scroll-to-top behavior."""
+    """Inject shared CSS and sidebar chrome-sync / scroll helpers."""
     st.markdown(
         """
 <style>
@@ -116,22 +261,31 @@ def inject_global_styles() -> None:
     /* Streamlit's markdown container has a negative bottom margin that
        pulls the first nav button up under the wordmark. */
     section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"]:has(.tx-sidebar-brand) {
-        margin-bottom: 0.75rem !important;
+        margin-bottom: 1.25rem !important;
     }
     .tx-sidebar-brand img {
         display: block;
         max-width: 100%;
         height: auto;
     }
-    /* Default: dark wordmark (readable on light chrome). JS sets data-tx-chrome
-       from the live sidebar background so Streamlit theme wins over OS/browser. */
-    .tx-sidebar-brand .tx-logo-dark-chrome { display: none; }
-    .tx-sidebar-brand .tx-logo-light-chrome { display: block; }
-    .tx-sidebar-brand[data-tx-chrome="dark"] .tx-logo-light-chrome { display: none; }
-    .tx-sidebar-brand[data-tx-chrome="dark"] .tx-logo-dark-chrome { display: block; }
-    @media (prefers-color-scheme: dark) {
-        .tx-sidebar-brand:not([data-tx-chrome]) .tx-logo-light-chrome { display: none; }
-        .tx-sidebar-brand:not([data-tx-chrome]) .tx-logo-dark-chrome { display: block; }
+    /* Default: dark wordmark (readable on light chrome). Do not key off
+       prefers-color-scheme — Streamlit Light + OS dark would show the white
+       wordmark. JS sets data-tx-chrome from Streamlit's used color-scheme. */
+    .tx-sidebar-brand .tx-logo-dark-chrome { display: none !important; }
+    .tx-sidebar-brand .tx-logo-light-chrome { display: block !important; }
+    .tx-sidebar-brand[data-tx-chrome="dark"] .tx-logo-light-chrome { display: none !important; }
+    .tx-sidebar-brand[data-tx-chrome="dark"] .tx-logo-dark-chrome { display: block !important; }
+    /* Chrome-sync helper is st.html; collapse it so it does not consume layout. */
+    div[data-testid="stElementContainer"]:has([data-tx-chrome-sync]),
+    [data-testid="stHtml"]:has([data-tx-chrome-sync]),
+    .tx-chrome-sync-slot {
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        border: 0 !important;
     }
     section[data-testid="stSidebar"] * {
         overflow-wrap: anywhere;
@@ -291,22 +445,17 @@ def inject_global_styles() -> None:
         height: auto !important;
         line-height: 1.3 !important;
     }
-    /* Sidebar nav — chrome-aware. Streamlit 1.55+ no longer exposes --text-color,
-       so var(--text-color, #31333F) painted dark labels on dark chrome. JS sets
-       data-tx-chrome from live sidebar luminance (same as the brand wordmark). */
+    /* Sidebar nav — chrome-aware. Streamlit 1.55+ no longer exposes --text-color.
+       light-dark() follows Streamlit's used color-scheme (set on the sidebar),
+       not OS prefers-color-scheme. data-tx-chrome overrides once JS runs. */
     section[data-testid="stSidebar"] {
-        --tx-nav-fg: #31333F;
+        --tx-nav-fg: light-dark(#31333F, #e8eef6);
     }
     section[data-testid="stSidebar"][data-tx-chrome="dark"] {
         --tx-nav-fg: #e8eef6;
     }
     section[data-testid="stSidebar"][data-tx-chrome="light"] {
         --tx-nav-fg: #31333F;
-    }
-    @media (prefers-color-scheme: dark) {
-        section[data-testid="stSidebar"]:not([data-tx-chrome]) {
-            --tx-nav-fg: #e8eef6;
-        }
     }
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button[kind="secondary"] {
         background: color-mix(in srgb, var(--tx-nav-fg) 8%, transparent) !important;
@@ -1066,118 +1215,8 @@ def inject_global_styles() -> None:
         overflow-anchor: none;
     }
 </style>
-<script>
-    // Match brand wordmark to Streamlit chrome (light vs dark), not only OS preference.
-    (function() {
-        if (window.__txBrandChromeSync) return;
-        window.__txBrandChromeSync = true;
-        const luminance = function(el) {
-            if (!el) return null;
-            const bg = window.getComputedStyle(el).backgroundColor || '';
-            const m = bg.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
-            if (!m) return null;
-            return (0.2126 * +m[1]) + (0.7152 * +m[2]) + (0.0722 * +m[3]);
-        };
-        const resolveChrome = function() {
-            const sidebar = document.querySelector('section[data-testid="stSidebar"]');
-            const lum = luminance(sidebar);
-            if (lum !== null) {
-                return lum > 140 ? 'light' : 'dark';
-            }
-            const root = document.querySelector('[data-testid="stAppViewContainer"]')
-                || document.documentElement;
-            const scheme = (window.getComputedStyle(root).colorScheme || '').toLowerCase();
-            if (scheme.indexOf('dark') !== -1) return 'dark';
-            if (scheme.indexOf('light') !== -1) return 'light';
-            return window.matchMedia('(prefers-color-scheme: dark)').matches
-                ? 'dark' : 'light';
-        };
-        const apply = function() {
-            const chrome = resolveChrome();
-            const sidebar = document.querySelector('section[data-testid="stSidebar"]');
-            if (sidebar && sidebar.getAttribute('data-tx-chrome') !== chrome) {
-                sidebar.setAttribute('data-tx-chrome', chrome);
-            }
-            document.querySelectorAll('.tx-sidebar-brand').forEach(function(node) {
-                if (node.getAttribute('data-tx-chrome') !== chrome) {
-                    node.setAttribute('data-tx-chrome', chrome);
-                }
-            });
-        };
-        apply();
-        const obs = new MutationObserver(apply);
-        obs.observe(document.documentElement, {
-            attributes: true,
-            childList: true,
-            subtree: true,
-        });
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener(
-            'change', apply
-        );
-    })();
-
-    // Scroll to top button functionality
-    window.addEventListener('DOMContentLoaded', function() {
-        // Create the button
-        const btn = document.createElement('button');
-        btn.id = 'scroll-to-top-btn';
-        btn.innerHTML = '↑';
-        btn.title = 'Return to top';
-        btn.onclick = function() {
-            window.scrollTo({top: 0, behavior: 'smooth'});
-        };
-        document.body.appendChild(btn);
-
-        // Show/hide button based on scroll position
-        window.addEventListener('scroll', function() {
-            if (window.pageYOffset > 300) {
-                btn.classList.add('show');
-            } else {
-                btn.classList.remove('show');
-            }
-        });
-    });
-
-    // Keep reading position when ▶ triggers a fragment redraw that
-    // would otherwise scroll the newly focused audio player into view.
-    // Chapter "Play" is excluded so jump-to-segment scroll can run.
-    (function() {
-        if (window.__txPlayScrollPreserve) return;
-        window.__txPlayScrollPreserve = true;
-        const KEY = 'txPreserveScrollY';
-        const isPlayControl = function(el) {
-            const btn = el && el.closest ? el.closest('button') : null;
-            if (!btn) return false;
-            const text = (btn.innerText || btn.textContent || '').trim();
-            return text === '▶';
-        };
-        const restore = function() {
-            const raw = sessionStorage.getItem(KEY);
-            if (raw === null) return;
-            const y = parseInt(raw, 10);
-            if (!Number.isFinite(y)) return;
-            window.scrollTo(0, y);
-        };
-        document.addEventListener('pointerdown', function(e) {
-            if (!isPlayControl(e.target)) return;
-            sessionStorage.setItem(
-                KEY,
-                String(window.scrollY || window.pageYOffset || 0)
-            );
-            let frames = 0;
-            const tick = function() {
-                restore();
-                frames += 1;
-                if (frames < 45) {
-                    window.requestAnimationFrame(tick);
-                } else {
-                    sessionStorage.removeItem(KEY);
-                }
-            };
-            window.requestAnimationFrame(tick);
-        }, true);
-    })();
-</script>
 """,
         unsafe_allow_html=True,
     )
+    # st.markdown strips <script>; st.html is the Streamlit 1.55+ way to run JS.
+    st.html(_SHELL_RUNTIME_JS, unsafe_allow_javascript=True)

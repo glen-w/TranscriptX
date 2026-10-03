@@ -24,6 +24,9 @@ def test_sidebar_nav_buttons_use_theme_text_color() -> None:
     assert "color: #f3f9fd !important" not in source
     # Dark chrome must not inherit the light-theme fallback.
     assert "--tx-nav-fg: #e8eef6" in source
+    # Follow Streamlit's used color-scheme, not OS prefers-color-scheme.
+    assert "light-dark(#31333F, #e8eef6)" in source
+    assert '[data-testid="stSidebar"]:not([data-tx-chrome])' not in source
 
 
 @pytest.mark.unit
@@ -33,3 +36,9 @@ def test_brand_logo_emits_both_chrome_variants() -> None:
     assert "tx-logo-dark-chrome" in source
     assert "__txBrandChromeSync" in source
     assert "data-tx-chrome" in source
+    assert "unsafe_allow_javascript=True" in source
+    # OS-dark CSS must not swap in the white wordmark before chrome is known.
+    assert (
+        ".tx-sidebar-brand:not([data-tx-chrome]) .tx-logo-dark-chrome"
+        not in source
+    )
