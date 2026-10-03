@@ -21,6 +21,7 @@ def select_charts_for_set(
     run_kind: str,
     user_overview: Sequence[str] | None = None,
     max_items: int | None = None,
+    overview_enabled: bool = True,
 ) -> list[LogicalChartDescriptor]:
     """Apply chart_set filter, then deterministic sort by chart_key."""
     if chart_set == "all":
@@ -36,6 +37,7 @@ def select_charts_for_set(
             run_kind=run_kind,
             user_overview=user_overview,
             max_items=max_items,
+            overview_enabled=overview_enabled,
         )
     else:
         raise ValueError(f"Unknown chart_set: {chart_set}")
