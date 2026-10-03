@@ -5,8 +5,9 @@ Host helpers such as ``whispermlx-missing`` and ``inbox-watch`` write JSON
 same ``admit_and_register`` path as Import Transcript / Settings → Watcher.
 
 When the source already lives in ``originals/``, the archive step reuses that
-path (no ``foo (1).json`` duplicate). Streamlit never executes this module;
-``inbox-watch --admit`` subprocesses ``python -m transcriptx.admit_originals``.
+path (no ``foo (1).json`` duplicate). Import Transcript calls
+``admit_originals_files`` for that folder. ``inbox-watch --admit`` subprocesses
+``python -m transcriptx.admit_originals``.
 """
 
 from __future__ import annotations

@@ -78,6 +78,29 @@ def test_list_skips_hidden_disambiguated_and_non_transcripts(
     assert names == {"keep.srt", "notes.txt"}
 
 
+def test_admit_originals_registers_library_row_without_touching_inbox(
+    monkeypatch, tmp_path: Path
+) -> None:
+    import json
+
+    root = tmp_path / "transcripts"
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    marker = inbox / "leave-me.json"
+    marker.write_text("{}", encoding="utf-8")
+    outputs = tmp_path / "outputs"
+    _patch(monkeypatch, root, outputs)
+    staging = root / "originals" / "meeting.srt"
+    staging.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello\n", encoding="utf-8")
+
+    outcome = admit_originals_file(staging)
+    assert outcome.kind is AdmitOutcomeKind.IMPORTED_AND_REGISTERED
+    index = json.loads((outputs / ".transcriptx_index.json").read_text(encoding="utf-8"))
+    assert index.get("transcripts")
+    assert marker.read_text(encoding="utf-8") == "{}"
+    assert [p.name for p in inbox.iterdir()] == ["leave-me.json"]
+
+
 def test_admit_originals_reuses_archive_path(monkeypatch, tmp_path: Path) -> None:
     root = tmp_path / "transcripts"
     _patch(monkeypatch, root, tmp_path / "outputs")

@@ -180,7 +180,7 @@ volumes:
   - ./data:/data
   - ${HOST_CONFIG_DIR:-./data/.transcriptx}:/data/.transcriptx
   - transcriptx_cache:/home/transcriptx/.cache
-  - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts:ro
+  - ${HOST_TRANSCRIPTS_DIR:-./data/transcripts}:/mnt/transcripts
   - ${HOST_TRANSCRIPT_INBOX_DIR:-./data/transcript-inbox}:/mnt/transcript-inbox:ro
   - ${HOST_OUTPUT_DIR:-./data/outputs}:/mnt/outputs
   - ${HOST_RECORDINGS_DIR}:/mnt/recordings
@@ -196,14 +196,14 @@ Prefer `HOST_CONFIG_DIR` outside the clone as well (same idea as transcripts/out
 |---------------|----------------|---------------------------|-------|
 | (default) `./data` | `/data` | `TRANSCRIPTX_DATA_DIR=/data` | App cache, groups, speaker_profiles, HF caches. Numba/librosa cache is `NUMBA_CACHE_DIR=/tmp/numba_cache` (not under `/data`) so Docker Desktop virtiofs does not break Numba's cache-dir writability probe. |
 | `HOST_CONFIG_DIR` (default `./data/.transcriptx`) | `/data/.transcriptx` | `TRANSCRIPTX_CONFIG_DIR=/data/.transcriptx` | Project settings / metadata (`config.json`, menus, profiles). Prefer absolute path outside the clone |
-| `HOST_TRANSCRIPTS_DIR` (default `./data/transcripts`) | `/mnt/transcripts` | `TRANSCRIPTX_TRANSCRIPTS_DIR=/mnt/transcripts` | **Read-only** in base compose |
+| `HOST_TRANSCRIPTS_DIR` (default `./data/transcripts`) | `/mnt/transcripts` | `TRANSCRIPTX_TRANSCRIPTS_DIR=/mnt/transcripts` | **Writable** in base compose so Admit and Import can update the library |
 | `HOST_TRANSCRIPT_INBOX_DIR` (default `./data/transcript-inbox`) | `/mnt/transcript-inbox` | (scan path only) | External inbox for **Import all from folder**; not under managed transcripts |
 | `HOST_OUTPUT_DIR` (default `./data/outputs`) | `/mnt/outputs` | `TRANSCRIPTX_OUTPUT_DIR=/mnt/outputs` | Analysis run outputs |
 | `HOST_RECORDINGS_DIR` | `/mnt/recordings` | `TRANSCRIPTX_RECORDINGS_DIR=/mnt/recordings` | Source audio (read-only root) |
 | `HOST_RECORDINGS_DIR/imports` | `/mnt/recordings/imports` | `TRANSCRIPTX_IMPORTS_DIR=/mnt/recordings/imports` | Writable uploads staging |
 | `HOST_WAV_BACKUP_DIR` (default `./data/backups/wav`) | `/mnt/wav` | `TRANSCRIPTX_WAV_BACKUP_DIR=/mnt/wav` | WAV archive |
 
-**Local dev override:** `docker-compose.override.yml` (optional, often gitignored) repeats these mounts but drops `:ro` on transcripts so the web UI can write speaker-map sidecars beside JSON files. It also mounts `./tests/fixtures` at `/mnt/fixtures:ro` for deep-test analysis probes. Analyse those paths in place (`TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS=1`); do not import them into `/mnt/transcripts`. For production-like read-only transcripts, use only `docker-compose.yml` or remove the override.
+**Local dev override:** `docker-compose.override.yml` (optional, often gitignored) repeats these mounts and adds a bind of `./src` plus `./tests/fixtures` at `/mnt/fixtures:ro` for deep-test analysis probes. Analyse those paths in place (`TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS=1`); do not import them into `/mnt/transcripts`. The import inbox stays read-only. Base compose already mounts transcripts writable.
 
 Canonical storage layout and invariants: [`docs/runtime/STORAGE.md`](../runtime/STORAGE.md).
 

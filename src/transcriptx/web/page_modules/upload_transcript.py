@@ -15,7 +15,10 @@ from typing import Any
 import streamlit as st
 
 from transcriptx.web import icons as ic
-from transcriptx.core.utils.paths import TRANSCRIPTS_IMPORTS_DIR
+from transcriptx.core.utils.paths import (
+    TRANSCRIPTS_IMPORTS_DIR,
+    TRANSCRIPTS_ORIGINALS_DIR,
+)
 from transcriptx.core.utils.logger import get_logger
 from transcriptx.io.admit_and_register import (
     AdmitOutcomeKind,
@@ -247,6 +250,47 @@ def _on_scan_folder() -> None:
         f"Scan complete: {len(handle.candidates)} supported file(s) "
         f"({len(eligible_candidates(handle))} eligible).",
     )
+
+
+def _admit_from_originals() -> None:
+    """Admit files already under originals/. Does not scan the import inbox."""
+    from transcriptx.io.admit_originals import (
+        admit_originals_files,
+        list_originals_candidates,
+    )
+
+    directory = Path(TRANSCRIPTS_ORIGINALS_DIR)
+    candidates = list_originals_candidates(directory)
+    if not candidates:
+        st.info(f"No transcript files to admit in `{directory}`.")
+        return
+    stats = admit_originals_files(candidates)
+    if stats.admitted:
+        _clear_import_caches()
+        st.success(f"Admitted {stats.admitted} file(s) from originals/.")
+        for name in stats.admitted_names:
+            st.caption(name)
+    if stats.skipped:
+        st.info(f"Skipped {stats.skipped} already-managed file(s).")
+    if stats.failed:
+        st.error(f"{stats.failed} file(s) could not be admitted.")
+        for line in stats.failed_names:
+            st.caption(line)
+
+
+def _render_admit_originals_section() -> None:
+    st.subheader("Admit from originals")
+    st.caption(
+        "Promote transcript files already in the library originals/ folder "
+        "into the managed library. Files stay where they are. "
+        "This does not scan the import inbox."
+    )
+    if st.button(
+        "Admit from originals",
+        key="admit_originals_btn",
+        icon=ic.UPLOAD,
+    ):
+        _admit_from_originals()
 
 
 def _render_folder_import_section() -> None:
@@ -501,6 +545,8 @@ def render_upload_transcript_page() -> None:
         current = _maybe_auto_rename_imported(Path(imported_path))
         _render_post_import_actions(current)
         _render_import_rename_form(current)
+
+    _render_admit_originals_section()
 
     _render_folder_import_section()
 

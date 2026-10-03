@@ -120,6 +120,53 @@ def test_clear_import_caches_clears_transcript_recording_and_streamlit(
     assert called == {"listing_caches": 1, "recordings": 1}
 
 
+def test_import_page_admits_from_originals_not_the_inbox() -> None:
+    import transcriptx.web.page_modules.upload_transcript as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "Admit from originals" in source
+    assert 'key="admit_originals_btn"' in source
+    assert "list_originals_candidates" in source
+    assert "admit_originals_files" in source
+    assert "This does not scan the import inbox." in source
+
+
+def test_admit_from_originals_uses_originals_candidates(monkeypatch, tmp_path: Path) -> None:
+    import transcriptx.web.page_modules.upload_transcript as mod
+    from transcriptx.io.admit_originals import AdmitOriginalsStats
+
+    original = tmp_path / "originals" / "meeting.json"
+    seen: dict = {}
+
+    def _list(directory):
+        seen["directory"] = directory
+        return [original]
+
+    def _admit(paths, **kwargs):
+        seen["paths"] = list(paths)
+        seen["kwargs"] = kwargs
+        return AdmitOriginalsStats(admitted=1, admitted_names=["meeting.json"])
+
+    monkeypatch.setattr(mod, "TRANSCRIPTS_ORIGINALS_DIR", tmp_path / "originals")
+    monkeypatch.setattr(mod, "_clear_import_caches", lambda: None)
+    messages: list[str] = []
+    monkeypatch.setattr(mod.st, "success", lambda msg: messages.append(msg))
+    monkeypatch.setattr(mod.st, "caption", lambda msg: None)
+    monkeypatch.setattr(mod.st, "info", lambda msg: messages.append(msg))
+    monkeypatch.setattr(mod.st, "error", lambda msg: messages.append(msg))
+    monkeypatch.setattr(
+        "transcriptx.io.admit_originals.list_originals_candidates", _list
+    )
+    monkeypatch.setattr(
+        "transcriptx.io.admit_originals.admit_originals_files", _admit
+    )
+
+    mod._admit_from_originals()
+    assert seen["directory"] == tmp_path / "originals"
+    assert seen["paths"] == [original]
+    assert any("Admitted 1" in msg for msg in messages)
+
+
 def test_import_page_contains_no_auto_transcription_message() -> None:
     import transcriptx.web.page_modules.upload_transcript as mod
 
