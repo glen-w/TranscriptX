@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Root markdown allowlist includes `AGENTS.md`, so release hygiene passes on main.
+- Clean-env `pip-audit` ignores only no-fix findings already named in [dependency_audit.md](docs/dev/dependency_audit.md). Fixable findings still fail the job.
+
 ### Added
 
 - Names group aggregation (`names` pooled people catalog across sessions) plus pydantic config goldens so the new module passes Gate B drift / group-support contracts.

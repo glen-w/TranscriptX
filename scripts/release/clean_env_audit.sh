@@ -36,12 +36,43 @@ AUDIT_RC=$?
 pip-audit --format columns | tee "$OUT_DIR/pip-audit-clean-env.txt"
 set -e
 
-# Fail on fixable CVEs unless waivers are present (human review of waiver file).
-# For Wave 0 automation: non-zero pip-audit fails the script.
+# Fail on fixable findings, and on any finding not named in the waiver doc.
+# A no-fix id that docs/dev/dependency_audit.md already records does not fail CI.
+WAIVER_DOC="$ROOT_DIR/docs/dev/dependency_audit.md"
 if [[ "$AUDIT_RC" -ne 0 ]]; then
-  echo "ERROR: pip-audit reported issues (see $OUT_DIR/pip-audit-clean-env.*)."
-  echo "Document exceptional waivers in docs/dev/dependency_audit.md before tagging."
-  exit "$AUDIT_RC"
+  python - "$OUT_DIR/pip-audit-clean-env.json" "$WAIVER_DOC" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+report = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+waiver = Path(sys.argv[2]).read_text(encoding="utf-8")
+deps = report.get("dependencies", report if isinstance(report, list) else [])
+blocking = []
+waived = []
+for dep in deps:
+    for vuln in dep.get("vulns") or []:
+        ids = [vuln.get("id") or ""]
+        ids.extend(vuln.get("aliases") or [])
+        ids = [i for i in ids if i]
+        fixable = bool(vuln.get("fix_versions"))
+        named = any(i in waiver for i in ids)
+        label = f"{dep.get('name')} {dep.get('version')} ({', '.join(ids)})"
+        if fixable or not named:
+            blocking.append(label + (" [fix available]" if fixable else " [not in dependency_audit.md]"))
+        else:
+            waived.append(label)
+for line in waived:
+    print(f"WAIVED no-fix: {line}")
+if blocking:
+    print("ERROR: pip-audit findings are not covered by the no-fix waiver:", file=sys.stderr)
+    for line in blocking:
+        print(f"  {line}", file=sys.stderr)
+    sys.exit(1)
+if not waived:
+    print("ERROR: pip-audit failed and the report had no parsed findings.", file=sys.stderr)
+    sys.exit(1)
+PY
 fi
 
 echo "OK: clean-env audit passed"

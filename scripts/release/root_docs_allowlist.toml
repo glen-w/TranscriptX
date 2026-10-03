@@ -17,3 +17,7 @@ purpose = "Pointer to docs/dev/CONTRIBUTING.md"
 [[paths]]
 path = "SECURITY.md"
 purpose = "Security policy"
+
+[[paths]]
+path = "AGENTS.md"
+purpose = "Cursor Cloud agent environment notes"

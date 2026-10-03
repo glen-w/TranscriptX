@@ -1,4 +1,6 @@
-# TranscriptX
+<p align="center">
+  <img src="assets/transcriptx_logo.png" alt="TranscriptX" width="420">
+</p>
 
 TranscriptX is a local-first workbench for people who want to think with transcripts.
 
