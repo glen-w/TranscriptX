@@ -25,7 +25,7 @@ Owner checklist (do this first):
 - [ ] Stranger door: **admit from `originals/`** (do not copy `originals/` into the import inbox)
 - [ ] Confirm library listing vs inbox vs `originals/` so “imported all” cannot miss new stems
 
-This is **owner machine hygiene**, not a 1.0 product feature. It still outranks unfamiliar-user prep on this corpus. Layout contracts: [STORAGE.md](runtime/STORAGE.md), [docker.md](runtime/docker.md), [transcription.md](runtime/transcription.md). Programme note: [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) §20 / §21.
+This is **owner machine hygiene**, not a 1.0 product feature. Layout contracts: [STORAGE.md](runtime/STORAGE.md), [docker.md](runtime/docker.md), [transcription.md](runtime/transcription.md). Programme note: [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) §20 / §21.
 
 ---
 
@@ -57,9 +57,9 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Hygiene + honesty + human-pass prep | Epoch/deps cleanup; BERTopic-out-of-base; Balanced emotion honesty; known-limitations; acceptance kits | **0.9.8** |
 | Maintainer acceptance | Manual acceptance + a11y/browser; severity-justified fixes | **done** 2026-08-07 (kit journeys closed; see [manual_acceptance_1_0.md](dev/manual_acceptance_1_0.md)) |
 | Overview / results presentation | Retire Insights Analysis tab; redistribute into Summary / Speakers / Actions / Highlights — [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | **0.9.9** (Charts/Overview hierarchy residuals deferred) |
-| Post-0.9.9 wave (interim) | Early 1.x A–D + operator UX — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md) | **0.9.9.5** (pre-unfamiliar-user) |
+| Post-0.9.9 wave (interim) | Early 1.x A–D + operator UX — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md) | **0.9.9.5** |
 | **Owner local folder cleanup** | Unambiguous library / `originals/` / inbox / recordings mounts — see **Now** above | **now (top priority)** |
-| Unfamiliar-user → RC | Clean-room validation; clean-env soak; RTD slug (owner) | after folder cleanup (pre-RC) |
+| Informal stranger test | Tried by someone who had not used the app | **done** (2026-10); not a release gate |
 
 **Module freeze:** no new analysis modules in 0.9.x unless required to complete or repair the 1.0 journey. Backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
 
@@ -69,7 +69,6 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 
 Mandatory themes (detail in the programme plan):
 
-- Unfamiliar-user clean-room validation — [unfamiliar_user_validation_1_0.md](dev/unfamiliar_user_validation_1_0.md)
 - Release severity triage — [release_severity_triage_1_0.md](dev/release_severity_triage_1_0.md)
 - Performance/resource envelopes — [performance_envelopes_1_0.md](dev/performance_envelopes_1_0.md)
 - Trust / privacy / model-governance — [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md)

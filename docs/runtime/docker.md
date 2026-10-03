@@ -150,7 +150,7 @@ Default host mounts (override with `HOST_UNFAMILIAR_*` env vars):
 | `../transcriptx_test/transcriptx_test_outputs` | `/mnt/outputs` |
 | `../transcriptx_test/transcript-inbox` | `/mnt/transcript-inbox` |
 
-UI: http://127.0.0.1:8502 (`TRANSCRIPTX_UNFAMILIAR_PORT` to change). Use this for facilitator-supplied samples during [unfamiliar-user validation](../dev/unfamiliar_user_validation_1_0.md).
+UI: http://127.0.0.1:8502 (`TRANSCRIPTX_UNFAMILIAR_PORT` to change). Isolated sample stack; not a release gate.
 
 After the first boot (or any wipe of `../transcriptx_test/data`), ensure the epoch marker exists — Streamlit writes `perf/` under `/data`, which makes an unmarked root fail the schema-epoch gate (`missing_marker`):
 

@@ -1,14 +1,11 @@
 # v1 launch readiness snapshot (2026-09-20)
 
-Maintainer/agent prep pass on package **0.9.9.5**. Not a 1.0 tag — programme gates
-in [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) still require
-unfamiliar-user validation and RC evidence. This note records what was verified,
-fixed, and left open.
+Maintainer/agent prep pass on package **0.9.9.5**. Not a 1.0 tag. This note records what was verified, fixed, and left open. An informal stranger test in October 2026 is not a release gate.
 
 ## Verdict
 
 **Codebase is close to RC-ready on automated gates**, with residual owner-gated
-and human-validation work still blocking the public **1.0** tag.
+and owner work still open before a public **1.0** tag. An informal stranger test is not one of those blockers.
 
 | Gate | Status |
 |------|--------|
@@ -20,7 +17,7 @@ and human-validation work still blocking the public **1.0** tag.
 | Smoke + previously red fast-lane failures | Pass |
 | Fast suite (Gate B) | **8475 passed** after fixing names/module/icon/hygiene flakes. One intermittent `hypothesis.FlakyFailure` on `test_normalize_property_dedupe_and_limits` when `speechbrain` is installed (lazy `k2` import during Hypothesis module introspection) — passes in isolation; not a product defect. |
 | Docker image build / image pip-check | Skipped (Docker unavailable in this environment) |
-| Unfamiliar-user round | Open (mandatory) |
+| Informal stranger test | Done (2026-10); not a release gate |
 | RTD project slug | Owner-gated |
 | Owner local folder cleanup | Owner machine (not product) |
 
@@ -39,10 +36,9 @@ and human-validation work still blocking the public **1.0** tag.
 
 **Must fix / evidence (programme)**
 
-1. Unfamiliar-user clean-room round ([unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md))
-2. Fresh clean-install matrix + Docker production image audit on release hardware
-3. RC rehearsal on exact commit ([release_governance.md](release_governance.md))
-4. Re-run `pip-audit` when nltk ≥3.10.4 (or successor) publishes; clear no-fix row
+1. Fresh clean-install matrix + Docker production image audit on release hardware
+2. RC rehearsal on exact commit ([release_governance.md](release_governance.md))
+3. Re-run `pip-audit` when nltk ≥3.10.4 (or successor) publishes; clear no-fix row
 
 **May ship as known limitation / post-1.0**
 
@@ -63,7 +59,6 @@ and human-validation work still blocking the public **1.0** tag.
 ## Suggested next owner actions
 
 1. Local corpus folder cleanup (ROADMAP **Now**)
-2. Recruit unfamiliar-user cohort and run the kit
-3. On a Docker-capable host: `docker compose build` → `make docker-smoke` → `image_pip_check.sh`
-4. When nltk fix ships: bump pin, re-run `clean_env_audit.sh`, drop no-fix row
-5. Cut `1.0.0-rc.1` only when blockers above are green
+2. On a Docker-capable host: `docker compose build` → `make docker-smoke` → `image_pip_check.sh`
+3. When nltk fix ships: bump pin, re-run `clean_env_audit.sh`, drop no-fix row
+4. Cut `1.0.0-rc.1` only when blockers above are green

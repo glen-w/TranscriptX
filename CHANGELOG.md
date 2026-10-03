@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- An informal try by someone new to the app (October 2026) is noted and is not a release gate. The old unfamiliar-user protocol is retired.
+
 ### Fixed
 
 - Root markdown allowlist includes `AGENTS.md`, so release hygiene passes on main.

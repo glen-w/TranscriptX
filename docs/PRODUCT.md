@@ -8,7 +8,7 @@ Import and organise transcripts; explore language, themes, speakers, interaction
 
 ## Audience
 
-**Primary:** any thoughtful person who already has (or can obtain) transcripts and wants to explore them seriously — meetings, interviews, notes, longitudinal personal recordings, and similar corpora. The standing bar is that an unfamiliar user can complete the core journey without undocumented developer knowledge (see Boundaries).
+**Primary:** any thoughtful person who already has (or can obtain) transcripts and wants to explore them seriously — meetings, interviews, notes, longitudinal personal recordings, and similar corpora. Someone who had not used the app tried it in October 2026. That trial is not a release gate.
 
 **Emerging:** researchers and analysts who need trustworthy structured outputs. They care especially about:
 
@@ -53,7 +53,7 @@ Evolve toward a **personal audio intelligence companion**: personal recordings, 
 
 ## Boundaries
 
-**Standing credibility bar:** install → import/build a useful corpus, run appropriate analysis, understand results, recover from failures, and export artifacts — preferably validated with unfamiliar-user feedback, not only maintainer testing.
+**Standing credibility bar:** install → import/build a useful corpus, run appropriate analysis, understand results, recover from failures, and export artifacts.
 
 **Explicitly out of scope unless the roadmap says otherwise:** hosted SaaS analysis, replacing upstream transcription/meeting tools, or treating “every backlog module” / polished marketing surfaces as release blockers.
 

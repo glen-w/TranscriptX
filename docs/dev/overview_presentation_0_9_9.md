@@ -1,7 +1,7 @@
 # 0.9.9 — Overview / results presentation polish
 
-**Status:** cut as **`0.9.9`** (2026-08-09) — Analysis tab retired; Overview EPUB + batch progress honesty landed; Overview hierarchy + Charts catalogue residuals deferred for pre-unfamiliar-user follow-up  
-**Slot:** after **maintainer acceptance** findings settle; **before** unfamiliar-user validation  
+**Status:** cut as **`0.9.9`** (2026-08-09) — Analysis tab retired; Overview EPUB + batch progress honesty landed; Overview hierarchy + Charts catalogue residuals deferred  
+**Slot:** after **maintainer acceptance** findings settle  
 **Programme:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md)  
 **Related:** [manual_acceptance_1_0.md](manual_acceptance_1_0.md) §3.3 (Overview works; presentation debt parked here)
 
