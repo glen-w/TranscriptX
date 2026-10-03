@@ -2454,3 +2454,28 @@ Follow-up: expand testing of knobs-heavy GUI pages (Settings Analysis, Custom QA
 - Optional `integration_core` gate: **79 passed**, `1 deselected`.
 - **Production code:** none (tests-only).
 - **Quarantined tests:** not re-enabled.
+
+## 82. Expansion (2026-10-03) – Wave G admit-door Compose contract
+
+### Trigger
+`/deep-test` after Wave G (Admit door, PR #62).
+
+### Backup
+- `/Users/89298/Documents/transcriptx backup/261003-2100.zip`; `custom-commands/` mirrored. Nested `# tests` backup skipped.
+
+### Review
+- **Collection (default addopts):** `8601/8980` selected (`379` deselected) before the new test; no collection errors.
+- **Baseline:** `8594 passed`, `3 skipped`, `379` deselected, `4` failed. The four failures are local `.env` contamination (`load_dotenv(override=True)` pins host library/output paths before pytest can set `.test_outputs`). The same four pass in a container with an empty `.env`. Not Wave G regressions. CI on #62 was green.
+- **After expansion:** `8595 passed`, `3 skipped`, `379` deselected, same `4` local-env failures. New contract included.
+- **Cleanup:** disabled.
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0). Not re-enabled.
+- **Markers / addopts:** unchanged.
+
+### Tests added
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/contracts/test_compose_library_mounts.py` | **+1** | Base Compose: transcripts writable, inbox and recordings read-only, imports writable; README still uses `docker compose up transcriptx-web` |
+
+### Validation
+- New test: **1 passed** on the host.
+- **Production code:** none in this expansion.
