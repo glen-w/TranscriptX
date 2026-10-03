@@ -914,6 +914,7 @@ def build_registry() -> List[AggregationEntry]:
         aggregate_sentiment_group,
     )
     from transcriptx.core.analysis.aggregation.ner import aggregate_ner_group
+    from transcriptx.core.analysis.names.aggregation import aggregate_names_group
     from transcriptx.core.analysis.aggregation.entity_sentiment import (
         aggregate_entity_sentiment_group,
     )
@@ -987,6 +988,12 @@ def build_registry() -> List[AggregationEntry]:
             selector=any_of(["ner"]),
             deps=[],
             aggregate_fn=aggregate_ner_group,
+        ),
+        AggregationEntry(
+            agg_id="names",
+            selector=any_of(["names"]),
+            deps=["ner"],
+            aggregate_fn=aggregate_names_group,
         ),
         AggregationEntry(
             agg_id="entity_sentiment",

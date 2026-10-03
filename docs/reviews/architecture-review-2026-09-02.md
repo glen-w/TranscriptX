@@ -123,13 +123,13 @@ Outcomes inferred from code, contracts, workflow docs, pages, and tests. Impleme
 | **DP12** | Write-side run persistence | [`pipeline_write_phases.py`](../../src/transcriptx/core/pipeline/pipeline_write_phases.py) order: `run_results.json` then `manifest.json`; [`run_outcome_truth.py`](../../src/transcriptx/core/pipeline/run_outcome_truth.py) |
 | **DP13** | Path roots / env path resolution | [`core/utils/paths.py`](../../src/transcriptx/core/utils/paths.py) `PathSettings`, `PATHS`; import fan-in ~111 |
 | **DP14** | Dual config: live dataclass facade + pydantic project config | [`core/utils/config/__init__.py`](../../src/transcriptx/core/utils/config/__init__.py) `_global_config`; [`core/config/persistence.py`](../../src/transcriptx/core/config/persistence.py); `apply_project_config_to_live_facade()` in `web/app.py` |
-| **DP15** | Module/workflow `ProfileManager` JSON files | [`core/utils/profile_manager.py`](../../src/transcriptx/core/utils/profile_manager.py) `get_profile_path` concatenates `profile_name` **with no `..` rejection** |
+| **DP15** | Module/workflow `ProfileManager` JSON files | [`core/utils/profile_manager.py`](../../src/transcriptx/core/utils/profile_manager.py) `get_profile_path` via `assert_safe_path_segment` + `assert_path_under_root` (fixed 2026-09-02; see §P) |
 | **DP16** | STT command generation (never executed) | [`services/transcription/command_gen.py`](../../src/transcriptx/services/transcription/command_gen.py); [`web/page_modules/transcribe_audio.py`](../../src/transcriptx/web/page_modules/transcribe_audio.py) |
 | **DP17** | Directory watcher thread + file `JobStore` | [`services/watcher/service.py`](../../src/transcriptx/services/watcher/service.py) process singleton |
 | **DP18** | Ollama client | [`core/llm/ollama_client.py`](../../src/transcriptx/core/llm/ollama_client.py) tenacity retries, Docker host remap |
 | **DP19** | Export ZIP/EPUB | [`web/components/export_panel.py`](../../src/transcriptx/web/components/export_panel.py); `HARD_CAP_BYTES` in `export/types.py` |
 | **DP20** | Managed rename journal + `processing_state.json` | [`rename_transaction.py`](../../src/transcriptx/core/utils/rename_transaction.py); [`processing_state.py`](../../src/transcriptx/core/utils/processing_state.py); Diagnostics repair |
-| **DP21** | Recordings upload + preprocess/merge | [`web/services/recordings_service.py`](../../src/transcriptx/web/services/recordings_service.py) `save_uploaded_file` uses **raw `uploaded_file.name`**; `app/workflows/preprocess.py`, `merge.py` |
+| **DP21** | Recordings upload + preprocess/merge | [`web/services/recordings_service.py`](../../src/transcriptx/web/services/recordings_service.py) `save_uploaded_file` uses `sanitize_upload_basename` + containment (fixed 2026-09-02; see §P); `app/workflows/preprocess.py`, `merge.py` |
 | **DP22** | Workspace backup/restore | [`services/workspace_backup.py`](../../src/transcriptx/services/workspace_backup.py) |
 | **DP23** | Schema-epoch gate | [`web/schema_epoch_gate.py`](../../src/transcriptx/web/schema_epoch_gate.py); `core/utils/schema_epoch.py` |
 | **DP24** | `FileLock` + atomic `.tmp`/`os.replace` | [`file_lock.py`](../../src/transcriptx/core/utils/file_lock.py); store writers |
@@ -312,8 +312,8 @@ Streamlit has **no URL routes**. State machine is `st.session_state["page"]` + s
 
 **Risks with evidence**
 
-1. **Profile name path traversal (open)** — `get_profile_path` joins unsanitized `profile_name`. Same finding as [docs/dev/security_review_2026-08-23.md](../dev/security_review_2026-08-23.md) SR-01. Guardrail tests do **not** include `../`. Under loopback this is a local footgun (overwrite JSON the process can write). If LAN-bound, it is unauthenticated filesystem write. **Do not inflate to unconditional P0** given documented single-user trust; **does escalate to P0 on non-loopback bind.**
-2. **Recording upload path traversal (open)** — `dest = RECORDINGS_IMPORTS_DIR / uploaded_file.name` with **no** `sanitize_upload_basename`. Transcript upload **does** sanitize. No tests of `save_uploaded_file`. Same SR-02 class. Overwrite/escape depends on client filename (browsers sometimes send paths).
+1. **Profile name path traversal (fixed 2026-09-02)** — Was unsanitized `profile_name` join ([security review](../dev/security_review_2026-08-23.md) SR-01). Now `assert_safe_path_segment` + `assert_path_under_root`; tests in `tests/core/utils/test_profile_manager_guardrails.py`. See §P L1.
+2. **Recording upload path traversal (fixed 2026-09-02)** — Was raw `uploaded_file.name` (SR-02). Now `sanitize_upload_basename` + containment; tests in `tests/web/test_recordings_upload_sanitize.py`. Same-basename overwrite inside `imports/` remains intentional. See §P L1.
 3. **No app auth** — by design (FR27). Destructive UI is phrase-gated only. Binding `0.0.0.0` is the real security boundary ([SECURITY.md](../../SECURITY.md)).
 4. **Secrets** — STT profiles strip token keys; `HF_TOKEN` intended in host `whisperx.env`. Optional `LLM_BASE_URL` can be any HTTP endpoint (SSRF-to-self / data exfil only if user configures it — local-first).
 5. **Uniqueness** — filesystem paths; group **names** not unique; speaker **display names** not globally unique. No DB constraints.

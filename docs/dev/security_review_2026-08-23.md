@@ -9,29 +9,25 @@ restore defends against ZIP traversal, subprocesses use argument arrays rather
 than shell interpolation, and sensitive transcription tokens are normally passed
 through the environment.
 
-The review nevertheless found **two high-priority path-containment defects**:
+**P0 path-containment defects (SR-01, SR-02) are fixed** as of 2026-09-02
+([architecture review §P](../reviews/architecture-review-2026-09-02.md#p-implementation-note-2026-09-02)):
+profile names and recording uploads now sanitize path segments and enforce
+containment under the expected roots.
 
-1. recording uploads trust the client-supplied filename and can write outside the
-   recording imports directory; and
-2. analysis profile names can traverse outside the profiles directory, enabling
-   JSON file read, write, rename, or deletion under the process account.
+**Residual before 1.0** (accept as known limitation or fix): unescaped dynamic
+HTML (SR-05), unrestricted optional LLM destinations (SR-06), temporary-audio
+cleanup (SR-07 — fixed in launch readiness), profile import/export raw paths
+(SR-04), and supply-chain/deployment hardening (SR-08–SR-12). No evidence of
+embedded credentials, unsafe Python deserialization, or `shell=True` execution
+was found in production code.
 
-Both defects are most serious if the Streamlit UI is exposed beyond loopback.
-They remain worth fixing for defense in depth because filenames and imported
-profile data are external input even in a local-first application.
+### Priority summary (at discovery / current)
 
-The review also found unescaped dynamic HTML, unrestricted optional LLM
-destinations, temporary-audio cleanup gaps, and supply-chain/deployment
-hardening work. No evidence of embedded credentials, unsafe Python
-deserialization, or `shell=True` execution was found in production code.
-
-### Priority summary
-
-| Priority | Count | Meaning |
-|---|---:|---|
-| P0 | 2 | Fix before recommending any shared or non-loopback deployment |
-| P1 | 5 | Address before 1.0 or explicitly accept and document |
-| P2 | 5 | Defense-in-depth, privacy, and release-process hardening |
+| Priority | At discovery | Remaining open | Meaning |
+|---|---:|---:|---|
+| P0 | 2 | 0 | Fixed before recommending any shared or non-loopback deployment |
+| P1 | 5 (+ SR-13 merge path) | 4 (SR-04–06 open; SR-07 + SR-13 fixed) | Address before 1.0 or explicitly accept and document |
+| P2 | 5 | 5 (SR-09 partially: `no-new-privileges` landed) | Defense-in-depth, privacy, and release-process hardening |
 
 ## 2. Scope and method
 
@@ -60,55 +56,38 @@ application has no authentication or per-action authorization.
 
 ### SR-01 — Profile names permit path traversal
 
-**Priority:** P0  
+**Status:** **Fixed** (2026-09-02) — see [architecture review §P L1](../reviews/architecture-review-2026-09-02.md#p-implementation-note-2026-09-02).  
+**Priority (at discovery):** P0  
 **Severity:** High when the UI is reachable by an untrusted user; Medium under
 the documented loopback trust model.  
-**Evidence:** `src/transcriptx/core/utils/profile_manager.py:98-101`,
-`:103-177`, `:210-231`, `:255-338`;
-`src/transcriptx/web/page_modules/profiles.py:142-179`, `:253-267`.
+**Evidence (historical):** `src/transcriptx/core/utils/profile_manager.py`;
+`src/transcriptx/web/page_modules/profiles.py`.
 
-`get_profile_path()` appends `f"{profile_name}.json"` without rejecting path
-separators or `..`. Create and rename fields accept arbitrary trimmed text.
-Consequently, a name such as `../../target` resolves outside the module profile
-directory. The same helper feeds profile load, save, existence, delete, import,
-and rename operations.
+`get_profile_path()` previously appended `f"{profile_name}.json"` without
+rejecting path separators or `..`. Create and rename fields accepted arbitrary
+trimmed text, so a name such as `../../target` could resolve outside the module
+profile directory.
 
-**Impact:** Read, overwrite, create, rename, or delete JSON files reachable by
-the process account. The exact operation depends on the UI flow and whether the
-target exists.
-
-**Remediation:**
-
-1. define one profile-name validator with a conservative character allowlist;
-2. resolve every resulting path and require it to be a child of the expected
-   module profile directory before any read or mutation;
-3. reject symlinked module/profile paths where appropriate; and
-4. add traversal tests for create, load, import, rename, and delete.
+**Current control:** `assert_safe_path_segment` on module and profile names,
+`assert_path_under_root` on the resolved path, and public API returns
+`False`/`None` on unsafe names. Tests:
+`tests/core/utils/test_profile_manager_guardrails.py`.
 
 ### SR-02 — Recording upload filename is not confined
 
-**Priority:** P0  
+**Status:** **Fixed** (2026-09-02) — see [architecture review §P L1](../reviews/architecture-review-2026-09-02.md#p-implementation-note-2026-09-02).  
+**Priority (at discovery):** P0  
 **Severity:** High when the UI is reachable by an untrusted user; Medium under
 the documented loopback trust model.  
-**Evidence:** `src/transcriptx/web/services/recordings_service.py:91-113`.
+**Evidence (historical):** `src/transcriptx/web/services/recordings_service.py`.
 
-`save_uploaded_file()` writes to
-`RECORDINGS_IMPORTS_DIR / uploaded_file.name`. The filename comes from the upload
-client and is neither reduced to a safe basename nor checked after path
-resolution. A crafted upload protocol message containing path components can
-escape the imports directory.
+`save_uploaded_file()` previously wrote to
+`RECORDINGS_IMPORTS_DIR / uploaded_file.name` without basename sanitization or
+post-resolution containment.
 
-Transcript upload already provides a safer pattern in
-`src/transcriptx/io/import_admission.py:127-147` and
-`src/transcriptx/web/page_modules/upload_transcript.py:56-64`.
-
-**Impact:** Arbitrary file write to locations writable by the application user,
-including writable bind mounts.
-
-**Remediation:** Reuse `sanitize_upload_basename()`, prefix the stored name with
-a generated identifier, and enforce resolved-path containment immediately
-before writing. Add tests for absolute paths, `..`, mixed separators, empty
-names, collisions, and symlinked destinations.
+**Current control:** `sanitize_upload_basename()` plus `assert_path_under_root`
+under `RECORDINGS_IMPORTS_DIR`. Same-basename overwrite inside that directory is
+unchanged. Tests: `tests/web/test_recordings_upload_sanitize.py`.
 
 ### SR-03 — Non-loopback deployment exposes the full application without authentication
 
@@ -192,17 +171,29 @@ and show a prominent data-egress warning for non-local endpoints.
 
 ### SR-07 — Temporary audio files survive preprocessing failures
 
-**Priority:** P1  
+**Status:** **Fixed** (v1 launch readiness) — `finally` unlink on both loudness
+and denoise paths.  
+**Priority (at discovery):** P1  
 **Severity:** Medium on a shared host; Low in the default single-user container.  
-**Evidence:** `src/transcriptx/core/audio/preprocessing.py:347-375`,
-`:430-468`.
+**Evidence (historical):** `src/transcriptx/core/audio/preprocessing.py`.
 
-Loudness normalization and denoising create `delete=False` WAV files and unlink
-them only on the success path. Exceptions after export leave transcript-derived
-audio in the system temporary directory.
+Loudness normalization and denoising previously created `delete=False` WAV files
+and unlinked them only on the success path. Exceptions after export left
+transcript-derived audio in the system temporary directory.
 
-**Remediation:** Initialize the temporary path outside the nested operation and
-unlink it in `finally`, tolerating a missing file. Add failure-injection tests.
+**Current control:** `tmp_path` is initialized before the nested operation and
+unlinked in `finally`, tolerating a missing file.
+
+### SR-13 — Merge output filename path escape
+
+**Status:** **Fixed** (v1 launch readiness follow-up).  
+**Priority (at discovery):** P1-class path  
+**Evidence (historical):** `src/transcriptx/app/workflows/merge.py` joined
+`output_dir / output_filename` without sanitizing UI-supplied names.
+
+**Current control:** basename via `Path(...).name`, `assert_safe_path_segment`,
+and `assert_path_under_root` under `output_dir`. Tests in
+`tests/app/test_merge_workflow.py`.
 
 ### SR-08 — Production dependency/image scanning is incomplete
 
@@ -229,12 +220,13 @@ shipped components.
 **Evidence:** `Dockerfile:7`, `:97`, `docker-compose.yml:17-95`.
 
 The Python base image uses a floating tag rather than an immutable digest.
-Compose runs as a non-root host UID, but does not set
-`no-new-privileges`, capability drops, or a read-only root filesystem.
+Compose runs as a non-root host UID. **`no-new-privileges` is now set** on
+`transcriptx-web` (v1 launch readiness). Capability drops and a read-only root
+filesystem remain open.
 
-**Remediation:** Pin release builds by digest, add image provenance/SBOM
-evidence, enable `no-new-privileges`, drop capabilities, and test a read-only
-root filesystem with explicit writable mounts or `tmpfs`.
+**Remediation (remaining):** Pin release builds by digest, add image
+provenance/SBOM evidence, drop capabilities, and test a read-only root
+filesystem with explicit writable mounts or `tmpfs`.
 
 ### SR-10 — Performance telemetry records full local paths by default
 
