@@ -122,3 +122,9 @@ packages/**/frontend/build/.vite/
 
 # Streamlit runtime cache (do not commit)
 data/queue-state.json
+
+# Local watch / assessment run logs
+assessments/
+
+# Cursor commands that name machine-specific folders (tracked playbooks stay committed)
+.cursor/commands/ingest.md
