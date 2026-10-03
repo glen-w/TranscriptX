@@ -128,6 +128,27 @@ def test_apply_subject_context_pops_locked_sidebar_widgets() -> None:
 
 
 @pytest.mark.unit
+def test_apply_subject_context_pops_locked_sidebar_widgets_new_streamlit_error() -> None:
+    class _Locked(dict):
+        def __setitem__(self, key, value):  # noqa: ANN001
+            if key in (
+                SUBJECT_TYPE_SELECTOR_KEY,
+                SUBJECT_ID_SELECTOR_KEY,
+                RUN_SELECTOR_KEY,
+            ):
+                err = type(
+                    "StreamlitWidgetAlreadyInstantiatedError", (Exception,), {}
+                )("subject_type_selector locked")
+                raise err
+            return super().__setitem__(key, value)
+
+    ss = _Locked({SUBJECT_TYPE_SELECTOR_KEY: "Group"})
+    apply_subject_context(ss, subject_type="transcript", subject_id="s", run_id="r")
+    assert SUBJECT_TYPE_SELECTOR_KEY not in ss
+    assert ss[SUBJECT_ID_KEY] == "s"
+
+
+@pytest.mark.unit
 def test_apply_subject_context_reraises_non_streamlit_errors() -> None:
     class _Boom(dict):
         def __setitem__(self, key, value):  # noqa: ANN001

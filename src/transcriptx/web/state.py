@@ -81,6 +81,14 @@ def get_current_subject_context() -> tuple[SubjectType | None, str | None, str |
     return subject_type, subject_id, run_id
 
 
+def _is_sidebar_widget_locked_error(exc: BaseException) -> bool:
+    """True when Streamlit rejects writes to an already-instantiated widget key."""
+    name = type(exc).__name__
+    if name in ("StreamlitAPIException", "StreamlitWidgetAlreadyInstantiatedError"):
+        return True
+    return "cannot be modified after the widget" in str(exc).lower()
+
+
 def _sync_sidebar_widget(
     session_state: dict[str, Any], key: str, value: Any | None
 ) -> None:
@@ -99,8 +107,8 @@ def _sync_sidebar_widget(
             session_state[key] = value
     except Exception as exc:
         # Avoid importing Streamlit here: tests pass a plain dict; the live
-        # app raises StreamlitAPIException only for already-instantiated keys.
-        if type(exc).__name__ != "StreamlitAPIException":
+        # app raises StreamlitAPIException / StreamlitWidgetAlreadyInstantiatedError.
+        if not _is_sidebar_widget_locked_error(exc):
             raise
         session_state.pop(key, None)
 
