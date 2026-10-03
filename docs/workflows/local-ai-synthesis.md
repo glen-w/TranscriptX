@@ -8,7 +8,7 @@ You will have confirmed Local AI readiness, run (or re-run) summary / [**Meeting
 
 ## Starting point
 
-- The planning-review transcript is [imported](../runtime/transcription.md) and a run context is available.
+- The planning-review transcript is [imported](../runtime/transcription.md) and a run context is available. The Overview figure is the BBNJ webinar run, which included local summary (`gemma3:12b`).
 - Local AI is enabled and reachable. Follow [Local LLM (Ollama)](../runtime/llm.md) if you still need setup — this page is not an installer guide.
 - You understand that LLM modules send transcript text to your configured Ollama endpoint.
 
@@ -34,7 +34,7 @@ Local AI is **optional**. Workflows 1–3 and 5 work without it.
 
 4. Open [**Overview**](../public_surfaces.md). After a successful Local AI run, look for summary content and compact meeting extracts with a **Local AI** badge. Until those modules complete, Overview may still show the deterministic summary from core analysis — useful context, but not Local AI output.
 
-![Overview summary area for the planning-review run after analysis](../_static/workflows/local-ai-overview-summary.png)
+![Overview summary for the BBNJ webinar run, with Local AI and model badges](../_static/workflows/local-ai-overview-summary.png)
 
 5. Open **Insights → Actions** for **Meeting extracts** when `llm_action_items` completed. If that module was skipped, open **Insights → Summary** and use the deterministic executive summary as a baseline, then re-run with LLM enabled when you want generated extracts.
 

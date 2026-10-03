@@ -4,6 +4,8 @@ Short, outcome-focused walkthroughs for real jobs in the web UI. They complement
 
 Use the same sample transcript across the set so the story stays continuous: [planning_review.json](fixtures/planning_review.json) (synthetic three-speaker launch planning meeting).
 
+The still images are a **Balanced** run of *Rapid Response Webinar Analysing the Biodiversity Beyond National Jurisdiction Treaty*, after display names were assigned in Speaker Identification. Follow the steps with the sample file if you do not have that webinar.
+
 ## Common workflows
 
 Start here. First-time users should follow **1 → 5** in order.

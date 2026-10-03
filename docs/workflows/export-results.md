@@ -10,6 +10,8 @@ You will have created an [export](../runtime/export.md) ZIP containing selected 
 
 A completed analysis run is selected for the planning-review transcript (from [First analysis](first-analysis.md) or later workflows). Local AI is not required.
 
+The browse figure is the artifact list from the BBNJ webinar Balanced run.
+
 ## What you’ll do
 
 1. Confirm the transcript and run.
@@ -24,7 +26,7 @@ A completed analysis run is selected for the planning-review transcript (from [F
 
 2. Open **Artifacts**. Use **Browse** to see what the run produced, or **Preview** to skim a file without leaving the app.
 
-![Artifacts Browse section listing files from the completed planning-review run](../_static/workflows/export-artifacts-browse.png)
+![Artifacts Browse listing files from the completed BBNJ webinar run](../_static/workflows/export-artifacts-browse.png)
 
 3. Switch to **Export**. Keep a coherent selection (for example **All**, or the default selection that covers transcript, summaries, and charts you care about). Avoid turning this into a format-by-format catalogue — pick one sensible package.
 

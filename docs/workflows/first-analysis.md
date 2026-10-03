@@ -12,6 +12,8 @@ TranscriptX is running and you can open the sidebar. You do not need local AI fo
 
 Download or copy the sample file [planning_review.json](fixtures/planning_review.json) so you can import it.
 
+The screenshots are a **Balanced** run of *Rapid Response Webinar Analysing the Biodiversity Beyond National Jurisdiction Treaty*, after speakers were named. The clicks are the same with the sample file.
+
 For a **native** install from git (not Docker), install chart dependencies before **Balanced** — for example `./transcriptx.sh` or `pip install -e ".[full,web]"` — so modules that write charts do not fail mid-run. See [Installation](../runtime/installation.md).
 
 ## What you’ll do
@@ -35,7 +37,7 @@ For a **native** install from git (not Docker), install chart dependencies befor
 
 4. Open **Run Analysis**. Keep the target as **Transcript** and the analysis preset as **Balanced** (the default). Balanced runs a practical core set without requiring local AI for the non-LLM modules.
 
-![Run Analysis page showing the Balanced preset ready to launch](../_static/workflows/first-analysis-run-analysis.png)
+![Run Analysis with Balanced selected for the BBNJ rapid-response webinar](../_static/workflows/first-analysis-run-analysis.png)
 
 5. Choose **Run analysis** and wait until the progress panel reports completion. A success message naming the output folder appears when the run finishes.
 
@@ -43,7 +45,7 @@ For a **native** install from git (not Docker), install chart dependencies befor
 
 6. Open **Overview** for the selected transcript and run. Check **At a glance**, the speaker cards, and the compact highlights strip.
 
-![Overview page after a Balanced run showing at-a-glance metrics and highlights](../_static/workflows/first-analysis-overview.png)
+![Overview after that Balanced run: summary, Local AI badge, and at-a-glance metrics](../_static/workflows/first-analysis-overview.png)
 
 7. Pick two or three outputs that look useful for this meeting — for example a theme-related highlight, a speaker card, or run status. You do not need every panel yet.
 

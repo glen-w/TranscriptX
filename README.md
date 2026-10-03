@@ -13,15 +13,17 @@ Not sure if this is the right tool? [How TranscriptX compares](docs/comparison.m
 
 ## The application
 
-![Overview after analysis: summary, themes, and speaker cards](docs/_static/workflows/first-analysis-overview.png)
+![Overview after a Balanced run: summary and at-a-glance metrics](docs/_static/workflows/first-analysis-overview.png)
 
 ![Transcript view with named speakers, timestamps, and search](docs/_static/workflows/speaker-identification-transcript.png)
 
-![Speaker Identification: name diarized speakers from their lines](docs/_static/workflows/speaker-identification-page.png)
+![Speaker Identification: diarized speakers named from their lines](docs/_static/workflows/speaker-identification-page.png)
 
-![Insights: themes, summaries, and highlights](docs/_static/workflows/investigate-highlights.png)
+![Insights Highlights: notable moments with quoted lines](docs/_static/workflows/investigate-highlights.png)
 
-Open **Charts** from the same View menu for visual module outputs.
+![Charts gallery for the finished run](docs/_static/workflows/charts-gallery.png)
+
+These shots are a **Balanced** run of *Rapid Response Webinar Analysing the Biodiversity Beyond National Jurisdiction Treaty*. Display names were assigned in Speaker Identification.
 
 ## What can I do with it?
 
