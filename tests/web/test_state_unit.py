@@ -96,8 +96,13 @@ def test_apply_subject_context_skips_type_label_when_subject_none() -> None:
     assert RUN_SELECTOR_KEY not in ss
 
 
-@pytest.mark.unit
-def test_apply_subject_context_pops_locked_sidebar_widgets() -> None:
+def _locked_session(error_name: str) -> type:
+    base = type("StreamlitAPIException", (Exception,), {})
+    if error_name == "StreamlitAPIException":
+        error_type = base
+    else:
+        error_type = type(error_name, (base,), {})
+
     class _Locked(dict):
         def __setitem__(self, key, value):  # noqa: ANN001
             if key in (
@@ -105,11 +110,19 @@ def test_apply_subject_context_pops_locked_sidebar_widgets() -> None:
                 SUBJECT_ID_SELECTOR_KEY,
                 RUN_SELECTOR_KEY,
             ):
-                err = type("StreamlitAPIException", (Exception,), {})(
-                    "cannot be modified after the widget is instantiated"
-                )
-                raise err
+                raise error_type("cannot be modified after the widget is instantiated")
             return super().__setitem__(key, value)
+
+    return _Locked
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "error_name",
+    ["StreamlitAPIException", "StreamlitWidgetAlreadyInstantiatedError"],
+)
+def test_apply_subject_context_pops_locked_sidebar_widgets(error_name: str) -> None:
+    _Locked = _locked_session(error_name)
 
     ss = _Locked(
         {

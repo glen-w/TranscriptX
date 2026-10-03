@@ -301,6 +301,7 @@ PILOT_SPECS: list[dict[str, Any]] = [
         "dataclass": None,
         "field_filter": {
             "schema_version",
+            "overview_enabled",
             "overview_charts",
             "overview_missing_behavior",
             "overview_max_items",
@@ -663,6 +664,10 @@ class DashboardOverviewSettingsModel(BaseModel):
     """Canonical field definitions for dashboard overview chart selection."""
 
     schema_version: int = Field(default=2, ge=1, description="Dashboard config schema version.")
+    overview_enabled: bool = Field(
+        default=False,
+        description="Show Charts page Overview section and strip.",
+    )
     overview_charts: list[str] = Field(
         default_factory=_default_overview_charts,
         description="Ordered list of chart registry IDs for the overview.",

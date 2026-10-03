@@ -104,6 +104,51 @@ class TestMergeValidation:
         return_value=_FFMPEG_OK,
     )
     @patch("transcriptx.app.workflows.merge.merge_audio_files")
+    def test_output_filename_traversal_stays_under_output_dir(
+        self, mock_merge, _mock_ffmpeg, tmp_path
+    ):
+        in_dir = tmp_path / "in"
+        in_dir.mkdir()
+        files = _make_files(in_dir, 2)
+        out_dir = tmp_path / "out"
+        out_dir.mkdir()
+        outside = tmp_path / "escape.mp3"
+        expected = out_dir / "escape.mp3"
+        mock_merge.return_value = expected
+        req = MergeRequest(
+            file_paths=files,
+            output_dir=out_dir,
+            output_filename="../escape.mp3",
+            backup_wavs=False,
+        )
+        result = run_merge(req)
+        assert result.success
+        assert not outside.exists()
+        mock_merge.assert_called_once()
+        called_out = mock_merge.call_args[0][1]
+        assert Path(called_out).resolve() == expected.resolve()
+
+    @patch(
+        "transcriptx.app.workflows.merge.check_ffmpeg_available",
+        return_value=_FFMPEG_OK,
+    )
+    def test_output_filename_dotdot_segment_rejected(self, _mock_ffmpeg, tmp_path):
+        files = _make_files(tmp_path, 2)
+        req = MergeRequest(
+            file_paths=files,
+            output_dir=tmp_path,
+            output_filename="..",
+            backup_wavs=False,
+        )
+        result = run_merge(req)
+        assert not result.success
+        assert any("traversal" in e.lower() or "segment" in e.lower() for e in result.errors)
+
+    @patch(
+        "transcriptx.app.workflows.merge.check_ffmpeg_available",
+        return_value=_FFMPEG_OK,
+    )
+    @patch("transcriptx.app.workflows.merge.merge_audio_files")
     def test_opus_extension_is_accepted(self, mock_merge, _mock_ffmpeg, tmp_path):
         files = _make_files(tmp_path, 2, suffix=".opus")
         expected_out = tmp_path / "whatsapp_merged.mp3"

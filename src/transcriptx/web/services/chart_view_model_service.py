@@ -241,6 +241,7 @@ def build_charts_gallery_view(
     user_overview: Sequence[Any],
     missing_behavior: str,
     max_items: int | None,
+    overview_enabled: bool = True,
 ) -> ChartsGalleryViewModel:
     """Apply filters once; derive overview, module rows, and export set from the result."""
     filtered = apply_chart_filters(
@@ -258,6 +259,7 @@ def build_charts_gallery_view(
         user_overview=list(user_overview or []),
         missing_behavior=missing_behavior,
         max_items=max_items,
+        overview_enabled=overview_enabled,
     )
     # Hide overview section when filtering leaves no usable slots.
     visible_overview = [
@@ -624,6 +626,7 @@ def build_overview_slots(
     user_overview: List[str],
     missing_behavior: str,
     max_items: int | None,
+    overview_enabled: bool = True,
 ) -> List[Dict[str, Any]]:
     from transcriptx.core.analysis.chart_descriptions.overview import (
         resolve_overview_viz_ids,
@@ -639,6 +642,7 @@ def build_overview_slots(
         run_kind=run_kind,
         user_overview=user_overview or None,
         max_items=max_items,
+        overview_enabled=overview_enabled,
     )
 
     slots: List[Dict[str, Any]] = []

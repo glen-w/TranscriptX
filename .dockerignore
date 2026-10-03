@@ -23,11 +23,19 @@ htmlcov
 dist
 build
 
+# Local virtualenvs (never needed in build context)
+.venv
+venv
+.transcriptx
+
 # Runtime data (never needed to build the image)
 data
 outputs
 archive
 reports
+artifacts
+.local
+website
 
 # Env and local overrides
 .env

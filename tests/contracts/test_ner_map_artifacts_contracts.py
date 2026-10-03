@@ -40,8 +40,9 @@ class _OutputServiceFake:
 
 
 class _FakeMap:
-    def __init__(self, zoom_start: int = 3) -> None:
+    def __init__(self, zoom_start: int = 3, **kwargs: Any) -> None:
         self.zoom_start = zoom_start
+        self.kwargs = kwargs
         self.markers: list[dict[str, Any]] = []
 
     def save(self, path: str) -> None:
