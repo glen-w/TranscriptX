@@ -115,3 +115,6 @@ data/transcript-inbox/**
 packages/**/node_modules/
 packages/**/frontend/build/.vite/
 .local/
+
+# Streamlit runtime cache (do not commit)
+data/queue-state.json
