@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="assets/transcriptx_logo.png" alt="TranscriptX" width="420">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/transcriptx_logo_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/transcriptx_logo.png">
+    <img src="assets/transcriptx_logo.png" alt="TranscriptX" width="300">
+  </picture>
 </p>
 
 TranscriptX is a local-first workbench for people who want to think with transcripts.
