@@ -10,7 +10,7 @@ This guide describes container behavior and operational layouts only. Canonical 
 - `docs/contracts/output-contract-v1.md`
 - `docs/run_outcome_contract.md`
 
-TranscriptX is **analysis-only**; it does not run WhisperX or any transcription engine inside Docker. Bring your own transcript JSON (see [transcription.md](transcription.md) for how to generate compatible transcripts).
+The analysis container does not run WhisperX or other transcription engines. Generate transcripts on the host (see [transcription.md](transcription.md)), then **Import Transcript** in the web UI.
 
 ## Non-root /data write access
 

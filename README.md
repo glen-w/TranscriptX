@@ -9,9 +9,7 @@
 TranscriptX is a local-first workbench for people who want to think with transcripts.
 
 Import conversations you already have. See themes, speakers, and evidence.
-Optional local AI stays on your computer. TranscriptX does **not** transcribe
-audio — bring files from WhisperX, [Scriberr](https://scriberr.app/),
-[noScribe](https://noscribe.de/en/), Otter, or a similar tool.
+Optional local AI stays on your computer.
 
 Not sure if this is the right tool? [How TranscriptX compares](docs/comparison.md).
 

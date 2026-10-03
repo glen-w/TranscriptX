@@ -2,7 +2,7 @@
 
 TranscriptX is a local-first workbench for people who want to think with transcripts. You import files you already have, run analysis on your machine, and keep the results.
 
-It does **not** transcribe audio in the app. Bring JSON, SRT, VTT, or similar files, then use **Import Transcript**.
+Use **Import Transcript** for JSON, SRT, VTT, and other supported formats. Need text from audio first? See [Transcription](runtime/transcription.md).
 
 **See how it works:** [first analysis](workflows/first-analysis.md) — import the sample, run **Balanced**, read **Overview**.  
 **Everyday jobs:** [Using TranscriptX](workflows/index.md).  
