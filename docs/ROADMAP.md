@@ -22,7 +22,7 @@ Owner checklist (do this first):
 
 - [ ] Inventory host mounts: managed library, `originals/`, import inbox, recordings, wav backup, outputs — names must not be confusable
 - [ ] Rename the inbox to an unambiguous path (prefer `transcript-inbox`, not a space-variant of `transcripts/originals`)
-- [ ] Decide the copy/sync rule until auto-admit exists: new `originals/` JSON → inbox, then Import eligible
+- [ ] Stranger door: **admit from `originals/`** (do not copy `originals/` into the import inbox)
 - [ ] Confirm library listing vs inbox vs `originals/` so “imported all” cannot miss new stems
 
 This is **owner machine hygiene**, not a 1.0 product feature. It still outranks unfamiliar-user prep on this corpus. Layout contracts: [STORAGE.md](runtime/STORAGE.md), [docker.md](runtime/docker.md), [transcription.md](runtime/transcription.md). Programme note: [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) §20 / §21.

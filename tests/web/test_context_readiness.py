@@ -81,3 +81,19 @@ def test_evaluate_page_access_transcript_view_gate() -> None:
         },
     )
     assert library.allowed is True
+
+
+def test_ask_is_blocked_for_group_without_run() -> None:
+    from transcriptx.web.navigation import PAGE_SPECS, build_prerequisites
+
+    ask = next(spec for spec in PAGE_SPECS if spec.key == "Ask")
+    assert ask.required_context == "run_scoped"
+    prereq = build_prerequisites()
+    group_ready = {
+        "subject_ready": True,
+        "transcript_ready": True,
+        "run_scoped_ready": False,
+    }
+    assert evaluate_page_access("Ask", prereq, group_ready).allowed is False
+    with_run = {**group_ready, "run_scoped_ready": True}
+    assert evaluate_page_access("Ask", prereq, with_run).allowed is True

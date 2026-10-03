@@ -62,7 +62,7 @@ dependencies = [
 
 [project.optional-dependencies]
 rag = [
-    "lancedb>=0.39,<1",
+    "lancedb>=0.21,<0.26",
     "httpx>=0.25.0",
 ]
 dev = [
@@ -189,6 +189,8 @@ full = [
     "torchaudio>=2.6.0",
     "yake>=0.4.8",
     "keybert>=0.8.0",
+    "lancedb>=0.21,<0.26",
+    "httpx>=0.25.0",
 ]
 
 [project.scripts]

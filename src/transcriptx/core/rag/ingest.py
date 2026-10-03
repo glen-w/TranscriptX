@@ -5,11 +5,11 @@ Orchestrates the full cycle for one transcript. Called on admit/corrections/rebu
 """
 
 from pathlib import Path
-from typing import List
+from typing import Any, List, Optional
 
 from .chunk import chunk_segments
 from .embed import EmbedError, OllamaEmbedder
-from .index import Index
+from .index import Index, scope_where
 from .ledger import Ledger, LedgerEntry, file_mtime, file_sha256
 from .settings import RagSettings
 
@@ -21,6 +21,7 @@ def ingest_transcript(
     transcript_title: str,
     settings: RagSettings,
     segments: List[dict],
+    embedder: Optional[Any] = None,
 ) -> None:
     """
     Ingest one transcript: chunk, embed, and index.
@@ -79,12 +80,12 @@ def ingest_transcript(
         create=True,
     )
 
-    # Embed chunks
-    embedder = OllamaEmbedder(
-        model=settings.embed_model,
-        base_url=settings.ollama_base_url,
-        timeout_s=settings.llm_timeout_s,
-    )
+    if embedder is None:
+        embedder = OllamaEmbedder(
+            model=settings.embed_model,
+            base_url=settings.ollama_base_url,
+            timeout_s=settings.llm_timeout_s,
+        )
 
     texts = [chunk.text for chunk in chunks]
     try:
@@ -113,6 +114,7 @@ def ingest_transcript(
         rows.append(
             {
                 "chunk_id": f"{session_slug}:{run_id}:{chunk.chunk_index}",
+                "chunk_index": chunk.chunk_index,
                 "text": chunk.text,
                 "vector": vector,
                 "t_start": chunk.t_start,
@@ -127,7 +129,7 @@ def ingest_transcript(
             }
         )
 
-    # Write to index
+    index.delete_where(scope_where(session_slug, run_id))
     index.add_chunks(rows)
 
     # Record in ledger

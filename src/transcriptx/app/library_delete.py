@@ -112,6 +112,13 @@ def delete_managed_library_transcript(path: Path) -> LibraryDeleteResult:
         )
 
     try:
+        from transcriptx.core.rag.purge import purge_transcript_from_index
+
+        purge_transcript_from_index(resolved)
+    except Exception as exc:
+        warnings.append(f"Could not purge Ask index for {resolved.name}: {exc}")
+
+    try:
         unregister_source_path(resolved)
     except Exception as exc:
         warnings.append(f"Could not unregister {resolved.name} from slug index: {exc}")

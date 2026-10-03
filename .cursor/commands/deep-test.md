@@ -24,8 +24,20 @@ Do not publish, push, tag, or deploy unless explicitly instructed.
    - An existing file-backed group under `data/groups/` with ≥2 resolvable member transcripts
    - If none is usable, create a temporary two-member group from the small + large transcripts (or two distinct real transcripts) via the group service / documented group workflow, then use that UUID
 5. **Analysis mode**: prefer `full` when the change under test touches many modules; otherwise `quick` is acceptable. Record which mode and module list/profile were used.
+6. **Skip LLM chart descriptions** (mandatory unless the plan under test *is* `chart_descriptions`): do **not** pass `modules=None` or `modules=[]` — both resolve to the default set, which includes finalize-phase `chart_descriptions` and will call Ollama once per chart. Build the default list and drop that module. Other LLM modules (`llm_summary`, `llm_action_items`, …) still run unless the plan says otherwise.
 
-There is **no** `transcriptx analyze` CLI. Use the Python API (`run_analysis` / `run_group_analysis`) and/or Docker Compose web + log watch. See `docs/generated/cli.md`.
+```python
+from transcriptx.core.pipeline.module_registry import get_default_modules
+
+def deep_test_modules(transcript_paths, *, for_group=False):
+    return [
+        m
+        for m in get_default_modules(transcript_paths, for_group=for_group)
+        if m != "chart_descriptions"
+    ]
+```
+
+There is **no** `transcriptx analyze` CLI. Use the Python API (`run_analysis` / `run_group_analysis`) and/or Docker Compose web + log watch. See `docs/generated/cli.md`. The image `ENTRYPOINT` is `transcriptx`; one-shot Python in Compose needs `--entrypoint python`.
 
 ---
 
@@ -96,12 +108,17 @@ import os
 from pathlib import Path
 from transcriptx.app.models.requests import AnalysisRequest
 from transcriptx.app.workflows.analysis import run_analysis
+from transcriptx.core.pipeline.module_registry import get_default_modules
 
 os.environ["TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS"] = "1"
+path = Path("tests/fixtures/mini_transcript.json")
+modules = [
+    m for m in get_default_modules([str(path)]) if m != "chart_descriptions"
+]
 result = run_analysis(AnalysisRequest(
-    transcript_path=Path("tests/fixtures/mini_transcript.json"),
+    transcript_path=path,
     mode="quick",   # or "full" if the plan requires it
-    modules=None,   # None = recommended; or plan-relevant modules
+    modules=modules,  # never None/[] — those include chart_descriptions
     run_label="_deep_test_mini_py",
 ))
 print(result.success, result.errors, getattr(result, "run_dir", None))
@@ -120,18 +137,23 @@ Ensure the image is usable (`docker compose build` only if needed; prefer existi
 **A. One-shot API in compose (preferred when non-interactive):**
 
 ```bash
-docker compose run --rm \
+docker compose run --rm --entrypoint python \
   -e TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS=1 \
   -v "$(pwd)/tests/fixtures:/mnt/fixtures:ro" \
-  transcriptx-web python - <<'PY'
+  transcriptx-web - <<'PY'
 from pathlib import Path
 from transcriptx.app.models.requests import AnalysisRequest
 from transcriptx.app.workflows.analysis import run_analysis
+from transcriptx.core.pipeline.module_registry import get_default_modules
 
+path = Path("/mnt/fixtures/mini_transcript.json")
+modules = [
+    m for m in get_default_modules([str(path)]) if m != "chart_descriptions"
+]
 result = run_analysis(AnalysisRequest(
-    transcript_path=Path("/mnt/fixtures/mini_transcript.json"),
+    transcript_path=path,
     mode="quick",
-    modules=None,
+    modules=modules,
     run_label="_deep_test_mini_docker",
 ))
 print(result.success, result.errors, getattr(result, "run_dir", None))
@@ -141,7 +163,7 @@ PY
 
 Mount `tests/fixtures` at `/mnt/fixtures`. **Do not copy or import probes into `/mnt/transcripts`** (that is the user library). Local `docker-compose.override.yml` may already mount fixtures at `/mnt/fixtures`.
 
-**B. UI path:** `docker compose up` (or attach to a running `transcriptx-web`), run the small analysis in the UI, and **watch compose logs** for ERROR / Traceback / “Pipeline completed … with N errors”.
+**B. UI path:** `docker compose up` (or attach to a running `transcriptx-web`), run the small analysis in the UI with **Chart descriptions** unchecked, and **watch compose logs** for ERROR / Traceback / “Pipeline completed … with N errors”. Treat `[CHART_DESCRIPTIONS] 1/N` LLM loops as a miss of the skip unless the plan requires that module.
 
 **Watch terminal continuously** during the run. On ERROR/traceback/failed modules: stop, fix, re-run §3.2 until clean.
 
@@ -158,12 +180,17 @@ import os
 from pathlib import Path
 from transcriptx.app.models.requests import AnalysisRequest
 from transcriptx.app.workflows.analysis import run_analysis
+from transcriptx.core.pipeline.module_registry import get_default_modules
 
 os.environ["TRANSCRIPTX_ALLOW_UNMANAGED_TRANSCRIPTS"] = "1"
+path = Path("tests/fixtures/analysis_probes/large_norm.json")
+modules = [
+    m for m in get_default_modules([str(path)]) if m != "chart_descriptions"
+]
 result = run_analysis(AnalysisRequest(
-    transcript_path=Path("tests/fixtures/analysis_probes/large_norm.json"),
+    transcript_path=path,
     mode="full",  # prefer full for large probe unless user/plan says otherwise
-    modules=None,
+    modules=modules,
     run_label="_deep_test_large",
 ))
 print(result.success, result.errors, getattr(result, "run_dir", None))
@@ -197,11 +224,17 @@ Resolve a usable group (§ Inputs). Run group analysis via API:
 ```python
 from transcriptx.app.models.requests import GroupAnalysisRequest
 from transcriptx.app.workflows.analysis import run_group_analysis
+from transcriptx.core.pipeline.module_registry import get_default_modules
 
+modules = [
+    m
+    for m in get_default_modules(for_group=True)
+    if m != "chart_descriptions"
+]
 result = run_group_analysis(GroupAnalysisRequest(
     group_uuid="GROUP-UUID",
     mode="quick",  # or "full" if plan requires
-    modules=None,
+    modules=modules,
     run_label="_deep_test_group",
 ))
 print(result.success, result.errors, getattr(result, "run_dir", None))
@@ -239,6 +272,7 @@ Deep-test context:
 - Work from the workspace root.
 - Order is strict: §0 → §1 → §2 → §3 → §4 → §5 → §6. Do not skip ahead unless a step is impossible (missing large transcript / group) — then ask and wait.
 - **Watch terminals** during §§3–5; do not fire-and-forget long analyses.
+- Omit `chart_descriptions` from every analysis probe unless that module is what the plan changed. `modules=None` / `[]` is not a skip.
 - Prefer minimal fixes tied to plan landing or probe failures.
 - Do not delete run artifacts; cleanup remains disabled (same policy as `# tests` / `# pre-release`).
 - Do not run destructive docker prune / compose down unless the user explicitly asks.

@@ -64,4 +64,19 @@ Where you need the actual definition or invariant, always read the linked CONTRA
 - **Speaker-map sidecar**  
   - Per-transcript display names / ignore lists under `transcripts/metadata/speaker_maps/`. See `docs/runtime/STORAGE.md` and `docs/contracts/speaker_profiles_v1.md`.
 
+- **Library**  
+  - Managed transcript library (`transcripts_dir` / `HOST_TRANSCRIPTS_DIR`). See `docs/runtime/STORAGE.md`.
+
+- **originals/**  
+  - Staging subtree **inside** the managed library where host STT lands. Gate: **admit**. See `docs/runtime/STORAGE.md`, `docs/runtime/transcription.md`.
+
+- **Import inbox**  
+  - External drop mount (`HOST_TRANSCRIPT_INBOX_DIR` → `/mnt/transcript-inbox`) for Import all from folder. Not `originals/`. See `docs/runtime/docker.md`.
+
+- **Admit**  
+  - Promote `originals/` to a library-valid transcript. See `docs/runtime/host-stt.md`, `docs/runtime/STORAGE.md`.
+
+- **Ask**  
+  - Opt-in RAG over **one** transcript (`session_slug` + `run_id`). Default off (`TRANSCRIPTX_RAG_ENABLED`). Fail closed if scope is missing. Distinct from Custom Questions (`llm_custom_qa`).
+
 This index may grow as new terms are introduced in CONTRACT docs, but each term here must always **delegate meaning** to those documents rather than redefining it.

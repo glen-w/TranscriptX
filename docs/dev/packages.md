@@ -15,6 +15,7 @@ The GUI extra is separate: Streamlit is **`[web]`**, not in `[full]`. Docker / `
 | Extra | What it is for |
 |-------|----------------|
 | `web` | Streamlit GUI. Not included in `[full]`. |
+| `rag` | LanceDB + httpx for the opt-in Ask page. Also in Docker `requirements.txt` and `[full]`. |
 | `nlp` / `ner` | spaCy NER (`ner` is an alias; modules require `nlp`). |
 | `emotion_lexical` | NRCLex lexical emotion. |
 | `emotion_transformers` | Torch + Transformers contextual / fine-grained emotion. |
@@ -26,7 +27,7 @@ The GUI extra is separate: Streamlit is **`[web]`**, not in `[full]`. Docker / `
 | `maps` | Folium / geopy / Playwright for NER map HTML→PNG. |
 | `visualization` | matplotlib, seaborn, wordcloud, ebooklib (Overview EPUB). |
 | `plotly` | Plotly. |
-| `full` | Union of the analysis extras above (not `[web]`, `[dev]`, or `[docs]`). |
+| `full` | Union of the analysis extras above plus `[rag]` (not `[web]`, `[dev]`, or `[docs]`). |
 | `dev` | pytest, linters, pre-commit, plus matplotlib/seaborn/geopy for smoke tests. |
 | `docs` | Sphinx, MyST, Furo. |
 

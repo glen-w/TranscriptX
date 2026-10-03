@@ -5,13 +5,14 @@ Exposes: ingest, search, answer, status. All no-ops if RAG disabled.
 
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from transcriptx.core.llm import get_llm_client
 
 from .answer import AnswerStream, answer as _answer
 from .embed import OllamaEmbedder
-from .index import Index, IndexMissing
+from .flags import ollama_base_url_from_env, parse_rag_enabled
+from .index import Index, IndexMissing, RagScopeMissing, RagUnavailable, scope_where
 from .ingest import ingest_transcript
 from .ledger import Ledger
 from .retrieve import Hit
@@ -21,12 +22,17 @@ from .settings import RagSettings
 class RagAPI:
     """Thin API for Streamlit Ask page."""
 
-    def __init__(self, settings: Optional[RagSettings] = None):
+    def __init__(
+        self,
+        settings: Optional[RagSettings] = None,
+        embedder: Optional[Any] = None,
+    ):
         """
         Initialize RAG API.
 
         Args:
             settings: RagSettings (defaults to building from env/config).
+            embedder: Optional embedder (tests inject a fake; default is Ollama).
         """
         if settings is None:
             data_dir = Path(
@@ -37,21 +43,31 @@ class RagAPI:
             )
             settings = RagSettings(
                 data_dir=data_dir,
-                enabled=os.environ.get("TRANSCRIPTX_RAG_ENABLED", "0") == "1",
+                enabled=parse_rag_enabled(os.environ.get("TRANSCRIPTX_RAG_ENABLED")),
                 embed_model=os.environ.get(
                     "TRANSCRIPTX_RAG_EMBED_MODEL", "nomic-embed-text"
                 ),
-                ollama_base_url=os.environ.get(
-                    "TRANSCRIPTX_OLLAMA_BASE_URL",
-                    "http://localhost:11434",
-                ),
+                ollama_base_url=ollama_base_url_from_env(),
             )
 
         self.settings = settings
+        self._embedder = embedder
 
     def is_enabled(self) -> bool:
         """Check if RAG is enabled."""
         return self.settings.enabled
+
+    def _require_scope(self, session_slug: Optional[str], run_id: Optional[str]) -> None:
+        if not session_slug or not run_id:
+            raise RagScopeMissing()
+
+    def _embedder_or_default(self) -> Any:
+        if self._embedder is not None:
+            return self._embedder
+        return OllamaEmbedder(
+            model=self.settings.embed_model,
+            base_url=self.settings.ollama_base_url,
+        )
 
     def ingest(
         self,
@@ -72,6 +88,7 @@ class RagAPI:
             transcript_title,
             self.settings,
             segments,
+            embedder=self._embedder_or_default(),
         )
 
     def search(
@@ -81,24 +98,23 @@ class RagAPI:
         run_id: Optional[str] = None,
         k: int = 5,
     ) -> List[Hit]:
-        """Search index for relevant chunks."""
+        """Search index for relevant chunks (scoped to one transcript)."""
         if not self.is_enabled():
             return []
+
+        self._require_scope(session_slug, run_id)
 
         try:
             index = Index.open(self.settings, create=False)
         except IndexMissing:
             return []
 
-        embedder = OllamaEmbedder(
-            model=self.settings.embed_model,
-            base_url=self.settings.ollama_base_url,
+        embedder = self._embedder_or_default()
+        query_vector = embedder.embed_query(question)
+        results = index.search(
+            query_vector, k=k, where=scope_where(str(session_slug), str(run_id))
         )
 
-        query_vector = embedder.embed_query(question)
-        results = index.search(query_vector, k=k)
-
-        # Convert LanceDB rows to Hit objects
         hits = []
         for row in results:
             hit = Hit(
@@ -128,16 +144,14 @@ class RagAPI:
     ) -> AnswerStream:
         """Answer a question from the index."""
         if not self.is_enabled():
-            # Return empty answer
             def empty_gen():
                 yield "RAG is not enabled."
 
             return AnswerStream(empty_gen(), [], [])
 
-        # Search
+        self._require_scope(session_slug, run_id)
         hits = self.search(question, session_slug, run_id, k=k)
 
-        # Answer
         client = get_llm_client()
         return _answer(question, hits=hits, client=client)
 
@@ -150,6 +164,8 @@ class RagAPI:
             index = Index.open(self.settings, create=False)
         except IndexMissing:
             return {"enabled": True, "status": "missing"}
+        except RagUnavailable:
+            return {"enabled": True, "status": "unavailable"}
 
         ledger = Ledger(self.settings.ledger_path)
         return {

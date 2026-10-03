@@ -157,7 +157,6 @@ def chunk_segments(
             chunks.append(chunk)
             chunk_index += 1
 
-    # TODO(P1): Add overlap logic if needed (prepend tail of previous chunk)
-    # For now, simple coalescing without explicit overlap.
+    # Overlap (prepend previous-chunk tail) is deferred; coalescing is enough for 1.0.
 
     return chunks

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.core.rag.flags import rag_enabled_from_env
 from transcriptx.web.navigation import (
     NavSection,
     PageSpec,
@@ -45,6 +46,11 @@ _SUBJECT_TYPE_OPTIONS = ("Transcript", "Group")
 _LABEL_TO_CANONICAL = {"Transcript": "transcript", "Group": "group"}
 _CANONICAL_TO_LABEL = {"transcript": "Transcript", "group": "Group"}
 _SUBJECT_TYPE_SELECTOR_KEY = SUBJECT_TYPE_SELECTOR_KEY
+
+
+def _ask_nav_enabled() -> bool:
+    """Ask is opt-in; hide the nav item when TRANSCRIPTX_RAG_ENABLED is off."""
+    return rag_enabled_from_env()
 
 
 def _nav_section(title: str) -> None:
@@ -277,6 +283,8 @@ def render_sidebar(
 
     def _render_nav_spec(spec: PageSpec, *, key_suffix: str = "") -> None:
         if spec.key == "Corrections Studio" and not corrections_studio_available:
+            return
+        if spec.key == "Ask" and not _ask_nav_enabled():
             return
         access = evaluate_page_access(
             spec.key, prerequisites, context_readiness(session_state)
