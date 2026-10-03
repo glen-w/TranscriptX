@@ -10,6 +10,8 @@ You will have opened **Charts** for the planning-review run and oriented on at l
 
 The planning-review transcript is [imported](../runtime/transcription.md) and a completed analysis run is selected (from [First analysis](first-analysis.md)). Local AI is not required.
 
+The figure is the Charts gallery from the BBNJ webinar Balanced run.
+
 ## What you’ll do
 
 1. Confirm the transcript and run in the workspace pickers.
@@ -22,6 +24,8 @@ The planning-review transcript is [imported](../runtime/transcription.md) and a 
 1. In the sidebar, select the planning-review transcript and the completed run you care about.
 
 2. Open **Charts**. The page is run-scoped: if no subject/run is selected, TranscriptX will nudge you back toward Home/Overview rather than showing an empty chart shell.
+
+![Charts gallery for the finished BBNJ webinar run](../_static/workflows/charts-gallery.png)
 
 3. Scan the chart gallery or module sections for visuals that answer a concrete question (for example speaker share, topic shift, or interaction patterns — depending on which modules completed).
 

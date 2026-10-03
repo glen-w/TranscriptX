@@ -13,6 +13,8 @@ Maintainer notes for regenerating screenshots and GIFs under `docs/_static/workf
 
 Import via **Import Transcript**. Do not commit managed library copies under `data/`.
 
+Committed stills (October 2026) are a **Balanced** run of *Rapid Response Webinar Analysing the Biodiversity Beyond National Jurisdiction Treaty* on package 0.9.9.5, with display names assigned before analysis. The practice fixture for the written steps remains `planning_review.json`. Recapture against a disposable data root; do not commit library copies or host paths.
+
 ## Application state
 
 Capture against a disposable data root when practical.

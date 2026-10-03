@@ -10,6 +10,8 @@ You will have named (or deliberately ignored) the diarized speakers on the sampl
 
 The sample [planning_review.json](fixtures/planning_review.json) is [imported](../runtime/transcription.md) (see [First analysis](first-analysis.md)). Speakers still show as `SPEAKER_00`, `SPEAKER_01`, and `SPEAKER_02`.
 
+The figures show the same page on *Rapid Response Webinar Analysing the Biodiversity Beyond National Jurisdiction Treaty* after six diarized speakers were given display names.
+
 Audio is optional for naming from text lines. If a matching recording is linked (same base name under recordings), you can load and play short clips while deciding who each diarized ID is.
 
 ## What you’ll do
@@ -27,7 +29,7 @@ On a managed library transcript you can also use **Apply auto-identify** (voice 
 
 1. From **Library** or the post-import actions, open **Speaker Identification**. Select the planning-review transcript if it is not already selected.
 
-![Speaker Identification page showing sample lines for the active diarized speaker](../_static/workflows/speaker-identification-page.png)
+![Speaker Identification after naming six speakers on the BBNJ webinar](../_static/workflows/speaker-identification-page.png)
 
 2. Read the sample lines for the first speaker. Decide who that person is from the dialogue (in this fixture: facilitator / product, engineering, and support roles).
 
@@ -47,7 +49,7 @@ A unique name match preselects the existing person. If several profiles share th
 
 8. Open **Transcript** and confirm turns now show your chosen names instead of `SPEAKER_00`-style IDs.
 
-![Transcript viewer showing named speakers after Speaker Identification](../_static/workflows/speaker-identification-transcript.png)
+![Transcript viewer showing those display names, timestamps, and search](../_static/workflows/speaker-identification-transcript.png)
 
 9. Re-run or refresh analysis views that depend on named speakers when you care about per-speaker summaries. A prior run may still reflect old labels until modules that key on speaker identity are run again.
 

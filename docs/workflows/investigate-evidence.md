@@ -10,6 +10,8 @@ You will have answered one concrete question about the sample meeting by moving 
 
 The planning-review transcript is [imported](../runtime/transcription.md), speakers are preferably named ([Identify and name speakers](speaker-identification.md)), and a [**Balanced**](../runtime/settings.md#analysis-presets) (or richer) run is selected on **Overview**.
 
+The figures are the BBNJ rapid-response webinar run: speaker cards on Overview, then quoted moments on Insights → Highlights.
+
 **Example question:** *Where did the speakers disagree most about the launch plan?*
 
 ## What you’ll do
@@ -24,11 +26,11 @@ The planning-review transcript is [imported](../runtime/transcription.md), speak
 
 1. Keep the example question in mind. Open **Overview** for the planning-review run and scan the compact highlights and speaker cards for signs of disagreement (timeline, scope, analytics).
 
-![Overview highlights suggesting disagreement topics in the planning review run](../_static/workflows/investigate-overview.png)
+![Overview speaker cards for the BBNJ webinar Balanced run](../_static/workflows/investigate-overview.png)
 
 2. Open **Insights** and stay on the **Summary** section first. Read the executive overview, key themes, and any tension points — in this sample you should see disagreement around timeline, collaboration scope, and analytics.
 
-![Insights Summary showing executive overview, key themes, and a tension point with a quoted excerpt](../_static/workflows/investigate-highlights.png)
+![Insights Highlights for the BBNJ webinar, with a quoted notable moment](../_static/workflows/investigate-highlights.png)
 
 3. Follow one tension point or theme quote into fuller context. Prefer a cited speaker line (for example Sam on analytics versus shared folders) and open **Transcript** to read the surrounding turns. Use **Highlights** only if you want a denser quote/tension list.
 
