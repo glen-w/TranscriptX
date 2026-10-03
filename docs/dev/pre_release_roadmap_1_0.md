@@ -8,7 +8,7 @@ Documentation-first alignment of TranscriptX as a local-first personal transcrip
 
 Before rewriting live product docs, an early **repository hygiene and knowledge-consolidation** workstream classifies documentation and scripts so the public project is coherent: intentional navigation, preserved historical detail, clear script support status, and no abandoned utilities mistaken for product capabilities.
 
-**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch **`0.9.3`**, install + transcription **`0.9.4`**, hosted docs + harden scaffolds **`0.9.5`**, Guided/Full + demo project **`0.9.6`**, automatable harden + public surfaces **`0.9.7`**, hygiene + honesty + human-pass prep **`0.9.8`**, then **maintainer acceptance** → **`0.9.9` Overview/results presentation polish** → interim **`0.9.9.5`** (post-0.9.9 wave) → unfamiliar-user → RC → public **1.0**. Do not combine unrelated risky changes merely because a draft once shared a patch label.
+**Version numbers in this roadmap are flexible.** Prefer thematic **0.9.x** workstreams over fixed patch assignments. Cut releases around coherent, tested increments — hygiene/docs **`0.9.1`**, planning stubs + schema inventory sign-off **`0.9.2`**, schema epoch **`0.9.3`**, install + transcription **`0.9.4`**, hosted docs + harden scaffolds **`0.9.5`**, Guided/Full + demo project **`0.9.6`**, automatable harden + public surfaces **`0.9.7`**, hygiene + honesty + human-pass prep **`0.9.8`**, then **maintainer acceptance** → **`0.9.9` Overview/results presentation polish** → interim **`0.9.9.5`** (post-0.9.9 wave) → RC → public **1.0**. An informal stranger test happened in October 2026 and is not a release gate. Do not combine unrelated risky changes merely because a draft once shared a patch label.
 
 ## Programme checklist
 
@@ -29,18 +29,18 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **0.9.9 — Overview / results presentation polish** — Insights **Analysis** tab retired/redistributed; selection-scoped Overview EPUB; batch progress labels (**cut as 0.9.9**). Overview hierarchy polish + Charts catalogue remain deferred residuals — [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md)
 - [x] **Post-0.9.9 shipped wave → interim `0.9.9.5`** — Early 1.x themes B/C/D + A, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, workflows/assessments, backup/restore, unnamed-speaker ungate, Playwright GUI E2E, CI/docs hygiene — summary below; detail [post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md); **cut as 0.9.9.5** (2026-08-15)
 - [ ] **Owner local folder cleanup (top priority, now)** — Inventory and rename host corpus mounts so managed library, `originals/`, and the Docker import inbox cannot be confused; set an explicit originals→inbox copy rule until auto-admit exists. Not a product feature; blocks reliable local import on this machine. Detail: [ROADMAP.md](../ROADMAP.md) **Now**.
-- [ ] **Unfamiliar-user validation** — Clean-room round (2–5 people, ≥1 non-technical); kit in [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); mandatory before 1.0
+- [x] **Informal stranger test** — someone who had not used the app tried it (2026-10). Not a release gate. [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md)
 - [ ] **RC → 1.0** — Severity triage clear; gates pass; release ops/support policy published; governance evidence on exact commit
 
 ---
 
 ## Post-0.9.9 shipped wave → 0.9.9.5 (summary)
 
-After the **0.9.9** cut (`45a235d`), capacity before unfamiliar-user validation pulled **early 1.x work** onto the 0.9.9 line. That wave is now an **interim version cut `0.9.9.5`** (not a new programme theme — still pre-unfamiliar-user). Full narrative: [post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md). Theme status authority: [docs/ROADMAP.md](../ROADMAP.md).
+After the **0.9.9** cut (`45a235d`), spare capacity pulled **early 1.x work** onto the 0.9.9 line. That wave is now an **interim version cut `0.9.9.5`**. Full narrative: [post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md). Theme status authority: [docs/ROADMAP.md](../ROADMAP.md).
 
 **Landed clusters:** Theme **B** viewer Correct mode; Theme **C** Speaker ID CCv2 default-on; Theme **D** Transcript karaoke MVP; Theme **A** quieter deterministic insights; **System → Tools** (Preprocess/Merge) + Merge profiles / serial / cleanup / auto-merge; **G2 Phase 1** directory watcher; smart rename + Rename Transcript workflow; Dashboard Builder presets/Edit + Charts overview selector; GUI performance upgrades; Settings bulk corrections / voice enrol / ⓘ tooltips; WebVTT + STT presets; ten workflow walkthroughs; full-workspace backup/restore; unnamed-speaker ungate; Playwright GUI E2E; CI lint/nightly + Sphinx-on-push; GUI-perf and test-suite assessments.
 
-**Does not change the gate:** unfamiliar-user clean-room evidence remains mandatory; module freeze held; Overview hierarchy + Charts catalogue residuals from 0.9.9 remain deferred unless severity says otherwise.
+**Does not add a stranger-testing gate.** Module freeze held. Overview hierarchy + Charts catalogue residuals from 0.9.9 remain deferred unless severity says otherwise.
 
 ---
 
@@ -56,7 +56,7 @@ After the **0.9.9** cut (`45a235d`), capacity before unfamiliar-user validation 
 
 **AI position:** First-class, optional (Ollama today). Deterministic/statistical, model-based, and LLM interpretation are complementary; label them honestly; do not keep weak deterministic fallbacks merely to claim non-AI coverage.
 
-**1.0 success:** An unfamiliar user can install, build/import a useful corpus, run appropriate analysis, understand results, recover from failures, and export artifacts without undocumented developer knowledge — **validated by a clean-room unfamiliar-user round**, not only maintainer testing. Not required: every backlog feature, PyPI, hosted SaaS, built-in transcription, or a highly polished website.
+**1.0 success:** Install, build/import a useful corpus, run appropriate analysis, understand results, recover from failures, and export artifacts without undocumented developer knowledge. An informal stranger test in October 2026 is not a release gate. Not required: every backlog feature, PyPI, hosted SaaS, built-in transcription, or a highly polished website.
 
 ---
 
@@ -79,7 +79,7 @@ After the **0.9.9** cut (`45a235d`), capacity before unfamiliar-user validation 
 
 **Mandatory for 1.0**
 - Documentation inventory and authority consolidation; script/tooling inventory; removal of machine-specific or misleading supported scripts; archive policy; deliberate ignored location for future local scratch; removal or archival of obsolete pre-public compatibility and migration helpers after the schema reset.
-- Product/roadmap/docs alignment; schema epoch reset + compatibility cleanup with **supported data-epoch transition UX**; installation/profile audit; end-to-end manual tests including **accessibility and supported-browser checks**; task-oriented documentation; Transcribe Audio command generation + corpus guidance; sustained real-use hardening; **unfamiliar-user clean-room validation**; **performance/resource envelopes** as documented expectations; **trust / privacy / model-governance gate**; **release severity triage**; **release operations and support policy**; release-governance evidence on exact clean commit.
+- Product/roadmap/docs alignment; schema epoch reset + compatibility cleanup with **supported data-epoch transition UX**; installation/profile audit; end-to-end manual tests including **accessibility and supported-browser checks**; task-oriented documentation; Transcribe Audio command generation + corpus guidance; sustained real-use hardening; **performance/resource envelopes** as documented expectations; **trust / privacy / model-governance gate**; **release severity triage**; **release operations and support policy**; release-governance evidence on exact clean commit.
 - Usable hosted documentation and a credible public landing surface (may be modest).
 
 A perfect historical archive taxonomy is **not** required for 1.0. A simple, documented archive structure is acceptable initially, provided current and historical material are clearly distinguished.
@@ -824,21 +824,9 @@ Gate is mandatory before 1.0. Incomplete polish of notices may be known limitati
 
 ---
 
-## 14. Unfamiliar-user validation
+## 14. Informal stranger test
 
-The 1.0 success criterion centres on an unfamiliar user; personal testing will find analytical and workflow problems, but unfamiliar users expose assumptions the maintainer no longer notices.
-
-Deliverable: [docs/dev/unfamiliar_user_validation_1_0.md](docs/dev/unfamiliar_user_validation_1_0.md). Run during late **0.9.x hardening or pre-RC** once install and principal journeys are stable enough to evaluate.
-
-**Mandatory before 1.0:**
-
-- [ ] Two to five people who have **not** developed TranscriptX
-- [ ] At least one relatively **non-technical** user
-- [ ] **Fresh machine** or fresh environment
-- [ ] **No live coaching** unless they become completely blocked
-- [ ] Record: installation time; time to first useful result; blockers; misunderstood terminology; abandoned journeys
-
-Triage findings with §7 severity rules. Blockers and must-fix items from this round gate RC.
+Someone who had not used TranscriptX tried it in October 2026. That trial is not a release gate. There is no cohort, script, or sign-off checklist. Note: [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md).
 
 ---
 
@@ -993,7 +981,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 | Hardening never ends | Severity triage; known-limitation escape for non-must-fix |
 | Cryptic epoch refusal alienates first public users | GUI preflight + typed/internal remediation; fresh-dir path; backup guidance; no auto-delete; preserve compatible transcripts by default; tests |
 | Epoch wipe deletes salvageable source data | Inventory separates canonical transcripts/recordings from incompatible derived state; never broaden deletion for neatness |
-| Maintainer-only testing misses UX assumptions | Mandatory unfamiliar-user clean-room round |
+| Maintainer-only testing misses UX assumptions | Informal stranger test done (2026-10); not a release gate |
 | Operational surprise (RAM/disk/image size) | Documented performance envelopes and capacity-failure behaviour |
 | Licence/privacy/model gaps at public release | Dedicated trust/privacy/model-governance gate |
 | 1.0 ships without a maintenance promise | Release-ops/support policy including rollback and deprecation |
@@ -1034,7 +1022,7 @@ For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, char
 12. [x] Execute **0.9.x hygiene + honesty + human-pass prep** theme (**0.9.8**) ← **landed** (BMC closed; Hub-card residual dropped; Large-library measured; RTD slug + cohort remain owner residuals)
 13. [x] **Maintainer acceptance pass** — kit journeys closed **2026-08-07** ([manual_acceptance_1_0.md](manual_acceptance_1_0.md)); severity-justified fixes only if residual findings remain
 14. [x] **0.9.9 Overview / results presentation polish** — cut **0.9.9**; Analysis IA + EPUB + batch progress landed; Charts/Overview hierarchy residuals deferred ([overview_presentation_0_9_9.md](overview_presentation_0_9_9.md))
-15. [x] **Post-0.9.9 shipped wave → `0.9.9.5`** — early 1.x + operator UX interim cut ([post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md)); does not substitute unfamiliar-user evidence
+15. [x] **Post-0.9.9 shipped wave → `0.9.9.5`** — early 1.x + operator UX interim cut ([post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md))
 16. [ ] **Owner local folder cleanup (top priority, now)** — unambiguous library / `originals/` / inbox mounts; originals→inbox sync until auto-admit ([ROADMAP.md](../ROADMAP.md) **Now**)
-17. [ ] **Unfamiliar-user round** — [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); blockers/must-fix prevent RC
+17. [x] **Informal stranger test** — done 2026-10; not a release gate ([unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md))
 18. [ ] **Final gate review** → RC rehearsal → RC → public **1.0**

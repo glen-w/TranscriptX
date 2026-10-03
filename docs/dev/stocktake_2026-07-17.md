@@ -12,7 +12,7 @@
 |-----------|---------|------------|
 | **What it is** | Local-first personal transcript **analysis workbench** (Streamlit GUI + Python API + Docker). Transcription is intentionally external. | High |
 | **Honest stage** | **0.9.x stabilisation toward 1.0** (`0.9.7`, classifier Beta). Strong contracts and test culture; not consumer polish; not multi-user. | High |
-| **OSS local-first public 1.0** | **Conditional go** — automatable harden + public surfaces landed in **0.9.7**; public 1.0 still requires unfamiliar-user validation, owner trust/RTD sign-off, and [`release_governance.md`](release_governance.md) evidence. | High |
+| **OSS local-first public 1.0** | **Conditional go** — automatable harden + public surfaces landed in **0.9.7**; public 1.0 still wants owner trust/RTD sign-off and [`release_governance.md`](release_governance.md) evidence. An informal stranger test (2026-10) is not a release gate. | High |
 | **Hosted / multi-user product** | **No-go** until auth, tenancy, privacy, and durable concurrency are designed. | High |
 | **Immediate process focus** | Human-testing wave (manual acceptance, unfamiliar users, clean-env soak) → RC — not Wave 3 module sprawl. | High |
 

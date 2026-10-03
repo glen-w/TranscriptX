@@ -6,7 +6,7 @@
 **Programme home:** [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md)  
 **Long-term theme status:** [docs/ROADMAP.md](../ROADMAP.md)
 
-Package version **`0.9.9.5`** is an **interim cut** of this wave — not a new 0.9.x programme theme. It is early **1.x capacity pulled forward** — plus operator UX and hygiene — while the mandatory gate is still **unfamiliar-user validation → RC → 1.0**.
+Package version **`0.9.9.5`** is an **interim cut** of this wave — not a new 0.9.x programme theme. It is early **1.x capacity pulled forward**, plus operator UX and hygiene.
 
 Rough scale since the baseline: **~32 commits** (PRs **#2–#31** plus direct lands), **~470+ files**, **~33k+ insertions**.
 
@@ -14,16 +14,14 @@ Rough scale since the baseline: **~32 commits** (PRs **#2–#31** plus direct la
 
 ## Why this wave exists
 
-The 1.0 programme had already closed maintainer acceptance, the Thorough stress pass, and the **0.9.9** Overview presentation cut (Analysis IA redistributed; selection-scoped EPUB; batch progress honesty). The next *mandatory* programme step is the clean-room unfamiliar-user round — not another feature freeze.
-
-Capacity between 0.9.9 and that round was used to:
+The 1.0 programme had already closed maintainer acceptance, the Thorough stress pass, and the **0.9.9** Overview presentation cut (Analysis IA redistributed; selection-scoped EPUB; batch progress honesty). Capacity after that cut was used to:
 
 1. Land early **ROADMAP** themes that reduce Streamlit friction on the primary journeys (correct, name speakers, follow playback, read Insights).
 2. Restore and deepen **audio / library operator** paths that unfamiliar users and power operators both hit (Tools, rename, merge, watcher).
 3. Harden **composition / Settings clarity** and **GUI performance** so density and latency are less likely to block the next gate.
 4. Leave **assessments** (GUI perf, test suite, settings/knobs) as living evidence rather than silent debt.
 
-None of this replaces unfamiliar-user evidence. Severity triage still decides what must fix before RC.
+Severity triage still decides what must fix before RC. A later informal stranger test (October 2026) is not a release gate.
 
 ---
 
@@ -99,19 +97,18 @@ Measured assessment then upgrades ([gui_performance_assessment_2026-08-11.md](..
 | Programme item | Effect of this wave |
 |----------------|---------------------|
 | **0.9.9 Overview presentation** | Cut already done at baseline. Builder Edit + Charts overview selector help residual presentation debt; full Charts catalogue + Overview hierarchy polish remain deferred. |
-| **Unfamiliar-user validation** | Still mandatory and **not executed**. This wave should make principal journeys clearer (Correct, Speaker ID, karaoke honesty, Tools, rename, tooltips, workflows) but does not count as clean-room evidence. |
+| **Informal stranger test** | Done October 2026. Not a release gate, and not a substitute for severity triage. |
 | **Module freeze** | Held — no new analysis modules. Theme A deepens existing deterministic insights. |
-| **1.0 success criterion** | Unchanged: unfamiliar user can install → useful result → export without undocumented developer knowledge. |
+| **1.0 success criterion** | Install → useful result → export without undocumented developer knowledge. Informal stranger test (2026-10) is not a release gate. |
 | **Safe-to-defer list (historical)** | Themes **B/C/D** and **G2 Phase 1** were listed as post-1.0 in older programme text; they are now partially or Phase-1 shipped on the 0.9.9 line. Treat ROADMAP theme status as authority for those items. |
 
 ---
 
 ## Still ahead (programme-critical)
 
-1. **Unfamiliar-user clean-room round** — [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md); cohort who/when still owner judgement (§20).
-2. **Severity triage** of findings from that round (and any residual maintainer debt).
-3. **RC → 1.0** gates: release ops/support publish, trust/perf sign-off, governance evidence on exact commit, RTD slug (owner-gated).
-4. **Deferred presentation residuals** from [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md) if they become unfamiliar-user blockers.
+1. **Severity triage** of residual maintainer debt.
+2. **RC → 1.0** gates: release ops/support publish, trust/perf sign-off, governance evidence on exact commit, RTD slug (owner-gated).
+3. **Deferred presentation residuals** from [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md).
 5. **Theme C Phase 9**, continuous karaoke, transcript-stitch merge, watcher→STT — post-1.0 or severity-justified only.
 
 ---
