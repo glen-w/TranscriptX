@@ -266,6 +266,7 @@ class TestConvertWavs:
 
         with (
             patch.object(wm, "probe_output_format_support", return_value=True),
+            patch.object(wm, "find_ffmpeg", return_value=Path("ffmpeg")),
             patch.object(wm.subprocess, "run", side_effect=_run_side_effect),
         ):
             rc = wm.main(

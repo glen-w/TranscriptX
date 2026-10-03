@@ -15,7 +15,9 @@ options:
   --port PORT  Port to listen on (default: 8501)
 ```
 
-For scripting and automation, use the Python API directly:
+For scripting and automation, use the Python API directly.
+
+From a clean venv, install analysis and chart extras before expecting a full **Balanced** run (for example `pip install -e ".[visualization]"` or `.[full]` from this repository). Core-only `pip install -e .` can complete runs with many modules skipped or failed when speakers are still diarized labels and when matplotlib is missing. See [Installation](../runtime/installation.md).
 
 ## Analysis
 

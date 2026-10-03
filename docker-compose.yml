@@ -23,6 +23,8 @@ services:
     image: transcriptx:latest
     init: true
     user: "${UID:-1000}:${GID:-1000}"
+    security_opt:
+      - no-new-privileges:true
     working_dir: /data
     volumes:
       - ./data:/data

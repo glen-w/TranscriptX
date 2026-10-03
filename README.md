@@ -44,9 +44,11 @@ Limits: [known limitations](docs/known_limitations.md). Third-party models: [NOT
 Use the sample [planning_review.json](docs/workflows/fixtures/planning_review.json) if you do not have a transcript yet.
 
 1. Open **Import Transcript**, upload the JSON, and confirm.
-2. Open **Run Analysis**, keep **Balanced**, and run it.
-3. Open **Overview** and note a couple of useful outputs.
-4. If speakers still look like `SPEAKER_00`, name them next.
+2. Open **Speaker Identification** and give each diarized label a display name (the sample uses `SPEAKER_00`, … until you rename them). Most **Balanced** modules skip until speakers are named.
+3. Open **Run Analysis**, keep **Balanced**, and run it.
+4. Open **Overview** and note a couple of useful outputs.
+
+Native install from git: use `./transcriptx.sh` or `pip install -e ".[full,web]"` so chart modules can finish (see [installation](docs/runtime/installation.md)).
 
 Full walkthrough: [First analysis](docs/workflows/first-analysis.md).
 

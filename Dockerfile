@@ -34,6 +34,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Install dependencies only (constraints enforced); cache pip for faster rebuilds.
 # TRANSCRIPTX_TORCH_VARIANT: default = PyPI torch (CUDA wheels on arm64); cpu = CPU-only PyTorch index.
+# hdbscan has no manylinux aarch64 wheel. Isolated sdist builds then resolve Cython/NumPy
+# from PyPI's multi-megabyte simple JSON index, and those bodies are arriving truncated
+# (JSONDecodeError: Unterminated string). Prefer a wheel; on arm64 compile against the
+# NumPy already installed in this stage.
 ARG TRANSCRIPTX_TORCH_VARIANT=default
 COPY constraints.txt requirements.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip \
@@ -53,6 +57,12 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     if [ "$TRANSCRIPTX_TORCH_VARIANT" = "cpu" ]; then \
       pip_retry install --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple \
         "numpy==1.26.4" "torch>=2.6.0" "torchvision>=0.15.0" "torchaudio>=2.2.0"; \
+    fi; \
+    if ! pip install --only-binary=:all: -c constraints.txt "hdbscan>=0.8.33,<0.9"; then \
+      echo "No hdbscan wheel for $(uname -m); compiling against the pinned NumPy."; \
+      pip_retry install -c constraints.txt "cython>=3.0.11,<4"; \
+      pip_retry install --no-build-isolation --no-deps -c constraints.txt "hdbscan>=0.8.33,<0.9"; \
+      pip uninstall -y cython; \
     fi; \
     pip_retry install -c constraints.txt -r requirements.txt
 
@@ -75,11 +85,13 @@ nltk.download('cmudict', download_dir='/opt/venv/nltk_data')"
 # Pre-download TextBlob corpora for emotion module (NRCLex)
 RUN python -m textblob.download_corpora
 
-# Install build tool and build wheel
+# Install build tool and build wheel.
+# --no-isolation: setuptools and wheel are already in the venv. An isolated build
+# env re-fetches them from PyPI's simple JSON index, which is arriving truncated.
 RUN --mount=type=cache,target=/root/.cache/pip pip install build
 COPY pyproject.toml README.md ./
 COPY src ./src
-RUN python -m build
+RUN python -m build --no-isolation
 
 # Install the application wheel into the venv (no editable install)
 RUN --mount=type=cache,target=/root/.cache/pip \
@@ -88,7 +100,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # Theme C: install packaged CCv2 workspaces wheel (Speaker ID / future Corrections)
 COPY packages/transcriptx_workspaces ./packages/transcriptx_workspaces
 RUN --mount=type=cache,target=/root/.cache/pip \
-    python -m build packages/transcriptx_workspaces \
+    python -m build --no-isolation packages/transcriptx_workspaces \
     && pip install packages/transcriptx_workspaces/dist/*.whl
 
 # -----------------------------------------------------------------------------

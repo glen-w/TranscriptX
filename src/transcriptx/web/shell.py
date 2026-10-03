@@ -111,7 +111,12 @@ def inject_global_styles() -> None:
         padding-top: 0 !important;
     }
     .tx-sidebar-brand {
-        margin: 0 0 0.5rem 0;
+        margin: 0;
+    }
+    /* Streamlit's markdown container has a negative bottom margin that
+       pulls the first nav button up under the wordmark. */
+    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"]:has(.tx-sidebar-brand) {
+        margin-bottom: 0.75rem !important;
     }
     .tx-sidebar-brand img {
         display: block;

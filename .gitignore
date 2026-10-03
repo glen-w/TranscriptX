@@ -108,6 +108,10 @@ data/transcripts/**
 # Inbox drop folder (local; never commit)
 data/transcript-inbox/**
 
+# Local queue and one-off runners (not product code)
+data/queue-state.json
+data/run_angela_*.py
+
 # Hypothesis database / examples
 .hypothesis/
 
@@ -115,3 +119,12 @@ data/transcript-inbox/**
 packages/**/node_modules/
 packages/**/frontend/build/.vite/
 .local/
+
+# Streamlit runtime cache (do not commit)
+data/queue-state.json
+
+# Local watch / assessment run logs
+assessments/
+
+# Cursor commands that name machine-specific folders (tracked playbooks stay committed)
+.cursor/commands/ingest.md

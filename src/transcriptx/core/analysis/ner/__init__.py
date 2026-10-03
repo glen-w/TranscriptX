@@ -54,7 +54,6 @@ class NERAnalysis(AnalysisModule):
         super().__init__(config)
         self.module_name = "ner"
         self.config = get_config()
-        self.nlp = _get_ner_nlp()
 
     def analyze(self, segments: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -445,8 +444,10 @@ class NERAnalysis(AnalysisModule):
                 and html_dir is not None
                 and image_dir is not None
             ):
-                # Create per-speaker map
-                fmap = folium.Map(zoom_start=3)
+                # Create per-speaker map (CartoDB tiles — not OSM.org CDN)
+                from transcriptx.core.maps_folium import create_location_map
+
+                fmap = create_location_map(folium, zoom_start=3)
                 for loc in enriched:
                     folium.Marker(
                         [loc["lat"], loc["lon"]],
@@ -505,7 +506,9 @@ class NERAnalysis(AnalysisModule):
             and global_coord_records
             and len(filtered_locations) > 1
         ):
-            fmap = folium.Map(zoom_start=2)
+            from transcriptx.core.maps_folium import create_location_map
+
+            fmap = create_location_map(folium, zoom_start=2)
             for loc in global_coord_records:
                 folium.Marker(
                     [loc["lat"], loc["lon"]],

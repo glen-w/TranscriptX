@@ -43,7 +43,7 @@ structlog==25.4.0
 tenacity==9.1.2
 watchdog==5.0.3
 humanize==4.12.3
-rapidfuzz>=3.0.0
+rapidfuzz>=3.0.0,<4
 alive-progress==3.3.0
 keyring==25.6.0
 cryptography==50.0.0
@@ -53,7 +53,8 @@ cryptography==50.0.0
 # ============================================================================
 pydub==0.25.1
 pyloudnorm>=0.1.1
-webrtcvad>=2.0.10
+webrtcvad>=2.0.10,<3
+beautifulsoup4==4.15.0
 noisereduce>=3.0.0
 librosa>=0.10.0
 resampy>=0.4.2
@@ -76,7 +77,7 @@ nrclex>=3.0.0
 # ============================================================================
 scikit-learn==1.6.1
 matplotlib==3.7.2
-ebooklib>=0.18
+ebooklib==0.20
 
 # ============================================================================
 # Deep Learning
@@ -85,7 +86,7 @@ ebooklib>=0.18
 # transformers: emotion floor (>=4.53.0) capped <4.53.3 for spacy-transformers 1.4.x.
 torch>=2.6.0
 torchvision>=0.15.0
-torchaudio>=2.2.0
+torchaudio>=2.6.0
 transformers>=4.53.0,<4.53.3
 
 # ============================================================================
@@ -125,7 +126,7 @@ pyannote.pipeline>=3.0.1
 pytorch-metric-learning>=2.1.0
 semver>=3.0.0
 soundfile>=0.12.1
-speechbrain>=1.0.0
+speechbrain==1.0.2
 tensorboardX>=2.6
 torch-audiomentations>=0.11.0
 torchmetrics>=0.11.0

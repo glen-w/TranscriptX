@@ -51,7 +51,7 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 | Doc | Purpose |
 |-----|---------|
 | [Transcription](runtime/transcription.md) | Bring a file, or generate a host STT command |
-| [Host STT automation](runtime/host-stt.md) | whispermlx-missing, inbox-watch, Python import |
+| [Host STT automation](runtime/host-stt.md) | whispermlx-missing, inbox-watch, voice-note-watch, Python import |
 | [Auto-identify speakers](runtime/auto-identify.md) | Auto-name / auto-link after ingest (Settings, inbox-watch, CLI) |
 | [Audio prep](runtime/audio-prep.md) | Tools → Preprocessing / Auto-merge |
 | [Directory watcher](runtime/directory_watcher.md) | In-app inbox → import |

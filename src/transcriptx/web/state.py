@@ -81,12 +81,14 @@ def get_current_subject_context() -> tuple[SubjectType | None, str | None, str |
     return subject_type, subject_id, run_id
 
 
-def _is_sidebar_widget_locked_error(exc: BaseException) -> bool:
-    """True when Streamlit rejects writes to an already-instantiated widget key."""
-    name = type(exc).__name__
-    if name in ("StreamlitAPIException", "StreamlitWidgetAlreadyInstantiatedError"):
-        return True
-    return "cannot be modified after the widget" in str(exc).lower()
+def _is_locked_sidebar_widget_error(exc: BaseException) -> bool:
+    """True when Streamlit rejects a write to an already-instantiated widget.
+
+    Live Streamlit raises ``StreamlitWidgetAlreadyInstantiatedError``, which
+    subclasses ``StreamlitAPIException``. Match the base name on the MRO so
+    tests can inject either class without importing Streamlit.
+    """
+    return any(cls.__name__ == "StreamlitAPIException" for cls in type(exc).__mro__)
 
 
 def _sync_sidebar_widget(
@@ -106,9 +108,7 @@ def _sync_sidebar_widget(
         else:
             session_state[key] = value
     except Exception as exc:
-        # Avoid importing Streamlit here: tests pass a plain dict; the live
-        # app raises StreamlitAPIException / StreamlitWidgetAlreadyInstantiatedError.
-        if not _is_sidebar_widget_locked_error(exc):
+        if not _is_locked_sidebar_widget_error(exc):
             raise
         session_state.pop(key, None)
 
@@ -275,7 +275,7 @@ CHARTS_FILTER_DEFAULTS: dict[str, Any] = {
 # Persistent view preference (not resettable, not dirty).
 CHARTS_VIEW_PREF_DEFAULTS: dict[str, Any] = {
     CHARTS_KEY_CHART_TEXT: CHARTS_CHART_TEXT_BOTH,
-    CHARTS_KEY_SECTION: CHARTS_SECTION_OVERVIEW,
+    CHARTS_KEY_SECTION: CHARTS_SECTION_BROWSE,
 }
 
 

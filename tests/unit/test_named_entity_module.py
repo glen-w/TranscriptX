@@ -204,8 +204,9 @@ def test_save_location_maps_records_artifacts(tmp_path, monkeypatch) -> None:
     module.module_name = "ner"
 
     class FakeMap:
-        def __init__(self, zoom_start: int = 3) -> None:
+        def __init__(self, zoom_start: int = 3, **kwargs) -> None:
             self.markers = []
+            self.kwargs = {"zoom_start": zoom_start, **kwargs}
 
         def save(self, path: str) -> None:
             Path(path).write_text("<html/>", encoding="utf-8")
