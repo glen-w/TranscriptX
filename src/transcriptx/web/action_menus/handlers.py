@@ -12,6 +12,7 @@ from transcriptx.app.library_delete import (
     delete_managed_library_transcript,
     is_managed_library_transcript,
 )
+from transcriptx.core.rag.flags import rag_enabled_from_env
 from transcriptx.web import icons as ic
 from transcriptx.web.action_menus.catalog import help_for, icon_for, label_for
 from transcriptx.web.action_menus.context import ActionContext, ContextCapabilities
@@ -23,6 +24,7 @@ from transcriptx.web.action_menus.ids import (
 )
 from transcriptx.web.action_menus.services import (
     PAGE_ARTIFACTS,
+    PAGE_ASK,
     PAGE_CHARTS,
     PAGE_CORRECTIONS,
     PAGE_INSIGHTS,
@@ -83,6 +85,10 @@ def _available_transcript_file(ctx: ActionContext, caps: ContextCapabilities) ->
 
 def _available_open_transcript(ctx: ActionContext, caps: ContextCapabilities) -> bool:
     return _available_transcript_file(ctx, caps) and caps.has_valid_run
+
+
+def _available_ask(ctx: ActionContext, caps: ContextCapabilities) -> bool:
+    return rag_enabled_from_env() and _available_open_transcript(ctx, caps)
 
 
 def _available_corrections(ctx: ActionContext, caps: ContextCapabilities) -> bool:
@@ -203,6 +209,23 @@ def _render_insights(
         key=key,
         display=display,
         on_activate=lambda: _nav(ctx, PAGE_INSIGHTS),
+    )
+
+
+def _render_ask(
+    ctx: ActionContext,
+    *,
+    section: SectionId,
+    key: str,
+    display: str = ActionDisplay.BOTH.value,
+) -> None:
+    _button(
+        ctx,
+        action=ActionId.ASK,
+        section=section,
+        key=key,
+        display=display,
+        on_activate=lambda: _nav(ctx, PAGE_ASK),
     )
 
 
@@ -452,6 +475,7 @@ HANDLERS: dict[ActionId, ActionHandler] = {
     ActionId.CHARTS: ActionHandler(_available_run_scoped, _render_charts),
     ActionId.ARTIFACTS: ActionHandler(_available_run_scoped, _render_artifacts),
     ActionId.INSIGHTS: ActionHandler(_available_insights, _render_insights),
+    ActionId.ASK: ActionHandler(_available_ask, _render_ask),
     ActionId.EXPORT_ZIP: ActionHandler(_available_export, _render_export, _post_export),
     ActionId.RENAME: ActionHandler(_available_rename, _render_rename),
     ActionId.DELETE: ActionHandler(_available_transcript_file, _render_delete),

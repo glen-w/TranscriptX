@@ -264,6 +264,7 @@ def test_view_actions_require_run(tmp_path: Path) -> None:
     assert not is_action_available(ActionId.CHARTS, ctx, caps)
     assert not is_action_available(ActionId.ARTIFACTS, ctx, caps)
     assert not is_action_available(ActionId.INSIGHTS, ctx, caps)
+    assert not is_action_available(ActionId.ASK, ctx, caps)
     assert not is_action_available(ActionId.EXPORT_ZIP, ctx, caps)
     assert not is_action_available(ActionId.CORRECT_IN_VIEWER, ctx, caps)
 
@@ -324,6 +325,45 @@ def test_insights_requires_completed_run(tmp_path: Path) -> None:
     assert is_action_available(ActionId.INSIGHTS, ctx2, capabilities_from_context(ctx2))
 
 
+def test_ask_requires_rag_transcript_and_run(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    tp = tmp_path / "t.json"
+    tp.write_text("{}", encoding="utf-8")
+    run_dir = tmp_path / "slug" / "run-a"
+    run_dir.mkdir(parents=True)
+    ident = build_canonical_identity(
+        subject_type="transcript",
+        subject_id="slug",
+        transcript_path=tp,
+        run_id="run-a",
+        run_dir=run_dir,
+    )
+    ctx = ActionContext(
+        identity=ident,
+        widget_identity="w",
+        nav_style=NavStyle.ON_CLICK,
+        instance_prefix="t",
+        run_completed=True,
+    )
+    monkeypatch.delenv("TRANSCRIPTX_RAG_ENABLED", raising=False)
+    assert not is_action_available(ActionId.ASK, ctx, capabilities_from_context(ctx))
+    monkeypatch.setenv("TRANSCRIPTX_RAG_ENABLED", "true")
+    assert is_action_available(ActionId.ASK, ctx, capabilities_from_context(ctx))
+    no_run = ActionContext(
+        identity=build_canonical_identity(
+            subject_type="transcript", subject_id="slug", transcript_path=tp
+        ),
+        widget_identity="w",
+        nav_style=NavStyle.ON_CLICK,
+        instance_prefix="t",
+        run_completed=True,
+    )
+    assert not is_action_available(
+        ActionId.ASK, no_run, capabilities_from_context(no_run)
+    )
+
+
 def test_corrections_excluded_for_group(tmp_path: Path) -> None:
     run_dir = tmp_path / "g1" / "run-a"
     run_dir.mkdir(parents=True)
@@ -344,6 +384,7 @@ def test_corrections_excluded_for_group(tmp_path: Path) -> None:
     caps = capabilities_from_context(ctx)
     assert not is_action_available(ActionId.CORRECTIONS, ctx, caps)
     assert not is_action_available(ActionId.OPEN_TRANSCRIPT, ctx, caps)
+    assert not is_action_available(ActionId.ASK, ctx, caps)
 
 
 def test_load_save_roundtrip(tmp_path: Path) -> None:
@@ -588,6 +629,7 @@ def test_library_overflow_hides_run_scoped_actions_without_run(tmp_path: Path) -
     )
     assert ActionId.OPEN not in overflow
     assert ActionId.OPEN_TRANSCRIPT not in overflow
+    assert ActionId.ASK not in overflow
     assert ActionId.CHARTS not in overflow
     assert ActionId.CORRECT_IN_VIEWER not in overflow
     assert ActionId.DELETE in overflow

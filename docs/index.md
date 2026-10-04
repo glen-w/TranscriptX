@@ -4,7 +4,7 @@ TranscriptX is a local-first workbench for people who want to think with transcr
 
 Use **Import Transcript** for JSON, SRT, VTT, and other supported formats. Need text from audio first? See [Transcription](runtime/transcription.md).
 
-**See how it works:** [first analysis](workflows/first-analysis.md) — import the sample, run **Balanced**, read **Overview**.  
+**See how it works:** [first analysis](workflows/first-analysis.md) — import the sample, name speakers, run **Balanced**, read **Overview**.  
 **Everyday jobs:** [Using TranscriptX](workflows/index.md).  
 **Is this for me?** [How TranscriptX compares](comparison.md).  
 **Privacy:** files stay on your computer; optional local AI is [Ollama](runtime/llm.md) and off by default.

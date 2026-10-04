@@ -53,10 +53,11 @@ def test_view_section_excludes_legacy_and_includes_artifacts() -> None:
     assert "Artifacts" in keys
     assert "Data" not in keys
     assert "Explorer" not in keys
-    # Order: ... Overview, Transcript, Insights, Charts, Artifacts, Performance
+    # Order: ... Overview, Transcript, Insights, Ask, Charts, Artifacts, Performance
     assert keys.index("Overview") < keys.index("Transcript")
     assert keys.index("Transcript") < keys.index("Insights")
-    assert keys.index("Insights") < keys.index("Charts")
+    assert keys.index("Insights") < keys.index("Ask")
+    assert keys.index("Ask") < keys.index("Charts")
     assert keys.index("Charts") < keys.index("Artifacts")
     assert keys.index("Artifacts") < keys.index("Performance")
 

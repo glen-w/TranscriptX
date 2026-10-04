@@ -28,7 +28,7 @@ The browse figure is the artifact list from the BBNJ webinar Balanced run.
 
 ![Artifacts Browse listing files from the completed BBNJ webinar run](../_static/workflows/export-artifacts-browse.png)
 
-3. Switch to **Export**. Keep a coherent selection (for example **All**, or the default selection that covers transcript, summaries, and charts you care about). Avoid turning this into a format-by-format catalogue — pick one sensible package.
+3. Switch to **Export**. Pick one sensible package (for example **All**, or the default selection that covers the transcript, summaries, and charts you care about).
 
 ![Artifacts Export panel with Create Export ready for the selected run](../_static/workflows/export-panel.png)
 
@@ -48,7 +48,7 @@ The browse figure is the artifact list from the BBNJ webinar Balanced run.
 
 - Export is selection-scoped: HTML/EPUB only include what you chose to copy into the ZIP.
 - Artifacts **Preview** is for inspection; **Export** is for taking work elsewhere.
-- [Overview](../public_surfaces.md) can also offer export entry points; **Artifacts → Export** is the durable end-of-workflow surface.
+- **Overview** can also offer export entry points; **Artifacts → Export** is the place to package a finished run.
 - Large selections warn or hard-cap; prefer a focused package for sharing.
 
 ## You should now have…

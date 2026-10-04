@@ -15,6 +15,7 @@ from transcriptx.web.action_menus.ids import ActionId, SectionId
 from transcriptx.web.action_menus.services import (
     ACTION_NAV_PAGES,
     PAGE_ARTIFACTS,
+    PAGE_ASK,
     PAGE_CHARTS,
     PAGE_CORRECTIONS,
     PAGE_INSIGHTS,
@@ -115,6 +116,7 @@ def transcript_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         (ActionId.CHARTS, PAGE_CHARTS),
         (ActionId.ARTIFACTS, PAGE_ARTIFACTS),
         (ActionId.INSIGHTS, PAGE_INSIGHTS),
+        (ActionId.ASK, PAGE_ASK),
         (ActionId.RUN_SPEAKER_ID, PAGE_SPEAKER_ID),
         (ActionId.RUN_ANALYSIS, PAGE_RUN_ANALYSIS),
         (ActionId.CORRECTIONS, PAGE_CORRECTIONS),
@@ -136,6 +138,7 @@ def test_action_nav_pages_registry_matches_handlers(
         PAGE_CHARTS,
         PAGE_ARTIFACTS,
         PAGE_INSIGHTS,
+        PAGE_ASK,
         PAGE_SPEAKER_ID,
         PAGE_RUN_ANALYSIS,
         PAGE_CORRECTIONS,
@@ -165,7 +168,14 @@ def test_navigate_with_identity_transcript_no_run_presets_subject_and_pickers(
 @pytest.mark.unit
 @pytest.mark.parametrize(
     "page",
-    [PAGE_OVERVIEW, PAGE_CHARTS, PAGE_ARTIFACTS, PAGE_INSIGHTS, PAGE_TRANSCRIPT],
+    [
+        PAGE_OVERVIEW,
+        PAGE_CHARTS,
+        PAGE_ARTIFACTS,
+        PAGE_INSIGHTS,
+        PAGE_ASK,
+        PAGE_TRANSCRIPT,
+    ],
 )
 def test_navigate_with_identity_preserves_run_for_run_scoped_pages(
     transcript_env, page: str

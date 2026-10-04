@@ -1,6 +1,6 @@
-# Rename a managed transcript
+# Rename a transcript
 
-Give a managed library transcript a clearer file name (and rename linked working-copy audio when present) from **Rename Transcript**.
+Give a library transcript a clearer file name (and rename linked working-copy audio when present) from **Rename Transcript**.
 
 ## Outcome
 

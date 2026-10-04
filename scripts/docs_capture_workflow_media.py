@@ -42,7 +42,8 @@ def make_gif(pattern: str, out_name: str) -> None:
         return
     tmp = OUT / out_name
     subprocess.run(
-        ["convert", "-delay", "50", "-loop", "0", *[str(f) for f in frames], str(tmp)],
+        # Delay is centiseconds per frame (~1.6s); tuned for readable walkthrough GIFs.
+        ["convert", "-delay", "80", "-loop", "0", *[str(f) for f in frames], str(tmp)],
         check=False,
     )
     if not tmp.exists():

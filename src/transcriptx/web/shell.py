@@ -777,37 +777,47 @@ def inject_global_styles() -> None:
         justify-content: flex-end;
         align-items: center;
     }
-    /* Recent Runs rows */
+    /* Recent Runs rows — light-dark(): custom HTML does not inherit Streamlit
+       theme variables, so dark fallbacks looked like heavy slabs in Light mode. */
     .tx-recent-run-row {
-        border: 1px solid rgba(250, 250, 250, 0.12);
+        border: 1px solid light-dark(
+            rgba(49, 51, 63, 0.12),
+            rgba(250, 250, 250, 0.12)
+        );
         border-radius: 10px;
         padding: 0.75rem 0.9rem;
         margin: 0 0 0.65rem 0;
-        background: var(--secondary-background-color, rgba(38, 39, 48, 0.9));
-        color: var(--text-color, #fafafa);
+        background: light-dark(#f4f7fa, rgba(38, 39, 48, 0.9));
+        color: light-dark(#31333f, #fafafa);
         transition: border-color 0.12s ease, background 0.12s ease;
     }
     .tx-recent-run-row:hover {
-        border-color: rgba(31, 119, 180, 0.55);
-        background: rgba(31, 119, 180, 0.12);
+        border-color: light-dark(
+            rgba(31, 119, 180, 0.4),
+            rgba(31, 119, 180, 0.55)
+        );
+        background: light-dark(
+            rgba(31, 119, 180, 0.07),
+            rgba(31, 119, 180, 0.12)
+        );
     }
     .tx-recent-run-title {
         font-size: 1rem;
         font-weight: 600;
-        color: var(--text-color, #fafafa);
+        color: light-dark(#31333f, #fafafa);
         margin: 0 0 0.15rem 0;
         line-height: 1.3;
     }
     .tx-recent-run-meta {
         font-size: 0.82rem;
-        color: var(--text-color, #c9d1d9);
+        color: light-dark(#5a6b7d, #c9d1d9);
         opacity: 0.85;
         margin: 0 0 0.35rem 0;
     }
     .tx-recent-run-secondary {
         font-size: 0.78rem;
-        color: var(--text-color, #8a9ab0);
-        opacity: 0.7;
+        color: light-dark(#6b7c8f, #8a9ab0);
+        opacity: light-dark(1, 0.7);
         margin: 0 0 0.45rem 0;
     }
     /* Compact tertiary action links (nav jumps + downloads) */
@@ -823,7 +833,7 @@ def inject_global_styles() -> None:
         padding: 0.1rem 0.15rem !important;
         font-size: 0.88rem !important;
         font-weight: 500 !important;
-        color: #9ec9e6 !important;
+        color: light-dark(#1a6fa8, #9ec9e6) !important;
         gap: 0.28rem !important;
     }
     [class*="st-key-tx_al_"] [data-testid="stButton"] > button span[data-testid="stIconMaterial"],
@@ -839,7 +849,7 @@ def inject_global_styles() -> None:
     [class*="st-key-tx_al_"] [data-testid="stButton"] > button:hover,
     [class*="st-key-tx_al_"] [data-testid="stDownloadButton"] > button:hover,
     [class*="st-key-tx_al_"] > button:hover {
-        color: #c5e3f6 !important;
+        color: light-dark(#155a8a, #c5e3f6) !important;
         text-decoration: underline;
         background: transparent !important;
     }
@@ -863,7 +873,7 @@ def inject_global_styles() -> None:
     div[data-testid="stHorizontalBlock"]:has([class*="st-key-tx_al_"])
         [data-testid="stColumn"]:not(:last-child)::after {
         content: "|";
-        color: rgba(250, 250, 250, 0.38);
+        color: light-dark(rgba(49, 51, 63, 0.32), rgba(250, 250, 250, 0.38));
         margin: 0 0.55rem;
         font-size: 0.88rem;
         font-weight: 400;

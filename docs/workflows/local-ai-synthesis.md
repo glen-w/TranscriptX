@@ -24,7 +24,7 @@ Local AI is **optional**. Workflows 1–3 and 5 work without it.
 
 ## Walkthrough
 
-1. Open **Run Analysis** for the planning-review transcript. If you only need AI modules on top of an existing core run, choose [**Custom**](../runtime/settings.md#analysis-presets) (or a preset that already includes live-LLM consumers) and ensure transcript summary and meeting-extracts modules are selected. Exact module picker labels follow the registry names surfaced in the UI.
+1. Open **Run Analysis** for the planning-review transcript. If you only need AI modules on top of an existing core run, choose [**Custom**](../runtime/settings.md#analysis-presets) (or a preset that already includes live-LLM consumers) and select the transcript summary and meeting-extracts modules.
 
 2. Expand **LLM setup**. When Ollama is healthy you should see the active model and optional per-run overrides. If LLM is disabled or unreachable, the panel says so clearly — enable Ollama under [**Settings**](../runtime/settings.md) → Configuration and manage models under **Settings → Models** ([LLM](../runtime/llm.md)), then return here.
 
@@ -32,7 +32,7 @@ Local AI is **optional**. Workflows 1–3 and 5 work without it.
 
 3. Choose **Run analysis**. Watch the progress panel: LLM modules may take longer than deterministic ones. Completed, skipped, and failed counts should stay honest if something times out.
 
-4. Open [**Overview**](../public_surfaces.md). After a successful Local AI run, look for summary content and compact meeting extracts with a **Local AI** badge. Until those modules complete, Overview may still show the deterministic summary from core analysis — useful context, but not Local AI output.
+4. Open **Overview**. After a successful Local AI run, look for summary content and compact meeting extracts with a **Local AI** badge. Until those modules complete, Overview may still show the deterministic summary from core analysis — useful context, but not Local AI output.
 
 ![Overview summary for the BBNJ webinar run, with Local AI and model badges](../_static/workflows/local-ai-overview-summary.png)
 

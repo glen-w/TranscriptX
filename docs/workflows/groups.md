@@ -26,7 +26,7 @@ At least one managed transcript is in the library (see [First analysis](first-an
 
 3. In **Transcripts**, select the planning-review entry (and any other members you want). Choose **Create group**.
 
-4. Confirm a success toast/flash (`Group created`) or that the group already existed with that membership. The Groups table / **Select group** picker should list the new group.
+4. Confirm a success message (`Group created`) or that the group already existed with that membership. The Groups table / **Select group** picker should list the new group.
 
 5. Select the group to review **Group details** (name, member count, membership editor). Membership is file-backed and can be edited later without re-importing transcripts.
 

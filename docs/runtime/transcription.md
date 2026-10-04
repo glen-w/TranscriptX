@@ -10,8 +10,9 @@ This page is the mainstream path: you already have a transcript, or you have aud
 
 1. Open **Import Transcript** and upload the file (JSON, SRT, VTT, TXT, or HTML — [formats](#what-files-you-can-bring)).
 2. Optionally attach the source recording, or place same-stem audio in the mounted recordings folder so playback can link.
-3. Open **Run Analysis**, keep **Balanced**, and run it.
-4. Read **Overview**. If labels still look like `SPEAKER_00`, [name the speakers](../workflows/speaker-identification.md) and re-run. Host USB ingest can auto-name after admit: [auto-identify.md](auto-identify.md).
+3. If labels look like `SPEAKER_00`, [name the speakers](../workflows/speaker-identification.md) before you analyse. Most **Balanced** modules skip until speakers are named. Host USB ingest can auto-name after admit: [auto-identify.md](auto-identify.md).
+4. Open **Run Analysis**, keep **Balanced**, and run it.
+5. Read **Overview**. If you already ran on placeholder labels, name the speakers and run again.
 
 Walkthrough with screenshots: [First analysis](../workflows/first-analysis.md).
 
@@ -32,7 +33,7 @@ Walkthrough with screenshots: [First analysis](../workflows/first-analysis.md).
 | 2 | Transcribe Audio → **whispermlx-missing** → set source + output folders → enable **Dry-run** → copy/run once to preview |
 | 3 | Re-run without dry-run; already-transcribed stems are skipped (resume-friendly) |
 | 4 | Import Transcript → upload JSON → optionally attach recordings |
-| 5 | Run a Balanced or Quick analysis preset |
+| 5 | Name speakers if labels are still placeholders, then run Balanced or Quick |
 
 Keep analysis in Docker if you like; still run whispermlx on the Mac host. WhisperX Docker and Whisper-WebUI are separate recipes — [WhisperX](../recipes/whisperx/README.md) and [Whisper-WebUI](../recipes/whisper-webui/README.md). Installing the bulk helper: [Host STT automation](host-stt.md#whispermlx-missing-bulk-script).
 
