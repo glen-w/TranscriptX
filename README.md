@@ -13,6 +13,17 @@ Optional local AI stays on your computer.
 
 Not sure if this is the right tool? [How TranscriptX compares](docs/comparison.md).
 
+## What can I do with it?
+
+- Understand themes across a conversation
+- Compare speakers — who said what, and how they interact
+- Investigate a question and jump back to the original lines
+- Analyse several conversations together over time
+- Correct the transcript while you read
+- Export findings as HTML or a ZIP you keep
+
+You can also browse **Charts**, save custom questions, and turn on optional [local AI](docs/runtime/llm.md) for summaries and extracts. [Analysis modules](docs/generated/modules.md) · [Workflows](docs/workflows/index.md) · [Settings](docs/runtime/settings.md).
+
 ## Screenshots
 
 ![Home: corpus totals and recent runs](docs/_static/workflows/home.png)
@@ -30,17 +41,6 @@ Not sure if this is the right tool? [How TranscriptX compares](docs/comparison.m
 ![Insights Highlights: notable moments with quoted lines](docs/_static/workflows/investigate-highlights.png)
 
 ![Charts gallery for the finished run](docs/_static/workflows/charts-gallery.png)
-
-## What can I do with it?
-
-- Understand themes across a conversation
-- Compare speakers — who said what, and how they interact
-- Investigate a question and jump back to the original lines
-- Analyse several conversations together over time
-- Correct the transcript while you read
-- Export findings as HTML or a ZIP you keep
-
-You can also browse **Charts**, save custom questions, and turn on optional [local AI](docs/runtime/llm.md) for summaries and extracts. [Analysis modules](docs/generated/modules.md) · [Workflows](docs/workflows/index.md) · [Settings](docs/runtime/settings.md).
 
 ## On your machine
 
