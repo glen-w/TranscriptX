@@ -8,7 +8,7 @@ You will have named (or deliberately ignored) the diarized speakers on the sampl
 
 ## Starting point
 
-The sample [planning_review.json](fixtures/planning_review.json) is [imported](../runtime/transcription.md) (see [First analysis](first-analysis.md)). Speakers still show as `SPEAKER_00`, `SPEAKER_01`, and `SPEAKER_02`.
+Import the sample first ([First analysis](first-analysis.md)). This page is the full naming pass: review lines, play clips, ignore junk labels, and attach profiles. If you have not named anyone yet, speakers still show as `SPEAKER_00`, `SPEAKER_01`, and `SPEAKER_02`.
 
 The figures show the same page on *Rapid Response Webinar Analysing the Biodiversity Beyond National Jurisdiction Treaty* after six diarized speakers were given display names.
 

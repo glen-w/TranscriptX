@@ -26,7 +26,7 @@ Speaker identity/voice stores are a separate subsystem (**Settings → Speakers*
 When you run analysis, choose a **Preset** that determines which modules run:
 
 - **Quick** — no LLM modules and no heavy modules (fast local path). Modules that hard-depend on excluded heavy/LLM modules are omitted so the DAG cannot pull them back in.
-- **Balanced** — recommended default: non-heavy modules plus a limited heavy allowlist (`semantic_similarity`, `fine_grained_emotion`) and **global transcript LLM summary only** (`llm_summary`).
+- **Balanced** — recommended default: non-heavy modules plus a limited heavy allowlist (`semantic_similarity`) and **global transcript LLM summary only** (`llm_summary`). Experimental emotion classifiers stay off this preset — [known limitations](../known_limitations.md).
 - **Thorough** — all suitable modules for the target (including LLM and heavy).
 - **Custom** — pick exactly which modules to run for this launch.
 
@@ -119,7 +119,7 @@ Settings → Speakers controls the Speakers directory filters and optional local
 
 1. Read the privacy notice and **enable** matching. Consent is `privacy.voice_settings.json`. Defaults off. Opt-in enrols nothing.
 2. Set **Max confirmed links per voice enrol** (default 40) if you need a larger bootstrap.
-3. **Enrol trusted voice for all profiles** — reference samples from every active profile that already has confirmed links. Per-profile enrol also exists on the Speakers dossier Voice tab.
+3. **Enrol trusted voice for all profiles** — reference samples from every active profile that already has confirmed links. Per-profile enrol also exists on the Speakers **Voice & lifecycle** tab.
 4. **Pre-load voice suggestions** — analyse every non-ignored managed occurrence into `.cache/voice` for Speaker Identification. Speaker ID **Analyse all speakers** does the same for the open transcript only.
 
 Order: name and **link** a seed cast → Enrol all → Pre-load → confirm suggestions in Speaker Identification. Empty corpus → analyse succeeds with no match. Scores never auto-name. Full walkthrough: [Assist naming with voice](../workflows/speaker-voice-matching.md).

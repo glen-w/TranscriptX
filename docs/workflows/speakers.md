@@ -4,7 +4,7 @@ Open the **Speakers** directory to review and edit profiles linked across manage
 
 ## Outcome
 
-You will have opened **Speakers**, found a longitudinal profile in the people gallery, opened the dossier, and edited identity or inspected appearances.
+You will have opened **Speakers**, found a profile in the people gallery, opened it, and edited identity or inspected appearances.
 
 ## Starting point
 
@@ -25,7 +25,7 @@ Prefer completing [Identify and name speakers](speaker-identification.md) and ch
 
 3. When profiles exist, search by name or alias if needed, then open a card (for example a facilitator named during walkthrough 2). The header shows the display name and headline totals. Use **Identity** to edit name, aliases, notes, colour, or photo. Use **Appearances** to see linked transcripts and unlink if needed.
 
-4. Use Speakers for cross-transcript continuity; use **Speaker Identification** for naming on a single transcript before analysis. Library-wide **Enrol trusted voice for all profiles** and **Pre-load voice suggestions** live on Settings → Speakers, not only the dossier Voice tab — see [Assist naming with voice](speaker-voice-matching.md).
+4. Use Speakers for cross-transcript continuity; use **Speaker Identification** for naming on a single transcript before analysis. Library-wide **Enrol trusted voice for all profiles** and **Pre-load voice suggestions** live on Settings → Speakers, not only the **Voice & lifecycle** tab — see [Assist naming with voice](speaker-voice-matching.md).
 
 5. After linking, re-open Speakers to confirm the profile still resolves — this is the durable directory, not a one-shot wizard result.
 

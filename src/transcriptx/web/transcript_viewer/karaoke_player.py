@@ -31,6 +31,43 @@ from transcriptx.web.workspaces.playback_host import PlaybackHostCapabilities
 
 logger = get_logger()
 
+_KARAOKE_CHROME_SYNC_JS = r"""
+(function () {
+  const exclusiveScheme = function (el) {
+    if (!el) return "";
+    const scheme = (window.getComputedStyle(el).colorScheme || "").toLowerCase();
+    const hasDark = scheme.indexOf("dark") !== -1;
+    const hasLight = scheme.indexOf("light") !== -1;
+    if (hasDark && !hasLight) return "dark";
+    if (hasLight && !hasDark) return "light";
+    return "";
+  };
+  const resolveChrome = function () {
+    try {
+      const doc = window.parent && window.parent.document;
+      if (!doc) return "";
+      const sidebar = doc.querySelector('section[data-testid="stSidebar"]');
+      const root =
+        doc.querySelector('[data-testid="stAppViewContainer"]') ||
+        doc.documentElement;
+      const fromScheme =
+        exclusiveScheme(sidebar) || exclusiveScheme(root) || "";
+      if (fromScheme) return fromScheme;
+      const attr = sidebar && sidebar.getAttribute("data-tx-chrome");
+      if (attr === "light" || attr === "dark") return attr;
+    } catch (e) {}
+    return "";
+  };
+  const chrome =
+    resolveChrome() ||
+    (window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light");
+  document.documentElement.setAttribute("data-tx-chrome", chrome);
+  document.documentElement.style.colorScheme = chrome;
+})();
+"""
+
 _KARAOKE_CSS = """
 :root {
   --tx-k-bg: #12161c;
@@ -42,7 +79,20 @@ _KARAOKE_CSS = """
   --tx-k-active-bg: rgba(240, 193, 74, 0.18);
   --tx-k-spoken: rgba(232, 238, 247, 0.55);
   --tx-k-border: rgba(140, 160, 185, 0.28);
+  --tx-k-word-hover: rgba(61, 143, 209, 0.18);
   font-family: "IBM Plex Sans", "Source Sans 3", "Segoe UI", sans-serif;
+}
+html[data-tx-chrome="light"] {
+  --tx-k-bg: #f4f7fa;
+  --tx-k-panel: #ffffff;
+  --tx-k-ink: #31333f;
+  --tx-k-muted: #5a6b7d;
+  --tx-k-accent: #1f77b4;
+  --tx-k-active: #c48a00;
+  --tx-k-active-bg: rgba(196, 138, 0, 0.14);
+  --tx-k-spoken: rgba(49, 51, 63, 0.52);
+  --tx-k-border: rgba(49, 51, 63, 0.12);
+  --tx-k-word-hover: rgba(31, 119, 180, 0.12);
 }
 * { box-sizing: border-box; }
 body {
@@ -96,7 +146,7 @@ body {
   cursor: pointer;
 }
 .tx-karaoke-word[data-timed="1"]:hover {
-  background: rgba(61, 143, 209, 0.18);
+  background: var(--tx-k-word-hover);
 }
 .tx-karaoke-word.is-spoken {
   color: var(--tx-k-spoken);
@@ -305,6 +355,7 @@ def build_karaoke_html(
     payload_json = payload_json.replace("<", "\\u003c").replace(">", "\\u003e")
     return (
         "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        f"<script>{_KARAOKE_CHROME_SYNC_JS}</script>"
         f"<style>{_KARAOKE_CSS}</style></head><body>"
         '<div class="tx-karaoke" id="tx-karaoke-root" '
         'data-testid="tx-karaoke-root"></div>'

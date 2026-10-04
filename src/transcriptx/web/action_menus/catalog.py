@@ -55,6 +55,12 @@ ACTIONS: tuple[ActionDef, ...] = (
         "Open Insights for a completed compatible analysis run.",
     ),
     ActionDef(
+        ActionId.ASK,
+        "Ask",
+        ic.ASK,
+        "Open Ask (RAG) for a completed analysis run when RAG is enabled.",
+    ),
+    ActionDef(
         ActionId.EXPORT_ZIP,
         "Export ZIP",
         ic.FOLDER_ZIP,
@@ -104,6 +110,7 @@ OPTIONAL_ACTIONS: frozenset[ActionId] = frozenset(
     {
         ActionId.OPEN_TRANSCRIPT,
         ActionId.INSIGHTS,
+        ActionId.ASK,
         ActionId.CORRECT_IN_VIEWER,
     }
 )
@@ -117,6 +124,7 @@ SECTION_ALLOWLISTS: dict[SectionId, tuple[ActionId, ...]] = {
         ActionId.RENAME,
         ActionId.OPEN_TRANSCRIPT,
         ActionId.INSIGHTS,
+        ActionId.ASK,
         ActionId.CORRECTIONS,
         ActionId.CORRECT_IN_VIEWER,
     ),
@@ -128,6 +136,7 @@ SECTION_ALLOWLISTS: dict[SectionId, tuple[ActionId, ...]] = {
         ActionId.RENAME,
         ActionId.EXPORT_ZIP,
         ActionId.OPEN_TRANSCRIPT,
+        ActionId.ASK,
         ActionId.CORRECT_IN_VIEWER,
         ActionId.DELETE,
     ),
@@ -136,6 +145,7 @@ SECTION_ALLOWLISTS: dict[SectionId, tuple[ActionId, ...]] = {
         ActionId.RUN_ANALYSIS,
         ActionId.RUN_SPEAKER_ID,
         ActionId.OPEN_TRANSCRIPT,
+        ActionId.ASK,
         ActionId.CORRECTIONS,
         ActionId.CORRECT_IN_VIEWER,
     ),
@@ -148,6 +158,7 @@ SECTION_ALLOWLISTS: dict[SectionId, tuple[ActionId, ...]] = {
         ActionId.RUN_ANALYSIS,
         ActionId.OPEN_TRANSCRIPT,
         ActionId.INSIGHTS,
+        ActionId.ASK,
         ActionId.CORRECTIONS,
         ActionId.CORRECT_IN_VIEWER,
     ),
@@ -159,6 +170,7 @@ SECTION_ALLOWLISTS: dict[SectionId, tuple[ActionId, ...]] = {
         ActionId.RENAME,
         ActionId.OPEN_TRANSCRIPT,
         ActionId.INSIGHTS,
+        ActionId.ASK,
         ActionId.CORRECTIONS,
         ActionId.CORRECT_IN_VIEWER,
     ),

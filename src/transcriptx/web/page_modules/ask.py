@@ -11,6 +11,7 @@ import streamlit as st
 from transcriptx.core.rag import RagAPI, RagScopeMissing, RagUnavailable
 from transcriptx.core.segments import get_segments
 from transcriptx.web import icons as ic
+from transcriptx.web.components.ask_question_library import render_ask_global_library_picker
 from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.web.state import RUN_ID_KEY, SUBJECT_ID_KEY
 from transcriptx.web.transcript_navigation import navigate_to_segment
@@ -69,18 +70,29 @@ def render_ask_page() -> None:
     if status.get("status") == "missing":
         st.info("Index this transcript, then ask a question here.")
 
+    library_questions = render_ask_global_library_picker()
+    for i, question in enumerate(library_questions):
+        st.divider()
+        st.markdown(f"**{question}**")
+        _render_rag_answer(
+            api,
+            question,
+            str(session_slug),
+            str(run_id),
+            key_suffix=f"lib_{i}",
+        )
+
     _ask_interaction(str(session_slug), str(run_id))
 
 
-@st.fragment
-def _ask_interaction(session_slug: str, run_id: str) -> None:
-    """Q&A interaction (fragment-wrapped to preserve thread on navigate)."""
-    api = RagAPI()
-
-    question = st.chat_input("Ask a question about this transcript...")
-    if not question:
-        return
-
+def _render_rag_answer(
+    api: RagAPI,
+    question: str,
+    session_slug: str,
+    run_id: str,
+    *,
+    key_suffix: str = "chat",
+) -> None:
     try:
         hits = api.search(question, session_slug=session_slug, run_id=run_id, k=5)
 
@@ -102,7 +114,7 @@ def _ask_interaction(session_slug: str, run_id: str) -> None:
                 chip_text = f"{source.citation} [{source.marker}]"
                 if st.button(
                     chip_text,
-                    key=f"cite_{source.marker}",
+                    key=f"cite_{key_suffix}_{source.marker}",
                     icon=ic.LINK,
                     use_container_width=False,
                 ):
@@ -115,3 +127,15 @@ def _ask_interaction(session_slug: str, run_id: str) -> None:
         st.error(str(exc))
     except Exception as e:
         st.error(f"Error: {e}")
+
+
+@st.fragment
+def _ask_interaction(session_slug: str, run_id: str) -> None:
+    """Q&A interaction (fragment-wrapped to preserve thread on navigate)."""
+    api = RagAPI()
+
+    question = st.chat_input("Ask a question about this transcript...")
+    if not question:
+        return
+
+    _render_rag_answer(api, question, session_slug, run_id)

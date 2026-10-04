@@ -4,11 +4,11 @@ Use TranscriptX as an analysis workbench: start from a question, follow results 
 
 ## Outcome
 
-You will have answered one concrete question about the sample meeting by moving from [**Overview**](../public_surfaces.md) through **Insights** into transcript evidence.
+You will have answered one concrete question about the sample meeting by moving from **Overview** through **Insights** into transcript evidence.
 
 ## Starting point
 
-The planning-review transcript is [imported](../runtime/transcription.md), speakers are preferably named ([Identify and name speakers](speaker-identification.md)), and a [**Balanced**](../runtime/settings.md#analysis-presets) (or richer) run is selected on **Overview**.
+The planning-review transcript is [imported](../runtime/transcription.md), speakers are named ([Identify and name speakers](speaker-identification.md)), and a [**Balanced**](../runtime/settings.md#analysis-presets) (or richer) run is selected on **Overview**.
 
 The figures are the BBNJ rapid-response webinar run: speaker cards on Overview, then quoted moments on Insights → Highlights.
 

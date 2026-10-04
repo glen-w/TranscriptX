@@ -1,23 +1,14 @@
 # Docker
 
-Operational guide only. For authoritative storage and metadata structure, see `STORAGE.md`. For behavior and invariants, see CONTRACT documents.
+**Docker Compose is the recommended way** to run TranscriptX without a local Python install. The web app runs in the container; your library stays in a folder on the host.
 
-**Docker Compose is the recommended way** to run TranscriptX in containers (no local Python required). The Streamlit web interface runs inside the container with a mounted data directory.
+This page covers Compose, mounts, and container pitfalls. Storage layout, output layout, and run results are defined in:
 
-This guide describes container behavior and operational layouts only. Canonical storage, output, and run-truth rules live in:
-
-- `docs/runtime/STORAGE.md`
-- `docs/contracts/output-contract-v1.md`
-- `docs/run_outcome_contract.md`
+- [STORAGE.md](STORAGE.md)
+- [Output contract](../contracts/output-contract-v1.md)
+- [Run outcome contract](../run_outcome_contract.md)
 
 The analysis container does not run WhisperX or other transcription engines. Generate transcripts on the host (see [transcription.md](transcription.md)), then **Import Transcript** in the web UI.
-
-## Non-root /data write access
-
-The default compose runs the `transcriptx-web` service as your host user (`user: "${UID:-1000}:${GID:-1000}"`) so that files written under the mounted `./data` volume are owned by you.
-
-- **Dev / quick start:** If `/data` is not writable (e.g. permission denied), make the host directory writable: `chmod -R a+w data/` (or create `data` and then run compose).
-- **Production:** Use the same `user: "${UID:-1000}:${GID:-1000}"` so the container runs as a known UID/GID; ensure the host `./data` is owned by that user or is group-writable.
 
 ## Quickstart
 
@@ -28,6 +19,13 @@ docker compose up transcriptx-web
 ```
 
 Open http://localhost:8501. Compose builds the image on first run. First-time path: [README](../../README.md) and [First analysis](../workflows/first-analysis.md).
+
+### If `data/` is not writable
+
+The default compose runs the `transcriptx-web` service as your host user (`user: "${UID:-1000}:${GID:-1000}"`) so that files written under the mounted `./data` volume are owned by you.
+
+- **Dev / quick start:** If `/data` is not writable (permission denied), make the host directory writable: `chmod -R a+w data/` (or create `data` and then run compose).
+- **Production:** Use the same `user: "${UID:-1000}:${GID:-1000}"` so the container runs as a known UID/GID; ensure the host `./data` is owned by that user or is group-writable.
 
 ### Build
 

@@ -1,6 +1,6 @@
-# Known limitations (1.0 programme)
+# Known limitations
 
-Concise user-facing limits for TranscriptX **0.9.x → 1.0**. Deeper audit rows live in developer docs; this page is the single public summary. Do not duplicate claims elsewhere — **link here**.
+Limits that affect everyday use: optional modules, large libraries, voice features, local AI, and export. This is the public summary — link here instead of restating these claims. Deeper notes stay in developer docs.
 
 ## Experimental analyses
 

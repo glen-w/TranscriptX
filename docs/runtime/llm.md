@@ -1,8 +1,6 @@
 # Local LLM integration (Ollama)
 
-Optional local AI stays on your machine unless you point it at a remote URL. Transcript text can appear in prompts — enable it only when that is acceptable. Modules that need a live model are **off by default**.
-
-LLM-backed analysis modules are **disabled by default**. Enable them only when you have a local Ollama daemon (or another configured endpoint) and understand that prompts may contain sensitive transcript content.
+Optional local AI stays on your machine unless you point it at a remote URL. Modules that need a live model are **off by default**. Enable them only when you have a local Ollama daemon (or another configured endpoint). Transcript text can appear in prompts — turn this on only when that is acceptable.
 
 ## Configuration
 

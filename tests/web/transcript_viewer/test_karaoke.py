@@ -102,6 +102,8 @@ def test_karaoke_html_escapes_angle_brackets_in_payload() -> None:
     model = build_karaoke_clip_model(_timed_segment())
     html = build_karaoke_html(model, clip_b64="Zm9v", autoplay=True)
     assert "tx-karaoke-payload" in html
+    assert "data-tx-chrome" in html
+    assert 'html[data-tx-chrome="light"]' in html
     assert "Zm9v" in html
     nasty = {
         "speaker": "A",

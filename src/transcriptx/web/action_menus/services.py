@@ -29,6 +29,7 @@ PAGE_OVERVIEW = "Overview"
 PAGE_CHARTS = "Charts"
 PAGE_ARTIFACTS = "Artifacts"
 PAGE_INSIGHTS = "Insights"
+PAGE_ASK = "Ask"
 PAGE_TRANSCRIPT = "Transcript"
 PAGE_LIBRARY = "Library"
 PAGE_SPEAKER_ID = "Speaker ID"
@@ -54,6 +55,7 @@ ACTION_NAV_PAGES: dict[str, str] = {
     "charts": PAGE_CHARTS,
     "artifacts": PAGE_ARTIFACTS,
     "insights": PAGE_INSIGHTS,
+    "ask": PAGE_ASK,
     "run_speaker_id": PAGE_SPEAKER_ID,
     "run_analysis": PAGE_RUN_ANALYSIS,
     "corrections": PAGE_CORRECTIONS,

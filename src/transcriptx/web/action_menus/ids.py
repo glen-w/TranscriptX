@@ -20,6 +20,7 @@ class ActionId(str, Enum):
     CHARTS = "charts"
     ARTIFACTS = "artifacts"
     INSIGHTS = "insights"
+    ASK = "ask"
     EXPORT_ZIP = "export_zip"
     RENAME = "rename"
     DELETE = "delete"

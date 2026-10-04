@@ -4,7 +4,7 @@ The shortest realistic path from importing a transcript to reading your first an
 
 ## Outcome
 
-You will have [imported](../runtime/transcription.md) a transcript, **named diarized speakers**, completed a [**Balanced**](../runtime/settings.md#analysis-presets) analysis run, and identified several useful outputs on [**Overview**](../public_surfaces.md).
+You will have [imported](../runtime/transcription.md) a transcript, **named diarized speakers**, completed a [**Balanced**](../runtime/settings.md#analysis-presets) analysis run, and read the summary, at-a-glance metrics, and speaker cards on **Overview**.
 
 ## Starting point
 

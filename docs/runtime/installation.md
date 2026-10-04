@@ -38,7 +38,7 @@ Both the extra and the model are required for those modules. Docker images alrea
 
 1. Follow [First analysis](../workflows/first-analysis.md).
 2. Bring a file you already have, or generate one from audio — [Transcription](transcription.md).
-3. On **Run Analysis**, keep **Balanced** unless you have a reason not to. Edit Quick / Balanced / Thorough under **Settings → Analysis** — [Settings](settings.md#analysis-presets).
+3. Name speakers before the first **Balanced** run (most modules skip placeholder labels), then keep **Balanced** unless you have a reason not to. Edit Quick / Balanced / Thorough under **Settings → Analysis** — [Settings](settings.md#analysis-presets).
 
 ## Troubleshooting
 
