@@ -24,3 +24,18 @@ def test_library_question_label_shows_scope_badges() -> None:
         {"text": "Hello", "scopes": {"global": True, "per_speaker": True}}
     )
     assert label == "Hello [GS]"
+
+
+def test_library_question_label_global_only() -> None:
+    label = library_question_label(
+        {"text": "Decisions?", "scopes": {"global": True, "per_speaker": False}}
+    )
+    assert label == "Decisions? [G]"
+
+
+def test_filter_global_scope_ignores_missing_global_flag() -> None:
+    rows = [
+        {"text": "No scopes key", "scopes": {}},
+        {"text": "Explicit false", "scopes": {"global": False}},
+    ]
+    assert filter_global_scope_library_questions(rows) == []
