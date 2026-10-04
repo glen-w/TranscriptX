@@ -77,6 +77,6 @@ Where you need the actual definition or invariant, always read the linked CONTRA
   - Promote `originals/` to a library-valid transcript. See `docs/runtime/host-stt.md`, `docs/runtime/STORAGE.md`.
 
 - **Ask**  
-  - Opt-in RAG over **one** transcript (`session_slug` + `run_id`). Default off (`TRANSCRIPTX_RAG_ENABLED`). Fail closed if scope is missing. Distinct from Custom Questions (`llm_custom_qa`).
+  - Opt-in RAG over **one** transcript (`session_slug` + `run_id`). Default off (`TRANSCRIPTX_RAG_ENABLED`). Fail closed if scope is missing. Distinct from Custom Questions (`llm_custom_qa`) as a pipeline module; the Ask page may still run **global** entries from the same Settings → Questions library (per-speaker library entries stay on Run Analysis).
 
 This index may grow as new terms are introduced in CONTRACT docs, but each term here must always **delegate meaning** to those documents rather than redefining it.
