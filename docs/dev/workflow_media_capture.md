@@ -51,10 +51,13 @@ Capture against a disposable data root when practical.
 | `export-*` | Artifacts (Browse / Export) + external HTML preview |
 | `charts-*` | Charts |
 
-Landing gallery (`website/images/`): Overview, Transcript, Speaker ID, Insights.
-A dedicated Charts still is not in the set yet; Insights stands in on the public
-site (Charts is in the same View menu). When capturing Charts, copy it to
-`website/images/` as well.
+Landing gallery (`website/images/`): same eight stills as the README **Screenshots**
+section — `home.png`, `speaker-id.png` (from `speaker-identification-page.png`),
+`corrections-studio.png`, `run-analysis.png` (from `first-analysis-run-analysis.png`),
+`overview.png` (from `first-analysis-overview.png`), `transcript.png` (from
+`speaker-identification-transcript.png`), `insights.png` (from
+`investigate-highlights.png`), `charts-gallery.png`. Copy from
+`docs/_static/workflows/` after recapture.
 | `groups-*` | Groups |
 | `corrections-*` | Transcript (Correct mode) / Corrections Studio |
 | `rename-*` | Rename Transcript |
