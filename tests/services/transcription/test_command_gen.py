@@ -184,3 +184,42 @@ def test_expected_output_format_is_whisperx_json() -> None:
     assert params.expected_output_format == "whisperx_json"
     cmd = generate_transcription_command(params)
     assert any("JSON" in n for n in cmd.notes)
+
+
+@pytest.mark.unit
+def test_whispermlx_uppercase_mp3_is_single_file() -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.WHISPERMLX_SINGLE,
+        input_path=r"C:\rec\meeting.MP3",
+        output_dir=r"C:\out",
+    )
+    cmd = generate_transcription_command(params)
+    assert "for f in" not in cmd.shell
+    assert "meeting.MP3" in cmd.shell
+    assert any("POSIX" in n for n in cmd.notes)
+
+
+@pytest.mark.unit
+def test_whispermlx_trailing_backslash_file_is_single() -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.WHISPERMLX_SINGLE,
+        input_path=r"C:\rec\meeting.mp3\\",
+        output_dir=r"C:\out",
+    )
+    cmd = generate_transcription_command(params)
+    assert "for f in" not in cmd.shell
+    assert any("Git Bash" in n or "WSL" in n for n in cmd.notes)
+
+
+@pytest.mark.unit
+def test_whisperx_docker_notes_windows_mounts() -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.WHISPERX_DOCKER,
+        input_path=r"C:\data\audio\\",
+        output_dir=r"C:\data\out",
+    )
+    cmd = generate_transcription_command(params)
+    assert "C:\\data\\audio" in cmd.shell or r"C:\data\audio" in cmd.shell
+    assert cmd.shell.count("audio\\\\:/") == 0
+    assert any("POSIX" in n for n in cmd.notes)
+    assert any("C:\\" in n or "mount" in n.lower() for n in cmd.notes)

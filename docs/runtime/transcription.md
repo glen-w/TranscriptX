@@ -22,7 +22,7 @@ Walkthrough with screenshots: [First analysis](../workflows/first-analysis.md).
 2. Open **Transcribe Audio** in the web UI.
 3. Choose a tool: **whispermlx** (macOS host), **whispermlx-missing** (skip files that already have JSON), **WhisperX Docker**, or **Whisper-WebUI Docker**.
 4. Set input path, output folder, model, language, diarization, and (for the bulk helper) dry-run / force flags. For Whisper-WebUI, set outputs folder, port, and CPU/CUDA.
-5. **Copy** the generated shell snippet (paths with spaces are quoted). Run it on the host — macOS for whispermlx; the Docker host for WhisperX / Whisper-WebUI. Do **not** expect Streamlit to run it.
+5. **Copy** the generated shell snippet (paths with spaces are quoted). Run it in a POSIX shell — macOS, Linux, Git Bash, or WSL. The snippet is not PowerShell or cmd.exe. Do **not** expect Streamlit to run it.
 6. Open **Import Transcript** and upload the result (WhisperX/whispermlx JSON, or Whisper-WebUI SRT/VTT).
 
 **Saved presets:** on the same page, save/load/delete command-gen fields (tool, paths, model, language, diarize, tool-specific knobs) under `.transcriptx/profiles/stt_commands/`. Presets store host paths and flags only — never `HF_TOKEN` (tokens stay in `whisperx.env`).
@@ -72,7 +72,7 @@ Transcription runs on the **host** (terminal, WhisperX Docker, or Whisper-WebUI)
 
 | Where | What runs |
 |-------|-----------|
-| Host (Mac terminal) | `whispermlx`, `whispermlx-missing`, `inbox-watch`, optional WhisperX / Whisper-WebUI Docker |
+| Host (terminal) | `whispermlx` / `whispermlx-missing` (macOS), `inbox-watch` (`--transcribe none` or `--transcribe-cmd` without MLX), optional WhisperX / Whisper-WebUI Docker |
 | `transcriptx-web` (Docker or native) | Import, library, analysis, artifacts |
 
 The recommended install runs analysis in a **Linux** container. **whispermlx** typically lives in a **macOS** venv and cannot be run from inside that container. Keeping engines out of the analysis image avoids bloating it and matches how most people already arrive (JSON from another tool).
@@ -81,6 +81,6 @@ The recommended install runs analysis in a **Linux** container. **whispermlx** t
 
 ## Advanced
 
-- [Host STT automation](host-stt.md) — whispermlx-missing, inbox-watch, config, Python import API
+- [Host STT automation](host-stt.md) — whispermlx-missing, inbox-watch `--transcribe`, config, Python import API
 - [Audio prep](audio-prep.md) — Tools → Preprocessing / Auto-merge before you transcribe
 - [Directory watcher](directory_watcher.md) — in-app inbox (transcripts), not host STT

@@ -20,5 +20,7 @@
   "auto_name": false,
   "auto_link": false,
   "stage_local": null,
-  "stage_dir": ""
+  "stage_dir": "",
+  "transcribe": "whispermlx-missing",
+  "transcribe_cmd": []
 }

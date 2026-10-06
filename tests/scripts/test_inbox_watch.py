@@ -267,9 +267,11 @@ class TestStemSkip:
         inbox, recordings, transcripts = dirs
         (inbox / "foo.m4a").write_bytes(b"new")
         (recordings / "foo.wav").write_bytes(b"old")
-        monkeypatch.setattr(iw, "run_ffmpeg", lambda _cmd: (_ for _ in ()).throw(
-            AssertionError("should skip")
-        ))
+        monkeypatch.setattr(
+            iw,
+            "run_ffmpeg",
+            lambda _cmd: (_ for _ in ()).throw(AssertionError("should skip")),
+        )
         monkeypatch.setattr(iw, "run_whispermlx_missing", lambda _cmd: 0)
         rc = iw.main(
             _once_args(inbox, recordings, transcripts, ["--no-watch-transcripts"])
@@ -307,9 +309,7 @@ class TestTranscriptCopy:
         (transcripts / "foo.json").write_text("old", encoding="utf-8")
         monkeypatch.setattr(iw, "run_whispermlx_missing", lambda _cmd: 0)
         rc = iw.main(
-            _once_args(
-                inbox, recordings, transcripts, ["--no-watch-audio", "--force"]
-            )
+            _once_args(inbox, recordings, transcripts, ["--no-watch-audio", "--force"])
         )
         assert rc == 0
         assert (transcripts / "foo.json").read_text(encoding="utf-8") == "new"
@@ -763,7 +763,6 @@ class TestAdmit:
         assert seen
         assert "transcriptx.admit_originals" in seen[0]
 
-
     def test_auto_name_implies_admit_and_link(self, iw, tmp_path: Path, monkeypatch):
         monkeypatch.delenv("INBOX_WATCH_AUTO_LINK", raising=False)
         monkeypatch.delenv("INBOX_WATCH_AUTO_NAME", raising=False)
@@ -865,9 +864,7 @@ class TestWaitForDirectory:
     def test_timeout_when_missing(self, iw, tmp_path: Path):
         missing = tmp_path / "usb-inbox"
         assert (
-            iw.wait_for_directory(
-                missing, interval_seconds=0.01, timeout_seconds=0.05
-            )
+            iw.wait_for_directory(missing, interval_seconds=0.01, timeout_seconds=0.05)
             is False
         )
         assert not missing.exists()
@@ -1214,3 +1211,277 @@ class TestStaging:
         assert iw.should_stage_audio(cfg, inbox, removable=True) is True
         assert iw.should_stage_audio(cfg, inbox, removable=False) is False
 
+
+@pytest.mark.unit
+class TestTranscribeModes:
+    def test_default_still_invokes_missing(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        seen: list[list[str]] = []
+        monkeypatch.setattr(iw, "run_ffmpeg", _ok_ffmpeg)
+        monkeypatch.setattr(
+            iw,
+            "run_whispermlx_missing",
+            lambda cmd: seen.append(list(cmd)) or 0,
+        )
+        rc = iw.main(
+            _once_args(inbox, recordings, transcripts, ["--no-watch-transcripts"])
+        )
+        assert rc == 0
+        assert len(seen) == 1
+
+    def test_none_does_not_invoke_missing(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        (inbox / "clip.m4a").write_bytes(b"audio")
+        monkeypatch.setattr(iw, "run_ffmpeg", _ok_ffmpeg)
+        monkeypatch.setattr(
+            iw,
+            "run_whispermlx_missing",
+            lambda _cmd: (_ for _ in ()).throw(AssertionError("missing")),
+        )
+        rc = iw.main(
+            _once_args(
+                inbox,
+                recordings,
+                transcripts,
+                ["--no-watch-transcripts", "--transcribe", "none"],
+            )
+        )
+        assert rc == 0
+        assert (recordings / "clip.mp3").is_file()
+
+    def test_command_substitutes_placeholders(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        (inbox / "clip.m4a").write_bytes(b"audio")
+        seen: list[list[str]] = []
+        monkeypatch.setattr(iw, "run_ffmpeg", _ok_ffmpeg)
+
+        def capture(cmd):
+            seen.append(list(cmd))
+            return 0
+
+        monkeypatch.setattr(iw, "run_transcribe_cmd", capture)
+        rc = iw.main(
+            _once_args(
+                inbox,
+                recordings,
+                transcripts,
+                [
+                    "--no-watch-transcripts",
+                    "--transcribe",
+                    "command",
+                    "--transcribe-cmd",
+                    (
+                        "docker run --rm -v {recordings}:/audio "
+                        "-v {transcripts}:/out image"
+                    ),
+                ],
+            )
+        )
+        assert rc == 0
+        assert len(seen) == 1
+        cmd = seen[0]
+        assert cmd[0] == "docker"
+        assert f"{recordings}:/audio" in cmd
+        assert f"{transcripts}:/out" in cmd
+        assert "{recordings}" not in cmd
+        assert "{transcripts}" not in " ".join(cmd)
+
+    def test_command_does_not_use_shell(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        seen: list[dict[str, object]] = []
+        monkeypatch.setattr(iw, "run_ffmpeg", _ok_ffmpeg)
+        real_run = iw.subprocess.run
+
+        def fake_run(cmd, **kwargs):
+            argv = list(cmd)
+            if argv and argv[0] == "echo":
+                seen.append({"cmd": argv, "kwargs": kwargs})
+                return MagicMock(returncode=0, stdout="", stderr="")
+            return real_run(cmd, **kwargs)
+
+        monkeypatch.setattr(iw.subprocess, "run", fake_run)
+        rc = iw.main(
+            _once_args(
+                inbox,
+                recordings,
+                transcripts,
+                [
+                    "--no-watch-transcripts",
+                    "--transcribe",
+                    "command",
+                    "--transcribe-cmd",
+                    "echo start && echo pwned -- {recordings} {transcripts}",
+                ],
+            )
+        )
+        assert rc == 0
+        transcribe_calls = [c for c in seen if c["cmd"] and c["cmd"][0] == "echo"]
+        assert transcribe_calls
+        call = transcribe_calls[0]
+        assert call["kwargs"].get("shell") is False
+        assert "&&" in call["cmd"]
+        assert call["cmd"][0] == "echo"
+
+    def test_unknown_placeholder_fails_closed(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        monkeypatch.setattr(
+            iw,
+            "run_ffmpeg",
+            lambda _cmd: (_ for _ in ()).throw(AssertionError("ffmpeg")),
+        )
+        monkeypatch.setattr(
+            iw,
+            "run_transcribe_cmd",
+            lambda _cmd: (_ for _ in ()).throw(AssertionError("cmd")),
+        )
+        rc = iw.main(
+            _once_args(
+                inbox,
+                recordings,
+                transcripts,
+                [
+                    "--no-watch-transcripts",
+                    "--transcribe",
+                    "command",
+                    "--transcribe-cmd",
+                    "tool {recordings} {transcripts} {other}",
+                ],
+            )
+        )
+        assert rc == 2
+
+    def test_missing_recordings_placeholder_fails_before_ffmpeg(
+        self, iw, dirs, monkeypatch
+    ):
+        inbox, recordings, transcripts = dirs
+        monkeypatch.setattr(
+            iw,
+            "run_ffmpeg",
+            lambda _cmd: (_ for _ in ()).throw(AssertionError("ffmpeg")),
+        )
+        rc = iw.main(
+            _once_args(
+                inbox,
+                recordings,
+                transcripts,
+                [
+                    "--no-watch-transcripts",
+                    "--transcribe",
+                    "command",
+                    "--transcribe-cmd",
+                    "tool {transcripts}",
+                ],
+            )
+        )
+        assert rc == 2
+
+    def test_missing_transcripts_placeholder_fails_closed(self, iw, tmp_path: Path):
+        with pytest.raises(ValueError, match=r"\{transcripts\}"):
+            iw.expand_transcribe_cmd(
+                ["tool", "{recordings}"],
+                recordings=tmp_path / "rec",
+                transcripts=tmp_path / "tx",
+                env_file=None,
+            )
+
+    def test_env_file_placeholder_without_env_file_fails(self, iw, tmp_path: Path):
+        with pytest.raises(ValueError, match="env_file"):
+            iw.expand_transcribe_cmd(
+                ["tool", "{recordings}", "{transcripts}", "{env_file}"],
+                recordings=tmp_path / "rec",
+                transcripts=tmp_path / "tx",
+                env_file=None,
+            )
+
+    def test_empty_command_fails_before_ffmpeg(self, iw, dirs, monkeypatch):
+        inbox, recordings, transcripts = dirs
+        monkeypatch.setattr(
+            iw,
+            "run_ffmpeg",
+            lambda _cmd: (_ for _ in ()).throw(AssertionError("ffmpeg")),
+        )
+        rc = iw.main(
+            _once_args(
+                inbox,
+                recordings,
+                transcripts,
+                ["--no-watch-transcripts", "--transcribe", "command"],
+            )
+        )
+        assert rc == 2
+
+    def test_expand_whole_token_and_inline(self, iw, tmp_path: Path):
+        recordings = tmp_path / "rec"
+        transcripts = tmp_path / "tx"
+        env_file = tmp_path / "whisperx.env"
+        cmd = iw.expand_transcribe_cmd(
+            [
+                "tool",
+                "{recordings}",
+                "-v",
+                "{recordings}:/audio",
+                "{transcripts}",
+                "{env_file}",
+            ],
+            recordings=recordings,
+            transcripts=transcripts,
+            env_file=env_file,
+        )
+        assert cmd == [
+            "tool",
+            str(recordings),
+            "-v",
+            f"{recordings}:/audio",
+            str(transcripts),
+            str(env_file),
+        ]
+
+    def test_json_array_transcribe_cmd(self, iw, tmp_path: Path, monkeypatch):
+        monkeypatch.setattr(iw, "CONFIG_PATH", tmp_path / "noconfig.json")
+        config_path = tmp_path / "cfg.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "inbox": str(tmp_path / "inbox"),
+                    "recordings": str(tmp_path / "rec"),
+                    "transcripts": str(tmp_path / "tx"),
+                    "transcribe": "command",
+                    "transcribe_cmd": [
+                        "docker",
+                        "run",
+                        "-v",
+                        "{recordings}:/audio",
+                        "-v",
+                        "{transcripts}:/out",
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        args = iw.parse_args(["--once", "--config", str(config_path)])
+        cfg = iw.resolve_config(args, config_path=config_path)
+        assert cfg.transcribe == "command"
+        assert cfg.transcribe_cmd[0] == "docker"
+        assert "{recordings}:/audio" in cfg.transcribe_cmd
+
+    def test_omitted_transcribe_key_defaults_to_whispermlx_missing(
+        self, iw, tmp_path: Path, monkeypatch
+    ):
+        monkeypatch.setattr(iw, "CONFIG_PATH", tmp_path / "noconfig.json")
+        config_path = tmp_path / "cfg.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "inbox": str(tmp_path / "inbox"),
+                    "recordings": str(tmp_path / "rec"),
+                    "transcripts": str(tmp_path / "tx"),
+                }
+            ),
+            encoding="utf-8",
+        )
+        args = iw.parse_args(["--once", "--config", str(config_path)])
+        cfg = iw.resolve_config(args, config_path=config_path)
+        assert cfg.transcribe == "whispermlx-missing"
+        assert cfg.transcribe_cmd == ()
