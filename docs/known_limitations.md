@@ -45,13 +45,13 @@ are excluded from feeding subsequent export resolvers if re-selected.
 
 Charts-only ZIP export remains HTML-only (no EPUB) in this release.
 
-## Speaker ID Components v2 workspace
+## Speaker ID / Corrections Components v2 workspaces
 
-An experimental Streamlit Components v2 Speaker Identification workspace ships in
-the ``transcriptx-workspaces`` package (installed in Docker images; optional for
-native GUI). It is **default-on** when the package is present. Roll back with
-``TX_SPEAKER_ID_WORKSPACE_COMPONENT=0``. If the package is missing, Speaker ID
-falls through to the classic fragment UI automatically. See
+Speaker Identification, Corrections Studio review, and Correct-mode word
+selection run in the ``transcriptx-workspaces`` package (Docker images and
+``pip install -e ".[web]"`` from a git checkout). Speaker ID has **no classic
+widget fallback**; a missing package shows an install error. Corrections Studio
+review can roll back with ``TX_CORRECTIONS_WORKSPACE_COMPONENT=0``. See
 [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
 
 ## Install honesty (Mac MPS)

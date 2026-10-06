@@ -16,6 +16,8 @@ SpeakerIdActionName = Literal[
     "navigate_prev",
     "navigate_next",
     "navigate_jump",
+    "voice_confirm",
+    "voice_reject",
 ]
 
 SpeakerIdAckStatus = Literal[

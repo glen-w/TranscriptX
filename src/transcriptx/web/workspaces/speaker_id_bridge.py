@@ -19,7 +19,7 @@ from transcriptx.web.workspaces.clip_transport import (
 try:
     from transcriptx_workspaces import FRONTEND_BUILD_ID
 except Exception:  # pragma: no cover - package may be optional during import
-    FRONTEND_BUILD_ID = "tx-workspaces-0.2.0"
+    FRONTEND_BUILD_ID = "tx-workspaces-0.3.0"
 
 # Prefetch budgets (docs/dev/theme_c_workspaces_ccv2.md)
 MAX_CLIPS_PER_WARM = 8
@@ -178,7 +178,7 @@ def dispatch_workspace_command(
             "action_id": command.get("action_id"),
             "action_seq": int(command.get("action_seq") or 0),
             "status": "rejected_protocol",
-            "message": "Frontend/protocol mismatch — reload or use classic Speaker ID.",
+            "message": "Frontend/protocol mismatch — reload Speaker Identification.",
         }
         return ack
     if action == "enqueue_clip":

@@ -90,6 +90,8 @@ setup_environment() {
 
     print_status "Installing transcriptx package in development mode..."
     pip install -e . --use-pep517
+    print_status "Installing Theme C CCv2 workspaces..."
+    pip install -e packages/transcriptx_workspaces
 
     print_status "Installing spaCy models for NER analysis..."
     python -m spacy download en_core_web_sm || true
@@ -171,6 +173,7 @@ main() {
             print_warning "transcriptx package path mismatch. Reinstalling..."
         fi
         pip install -e . --use-pep517
+        pip install -e packages/transcriptx_workspaces
     fi
 
     print_status "Checking core dependencies..."

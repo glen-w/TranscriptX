@@ -42,6 +42,33 @@ TRANSCRIPTION_MODEL_OPTIONS: tuple[str, ...] = (
 # (PATHS.project_root resolves under /opt/venv/.../site-packages, not the git clone).
 _HOST_ENV_FILE_RELATIVE = "whisperx.env"
 _HOST_SCRIPT_RELATIVE = "scripts/whispermlx-missing.py"
+_AUDIO_FILE_SUFFIXES = (
+    ".mp3",
+    ".wav",
+    ".m4a",
+    ".flac",
+    ".ogg",
+    ".mp4",
+    ".webm",
+)
+_POSIX_PASTE_NOTE = (
+    "Paste into a POSIX shell (macOS, Linux, Git Bash, or WSL). "
+    "This snippet is not PowerShell or cmd.exe."
+)
+_WINDOWS_MOUNT_NOTE = (
+    "Host paths are quoted as given; TranscriptX does not rewrite "
+    "Windows C:\\… mounts into Git Bash or Docker Desktop spelling."
+)
+
+
+def looks_like_audio_file(path: str) -> bool:
+    """True when path looks like a single audio/video file (case-insensitive)."""
+    stripped = path.rstrip("/\\")
+    return Path(stripped).suffix.lower() in _AUDIO_FILE_SUFFIXES
+
+
+def _strip_trailing_separators(path: str) -> str:
+    return path.rstrip("/\\")
 
 
 def looks_like_container_install_path(path: str | Path) -> bool:
@@ -254,8 +281,8 @@ def build_whispermlx_missing(params: CommandGenParams) -> GeneratedCommand:
 
 def build_whisperx_docker(params: CommandGenParams) -> GeneratedCommand:
     """Reference docker run for non-macOS / WhisperX recipe (copyable only)."""
-    audio_mount = params.input_path.rstrip("/")
-    out_mount = params.output_dir.rstrip("/")
+    audio_mount = _strip_trailing_separators(params.input_path)
+    out_mount = _strip_trailing_separators(params.output_dir)
     diarize = " --diarize" if params.diarize else ""
     speaker_flags = ""
     if params.min_speakers is not None:
@@ -296,7 +323,7 @@ docker run --rm \\
 
 def build_whisper_webui_docker(params: CommandGenParams) -> GeneratedCommand:
     """Deploy jhj0517/Whisper-WebUI (Gradio) via Docker — copyable only."""
-    out_mount = params.output_dir.rstrip("/") or "./outputs"
+    out_mount = _strip_trailing_separators(params.output_dir) or "./outputs"
     image = params.docker_image.strip() or "jhj0517/whisper-webui:v1.0.8-4def223"
     port = int(params.webui_port) if params.webui_port else 7860
     clone_dir = params.webui_clone_dir.strip() or "$HOME/Whisper-WebUI"
@@ -357,19 +384,27 @@ echo "Stop: docker stop whisper-webui"
 def generate_transcription_command(params: CommandGenParams) -> GeneratedCommand:
     """Build a copyable command for the selected tool."""
     if params.tool is TranscriptionTool.WHISPERMLX_SINGLE:
-        # Directory-looking inputs get a batch loop; files get single invocation.
-        if params.input_path.rstrip("/").endswith(
-            (".mp3", ".wav", ".m4a", ".flac", ".ogg", ".mp4", ".webm")
-        ):
-            return build_whispermlx_single(params)
-        return build_whispermlx_batch_loop(params)
-    if params.tool is TranscriptionTool.WHISPERMLX_MISSING:
-        return build_whispermlx_missing(params)
+        if looks_like_audio_file(params.input_path):
+            generated = build_whispermlx_single(params)
+        else:
+            generated = build_whispermlx_batch_loop(params)
+    elif params.tool is TranscriptionTool.WHISPERMLX_MISSING:
+        generated = build_whispermlx_missing(params)
+    elif params.tool is TranscriptionTool.WHISPERX_DOCKER:
+        generated = build_whisperx_docker(params)
+    elif params.tool is TranscriptionTool.WHISPER_WEBUI_DOCKER:
+        generated = build_whisper_webui_docker(params)
+    else:
+        raise ValueError(f"Unknown transcription tool: {params.tool!r}")
+    extra_notes = (_POSIX_PASTE_NOTE,)
     if params.tool is TranscriptionTool.WHISPERX_DOCKER:
-        return build_whisperx_docker(params)
-    if params.tool is TranscriptionTool.WHISPER_WEBUI_DOCKER:
-        return build_whisper_webui_docker(params)
-    raise ValueError(f"Unknown transcription tool: {params.tool!r}")
+        extra_notes = extra_notes + (_WINDOWS_MOUNT_NOTE,)
+    return GeneratedCommand(
+        title=generated.title,
+        shell=generated.shell,
+        notes=generated.notes + extra_notes,
+        next_step=generated.next_step,
+    )
 
 
 def generate_preview_lines(params: CommandGenParams) -> Sequence[str]:

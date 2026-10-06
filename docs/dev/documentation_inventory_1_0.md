@@ -185,7 +185,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/contracts/workspace-backup.md | Workspace backup contract | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/contracts/workspace-backup.md | yes |
 | docs/runtime/karaoke-playback.md | Theme D karaoke playback | live | user | current | Theme D MVP | retain | — | USER_INDEX, index.md | docs/ROADMAP.md | yes |
 | docs/dev/workflow_media_capture.md | Regenerating workflow screenshots/GIFs | live | developer | current | — | retain | — | DEV_INDEX | docs/dev/CONTRIBUTING.md | no |
-| docs/dev/theme_c_workspaces_ccv2.md | Theme C CCv2 workspaces design | live | developer | current | 1.x; flag default-on | retain | — | DEV_INDEX, ROADMAP | docs/ROADMAP.md | no |
+| docs/dev/theme_c_workspaces_ccv2.md | Theme C CCv2 workspaces design | live | developer | current | 1.0 named workspaces; Corrections env rollback | retain | — | DEV_INDEX, ROADMAP | docs/ROADMAP.md | no |
 | docs/dev/theme_c_invest_narrow_defer.md | Theme C invest/narrow/defer | live | developer | current | — | retain | — | DEV_INDEX | docs/dev/theme_c_workspaces_ccv2.md | no |
 | docs/dev/ui_presentation_modes.md | Guided / Full (0.9.6 trial) | — | — | — | **removed** — trialled and decided against | deleted | — | pre_release_roadmap §16 | PRODUCT.md | no |
 | docs/dev/demo_project.md | Demo project (0.9.6 trial) | — | — | — | **removed** — trialled and decided against | deleted | — | pre_release_roadmap §16 | PRODUCT.md | no |

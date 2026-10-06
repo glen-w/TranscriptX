@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Theme G3 (host STT selection):** `inbox-watch --transcribe whispermlx-missing|none|command` plus `--transcribe-cmd` argv placeholders (`{recordings}`, `{transcripts}`, `{env_file}`). Default stays `whispermlx-missing`. Transcribe Audio copyable snippets stay POSIX; file-vs-folder detection is case-insensitive and strips trailing `\`. Operator notes: [host-stt.md](docs/runtime/host-stt.md).
+- **Theme C Phase 9:** Speaker Identification is CCv2-only (classic naming/playback widgets removed). `[web]` installs `transcriptx-workspaces`. Corrections Studio review pane is CCv2 default-on (`TX_CORRECTIONS_WORKSPACE_COMPONENT=0` rollback). Transcript Correct mode click-drag selects word spans when `words[]` exist. Voice confirm/reject go through `SpeakerIdActionService`.
+
 ### Changed
 
 - An informal try by someone new to the app (October 2026) is noted and is not a release gate. The old unfamiliar-user protocol is retired.

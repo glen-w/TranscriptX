@@ -14,7 +14,7 @@ The GUI extra is separate: Streamlit is **`[web]`**, not in `[full]`. Docker / `
 
 | Extra | What it is for |
 |-------|----------------|
-| `web` | Streamlit GUI. Not included in `[full]`. |
+| `web` | Streamlit GUI plus in-repo `transcriptx-workspaces` (CCv2). Not included in `[full]`. `file:` path on git checkouts, not PyPI. |
 | `rag` | LanceDB + httpx for the opt-in Ask page. Also in Docker `requirements.txt` and `[full]`. |
 | `nlp` / `ner` | spaCy NER (`ner` is an alias; modules require `nlp`). |
 | `emotion_lexical` | NRCLex lexical emotion. |
@@ -33,10 +33,10 @@ The GUI extra is separate: Streamlit is **`[web]`**, not in `[full]`. Docker / `
 
 ## Workspace package
 
-[`packages/transcriptx_workspaces`](../../packages/transcriptx_workspaces/README.md) is the Theme C Streamlit Components v2 package (Speaker ID workspace). Install alongside `[web]`:
+[`packages/transcriptx_workspaces`](../../packages/transcriptx_workspaces/README.md) is the Theme C Streamlit Components v2 package (Speaker ID, Corrections review, viewer click-drag). The `[web]` extra installs it from `file:packages/transcriptx_workspaces` on git checkouts. Docker strips that extra before building the TranscriptX wheel (image pip cannot parse the relative `file:` URL), installs `transcriptx` with `--no-deps` (deps already from `requirements.txt`), and vendors the workspaces wheel in a later Dockerfile step.
 
 ```bash
-pip install -e packages/transcriptx_workspaces
+pip install -e ".[web]"
 ```
 
-If it is not installed, Speaker ID falls through to the classic UI. See [theme_c_workspaces_ccv2.md](theme_c_workspaces_ccv2.md).
+See [theme_c_workspaces_ccv2.md](theme_c_workspaces_ccv2.md).

@@ -6,3 +6,11 @@ version = "0.1.0"
 [[tool.streamlit.component.components]]
 name = "speaker_id_workspace"
 asset_dir = "frontend/build"
+
+[[tool.streamlit.component.components]]
+name = "corrections_workspace"
+asset_dir = "frontend/build"
+
+[[tool.streamlit.component.components]]
+name = "viewer_edit_workspace"
+asset_dir = "frontend/build"

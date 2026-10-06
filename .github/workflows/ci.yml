@@ -283,6 +283,6 @@ jobs:
           python -m venv /tmp/tx-ws-wheel
           /tmp/tx-ws-wheel/bin/pip install -U pip
           /tmp/tx-ws-wheel/bin/pip install packages/transcriptx_workspaces/dist/transcriptx_workspaces-*.whl
-          /tmp/tx-ws-wheel/bin/python -c "import transcriptx_workspaces; print(transcriptx_workspaces.FRONTEND_BUILD_ID)"
+          /tmp/tx-ws-wheel/bin/python -c "from transcriptx_workspaces import FRONTEND_BUILD_ID, speaker_id_workspace, corrections_workspace, viewer_edit_workspace; print(FRONTEND_BUILD_ID)"
       - name: Browser harness
         run: make test-theme-c-browser

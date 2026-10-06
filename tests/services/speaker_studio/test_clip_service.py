@@ -479,12 +479,12 @@ def test_speaker_id_page_imports_only_controller() -> None:
     assert "SpeakerMappingService" not in source
 
 
-def test_speaker_id_page_uses_render_playback_panel() -> None:
-    """speaker_id.py must call render_playback_panel_body from the shared component."""
+def test_speaker_id_page_uses_ccv2_playback() -> None:
+    """speaker_id.py mounts CCv2 for clips; still resolves playback context."""
     import transcriptx.web.page_modules.speaker_id as mod
 
     source = Path(mod.__file__).read_text()
-    assert "render_playback_panel_body" in source
+    assert "_render_ccv2_speaker_workspace" in source
     assert "playback_panel" in source
     assert "resolve_playback_context" in source
 

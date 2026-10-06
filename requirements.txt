@@ -164,10 +164,10 @@ httpx>=0.25.0
 # Web Framework
 # ============================================================================
 streamlit>=1.55.0
-# Theme C CCv2 workspaces — default Speaker ID surface (flag on).
-# Missing package falls through to classic UI. Rollback: TX_SPEAKER_ID_WORKSPACE_COMPONENT=0
-# Native: pip install -e packages/transcriptx_workspaces
+# Theme C CCv2 workspaces (Speaker ID / Corrections / viewer edit). Source checkouts:
+#   pip install -e ".[web]"  (pulls file:packages/transcriptx_workspaces)
 # Docker: built/installed from packages/transcriptx_workspaces in the image (see Dockerfile).
+# Native extra if not using [web]: pip install -e packages/transcriptx_workspaces
 
 # ============================================================================
 # Development and Testing (for core functionality)

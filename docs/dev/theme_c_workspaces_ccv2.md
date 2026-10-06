@@ -1,18 +1,18 @@
 # Theme C — High-interaction workspaces (Components v2)
 
-Status: active (1.x)  
-Last updated: 2026-08-27
+Status: 1.0 named workspaces landed (Speaker ID Phase 9, Studio review, viewer click-drag)  
+Last updated: 2026-10-06
 
 **Roadmap home:** [docs/ROADMAP.md](../ROADMAP.md) §C  
 **Product constraint:** Streamlit shell + Python domain; specialised CCv2 workspaces only.
 
 ## Goal
 
-Escape Streamlit’s rerun model for workstation pages (Speaker ID → Corrections → later rich edit) without abandoning Streamlit for the analysis workbench.
+Escape Streamlit’s rerun model for workstation pages (Speaker ID, Corrections review, per-segment word selection) without abandoning Streamlit for the analysis workbench. Manuscript-style rich edit and a CCv2 karaoke reader stay out of this theme.
 
 ## Locked decisions
 
-1. Shared `SpeakerIdActionService` owns mutations for **legacy and CCv2** (Phase −1 shipped).
+1. Shared `SpeakerIdActionService` owns Speaker ID mutations (Phase −1). After Phase 9 the naming/playback surface is CCv2-only.
 2. Three state tiers: browser-local ephemeral · sparse Streamlit `setStateValue` · revisioned domain triggers. **Never** stream `current_time_ms` via `setStateValue`.
 3. Every domain trigger is a revisioned command envelope; acks carry authoritative revisions.
 4. Optimistic reconciliation: one mutating speaker action in flight; nav may be optimistic; ignore stale/out-of-order acks by `action_seq`; duplicate `action_id` never writes twice; protocol/build mismatch fails closed.
@@ -22,7 +22,7 @@ Escape Streamlit’s rerun model for workstation pages (Speaker ID → Correctio
 8. Packaged CCv2 from Streamlit `component-template` v2 layout: component-level `[[tool.streamlit.component.components]]`, assets in wheel/sdist.
 9. Dist policy: **commit built `frontend/build` assets** into the workspaces package (reproducible installs without Node at runtime). CI rebuilds and fails on drift. Lockfile + Node engines pinned.
 10. Shadow DOM = style isolation only. Render text via `textContent`. `asset_dir` is public.
-11. Feature flag default **on** (Phase 5). Rollback with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`. Missing `transcriptx-workspaces` falls through to legacy. Legacy retired only in Phase 9.
+11. Feature flag for **Corrections** default **on**. Rollback with `TX_CORRECTIONS_WORKSPACE_COMPONENT=0`. Speaker ID CCv2 is required (Phase 9); missing `transcriptx-workspaces` is an install error, not a classic-UI fallback.
 
 ## Protocol
 
@@ -67,29 +67,28 @@ Revoke Blob URLs on replacement, transcript switch, and unmount.
 - Prefetch budgets held; multi-session backpressure respected
 - Record p50/p95 trigger→ack for nav/warm in CI artefacts when measured
 
-### Phase 5 (default-on)
+### Phase 5 (default-on, historical)
 
 - Browser harness green (audio identity, transcript switch, keyboard suppression)
 - Docker/web images install `transcriptx-workspaces` wheel
-- Flag defaults **on**; env/session rollback retained for one release window
-- Missing package auto-falls through to legacy (does not brick Speaker ID)
+- Corrections flag defaults **on**; env rollback retained for one release after 1.0
+- Speaker ID missing-package fallback to classic widgets **removed in Phase 9** (install error instead)
 - Zero duplicate mutations under replayed `action_id`
 
 ## Feature flags
 
 | Flag | Default | Meaning |
 |------|---------|---------|
-| `speaker_id_workspace_component` | **`true`** (Phase 5); rollback with env `0`/`false`/`off` | CCv2 Speaker ID workspace |
-| `corrections_workspace_component` | `false` | CCv2 Corrections |
+| `corrections_workspace_component` | **`true`**; rollback with env `0`/`false`/`off` | CCv2 Corrections review pane |
 
-Env enable: `TX_SPEAKER_ID_WORKSPACE_COMPONENT=1` (redundant once default-on). Env rollback: `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`.
+Env rollback: `TX_CORRECTIONS_WORKSPACE_COMPONENT=0`.
 
 ## Frontend toolchain
 
 - Node `>=20 <23` (CI uses 22.x)
 - npm lockfile committed
 - `@streamlit/component-v2-lib` pinned in workspaces package
-- Vite, `base: "./"`, hashed `index-*.js` / `index-*.css`
+- Vite, `base: "./"`, hashed `speaker_id-*.js` / `corrections-*.js` / `viewer_edit-*.js` plus named CSS
 
 ## Keyboard map (Phase 3)
 
@@ -115,24 +114,28 @@ Avoid browser/AT reserved chords.
 
 ## Invest / narrow / defer (after Phase 3)
 
-Written decision required before Corrections expansion or SPA rewrite. Escalate to a custom local frontend only with evidence that CCv2 remount/bytes/focus limits block product goals.
+Corrections CCv2 review and viewer click-drag landed for 1.0. SPA rewrite still needs written remount/bytes/focus evidence. Escalate to a custom local frontend only with evidence that CCv2 remount/bytes/focus limits block product goals.
 
 **First escalation (if the gate fires):** loopback application API over existing `app.controllers` / workflows, with Streamlit remaining the only client until that API is stable — then grow workspaces off Streamlit hosting. Do **not** jump to Gradio/NiceGUI or an OS-native workbench rewrite. Full Streamlit retirement is a late 1.x / 2.0 programme (theme **I**), not a Theme C deliverable. Roadmap: [ROADMAP.md](../ROADMAP.md) §C (shell review) and §I.
 
 ## Phase 9 legacy retirement
 
-Remove legacy fragment contracts **only when all** are true:
+**Done for 1.0** (2026-10-06). Soak evidence: CI `workspaces-theme-c`, GUI E2E, and Docker wheel install since default-on (2026-08-11). Native `[web]` now installs the package. Classic Speaker ID naming/playback widgets are removed. Missing package → install error.
+
+Previous criteria (all true):
 
 1. Shared `SpeakerIdActionService` means both paths have identical domain semantics (enforced by tests) — **done**
-2. Rollback / flag-off path has survived the stated release window after default-on
+2. Rollback / flag-off path survived the stated release window after default-on — **waived in favour of CI/E2E/Docker soak; native extra now required**
 3. Browser acceptance suite remains green in CI (Streamlit min + current)
 4. Explicit changelog + known-limitations update
 
-Until then: keep “single `@st.fragment` on Speaker ID” and flag-off characterisation contracts. **Do not remove legacy merely because CCv2 is default-on.**
-
 ## Related code
 
-- `src/transcriptx/app/speaker_id/` — action service
-- `packages/transcriptx_workspaces/` — CCv2 package
-- `src/transcriptx/web/workspaces/` — Streamlit adapters / flags
+- `src/transcriptx/app/speaker_id/` — Speaker ID action service (`voice_confirm` / `voice_reject` included)
+- `src/transcriptx/app/corrections/` — Studio review / export action service
+- `packages/transcriptx_workspaces/` — named CCv2 entries (`speaker_id`, `corrections`, `viewer_edit`)
+- `src/transcriptx/web/workspaces/` — Streamlit adapters / Corrections flag
+- `src/transcriptx/web/page_modules/speaker_id.py` — CCv2-only naming/playback
+- `src/transcriptx/web/page_modules/corrections_studio.py` — CCv2 review + Streamlit generate/export
+- `src/transcriptx/web/transcript_viewer/corrections_panel.py` — click-drag host when `words[]` exist
 - `src/transcriptx/services/speaker_studio/clip_service.py` — non-blocking APIs

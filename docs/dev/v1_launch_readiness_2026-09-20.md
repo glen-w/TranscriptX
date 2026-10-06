@@ -47,7 +47,7 @@ and owner work still open before a public **1.0** tag. An informal stranger test
 - SR-06 LLM arbitrary HTTP destinations (document + warn; allowlist later)
 - SR-08–SR-12 supply-chain / digest pins / privacy egress profile
 - Overview hierarchy + Charts catalogue residuals
-- Theme C depth beyond default-on Speaker ID CCv2
+- Theme C named workspaces (Speaker ID Phase 9, Studio CCv2, viewer click-drag) landed 2026-10 — see [theme_c_workspaces_ccv2.md](theme_c_workspaces_ccv2.md)
 
 ## Efficiency notes
 

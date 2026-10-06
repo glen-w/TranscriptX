@@ -1,12 +1,24 @@
 # transcriptx-workspaces
 
 Streamlit Components v2 package for TranscriptX Theme C high-interaction
-workspaces. Scaffolded from Streamlit's official `component-template` v2
-(template-reactless), then specialised for Speaker Identification.
+workspaces: Speaker Identification, Corrections Studio review, and Transcript
+Correct-mode word selection.
 
-The Speaker ID workspace feature flag is **default-on**. Roll back with
-`TX_SPEAKER_ID_WORKSPACE_COMPONENT=0` (see `docs/dev/theme_c_workspaces_ccv2.md`).
-If this package is not installed, Speaker ID falls through to the classic UI.
+Install with the GUI extra from a git checkout:
+
+```bash
+pip install -e ".[web]"
+```
+
+or:
+
+```bash
+pip install -e packages/transcriptx_workspaces
+```
+
+Corrections review rolls back to Streamlit widgets with
+`TX_CORRECTIONS_WORKSPACE_COMPONENT=0`. Speaker ID has no classic widget
+fallback — missing this package is an install error.
 
 ## Build
 
@@ -17,12 +29,11 @@ npm run build
 ```
 
 Built assets under `frontend/build/` are committed so installs do not require
-Node at runtime. CI rebuilds and fails on drift.
+Node at runtime. CI rebuilds hashed `speaker_id-*`, `corrections-*`, and
+`viewer_edit-*` bundles.
 
-## Install
+Registered component keys:
 
-```bash
-pip install -e packages/transcriptx_workspaces
-```
-
-Registered component key: `transcriptx-workspaces.speaker_id_workspace`
+- `transcriptx-workspaces.speaker_id_workspace`
+- `transcriptx-workspaces.corrections_workspace`
+- `transcriptx-workspaces.viewer_edit_workspace`

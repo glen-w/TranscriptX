@@ -23,7 +23,7 @@ TranscriptX is structured in two layers:
 - **Engine** — Pipeline, modules, and shared context. Responsible for execution and artifact production.
 - **GUI** — Streamlit-based web interface (primary product surface). Provides transcript processing, speaker identification, analysis browsing, batch operations, audio preparation, settings, groups, and more.
 
-**High-interaction workspaces (Theme C):** Speakers/Corrections workstation pages may mount Streamlit Components v2 surfaces (`packages/transcriptx_workspaces`) while Streamlit remains the shell. Domain mutations go through shared application services (`app/speaker_id`, `app/corrections`) so legacy fragment UIs and CCv2 bridges cannot drift. See [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md). A custom non-Streamlit frontend is a post-1.0 escalation (roadmap theme **I**), not current architecture.
+**High-interaction workspaces (Theme C):** Speaker Identification, Corrections Studio review, and Correct-mode word selection mount Streamlit Components v2 (`packages/transcriptx_workspaces`) while Streamlit remains the shell. Domain mutations go through shared application services (`app/speaker_id`, `app/corrections`). Speaker ID has no classic-widget fallback. See [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md). A custom non-Streamlit frontend is a post-1.0 escalation (roadmap theme **I**), not current architecture.
 
 Scripting and automation use the Python API directly (`app.workflows`, `core.pipeline`). Transcription is **external**; the GUI may generate commands for external tools rather than running a built-in engine.
 

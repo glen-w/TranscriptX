@@ -4,7 +4,7 @@ import { __test } from "./index";
 describe("Speaker ID workspace lifecycle helpers", () => {
   it("exports stable protocol/build ids", () => {
     expect(__test.PROTOCOL_VERSION).toBe("1");
-    expect(__test.FRONTEND_BUILD_ID).toBe("tx-workspaces-0.2.0");
+    expect(__test.FRONTEND_BUILD_ID).toBe("tx-workspaces-0.3.0");
   });
 
   it("ranks typed names ahead of the rest of the profile catalog", () => {

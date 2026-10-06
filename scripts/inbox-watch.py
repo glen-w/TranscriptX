@@ -17,8 +17,9 @@ Install:
     (ensure ~/.local/bin is on PATH)
 
 Modes (independent; at least one required):
-    --watch-audio         Convert new inbox audio → recordings as 16 kHz mono 64k MP3,
-                          then run whispermlx-missing
+    --watch-audio         Convert new inbox audio → recordings as 16 kHz mono 64k MP3
+    --transcribe          After convert: whispermlx-missing (default), none, or command
+    --transcribe-cmd      Argv template when --transcribe command (placeholders below)
     --watch-transcripts   Copy new inbox JSON/SRT/VTT/txt/html into transcripts dest
                           when that stem is not already present
 
@@ -69,6 +70,8 @@ import argparse
 import json
 import os
 import plistlib
+import re
+import shlex
 import shutil
 import stat
 import subprocess
@@ -90,9 +93,7 @@ Kind = Literal["audio", "transcript", "ignore"]
 AUDIO_EXTENSIONS = frozenset(
     {".wav", ".mp3", ".m4a", ".flac", ".ogg", ".opus", ".aac", ".wma"}
 )
-TRANSCRIPT_EXTENSIONS = frozenset(
-    {".json", ".srt", ".vtt", ".txt", ".html", ".htm"}
-)
+TRANSCRIPT_EXTENSIONS = frozenset({".json", ".srt", ".vtt", ".txt", ".html", ".htm"})
 
 KNOWN_CONFIG_KEYS = frozenset(
     {
@@ -103,6 +104,8 @@ KNOWN_CONFIG_KEYS = frozenset(
         "env_file",
         "whispermlx_missing",
         "ffmpeg",
+        "transcribe",
+        "transcribe_cmd",
         "watch_audio",
         "watch_transcripts",
         "recursive",
@@ -139,6 +142,18 @@ FFMPEG_SAMPLE_RATE = "16000"
 FFMPEG_CODEC = "libmp3lame"
 FFMPEG_BITRATE = "64k"
 STAGE_DIR_NAME = ".inbox-staging"
+TRANSCRIBE_WHISPERMLX_MISSING = "whispermlx-missing"
+TRANSCRIBE_NONE = "none"
+TRANSCRIBE_COMMAND = "command"
+TRANSCRIBE_MODES = frozenset(
+    {
+        TRANSCRIBE_WHISPERMLX_MISSING,
+        TRANSCRIBE_NONE,
+        TRANSCRIBE_COMMAND,
+    }
+)
+TRANSCRIBE_PLACEHOLDERS = frozenset({"recordings", "transcripts", "env_file"})
+_PLACEHOLDER_RE = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
 
 @dataclass
@@ -178,6 +193,8 @@ class EffectiveConfig:
     auto_link: bool = False
     stage_local: bool | None = None
     stage_dir: Path | None = None
+    transcribe: str = TRANSCRIBE_WHISPERMLX_MISSING
+    transcribe_cmd: tuple[str, ...] = ()
     provenance: ConfigProvenance = field(default_factory=ConfigProvenance)
 
 
@@ -236,9 +253,7 @@ def _print_section(title: str) -> None:
     _log("---")
 
 
-def _print_limited_items(
-    label: str, items: Sequence[str], *, limit: int = 12
-) -> None:
+def _print_limited_items(label: str, items: Sequence[str], *, limit: int = 12) -> None:
     if not items:
         return
     shown = min(len(items), limit)
@@ -262,7 +277,7 @@ def _cycle_status(stats: CycleStats, *, dry_run: bool) -> str:
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Watch an inbox for new audio (convert + whispermlx-missing) "
+            "Watch an inbox for new audio (convert, then optional host STT) "
             "and/or new transcripts (copy if stem missing). "
             "Optional --admit admits originals/ JSON into the managed library."
         ),
@@ -290,6 +305,25 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Path to whispermlx-missing (binary or scripts/whispermlx-missing.py).",
     )
     parser.add_argument("--ffmpeg", type=Path, default=None)
+    parser.add_argument(
+        "--transcribe",
+        choices=sorted(TRANSCRIBE_MODES),
+        default=None,
+        help=(
+            "Host STT after audio convert: whispermlx-missing (default), "
+            "none (convert/copy/admit only), or command (--transcribe-cmd)."
+        ),
+    )
+    parser.add_argument(
+        "--transcribe-cmd",
+        dest="transcribe_cmd",
+        default=None,
+        metavar="ARGV",
+        help=(
+            "Argv template when --transcribe command. JSON config may use a "
+            "string array. Placeholders: {recordings}, {transcripts}, {env_file}."
+        ),
+    )
     parser.add_argument(
         "--admit-python",
         dest="admit_python",
@@ -376,7 +410,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         dest="watch_audio",
         action="store_true",
         default=None,
-        help="Enable audio convert + whispermlx-missing (default: on if unset).",
+        help="Enable audio convert (default: on if unset). STT is --transcribe.",
     )
     audio_group.add_argument(
         "--no-watch-audio",
@@ -615,7 +649,72 @@ def require_bool(value: Any, key: str) -> bool:
     raise SystemExit(f"ERROR: config key {key!r} must be a boolean, got {value!r}")
 
 
-def portable_defaults(repo_root: Path | None) -> tuple[dict[str, Any], ConfigProvenance]:
+def parse_transcribe_mode(value: Any) -> str:
+    if value is None:
+        return TRANSCRIBE_WHISPERMLX_MISSING
+    text = str(value).strip()
+    if not text:
+        return TRANSCRIBE_WHISPERMLX_MISSING
+    if text not in TRANSCRIBE_MODES:
+        known = ", ".join(sorted(TRANSCRIBE_MODES))
+        raise SystemExit(f"ERROR: transcribe must be one of {known}, got {value!r}")
+    return text
+
+
+def parse_transcribe_cmd(value: Any) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, (list, tuple)):
+        return tuple(str(item) for item in value if str(item).strip())
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return ()
+        return tuple(shlex.split(text))
+    raise SystemExit(
+        "ERROR: transcribe_cmd must be a JSON array of strings or a "
+        f"shell-split string, got {value!r}"
+    )
+
+
+def expand_transcribe_cmd(
+    tokens: Sequence[str],
+    *,
+    recordings: Path,
+    transcripts: Path,
+    env_file: Path | None,
+) -> list[str]:
+    values: dict[str, str | None] = {
+        "recordings": str(recordings),
+        "transcripts": str(transcripts),
+        "env_file": str(env_file) if env_file is not None else None,
+    }
+    joined = " ".join(tokens)
+    if "{recordings}" not in joined:
+        raise ValueError("transcribe_cmd must include the {recordings} placeholder")
+    if "{transcripts}" not in joined:
+        raise ValueError("transcribe_cmd must include the {transcripts} placeholder")
+
+    def replace_token(token: str) -> str:
+        def repl(match: re.Match[str]) -> str:
+            name = match.group(1)
+            if name not in TRANSCRIBE_PLACEHOLDERS:
+                raise ValueError(f"unknown transcribe_cmd placeholder {{{name}}}")
+            val = values[name]
+            if val is None:
+                raise ValueError(
+                    "transcribe_cmd uses {env_file} but env_file is not set"
+                )
+            return val
+
+        return _PLACEHOLDER_RE.sub(repl, token)
+
+    return [replace_token(token) for token in tokens]
+
+
+def portable_defaults(
+    repo_root: Path | None,
+) -> tuple[dict[str, Any], ConfigProvenance]:
     provenance = ConfigProvenance()
     defaults: dict[str, Any] = {}
     if repo_root is None:
@@ -681,6 +780,13 @@ def env_derived_config() -> tuple[dict[str, Any], ConfigProvenance]:
         derived["stage_dir"] = stage_dir
         provenance.stage_dir = "env"
 
+    transcribe = os.environ.get("INBOX_WATCH_TRANSCRIBE", "").strip()
+    if transcribe:
+        derived["transcribe"] = transcribe
+    transcribe_cmd = os.environ.get("INBOX_WATCH_TRANSCRIBE_CMD", "").strip()
+    if transcribe_cmd:
+        derived["transcribe_cmd"] = transcribe_cmd
+
     if os.environ.get("INBOX_WATCH_AUDIO", "").strip():
         derived["watch_audio"] = _parse_bool_env(
             os.environ.get("INBOX_WATCH_AUDIO"), default=True
@@ -735,6 +841,8 @@ def base_config_dict() -> dict[str, Any]:
         "delete_originals": False,
         "skip_serial": False,
         "admit_to_library": False,
+        "transcribe": TRANSCRIBE_WHISPERMLX_MISSING,
+        "transcribe_cmd": [],
     }
 
 
@@ -869,6 +977,10 @@ def resolve_config(
         merged["auto_link"] = args.auto_link
     if args.stage_local is not None:
         merged["stage_local"] = args.stage_local
+    if args.transcribe is not None:
+        merged["transcribe"] = args.transcribe
+    if args.transcribe_cmd is not None:
+        merged["transcribe_cmd"] = args.transcribe_cmd
     if args.recursive is not None:
         merged["recursive"] = args.recursive
     if args.interval_seconds is not None:
@@ -904,6 +1016,8 @@ def resolve_config(
         stage_local: bool | None = None
     else:
         stage_local = require_bool(stage_local_raw, "stage_local")
+    transcribe = parse_transcribe_mode(merged.get("transcribe"))
+    transcribe_cmd = parse_transcribe_cmd(merged.get("transcribe_cmd"))
     interval = merged.get("interval_seconds", 5.0)
     try:
         interval_seconds = float(interval)
@@ -934,6 +1048,8 @@ def resolve_config(
         auto_link=auto_link,
         stage_local=stage_local,
         stage_dir=_as_optional_path(merged.get("stage_dir")),
+        transcribe=transcribe,
+        transcribe_cmd=transcribe_cmd,
         provenance=provenance,
     )
 
@@ -964,6 +1080,8 @@ def config_to_dict(cfg: EffectiveConfig) -> dict[str, Any]:
         "auto_link": cfg.auto_link,
         "stage_local": cfg.stage_local,
         "stage_dir": str(cfg.stage_dir) if cfg.stage_dir else None,
+        "transcribe": cfg.transcribe,
+        "transcribe_cmd": list(cfg.transcribe_cmd),
     }
 
 
@@ -1032,7 +1150,10 @@ def wait_until_stable(
             st = path.stat()
         except OSError:
             return False
-        current = (int(st.st_size), int(getattr(st, "st_mtime_ns", int(st.st_mtime * 1e9))))
+        current = (
+            int(st.st_size),
+            int(getattr(st, "st_mtime_ns", int(st.st_mtime * 1e9))),
+        )
         if previous is not None and current == previous:
             stable_count += 1
             if stable_count >= max(checks, 1):
@@ -1341,6 +1462,11 @@ def run_whispermlx_missing(cmd: Sequence[str]) -> int:
     return int(result.returncode)
 
 
+def run_transcribe_cmd(cmd: Sequence[str]) -> int:
+    result = subprocess.run(list(cmd), check=False, shell=False)
+    return int(result.returncode)
+
+
 def transcripts_root_for_admit(transcripts: Path) -> Path:
     if transcripts.name == "originals":
         return transcripts.parent
@@ -1441,9 +1567,7 @@ def wait_for_directory(
     timeout_seconds: float | None = None,
 ) -> bool:
     """Block until *path* is a directory. Return False if *timeout_seconds* elapses."""
-    deadline = (
-        None if timeout_seconds is None else time.monotonic() + timeout_seconds
-    )
+    deadline = None if timeout_seconds is None else time.monotonic() + timeout_seconds
     announced = False
     while not path.is_dir():
         if deadline is not None and time.monotonic() >= deadline:
@@ -1516,7 +1640,9 @@ def finalize_inbox_source(
                     backup_original_to_wav(src, cfg.wav_backup)
                 stats.originals_backed_up += 1
             except OSError as exc:
-                print(f"ERROR: wav backup failed for {src.name}: {exc}", file=sys.stderr)
+                print(
+                    f"ERROR: wav backup failed for {src.name}: {exc}", file=sys.stderr
+                )
                 if cfg.delete_originals:
                     print(
                         f"WARNING: not deleting {src.name} because backup failed",
@@ -1576,8 +1702,11 @@ def validate_layout(cfg: EffectiveConfig) -> str | None:
     if cfg.watch_audio:
         if cfg.recordings is None:
             return "recordings is required when watch_audio is on."
-        if cfg.transcripts is None:
-            return "transcripts is required when watch_audio is on (whispermlx-missing output)."
+        if cfg.transcribe != TRANSCRIBE_NONE and cfg.transcripts is None:
+            return (
+                "transcripts is required when watch_audio is on "
+                "(host STT output / transcribe-cmd placeholders)."
+            )
     if cfg.watch_transcripts and cfg.transcripts is None:
         return "transcripts is required when watch_transcripts is on."
     if cfg.admit_to_library and cfg.transcripts is None:
@@ -1611,7 +1740,9 @@ def validate_layout(cfg: EffectiveConfig) -> str | None:
         if cfg.wav_backup is None:
             return "wav_backup is required when backup_wavs is on."
         wav_backup = cfg.wav_backup
-        if inbox.resolve() == wav_backup.resolve() or is_same_or_under(inbox, wav_backup):
+        if inbox.resolve() == wav_backup.resolve() or is_same_or_under(
+            inbox, wav_backup
+        ):
             return "inbox must not be wav_backup or a path under wav_backup."
         if is_same_or_under(wav_backup, inbox):
             return "wav_backup must not be under inbox."
@@ -1621,18 +1752,41 @@ def validate_layout(cfg: EffectiveConfig) -> str | None:
             return "inbox must not be stage_dir or a path under stage_dir."
         if is_same_or_under(stage_dir, inbox):
             return "stage_dir must not be under inbox."
-        if cfg.recordings is not None and stage_dir.resolve() == cfg.recordings.resolve():
+        if (
+            cfg.recordings is not None
+            and stage_dir.resolve() == cfg.recordings.resolve()
+        ):
             return (
                 "stage_dir must not be recordings "
                 "(use a subdirectory such as recordings/.inbox-staging)."
             )
-        if cfg.wav_backup is not None and stage_dir.resolve() == cfg.wav_backup.resolve():
+        if (
+            cfg.wav_backup is not None
+            and stage_dir.resolve() == cfg.wav_backup.resolve()
+        ):
             return "stage_dir must not be wav_backup."
         if (
             cfg.move_processed is not None
             and stage_dir.resolve() == cfg.move_processed.resolve()
         ):
             return "stage_dir must not be move_processed."
+    if cfg.transcribe == TRANSCRIBE_COMMAND:
+        if not cfg.transcribe_cmd:
+            return "transcribe_cmd is required when transcribe is command."
+        if cfg.recordings is None or cfg.transcripts is None:
+            return "recordings and transcripts are required when transcribe is command."
+        try:
+            expand_transcribe_cmd(
+                cfg.transcribe_cmd,
+                recordings=cfg.recordings,
+                transcripts=cfg.transcripts,
+                env_file=cfg.env_file,
+            )
+        except ValueError as exc:
+            return str(exc)
+    elif cfg.transcribe not in TRANSCRIBE_MODES:
+        known = ", ".join(sorted(TRANSCRIBE_MODES))
+        return f"transcribe must be one of {known}."
     return None
 
 
@@ -1642,8 +1796,9 @@ def _has_meaningful_paths(cfg: EffectiveConfig) -> bool:
     if cfg.watch_audio:
         if cfg.provenance.recordings not in _MEANINGFUL_PATH_SOURCES:
             return False
-        if cfg.provenance.transcripts not in _MEANINGFUL_PATH_SOURCES:
-            return False
+        if cfg.transcribe != TRANSCRIBE_NONE:
+            if cfg.provenance.transcripts not in _MEANINGFUL_PATH_SOURCES:
+                return False
     if cfg.watch_transcripts:
         if cfg.provenance.transcripts not in _MEANINGFUL_PATH_SOURCES:
             return False
@@ -1784,7 +1939,12 @@ def print_review_before_cycle(
             _log(f"  Stage dir:   {stage_dir}")
     modes: list[str] = []
     if cfg.watch_audio:
-        modes.append("audio→mp3 + whispermlx-missing")
+        if cfg.transcribe == TRANSCRIBE_NONE:
+            modes.append("audio→mp3")
+        elif cfg.transcribe == TRANSCRIBE_COMMAND:
+            modes.append("audio→mp3 + transcribe-cmd")
+        else:
+            modes.append("audio→mp3 + whispermlx-missing")
         if staging:
             modes.append("stage-local")
     if cfg.watch_transcripts:
@@ -1842,6 +2002,50 @@ def maybe_run_missing(
         stats.audio_failed += 1
     else:
         _log(f"  Finished whispermlx-missing in {elapsed:.1f}s")
+    _log("---")
+
+
+def maybe_run_transcribe_cmd(
+    cfg: EffectiveConfig,
+    stats: CycleStats,
+    *,
+    dry_run: bool,
+) -> None:
+    assert cfg.recordings is not None
+    assert cfg.transcripts is not None
+    try:
+        cmd = expand_transcribe_cmd(
+            cfg.transcribe_cmd,
+            recordings=cfg.recordings,
+            transcripts=cfg.transcripts,
+            env_file=cfg.env_file,
+        )
+    except ValueError as exc:
+        _log(f"ERROR: {exc}", err=True)
+        stats.failed_names.append("transcribe-cmd")
+        stats.audio_failed += 1
+        return
+    _print_section("Transcription (transcribe-cmd)")
+    if dry_run:
+        _log(f"  Would run: {' '.join(cmd)}")
+        stats.would_invoke_missing += 1
+        _log("---")
+        return
+    _log(f"  Running: {' '.join(cmd)}")
+    _log("  (child process output follows)")
+    started = time.perf_counter()
+    rc = run_transcribe_cmd(cmd)
+    elapsed = time.perf_counter() - started
+    stats.missing_invoked += 1
+    if rc != 0:
+        _log(
+            f"WARNING: transcribe-cmd exited {rc} after {elapsed:.1f}s",
+            err=True,
+        )
+        stats.failed_names.append("transcribe-cmd")
+        stats.audio_failed += 1
+    else:
+        _log(f"  Finished transcribe-cmd in {elapsed:.1f}s")
     _log("---")
 
 
@@ -1910,9 +2114,7 @@ def process_cycle(
         cfg.inbox,
         recursive=cfg.recursive,
         skip_under=[
-            p
-            for p in (cfg.move_processed, cfg.wav_backup, stage_dir)
-            if p is not None
+            p for p in (cfg.move_processed, cfg.wav_backup, stage_dir) if p is not None
         ],
     )
     work: list[tuple[Path, Kind]] = []
@@ -1957,11 +2159,7 @@ def process_cycle(
             convert_src = src
             staged_path: Path | None = None
             existing = find_stem_match(cfg.recordings, src.stem, AUDIO_EXTENSIONS)
-            if (
-                stage_audio
-                and stage_dir is not None
-                and (existing is None or force)
-            ):
+            if stage_audio and stage_dir is not None and (existing is None or force):
                 staged_path, stage_outcome = stage_inbox_audio(
                     src,
                     stage_dir,
@@ -2162,16 +2360,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 2
         if ffmpeg is None:
             ffmpeg = Path("ffmpeg")
-        missing = find_whispermlx_missing(cfg.whispermlx_missing)
-        if missing is None and not args.dry_run:
-            print(
-                "ERROR: whispermlx-missing not found "
-                "(set --whispermlx-missing or install the sibling script).",
-                file=sys.stderr,
-            )
-            return 2
-        if missing is None:
-            missing = Path("whispermlx-missing")
+        if cfg.transcribe == TRANSCRIBE_WHISPERMLX_MISSING:
+            missing = find_whispermlx_missing(cfg.whispermlx_missing)
+            if missing is None and not args.dry_run:
+                print(
+                    "ERROR: whispermlx-missing not found "
+                    "(set --whispermlx-missing or install the sibling script).",
+                    file=sys.stderr,
+                )
+                return 2
+            if missing is None:
+                missing = Path("whispermlx-missing")
 
     admit_python: Path | None = None
     if cfg.admit_to_library:
@@ -2212,11 +2411,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             wrote_audio = stats.audio_converted > 0 or stats.would_convert > 0
             wrote_tx = stats.transcripts_copied > 0 or stats.would_copy > 0
-            if cfg.watch_audio and missing is not None:
+            if cfg.watch_audio and cfg.transcribe == TRANSCRIBE_WHISPERMLX_MISSING:
+                if missing is not None and ((not watch_loop) or first or wrote_audio):
+                    maybe_run_missing(cfg, stats, missing=missing, dry_run=args.dry_run)
+            elif cfg.watch_audio and cfg.transcribe == TRANSCRIBE_COMMAND:
                 if (not watch_loop) or first or wrote_audio:
-                    maybe_run_missing(
-                        cfg, stats, missing=missing, dry_run=args.dry_run
-                    )
+                    maybe_run_transcribe_cmd(cfg, stats, dry_run=args.dry_run)
             if cfg.admit_to_library and admit_python is not None:
                 if (not watch_loop) or first or wrote_audio or wrote_tx:
                     maybe_run_admit(

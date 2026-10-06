@@ -62,6 +62,17 @@ def test_web_extra_owns_streamlit_not_full() -> None:
 
 
 @pytest.mark.unit
+def test_web_extra_file_url_is_not_resolved_when_installing_app_wheel() -> None:
+    """Checkout [web] uses file: workspaces; Docker must not ask pip to resolve extras."""
+    web = " ".join(_parse_optional_extra("web"))
+    assert "transcriptx-workspaces @ file:packages/transcriptx_workspaces" in web
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    assert "pip install --no-deps -c constraints.txt dist/*.whl" in dockerfile
+    assert "expected [web] file: extra" in dockerfile
+    assert "packages/transcriptx_workspaces/dist/*.whl" in dockerfile
+
+
+@pytest.mark.unit
 def test_requirements_include_keyphrases_optional_stack() -> None:
     req = (ROOT / "requirements.txt").read_text(encoding="utf-8").lower()
     assert "yake" in req

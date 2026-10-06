@@ -10,7 +10,7 @@ from transcriptx.web.workspaces.clip_transport import (
     encode_clip_b64,
     within_clip_budget,
 )
-from transcriptx.web.workspaces.flags import speaker_id_workspace_component_enabled
+from transcriptx.web.workspaces.flags import corrections_workspace_component_enabled
 from transcriptx.web.workspaces.speaker_id_bridge import (
     build_workspace_data,
     command_from_workspace_result,
@@ -19,71 +19,73 @@ from transcriptx.web.workspaces.speaker_id_bridge import (
 
 
 def test_flag_default_on(monkeypatch) -> None:
-    """Phase 5: CCv2 Speaker ID workspace is the default surface."""
-    monkeypatch.delenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", raising=False)
-    assert speaker_id_workspace_component_enabled({}) is True
-    assert speaker_id_workspace_component_enabled(None) is True
+    monkeypatch.delenv("TX_CORRECTIONS_WORKSPACE_COMPONENT", raising=False)
+    assert corrections_workspace_component_enabled({}) is True
+    assert corrections_workspace_component_enabled(None) is True
 
 
 def test_flag_env_off_rollback(monkeypatch) -> None:
-    monkeypatch.setenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", "0")
-    assert speaker_id_workspace_component_enabled({}) is False
-    monkeypatch.setenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", "false")
-    assert speaker_id_workspace_component_enabled({}) is False
-    monkeypatch.setenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", "off")
-    assert speaker_id_workspace_component_enabled({}) is False
+    monkeypatch.setenv("TX_CORRECTIONS_WORKSPACE_COMPONENT", "0")
+    assert corrections_workspace_component_enabled({}) is False
+    monkeypatch.setenv("TX_CORRECTIONS_WORKSPACE_COMPONENT", "false")
+    assert corrections_workspace_component_enabled({}) is False
+    monkeypatch.setenv("TX_CORRECTIONS_WORKSPACE_COMPONENT", "off")
+    assert corrections_workspace_component_enabled({}) is False
 
 
 def test_flag_env_on(monkeypatch) -> None:
-    monkeypatch.setenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", "1")
-    assert speaker_id_workspace_component_enabled({}) is True
-    monkeypatch.setenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", "true")
-    assert speaker_id_workspace_component_enabled({}) is True
+    monkeypatch.setenv("TX_CORRECTIONS_WORKSPACE_COMPONENT", "1")
+    assert corrections_workspace_component_enabled({}) is True
+    monkeypatch.setenv("TX_CORRECTIONS_WORKSPACE_COMPONENT", "true")
+    assert corrections_workspace_component_enabled({}) is True
 
 
 def test_flag_session_override_off(monkeypatch) -> None:
-    monkeypatch.delenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", raising=False)
+    monkeypatch.delenv("TX_CORRECTIONS_WORKSPACE_COMPONENT", raising=False)
     assert (
-        speaker_id_workspace_component_enabled(
-            {"speaker_id_workspace_component": False}
+        corrections_workspace_component_enabled(
+            {"corrections_workspace_component": False}
         )
         is False
     )
 
 
 def test_flag_session_override_on(monkeypatch) -> None:
-    monkeypatch.delenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", raising=False)
-    # Explicit True still works when someone clears default via other means.
+    monkeypatch.delenv("TX_CORRECTIONS_WORKSPACE_COMPONENT", raising=False)
     assert (
-        speaker_id_workspace_component_enabled({"speaker_id_workspace_component": True})
+        corrections_workspace_component_enabled(
+            {"corrections_workspace_component": True}
+        )
         is True
     )
 
 
 def test_flag_env_wins_over_session(monkeypatch) -> None:
-    monkeypatch.setenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", "0")
+    monkeypatch.setenv("TX_CORRECTIONS_WORKSPACE_COMPONENT", "0")
     assert (
-        speaker_id_workspace_component_enabled({"speaker_id_workspace_component": True})
+        corrections_workspace_component_enabled(
+            {"corrections_workspace_component": True}
+        )
         is False
     )
-    monkeypatch.setenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", "1")
+    monkeypatch.setenv("TX_CORRECTIONS_WORKSPACE_COMPONENT", "1")
     assert (
-        speaker_id_workspace_component_enabled(
-            {"speaker_id_workspace_component": False}
+        corrections_workspace_component_enabled(
+            {"corrections_workspace_component": False}
         )
         is True
     )
 
 
 def test_flag_blank_env_falls_through_to_session_then_default(monkeypatch) -> None:
-    monkeypatch.setenv("TX_SPEAKER_ID_WORKSPACE_COMPONENT", "   ")
+    monkeypatch.setenv("TX_CORRECTIONS_WORKSPACE_COMPONENT", "   ")
     assert (
-        speaker_id_workspace_component_enabled(
-            {"speaker_id_workspace_component": False}
+        corrections_workspace_component_enabled(
+            {"corrections_workspace_component": False}
         )
         is False
     )
-    assert speaker_id_workspace_component_enabled({}) is True
+    assert corrections_workspace_component_enabled({}) is True
 
 
 def test_clip_transport_roundtrip() -> None:
@@ -115,6 +117,70 @@ def test_command_from_workspace_result_accepts_dict_and_attr() -> None:
     assert (
         command_from_workspace_result(SimpleNamespace(command=envelope)) == envelope
     )
+
+
+def test_corrections_bridge_select_and_accept() -> None:
+    from transcriptx.app.corrections import CorrectionsActionService
+    from transcriptx.web.workspaces.corrections_bridge import (
+        build_corrections_workspace_data,
+        dispatch_corrections_command,
+        stable_corrections_workspace_key,
+    )
+
+    class _C:
+        def session_revision(self, _s):
+            return "s1"
+
+        def candidate_revision(self, _s, _c):
+            return "c1"
+
+        def record_decision(self, *a, **k):
+            self.decisions = (a, k)
+
+    cand = SimpleNamespace(
+        candidate_id="cid",
+        kind="manual",
+        review_status=SimpleNamespace(value="pending"),
+        wrong_text="teh",
+        right_text="the",
+        confidence=0.9,
+        sources=[],
+        suggestion_digest="d",
+        evidence=None,
+    )
+    data = build_corrections_workspace_data(
+        session_id="sess",
+        session_revision="s1",
+        candidates=[cand],
+        active_candidate=cand,
+    )
+    assert data["active_candidate_id"] == "cid"
+    assert stable_corrections_workspace_key("sess").startswith("corrections_ws:")
+    svc = CorrectionsActionService(_C())
+    sel = dispatch_corrections_command(
+        {"action": "select_candidate", "action_id": "a", "action_seq": 1, "payload": {"candidate_id": "cid"}},
+        service=svc,
+        session_id="sess",
+        session_revision="s1",
+    )
+    assert sel["selected_candidate_id"] == "cid"
+    ack = dispatch_corrections_command(
+        {
+            "action": "accept",
+            "action_id": "b",
+            "action_seq": 2,
+            "session_id": "sess",
+            "candidate_id": "cid",
+            "expected_session_revision": "s1",
+            "expected_candidate_revision": "c1",
+            "protocol_version": "1",
+            "payload": {},
+        },
+        service=svc,
+        session_id="sess",
+        session_revision="s1",
+    )
+    assert ack["status"] == "ok"
 
 
 def test_build_workspace_data_uses_nonblocking_clips(tmp_path: Path) -> None:
@@ -688,4 +754,45 @@ def test_dispatch_navigate_jump_unknown_speaker_falls_back() -> None:
     )
     assert out is not None and out["status"] == "ok"
     assert seen["payload"]["target_idx"] == 0
+
+
+def test_committed_frontend_uses_named_component_entries() -> None:
+    """Vite must emit speaker_id-/corrections-/viewer_edit- hashes, not index-*.js."""
+    build = (
+        Path(__file__).resolve().parents[2]
+        / "packages"
+        / "transcriptx_workspaces"
+        / "transcriptx_workspaces"
+        / "frontend"
+        / "build"
+    )
+    names = {p.name for p in build.iterdir() if p.is_file()}
+    for prefix in ("speaker_id-", "corrections-", "viewer_edit-"):
+        js = [
+            n
+            for n in names
+            if n.startswith(prefix) and n.endswith(".js") and "styles" not in n
+        ]
+        css = [n for n in names if n == f"{prefix.rstrip('-')}-styles.css"]
+        assert len(js) == 1, names
+        assert css, names
+    stale_index = [
+        n for n in names if n.startswith("index-") and n.endswith((".js", ".css"))
+    ]
+    assert not stale_index, stale_index
+
+
+def test_corrections_studio_keeps_generate_and_export_in_streamlit() -> None:
+    src = (
+        Path(__file__).resolve().parents[2]
+        / "src"
+        / "transcriptx"
+        / "web"
+        / "page_modules"
+        / "corrections_studio.py"
+    ).read_text(encoding="utf-8")
+    assert "_render_ccv2_corrections_workspace" in src
+    assert "corrections_workspace_component_enabled" in src
+    assert "ctrl.generate" in src or "generate_candidates" in src
+    assert "apply_export" in src
 

@@ -95,7 +95,7 @@ Host helpers write raw engine JSON under `originals/` only. Library admission re
 
 ## Host inbox watcher (`inbox-watch`)
 
-Optional **host-side** companion (not the in-app Settings → Watcher). Watches a drop folder for new **audio** and/or **transcripts**. Streamlit never runs it. Admission into the library is **off by default**; pass `--admit` (or `"admit_to_library": true`) to run `python -m transcriptx.admit_originals` after convert/copy/`whispermlx-missing`.
+Optional **host-side** companion (not the in-app Settings → Watcher). Watches a drop folder for new **audio** and/or **transcripts**. Streamlit never runs it. After convert/copy, STT is `--transcribe` (default `whispermlx-missing`). Admission into the library is **off by default**; pass `--admit` (or `"admit_to_library": true`) to run `python -m transcriptx.admit_originals` after convert/copy/STT.
 
 Install once from the repo root:
 
@@ -109,12 +109,40 @@ Or run without installing: `python3 scripts/inbox-watch.py --once --dry-run …`
 
 | Mode | What it does | Skip when |
 |------|----------------|-----------|
-| `--watch-audio` (default on) | Convert new inbox audio to 16 kHz mono 64k MP3 in the recordings folder, then run `whispermlx-missing` | Recordings already has that stem (any audio extension). With `--skip-serial`, `whispermlx-missing` also skips Auto-merge serial groups |
+| `--watch-audio` (default on) | Convert new inbox audio to 16 kHz mono 64k MP3 in the recordings folder | Recordings already has that stem (any audio extension) |
+| `--transcribe` | Host STT after convert: `whispermlx-missing` (default), `none`, or `command` | `--no-watch-audio` skips convert and STT. `none` never invokes STT. With `--skip-serial`, `whispermlx-missing` also skips Auto-merge serial groups |
 | `--watch-transcripts` (default on) | Copy new JSON/SRT/VTT/txt/html into the transcripts dest | Dest already has that stem (any transcript extension) |
 | `--admit` (default off) | After audio/transcript handling, admit eligible files in the transcripts dest (typically `originals/`) into the library | Already-imported stems; `foo (1).json` archive names. Requires a Python that can `import transcriptx` (`--admit-python` or `.transcriptx/bin/python`) |
 | `--auto-name` | After admit, auto-write speaker display names (implies `--admit`; also `--auto-link` unless `--no-auto-link`) | Fail-open: leaves `SPEAKER_*` when voice/text fusion is unsure. Needs enrolled voices for returning speakers; in-transcript names can still label first meetings |
 | `--auto-link` | After admit, create longitudinal profile links for matched enrolled / named profiles (`link_method: auto_identified`) | No new profiles from first-meeting names; does not enrol voice samples |
 | `--no-watch-audio` / `--no-watch-transcripts` | Disable that mode | At least one mode must stay on |
+
+`--transcribe` is independent of `--watch-audio` except that STT only runs when audio watching is on. Existing configs with no `transcribe` key keep `whispermlx-missing`.
+
+| `--transcribe` | Behaviour |
+|----------------|-----------|
+| `whispermlx-missing` | After convert, run `whispermlx-missing` once per cycle (macOS MLX path) |
+| `none` | Convert, copy, and optional `--admit` only. Honest path on Linux/Windows until a host command exists; `whispermlx-missing` is not required |
+| `command` | Run `--transcribe-cmd` / config `transcribe_cmd` once per cycle, as an argv list (`shell=False`) |
+
+`transcribe_cmd` is a JSON array of strings, or one CLI string passed through `shlex.split`. Placeholders `{recordings}`, `{transcripts}`, and `{env_file}` substitute only as a whole argv token or inside a single argv (for example `-v` then `{recordings}:/audio`). Unknown `{…}` tokens fail closed. `{recordings}` and `{transcripts}` are required. Empty `transcribe_cmd` with `transcribe=command` is a config error before ffmpeg runs.
+
+WhisperX-shaped example (host Docker; not executed by Streamlit):
+
+```json
+{
+  "transcribe": "command",
+  "transcribe_cmd": [
+    "docker", "run", "--rm",
+    "-v", "{recordings}:/audio",
+    "-v", "{transcripts}:/output",
+    "-e", "HF_TOKEN",
+    "ghcr.io/m-bain/whisperx:latest",
+    "whisperx", "/audio",
+    "--output_dir", "/output"
+  ]
+}
+```
 
 ```bash
 # Preview (no ffmpeg, no copy, no whispermlx)
@@ -127,8 +155,11 @@ inbox-watch --once --dry-run \
 inbox-watch --once --inbox … --recordings … --transcripts …
 
 # Poll until Ctrl-C. If the USB inbox path is missing, --watch keeps running
-# (empty scans) and still runs whispermlx-missing + --admit on the first cycle.
+# (empty scans) and still runs configured STT + --admit on the first cycle.
 inbox-watch --watch --interval 5
+
+# Convert without whispermlx (Linux/Windows host, or BYO STT later)
+inbox-watch --once --transcribe none --inbox … --recordings …
 
 # Same, and admit new originals/ JSON into the library
 inbox-watch --watch --admit
@@ -227,6 +258,8 @@ Inbox sources are **kept by default**. After a successful convert (audio) or cop
 | Transcripts dest | `transcripts` (use `…/originals`) | `TRANSCRIPTX_TRANSCRIPTS_DIR` is the **library base**; the script appends `/originals` |
 | WAV archive | `wav_backup` | `TRANSCRIPTX_WAV_BACKUP_DIR` |
 | Convert audio | `watch_audio` | `INBOX_WATCH_AUDIO` |
+| Host STT after convert | `transcribe` (`whispermlx-missing`, `none`, `command`) | `INBOX_WATCH_TRANSCRIBE` |
+| STT argv template | `transcribe_cmd` (JSON array or split string) | `INBOX_WATCH_TRANSCRIBE_CMD` |
 | Copy transcripts | `watch_transcripts` | `INBOX_WATCH_TRANSCRIPTS` |
 | Admit to library (default **off**) | `admit_to_library` | `INBOX_WATCH_ADMIT` |
 | Auto-name speakers after admit | `auto_name` | `INBOX_WATCH_AUTO_NAME` |
@@ -246,7 +279,7 @@ Enable admit in local JSON (and/or `.env` `INBOX_WATCH_ADMIT=1`):
 "admit_python": "/path/to/python3"
 ```
 
-**macOS login agent (optional):** [`scripts/macos/inbox-watch-agent.sh`](../../scripts/macos/inbox-watch-agent.sh) plus [`scripts/macos/com.transcriptx.inbox-watch.plist`](../../scripts/macos/com.transcriptx.inbox-watch.plist) can run `--watch` at login. The plist is a template (`/Users/you/...`); copy it to `~/Library/LaunchAgents` and replace those paths. The agent script uses the repo `.venv` / `.transcriptx` interpreter when present, otherwise `python3` on `PATH`. Admit is controlled by local JSON / `.env`, not by the plist. If the USB inbox is unplugged, `--watch` keeps polling empty cycles; the first cycle still catch-up transcribes missing MP3s and admits `originals/`. Logs: `.transcriptx/inbox-watch.launchd.log`.
+**macOS login agent (optional):** [`scripts/macos/inbox-watch-agent.sh`](../../scripts/macos/inbox-watch-agent.sh) plus [`scripts/macos/com.transcriptx.inbox-watch.plist`](../../scripts/macos/com.transcriptx.inbox-watch.plist) can run `--watch` at login. The plist is a template (`/Users/you/...`); copy it to `~/Library/LaunchAgents` and replace those paths. The agent script uses the repo `.venv` / `.transcriptx` interpreter when present, otherwise `python3` on `PATH`. Admit and `--transcribe` are controlled by local JSON / `.env`, not by the plist. If the USB inbox is unplugged, `--watch` keeps polling empty cycles; the first cycle still runs configured STT (when `--watch-audio` is on) and `--admit` if enabled. Logs: `.transcriptx/inbox-watch.launchd.log`.
 
 Do **not** point this inbox at the same folder as the in-app G2 watcher unless you intend both to handle new transcripts (G2 admits; inbox-watch copies). See [directory_watcher.md](directory_watcher.md).
 

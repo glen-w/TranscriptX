@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from typing import Any, Callable, Mapping, Optional
 
-FRONTEND_BUILD_ID = "tx-workspaces-0.2.0"
+FRONTEND_BUILD_ID = "tx-workspaces-0.3.0"
 PROTOCOL_VERSION = "1"
 
 _speaker_id_component = None
+_corrections_component = None
+_viewer_edit_component = None
 
 
 def _noop() -> None:
@@ -15,18 +17,7 @@ def _noop() -> None:
     return None
 
 
-def _get_speaker_id_component():
-    """Lazy-register so import works outside ``streamlit run`` (tests/wheel checks)."""
-    global _speaker_id_component
-    if _speaker_id_component is not None:
-        return _speaker_id_component
-    import streamlit as st
-
-    _speaker_id_component = st.components.v2.component(
-        "transcriptx-workspaces.speaker_id_workspace",
-        js="index-*.js",
-        css="index-*.css",
-        html="""
+_SPEAKER_ID_HTML = """
         <div class="tx-sid-root" data-testid="speaker-id-workspace">
           <div class="tx-sid-header">
             <div class="tx-sid-title"></div>
@@ -78,9 +69,81 @@ def _get_speaker_id_component():
           </div>
           <div class="tx-sid-help" hidden></div>
         </div>
-    """,
+    """
+
+_CORRECTIONS_HTML = """
+        <div class="tx-corr-root" data-testid="corrections-workspace" tabindex="0">
+          <aside class="tx-corr-list" aria-label="Candidates"></aside>
+          <section class="tx-corr-detail">
+            <div class="tx-corr-status" aria-live="polite"></div>
+            <div class="tx-corr-kind"></div>
+            <p class="tx-corr-wrong"></p>
+            <label>
+              <span>Replacement</span>
+              <input type="text" class="tx-corr-draft" autocomplete="off" />
+            </label>
+            <div class="tx-corr-actions">
+              <button type="button" class="tx-corr-accept">Accept</button>
+              <button type="button" class="tx-corr-reject">Reject</button>
+              <button type="button" class="tx-corr-skip">Skip</button>
+              <button type="button" class="tx-corr-save-draft">Save draft</button>
+            </div>
+          </section>
+        </div>
+    """
+
+_VIEWER_EDIT_HTML = """
+        <div class="tx-vedit-root" data-testid="viewer-edit-workspace" tabindex="0">
+          <div class="tx-vedit-words"></div>
+          <p class="tx-vedit-caption"></p>
+        </div>
+    """
+
+
+def _get_speaker_id_component():
+    """Lazy-register so import works outside ``streamlit run`` (tests/wheel checks)."""
+    global _speaker_id_component
+    if _speaker_id_component is not None:
+        return _speaker_id_component
+    import streamlit as st
+
+    _speaker_id_component = st.components.v2.component(
+        "transcriptx-workspaces.speaker_id_workspace",
+        js="speaker_id-*.js",
+        css="speaker_id-styles.css",
+        html=_SPEAKER_ID_HTML,
     )
     return _speaker_id_component
+
+
+def _get_corrections_component():
+    global _corrections_component
+    if _corrections_component is not None:
+        return _corrections_component
+    import streamlit as st
+
+    _corrections_component = st.components.v2.component(
+        "transcriptx-workspaces.corrections_workspace",
+        js="corrections-*.js",
+        css="corrections-styles.css",
+        html=_CORRECTIONS_HTML,
+    )
+    return _corrections_component
+
+
+def _get_viewer_edit_component():
+    global _viewer_edit_component
+    if _viewer_edit_component is not None:
+        return _viewer_edit_component
+    import streamlit as st
+
+    _viewer_edit_component = st.components.v2.component(
+        "transcriptx-workspaces.viewer_edit_workspace",
+        js="viewer_edit-*.js",
+        css="viewer_edit-styles.css",
+        html=_VIEWER_EDIT_HTML,
+    )
+    return _viewer_edit_component
 
 
 def speaker_id_workspace(
@@ -92,28 +155,57 @@ def speaker_id_workspace(
     on_ack_seq_change: Optional[Callable[[], None]] = None,
     height: str | int = "content",
 ) -> Any:
-    """Mount the Speaker ID CCv2 workspace with a stable transcript-scoped key.
-
-    ``key`` must be stable for a given transcript (e.g. ``speaker_id_ws:{id}``)
-    so metadata/mapping/clip updates do not remount the frontend identity.
-    """
+    """Mount the Speaker ID CCv2 workspace with a stable transcript-scoped key."""
     comp = _get_speaker_id_component()
     kwargs: dict[str, Any] = {
         "data": dict(data),
         "key": key,
-        # ``ack_seq`` is persistent component *state* (setStateValue).
-        # ``command`` must NOT be in ``default``: that would register it as
-        # state, and Streamlit's ComponentResult / presenter merge state *over*
-        # triggers — wiping every setTriggerValue("command", …) envelope to
-        # the default ``None`` before Python can apply navigate/save/ignore.
-        # Register ``on_command_change`` only so ``command`` stays a trigger.
         "default": dict(default or {"ack_seq": 0}),
         "height": height,
-        # Streamlit CCv2 only accepts ``default`` keys that have matching
-        # ``on_{name}_change`` callbacks. Always register both protocol
-        # callbacks (state + trigger) even when the caller does not consume them.
         "on_command_change": on_command_change or _noop,
         "on_ack_seq_change": on_ack_seq_change or _noop,
+    }
+    return comp(**kwargs)
+
+
+def corrections_workspace(
+    *,
+    data: Mapping[str, Any],
+    key: str,
+    default: Optional[Mapping[str, Any]] = None,
+    on_command_change: Optional[Callable[[], None]] = None,
+    on_ack_seq_change: Optional[Callable[[], None]] = None,
+    height: str | int = "content",
+) -> Any:
+    """Mount the Corrections Studio review CCv2 workspace."""
+    comp = _get_corrections_component()
+    kwargs: dict[str, Any] = {
+        "data": dict(data),
+        "key": key,
+        "default": dict(default or {"ack_seq": 0}),
+        "height": height,
+        "on_command_change": on_command_change or _noop,
+        "on_ack_seq_change": on_ack_seq_change or _noop,
+    }
+    return comp(**kwargs)
+
+
+def viewer_edit_workspace(
+    *,
+    data: Mapping[str, Any],
+    key: str,
+    default: Optional[Mapping[str, Any]] = None,
+    on_selection_change: Optional[Callable[[], None]] = None,
+    height: str | int = "content",
+) -> Any:
+    """Mount the Transcript Correct-mode word-span selector."""
+    comp = _get_viewer_edit_component()
+    kwargs: dict[str, Any] = {
+        "data": dict(data),
+        "key": key,
+        "default": dict(default or {"selection": None}),
+        "height": height,
+        "on_selection_change": on_selection_change or _noop,
     }
     return comp(**kwargs)
 
@@ -121,5 +213,7 @@ def speaker_id_workspace(
 __all__ = [
     "FRONTEND_BUILD_ID",
     "PROTOCOL_VERSION",
+    "corrections_workspace",
     "speaker_id_workspace",
+    "viewer_edit_workspace",
 ]

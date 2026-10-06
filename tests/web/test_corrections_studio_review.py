@@ -65,6 +65,10 @@ class _ReviewStreamlit:
     def error(cls, msg, **_kwargs):
         cls.errors.append(str(msg))
 
+    @staticmethod
+    def warning(*_a, **_k):
+        return None
+
     @classmethod
     def rerun(cls):
         cls.rerun_calls += 1
@@ -97,11 +101,17 @@ def test_candidate_accept_all_records_decision(monkeypatch) -> None:
     monkeypatch.setattr(mod, "_candidate_right_text", lambda _c: "the")
     _ReviewStreamlit.button_returns = {"accept_cand-1": True}
 
+    recorded: list[tuple] = []
+
+    def _record(*_a, **kwargs):
+        recorded.append(kwargs.get("action"))
+        return True
+
+    monkeypatch.setattr(mod, "_record_decision_via_action_service", _record)
+
     mod._render_candidate_detail(controller, "sess-1", cand)
 
-    controller.record_decision.assert_called_once()
-    args, kwargs = controller.record_decision.call_args
-    assert args[:3] == ("sess-1", "cand-1", "accept")
+    assert recorded == ["accept"]
     assert _ReviewStreamlit.rerun_calls == 1
 
 
@@ -118,9 +128,17 @@ def test_candidate_reject_records_decision(monkeypatch) -> None:
     monkeypatch.setattr(mod, "_candidate_right_text", lambda _c: "the")
     _ReviewStreamlit.button_returns = {"reject_cand-1": True}
 
+    recorded: list[tuple] = []
+
+    def _record(*_a, **kwargs):
+        recorded.append(kwargs.get("action"))
+        return True
+
+    monkeypatch.setattr(mod, "_record_decision_via_action_service", _record)
+
     mod._render_candidate_detail(controller, "sess-1", _candidate())
 
-    controller.record_decision.assert_called_once_with("sess-1", "cand-1", "reject")
+    assert recorded == ["reject"]
     assert _ReviewStreamlit.rerun_calls == 1
 
 
@@ -137,7 +155,15 @@ def test_candidate_skip_records_decision(monkeypatch) -> None:
     monkeypatch.setattr(mod, "_candidate_right_text", lambda _c: "the")
     _ReviewStreamlit.button_returns = {"skip_cand-1": True}
 
+    recorded: list[tuple] = []
+
+    def _record(*_a, **kwargs):
+        recorded.append(kwargs.get("action"))
+        return True
+
+    monkeypatch.setattr(mod, "_record_decision_via_action_service", _record)
+
     mod._render_candidate_detail(controller, "sess-1", _candidate())
 
-    controller.record_decision.assert_called_once_with("sess-1", "cand-1", "skip")
+    assert recorded == ["skip"]
     assert _ReviewStreamlit.rerun_calls == 1

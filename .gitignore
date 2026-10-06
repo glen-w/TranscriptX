@@ -97,6 +97,7 @@ _site/
 
 # Local reports archive (run dumps; docs archive is tracked under docs/archive/)
 reports/archive/
+reports/local_*.md
 
 # Accidental test output when mocks leak Path(".") as output roots
 MagicMock/

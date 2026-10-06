@@ -36,7 +36,7 @@ This is **owner machine hygiene**, not a 1.0 product feature. Layout contracts: 
 - Contracts for storage, run outcomes, outputs, and public surfaces
 - Package on a **0.9.x** stabilisation track toward 1.0
 
-Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Post-0.9.9 wave cut as interim **`0.9.9.5`**: early 1.x Themes **A–D**, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, backup/restore — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md). Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **in progress** (default-on); Theme **D** Transcript karaoke MVP. Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
+Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Post-0.9.9 wave cut as interim **`0.9.9.5`**: early 1.x Themes **A–D**, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, backup/restore — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md). Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **done for 1.0** (Speaker ID Phase 9, Studio review, viewer click-drag); Theme **D** Transcript karaoke MVP. Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
 
 ---
 
@@ -92,11 +92,11 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 |-------|--------|------------------|
 | A. Insights & analysis quality | Stronger deterministic/hybrid insights; clearer result UX | Early 1.x |
 | B. Corrections & transcript editing | Word-level propose/apply in the reader; studio as batch/review | Early 1.x — **done** ([corrections-viewer.md](runtime/corrections-viewer.md)) |
-| C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections (and later rich edit) | Near-term 1.x — **[~] in progress** (default-on; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md)) |
+| C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections / viewer click-drag | **done for 1.0** (Phase 9 Speaker ID; Studio CCv2 + viewer edit; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md)) |
 | D. Playback & reading UX | Karaoke-style word highlight; reader polish that Components unlock | With / after C — **[~] Transcript karaoke MVP** |
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
 | F. Library & organisation | Transcript tagging; Groups interaction rules | Mid 1.x |
-| G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** host-script OS portability parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
+| G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** pluggable host STT + POSIX path honesty called; Windows admit/service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
 | H. In-app transcription | Local NVIDIA Parakeet/Canary + Whisper; CUDA/CPU; YouTube ingest | Mid–late 1.x (product decision) |
 | I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Mid–late 1.x (depends on shell) |
 | J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 |
@@ -151,7 +151,7 @@ Speaker ID is reaching Streamlit’s architectural edge; TranscriptX as a whole 
 
 **Trajectory:** Streamlit shell + Python domain services + specialised frontend components for workstation-like interactions. CCv2 workspaces are the prototype of any later custom UI (browser owns ephemeral UI and media; Python owns transcripts, sidecars, mappings, clips, validation). They are not a commitment to retire Streamlit.
 
-**Implementation status (2026-08):** Phase −1 `SpeakerIdActionService` shared by legacy + CCv2; non-blocking ClipService APIs; packaged `transcriptx-workspaces` CCv2 Speaker ID surface (**default-on**; rollback with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`; missing package falls through to legacy); Corrections revisioned command protocol wired through `CorrectionsActionService` on the legacy studio page; PlaybackHost handoff for Theme D; legacy fragment path retained until Phase 9 criteria. Design authority: [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
+**Implementation status (2026-10):** Phase 9 Speaker ID CCv2-only; packaged `transcriptx-workspaces` on `[web]` (named Speaker ID / Corrections / viewer-edit entries); Corrections CCv2 review default-on with env rollback; viewer click-drag when `words[]` exist; voice confirm/reject on `SpeakerIdActionService`. Design authority: [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
 
 **Shell review (2026-08):** The analysis engine is already UI-agnostic (`app/` workflows/controllers and `core/` have no Streamlit imports). The Streamlit GUI is a large mature surface (~55k Python lines under `web/`; ~100 files import Streamlit; ~40k lines of `tests/web`). There is **no HTTP or IPC application API** to hang a second client on. Analysis/settings pages remain a good Streamlit fit; workstation pages are the constraint Theme C already names. A full custom frontend is a **late 1.x / 2.0-scale** programme (parity plus dual-run), not an early-1.x rewrite. First escalation, if CCv2 remount/bytes/focus limits block product goals: loopback API over existing controllers (theme **I**), then grow workspaces off Streamlit hosting — not a new Python GUI toolkit and not an OS-native (Swift/Qt) workbench.
 
@@ -214,7 +214,7 @@ Automatically notice new recordings (and/or transcript files) in a monitored fol
 - Today: folder import also exists for **manual** transcript admission — watcher reuses the same admission primitives
 - Design: watch scope, debounce + stability, size limits, failure surfacing, Docker bind-mount honesty, no silent library corruption
 - Prefer explicit user enablement; default-off on shared machines
-- **Next:** audio → host STT → import once theme **H** (or a host STT service) exists. The host helper for **library** admit is `inbox-watch`. Short voice notes are **G4**, not this bullet and not a second G2 on the same folder.
+- **Next:** in-app audio → STT → import waits on theme **H**. Host `inbox-watch --transcribe none|command` can convert or call a host argv without whispermlx. Short voice notes are **G4**, not this bullet and not a second G2 on the same folder.
 
 #### G3. Host companion scripts on Windows / Linux (parked; post-1.0)
 
@@ -224,16 +224,19 @@ Evidence (do not implement from this list before 1.0): [host-side Windows/Linux 
 
 **1.x intent:** make the **host Python scripts** actually runnable on Windows (and honest on Linux without whispermlx), without pretending MLX exists off Darwin.
 
-**Candidate slices (design before build):**
+**Called (this slice):** pluggable host STT on `inbox-watch` (`--transcribe whispermlx-missing|none|command` + `--transcribe-cmd` argv template) and Transcribe Audio **path honesty** (case-insensitive audio suffixes; strip trailing `\` as well as `/`; POSIX paste notes). Streamlit still never executes STT. `inbox-watch` stays stdlib-only and does not import the in-app provider registry.
+
+**Owner split:** G3 owns host-script STT *selection* and copyable-command path honesty. Theme **H** owns in-app `TranscriptionProvider.transcribe()` (WhisperX Docker GUI orchestration stays a stub). Theme **K** owns extra copyable engines and a future PowerShell builder.
+
+**Still parked:**
 
 | Slice | Notes |
 |-------|--------|
-| **Convert / copy / admit on Windows** | `py -3 scripts\inbox-watch.py`; discover `.transcriptx\Scripts\python.exe`; `ffmpeg.exe` on PATH; `--admit` without Unix `bin/python` only. STT remains optional when whispermlx is absent. |
-| **Pluggable host STT** | `--transcribe-cmd` / config so Windows/Linux can call WhisperX Docker (or another host command) instead of hard-requiring `whispermlx-missing`. Overlaps themes **H** / **K** — pick one owner before coding. |
-| **Copyable commands** | Theme **K**: PowerShell or Git-Bash-safe snippets; case-insensitive audio extensions; strip `\` as well as `/`. |
+| **Convert / copy / admit on Windows** | `py -3 scripts\inbox-watch.py`; discover `.transcriptx\Scripts\python.exe`; `ffmpeg.exe` on PATH; `--admit` without Unix `bin/python` only. |
+| **PowerShell snippets** | Theme **K**: PowerShell or Git-Bash-safe *second* builder. Current snippets stay POSIX (Git Bash / WSL on Windows). |
 | **Service samples** | Templated Task Scheduler / systemd user unit — not a personal `scripts/macos/*.plist` with absolute home paths. |
 
-**Decision fork:** **Narrow** (Windows convert/copy/admit + docs) · **Invest** (pluggable STT + command-gen shells) · **Defer** (stay Mac host STT + WSL2). Do not make Windows a silent 1.0 support cell.
+**Decision fork:** **Narrow** (Windows convert/copy/admit + docs) · **Invest** (pluggable STT called; remaining OS portability still parked) · **Defer** (stay Mac host STT + WSL2). Do not make Windows a silent 1.0 support cell.
 
 **Non-goals for 1.0:** native `transcriptx.ps1` GUI launcher; CI `windows-latest` matrix; shipping whispermlx on Windows.
 
@@ -265,7 +268,7 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 
 **1.0 stance unchanged:** transcription remains **external**, with in-app **command generation** only. Built-in STT is **not** a 1.0 gate.
 
-**1.x intent:** make local transcription a **supported product path** so the personal-recording journey (record/download → text → analyse) can stay inside TranscriptX when the user wants it — without abandoning BYO import or analysis-first positioning. Complementary tools ([Scriberr](https://scriberr.app/), [noScribe](https://noscribe.de/en/), [aTrain](https://github.com/aTrainTranscription/aTrain), [RiverScript](https://riverscript.com/), WhisperX, …) remain valid upstreams; see [comparison.md](comparison.md).
+**1.x intent:** make local transcription a **supported product path** so the personal-recording journey (record/download → text → analyse) can stay inside TranscriptX when the user wants it — without abandoning BYO import or analysis-first positioning. Complementary tools ([Scriberr](https://scriberr.app/), [noScribe](https://noscribe.de/en/), [aTrain](https://github.com/aTrainTranscription/aTrain), [RiverScript](https://riverscript.com/), WhisperX, …) remain valid upstreams; see [comparison.md](comparison.md). Host-side `--transcribe` / `--transcribe-cmd` on `inbox-watch` is theme **G3**, not this theme.
 
 **Candidate capabilities (design before build):**
 
@@ -331,7 +334,7 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 
 Until/beside theme **H**, keep improving **copyable host commands** on Transcribe Audio: whispermlx / whispermlx-missing (Apple MLX), WhisperX Docker, Whisper-WebUI, plus further CUDA Linux / CPU CLIs as needed. Still copy/run-on-host only (no in-container MLX; no silent orchestration). Import remains the GUI admission gate for BYO files.
 
-**Windows / PowerShell snippets** (and making generated paths survive `C:\…` / `.MP3`) are parked with theme **G3** — not a 1.0 Transcribe Audio change.
+**Windows / PowerShell snippets** stay with theme **K**. Theme **G3** already owns POSIX path honesty (`.MP3`, trailing `\`) and `inbox-watch --transcribe` / `--transcribe-cmd`. Do not treat PowerShell as a 1.0 Transcribe Audio change.
 
 **Saved presets:** Transcribe Audio can save/load/delete command-gen form presets under `.transcriptx/profiles/stt_commands/` (host paths and flags only — never `HF_TOKEN`; tokens stay in `whisperx.env`).
 

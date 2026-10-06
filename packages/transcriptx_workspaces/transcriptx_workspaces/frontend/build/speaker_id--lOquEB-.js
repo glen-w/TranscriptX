@@ -1,4 +1,5 @@
-const g = /* @__PURE__ */ new WeakMap(), k = "tx-workspaces-0.2.0", v = "1", S = 8e6, M = 4, U = 200, N = 3e3, B = 2;
+import { F as k, P as v } from "./constants-dt4zPgAn.js";
+const g = /* @__PURE__ */ new WeakMap(), S = 8e6, M = 4, U = 200, N = 3e3, B = 2;
 function C() {
   return typeof crypto < "u" && "randomUUID" in crypto ? crypto.randomUUID().replace(/-/g, "") : `a${Date.now().toString(16)}${Math.random().toString(16).slice(2)}`;
 }
@@ -359,7 +360,7 @@ function X(t, e, i) {
   const a = e.querySelector(".tx-sid-root") || e;
   return a.hasAttribute("tabindex") || a.setAttribute("tabindex", "0"), n;
 }
-const Y = (t) => {
+const H = (t) => {
   var l, a;
   const { parentElement: e, data: i } = t, s = e, n = ((l = s.querySelector) == null ? void 0 : l.call(s, ".tx-sid-root")) || ((a = s.querySelector) == null ? void 0 : a.call(s, ".tx-sid-root")) || s;
   let o = g.get(s);
@@ -367,7 +368,7 @@ const Y = (t) => {
     const r = g.get(s);
     r && (x(r), r.pendingPlay = null, E(r), r.audio.removeAttribute("src"), r.audio.load(), g.delete(s));
   };
-}, H = {
+}, z = {
   instances: g,
   ensureBlobUrl: R,
   revokeAllBlobs: E,
@@ -381,7 +382,7 @@ const Y = (t) => {
   findPlayableSample: T
 };
 export {
-  H as __test,
-  Y as default,
+  z as __test,
+  H as default,
   D as rankLinkRows
 };

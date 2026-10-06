@@ -114,3 +114,19 @@ def test_open_studio_uses_identity_nav_not_widget_key_path(monkeypatch, tmp_path
     assert ss[PAGE_KEY] == PAGE_CORRECTIONS
     assert "corrections_studio_transcript" not in ss
     assert reruns == [True]
+
+
+def test_mount_viewer_word_selector_missing_package_is_fail_closed(monkeypatch) -> None:
+    """Richer-edit CCv2 host must not raise if transcriptx_workspaces is absent."""
+    import sys
+
+    import transcriptx.web.transcript_viewer.corrections_panel as mod
+
+    monkeypatch.setitem(sys.modules, "transcriptx_workspaces", None)
+    ok, sel = mod._mount_viewer_word_selector(
+        identity_hash="abcd1234ffff0000",
+        segment_id="seg-1",
+        spans=[],
+    )
+    assert ok is False
+    assert sel is None
