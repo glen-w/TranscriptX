@@ -223,3 +223,44 @@ def test_whisperx_docker_notes_windows_mounts() -> None:
     assert cmd.shell.count("audio\\\\:/") == 0
     assert any("POSIX" in n for n in cmd.notes)
     assert any("C:\\" in n or "mount" in n.lower() for n in cmd.notes)
+
+
+@pytest.mark.unit
+def test_powershell_whisperx_docker_quotes_and_gpus() -> None:
+    from transcriptx.services.transcription.command_gen import (
+        generate_transcription_command_powershell,
+    )
+
+    params = CommandGenParams(
+        tool=TranscriptionTool.WHISPERX_DOCKER,
+        input_path=r"C:\rec\My Audio",
+        output_dir=r"C:\out",
+        device="cuda",
+        diarize=True,
+    )
+    cmd = generate_transcription_command_powershell(params)
+    assert "PowerShell" in cmd.title
+    assert "--gpus all" in cmd.shell
+    assert "New-Item" in cmd.shell
+    assert "'C:\\rec\\My Audio:/audio'" in cmd.shell or "My Audio" in cmd.shell
+    assert any("PowerShell" in n for n in cmd.notes)
+    assert "cmd.exe" in " ".join(cmd.notes)
+
+
+@pytest.mark.unit
+def test_powershell_whispermlx_missing_uses_python() -> None:
+    from transcriptx.services.transcription.command_gen import (
+        generate_transcription_command_powershell,
+    )
+
+    params = CommandGenParams(
+        tool=TranscriptionTool.WHISPERMLX_MISSING,
+        input_path=r"C:\src",
+        output_dir=r"C:\tx",
+        dry_run=True,
+    )
+    cmd = generate_transcription_command_powershell(params)
+    assert "python" in cmd.shell
+    assert "whispermlx-missing.py" in cmd.shell
+    assert "--dry-run" in cmd.shell
+    assert "'C:\\src'" in cmd.shell or "C:\\src" in cmd.shell

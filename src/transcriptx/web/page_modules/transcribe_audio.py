@@ -1,14 +1,15 @@
 """
-Transcribe Audio — parameterised command generator for external transcription.
-
-Commands are copyable only; Streamlit never executes transcription for 1.0.
+Transcribe Audio — in-app host-orchestrated STT plus copyable command generation.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import streamlit as st
 
 from transcriptx.web import icons as ic
+from transcriptx.app.models.requests import TranscriptionOptions
 from transcriptx.core.utils.paths import PATHS
 from transcriptx.services.transcription.command_gen import (
     DEFAULT_TRANSCRIPTION_MODEL,
@@ -19,7 +20,21 @@ from transcriptx.services.transcription.command_gen import (
     default_host_script_ref,
     generate_preview_lines,
     generate_transcription_command,
+    generate_transcription_command_powershell,
     looks_like_container_install_path,
+)
+from transcriptx.services.transcription.env import default_conversion_options
+from transcriptx.services.transcription.job_store import TranscriptionJobState
+from transcriptx.services.transcription.registry import (
+    any_provider_available,
+    get_provider,
+    get_transcription_providers,
+)
+from transcriptx.services.transcription.runner import (
+    build_transcription_request,
+    collect_audio_input_paths,
+    drain_queued_watcher_jobs,
+    get_transcription_runner,
 )
 from transcriptx.services.transcription.stt_command_profiles import (
     SttCommandProfileError,
@@ -49,6 +64,227 @@ _KEY_PENDING_LOAD = "tx_cmdgen_pending_load"
 _KEY_PRESET_SELECT = "tx_cmdgen_preset_select"
 _KEY_PRESET_SAVE_NAME = "tx_cmdgen_preset_save_name"
 _BLANK_PRESET = "—"
+_MODE_RUN = "Run in app"
+_MODE_COPY = "Copy command"
+_KEY_ACTIVE_JOB = "tx_stt_active_job_id"
+
+
+def _provider_label(provider_id: str) -> str:
+    for provider in get_transcription_providers():
+        if provider.provider_id == provider_id:
+            return provider.info().label
+    return provider_id
+
+
+def _render_job_status(job_id: str) -> None:
+    runner = get_transcription_runner()
+    job = runner.store.get(job_id)
+    if job is None:
+        st.caption("No active transcription job.")
+        return
+    st.markdown(f"**Job `{job.job_id}`** — {job.state.value}")
+    if job.progress_message:
+        st.caption(job.progress_message)
+    pct = job.progress_pct
+    if pct is not None:
+        st.progress(min(1.0, max(0.0, float(pct) / 100.0)))
+    if job.imported_paths:
+        st.success("Imported: " + ", ".join(Path(p).name for p in job.imported_paths))
+    if job.errors and job.state is TranscriptionJobState.FAILED:
+        st.error(job.errors[0])
+    if job.logs:
+        with st.expander("Log", expanded=job.state is TranscriptionJobState.RUNNING):
+            st.code("\n".join(job.logs[-12:]), language=None)
+    if job.state is TranscriptionJobState.RUNNING:
+        if st.button("Cancel", key=f"tx_stt_cancel_{job.job_id}", icon=ic.DELETE):
+            runner.request_cancel(job.job_id)
+            st.rerun()
+
+
+def _poll_active_job() -> None:
+    job_id = st.session_state.get(_KEY_ACTIVE_JOB)
+    if not isinstance(job_id, str) or not job_id:
+        return
+    _render_job_status(job_id)
+    job = get_transcription_runner().store.get(job_id)
+    if job is not None and job.state.value in {"queued", "running"}:
+        st.caption("Refreshing job status…")
+
+
+def _render_run_in_app(default_input: str) -> None:
+    st.subheader("Run in app")
+    st.caption(
+        "Host-orchestrated STT: Streamlit calls a local provider (whispermlx on "
+        "macOS, or WhisperX Docker). Engines stay out of the analysis image. "
+        "If no provider is available here, use Copy command and run it on the host."
+    )
+    providers = get_transcription_providers()
+    labels = [p.info().label for p in providers]
+    ids = [p.provider_id for p in providers]
+    selected_label = st.selectbox(
+        "Provider",
+        options=labels,
+        key="tx_run_provider",
+        help=widget_help("Local STT backend. Availability is checked on this machine."),
+    )
+    provider_id = ids[labels.index(selected_label)]
+    model = st.selectbox(
+        "Model",
+        options=list(TRANSCRIPTION_MODEL_OPTIONS),
+        index=TRANSCRIPTION_MODEL_OPTIONS.index(DEFAULT_TRANSCRIPTION_MODEL),
+        key="tx_run_model",
+        accept_new_options=True,
+        help=widget_help("Whisper-class model id for the selected provider."),
+    )
+    col_a, col_b = st.columns(2)
+    with col_a:
+        input_path = st.text_input(
+            "Input file or folder",
+            value=default_input or "",
+            key="tx_run_input",
+            help=widget_help(
+                "Absolute path to an audio file or a folder of audio files."
+            ),
+        )
+        language = st.text_input(
+            "Language",
+            value="en",
+            key="tx_run_language",
+            help=widget_help("ISO language code (e.g. en)."),
+        )
+    with col_b:
+        diarize = st.checkbox(
+            "Diarize",
+            value=True,
+            key="tx_run_diarize",
+            help=widget_help("Split speakers. Needs HF_TOKEN in whisperx.env."),
+        )
+        import_into_library = st.checkbox(
+            "Import result into library",
+            value=True,
+            key="tx_run_import",
+            help=widget_help(
+                "Admit JSON via managed import when transcription succeeds."
+            ),
+        )
+
+    device = "cpu"
+    compute_type = "float16"
+    batch_size = 16
+    docker_image = _DEFAULT_WHISPERX_IMAGE
+    min_speakers = None
+    max_speakers = None
+    if provider_id == "whisperx_docker":
+        device = st.selectbox(
+            "Device",
+            options=["cpu", "cuda"],
+            index=0,
+            key="tx_run_device",
+            help=widget_help("cuda adds --gpus all to docker run."),
+        )
+        compute_type = st.selectbox(
+            "Compute type",
+            options=["float16", "int8", "float32"],
+            index=0 if device == "cuda" else 1,
+            key="tx_run_compute",
+        )
+        batch_size = int(
+            st.number_input(
+                "Batch size",
+                min_value=1,
+                max_value=64,
+                value=16,
+                key="tx_run_batch",
+            )
+        )
+        docker_image = st.text_input(
+            "Docker image",
+            value=_DEFAULT_WHISPERX_IMAGE,
+            key="tx_run_image",
+        )
+
+    options = TranscriptionOptions(
+        provider_id=provider_id,
+        model=(str(model).strip() if model else "") or DEFAULT_TRANSCRIPTION_MODEL,
+        language=language.strip() or "en",
+        diarize=bool(diarize),
+        device=device,
+        compute_type=compute_type,
+        batch_size=batch_size,
+        min_speakers=min_speakers,
+        max_speakers=max_speakers,
+        docker_image=docker_image.strip() or _DEFAULT_WHISPERX_IMAGE,
+    )
+    availability = get_provider(provider_id).is_available(options)
+    if availability.available:
+        st.success(f"{_provider_label(provider_id)} is available on this host.")
+    else:
+        st.warning(
+            availability.reason
+            or f"{_provider_label(provider_id)} is not available. Use Copy command."
+        )
+        for check in availability.checks:
+            mark = "ok" if check.passed else "missing"
+            st.caption(
+                f"{check.label}: {mark}"
+                + (f" — {check.message}" if check.message else "")
+            )
+
+    queued = 0
+    try:
+        from transcriptx.services.watcher.service import get_watcher_service
+
+        queued = (
+            get_watcher_service().store.counts_by_state().get("queued_transcription", 0)
+        )
+    except Exception:
+        queued = 0
+    if queued:
+        st.info(f"{queued} watcher audio file(s) are queued for transcription.")
+        drain_disabled = not any_provider_available()
+        if st.button(
+            "Transcribe queued watcher files",
+            key="tx_run_drain_watcher",
+            icon=ic.PLAY,
+            disabled=drain_disabled,
+        ):
+            n = drain_queued_watcher_jobs()
+            st.success(f"Submitted {n} job(s).")
+            st.rerun()
+
+    run_disabled = not availability.available
+    if st.button(
+        "Transcribe",
+        key="tx_run_submit",
+        icon=ic.PLAY,
+        disabled=run_disabled,
+        type="primary",
+    ):
+        paths = collect_audio_input_paths(input_path.strip())
+        if not paths:
+            st.error("No audio files found at that path.")
+        else:
+            request = build_transcription_request(
+                paths,
+                options=options,
+                conversion=default_conversion_options(),
+                import_into_library=bool(import_into_library),
+            )
+            job = get_transcription_runner().submit(request)
+            st.session_state[_KEY_ACTIVE_JOB] = job.job_id
+            st.rerun()
+
+    poll = st.fragment(run_every=1.0)(_poll_active_job)
+    poll()
+
+    recent = get_transcription_runner().store.list_jobs(limit=8)
+    if recent:
+        with st.expander("Recent jobs", expanded=False):
+            for job in recent:
+                st.caption(
+                    f"{job.job_id} · {job.state.value} · "
+                    f"{Path(job.input_paths[0]).name if job.input_paths else '—'}"
+                )
 
 
 def _apply_pending_preset_load() -> None:
@@ -158,16 +394,16 @@ def _render_preset_controls(params: CommandGenParams) -> None:
 
 
 def render_transcribe_audio_page() -> None:
-    """Render external transcription command generator (copy-only)."""
+    """Render in-app transcription plus copyable host commands."""
     st.markdown(
         '<div class="main-header">Transcribe Audio</div>',
         unsafe_allow_html=True,
     )
     st.info(
-        "Transcription runs **outside** the TranscriptX web app. "
-        "Generate a copyable command below, run it on the **host** terminal "
-        "(not inside the Linux analysis container for whispermlx), "
-        "then open **Import Transcript** to add JSON to your library."
+        "Run transcription **in the app** when a host provider is available "
+        "(whispermlx on macOS, WhisperX Docker otherwise), or **copy a command** "
+        "and run it on the host. Results are admitted with **Import Transcript** "
+        "unless you enabled in-app import."
     )
 
     _apply_pending_preset_load()
@@ -180,6 +416,20 @@ def render_transcribe_audio_page() -> None:
             st.code(path_str, language=None)
         default_input = hint_paths[0]
         st.caption("These paths are prefilled below when present. Adjust as needed.")
+
+    mode = st.radio(
+        "Mode",
+        options=[_MODE_RUN, _MODE_COPY],
+        horizontal=True,
+        key="tx_stt_mode",
+        help=widget_help(
+            "Run in app uses the host STT provider on this machine. "
+            "Copy command never executes STT from Streamlit."
+        ),
+    )
+    if mode == _MODE_RUN:
+        _render_run_in_app(default_input)
+        return
 
     st.subheader("Command generator")
     st.caption(
@@ -507,13 +757,26 @@ def render_transcribe_audio_page() -> None:
     _render_preset_controls(params)
 
     generated = generate_transcription_command(params)
+    shell_kind = st.radio(
+        "Snippet shell",
+        options=["POSIX", "PowerShell"],
+        horizontal=True,
+        key="tx_cmdgen_shell",
+        help=widget_help(
+            "POSIX for macOS, Linux, Git Bash, or WSL. PowerShell for Windows hosts."
+        ),
+    )
+    if shell_kind == "PowerShell":
+        generated = generate_transcription_command_powershell(params)
 
     with st.expander("Preview", expanded=True):
         for line in generate_preview_lines(params):
             st.write(f"- {line}")
 
     st.markdown(f"**{generated.title}**")
-    st.code(generated.shell, language="bash")
+    st.code(
+        generated.shell, language="powershell" if shell_kind == "PowerShell" else "bash"
+    )
     for note in generated.notes:
         st.caption(f"• {note}")
     st.success(generated.next_step)

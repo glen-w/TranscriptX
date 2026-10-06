@@ -55,6 +55,10 @@ _POSIX_PASTE_NOTE = (
     "Paste into a POSIX shell (macOS, Linux, Git Bash, or WSL). "
     "This snippet is not PowerShell or cmd.exe."
 )
+_POWERSHELL_PASTE_NOTE = (
+    "Paste into Windows PowerShell 5+ or PowerShell 7. "
+    "This snippet is not cmd.exe or a POSIX shell."
+)
 _WINDOWS_MOUNT_NOTE = (
     "Host paths are quoted as given; TranscriptX does not rewrite "
     "Windows C:\\… mounts into Git Bash or Docker Desktop spelling."
@@ -309,7 +313,7 @@ docker run --rm \\
     --batch_size {int(params.batch_size)}{diarize}{speaker_flags}
 """
     notes = (
-        "External recipe only — TranscriptX does not orchestrate WhisperX from Streamlit.",
+        "Copyable recipe — or use Transcribe Audio → Run in app when Docker is visible.",
         "Adjust mounts if input is a single file (mount parent directory).",
         "Import the resulting WhisperX JSON via Import Transcript.",
         "Progress/logs come from the docker/whisperx process on the host terminal.",
@@ -420,4 +424,187 @@ def generate_preview_lines(params: CommandGenParams) -> Sequence[str]:
         f"Force / overwrite: {'yes' if params.force else 'no'}",
         f"Skip likely serial: {'yes' if params.skip_serial else 'no'}",
         f"Expected output format: {params.expected_output_format} (Import Transcript)",
+    )
+
+
+def _ps_q(value: str) -> str:
+    """PowerShell single-quote a path or token."""
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def _ps_join(parts: Sequence[str]) -> str:
+    return " ".join(parts)
+
+
+def generate_transcription_command_powershell(
+    params: CommandGenParams,
+) -> GeneratedCommand:
+    """Build a copyable PowerShell snippet for the selected tool (Theme K)."""
+    if params.tool is TranscriptionTool.WHISPERMLX_SINGLE:
+        generated = _build_whispermlx_powershell(params)
+    elif params.tool is TranscriptionTool.WHISPERMLX_MISSING:
+        generated = _build_whispermlx_missing_powershell(params)
+    elif params.tool is TranscriptionTool.WHISPERX_DOCKER:
+        generated = _build_whisperx_docker_powershell(params)
+    elif params.tool is TranscriptionTool.WHISPER_WEBUI_DOCKER:
+        generated = _build_whisper_webui_powershell(params)
+    else:
+        raise ValueError(f"Unknown transcription tool: {params.tool!r}")
+    notes = generated.notes + (_POWERSHELL_PASTE_NOTE,)
+    if params.tool is TranscriptionTool.WHISPERX_DOCKER:
+        notes = notes + (_WINDOWS_MOUNT_NOTE,)
+    return GeneratedCommand(
+        title=generated.title + " (PowerShell)",
+        shell=generated.shell,
+        notes=notes,
+        next_step=generated.next_step,
+    )
+
+
+def _build_whispermlx_powershell(params: CommandGenParams) -> GeneratedCommand:
+    binary = params.whispermlx_binary.strip() or "whispermlx"
+    env = _ps_q(params.env_file)
+    out = _ps_q(params.output_dir)
+    parts = [
+        "&",
+        _ps_q(binary),
+        _ps_q(params.input_path),
+        "--output_dir",
+        _ps_q(params.output_dir),
+        "--language",
+        _ps_q(params.language),
+        "--model",
+        _ps_q(params.model),
+    ]
+    if params.diarize:
+        parts.append("--diarize")
+    shell = f"""if (Test-Path {env}) {{
+  Get-Content {env} | ForEach-Object {{
+    if ($_ -match '^\\s*#' -or $_ -notmatch '=') {{ return }}
+    $k,$v = $_ -split '=',2
+    Set-Item -Path ("Env:" + $k.Trim()) -Value $v.Trim().Trim("'").Trim('"')
+  }}
+}}
+New-Item -ItemType Directory -Force -Path {out} | Out-Null
+{_ps_join(parts)}
+"""
+    notes = (
+        "whispermlx is a macOS/MLX binary; this PowerShell form is for hosts "
+        "that already have it on PATH.",
+        "Set HF_TOKEN in whisperx.env when diarization is enabled.",
+        "Expected output: WhisperX/whispermlx JSON for Import Transcript.",
+    )
+    return GeneratedCommand(
+        title="whispermlx",
+        shell=shell.strip() + "\n",
+        notes=notes,
+    )
+
+
+def _build_whispermlx_missing_powershell(params: CommandGenParams) -> GeneratedCommand:
+    parts = [
+        "python",
+        _ps_q("scripts/whispermlx-missing.py"),
+        "--source",
+        _ps_q(params.input_path),
+        "--transcripts",
+        _ps_q(params.output_dir),
+        "--env-file",
+        _ps_q(params.env_file),
+    ]
+    if params.dry_run:
+        parts.append("--dry-run")
+    if params.force:
+        parts.append("--force")
+    if params.fuzzy_json_match:
+        parts.append("--fuzzy-json-match")
+    if params.skip_serial:
+        parts.append("--skip-serial")
+    parts.extend(
+        ["--whisper-args", "--language", params.language, "--model", params.model]
+    )
+    if params.diarize:
+        parts.append("--diarize")
+    notes = (
+        "Run from the git clone so scripts/whispermlx-missing.py resolves.",
+        "Requires a Python that can run the helper (stdlib-only).",
+        "Expected output: WhisperX/whispermlx JSON for Import Transcript.",
+    )
+    return GeneratedCommand(
+        title="whispermlx-missing",
+        shell=_ps_join(parts) + "\n",
+        notes=notes,
+    )
+
+
+def _build_whisperx_docker_powershell(params: CommandGenParams) -> GeneratedCommand:
+    audio_mount = _strip_trailing_separators(params.input_path)
+    out_mount = _strip_trailing_separators(params.output_dir)
+    gpu = " --gpus all" if params.device == "cuda" else ""
+    diarize = " --diarize" if params.diarize else ""
+    speaker = ""
+    if params.min_speakers is not None:
+        speaker += f" --min_speakers {int(params.min_speakers)}"
+    if params.max_speakers is not None:
+        speaker += f" --max_speakers {int(params.max_speakers)}"
+    shell = f"""New-Item -ItemType Directory -Force -Path {_ps_q(out_mount)} | Out-Null
+docker run --rm{gpu} `
+  -v {_ps_q(audio_mount + ':/audio')} `
+  -v {_ps_q(out_mount + ':/output')} `
+  -e HF_TOKEN `
+  {_ps_q(params.docker_image)} `
+  whisperx /audio `
+    --output_dir /output `
+    --model {_ps_q(params.model)} `
+    --language {_ps_q(params.language)} `
+    --device {_ps_q(params.device)} `
+    --compute_type {_ps_q(params.compute_type)} `
+    --batch_size {int(params.batch_size)}{diarize}{speaker}
+"""
+    notes = (
+        "External recipe — run on a host with Docker Desktop or Engine.",
+        "Adjust mounts if input is a single file (mount the parent directory).",
+        "Import the resulting WhisperX JSON via Import Transcript.",
+    )
+    return GeneratedCommand(
+        title="WhisperX Docker",
+        shell=shell.strip() + "\n",
+        notes=notes,
+    )
+
+
+def _build_whisper_webui_powershell(params: CommandGenParams) -> GeneratedCommand:
+    out_mount = _strip_trailing_separators(params.output_dir) or "./outputs"
+    image = params.docker_image.strip() or "jhj0517/whisper-webui:v1.0.8-4def223"
+    port = int(params.webui_port) if params.webui_port else 7860
+    clone_dir = params.webui_clone_dir.strip() or "$HOME/Whisper-WebUI"
+    gpu = " --gpus all" if params.device == "cuda" else ""
+    clone_expr = _ps_q(clone_dir) if not clone_dir.startswith("$") else clone_dir
+    shell = f"""$CloneDir = {clone_expr}
+$OutDir = {_ps_q(out_mount)}
+$Port = {port}
+if (-not (Test-Path (Join-Path $CloneDir '.git'))) {{
+  git clone --depth 1 https://github.com/jhj0517/Whisper-WebUI.git $CloneDir
+}}
+New-Item -ItemType Directory -Force -Path $OutDir,(Join-Path $CloneDir 'outputs'),(Join-Path $CloneDir 'models'),(Join-Path $CloneDir 'configs') | Out-Null
+docker run --rm -d --name whisper-webui -p "127.0.0.1:${{Port}}:7860"{gpu} `
+  -v "${{CloneDir}}/models:/Whisper-WebUI/models" `
+  -v "${{OutDir}}:/Whisper-WebUI/outputs" `
+  -v "${{CloneDir}}/configs:/Whisper-WebUI/configs" `
+  -e HF_TOKEN `
+  {_ps_q(image)}
+Write-Host "Open http://127.0.0.1:$Port"
+"""
+    notes = (
+        "Optional interoperability recipe — TranscriptX does not own Whisper-WebUI.",
+        "Port binds to 127.0.0.1 only. Export SRT/VTT then Import Transcript.",
+    )
+    return GeneratedCommand(
+        title="Whisper-WebUI Docker",
+        shell=shell.strip() + "\n",
+        notes=notes,
+        next_step=(
+            "When SRT/VTT is ready in the outputs folder, open Import Transcript "
+            "and upload it."
+        ),
     )

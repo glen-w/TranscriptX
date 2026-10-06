@@ -179,6 +179,12 @@ class TranscriptionOptions:
     language: str
     diarize: bool
     timeout_seconds: int = 0
+    device: str = "cpu"
+    compute_type: str = "float16"
+    batch_size: int = 16
+    min_speakers: int | None = None
+    max_speakers: int | None = None
+    docker_image: str = "ghcr.io/m-bain/whisperx:latest"
 
 
 @dataclass
@@ -192,3 +198,4 @@ class TranscriptionRequest:
     import_into_library: bool = True
     overwrite_import: bool = False
     keep_intermediates: bool = False
+    job_id: Optional[str] = None

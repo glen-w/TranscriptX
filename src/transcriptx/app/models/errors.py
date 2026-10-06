@@ -33,6 +33,12 @@ class WorkflowExecutionError(AppError):
     pass
 
 
+class TranscriptionCancelled(AppError):
+    """Transcription batch stopped because cancel was requested."""
+
+    pass
+
+
 class ModuleExecutionError(AppError):
     """A specific analysis module failed."""
 

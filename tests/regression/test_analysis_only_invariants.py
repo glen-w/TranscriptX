@@ -1,10 +1,10 @@
 """
-Regression tests: prevent re-coupling to WhisperX or Docker orchestration.
+Regression tests: analysis image stays Docker-free.
 
-Scans source under src/transcriptx for forbidden references (docker socket,
-docker invocation strings, whisperx in core/). Excludes __pycache__ and
-allowlisted modules (io format adapters). Also asserts Dockerfile and
-docker-compose.yml do not install or mount Docker (analysis-only image).
+Scans source under src/transcriptx for Docker socket mounts and docker CLI
+strings outside host-orchestration allowlists. Excludes __pycache__ and
+allowlisted modules (command gen, WhisperX Docker provider). Dockerfile and
+docker-compose.yml must not install or mount Docker (analysis-only image).
 """
 
 import os
@@ -52,8 +52,10 @@ def test_no_docker_invocation_strings():
         {
             # Host-side WhisperX helper emits example `docker run` command strings.
             "services/transcription/command_gen.py",
-            # Transcribe page help copy mentions docker compose / docker run (no orchestration).
+            # Transcribe page help copy mentions docker compose / docker run.
             "web/page_modules/transcribe_audio.py",
+            # Theme H: host-orchestrated WhisperX Docker provider (not analysis-image STT).
+            "services/transcription/whisperx_docker_provider.py",
         }
     )
     patterns = [

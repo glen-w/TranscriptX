@@ -17,6 +17,7 @@ from transcriptx.services.transcription.provider import (
 from transcriptx.services.transcription.redact import redact_secret
 from transcriptx.services.transcription.registry import (
     UnknownTranscriptionProviderError,
+    any_provider_available,
     get_provider,
     get_transcription_providers,
     resolve_default_provider,
@@ -38,4 +39,5 @@ __all__ = [
     "load_merged_env",
     "redact_secret",
     "resolve_default_provider",
+    "any_provider_available",
 ]

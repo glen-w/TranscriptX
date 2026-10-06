@@ -100,11 +100,17 @@ def test_settings_env_and_file_roundtrip(tmp_path: Path, monkeypatch) -> None:
     assert loaded.transcript_mode == "offer"
 
 
-def test_validate_for_enable_requires_paths_and_rejects_auto_transcribe() -> None:
+def test_validate_for_enable_requires_paths_and_gates_auto_transcribe(
+    monkeypatch,
+) -> None:
     settings = DirectoryWatcherSettings(enabled=True, watch_paths=[])
     errs = settings.validate_for_enable()
     assert any("watch path" in e.lower() for e in errs)
 
+    monkeypatch.setattr(
+        "transcriptx.services.transcription.registry.any_provider_available",
+        lambda: False,
+    )
     settings2 = DirectoryWatcherSettings(
         enabled=True,
         watch_paths=["/tmp/inbox"],
@@ -112,6 +118,13 @@ def test_validate_for_enable_requires_paths_and_rejects_auto_transcribe() -> Non
     )
     errs2 = settings2.validate_for_enable()
     assert any("auto_transcribe" in e for e in errs2)
+
+    monkeypatch.setattr(
+        "transcriptx.services.transcription.registry.any_provider_available",
+        lambda: True,
+    )
+    errs3 = settings2.validate_for_enable()
+    assert not any("auto_transcribe" in e for e in errs3)
 
 
 def test_classifier_extensions() -> None:
@@ -228,6 +241,68 @@ def test_pipeline_queues_audio_in_offer_mode(tmp_path: Path) -> None:
     job = process_watched_path(audio, settings=settings, store=store)
     assert job.state is JobState.QUEUED_TRANSCRIPTION
     assert job.kind == "audio"
+
+
+def test_pipeline_auto_transcribe_runs_stt(tmp_path: Path, monkeypatch) -> None:
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    audio = inbox / "note.mp3"
+    audio.write_bytes(b"ID3fake")
+    settings = DirectoryWatcherSettings(
+        enabled=True,
+        watch_paths=[str(inbox)],
+        audio_mode="auto_transcribe",
+        stability_checks=1,
+        stability_interval_ms=50,
+    )
+    store = JobStore(tmp_path / "watcher" / "jobs")
+    imported = tmp_path / "transcripts" / "note.json"
+    imported.parent.mkdir(parents=True, exist_ok=True)
+    imported.write_text("{}", encoding="utf-8")
+
+    from transcriptx.app.models.results import (
+        TranscriptionBatchResult,
+        TranscriptionFileResult,
+    )
+
+    fake = TranscriptionBatchResult(
+        job_id="stt1",
+        success=True,
+        file_results=[
+            TranscriptionFileResult(
+                input_path=audio,
+                provider_id="whispermlx",
+                success=True,
+                created_staged_file=False,
+                staged_mp3_path=None,
+                raw_json_path=imported,
+                imported_json_path=imported,
+                import_success=True,
+                errors=(),
+                stderr_tail=(),
+                duration_seconds=0.1,
+            )
+        ],
+        succeeded_count=1,
+        failed_count=0,
+        output_dir=tmp_path,
+        duration_seconds=0.1,
+    )
+    monkeypatch.setattr(
+        "transcriptx.services.transcription.registry.any_provider_available",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "transcriptx.services.transcription.runner.transcribe_audio_path_blocking",
+        lambda *args, **kwargs: fake,
+    )
+    monkeypatch.setattr(
+        "transcriptx.services.watcher.pipeline._try_identify_imported",
+        lambda path: "",
+    )
+    job = process_watched_path(audio, settings=settings, store=store)
+    assert job.state is JobState.IMPORTED
+    assert job.transcript_path == str(imported)
 
 
 def test_pipeline_stale_identity_fails_closed(tmp_path: Path, monkeypatch) -> None:

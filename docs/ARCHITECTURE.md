@@ -27,7 +27,7 @@ TranscriptX is structured in two layers:
 
 Scripting and automation use the Python API directly (`app.workflows`, `core.pipeline`). Transcription is **external**; the GUI may generate commands for external tools rather than running a built-in engine.
 
-Primary surface is the Streamlit GUI; secondary is the typed Python API. Transcription remains external with in-app command generation.
+Primary surface is the Streamlit GUI; secondary is the typed Python API. Transcription is BYO plus optional host-orchestrated STT and command generation.
 
 ## Components
 

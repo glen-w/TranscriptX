@@ -120,13 +120,63 @@ def process_watched_path(
                 job, state=JobState.SKIPPED, detail="Audio mode is ignore."
             )
         if settings.audio_mode == "auto_transcribe":
+            from transcriptx.services.transcription.registry import (
+                any_provider_available,
+            )
+            from transcriptx.services.transcription.runner import (
+                transcribe_audio_path_blocking,
+            )
+
+            if not any_provider_available():
+                return store.update(
+                    job,
+                    state=JobState.FAILED,
+                    detail=(
+                        "auto_transcribe requires an available host STT provider "
+                        "(whispermlx or WhisperX Docker)."
+                    ),
+                )
+            store.update(
+                job,
+                state=JobState.TRANSCRIBING,
+                detail="Running in-app transcription.",
+            )
+            if _cancelled():
+                return store.update(
+                    job, state=JobState.CANCELLED, detail="Watcher stopped."
+                )
+            result = transcribe_audio_path_blocking(
+                target,
+                cancel_check=_cancelled,
+                watcher_job_id=job.job_id,
+            )
+            if result.success:
+                imported = next(
+                    (
+                        fr.imported_json_path
+                        for fr in result.file_results
+                        if fr.imported_json_path is not None
+                    ),
+                    None,
+                )
+                detail = "Transcribed and imported." if imported else "Transcribed."
+                if imported is not None:
+                    ident = _try_identify_imported(imported)
+                    if ident:
+                        detail = f"{detail} {ident}".strip()
+                return store.update(
+                    job,
+                    state=JobState.IMPORTED,
+                    detail=detail,
+                    transcript_path=str(imported) if imported else None,
+                )
+            errors = list(result.errors)
+            for fr in result.file_results:
+                errors.extend(fr.errors)
             return store.update(
                 job,
                 state=JobState.FAILED,
-                detail=(
-                    "auto_transcribe is not available until a host STT provider "
-                    "is configured (theme H)."
-                ),
+                detail=errors[0] if errors else "Transcription failed.",
             )
         # offer
         return store.update(

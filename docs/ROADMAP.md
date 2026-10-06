@@ -36,7 +36,7 @@ This is **owner machine hygiene**, not a 1.0 product feature. Layout contracts: 
 - Contracts for storage, run outcomes, outputs, and public surfaces
 - Package on a **0.9.x** stabilisation track toward 1.0
 
-Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription remains external, with in-app **command-generation** handoff shipped in **0.9.4**. Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Post-0.9.9 wave cut as interim **`0.9.9.5`**: early 1.x Themes **A–D**, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, backup/restore — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md). Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **done for 1.0** (Speaker ID Phase 9, Studio review, viewer click-drag); Theme **D** Transcript karaoke MVP. Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
+Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription is BYO plus in-app **command-generation** (0.9.4) and optional **host-orchestrated STT** (theme **H**: whispermlx / WhisperX Docker, durable jobs). Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Post-0.9.9 wave cut as interim **`0.9.9.5`**: early 1.x Themes **A–D**, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, backup/restore — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md). Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **done for 1.0** (Speaker ID Phase 9, Studio review, viewer click-drag); Theme **D** Transcript karaoke MVP. Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
 
 ---
 
@@ -97,10 +97,10 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
 | F. Library & organisation | Transcript tagging; Groups interaction rules | Mid 1.x |
 | G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** pluggable host STT + POSIX path honesty called; Windows admit/service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
-| H. In-app transcription | Local NVIDIA Parakeet/Canary + Whisper; CUDA/CPU; YouTube ingest | Mid–late 1.x (product decision) |
-| I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Mid–late 1.x (depends on shell) |
-| J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 |
-| K. External STT command generation | Broader copyable host CLIs until / beside theme H | Ongoing light |
+| H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Parakeet/Canary/YouTube later | **[~] H1–H4 shipped**; H5+ deferred |
+| I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Deferred except H1 job channel |
+| J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 — deferred vs STT |
+| K. External STT command generation | Broader copyable host CLIs until / beside theme H | **[~] PowerShell builder shipped** |
 | L. Polish & onboarding extras | Coach-marks, bundled demos, aesthetics — only if capacity | Anytime light |
 | M. Research / citeable methods | Optional B4-style methods; multilingual beyond small subset | Later 1.x+ |
 | N. Multi-provider LLM (opt-in) | OpenAI-compatible / LiteLLM gateway beyond Ollama; never silent cloud default | Mid–late 1.x |
@@ -214,7 +214,7 @@ Automatically notice new recordings (and/or transcript files) in a monitored fol
 - Today: folder import also exists for **manual** transcript admission — watcher reuses the same admission primitives
 - Design: watch scope, debounce + stability, size limits, failure surfacing, Docker bind-mount honesty, no silent library corruption
 - Prefer explicit user enablement; default-off on shared machines
-- **Next:** in-app audio → STT → import waits on theme **H**. Host `inbox-watch --transcribe none|command` can convert or call a host argv without whispermlx. Short voice notes are **G4**, not this bullet and not a second G2 on the same folder.
+- **Next:** in-app audio → STT → import is theme **H** (`auto_transcribe` when a provider is available). Host `inbox-watch --transcribe none|command` can convert or call a host argv without whispermlx. Short voice notes are **G4**, not this bullet and not a second G2 on the same folder.
 
 #### G3. Host companion scripts on Windows / Linux (parked; post-1.0)
 
@@ -224,9 +224,9 @@ Evidence (do not implement from this list before 1.0): [host-side Windows/Linux 
 
 **1.x intent:** make the **host Python scripts** actually runnable on Windows (and honest on Linux without whispermlx), without pretending MLX exists off Darwin.
 
-**Called (this slice):** pluggable host STT on `inbox-watch` (`--transcribe whispermlx-missing|none|command` + `--transcribe-cmd` argv template) and Transcribe Audio **path honesty** (case-insensitive audio suffixes; strip trailing `\` as well as `/`; POSIX paste notes). Streamlit still never executes STT. `inbox-watch` stays stdlib-only and does not import the in-app provider registry.
+**Called (this slice):** pluggable host STT on `inbox-watch` (`--transcribe whispermlx-missing|none|command` + `--transcribe-cmd` argv template) and Transcribe Audio **path honesty** (case-insensitive audio suffixes; strip trailing `\` as well as `/`; POSIX paste notes). `inbox-watch` stays stdlib-only and does not import the in-app provider registry.
 
-**Owner split:** G3 owns host-script STT *selection* and copyable-command path honesty. Theme **H** owns in-app `TranscriptionProvider.transcribe()` (WhisperX Docker GUI orchestration stays a stub). Theme **K** owns extra copyable engines and a future PowerShell builder.
+**Owner split:** G3 owns host-script STT *selection* and copyable-command path honesty. Theme **H** owns in-app `TranscriptionProvider.transcribe()` (whispermlx + WhisperX Docker orchestration). Theme **K** owns extra copyable engines and the PowerShell builder.
 
 **Still parked:**
 
@@ -266,29 +266,25 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 
 ### H. In-app transcription (product decision)
 
-**1.0 stance unchanged:** transcription remains **external**, with in-app **command generation** only. Built-in STT is **not** a 1.0 gate.
+**1.0 stance unchanged:** built-in STT is **not** a 1.0 gate. BYO import remains the default path.
 
-**1.x intent:** make local transcription a **supported product path** so the personal-recording journey (record/download → text → analyse) can stay inside TranscriptX when the user wants it — without abandoning BYO import or analysis-first positioning. Complementary tools ([Scriberr](https://scriberr.app/), [noScribe](https://noscribe.de/en/), [aTrain](https://github.com/aTrainTranscription/aTrain), [RiverScript](https://riverscript.com/), WhisperX, …) remain valid upstreams; see [comparison.md](comparison.md). Host-side `--transcribe` / `--transcribe-cmd` on `inbox-watch` is theme **G3**, not this theme.
+**Shipped (H1–H4):** host-orchestrated Whisper-class STT — Streamlit/controller calls `TranscriptionProvider.transcribe()`; engines stay on the host or in a separate Docker recipe, **not** in the analysis image.
 
-**Candidate capabilities (design before build):**
+| Slice | Status |
+|-------|--------|
+| **H1** Durable jobs + GUI Run path (whispermlx) | **[x]** `data_dir/transcription/jobs/` + Transcribe Audio **Run in app** |
+| **H2** WhisperX Docker provider | **[x]** registered; CUDA `--gpus all` or CPU |
+| **H3** Watcher `auto_transcribe` + queued drain | **[x]** when a provider is available |
+| **H4** Docs / install honesty | **[x]** this page + [transcription.md](runtime/transcription.md) |
+| **H5+** NVIDIA Parakeet/Canary, YouTube ingest, HTTP STT sidecar | **[ ] deferred** until the Whisper path is boring |
 
-| Capability | Notes |
-|------------|--------|
-| **NVIDIA Parakeet / Canary + Whisper-class models** | User-selectable backends; accuracy/speed trade-offs documented; word-level timings where the stack supports them |
-| **Hardware acceleration** | NVIDIA **CUDA** where available; optimised **CPU** path otherwise; Apple **MLX** remains a host/command path until a coherent native story exists |
-| **YouTube transcription** | Paste a URL → download audio/video → local STT → managed import. Legal/ToS, yt-dlp (or equivalent) ops, size limits, and offline-default honesty are part of the design spike |
-| **Diarization** | Prefer optional/local; align speaker labels with Speaker ID / import contracts |
-| **Job UX** | Queue, progress, cancel, retry; never block the analysis GUI on a stuck STT job. A durable job/progress channel (not Streamlit `session_state` alone) is also the prerequisite if theme **I** ever grows a second client |
+**Architecture (locked):** host-orchestrated providers (fork #2, narrow). No silent cloud STT. Apple MLX stays host/binary; CUDA via WhisperX Docker.
 
-**Architecture fork (decide early):**
+**Job UX:** queue/progress/cancel/retry via the file-backed job store (not Streamlit `session_state` alone). This is the Theme **I** durable channel; loopback API / PWA / SPA stay deferred.
 
-1. **In-process / same-image STT** — simplest UX; heaviest Docker/image and GPU story  
-2. **Host-side STT service** (Ollama-like: GUI orchestrates via HTTP; ML stays on host) — cleaner Docker analysis vs GPU split  
-3. **Keep external-only + richer command gen** (theme **K**) — if in-app cost/risk stays too high
+**Decision fork:** **Narrow** (Whisper-only host orchestration). Invest in Parakeet/Canary later. Do not half-ship a silent cloud STT.
 
-**Decision fork:** **Invest** (supported optional STT path + clear install profiles) · **Narrow** (Whisper-only or CUDA-Docker-only) · **Defer** (stay BYO + command gen). Do not half-ship a silent cloud STT. Prefer local models; optional remote APIs only with explicit user opt-in and labelling.
-
-**Non-goals for this theme:** meeting bots that auto-join Zoom/Meet; becoming a chat-over-audio product; replacing the analysis module DAG.
+**Non-goals for this theme:** meeting bots that auto-join Zoom/Meet; becoming a chat-over-audio product; replacing the analysis module DAG; in-process NeMo in the analysis image.
 
 ---
 
@@ -299,6 +295,8 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 **What “native” means here:** TranscriptX stays a **local Python engine** (file-backed storage, optional local ML). A native-feeling product is a custom local client plus that process — not a Swift/Qt/WinUI rewrite of the analysis workbench, and not wrapping Streamlit in a webview as if that were a new UI.
 
 **1.x intent:** honest local-install feel (home-screen / dock icon, dark/light polish) without faking an offline app while the Python server must be running.
+
+**Deferred vs in-app STT:** PWA / Streamlit wrapper, loopback application API, and custom SPA stay deferred. The durable job/progress channel required by H lives in theme **H1**, not a separate I project.
 
 **Candidate slices (design before build; later slices depend on earlier ones):**
 
@@ -319,6 +317,8 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 
 1.0 stays **file-backed**. First deliberate DB wave: a **local** query/analytics layer so longitudinal views stop paying full-scan / ad-hoc JSON costs — without hosted multi-tenant SaaS.
 
+**Deferred vs in-app STT:** Theme **J** does not unlock record → text → analyse. Keep ~1.5 timing; no H dependency.
+
 - Start with **SQLite** (or equivalent) as an **optional / derived** store, not a second source of truth for canonical transcripts
 - First slice: **speaker-profile analytics views** and related B5 remainder (group gallery keyed by `profile_id`) — see analysis-module backlog
 - File/sidecar layout remains the durable library contract; DB rebuildable from files
@@ -332,9 +332,9 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 
 ### K. External STT command generation (bridge)
 
-Until/beside theme **H**, keep improving **copyable host commands** on Transcribe Audio: whispermlx / whispermlx-missing (Apple MLX), WhisperX Docker, Whisper-WebUI, plus further CUDA Linux / CPU CLIs as needed. Still copy/run-on-host only (no in-container MLX; no silent orchestration). Import remains the GUI admission gate for BYO files.
+Until/beside theme **H**, keep improving **copyable host commands** on Transcribe Audio: whispermlx / whispermlx-missing (Apple MLX), WhisperX Docker, Whisper-WebUI, plus further CUDA Linux / CPU CLIs as needed. Copy/run-on-host remains available when no in-app provider is reachable. Import remains the GUI admission gate for BYO files.
 
-**Windows / PowerShell snippets** stay with theme **K**. Theme **G3** already owns POSIX path honesty (`.MP3`, trailing `\`) and `inbox-watch --transcribe` / `--transcribe-cmd`. Do not treat PowerShell as a 1.0 Transcribe Audio change.
+**Windows / PowerShell snippets:** Transcribe Audio can emit a **PowerShell** snippet (Theme **K**) as well as POSIX. Theme **G3** already owns POSIX path honesty (`.MP3`, trailing `\`) and `inbox-watch --transcribe` / `--transcribe-cmd`.
 
 **Saved presets:** Transcribe Audio can save/load/delete command-gen form presets under `.transcriptx/profiles/stt_commands/` (host paths and flags only — never `HF_TOKEN`; tokens stay in `whisperx.env`).
 
