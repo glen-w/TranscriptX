@@ -314,7 +314,7 @@ class TranscriptionJobRunner:
         if not job.watcher_job_id:
             return
         try:
-            from transcriptx.services.watcher.job_store import JobState, JobStore
+            from transcriptx.services.watcher.job_store import JobState
             from transcriptx.services.watcher.service import get_watcher_service
 
             watcher_job = get_watcher_service().store.get(job.watcher_job_id)
