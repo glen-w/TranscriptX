@@ -18,9 +18,10 @@ def render_watcher_panel() -> None:
     st.subheader("Directory watcher")
     st.caption(
         "Default-off. When enabled, new transcript files in a watched inbox can be "
-        "auto-imported into the managed library. Audio files are queued (offer) until "
-        "host STT is available. Inbox sources are never deleted. The watcher runs only "
-        "while TranscriptX is running."
+        "auto-imported into the managed library. Audio files can be queued (offer), "
+        "ignored, or auto-transcribed when a host STT provider is available. "
+        "Inbox sources are never deleted. The watcher runs only while TranscriptX "
+        "is running."
     )
 
     service = get_watcher_service()
@@ -72,7 +73,9 @@ def render_watcher_panel() -> None:
             ),
             key="watcher_audio_mode",
             help=widget_help(
-                "auto_transcribe requires a host STT provider (theme H) and is rejected for now."
+                "offer: queue audio for Transcribe Audio. ignore: skip audio. "
+                "auto_transcribe: run an available host STT provider and import "
+                "the result (whispermlx or WhisperX Docker)."
             ),
         )
 

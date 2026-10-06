@@ -1,8 +1,9 @@
-"""Tests for WhisperX Docker provider stub."""
+"""Tests for WhisperX Docker provider."""
 
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -12,35 +13,74 @@ from transcriptx.services.transcription.whisperx_docker_provider import (
 )
 
 
+def _options(**kwargs) -> TranscriptionOptions:
+    values = dict(
+        provider_id="whisperx_docker",
+        model="large-v3",
+        language="en",
+        diarize=False,
+    )
+    values.update(kwargs)
+    return TranscriptionOptions(**values)
+
+
 @pytest.mark.unit
 class TestWhisperXDockerProvider:
-    def test_always_unavailable(self):
+    def test_unavailable_without_docker(self):
         provider = WhisperXDockerProvider()
-        options = TranscriptionOptions(
-            provider_id="whisperx_docker",
-            model="large-v3",
-            language="en",
-            diarize=True,
-        )
-        availability = provider.is_available(options)
+        with patch(
+            "transcriptx.services.transcription.whisperx_docker_provider.resolve_docker_binary",
+            return_value=None,
+        ):
+            availability = provider.is_available(_options())
         assert not availability.available
         assert availability.reason
 
-    def test_transcribe_returns_not_implemented(self, tmp_path: Path):
+    def test_available_when_docker_and_daemon_ok(self):
         provider = WhisperXDockerProvider()
-        options = TranscriptionOptions(
-            provider_id="whisperx_docker",
-            model="large-v3",
-            language="en",
-            diarize=False,
-        )
-        out_dir = tmp_path / "out"
+        with (
+            patch(
+                "transcriptx.services.transcription.whisperx_docker_provider.resolve_docker_binary",
+                return_value=Path("/usr/bin/docker"),
+            ),
+            patch(
+                "transcriptx.services.transcription.whisperx_docker_provider._docker_daemon_ok",
+                return_value=(True, None),
+            ),
+        ):
+            availability = provider.is_available(_options(diarize=False))
+        assert availability.available
+
+    def test_transcribe_invokes_docker_run(self, tmp_path: Path):
+        provider = WhisperXDockerProvider()
         audio = tmp_path / "clip.mp3"
         audio.write_bytes(b"x")
-        result = provider.transcribe(audio, out_dir, options)
-        assert not result.success
-        assert result.returncode is None
-        assert result.error
+        out_dir = tmp_path / "out"
+        out_dir.mkdir()
+        json_path = out_dir / "clip.json"
+        json_path.write_text("{}", encoding="utf-8")
+        proc = MagicMock()
+        proc.returncode = 0
+        proc.communicate.return_value = ("ok", "")
+        with (
+            patch(
+                "transcriptx.services.transcription.whisperx_docker_provider.resolve_docker_binary",
+                return_value=Path("/usr/bin/docker"),
+            ),
+            patch(
+                "transcriptx.services.transcription.whisperx_docker_provider.subprocess.Popen",
+                return_value=proc,
+            ) as popen,
+        ):
+            result = provider.transcribe(audio, out_dir, _options(device="cuda"))
+        assert result.success
+        assert result.json_path == json_path
+        argv = popen.call_args[0][0]
+        assert argv[0] == "/usr/bin/docker"
+        assert "run" in argv
+        assert "--gpus" in argv
+        assert "whisperx" in argv
+        assert "/audio/clip.mp3" in argv
 
     def test_recipe_path_points_at_docs(self):
         provider = WhisperXDockerProvider()

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -19,7 +20,7 @@ def test_transcribe_audio_page_callable():
 
 
 @pytest.mark.unit
-def test_transcribe_audio_page_is_instruction_only():
+def test_transcribe_audio_page_has_run_and_copy_paths():
     import transcriptx.web.page_modules.transcribe_audio as page
 
     source = Path(page.__file__).read_text(encoding="utf-8")
@@ -30,10 +31,12 @@ def test_transcribe_audio_page_is_instruction_only():
     assert "Import into TranscriptX" not in source
     assert "transcribe_goto_import" not in source
     assert "generate_transcription_command" in source
+    assert "generate_transcription_command_powershell" in source
     assert "TRANSCRIPTION_MODEL_OPTIONS" in source
     assert "st.selectbox" in source
     assert 'st.text_input("Model"' not in source
     assert "st.file_uploader" not in source
+    assert "get_transcription_runner" in source
     assert "TranscriptionController" not in source
     assert "subprocess" not in source
     assert "Popen" not in source
@@ -45,6 +48,9 @@ def test_transcribe_audio_page_is_instruction_only():
     assert "stt_command_profiles" in source
     assert "tx_cmdgen_preset_save" in source
     assert "HF_TOKEN stays in whisperx.env" in source
+    assert "Run in app" in source
+    assert "Copy command" in source
+    assert "PowerShell" in source
 
 
 @pytest.mark.unit
@@ -79,16 +85,16 @@ def test_transcribe_audio_page_does_not_execute_shell():
 
 
 @pytest.mark.unit
-def test_providers_include_whispermlx_only():
+def test_providers_include_whispermlx_and_whisperx_docker():
     from transcriptx.services.transcription.registry import get_transcription_providers
 
     ids = {p.provider_id for p in get_transcription_providers()}
     assert "whispermlx" in ids
-    assert "whisperx_docker" not in ids
+    assert "whisperx_docker" in ids
 
 
 @pytest.mark.unit
-def test_whisperx_docker_provider_file_still_unavailable():
+def test_whisperx_docker_provider_unavailable_without_docker():
     from transcriptx.services.transcription.whisperx_docker_provider import (
         WhisperXDockerProvider,
     )
@@ -100,5 +106,9 @@ def test_whisperx_docker_provider_file_still_unavailable():
         language="en",
         diarize=False,
     )
-    availability = provider.is_available(options)
+    with patch(
+        "transcriptx.services.transcription.whisperx_docker_provider.resolve_docker_binary",
+        return_value=None,
+    ):
+        availability = provider.is_available(options)
     assert not availability.available

@@ -89,10 +89,15 @@ class DirectoryWatcherSettings(BaseModel):
             if not expanded.is_absolute():
                 errors.append(f"Watch path must be absolute: {path_text}")
         if self.audio_mode == "auto_transcribe":
-            errors.append(
-                "audio_mode=auto_transcribe requires a host STT provider "
-                "(theme H); use offer or ignore until then."
+            from transcriptx.services.transcription.registry import (
+                any_provider_available,
             )
+
+            if not any_provider_available():
+                errors.append(
+                    "audio_mode=auto_transcribe requires an available host STT "
+                    "provider (whispermlx on macOS, or WhisperX Docker)."
+                )
         return errors
 
 

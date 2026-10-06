@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import Callable
 from pathlib import Path
 
+from transcriptx.app.models.errors import TranscriptionCancelled
 from transcriptx.app.models.requests import TranscriptionRequest
 from transcriptx.app.models.results import (
     TranscriptionBatchResult,
@@ -46,12 +48,14 @@ def _collect_secrets() -> list[str]:
 def run_transcription_workflow(
     request: TranscriptionRequest,
     progress: ProgressCallback | None = None,
+    *,
+    cancel_check: Callable[[], bool] | None = None,
 ) -> TranscriptionBatchResult:
     if progress is None:
         progress = NullProgress()
 
     batch_started = time.time()
-    job_id = uuid.uuid4().hex[:12]
+    job_id = request.job_id or uuid.uuid4().hex[:12]
     staging_dir = _transcription_staging_dir(job_id)
     output_dir = request.output_dir or _default_output_dir(job_id)
     staging_dir.mkdir(parents=True, exist_ok=True)
@@ -68,6 +72,12 @@ def run_transcription_workflow(
     progress.on_stage_start("running_pipeline")
 
     for index, input_path in enumerate(request.input_paths):
+        if cancel_check and cancel_check():
+            batch_errors.append("Cancelled")
+            progress.on_log("Cancelled by user", "warning")
+            progress.on_event({"event": "run_cancelled", "message": "Cancelled"})
+            raise TranscriptionCancelled("Transcription cancelled")
+
         file_started = time.time()
         input_path = Path(input_path).resolve()
         errors: list[str] = []

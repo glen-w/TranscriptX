@@ -67,7 +67,7 @@ Vendor-level cells (Scriberr, Nanosamurai, RiverScript, Gong, …): [comparison 
 
 Aligned with [PRODUCT.md](PRODUCT.md):
 
-- Built-in transcription or meeting bots (bring your own files)
+- Built-in meeting bots (optional host-orchestrated STT is in-app; BYO files remain first-class)
 - A hosted multi-user analysis service
 - Cloud AI as the default (Ollama on your machine is optional)
 - Chat-over-corpus as the main product
@@ -76,7 +76,7 @@ Aligned with [PRODUCT.md](PRODUCT.md):
 - Jeffersonian / GAT conversation-analytic transcription
 - Public oral-history exhibit sites
 
-**Post-1.0 direction:** optional local in-app transcription is tracked as a 1.x theme in [ROADMAP.md](ROADMAP.md) — it does not change the 1.0 BYO stance.
+**Post-1.0 direction:** optional host-orchestrated in-app transcription (whispermlx / WhisperX Docker) is the first Theme **H** slice in [ROADMAP.md](ROADMAP.md). BYO import stays the default; Parakeet/Canary/YouTube remain later.
 
 Limits users should know: [known_limitations.md](known_limitations.md).
 

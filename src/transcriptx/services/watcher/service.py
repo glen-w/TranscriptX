@@ -197,6 +197,15 @@ class DirectoryWatcherService:
             try:
                 item = self._queue.get(timeout=0.5)
             except queue.Empty:
+                from transcriptx.services.transcription.runner import (
+                    drain_queued_watcher_jobs,
+                )
+
+                if self.settings.audio_mode == "auto_transcribe":
+                    try:
+                        drain_queued_watcher_jobs(limit=1)
+                    except Exception:
+                        logger.exception("Failed draining queued transcription jobs")
                 continue
             if item is None:
                 continue

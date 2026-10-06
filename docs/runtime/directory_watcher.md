@@ -9,7 +9,7 @@ Optional **directory watcher** (roadmap G2) notices new files in a monitored inb
 | Transcript (`.json`/`.srt`/`.vtt`/`.txt`/`.html`) | `auto_import` (default when enabled) | Stabilize → classify → `admit_and_register` |
 | Transcript | `offer` / `ignore` | Record/skip only |
 | Audio | `offer` (default) | Queue as `queued_transcription` (no silent STT) |
-| Audio | `auto_transcribe` | Rejected until host STT (theme H) is available |
+| Audio | `auto_transcribe` | Run an available host STT provider (whispermlx / WhisperX Docker) and import |
 | Audio | `ignore` | Skip |
 
 Inbox files are **never deleted or modified**. Admission always copies into app `imports/` then uses the managed import path (canonical JSON + sidecar + originals + index). The watcher does **not** scan the managed transcripts library.
@@ -24,7 +24,7 @@ Inbox files are **never deleted or modified**. Admission always copies into app 
 
 ## Host-side helper (`inbox-watch`)
 
-The in-app watcher does **not** convert audio or run STT. For that, use the host script [`scripts/inbox-watch.py`](../../scripts/inbox-watch.py) documented under [Host inbox watcher (`inbox-watch`)](host-stt.md#host-inbox-watcher-inbox-watch) in [host-stt.md](host-stt.md):
+The in-app watcher **can** run STT when **Settings → Watcher → Audio mode** is `auto_transcribe` and a provider is available (theme **H**). Offer mode still queues audio for **Transcribe Audio**. For host-side convert/STT without Streamlit, use [`scripts/inbox-watch.py`](../../scripts/inbox-watch.py) documented under [Host inbox watcher (`inbox-watch`)](host-stt.md#host-inbox-watcher-inbox-watch) in [host-stt.md](host-stt.md):
 
 - `--watch-audio` — ffmpeg 16 kHz mono 64k MP3 into recordings
 - `--transcribe` — host STT after convert: `whispermlx-missing` (default), `none` (convert/copy/admit only), or `command` (`--transcribe-cmd` argv template). Optional `--skip-serial` is forwarded to `whispermlx-missing` only.
@@ -40,6 +40,6 @@ Short voice notes are roadmap **G4** ([`scripts/voice-note-watch.py`](../../scri
 ## Related
 
 - Folder scan (manual): Import Transcript → Import all from folder
-- Transcription remains external for 1.0: [transcription.md](transcription.md)
+- Transcription: optional host-orchestrated STT plus BYO import — [transcription.md](transcription.md)
 - Auto-identify after admit: [auto-identify.md](auto-identify.md)
 - Product roadmap: [ROADMAP.md](../ROADMAP.md) theme G2 / H

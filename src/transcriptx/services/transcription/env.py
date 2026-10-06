@@ -97,6 +97,12 @@ def default_transcription_options(
         language=merged.get("WHISPERMLX_LANGUAGE", "en"),
         diarize=parse_bool(merged.get("WHISPERMLX_DIARIZE"), default=True),
         timeout_seconds=parse_int(merged.get("WHISPERMLX_TIMEOUT_SECONDS"), default=0),
+        device=merged.get("WHISPERX_DEVICE", "cpu"),
+        compute_type=merged.get("WHISPERX_COMPUTE_TYPE", "float16"),
+        batch_size=parse_int(merged.get("WHISPERX_BATCH_SIZE"), default=16),
+        docker_image=merged.get(
+            "WHISPERX_DOCKER_IMAGE", "ghcr.io/m-bain/whisperx:latest"
+        ),
     )
 
 
@@ -139,4 +145,10 @@ def build_transcription_options(
         language=str(overrides.get("language", base.language)),
         diarize=bool(overrides.get("diarize", base.diarize)),
         timeout_seconds=int(overrides.get("timeout_seconds", base.timeout_seconds)),
+        device=str(overrides.get("device", base.device)),
+        compute_type=str(overrides.get("compute_type", base.compute_type)),
+        batch_size=int(overrides.get("batch_size", base.batch_size)),
+        min_speakers=overrides.get("min_speakers", base.min_speakers),
+        max_speakers=overrides.get("max_speakers", base.max_speakers),
+        docker_image=str(overrides.get("docker_image", base.docker_image)),
     )
