@@ -35,7 +35,7 @@ On a managed library transcript you can also use **Apply auto-identify** (voice 
 
 3. If audio is linked, use the play controls beside a sample line to load that clip. Clips help when two speakers sound similar or when a short turn is ambiguous from text alone. Without audio, continue from the printed lines — naming still works.
 
-4. Enter a display name in the **Name** field. Under **Profile** (classic UI: **Link to speaker profile**), choose who this diarized ID should attach to. The menu lists existing speaker profiles, with name, alias, and voice matches first, then **Create new profile** or **Name only — this transcript**. Then choose the save (✓) control. The workspace advances to the next unnamed speaker when one remains.
+4. Enter a display name in the **Name** field. Under **Profile**, choose who this diarized ID should attach to. The menu lists existing speaker profiles, with name, alias, and voice matches first, then **Create new profile** or **Name only — this transcript**. Then choose the save (✓) control. The workspace advances to the next unnamed speaker when one remains.
 
 A unique name match preselects the existing person. If several profiles share the name, nothing is auto-picked — choose deliberately so you do not create a second Maya.
 
@@ -53,18 +53,16 @@ A unique name match preselects the existing person. If several profiles share th
 
 9. Re-run or refresh analysis views that depend on named speakers when you care about per-speaker summaries. A prior run may still reflect old labels until modules that key on speaker identity are run again.
 
-> **Note:** Speaker Identification mounts the Components v2 (CCv2) workspace by
-> default when `transcriptx-workspaces` is installed. Roll back to the classic
-> UI with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`. The classic path uses
-> **Assign name** / **Save name** / **Jump to speaker** / **Unignore** labels;
-> CCv2 uses **Name**, icon actions (save / ignore / prev / next), and the speaker list.
+> **Note:** Speaker Identification uses the Components v2 (CCv2) workspace
+> (`Name`, icon save / ignore / prev / next, speaker list). Install
+> `transcriptx-workspaces` with the GUI (`pip install -e ".[web]"`).
 > See [known limitations](../known_limitations.md).
 
 ## What to notice
 
 - Naming speakers makes the transcript readable and unlocks speaker-level modules; it is not a cosmetic rename.
 - Switching speakers refreshes sample lines (and clip targets when audio is present) so you can compare before saving.
-- Ignore is for unusable diarization IDs; prefer naming real participants. On CCv2, choose ignore again to restore a previously ignored ID.
+- Ignore is for unusable diarization IDs; prefer naming real participants. Choose ignore again on that speaker to restore a previously ignored ID.
 - Longitudinal profile linking is optional; naming alone is enough for single-transcript work. When you do link, the control shows **which person** you are attaching to (or that you are creating a new profile).
 - Voice suggestions appear in that same list when you have enrolled a reference corpus and pre-loaded queries — see [Assist naming with voice](speaker-voice-matching.md). Confirming still saves the name; nothing is applied automatically.
 - Optional **Apply auto-identify** (managed library) runs local voice match plus names found in the dialogue and can write names and profile links when confident. Review badges show auto-named / auto-linked. It is probabilistic — not identity verification. Host ingest: `inbox-watch --auto-name`. Operator reference: [Auto-identify speakers](../runtime/auto-identify.md). Settings → Speakers stores ingest defaults (`auto_name` / `auto_link`).

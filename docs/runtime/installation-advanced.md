@@ -9,7 +9,7 @@ Operational guide only. Storage and metadata: [STORAGE.md](STORAGE.md). Run stat
 Authoritative verification cells: [install_verification_matrix.md](install_verification_matrix.md).
 
 - **Core (editable):** `pip install -e .`
-- **GUI only:** `pip install -e ".[web]"` (Streamlit; not part of `[full]`)
+- **GUI only:** `pip install -e ".[web]"` (Streamlit + in-repo `transcriptx-workspaces` CCv2 components; not part of `[full]`; `file:` extra, not PyPI)
 - **Full analysis extras:** `pip install -e ".[full]"` (all optional analysis modules; core_mode off; may fail on some hosts; **does not** install Streamlit)
 - **Native GUI ≈ Docker:** `pip install -e ".[full,web]"` or use `./transcriptx.sh` / `requirements.txt`
 - **Specific extras:** `pip install -e ".[voice]"`, `pip install -e '.[nlp]'`, `pip install -e ".[keyphrases]"` (optional YAKE / KeyBERT for the `keyphrases` module; noun-chunks path works without the extra), `pip install -e ".[visualization]"` (charts helpers + Overview export EPUB via `ebooklib`), `pip install -e ".[speaker_match]"`, etc.

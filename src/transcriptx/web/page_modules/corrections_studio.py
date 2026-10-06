@@ -364,6 +364,98 @@ def _render_candidate_detail(
                 st.rerun()
 
 
+def _render_ccv2_corrections_workspace(
+    controller: CorrectionsStudioController,
+    session_id: str,
+    candidates: list,
+) -> bool:
+    """Mount CCv2 review pane. Returns False when the package is missing."""
+    from transcriptx.web.workspaces.corrections_bridge import (
+        build_corrections_workspace_data,
+        command_from_workspace_result,
+        dispatch_corrections_command,
+        stable_corrections_workspace_key,
+    )
+
+    try:
+        from transcriptx_workspaces import corrections_workspace
+    except Exception as exc:
+        st.warning(
+            "Corrections workspace component could not be imported; "
+            f"using classic review widgets. ({exc})"
+        )
+        return False
+
+    session = None
+    getter = getattr(controller, "get_session", None)
+    if callable(getter):
+        try:
+            session = getter(session_id)
+        except Exception:
+            session = None
+    sess_rev = _session_revision(session, session_id)
+    active_id = st.session_state.get("corrections_studio_active_candidate")
+    active_candidate = next(
+        (c for c in candidates if _get_candidate_id(c) == active_id),
+        None,
+    )
+    if active_candidate is None and candidates:
+        active_candidate = candidates[0]
+        st.session_state["corrections_studio_active_candidate"] = _get_candidate_id(
+            active_candidate
+        )
+    controller.session_revision = lambda _sid: sess_rev  # type: ignore[attr-defined]
+    if active_candidate is not None:
+        cand_id = _get_candidate_id(active_candidate)
+        cand_rev = _candidate_revision(active_candidate, cand_id or "")
+        controller.candidate_revision = (  # type: ignore[attr-defined]
+            lambda _sid, _cid: cand_rev
+        )
+    last_ack = st.session_state.get("corrections_ccv2_last_ack")
+    data = build_corrections_workspace_data(
+        session_id=session_id,
+        session_revision=sess_rev,
+        candidates=candidates,
+        active_candidate=active_candidate,
+        last_ack=last_ack if isinstance(last_ack, dict) else None,
+    )
+    result_key = stable_corrections_workspace_key(session_id)
+
+    def _on_command() -> None:
+        return None
+
+    result = corrections_workspace(
+        data=data,
+        key=result_key,
+        on_command_change=_on_command,
+    )
+    command = command_from_workspace_result(result)
+    if command is None:
+        command = command_from_workspace_result(st.session_state.get(result_key))
+    if command:
+        svc = CorrectionsActionService(controller)
+        ack = dispatch_corrections_command(
+            command,
+            service=svc,
+            session_id=session_id,
+            session_revision=sess_rev,
+        )
+        if ack:
+            st.session_state["corrections_ccv2_last_ack"] = ack
+            selected = ack.get("selected_candidate_id")
+            if selected:
+                st.session_state["corrections_studio_active_candidate"] = selected
+            if ack.get("status") == "ok" and command.get("action") in {
+                "accept",
+                "reject",
+                "skip",
+                "select_candidate",
+                "edit_draft",
+            }:
+                st.rerun()
+    return True
+
+
 @st.fragment
 def _corrections_studio_workspace_fragment(
     controller: CorrectionsStudioController, session_id: str
@@ -480,57 +572,74 @@ def _corrections_studio_workspace_fragment(
         st.info("No candidates match the current filter.")
         return
 
-    # -- Layout: candidate list + detail panel --
-    list_col, detail_col = st.columns([3, 7])
+    from transcriptx.web.workspaces.flags import (
+        corrections_workspace_component_enabled,
+    )
 
-    with list_col:
-        st.markdown("#### Candidates")
-        active_id = st.session_state.get("corrections_studio_active_candidate")
-        for c in candidates:
-            candidate_id = _get_candidate_id(c)
-            if not candidate_id:
-                continue
-            st_val = _candidate_status(c)
-            status_emoji = {
-                "pending": "",
-                "accepted": "[ok]",
-                "rejected": "[x]",
-                "skipped": "[-]",
-            }.get(st_val, "")
-            wrong_preview = c.wrong_text[:30] + ("…" if len(c.wrong_text) > 30 else "")
-            rt = _candidate_right_text(c)
-            suggested_preview = rt[:30] + ("…" if len(rt) > 30 else "")
-            label = f"{c.kind} {status_emoji} — {wrong_preview} → {suggested_preview}"
-            if c.kind == "manual" or any(
-                (s.value if hasattr(s, "value") else str(s)) == "viewer_manual"
-                for s in (c.sources or [])
-            ):
-                label = f"[viewer] {label}"
-            is_active = active_id == candidate_id
-            btn_type = "primary" if is_active else "secondary"
-            if st.button(
-                label,
-                key=f"cand_{candidate_id}",
-                width="stretch",
-                type=btn_type,
-            ):
-                st.session_state["corrections_studio_active_candidate"] = candidate_id
-                st.rerun()
-
-    with detail_col:
-        active_id = st.session_state.get("corrections_studio_active_candidate")
-        active_candidate = next(
-            (c for c in candidates if _get_candidate_id(c) == active_id),
-            None,
+    ccv2_review = False
+    if corrections_workspace_component_enabled(st.session_state):
+        ccv2_review = _render_ccv2_corrections_workspace(
+            controller, session_id, candidates
         )
-        if active_candidate is None and candidates:
-            active_candidate = candidates[0]
-            st.session_state["corrections_studio_active_candidate"] = _get_candidate_id(
-                active_candidate
-            )
 
-        if active_candidate:
-            _render_candidate_detail(controller, session_id, active_candidate)
+    if not ccv2_review:
+        # -- Layout: candidate list + detail panel --
+        list_col, detail_col = st.columns([3, 7])
+
+        with list_col:
+            st.markdown("#### Candidates")
+            active_id = st.session_state.get("corrections_studio_active_candidate")
+            for c in candidates:
+                candidate_id = _get_candidate_id(c)
+                if not candidate_id:
+                    continue
+                st_val = _candidate_status(c)
+                status_emoji = {
+                    "pending": "",
+                    "accepted": "[ok]",
+                    "rejected": "[x]",
+                    "skipped": "[-]",
+                }.get(st_val, "")
+                wrong_preview = c.wrong_text[:30] + (
+                    "…" if len(c.wrong_text) > 30 else ""
+                )
+                rt = _candidate_right_text(c)
+                suggested_preview = rt[:30] + ("…" if len(rt) > 30 else "")
+                label = (
+                    f"{c.kind} {status_emoji} — {wrong_preview} → {suggested_preview}"
+                )
+                if c.kind == "manual" or any(
+                    (s.value if hasattr(s, "value") else str(s)) == "viewer_manual"
+                    for s in (c.sources or [])
+                ):
+                    label = f"[viewer] {label}"
+                is_active = active_id == candidate_id
+                btn_type = "primary" if is_active else "secondary"
+                if st.button(
+                    label,
+                    key=f"cand_{candidate_id}",
+                    width="stretch",
+                    type=btn_type,
+                ):
+                    st.session_state["corrections_studio_active_candidate"] = (
+                        candidate_id
+                    )
+                    st.rerun()
+
+        with detail_col:
+            active_id = st.session_state.get("corrections_studio_active_candidate")
+            active_candidate = next(
+                (c for c in candidates if _get_candidate_id(c) == active_id),
+                None,
+            )
+            if active_candidate is None and candidates:
+                active_candidate = candidates[0]
+                st.session_state["corrections_studio_active_candidate"] = (
+                    _get_candidate_id(active_candidate)
+                )
+
+            if active_candidate:
+                _render_candidate_detail(controller, session_id, active_candidate)
 
     # -- Preview & Export --
     st.divider()

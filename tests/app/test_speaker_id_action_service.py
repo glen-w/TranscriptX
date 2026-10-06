@@ -369,3 +369,33 @@ def test_save_name_unmanaged_create_falls_back_to_name_only(
     )
     assert ack.status == "ok"
     assert ctrl.speaker_map["SPEAKER_00"] == "Maya"
+
+
+def test_voice_confirm_calls_handler(transcript: Path) -> None:
+    ctrl = _FakeController()
+    seen: list[tuple] = []
+
+    def _confirm(cmd, path, speaker_id):
+        seen.append((cmd.action, path, speaker_id, cmd.payload.get("profile_id")))
+
+    svc = SpeakerIdActionService(
+        ctrl,  # type: ignore[arg-type]
+        index_loader=lambda _p: _FakeIndex(("SPEAKER_00", "SPEAKER_01")),
+        profile_context_resolver=lambda _p: SimpleNamespace(is_managed=False),
+        voice_confirm=_confirm,
+    )
+    ack = svc.execute(
+        SpeakerIdCommand(
+            action="voice_confirm",
+            transcript_id=str(transcript),
+            action_id=new_action_id(),
+            action_seq=1,
+            current_speaker_idx=0,
+            expected_speaker_id="SPEAKER_00",
+            transcript_revision=transcript_revision_from_path(transcript),
+            expected_mapping_revision=mapping_revision_from_state({}, []),
+            payload={"profile_id": "p-1"},
+        )
+    )
+    assert ack.status == "ok"
+    assert seen == [("voice_confirm", str(transcript), "SPEAKER_00", "p-1")]

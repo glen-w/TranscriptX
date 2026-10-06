@@ -1,6 +1,6 @@
 # TranscriptX architecture review (evidence, not docs)
 
-**Maintainer assessment** under [docs/reviews/](index.md). Dated snapshot (2026-09-02), not a contract. Where this disagrees with contracts or `src/`, **code and contracts win**. Hosted at `/guide/reviews/architecture-review-2026-09-02/` after `make docs`.
+**Maintainer assessment** under [docs/reviews/](index.md). Dated snapshot (2026-09-02), not a contract. Where this disagrees with contracts or `src/`, **code and contracts win**. Theme C Phase 9 / named workspaces landed later (2026-10); live status is [theme_c_workspaces_ccv2.md](../dev/theme_c_workspaces_ccv2.md). Hosted at `/guide/reviews/architecture-review-2026-09-02/` after `make docs`.
 
 Static reconstruction of the TranscriptX tree as of 2026-09-02. No runtime execution, no test run, no code changes. Where docs and code disagree, **code wins**.
 

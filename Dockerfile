@@ -91,11 +91,25 @@ RUN python -m textblob.download_corpora
 RUN --mount=type=cache,target=/root/.cache/pip pip install build
 COPY pyproject.toml README.md ./
 COPY src ./src
+# Wheel METADATA cannot carry the checkout-only PEP 508 file: extra; image pip
+# treats it as Invalid URL (install extras / pip check). Git checkouts still use
+# [web] file: from the source pyproject. GUI deps come from requirements.txt.
+RUN python - <<'PY'
+from pathlib import Path
+
+path = Path("pyproject.toml")
+text = path.read_text()
+needle = '    "transcriptx-workspaces @ file:packages/transcriptx_workspaces",\n'
+if needle not in text:
+    raise SystemExit("expected [web] file: extra")
+path.write_text(text.replace(needle, "", 1))
+PY
 RUN python -m build --no-isolation
 
-# Install the application wheel into the venv (no editable install)
+# Install the application wheel into the venv (no editable install).
+# --no-deps: deps already came from requirements.txt; avoid resolving extras.
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -c constraints.txt dist/*.whl
+    pip install --no-deps -c constraints.txt dist/*.whl
 
 # Theme C: install packaged CCv2 workspaces wheel (Speaker ID / future Corrections)
 COPY packages/transcriptx_workspaces ./packages/transcriptx_workspaces

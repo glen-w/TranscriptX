@@ -7,7 +7,7 @@
     "node": ">=20 <23"
   },
   "scripts": {
-    "build": "npm run clean && npm run typecheck && npm run build:css && npm run build:frontend:production",
+    "build": "npm run clean && npm run typecheck && npm run build:frontend:production && npm run build:css",
     "build:css": "node ./scripts/copy-css.mjs",
     "build:frontend:production": "cross-env NODE_ENV=production vite build",
     "clean": "rimraf build",

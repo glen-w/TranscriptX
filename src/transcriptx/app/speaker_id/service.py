@@ -113,11 +113,15 @@ class SpeakerIdActionService:
         index_loader: IndexLoader,
         profile_context_resolver: Optional[Callable[[str], object]] = None,
         expected_frontend_build_ids: Optional[Sequence[str]] = None,
+        voice_confirm: Optional[Callable[[SpeakerIdCommand, str, str], None]] = None,
+        voice_reject: Optional[Callable[[SpeakerIdCommand, str, str], None]] = None,
     ) -> None:
         self._controller = controller
         self._index_loader = index_loader
         self._profile_context_resolver = profile_context_resolver
         self._expected_builds = set(expected_frontend_build_ids or ("legacy",))
+        self._voice_confirm = voice_confirm
+        self._voice_reject = voice_reject
         self._acks: OrderedDict[str, SpeakerIdAck] = OrderedDict()
 
     def execute(self, command: SpeakerIdCommand) -> SpeakerIdAck:
@@ -152,7 +156,7 @@ class SpeakerIdActionService:
                 status="rejected_protocol",
                 message=(
                     f"Frontend build mismatch: {command.frontend_build_id!r}. "
-                    "Reload or fall back to the classic Speaker ID UI."
+                    "Reload Speaker Identification."
                 ),
             )
 
@@ -243,6 +247,8 @@ class SpeakerIdActionService:
         if command.action == "navigate_jump":
             target = int(command.payload.get("target_idx", idx))
             return self._navigate_jump(command, path, speaker_ids, target)
+        if command.action in {"voice_confirm", "voice_reject"}:
+            return self._voice_decision(command, path, speaker_ids, idx, active_id)
         return self._reject(
             command,
             status="error",
@@ -250,6 +256,60 @@ class SpeakerIdActionService:
             speaker_ids=speaker_ids,
             active_idx=idx,
             active_id=active_id,
+        )
+
+    def _voice_decision(
+        self,
+        command: SpeakerIdCommand,
+        path: str,
+        speaker_ids: list[str],
+        speaker_idx: int,
+        active_id: str,
+    ) -> SpeakerIdAck:
+        handler = (
+            self._voice_confirm
+            if command.action == "voice_confirm"
+            else self._voice_reject
+        )
+        if handler is None:
+            return self._reject(
+                command,
+                status="error",
+                message="Voice confirm/reject is not wired for this session.",
+                speaker_ids=speaker_ids,
+                active_idx=speaker_idx,
+                active_id=active_id,
+            )
+        try:
+            handler(command, path, active_id)
+        except Exception as exc:
+            return self._reject(
+                command,
+                status="error",
+                message=str(exc),
+                speaker_ids=speaker_ids,
+                active_idx=speaker_idx,
+                active_id=active_id,
+            )
+        new_state = self._controller.get_mapping_status(path)
+        speaker_map = dict(new_state.speaker_map or {})
+        ignored = list(new_state.ignored_speakers or [])
+        return SpeakerIdAck(
+            action_id=command.action_id,
+            action_seq=command.action_seq,
+            status="ok",
+            transcript_id=path,
+            transcript_revision=transcript_revision_from_path(path),
+            mapping_revision=mapping_revision_from_state(speaker_map, ignored),
+            active_speaker_id=active_id,
+            active_speaker_idx=speaker_idx,
+            speaker_map=speaker_map,
+            ignored_speakers=tuple(ignored),
+            effects=SpeakerIdEffects(
+                flashes=(),
+                navigate_to_idx=speaker_idx,
+                sync_jump=False,
+            ),
         )
 
     def _save_name(

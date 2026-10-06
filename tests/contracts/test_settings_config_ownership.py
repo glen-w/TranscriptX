@@ -18,7 +18,6 @@ from transcriptx.core.utils.config.env_key_registry import INFRA_ENV_ALLOWLIST
 FIXTURES = Path(__file__).resolve().parents[1] / "core" / "config" / "fixtures"
 
 _THEME_C_TX_FLAGS = (
-    "TX_SPEAKER_ID_WORKSPACE_COMPONENT",
     "TX_CORRECTIONS_WORKSPACE_COMPONENT",
     "TX_SID_CLIP_POLL",
 )

@@ -15,7 +15,7 @@ This document defines which TranscriptX surfaces are **supported** and which are
   - Managing basic settings exposed in the UI.
 - Use **Artifacts** (Browse / Preview / Export). Overview / Artifacts ZIP export includes selected files plus generated `index.html` and, when `ebooklib` is available, `index.epub` (see [runtime/export.md](runtime/export.md)). Legacy `Data` / `Explorer` (File List) page keys are no longer supported (removed in 0.9.7).
 - Built-in layout profiles are immutable (`default` / **Standard**, `executive`, `meeting_followup`, `speaker_focus`, `minimal`, `developer_debug`, and generated `all`). Switch, preview, edit (custom), and clone via **Settings → Dashboard Builder**; custom layouts live under `{config_dir}/profiles/ui_layouts/` (`PROFILES_DIR/ui_layouts`). Charts Overview strip selection is **Settings → Configuration → Charts overview**, not the Builder.
-- **Optional rollback:** Speaker Identification mounts the Streamlit Components v2 workspace by default when `transcriptx-workspaces` is installed. Roll back to the classic fragment UI with `TX_SPEAKER_ID_WORKSPACE_COMPONENT=0`; missing package falls through to classic automatically. See [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
+- Speaker Identification, Corrections Studio review, and Correct-mode word selection mount Streamlit Components v2 from `transcriptx-workspaces` (`pip install -e ".[web]"`). Missing Speaker ID package is an install error, not a classic-UI fallback. Corrections review rolls back with `TX_CORRECTIONS_WORKSPACE_COMPONENT=0`. See [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
 ### 1.2 Python API
 
 - The **Python API** is a supported surface for scripting and automation.

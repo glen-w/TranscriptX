@@ -13,13 +13,16 @@ export default defineConfig(() => {
     build: {
       minify: isDev ? false : "esbuild",
       outDir: "build",
-      emptyOutDir: false,
+      emptyOutDir: true,
       sourcemap: isDev,
       lib: {
-        entry: "./src/index.ts",
-        name: "SpeakerIdWorkspace",
+        entry: {
+          speaker_id: "./src/speaker_id.ts",
+          corrections: "./src/corrections.ts",
+          viewer_edit: "./src/viewer_edit.ts",
+        },
         formats: ["es"],
-        fileName: "index-[hash]",
+        fileName: "[name]-[hash]",
       },
     },
     test: {

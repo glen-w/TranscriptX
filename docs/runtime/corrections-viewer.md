@@ -8,7 +8,7 @@ Storage and sidecar layout for corrected transcripts follow the [storage contrac
 
 1. Open **Transcript** and enable **Correct mode** (or use library action **Correct in viewer**).
 2. Expand **Propose correction** on a segment.
-3. Select a word range (when `words[]` align) or enter **exact unique** find text (ambiguous matches are rejected).
+3. Select a word range by click-drag when `words[]` align, or enter **exact unique** find text (ambiguous matches are rejected).
 4. Enter a replacement, then:
    - **Propose** — adds a `manual` / `viewer_manual` candidate to the current Studio session (no detector run required).
    - **Accept & apply this** — accepts that candidate and writes a **scoped** corrected sidecar only (other accepted Studio candidates are not applied).

@@ -12,8 +12,8 @@ the natural fragment rerun — no mid-render ``_rerun_ui`` on those paths.
 Callbacks must not rerun the app (no-op + client warning) or display
 elements (fragment-callback warning that paints at the top of the app).
 Completion only sets ``_SPEAKER_ID_COMPLETION_APP_RERUN``; the fragment body
-performs the full-app rerun so the outer picker label refreshes. Playback uses
-``render_playback_panel_body`` inside the workspace (no nested fragments).
+performs the full-app rerun so the outer picker label refreshes. Playback lives
+in the CCv2 workspace (no nested fragments).
 Voice is a lightweight conditional block, not a sibling/nested fragment.
 """
 
@@ -52,8 +52,6 @@ from transcriptx.web.action_menus.ids import NavStyle, SectionId
 from transcriptx.web.action_menus.render import render_configured_actions
 from transcriptx.web.components.playback_panel import (
     clear_playback_session_keys,
-    fmt_time as _fmt_time,
-    render_playback_panel_body,
     resolve_playback_context,
     sanitize_lines_shown,
     sanitize_play_index,
@@ -915,6 +913,12 @@ def _get_action_service() -> SpeakerIdActionService:
         # Use the module symbol so tests can monkeypatch the index loader.
         index_loader=load_speaker_identification_index,
         profile_context_resolver=_resolve_profile_context,
+        voice_confirm=lambda cmd, path, sid: _cb_voice_confirm(
+            path, sid, str((cmd.payload or {}).get("profile_id") or "")
+        ),
+        voice_reject=lambda cmd, path, sid: _cb_voice_reject(
+            path, sid, str((cmd.payload or {}).get("profile_id") or "")
+        ),
     )
 
 
@@ -1525,6 +1529,47 @@ def _cb_voice_reject(
         _set_flash(transcript_path, level="error", message=str(exc))
 
 
+def _cb_voice_confirm_action(
+    transcript_path: str, speaker_id: str, profile_id: str
+) -> None:
+    """Route confirm through SpeakerIdActionService (revisioned command)."""
+    svc = _get_action_service()
+    idx = int(st.session_state.get(speaker_idx_key(transcript_path), 0) or 0)
+    ack = svc.execute(
+        SpeakerIdCommand(
+            action="voice_confirm",
+            transcript_id=str(Path(transcript_path).resolve()),
+            action_id=new_action_id(),
+            action_seq=idx + 1,
+            current_speaker_idx=idx,
+            expected_speaker_id=speaker_id,
+            payload={"profile_id": profile_id},
+            frontend_build_id="legacy",
+        )
+    )
+    _apply_ack(ack, transcript_path=transcript_path, speaker_count=max(idx + 1, 1))
+
+
+def _cb_voice_reject_action(
+    transcript_path: str, speaker_id: str, profile_id: str
+) -> None:
+    svc = _get_action_service()
+    idx = int(st.session_state.get(speaker_idx_key(transcript_path), 0) or 0)
+    ack = svc.execute(
+        SpeakerIdCommand(
+            action="voice_reject",
+            transcript_id=str(Path(transcript_path).resolve()),
+            action_id=new_action_id(),
+            action_seq=idx + 1,
+            current_speaker_idx=idx,
+            expected_speaker_id=speaker_id,
+            payload={"profile_id": profile_id},
+            frontend_build_id="legacy",
+        )
+    )
+    _apply_ack(ack, transcript_path=transcript_path, speaker_count=max(idx + 1, 1))
+
+
 def _cb_voice_leave(
     transcript_path: str,
     speaker_id: str,
@@ -1579,14 +1624,14 @@ def _render_voice_display_payload(
                 "Confirm this profile",
             icon=ic.CONFIRM,
                 key=widget_key(path_str, f"voice_confirm_{active_id}_{pid}"),
-                on_click=_cb_voice_confirm,
+                on_click=_cb_voice_confirm_action,
                 args=(path_str, active_id, pid),
             )
             cols[1].button(
                 "Reject suggestion",
             icon=ic.REJECT,
                 key=widget_key(path_str, f"voice_reject_{active_id}_{pid}"),
-                on_click=_cb_voice_reject,
+                on_click=_cb_voice_reject_action,
                 args=(path_str, active_id, pid),
             )
             cols[2].button(
@@ -1890,10 +1935,10 @@ def _render_ccv2_speaker_workspace(
     try:
         from transcriptx_workspaces import speaker_id_workspace
     except Exception as exc:
-        st.warning(
-            "Speaker ID workspace component could not be imported; "
-            f"using classic Speaker ID. Install ``transcriptx-workspaces`` "
-            f"or set TX_SPEAKER_ID_WORKSPACE_COMPONENT=0. ({exc})"
+        st.error(
+            "Speaker Identification requires the ``transcriptx-workspaces`` package. "
+            "Install it with ``pip install -e packages/transcriptx_workspaces`` "
+            f"(or ``pip install -e '.[web]'`` from a git checkout). ({exc})"
         )
         return False
 
@@ -2099,27 +2144,17 @@ def _speaker_id_workspace_fragment(
             st.session_state[j_key] = speaker_idx
     st.session_state["speaker_id_speaker_idx"] = speaker_idx
 
-    # Theme C: CCv2 workspace is default-on; legacy path retained for rollback
-    # and when transcriptx-workspaces is not installed.
-    from transcriptx.web.workspaces.flags import speaker_id_workspace_component_enabled
-
-    ccv2_on = speaker_id_workspace_component_enabled(st.session_state)
-    if ccv2_on:
-        speaker_idx = _drain_pending_ccv2_command(
-            str(transcript_path), speaker_ids, speaker_idx
-        )
-        st.session_state[idx_key] = speaker_idx
-        st.session_state["speaker_id_speaker_idx"] = speaker_idx
+    # Phase 9: CCv2 is the only naming/playback surface.
+    speaker_idx = _drain_pending_ccv2_command(
+        str(transcript_path), speaker_ids, speaker_idx
+    )
+    st.session_state[idx_key] = speaker_idx
+    st.session_state["speaker_id_speaker_idx"] = speaker_idx
 
     active_id = speaker_ids[speaker_idx]
     active_segs = list(index.segments_by_speaker[active_id])
     current_name = _speaker_map_display_name(speaker_map, active_id)
     is_ignored = _is_speaker_ignored(ignored, active_id)
-    total_dur = (
-        index.durations[speaker_idx]
-        if speaker_idx < len(index.durations)
-        else sum(max(0.0, s.end - s.start) for s in active_segs)
-    )
 
     status_badge = (
         "🔇 ignored"
@@ -2131,168 +2166,23 @@ def _speaker_id_workspace_fragment(
             transcript_path, active_id
         )
 
-    if ccv2_on:
-        mounted = _render_ccv2_speaker_workspace(
-            transcript_path=transcript_path,
-            controller=controller,
-            speaker_ids=speaker_ids,
-            speaker_idx=speaker_idx,
-            active_id=active_id,
-            speaker_map=speaker_map,
-            ignored=ignored,
-            active_segs=active_segs,
-            current_name=current_name,
-            playback_ctx=playback_ctx,
-            status_badge=status_badge,
-            total_speakers=total_speakers,
-        )
-        _commit_completion_app_rerun()
-        if mounted:
-            return
-
-    st.subheader(
-        f"Speaker {speaker_idx + 1} / {total_speakers} — `{active_id}` {status_badge}"
-    )
-    l_key = lines_key(transcript_path)
-    lines_shown = sanitize_lines_shown(
-        st.session_state.get(l_key, _LINES_PER_PAGE),
-        length=len(active_segs),
-        default=_LINES_PER_PAGE,
-    )
-    st.session_state[l_key] = lines_shown
-    st.caption(
-        f"{len(active_segs)} segments · {_fmt_time(total_dur)} total · "
-        f"showing {min(lines_shown, len(active_segs))} of {len(active_segs)} lines"
-    )
-
-    p_key = play_key(transcript_path)
-    render_playback_panel_body(
+    mounted = _render_ccv2_speaker_workspace(
+        transcript_path=transcript_path,
         controller=controller,
-        transcript_path=str(transcript_path),
-        audio_path=playback_ctx.audio_path,
-        all_segs=active_segs,
+        speaker_ids=speaker_ids,
+        speaker_idx=speaker_idx,
         active_id=active_id,
-        play_key=p_key,
-        lines_key=l_key,
-        max_lines=_LINES_PER_PAGE,
-        autoplay=True,
-        include_segment_rows=True,
-        playback_context=playback_ctx,
+        speaker_map=speaker_map,
+        ignored=ignored,
+        active_segs=active_segs,
+        current_name=current_name,
+        playback_ctx=playback_ctx,
+        status_badge=status_badge,
+        total_speakers=total_speakers,
     )
-
-    st.divider()
-
-    profile_ctx = _resolve_profile_context(transcript_path)
-    is_managed_for_profiles = profile_ctx.is_managed
-
-    if is_managed_for_profiles and not is_ignored:
-        _render_voice_suggestions(
-            transcript_path=transcript_path,
-            speaker_ids=speaker_ids,
-            ignored=ignored,
-            active_id=active_id,
-            profile_ctx=profile_ctx,
-        )
-
-    if is_managed_for_profiles:
-        st.button(
-            "Apply auto-identify",
-            key=widget_key(transcript_path, "apply_auto_identify"),
-            icon=ic.CHECK_ALL,
-            help=widget_help(
-                "Run voice + text identification on unnamed speakers and write "
-                "display names and profile links when confident. Does not enrol "
-                "voice samples. Probabilistic — review names after."
-            ),
-            on_click=_cb_apply_auto_identify,
-            args=(str(transcript_path),),
-        )
-        st.caption(
-            "Auto-identify uses enrolled voices and names in the dialogue. "
-            "It is not identity verification."
-        )
-
-    col_name, col_save, col_ignore = st.columns([3, 1, 1])
-    with col_name:
-        st.text_input(
-            "Assign name",
-            value=current_name,
-            key=name_widget_key(transcript_path, active_id),
-            placeholder="Type speaker name…",
-            label_visibility="collapsed",
-            help=widget_help(
-                "Local display name for this diarization speaker key in the transcript map."
-            ),
-        )
-    draft_name = str(
-        st.session_state.get(name_widget_key(transcript_path, active_id))
-        or current_name
-        or ""
-    )
-    if not is_ignored:
-        _render_link_target_panel(
-            transcript_path=transcript_path,
-            active_id=active_id,
-            draft_name=draft_name,
-            profile_ctx=profile_ctx,
-        )
-    with col_save:
-        st.button(
-            "Save name",
-            key=widget_key(transcript_path, "save"),
-            icon=ic.SAVE,
-            type="primary",
-            width="stretch",
-            on_click=_cb_save_name,
-            args=(str(transcript_path), active_id),
-        )
-    with col_ignore:
-        ignore_label = "Unignore" if is_ignored else "Ignore"
-        st.button(
-            ignore_label,
-            key=widget_key(transcript_path, "ignore"),
-            icon=ic.HIDE,
-            width="stretch",
-            on_click=_cb_ignore_toggle,
-            args=(str(transcript_path), active_id),
-        )
-
-    st.divider()
-    col_prev, col_jump, col_next = st.columns([1, 3, 1])
-    with col_prev:
-        st.button(
-            "Prev",
-            key=widget_key(transcript_path, "prev"),
-            icon=ic.CHEVRON_LEFT,
-            disabled=(speaker_idx == 0),
-            width="stretch",
-            on_click=_cb_prev,
-            args=(str(transcript_path), active_id),
-        )
-    with col_next:
-        st.button(
-            "Next",
-            key=widget_key(transcript_path, "next"),
-            icon=ic.CHEVRON_RIGHT,
-            disabled=(speaker_idx >= total_speakers - 1),
-            width="stretch",
-            on_click=_cb_next,
-            args=(str(transcript_path), active_id),
-        )
-    with col_jump:
-        jump_labels = [
-            _speaker_label(sid, i, speaker_map, ignored)
-            for i, sid in enumerate(speaker_ids)
-        ]
-        st.selectbox(
-            "Jump to speaker",
-            range(total_speakers),
-            format_func=lambda i: jump_labels[i],
-            key=j_key,
-            label_visibility="collapsed",
-            on_change=_cb_jump_change,
-            args=(str(transcript_path),),
-        )
+    _commit_completion_app_rerun()
+    if not mounted:
+        return
 
 
 # ── main render ──────────────────────────────────────────────────────────────

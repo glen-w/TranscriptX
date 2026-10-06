@@ -32,6 +32,8 @@ python -m spacy download en_core_web_md
 
 Both the extra and the model are required for those modules. Docker images already include this.
 
+**GUI workspaces:** `pip install -e ".[web]"` (and `./transcriptx.sh`) install the in-repo `transcriptx-workspaces` package used for Speaker Identification, Corrections Studio review, and Correct-mode click-drag. That extra uses a git-checkout `file:` path; it is not a PyPI dependency. Docker vendors the workspaces wheel in a later build step after stripping the checkout-only `file:` extra from the TranscriptX wheel (image pip cannot parse that URL) and installing that wheel with `--no-deps`. Speaker Identification does not fall back to classic widgets if the package is missing.
+
 **Balanced analysis and charts:** A minimal `pip install -e .` omits plotting libraries. Many **Balanced** modules write charts; without them, those modules can fail and block downstream results (for example summary and highlights). Prefer `./transcriptx.sh`, `pip install -r requirements.txt` plus `pip install -e .`, or at least `pip install -e ".[visualization,web]"` when you run the web UI from a venv. Details: [Installation details](installation-advanced.md).
 
 ## After install

@@ -15,7 +15,7 @@ The planning-review transcript is [imported](../runtime/transcription.md) and a 
 1. Open **Transcript** for the sample.
 2. Enable **Correct mode**.
 3. Expand **Propose correction** on a segment.
-4. Find unique text, enter a replacement, and **Propose**.
+4. Click-drag a word span when the segment has `words[]`, or find unique text, then enter a replacement and **Propose**.
 5. Optionally open **Corrections Studio** for batch review.
 
 ## Walkthrough
@@ -26,7 +26,7 @@ The planning-review transcript is [imported](../runtime/transcription.md) and a 
 
 3. Expand **Propose correction** on a segment that contains a clear unique phrase (for this fixture, something like `Northwind Notes` works).
 
-4. Because this sample has no word-timing array, use **Find exact text in segment** with a unique substring, then enter a **Replacement** (for example `Northwind Notes App`). Choose **Propose**.
+4. When a segment has aligned `words[]`, click-drag across words to select the span. This sample has no word-timing array, so use **Find exact text in segment** with a unique substring, then enter a **Replacement** (for example `Northwind Notes App`). Choose **Propose**.
 
 5. Confirm the pending-manual strip updates (pending count / viewer proposals). The managed original transcript is not overwritten by Propose alone.
 

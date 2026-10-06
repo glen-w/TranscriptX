@@ -33,7 +33,7 @@ Status language matches [docs/ROADMAP.md](../ROADMAP.md): **done** / **[~] in pr
 |---------|---------|---------------|------------------------|
 | Insights quality | **A** | Deterministic floors, schema-v3 composer (evidence / confidence / abstention), quieter empty states | Overview hierarchy polish; Charts catalogue audit; B18 LLM narratives deferred |
 | Corrections in reader | **B** | Transcript **Correct** mode: word/span propose, atomic accept-and-apply, scoped sidecar | Studio remains batch/review; CCv2 selection polish |
-| High-interaction workspaces | **C** | CCv2 Speaker ID **default-on** (`TX_SPEAKER_ID_WORKSPACE_COMPONENT=0` rollback); shared action services; Corrections command protocol | Phase 9 legacy retirement; richer edit surfaces |
+| High-interaction workspaces | **C** | CCv2 Speaker ID **default-on** in this wave (`TX_SPEAKER_ID_WORKSPACE_COMPONENT` rollback then still existed) | **Follow-on (2026-10, 1.0):** Phase 9 CCv2-only Speaker ID; Studio review CCv2; viewer click-drag; `[web]` installs the package |
 | Playback / karaoke | **D** | Clip-scoped Transcript karaoke + honesty when timings missing; Playing badge / follow-along | Continuous full-file karaoke; CCv2-native reader |
 | GUI performance | **E**-adjacent | Charts HTML gate; transcript windowing; non-blocking cold ▶; cold-import deferrals | Envelope reconcile; further scale work per assessment |
 | Audio / inbox | **G / G2** | System → Tools (Preprocess + Merge); merge profiles + auto-merge; G2 Phase 1 directory watcher (default-off); Merge serial honesty + optional post-merge cleanup | Transcript stitch merge; watcher → host STT (theme **H**) |
@@ -51,7 +51,7 @@ Status language matches [docs/ROADMAP.md](../ROADMAP.md): **done** / **[~] in pr
 
 **Theme B — corrections in the Transcript viewer** ([corrections-viewer.md](../runtime/corrections-viewer.md)). Operators can free-read, propose at word/span level, and apply without silent overwrite of the managed original. Corrections Studio stays the batch / detector / LLM review surface; Start/Resume no longer auto-generates.
 
-**Theme C — Components v2 workspaces** ([theme_c_workspaces_ccv2.md](theme_c_workspaces_ccv2.md)). Shared `SpeakerIdActionService`, non-blocking clip APIs, packaged `transcriptx-workspaces` Speaker ID surface (default-on; missing package falls through to classic `@st.fragment`). Corrections revisioned protocol on the studio page; PlaybackHost handoff for Theme D. Legacy path retained until Phase 9 criteria.
+**Theme C — Components v2 workspaces** ([theme_c_workspaces_ccv2.md](theme_c_workspaces_ccv2.md)). In the 0.9.9.5 wave: shared `SpeakerIdActionService`, non-blocking clip APIs, packaged Speaker ID surface default-on with classic fallback. **1.0 follow-on (2026-10):** Phase 9 removed classic Speaker ID widgets; `[web]` installs `transcriptx-workspaces`; Corrections Studio review CCv2 (env rollback); viewer click-drag when `words[]` exist.
 
 **Theme D — karaoke MVP** ([karaoke-playback.md](../runtime/karaoke-playback.md)). Browser-local clip player with word highlight when imported `words[]` cover the clip; segment-level fallback + honesty caption otherwise; seek-from-word inside the karaoke panel without streaming `current_time` to Python.
 
@@ -109,7 +109,7 @@ Measured assessment then upgrades ([gui_performance_assessment_2026-08-11.md](..
 1. **Severity triage** of residual maintainer debt.
 2. **RC → 1.0** gates: release ops/support publish, trust/perf sign-off, governance evidence on exact commit, RTD slug (owner-gated).
 3. **Deferred presentation residuals** from [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md).
-5. **Theme C Phase 9**, continuous karaoke, transcript-stitch merge, watcher→STT — post-1.0 or severity-justified only.
+5. Continuous karaoke, transcript-stitch merge, watcher→STT — post-1.0 or severity-justified only. Theme **C** Phase 9 + Studio/viewer CCv2 landed 2026-10 (see ROADMAP).
 
 ---
 

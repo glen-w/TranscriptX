@@ -92,6 +92,55 @@ def render_pending_strip(session_id: Optional[str]) -> None:
         st.write(f"- `{c.wrong_text}` → `{c.right_text}`")
 
 
+def _noop_selection_change() -> None:
+    return None
+
+
+def _mount_viewer_word_selector(
+    *,
+    identity_hash: str,
+    segment_id: str,
+    spans: list,
+) -> tuple[bool, Optional[Tuple[int, int]]]:
+    """Return (mounted, (i0, i1) or None)."""
+    try:
+        from transcriptx_workspaces import viewer_edit_workspace
+    except Exception:
+        return False, None
+    words = [
+        {
+            "i": i,
+            "text": str(s.text),
+            "low_conf": bool(s.score is not None and float(s.score) < 0.5),
+        }
+        for i, s in enumerate(spans)
+    ]
+    key = correction_widget_key(identity_hash, segment_id, "vedit")
+    result = viewer_edit_workspace(
+        data={"words": words, "segment_id": segment_id},
+        key=key,
+        on_selection_change=_noop_selection_change,
+    )
+    selection = getattr(result, "selection", None)
+    if selection is None and isinstance(result, dict):
+        selection = result.get("selection")
+    if not isinstance(selection, dict):
+        ss = st.session_state.get(key)
+        selection = getattr(ss, "selection", None) if ss is not None else None
+        if selection is None and isinstance(ss, dict):
+            selection = ss.get("selection")
+    if not isinstance(selection, dict):
+        return True, None
+    try:
+        i0 = int(selection.get("i0"))
+        i1 = int(selection.get("i1"))
+    except (TypeError, ValueError):
+        return True, None
+    if i1 < i0:
+        i0, i1 = i1, i0
+    return True, (i0, i1)
+
+
 def _resolve_span_from_ui(
     segment: dict[str, Any],
     *,
@@ -114,6 +163,20 @@ def _resolve_span_from_ui(
                 "Low ASR confidence (assist only — enter replacement yourself): "
                 + ", ".join(low_conf[:8])
             )
+        mounted, word_range = _mount_viewer_word_selector(
+            identity_hash=identity_hash,
+            segment_id=segment_id,
+            spans=spans,
+        )
+        if mounted:
+            if word_range is None:
+                return None, None, None
+            i0, i1 = word_range
+            try:
+                start, end, wrong = span_from_word_range(segment, i0, i1)
+            except (IndexError, ValueError) as exc:
+                return None, None, str(exc)
+            return (start, end), wrong, None
         labels = [f"{i}: {s.text}" for i, s in enumerate(spans)]
         start_lab = st.selectbox(
             "From word",

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Theme C Phase 9:** Speaker Identification is CCv2-only (classic naming/playback widgets removed). `[web]` installs `transcriptx-workspaces`. Corrections Studio review pane is CCv2 default-on (`TX_CORRECTIONS_WORKSPACE_COMPONENT=0` rollback). Transcript Correct mode click-drag selects word spans when `words[]` exist. Voice confirm/reject go through `SpeakerIdActionService`.
+
 ### Changed
 
 - An informal try by someone new to the app (October 2026) is noted and is not a release gate. The old unfamiliar-user protocol is retired.

@@ -28,7 +28,7 @@ def test_speaker_id_page_invalidates_path_summary_after_mutations() -> None:
     assert "_speaker_id_workspace_fragment" in source
     assert "_cb_save_name" in source
     assert "_cb_ignore_toggle" in source
-    assert "on_click=_cb_save_name" in source
+    assert "speaker_id_workspace" in source
     assert "_paths_with_current_subject" in source
     assert "cached_transcript_paths_for_speaker_views" in source
     # Ordinary action paths must not call _rerun_ui (natural fragment rerun only).
@@ -555,10 +555,9 @@ def test_speaker_id_page_exposes_workspace_fragment() -> None:
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
     assert source.count("@st.fragment") == 1
-    assert "render_playback_panel_body" in source
+    assert "_render_ccv2_speaker_workspace" in source
     assert "from transcriptx.web.components.playback_panel import" in source
-    assert "render_playback_panel_body" in source
-    # Must not call the decorated playback entry from the workspace.
+    # Playback is owned by CCv2; must not call the decorated playback entry.
     assert "render_playback_panel(" not in source
     sig = inspect.signature(mod._speaker_id_workspace_fragment)
     assert list(sig.parameters) == ["transcript_path", "controller"]
@@ -1137,13 +1136,13 @@ def test_speaker_id_full_flow_both_speakers_named(
 
 
 def test_speaker_id_fmt_time_helper() -> None:
-    """_fmt_time formats seconds into M:SS and H:MM:SS correctly."""
-    from transcriptx.web.page_modules.speaker_id import _fmt_time
+    """Playback helper still formats seconds into M:SS and H:MM:SS."""
+    from transcriptx.web.components.playback_panel import fmt_time
 
-    assert _fmt_time(0.0) == "0:00"
-    assert _fmt_time(59.9) == "0:59"
-    assert _fmt_time(60.0) == "1:00"
-    assert _fmt_time(3661.0) == "1:01:01"
+    assert fmt_time(0.0) == "0:00"
+    assert fmt_time(59.9) == "0:59"
+    assert fmt_time(60.0) == "1:00"
+    assert fmt_time(3661.0) == "1:01:01"
 
 
 def test_speaker_id_next_unnamed_idx_stays_when_current_still_unnamed() -> None:
@@ -1609,27 +1608,26 @@ def test_voice_unmounted_until_loaded_contract() -> None:
 
 
 def test_ccv2_is_default_mount_path_contract() -> None:
-    """Fragment prefers CCv2 when enabled; falls through to legacy when mount fails."""
+    """Fragment always mounts CCv2; classic naming widgets are gone (Phase 9)."""
     import transcriptx.web.page_modules.speaker_id as mod
 
     source = Path(mod.__file__).read_text(encoding="utf-8")
     frag = source.split("def _speaker_id_workspace_fragment", 1)[1]
     frag = frag.split("def render_speaker_id_page", 1)[0]
-    assert "speaker_id_workspace_component_enabled" in frag
+    assert "speaker_id_workspace_component_enabled" not in frag
     assert "_render_ccv2_speaker_workspace" in frag
     assert "_drain_pending_ccv2_command" in frag
-    assert "if mounted:" in frag
+    assert "if not mounted:" in frag
     assert "return True" in source.split("def _render_ccv2_speaker_workspace", 1)[1]
     assert "return False" in source.split("def _render_ccv2_speaker_workspace", 1)[1]
-    # Classic widgets remain for rollback / missing-package path.
-    assert "render_playback_panel_body" in frag
-    assert "on_click=_cb_save_name" in frag
+    assert "render_playback_panel_body" not in frag
+    assert "on_click=_cb_save_name" not in frag
 
 
 def test_render_ccv2_returns_false_when_package_missing(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Default-on must not brick Speaker ID when transcriptx-workspaces is absent."""
+    """Missing package surfaces an error; it does not restore classic widgets."""
     import builtins
     import transcriptx.web.page_modules.speaker_id as mod
     from types import SimpleNamespace
@@ -1637,9 +1635,9 @@ def test_render_ccv2_returns_false_when_package_missing(
     transcript = tmp_path / "t.json"
     transcript.write_text("{}", encoding="utf-8")
     ss: dict = {}
-    warnings: list[str] = []
+    errors: list[str] = []
     monkeypatch.setattr(mod.st, "session_state", ss, raising=False)
-    monkeypatch.setattr(mod.st, "warning", lambda msg: warnings.append(str(msg)))
+    monkeypatch.setattr(mod.st, "error", lambda msg: errors.append(str(msg)))
 
     real_import = builtins.__import__
 
@@ -1667,8 +1665,8 @@ def test_render_ccv2_returns_false_when_package_missing(
         total_speakers=1,
     )
     assert ok is False
-    assert warnings
-    assert "classic Speaker ID" in warnings[0]
+    assert errors
+    assert "transcriptx-workspaces" in errors[0]
 
 
 def test_render_ccv2_mounts_and_dispatches_command(
@@ -1929,7 +1927,6 @@ def test_workspace_fragment_drains_navigate_jump_before_ccv2_paint(
     from types import SimpleNamespace
 
     import transcriptx.web.page_modules.speaker_id as mod
-    import transcriptx.web.workspaces.flags as flags_mod
     from transcriptx.web.cache_helpers import SpeakerIdentificationIndex
     from transcriptx.web.workspaces.speaker_id_bridge import stable_workspace_key
 
@@ -1980,9 +1977,6 @@ def test_workspace_fragment_drains_navigate_jump_before_ccv2_paint(
         return True, {"active_speaker_id": "SPEAKER_01", "active_speaker_idx": 1}
 
     monkeypatch.setattr(mod, "_apply_ccv2_workspace_command", _fake_apply)
-    monkeypatch.setattr(
-        flags_mod, "speaker_id_workspace_component_enabled", lambda *_a, **_k: True
-    )
 
     mounts: list[dict] = []
 
@@ -2037,7 +2031,6 @@ def test_workspace_fragment_prefers_ccv2_when_enabled(
     from types import SimpleNamespace
 
     import transcriptx.web.page_modules.speaker_id as mod
-    import transcriptx.web.workspaces.flags as flags_mod
     from transcriptx.web.cache_helpers import SpeakerIdentificationIndex
 
     transcript = tmp_path / "t.json"
@@ -2072,9 +2065,6 @@ def test_workspace_fragment_prefers_ccv2_when_enabled(
         return True
 
     monkeypatch.setattr(mod, "_render_ccv2_speaker_workspace", _mount)
-    monkeypatch.setattr(
-        flags_mod, "speaker_id_workspace_component_enabled", lambda *_a, **_k: True
-    )
 
     legacy: list[str] = []
     monkeypatch.setattr(mod.st, "subheader", lambda msg: legacy.append(str(msg)))
@@ -2085,14 +2075,13 @@ def test_workspace_fragment_prefers_ccv2_when_enabled(
     assert legacy == []
 
 
-def test_workspace_fragment_uses_legacy_when_flag_off(
+def test_workspace_fragment_always_attempts_ccv2(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Env/session rollback must keep the classic fragment widgets."""
+    """Phase 9: there is no flag-off classic naming tree."""
     from types import SimpleNamespace
 
     import transcriptx.web.page_modules.speaker_id as mod
-    import transcriptx.web.workspaces.flags as flags_mod
     from transcriptx.web.cache_helpers import SpeakerIdentificationIndex
 
     transcript = tmp_path / "t.json"
@@ -2120,42 +2109,32 @@ def test_workspace_fragment_uses_legacy_when_flag_off(
         "resolve_playback_context",
         lambda *_a, **_k: SimpleNamespace(audio_path=None),
     )
-    monkeypatch.setattr(mod, "render_playback_panel_body", lambda **_k: None)
-    monkeypatch.setattr(
-        mod,
-        "_resolve_profile_context",
-        lambda *_a, **_k: mod.TranscriptProfileContext(is_managed=False),
-    )
 
     class _Ctrl:
         def get_mapping_status(self, *_a, **_k):
             return SimpleNamespace(speaker_map={}, ignored_speakers=[])
 
-    monkeypatch.setattr(
-        flags_mod, "speaker_id_workspace_component_enabled", lambda *_a, **_k: False
-    )
-    monkeypatch.setattr(
-        mod,
-        "_render_ccv2_speaker_workspace",
-        lambda **_k: (_ for _ in ()).throw(AssertionError("ccv2 must not mount")),
-    )
+    mounts: list[bool] = []
 
+    def _mount(**_k):
+        mounts.append(True)
+        return True
+
+    monkeypatch.setattr(mod, "_render_ccv2_speaker_workspace", _mount)
     headers: list[str] = []
     monkeypatch.setattr(mod.st, "subheader", lambda msg: headers.append(str(msg)))
-
     mod._speaker_id_workspace_fragment.__wrapped__(str(transcript), _Ctrl())
-    assert headers
-    assert "SPEAKER_00" in headers[0]
+    assert mounts == [True]
+    assert headers == []
 
 
-def test_workspace_fragment_falls_through_when_ccv2_unavailable(
+def test_workspace_fragment_errors_when_ccv2_unavailable(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """Flag on + mount False → classic UI (missing package / import failure)."""
+    """Mount False → no classic widgets."""
     from types import SimpleNamespace
 
     import transcriptx.web.page_modules.speaker_id as mod
-    import transcriptx.web.workspaces.flags as flags_mod
     from transcriptx.web.cache_helpers import SpeakerIdentificationIndex
 
     transcript = tmp_path / "t.json"
@@ -2183,25 +2162,13 @@ def test_workspace_fragment_falls_through_when_ccv2_unavailable(
         "resolve_playback_context",
         lambda *_a, **_k: SimpleNamespace(audio_path=None),
     )
-    monkeypatch.setattr(mod, "render_playback_panel_body", lambda **_k: None)
-    monkeypatch.setattr(
-        mod,
-        "_resolve_profile_context",
-        lambda *_a, **_k: mod.TranscriptProfileContext(is_managed=False),
-    )
 
     class _Ctrl:
         def get_mapping_status(self, *_a, **_k):
             return SimpleNamespace(speaker_map={}, ignored_speakers=[])
 
-    monkeypatch.setattr(
-        flags_mod, "speaker_id_workspace_component_enabled", lambda *_a, **_k: True
-    )
     monkeypatch.setattr(mod, "_render_ccv2_speaker_workspace", lambda **_k: False)
-
     headers: list[str] = []
     monkeypatch.setattr(mod.st, "subheader", lambda msg: headers.append(str(msg)))
-
     mod._speaker_id_workspace_fragment.__wrapped__(str(transcript), _Ctrl())
-    assert headers
-    assert "SPEAKER_00" in headers[0]
+    assert headers == []
