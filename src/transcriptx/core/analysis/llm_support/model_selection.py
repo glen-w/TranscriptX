@@ -27,6 +27,7 @@ LLM_MODEL_CONSUMER_IDS: tuple[str, ...] = (
     "group_llm_synthesis",
     "topic_shift",
     "speaker_name_suggestions",
+    "rename_suggestions",
     "corrections_studio",
     "rag",
 )

@@ -213,6 +213,7 @@ def test_all_live_llm_consumers_are_registered():
         "group_llm_synthesis",
         "topic_shift",
         "speaker_name_suggestions",
+        "rename_suggestions",
         "corrections_studio",
         "rag",
     }
@@ -224,12 +225,14 @@ def test_interactive_consumers_resolve_from_model_pack():
         shared_model="shared-fallback",
         module_models={
             "speaker_name_suggestions": "names:7b",
+            "rename_suggestions": "rename:7b",
             "corrections_studio": "corr:7b",
             "rag": "ask:7b",
         },
     )
     cfg = _llm_cfg(model_selection=sel)
     assert resolve_module_llm_model(cfg, "speaker_name_suggestions").model == "names:7b"
+    assert resolve_module_llm_model(cfg, "rename_suggestions").model == "rename:7b"
     assert resolve_module_llm_model(cfg, "corrections_studio").model == "corr:7b"
     assert resolve_module_llm_model(cfg, "rag").model == "ask:7b"
 

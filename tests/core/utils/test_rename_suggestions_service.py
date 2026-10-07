@@ -1,0 +1,106 @@
+"""Orchestrator for rename suggestions."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+
+from transcriptx.core.utils.rename.suggestions.service import suggest_rename_stems
+
+
+def _write_transcript(path: Path, segments: list[dict]) -> None:
+    payload = {
+        "segments": segments,
+        "source": {"type": "import", "original_path": "x", "imported_at": "2026-01-01T00:00:00+00:00"},
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+@pytest.mark.unit
+def test_mode_off_returns_empty_without_loading_segments(tmp_path: Path) -> None:
+    tpath = tmp_path / "t.json"
+    _write_transcript(tpath, [{"text": "hello"}])
+    with patch(
+        "transcriptx.core.utils.rename.suggestions.service.load_transcript_segments"
+    ) as load_mock:
+        with patch(
+            "transcriptx.core.utils.rename.suggestions.service.get_config"
+        ) as cfg_mock:
+            cfg_mock.return_value.input.rename_content_suggestions = "off"
+            result = suggest_rename_stems(tpath)
+    load_mock.assert_not_called()
+    assert result.options == ()
+    assert result.prefill == ""
+
+
+@pytest.mark.unit
+def test_auto_mode_builds_options(tmp_path: Path) -> None:
+    tpath = tmp_path / "webinar.json"
+    _write_transcript(
+        tpath,
+        [{"text": "Recorded on 2026-03-12. Welcome to the Acme product webinar."}],
+    )
+    with patch(
+        "transcriptx.core.utils.rename.suggestions.service.get_config"
+    ) as cfg_mock:
+        inp = cfg_mock.return_value.input
+        inp.rename_content_suggestions = "auto"
+        inp.rename_suggest_transcript = True
+        inp.rename_suggest_llm = False
+        inp.rename_suggest_web = False
+        inp.rename_suggestions_effort = "low"
+        inp.smart_rename_pattern = "{yymmdd}_{period}_{n}"
+        cfg_mock.return_value.llm.enabled = False
+        result = suggest_rename_stems(tpath, force_refresh=True)
+    assert result.options
+    assert result.prefill
+    assert "rename_managed_transcript" not in dir(result)
+
+
+def test_suggest_rename_stems_prefers_transcript_event_date_over_file_mtime(tmp_path):
+    tpath = tmp_path / "webinar.json"
+    _write_transcript(
+        tpath,
+        [{"text": "Recorded on March 15, 2024. Host: Welcome to the webinar."}],
+    )
+    with patch(
+        "transcriptx.core.utils.rename.suggestions.service.get_config"
+    ) as cfg_mock:
+        inp = cfg_mock.return_value.input
+        inp.rename_content_suggestions = "auto"
+        inp.rename_suggest_transcript = True
+        inp.rename_suggest_llm = False
+        inp.rename_suggest_web = False
+        inp.smart_rename_pattern = "{yymmdd}_{title}"
+        cfg_mock.return_value.llm.enabled = False
+        result = suggest_rename_stems(tpath, force_refresh=True)
+    assert result.options
+    assert result.prefill == "240315"
+    assert any(o.basis == "transcript_date" for o in result.options)
+    assert all(o.basis != "file_mtime" or o.stem != result.prefill for o in result.options)
+
+
+def test_suggest_rename_stems_title_only_when_no_event_date(tmp_path):
+    tpath = tmp_path / "webinar.json"
+    _write_transcript(
+        tpath,
+        [{"text": "Welcome to the Future of AI webinar. Host: Thanks for joining."}],
+    )
+    with patch(
+        "transcriptx.core.utils.rename.suggestions.service.get_config"
+    ) as cfg_mock:
+        inp = cfg_mock.return_value.input
+        inp.rename_content_suggestions = "auto"
+        inp.rename_suggest_transcript = True
+        inp.rename_suggest_llm = False
+        inp.rename_suggest_web = False
+        inp.smart_rename_pattern = "{yymmdd}_{title}"
+        cfg_mock.return_value.llm.enabled = False
+        result = suggest_rename_stems(tpath, force_refresh=True)
+    assert result.options
+    assert result.prefill
+    assert not result.prefill.startswith("2")
+    assert "future" in result.prefill.lower() or "ai" in result.prefill.lower()

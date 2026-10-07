@@ -113,6 +113,8 @@ config_dir/                     # configuration
   interface_menus.json          # Settings → Interface action strips (schema v1; see docs/contracts/interface-menus.md)
 
 data_dir/                       # app-managed working state
+  .cache/
+    rename/                     # disposable assistive rename suggestion cache (*.rename_suggestions.v1.json)
   groups/                       # group definition manifests (*.group.json); local user data — not tracked
   speaker_profiles/             # longitudinal speaker profiles, links, events, ops (canonical PII); override with TRANSCRIPTX_SPEAKER_PROFILES_DIR; see docs/contracts/speaker_profiles_v1.md and speaker_profiles_voice_v1.md
     profiles/                   # *.speaker_profile.json

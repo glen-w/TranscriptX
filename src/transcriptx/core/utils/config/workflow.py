@@ -124,6 +124,13 @@ class InputConfig:
         "auto_import", "suggest_import", "suggest_rename_only", "off"
     ] = field(init=False, repr=True)
     smart_rename_pattern: str = field(init=False, repr=True)
+    rename_content_suggestions: Literal["off", "auto"] = field(init=False, repr=True)
+    rename_suggest_transcript: bool = field(init=False, repr=True)
+    rename_suggest_llm: bool = field(init=False, repr=True)
+    rename_suggest_web: bool = field(init=False, repr=True)
+    rename_suggestions_effort: Literal["low", "medium", "high", "max"] = field(
+        init=False, repr=True
+    )
     file_selection_mode: Literal["prompt", "explore", "direct"] = field(
         init=False, repr=True
     )

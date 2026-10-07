@@ -35,6 +35,7 @@ KNOWN_PATTERN_TOKENS = frozenset(
         "period",
         "n",
         "stem",
+        "title",
     }
 )
 DATE_ROOT_TOKENS = frozenset({"yymmdd", "yyyymmdd", "yyyy", "yy", "mm", "dd"})

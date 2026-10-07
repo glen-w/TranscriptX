@@ -72,6 +72,31 @@ COMMON_SETTINGS_SCHEMA: tuple[CommonSettingField, ...] = (
         label="Smart rename pattern",
     ),
     CommonSettingField(
+        key="input.rename_content_suggestions",
+        group="Rename",
+        label="Content rename suggestions",
+    ),
+    CommonSettingField(
+        key="input.rename_suggest_transcript",
+        group="Rename",
+        label="Suggest from transcript",
+    ),
+    CommonSettingField(
+        key="input.rename_suggest_llm",
+        group="Rename",
+        label="Suggest with local LLM",
+    ),
+    CommonSettingField(
+        key="input.rename_suggest_web",
+        group="Rename",
+        label="Suggest from web search",
+    ),
+    CommonSettingField(
+        key="input.rename_suggestions_effort",
+        group="Rename",
+        label="Rename suggestion effort",
+    ),
+    CommonSettingField(
         key="analysis.semantic_model_name",
         group="Models",
         label="Semantic model name",

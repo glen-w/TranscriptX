@@ -74,12 +74,36 @@ def sticky_smart_rename_keys(form_key: str) -> tuple[str, str]:
     return (f"{form_key}__bubbles", f"{form_key}__date_root")
 
 
+def sticky_content_rename_keys(form_key: str) -> tuple[str, str, str]:
+    """Return (options_key, pick_key, status_key) for content rename suggestions."""
+    return (
+        f"{form_key}__content_options",
+        f"{form_key}__content_pick",
+        f"{form_key}__content_status",
+    )
+
+
+def _rename_content_suggestions_mode() -> str:
+    try:
+        from transcriptx.core.utils.config_provider import get_config
+
+        cfg = get_config()
+        return str(
+            getattr(getattr(cfg, "input", None), "rename_content_suggestions", "off")
+            or "off"
+        )
+    except Exception:
+        return "off"
+
+
 def clear_rename_form_session_keys(form_key: str, session_state=None) -> None:
     """Drop sticky form bindings (call after rename or transcript switch cleanup)."""
     ss = st.session_state if session_state is None else session_state
     for key in sticky_suggested_name_keys(form_key):
         ss.pop(key, None)
     for key in sticky_smart_rename_keys(form_key):
+        ss.pop(key, None)
+    for key in sticky_content_rename_keys(form_key):
         ss.pop(key, None)
 
 
@@ -118,8 +142,61 @@ def bind_suggested_rename_name(
     bound_key, target_key, suggestion_key = sticky_suggested_name_keys(form_key)
     bubbles_key, date_root_key = sticky_smart_rename_keys(form_key)
     fingerprint = _path_fingerprint(path)
+    options_key, pick_key, status_key = sticky_content_rename_keys(form_key)
     if st.session_state.get(bound_key) != fingerprint:
         mode, _pattern, legacy = _input_rename_settings()
+        content_mode = _rename_content_suggestions_mode()
+        if content_mode == "auto":
+            from transcriptx.core.utils.rename.suggestions import suggest_rename_stems
+
+            content_result = suggest_rename_stems(path)
+            labels: list[str] = []
+            label_to_stem: dict[str, str] = {}
+            for opt in content_result.options:
+                label = f"{opt.stem} — {opt.basis}, {opt.confidence}"
+                labels.append(label)
+                label_to_stem[label] = opt.stem
+            st.session_state[options_key] = label_to_stem
+            st.session_state[status_key] = content_result.status
+            if content_result.prefill:
+                suggested = content_result.prefill
+                st.session_state[bubbles_key] = []
+                st.session_state[date_root_key] = ""
+            else:
+                use_smart = (
+                    enable_smart
+                    if enable_smart is not None
+                    else (
+                        date_prefix_prefill
+                        and smart_rename_suggests_in_rename_workflow(mode)
+                    )
+                )
+                suggestion = _resolve_smart_suggestion(
+                    path, enable_smart=bool(use_smart)
+                )
+                if suggestion is not None and suggestion.date_root:
+                    suggested = suggestion.date_root
+                    st.session_state[bubbles_key] = list(suggestion.token_bubbles)
+                    st.session_state[date_root_key] = suggestion.date_root
+                elif suggestion is not None and suggestion.full:
+                    suggested = suggestion.full
+                    st.session_state[bubbles_key] = list(suggestion.token_bubbles)
+                    st.session_state[date_root_key] = suggestion.date_root
+                elif date_prefix_prefill:
+                    suggested = suggest_rename_base_name(
+                        path,
+                        prefill_with_date_prefix=_prefill_date_prefix_enabled()
+                        and legacy,
+                        smart_rename_mode="off",
+                    )
+                else:
+                    suggested = path.stem
+            st.session_state[pick_key] = labels[0] if labels else ""
+            st.session_state[bound_key] = fingerprint
+            st.session_state[suggestion_key] = suggested
+            st.session_state[target_key] = suggested
+            return str(st.session_state.get(suggestion_key) or path.stem)
+
         use_smart = (
             enable_smart
             if enable_smart is not None
@@ -127,6 +204,9 @@ def bind_suggested_rename_name(
                 date_prefix_prefill and smart_rename_suggests_in_rename_workflow(mode)
             )
         )
+        st.session_state.pop(options_key, None)
+        st.session_state.pop(pick_key, None)
+        st.session_state.pop(status_key, None)
         suggestion = _resolve_smart_suggestion(path, enable_smart=bool(use_smart))
         if suggestion is not None and suggestion.date_root:
             suggested = suggestion.date_root
@@ -151,6 +231,32 @@ def bind_suggested_rename_name(
         st.session_state[suggestion_key] = suggested
         st.session_state[target_key] = suggested
     return str(st.session_state.get(suggestion_key) or path.stem)
+
+
+def _render_content_suggestion_dropdown(form_key: str) -> None:
+    options_key, pick_key, status_key = sticky_content_rename_keys(form_key)
+    _, target_key, _ = sticky_suggested_name_keys(form_key)
+    label_to_stem = st.session_state.get(options_key) or {}
+    if not label_to_stem:
+        return
+    status = str(st.session_state.get(status_key) or "")
+    if status:
+        st.caption(status)
+    labels = list(label_to_stem.keys())
+    current_pick = st.session_state.get(pick_key)
+    index = labels.index(current_pick) if current_pick in labels else 0
+    chosen = st.selectbox(
+        "Suggested names",
+        labels,
+        index=index,
+        key=f"{form_key}__content_select",
+    )
+    if chosen != current_pick:
+        st.session_state[pick_key] = chosen
+        stem = label_to_stem.get(chosen)
+        if stem:
+            st.session_state[target_key] = stem
+        st.rerun()
 
 
 def _render_token_bubbles(form_key: str) -> None:
@@ -279,6 +385,8 @@ def render_transcript_rename_form(
 
     # Bubbles live outside the form so clicks can update the text field immediately.
     _render_token_bubbles(form_key)
+    if _rename_content_suggestions_mode() == "auto":
+        _render_content_suggestion_dropdown(form_key)
 
     with st.form(form_key, clear_on_submit=False):
         st.text_input("Current file name", value=current_name, disabled=True)
