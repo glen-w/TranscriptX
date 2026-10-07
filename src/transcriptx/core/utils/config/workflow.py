@@ -125,6 +125,9 @@ class InputConfig:
     ] = field(init=False, repr=True)
     smart_rename_pattern: str = field(init=False, repr=True)
     rename_content_suggestions: Literal["off", "auto"] = field(init=False, repr=True)
+    rename_default_case: Literal["title", "upper", "lower"] = field(
+        init=False, repr=True
+    )
     rename_suggest_transcript: bool = field(init=False, repr=True)
     rename_suggest_llm: bool = field(init=False, repr=True)
     rename_suggest_web: bool = field(init=False, repr=True)

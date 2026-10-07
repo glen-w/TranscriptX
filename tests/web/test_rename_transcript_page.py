@@ -259,9 +259,11 @@ def test_post_rename_clears_old_path_and_binds_new(
     assert (
         page.rename_play_key(old) not in ss or ss.get(page.rename_play_key(old)) is None
     )
+    assert ss[page._RENAME_SUCCESS_KEY]["path"] == str(new)
+    assert ss[page._RENAME_SUCCESS_KEY]["new_base_name"] == "251230_new"
     bound, target, _ = sticky_suggested_name_keys(page._FORM_KEY)
-    assert str(new) in str(ss.get(bound, "")) or Path(ss[bound]).name == new.name
-    assert "251230_new" in str(ss.get(target, ""))
+    assert bound not in ss
+    assert target not in ss
 
 
 @pytest.mark.unit
@@ -365,6 +367,6 @@ def test_library_rename_action_to_preview_rename_smoke(
     assert WORKFLOW_NAV_TRANSCRIPT_PATH not in ss
     assert ss[page._SELECTED_PATH_KEY] == str(renamed)
     assert ss.get(page.rename_play_key(transcript)) in (None,)
-    # No stale old-path form binding
+    assert ss[page._RENAME_SUCCESS_KEY]["path"] == str(renamed)
     bound_key, _, _ = sticky_suggested_name_keys(page._FORM_KEY)
-    assert str(transcript.resolve()) not in str(ss.get(bound_key, ""))
+    assert bound_key not in ss

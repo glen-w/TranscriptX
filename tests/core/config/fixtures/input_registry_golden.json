@@ -59,6 +59,22 @@
     "sensitivity": "normal",
     "type": "bool"
   },
+  "input.recordings_folders": {
+    "advanced": false,
+    "category": "input",
+    "choices": null,
+    "default": [
+      "/Users/89298/Documents/recordings"
+    ],
+    "description": "",
+    "key": "input.recordings_folders",
+    "max": null,
+    "min": null,
+    "path": "input.recordings_folders",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "list"
+  },
   "input.rename_content_suggestions": {
     "advanced": false,
     "category": "input",
@@ -72,6 +88,24 @@
     "max": null,
     "min": null,
     "path": "input.rename_content_suggestions",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "input.rename_default_case": {
+    "advanced": false,
+    "category": "input",
+    "choices": [
+      "title",
+      "upper",
+      "lower"
+    ],
+    "default": "lower",
+    "description": "Default case for rename token buttons and the new file name field (title / upper / lower).",
+    "key": "input.rename_default_case",
+    "max": null,
+    "min": null,
+    "path": "input.rename_default_case",
     "scope": "project",
     "sensitivity": "normal",
     "type": "str"
@@ -128,7 +162,7 @@
       "max"
     ],
     "default": "low",
-    "description": "Effort tier for rename-suggestion LLM when llm.provider is ollama. Controls max_input_chars, request_timeout, and max_output_tokens for that pass only. Model is chosen under Settings → Models for consumer rename_suggestions.",
+    "description": "Effort tier for rename-suggestion LLM when llm.provider is ollama. Controls max_input_chars, request_timeout, and max_output_tokens for that pass only. Model is chosen under Settings \u2192 Models for consumer rename_suggestions.",
     "key": "input.rename_suggestions_effort",
     "max": null,
     "min": null,
@@ -136,22 +170,6 @@
     "scope": "project",
     "sensitivity": "normal",
     "type": "str"
-  },
-  "input.recordings_folders": {
-    "advanced": false,
-    "category": "input",
-    "choices": null,
-    "default": [
-      "/workspace/data/recordings"
-    ],
-    "description": "",
-    "key": "input.recordings_folders",
-    "max": null,
-    "min": null,
-    "path": "input.recordings_folders",
-    "scope": "project",
-    "sensitivity": "normal",
-    "type": "list"
   },
   "input.smart_rename_mode": {
     "advanced": false,

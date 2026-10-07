@@ -83,8 +83,9 @@ Settings → Configuration → **Rename** (also under Advanced as `input.*`):
 | `input.smart_rename_pattern` | `{yymmdd}_{period}_{n}` | Deterministic template rendered from the recording datetime |
 | `input.prefill_rename_with_date_prefix` | `true` | Legacy YYMMDD_ + stem prefill when smart mode is `off` |
 | `input.rename_content_suggestions` | `off` | `off` / `auto` — when `auto`, rename/import forms prefill from the suggestion service on open and show **Suggested names** |
+| `input.rename_default_case` | `lower` | Default case for rename token buttons and the new file name field: `title` / `upper` / `lower` |
 | `input.rename_suggest_transcript` | `true` | Transcript date/title cues when suggestions run (`auto` or **Suggest names** on the form) |
-| `input.rename_suggest_llm` | `false` | Optional local LLM pass (Ollama; model from Settings → Models → `rename_suggestions`) |
+| `input.rename_suggest_llm` | `false` | Optional local LLM pass when suggestions run in **auto** mode (Ollama; model from Settings → Models → `rename_suggestions`). **Suggest names** on the rename form also runs the LLM when Ollama is enabled and a `rename_suggestions` model is configured, even if this flag is off. The LLM returns **three** distinct title options per run. |
 | `input.rename_suggest_web` | `false` | Optional web lookup for public-event-like files (short query only; not the transcript body) |
 | `input.rename_suggestions_effort` | `low` | Effort tier for the rename-suggestion LLM pass (`max_input_chars`, timeout, output tokens) |
 

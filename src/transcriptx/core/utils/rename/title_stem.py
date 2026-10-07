@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Literal
 
 from transcriptx.core.utils.rename.audio_association import looks_like_uuid
 from transcriptx.core.utils.rename.smart_name import (
@@ -94,3 +95,27 @@ def title_word_bubbles(stem: str, *, max_tokens: int = 8) -> tuple[str, ...]:
     """Clickable title tokens (stopwords dropped)."""
     words = [w for w in split_title_tokens(stem) if w.lower() not in _STOPWORDS]
     return tuple(words[:max_tokens])
+
+
+BubbleTokenCase = Literal["title", "upper", "lower"]
+
+
+def format_bubble_token(token: str, case: BubbleTokenCase) -> str:
+    """Apply display/append casing to a rename token bubble."""
+    piece = (token or "").strip()
+    if not piece:
+        return piece
+    if case == "upper":
+        return piece.upper()
+    if case == "lower":
+        return piece.lower()
+    return "_".join(part.capitalize() for part in piece.split("_"))
+
+
+def format_rename_stem_case(stem: str, case: BubbleTokenCase) -> str:
+    """Apply casing to each underscore-separated segment of a rename target stem."""
+    raw = (stem or "").strip()
+    if not raw:
+        return raw
+    parts = raw.split("_")
+    return "_".join(format_bubble_token(part, case) for part in parts if part)

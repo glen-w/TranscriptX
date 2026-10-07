@@ -69,3 +69,30 @@ def test_natural_language_title_stem() -> None:
 @pytest.mark.unit
 def test_short_stem_not_natural_language() -> None:
     assert not stem_looks_like_natural_language_title("notes")
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("token", "case", "expected"),
+    [
+        ("RATIFIED", "upper", "RATIFIED"),
+        ("RATIFIED", "lower", "ratified"),
+        ("RATIFIED", "title", "Ratified"),
+        ("evening", "upper", "EVENING"),
+        ("BBNJ", "title", "Bbnj"),
+    ],
+)
+def test_format_bubble_token(token: str, case: str, expected: str) -> None:
+    from transcriptx.core.utils.rename.title_stem import format_bubble_token
+
+    assert format_bubble_token(token, case) == expected
+
+
+@pytest.mark.unit
+def test_format_rename_stem_case() -> None:
+    from transcriptx.core.utils.rename.title_stem import format_rename_stem_case
+
+    stem = "260908_Our_Ocean_Beyond"
+    assert format_rename_stem_case(stem, "upper") == "260908_OUR_OCEAN_BEYOND"
+    assert format_rename_stem_case(stem, "lower") == "260908_our_ocean_beyond"
+    assert format_rename_stem_case("RATIFIED_NOW", "title") == "Ratified_Now"
