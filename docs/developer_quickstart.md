@@ -98,7 +98,7 @@ Modules are loosely grouped into light, medium, and heavy. Heavy modules should 
 
 ## 8. Development workflow
 
-Use editable installs, run tests with pytest, inspect manifest.json and run_config_effective.json when debugging.
+Use editable installs, run tests with pytest, inspect manifest.json and run_config_effective.json when debugging. PR CI runs `make test-smoke`, `make test-contracts`, and `make test-fast` — see [tests/README.md](../tests/README.md) (CI watchlist) and [config_architecture.md](dev/config_architecture.md) when changing registry knobs, config goldens, or Streamlit buttons with fixed labels.
 
 **Docker:** The image uses `ENTRYPOINT ["transcriptx"]`. Compose mounts `./data` at `/data` for app state, outputs, and cache, and requires **`HOST_RECORDINGS_DIR`** (outside the repo) for source audio—see [docker.md](runtime/docker.md). For a minimal health check with `docker run`, mount `./data` and add a second bind for recordings plus `TRANSCRIPTX_RECORDINGS_DIR` (see compose file). When changing the Dockerfile or dependency constraints, build and run a quick smoke and hit `http://localhost:8501/_stcore/health` to avoid “works locally, fails in container” drift. The builder stage installs with `-c constraints.txt`; do not add pip installs in the runtime stage or without constraints. Full details: [docker.md](runtime/docker.md) and the [Architecture](ARCHITECTURE.md#docker-runtime--deployment) Docker section.
 

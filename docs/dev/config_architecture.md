@@ -9,12 +9,33 @@ Enforced by `tests/core/config/test_registry_ownership.py` against
 
 | Metric | Live value |
 |--------|------------|
-| Pydantic pilots | **53** |
-| Pydantic-owned flattened registry leaves | **720** |
+| Pydantic pilots | **55** |
+| Pydantic-owned flattened registry leaves | **731** |
 | Permanent non-Pydantic baseline leaves | **16** |
-| Total registry leaves | **736** |
+| Total registry leaves | **747** |
 
 Baseline leaves include profile activation selectors (`active_*_profile`), `core_mode`, `use_emojis`, and intentional `analysis.chart_descriptions.*` keys.
+
+When these numbers change, update **all** of the following in the same PR (CI `make test-fast` will fail if any are left behind):
+
+- `tests/core/config/fixtures/registry_ownership_snapshot.json` (regenerate from `_build_ownership_snapshot()` in `test_registry_ownership.py`)
+- Hard-coded totals in `tests/core/config/test_registry_ownership.py::test_ownership_invariant_counts`
+- `tests/core/config/delegation_test_utils.py::assert_ownership_invariant_unchanged`
+- Per-pilot JSON under `tests/core/config/fixtures/*_{registry,defaults}_golden.json` when fields or metadata change
+
+### Config golden fixtures (CI pitfalls)
+
+Drift guards live under `tests/core/config/` (`test_pydantic_bridge_drift.py`, delegation `test_*_delegation.py`, `test_registry_ownership.py`). They compare live registry defaults and metadata to committed JSON in `tests/core/config/fixtures/`.
+
+**Path-shaped defaults** (`input.recordings_folders`, `output.base_output_dir`, `group_analysis.output_dir`, and similar) must be **portable**, not host-specific:
+
+- Prefer literal placeholders such as `<REPO>/data/recordings` and `<REPO>/.test_outputs` in goldens when the value is derived from `TRANSCRIPTX_DATA_DIR` / `TRANSCRIPTX_OUTPUT_DIR`.
+- Alternatively use a repo-shaped absolute path that normalizes the same way as CI (see `_normalize_pathish` in `test_pydantic_bridge_drift.py` — it collapses `.../data/...` and `.../.test_outputs/...` to `<REPO>/...`).
+- Do **not** commit goldens with personal paths (`/Users/you/...`, external output dirs) unless they normalize identically on the GitHub runner.
+
+**Local `.env` vs CI:** `core/utils/paths.py` loads `.env` at import time and freezes `PATHS` before tests run. Many config tests call `without_transcriptx_env()` (clears `TRANSCRIPTX_*` for the assertion) but **do not** rebuild `PATHS`. A developer machine with a customized `.env` can therefore see `test_pydantic_bridge_drift` failures on the `output` / `input` pilots while CI is green. For parity with CI before pushing, run config drift tests in a clean environment (no repo `.env`, or temporarily unset path overrides) or compare against the normalized golden shapes above.
+
+**New Pydantic fields:** adding a `Field` on a pilot model increases `pydantic_owned_keys` and usually requires updating that pilot’s `*_registry_golden.json` and `*_defaults_golden.json`, not only the ownership snapshot.
 
 ## Dual stack
 
@@ -94,7 +115,7 @@ Note: `analysis.semantic_similarity_profiles` (in-config `fast`/`balanced`/`deep
 
 1. Add/change a knob in the owning Pydantic model under `core/config/models/`.
 2. Keep runtime facade attributes compatible (delegation hydrate if the subtree is delegated).
-3. Update ownership snapshot / goldens when registry leaf counts change.
+3. Update ownership snapshot, invariant counts, and pilot goldens when registry leaf counts or defaults change (see **Config golden fixtures** above).
 4. Add env mapping only via `ENV_KEY_REGISTRY` (or infra allowlist if not a bag key); update `.env.example`.
 5. Curate into `COMMON_SETTINGS_SCHEMA` only when the knob belongs in guided Settings UX.
 6. Document user-visible behaviour in [settings.md](../runtime/settings.md) / module runtime notes — not in archived plans.

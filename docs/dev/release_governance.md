@@ -75,7 +75,7 @@ python -m pytest -q \
   tests/core/config/test_settings_file_load_pilots.py
 ```
 
-Expected: green. Ownership invariant (authoritative): **47 pilots / 660 Pydantic leaves / 16 legacy** (676 total) via `test_ownership_invariant_counts`. Behaviour matrix: `docs/dev/../archive/plans/file_override_behaviour_matrix.md`.
+Expected: green. Ownership invariant (authoritative): live totals in `tests/core/config/fixtures/registry_ownership_snapshot.json` and `test_ownership_invariant_counts` (also summarized in [config_architecture.md](config_architecture.md)). Behaviour matrix: `docs/archive/plans/file_override_behaviour_matrix.md`.
 
 ### C. Dependency / clean-env audit (optional locally; required for tag when tooling available)
 

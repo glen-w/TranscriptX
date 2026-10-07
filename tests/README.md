@@ -108,3 +108,39 @@ Default `pytest` behavior remains the source of truth for the fast local profile
 - Nested structures have required keys
 - No drift-prone assertions (full text, exact floating values)
 - Artifacts (if any): file exists, expected extension, non-empty
+
+## CI watchlist (common `make test-fast` failures)
+
+PR CI runs **lint → smoke → contracts → fast** on three Python versions (see `.github/workflows/ci.yml`). Failures below are usually **fixture or contract drift**, not a broken venv.
+
+### Config registry / Pydantic pilots
+
+Adding or changing knobs under `src/transcriptx/core/config/models/` triggers a chain of guards:
+
+| Symptom | What to update |
+|---------|----------------|
+| `test_ownership_invariant_counts` / `test_ownership_snapshot_matches_committed_fixture` | `registry_ownership_snapshot.json`, `test_registry_ownership.py`, `delegation_test_utils.py` |
+| `test_pydantic_pilot_*_golden*` / `test_ownership_invariant_unchanged` in `test_*_delegation.py` | Matching `tests/core/config/fixtures/*_golden.json` for the affected pilot |
+| `input.recordings_folders` or `output.*` path mismatch | Use portable `<REPO>/data/...` paths in goldens; see [config_architecture.md](../docs/dev/config_architecture.md) |
+
+CI sets isolated `TRANSCRIPTX_DATA_DIR` / `TRANSCRIPTX_OUTPUT_DIR` under `$RUNNER_TEMP`. Local runs may still read path defaults from a repo `.env` loaded at import time — config drift tests can fail locally while CI passes unless goldens and env match the portable rules above.
+
+Focused local check before pushing config work:
+
+```bash
+python -m pytest tests/core/config/test_registry_ownership.py \
+  tests/core/config/test_pydantic_bridge_drift.py -q
+```
+
+### Streamlit web contracts
+
+| Symptom | Rule |
+|---------|------|
+| `test_buttons_with_literal_labels_declare_an_icon` | `st.button("Fixed label", ...)` must pass `icon=` using a constant from `transcriptx.web.icons` (no inline `:material/...:` tokens outside `icons.py`) |
+| `test_no_inline_material_tokens_outside_the_registry` | Add glyphs to `icons.py`, reference `ic.*` at call sites |
+
+### Other known drift (not always CI-red)
+
+Some characterization goldens still embed **machine-specific** values (absolute paths under the original author’s home directory, pinned `torch_version`, etc.). Those can fail on other hosts or newer PyTorch even when smoke/CI gates are green. Treat them as cleanup debt unless your PR touches the same surface.
+
+Generated docs: CI `docs` job fails if `make docs-gen` output is not committed (`docs/generated/`, `docs/dev/analysis_quality_audit_scaffold.md`).
