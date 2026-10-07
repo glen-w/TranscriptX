@@ -1,14 +1,14 @@
 # Theme C — High-interaction workspaces (Components v2)
 
 Status: 1.0 named workspaces landed (Speaker ID Phase 9, Studio review, viewer click-drag)  
-Last updated: 2026-10-06
+Last updated: 2026-10-07
 
 **Roadmap home:** [docs/ROADMAP.md](../ROADMAP.md) §C  
-**Product constraint:** Streamlit shell + Python domain; specialised CCv2 workspaces only.
+**Product constraint:** Streamlit shell + Python domain; specialised CCv2 workspaces only. Theme D full-file reader shares the package but is owned by [ROADMAP §D](../ROADMAP.md) / [karaoke-playback.md](../runtime/karaoke-playback.md).
 
 ## Goal
 
-Escape Streamlit’s rerun model for workstation pages (Speaker ID, Corrections review, per-segment word selection) without abandoning Streamlit for the analysis workbench. Manuscript-style rich edit and a CCv2 karaoke reader stay out of this theme.
+Escape Streamlit’s rerun model for workstation pages (Speaker ID, Corrections review, per-segment word selection) without abandoning Streamlit for the analysis workbench. Manuscript-style rich edit stays out of this theme. Theme D full-file reader is a separate CCv2 component (`reader_workspace`); see [karaoke-playback.md](../runtime/karaoke-playback.md).
 
 ## Locked decisions
 
@@ -81,14 +81,14 @@ Revoke Blob URLs on replacement, transcript switch, and unmount.
 |------|---------|---------|
 | `corrections_workspace_component` | **`true`**; rollback with env `0`/`false`/`off` | CCv2 Corrections review pane |
 
-Env rollback: `TX_CORRECTIONS_WORKSPACE_COMPONENT=0`.
+Env rollback: `TX_CORRECTIONS_WORKSPACE_COMPONENT=0`. Theme D reader flag (`TX_READER_WORKSPACE_COMPONENT`) is documented in [karaoke-playback.md](../runtime/karaoke-playback.md), not Theme C.
 
 ## Frontend toolchain
 
 - Node `>=20 <23` (CI uses 22.x)
 - npm lockfile committed
 - `@streamlit/component-v2-lib` pinned in workspaces package
-- Vite, `base: "./"`, hashed `speaker_id-*.js` / `corrections-*.js` / `viewer_edit-*.js` plus named CSS
+- Vite, `base: "./"`, hashed `speaker_id-*.js` / `corrections-*.js` / `viewer_edit-*.js` / `reader-*.js` (Theme D) plus named CSS
 
 ## Keyboard map (Phase 3)
 
@@ -110,7 +110,7 @@ Avoid browser/AT reserved chords.
 - **T0:** base64 (or data-URL string) inside JSON metadata `data`
 - **T1:** only if measured need — dedicated binary conduit component whose entire `data=` is bytes, correlated by `clip_id` + revision in the metadata component; tested on min + current Streamlit
 - **T2:** browser `Map<clipId, BlobURL>` under budgets
-- **T3:** documented local route — escalation only
+- **T3:** documented local route — Theme D `reader_workspace` uses loopback Range media (`src/transcriptx/web/media_route.py`); Speaker ID stays on T0
 
 ## Invest / narrow / defer (after Phase 3)
 
@@ -133,9 +133,10 @@ Previous criteria (all true):
 
 - `src/transcriptx/app/speaker_id/` — Speaker ID action service (`voice_confirm` / `voice_reject` included)
 - `src/transcriptx/app/corrections/` — Studio review / export action service
-- `packages/transcriptx_workspaces/` — named CCv2 entries (`speaker_id`, `corrections`, `viewer_edit`)
-- `src/transcriptx/web/workspaces/` — Streamlit adapters / Corrections flag
+- `packages/transcriptx_workspaces/` — named CCv2 entries (`speaker_id`, `corrections`, `viewer_edit`, Theme D `reader`)
+- `src/transcriptx/web/workspaces/` — Streamlit adapters / Corrections + reader flags
 - `src/transcriptx/web/page_modules/speaker_id.py` — CCv2-only naming/playback
 - `src/transcriptx/web/page_modules/corrections_studio.py` — CCv2 review + Streamlit generate/export
 - `src/transcriptx/web/transcript_viewer/corrections_panel.py` — click-drag host when `words[]` exist
-- `src/transcriptx/services/speaker_studio/clip_service.py` — non-blocking APIs
+- `src/transcriptx/web/page_modules/transcript.py` / `workspaces/reader_bridge.py` / `media_route.py` — Theme D reader
+- `src/transcriptx/services/speaker_studio/clip_service.py` — non-blocking APIs (Speaker ID / clip rollback)

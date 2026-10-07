@@ -33,7 +33,7 @@ The GUI extra is separate: Streamlit is **`[web]`**, not in `[full]`. Docker / `
 
 ## Workspace package
 
-[`packages/transcriptx_workspaces`](../../packages/transcriptx_workspaces/README.md) is the Theme C Streamlit Components v2 package (Speaker ID, Corrections review, viewer click-drag). The `[web]` extra installs it from `file:packages/transcriptx_workspaces` on git checkouts. Docker strips that extra before building the TranscriptX wheel (image pip cannot parse the relative `file:` URL), installs `transcriptx` with `--no-deps` (deps already from `requirements.txt`), and vendors the workspaces wheel in a later Dockerfile step.
+[`packages/transcriptx_workspaces`](../../packages/transcriptx_workspaces/README.md) is the Streamlit Components v2 package for Theme C (Speaker ID, Corrections review, viewer click-drag) and Theme D (`reader_workspace` full-file karaoke). The `[web]` extra installs it from `file:packages/transcriptx_workspaces` on git checkouts. Docker strips that extra before building the TranscriptX wheel (image pip cannot parse the relative `file:` URL), installs `transcriptx` with `--no-deps` (deps already from `requirements.txt`), and vendors the workspaces wheel in a later Dockerfile step.
 
 ```bash
 pip install -e ".[web]"

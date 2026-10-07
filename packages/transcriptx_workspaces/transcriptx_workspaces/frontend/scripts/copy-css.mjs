@@ -7,7 +7,12 @@ const root = path.resolve(here, "..");
 const build = path.join(root, "build");
 fs.mkdirSync(build, { recursive: true });
 const src = path.join(root, "src", "styles.css");
-for (const name of ["speaker_id-styles.css", "corrections-styles.css", "viewer_edit-styles.css"]) {
+for (const name of [
+  "speaker_id-styles.css",
+  "corrections-styles.css",
+  "viewer_edit-styles.css",
+  "reader-styles.css",
+]) {
   fs.copyFileSync(src, path.join(build, name));
   console.log(`copied styles.css → build/${name}`);
 }

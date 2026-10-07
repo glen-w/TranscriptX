@@ -10,6 +10,7 @@ PROTOCOL_VERSION = "1"
 _speaker_id_component = None
 _corrections_component = None
 _viewer_edit_component = None
+_reader_component = None
 
 
 def _noop() -> None:
@@ -108,6 +109,15 @@ _VIEWER_EDIT_HTML = """
         </div>
     """
 
+_READER_HTML = """
+        <div class="tx-reader-root" data-testid="tx-reader-root" tabindex="0">
+          <p class="tx-reader-caption" aria-live="polite"></p>
+          <audio class="tx-reader-audio" controls preload="metadata"></audio>
+          <p class="tx-reader-status"></p>
+          <div class="tx-reader-scroll"></div>
+        </div>
+    """
+
 
 def _get_speaker_id_component():
     """Lazy-register so import works outside ``streamlit run`` (tests/wheel checks)."""
@@ -138,6 +148,21 @@ def _get_corrections_component():
         html=_CORRECTIONS_HTML,
     )
     return _corrections_component
+
+
+def _get_reader_component():
+    global _reader_component
+    if _reader_component is not None:
+        return _reader_component
+    import streamlit as st
+
+    _reader_component = st.components.v2.component(
+        "transcriptx-workspaces.reader_workspace",
+        js="reader-*.js",
+        css="reader-styles.css",
+        html=_READER_HTML,
+    )
+    return _reader_component
 
 
 def _get_viewer_edit_component():
@@ -199,6 +224,17 @@ def corrections_workspace(
     return comp(**kwargs)
 
 
+def reader_workspace(
+    *,
+    data: Mapping[str, Any],
+    key: str,
+    height: str | int = 720,
+) -> Any:
+    """Mount the Theme D transcript reader (full-file loopback playback)."""
+    comp = _get_reader_component()
+    return comp(data=dict(data), key=key, height=height)
+
+
 def viewer_edit_workspace(
     *,
     data: Mapping[str, Any],
@@ -223,6 +259,7 @@ __all__ = [
     "FRONTEND_BUILD_ID",
     "PROTOCOL_VERSION",
     "corrections_workspace",
+    "reader_workspace",
     "speaker_id_workspace",
     "viewer_edit_workspace",
 ]

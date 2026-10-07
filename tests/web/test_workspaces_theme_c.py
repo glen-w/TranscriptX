@@ -767,7 +767,7 @@ def test_committed_frontend_uses_named_component_entries() -> None:
         / "build"
     )
     names = {p.name for p in build.iterdir() if p.is_file()}
-    for prefix in ("speaker_id-", "corrections-", "viewer_edit-"):
+    for prefix in ("speaker_id-", "corrections-", "viewer_edit-", "reader-"):
         js = [
             n
             for n in names

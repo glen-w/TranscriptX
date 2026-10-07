@@ -70,8 +70,9 @@ INFRA_ENV_ALLOWLIST = frozenset(
         "TRANSCRIPTX_WATCHER_ON_SUCCESS",
         "TRANSCRIPTX_WATCHER_TRANSCRIPTION_PROFILE",
         "TRANSCRIPTX_WATCHER_POLL_FALLBACK_SECONDS",
-        # Theme C workspace flags (not config-bag overrides).
+        # Theme C / D workspace flags (not config-bag overrides).
         "TX_CORRECTIONS_WORKSPACE_COMPONENT",
+        "TX_READER_WORKSPACE_COMPONENT",
         "TX_SID_CLIP_POLL",
         "TRANSCRIPTX_RAG_ENABLED",
         "TRANSCRIPTX_RAG_EMBED_MODEL",

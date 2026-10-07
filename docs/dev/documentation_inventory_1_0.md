@@ -185,7 +185,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/workflows/speaker-voice-matching.md | Workflow 11 — enrol-all / pre-load assisted naming | live | user | current | Confirm-to-apply | retain | — | workflows/index | docs/contracts/speaker_profiles_voice_v1.md | yes |
 | docs/backup_and_restore.md | Workspace backup / restore operator guide | live | user | current | — | retain | — | USER_INDEX, index.md | docs/contracts/workspace-backup.md | yes |
 | docs/contracts/workspace-backup.md | Workspace backup contract | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/contracts/workspace-backup.md | yes |
-| docs/runtime/karaoke-playback.md | Theme D karaoke playback | live | user | current | Theme D MVP | retain | — | USER_INDEX, index.md | docs/ROADMAP.md | yes |
+| docs/runtime/karaoke-playback.md | Theme D karaoke / CCv2 reader | live | user | current | Full-file reader + clip rollback | retain | — | USER_INDEX, index.md | docs/ROADMAP.md | yes |
 | docs/dev/workflow_media_capture.md | Regenerating workflow screenshots/GIFs | live | developer | current | — | retain | — | DEV_INDEX | docs/dev/CONTRIBUTING.md | no |
 | docs/dev/theme_c_workspaces_ccv2.md | Theme C CCv2 workspaces design | live | developer | current | 1.0 named workspaces; Corrections env rollback | retain | — | DEV_INDEX, ROADMAP | docs/ROADMAP.md | no |
 | docs/dev/theme_c_invest_narrow_defer.md | Theme C invest/narrow/defer | live | developer | current | — | retain | — | DEV_INDEX | docs/dev/theme_c_workspaces_ccv2.md | no |
