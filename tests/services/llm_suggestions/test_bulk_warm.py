@@ -11,6 +11,8 @@ import pytest
 from transcriptx.services.llm_suggestions.bulk_warm import (
     BulkLlmSuggestionsService,
     BulkWarmKind,
+    BulkWarmResult,
+    BulkWarmTargetResult,
     BulkWarmTargetStatus,
 )
 from transcriptx.core.speaker_profiles.identify.suggestions.models import (
@@ -209,3 +211,175 @@ def test_run_warm_suggestions_workflow_no_kinds() -> None:
     result = run_warm_suggestions(WarmSuggestionsRequest())
     assert not result.success
     assert result.errors
+
+
+def _ok_target(
+    tpath: Path, kind: BulkWarmKind = BulkWarmKind.SPEAKER_NAMES
+) -> BulkWarmTargetResult:
+    return BulkWarmTargetResult(
+        transcript_path=str(tpath),
+        transcript_label=tpath.name,
+        managed_transcript_id="tx-1",
+        kind=kind,
+        status=BulkWarmTargetStatus.OK,
+    )
+
+
+@pytest.mark.unit
+def test_run_warm_suggestions_workflow_warm_all_maps_kinds_and_paths(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from transcriptx.app.models.requests import WarmSuggestionsRequest
+    from transcriptx.app.workflows.warm_suggestions import run_warm_suggestions
+
+    captured: dict = {}
+    tpath = tmp_path / "one.json"
+
+    def fake_warm(self, **kwargs):
+        captured.update(kwargs)
+        return BulkWarmResult(targets=[_ok_target(tpath)])
+
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.warm_suggestions.BulkLlmSuggestionsService.warm",
+        fake_warm,
+    )
+
+    result = run_warm_suggestions(
+        WarmSuggestionsRequest(
+            warm_all=True,
+            transcript_paths=[str(tpath)],
+            force_refresh=True,
+            dry_run=True,
+        )
+    )
+    assert result.success
+    assert result.ok_count == 1
+    assert captured["kinds"] == [BulkWarmKind.SPEAKER_NAMES, BulkWarmKind.RENAME]
+    assert captured["paths"] == [tpath]
+    assert captured["force_refresh"] is True
+    assert captured["dry_run"] is True
+
+
+@pytest.mark.unit
+def test_run_warm_suggestions_workflow_rename_only(monkeypatch, tmp_path: Path) -> None:
+    from transcriptx.app.models.requests import WarmSuggestionsRequest
+    from transcriptx.app.workflows.warm_suggestions import run_warm_suggestions
+
+    captured: dict = {}
+    tpath = tmp_path / "a.json"
+
+    def fake_warm(self, **kwargs):
+        captured.update(kwargs)
+        return BulkWarmResult(
+            targets=[_ok_target(tpath, kind=BulkWarmKind.RENAME)]
+        )
+
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.warm_suggestions.BulkLlmSuggestionsService.warm",
+        fake_warm,
+    )
+
+    result = run_warm_suggestions(WarmSuggestionsRequest(warm_rename=True))
+    assert result.success
+    assert captured["kinds"] == [BulkWarmKind.RENAME]
+    assert " [rename]: ok" in result.log_lines[0]
+
+
+@pytest.mark.unit
+def test_run_warm_suggestions_workflow_surfaces_bulk_errors(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from transcriptx.app.models.requests import WarmSuggestionsRequest
+    from transcriptx.app.workflows.warm_suggestions import run_warm_suggestions
+
+    tpath = tmp_path / "bad.json"
+
+    def fake_warm(self, **kwargs):
+        return BulkWarmResult(
+            targets=[
+                BulkWarmTargetResult(
+                    transcript_path=str(tpath),
+                    transcript_label="bad.json",
+                    managed_transcript_id=None,
+                    kind=BulkWarmKind.SPEAKER_NAMES,
+                    status=BulkWarmTargetStatus.ERROR,
+                    message="cache write failed",
+                )
+            ]
+        )
+
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.warm_suggestions.BulkLlmSuggestionsService.warm",
+        fake_warm,
+    )
+
+    result = run_warm_suggestions(WarmSuggestionsRequest(warm_speaker_names=True))
+    assert not result.success
+    assert result.error_count == 1
+    assert "cache write failed" in result.errors[0]
+
+
+@pytest.mark.unit
+def test_run_warm_suggestions_workflow_forwards_progress_callback(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from transcriptx.app.models.requests import WarmSuggestionsRequest
+    from transcriptx.app.workflows.warm_suggestions import run_warm_suggestions
+
+    tpath = tmp_path / "a.json"
+    seen: list = []
+
+    def fake_warm(self, **kwargs):
+        cb = kwargs.get("progress_callback")
+        assert cb is not None
+        cb(1, 2, "warming")
+        seen.append("called")
+        return BulkWarmResult(targets=[_ok_target(tpath)])
+
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.warm_suggestions.BulkLlmSuggestionsService.warm",
+        fake_warm,
+    )
+
+    def on_progress(done: int, total: int, label: str) -> None:
+        seen.append((done, total, label))
+
+    run_warm_suggestions(
+        WarmSuggestionsRequest(warm_speaker_names=True),
+        progress=on_progress,
+    )
+    assert seen == [(1, 2, "warming"), "called"]
+
+
+@pytest.mark.unit
+def test_run_warm_suggestions_workflow_aggregates_skipped_fresh(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from transcriptx.app.models.requests import WarmSuggestionsRequest
+    from transcriptx.app.workflows.warm_suggestions import run_warm_suggestions
+
+    tpath = tmp_path / "fresh.json"
+
+    def fake_warm(self, **kwargs):
+        return BulkWarmResult(
+            targets=[
+                BulkWarmTargetResult(
+                    transcript_path=str(tpath),
+                    transcript_label="fresh.json",
+                    managed_transcript_id="tx-1",
+                    kind=BulkWarmKind.SPEAKER_NAMES,
+                    status=BulkWarmTargetStatus.SKIPPED_FRESH,
+                )
+            ]
+        )
+
+    monkeypatch.setattr(
+        "transcriptx.app.workflows.warm_suggestions.BulkLlmSuggestionsService.warm",
+        fake_warm,
+    )
+
+    result = run_warm_suggestions(WarmSuggestionsRequest(warm_speaker_names=True))
+    assert result.success
+    assert result.skipped_fresh_count == 1
+    assert result.ok_count == 0
+    assert "skipped_fresh" in result.log_lines[0]
