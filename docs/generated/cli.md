@@ -60,7 +60,38 @@ transcriptx analyze --path foo.json --mode quick --modules stats --allow-unnamed
 python -m transcriptx.analyze --path foo.json --preset quick
 ```
 
-Batch and group analysis remain Python API only (`run_batch_analysis`, `run_group_analysis`).
+Batch and group analysis remain Python API only (`run_batch_analysis`, `run_group_analysis`). For library-wide catch-up, use **analyze-backlog** / **analyze-modules** below. Overnight composition: [overnight-host.md](../runtime/overnight-host.md).
+
+## Analyze backlog (unanalyzed + filters)
+
+```bash
+transcriptx analyze-backlog --preset thorough --dry-run
+transcriptx analyze-backlog --preset thorough --mode full \
+  --require-complete-speakers --require-named-speaker Glen
+python -m transcriptx.analyze_backlog --dry-run --max 5
+```
+
+Skips transcripts that already have analysis outputs. Optional `--require-named-speaker NAME` (repeatable, case-insensitive) further narrows the set. See [overnight-host.md](../runtime/overnight-host.md).
+
+## Analyze modules (library catch-up)
+
+```bash
+transcriptx analyze-modules --dry-run --max 5
+transcriptx analyze-modules --modules transcript_output,llm_summary --allow-unnamed-speakers
+python -m transcriptx.analyze_modules --modules transcript_output,llm_summary
+```
+
+Default modules are human-readable transcripts (`transcript_output`) and `llm_summary`. Speakers need not be identified. Skips a transcript when the newest committed run already lists every requested module in `modules_run`. See [overnight-host.md](../runtime/overnight-host.md).
+
+## Cleanup analysis runs
+
+```bash
+transcriptx cleanup-runs --mode delete-old --keep-human-readable --keep-llm-summaries --dry-run
+transcriptx cleanup-runs --mode delete-old --keep-human-readable --keep-llm-summaries --yes
+python -m transcriptx.cleanup_runs --mode delete-old --yes
+```
+
+`delete-old` keeps the newest run per transcript/group. Retain flags salvage readable transcripts, reports, and LLM summaries into `{subject}/.retained/{run_id}/` before deleting the rest of an older run. Non-interactive confirm: `--yes` or `TRANSCRIPTX_CLEANUP_YES=1`.
 
 ## Admit originals
 
