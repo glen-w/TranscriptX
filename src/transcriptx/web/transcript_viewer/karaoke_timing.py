@@ -212,6 +212,75 @@ def karaoke_words_payload(model: KaraokeClipModel) -> list[dict[str, Any]]:
     return out
 
 
+def _absolute_word_payload(
+    span: WordSpan,
+    *,
+    karaoke_ok: bool,
+) -> dict[str, Any]:
+    item: dict[str, Any] = {"t": span.text}
+    if karaoke_ok and span.start is not None and span.end is not None:
+        rel0 = float(span.start)
+        rel1 = float(span.end)
+        if rel1 > rel0:
+            item["t0"] = round(rel0, 3)
+            item["t1"] = round(rel1, 3)
+    return item
+
+
+def build_reader_segment(
+    segment: Mapping[str, Any],
+    index: int,
+) -> dict[str, Any]:
+    """Absolute-time segment payload for the Theme D CCv2 reader."""
+    from transcriptx.web.transcript_view_state import segment_has_named_speaker
+
+    text = segment.get("text")
+    if text is None:
+        text = ""
+    elif not isinstance(text, str):
+        text = str(text)
+
+    seg_start = segment.get("start", 0.0)
+    seg_end = segment.get("end", 0.0)
+    try:
+        start_f = float(seg_start)
+        end_f = float(seg_end)
+    except (TypeError, ValueError):
+        start_f, end_f = 0.0, 0.0
+
+    spans, aligned = iter_segment_word_spans(dict(segment))
+    if not spans:
+        word_payload = [{"t": w.text} for w in _whitespace_tokens(text)]
+        karaoke_ok = False
+    else:
+        timed_count = sum(
+            1 for s in spans if s.start is not None and s.end is not None
+        )
+        total = len(spans)
+        coverage = (timed_count / total) if total else 0.0
+        karaoke_ok = (
+            aligned
+            and end_f > start_f
+            and timed_count > 0
+            and coverage >= _KARAOKE_COVERAGE_FLOOR
+        )
+        word_payload = [
+            _absolute_word_payload(s, karaoke_ok=karaoke_ok) for s in spans
+        ]
+
+    mode = "karaoke" if karaoke_ok else "segment"
+    return {
+        "index": index,
+        "speaker": _speaker_label(segment),
+        "text": text,
+        "start": start_f,
+        "end": end_f,
+        "mode": mode,
+        "words": word_payload,
+        "named": segment_has_named_speaker(dict(segment)),
+    }
+
+
 def segment_dict_for_source(
     segments: Sequence[Mapping[str, Any]],
     source_index: int,

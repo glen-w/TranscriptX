@@ -20,6 +20,7 @@ export default defineConfig(() => {
           speaker_id: "./src/speaker_id.ts",
           corrections: "./src/corrections.ts",
           viewer_edit: "./src/viewer_edit.ts",
+          reader: "./src/reader.ts",
         },
         formats: ["es"],
         fileName: "[name]-[hash]",

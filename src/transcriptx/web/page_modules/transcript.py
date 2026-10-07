@@ -460,10 +460,17 @@ def _render_transcript_tabs(
     playback: TranscriptPlaybackBinding | None,
     chapter_rows: list[Any] | None = None,
     correction_ctx: Any | None = None,
+    reader_mounted: bool = False,
 ) -> None:
     """Render turns/segments/chapters views for already-filtered display segments."""
     has_chapters = bool(chapter_rows)
     selected = _render_transcript_tab_nav(has_chapters=has_chapters)
+    if reader_mounted and selected in ("turns", "segments"):
+        st.caption(
+            "Transcript turns and playback are in the reader workspace above. "
+            "Correct mode uses the clip player when enabled."
+        )
+        return
     if selected == "turns":
         render_segmented_tab(
             display_segments,
@@ -611,9 +618,54 @@ def _transcript_interaction_fragment(
         clear_playback_session_keys(_PLAY_KEY)
         playback_enabled = False
 
+    from transcriptx.web.workspaces.flags import reader_workspace_component_enabled
+    from transcriptx.web.workspaces.reader_bridge import (
+        reader_jump_epoch_key,
+        render_reader_workspace,
+    )
+
+    reader_enabled = reader_workspace_component_enabled(st.session_state)
+    use_reader = reader_enabled and not controls.correct_mode
+    reader_mounted = False
+    if use_reader and pending:
+        epoch_key = reader_jump_epoch_key(_owner_prefix(owner))
+        st.session_state[epoch_key] = int(st.session_state.get(epoch_key, 0)) + 1
+
     karaoke_host = TranscriptKaraokeHost()
     active_source: int | None = None
-    if not playback_availability.enabled and playback_availability.reason is not None:
+    if use_reader and transcript_path:
+        try:
+            controller = get_shared_speaker_studio_controller()
+            scope = _owner_prefix(owner)
+            revision = f"{owner[3]}:{owner[4]}"
+            jump_idx = (
+                int(pending["jump_index"])
+                if pending and isinstance(pending.get("jump_index"), int)
+                else effective_jump
+            )
+            autoplay = bool(pending and pending.get("play"))
+            reader_mounted = render_reader_workspace(
+                controller=controller,
+                transcript_path=transcript_path,
+                transcript_scope=scope,
+                transcript_revision=revision,
+                segments=segments,
+                search_text=controls.search_text,
+                show_unnamed=controls.show_unnamed_speakers,
+                jump_epoch=int(st.session_state.get(reader_jump_epoch_key(scope), 0)),
+                jump_index=jump_idx,
+                autoplay_jump=autoplay,
+                component_key=f"reader_ws:{scope}",
+            )
+            playback_enabled = False
+        except Exception:
+            logger.warning(
+                "Reader workspace failed for transcript=%s",
+                transcript_path,
+                exc_info=True,
+            )
+            reader_mounted = False
+    elif not playback_availability.enabled and playback_availability.reason is not None:
         clear_playback_session_keys(_PLAY_KEY)
         render_playback_unavailable(playback_availability.reason)
     elif playback_availability.enabled and display_segments and not targets:
@@ -710,6 +762,9 @@ def _transcript_interaction_fragment(
             ):
                 open_corrected_as_subject(last_corrected)
 
+    if controls.correct_mode and reader_enabled:
+        st.caption("Correct mode uses the clip player; full-file reader is disabled.")
+
     _render_transcript_tabs(
         display_segments,
         controls=controls,
@@ -718,6 +773,7 @@ def _transcript_interaction_fragment(
         playback=binding,
         chapter_rows=chapter_rows,
         correction_ctx=correction_ctx,
+        reader_mounted=reader_mounted,
     )
     if should_scroll and effective_jump is not None:
         scroll_jump_target_into_view()

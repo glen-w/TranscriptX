@@ -66,7 +66,7 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 | [Export](runtime/export.md) | ZIP / HTML / EPUB packages |
 | [Corrections viewer](runtime/corrections-viewer.md) | Propose/apply while reading |
 | [Corrections LLM](runtime/corrections-llm.md) | LLM discovery in Corrections Studio |
-| [Karaoke playback](runtime/karaoke-playback.md) | Word-timed playback |
+| [Karaoke playback](runtime/karaoke-playback.md) | Full-file CCv2 reader + clip karaoke rollback |
 
 ## Module notes
 

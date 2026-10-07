@@ -147,7 +147,7 @@ workspaces-build:
 
 test-workspaces:
 	@echo "Theme C unit/protocol + Vitest lifecycle..."
-	@pytest -q tests/app/test_speaker_id_action_service.py tests/app/test_corrections_action_service.py tests/web/test_workspaces_theme_c.py tests/services/speaker_studio/test_clip_service.py
+	@pytest -q tests/app/test_speaker_id_action_service.py tests/app/test_corrections_action_service.py tests/web/test_workspaces_theme_c.py tests/web/test_media_route.py tests/web/transcript_viewer/test_reader_timing.py tests/web/test_reader_workspace_flag.py tests/services/speaker_studio/test_clip_service.py
 	@cd packages/transcriptx_workspaces/transcriptx_workspaces/frontend && npm ci && npm test
 
 test-theme-c-browser:
