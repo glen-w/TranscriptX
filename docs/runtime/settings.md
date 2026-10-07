@@ -19,7 +19,7 @@ How to change TranscriptX behaviour from the GUI, env, and config files — with
 | Action-menu icon vs text | **Settings → Interface** → Action appearance (`action_display`: `icon` / `text` / `both`; per-section may `inherit`) |
 | Install capability (`core` vs `full`) | Env / install marker — see [installation details](installation-advanced.md); **not** the Profiles page |
 
-Speaker identity/voice stores are a separate subsystem (**Settings → Speakers**), including ingest **auto-name / auto-link** defaults (`config_dir/identify.json`, all off until you enable them). Operator guide: [auto-identify.md](auto-identify.md). Contracts: [speaker_profiles_v1](../contracts/speaker_profiles_v1.md), [speaker_profiles_voice_v1](../contracts/speaker_profiles_voice_v1.md), [STORAGE.md](STORAGE.md).
+Speaker identity/voice stores are a separate subsystem (**Settings → Speakers**), including ingest **auto-name / auto-link** defaults (`config_dir/identify.json`, all off until you enable them), name-token policy, and optional Twenty CRM people lookup (env `TWENTY_API_KEY` / `TWENTY_BASE_URL`, read-only). Operator guide: [auto-identify.md](auto-identify.md). Contracts: [speaker_profiles_v1](../contracts/speaker_profiles_v1.md), [speaker_profiles_voice_v1](../contracts/speaker_profiles_voice_v1.md), [STORAGE.md](STORAGE.md).
 
 ## Analysis presets
 

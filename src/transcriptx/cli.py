@@ -10,6 +10,7 @@ _CLI_COMMANDS: dict[str, str] = {
     "admit-originals": "transcriptx.admit_originals",
     "analyze": "transcriptx.analyze",
     "analyze-backlog": "transcriptx.analyze_backlog",
+    "analyze-modules": "transcriptx.analyze_modules",
     "cleanup-runs": "transcriptx.cleanup_runs",
     "rename": "transcriptx.rename_managed",
     "backup": "transcriptx.backup",
@@ -27,6 +28,7 @@ def _print_cli_help() -> None:
         "  admit-originals    Admit files already under originals/\n"
         "  analyze            Run analysis on one managed transcript\n"
         "  analyze-backlog    Analyze ready transcripts with no analysis yet\n"
+        "  analyze-modules    Catch up selected modules across the library\n"
         "  cleanup-runs       Bulk-delete old (or all) analysis run directories\n"
         "  rename             Rename a managed transcript (+ linked audio)\n"
         "  backup             Workspace ZIP create / verify / restore\n"
@@ -40,6 +42,8 @@ def _print_cli_help() -> None:
         "  transcriptx import path/to/raw.json\n"
         "  transcriptx analyze --path library/foo.json --preset balanced\n"
         "  transcriptx analyze-backlog --preset thorough --dry-run\n"
+        "  transcriptx analyze-modules --modules transcript_output,llm_summary "
+        "--dry-run\n"
         "  transcriptx cleanup-runs --mode delete-old --keep-human-readable "
         "--keep-llm-summaries --dry-run\n"
         "  transcriptx backup create\n"

@@ -51,6 +51,17 @@ def test_roster_filters_stop_words(monkeypatch) -> None:
 
 
 @pytest.mark.unit
+def test_discourse_self_intro_is_not_an_option() -> None:
+    segments = [
+        {"speaker": "SPEAKER_00", "text": "I'm honoured to join you."},
+        {"speaker": "SPEAKER_01", "text": "For question, let's begin."},
+    ]
+    opts = build_deterministic_options(segments, ())
+    names = {o.display_name for bucket in opts.values() for o in bucket}
+    assert "Honoured To" not in names
+    assert "For Question" not in names
+
+
 def test_self_intro_option_for_speaker() -> None:
     segments = [
         {"speaker": "SPEAKER_00", "text": "Hi, I'm Maya."},
@@ -61,7 +72,9 @@ def test_self_intro_option_for_speaker() -> None:
         RosterPerson("Sam", "sam", 1, ("SPEAKER_01",), "Thanks Sam."),
     )
     opts = build_deterministic_options(segments, roster)
-    assert any(o.basis == "self_intro" and o.display_name == "Maya" for o in opts["SPEAKER_00"])
+    assert any(
+        o.basis == "self_intro" and o.display_name == "Maya" for o in opts["SPEAKER_00"]
+    )
 
 
 @pytest.mark.unit
@@ -194,11 +207,7 @@ def test_llm_parser_accepts_roster_name() -> None:
 
 @pytest.mark.unit
 def test_merge_llm_inserts_ahead_of_roster() -> None:
-    det = {
-        "SPEAKER_00": (
-            NameOption("Maya", "roster", "possible", quote=""),
-        )
-    }
+    det = {"SPEAKER_00": (NameOption("Maya", "roster", "possible", quote=""),)}
     llm = {
         "SPEAKER_00": NameOption(
             "Maya", "self_intro", "likely", quote="I'm Maya", source="llm"
@@ -239,7 +248,10 @@ def test_workspace_payload_includes_name_suggestions() -> None:
         controller=controller,
         name_suggestions=payload,
     )
-    assert data["name_suggestions"]["by_speaker"]["SPEAKER_00"][0]["display_name"] == "Maya"
+    assert (
+        data["name_suggestions"]["by_speaker"]["SPEAKER_00"][0]["display_name"]
+        == "Maya"
+    )
 
 
 @pytest.mark.unit

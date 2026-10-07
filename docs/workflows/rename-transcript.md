@@ -30,9 +30,9 @@ The sample is [imported](../runtime/transcription.md) (see [First analysis](firs
 
 5. Open **Library** and confirm the transcript list / picker shows the new stem. Downstream outputs stay associated via managed identity; if a run was open, re-select the transcript if the sidebar label looks stale.
 
-Smart suggestions from device filename patterns may appear as token buttons when enabled — optional helpers, not required for this walkthrough.
+When the current file name is already a descriptive title (not a device filename), the form prefills `YYMMDD_` from the recording when available plus an underscore version of that title. Word token buttons help tweak the title.
 
-When **Content rename suggestions** is set to `auto` (Settings → Configuration → Rename), the rename form can prefill a full proposed stem and list other candidates in a dropdown (transcript cues, optional local LLM, optional web lookup for public-event-like files). Nothing is renamed until you submit **Rename**. Web auto-fetch sends a short event query, not the transcript body. Library-wide cache warm: [llm-suggestion-batch.md](../runtime/llm-suggestion-batch.md).
+Use **Suggest names (transcript + LLM)** on the rename form to load candidates on demand (transcript cues and optional local LLM). You can also set **Content rename suggestions** to `auto` in Settings → Configuration → Rename to prefill and warm caches automatically. Nothing is renamed until you submit **Rename**. Web auto-fetch sends a short event query, not the transcript body. Library-wide cache warm: [llm-suggestion-batch.md](../runtime/llm-suggestion-batch.md).
 
 ## What to notice
 

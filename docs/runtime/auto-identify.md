@@ -59,6 +59,8 @@ Three local channels contribute candidates; an explicit table then apply or skip
 2. **Mentions** — self-introductions in the transcript text (at least two agreeing cues on the same name); unique-winner clustering; optional unique match to an existing profile display name. Single vocatives and other weak dialogue hits are **not** auto-written — use **Suggest names** in Speaker Identification to review them as dropdown options.
 3. **Style** — function-word / turn / question vectors versus prior linked text. Used as corroboration. Style-only apply stays off unless `style_only_apply` is enabled in `identify.json`.
 
+Deterministic name extraction (self-intros, vocatives, Suggest names) also applies a **name-token policy** (`hybrid` default, `strict`, or `soft`) against a bundled given/surname gazetteer, plus an optional **Twenty CRM** People snapshot (`twenty_role`: `off` / `evidence` / `gate`). Twenty is read-only; `TWENTY_API_KEY` / `TWENTY_BASE_URL` live in `.env` (same names as Paperful). CRM is never enough on its own to auto-write a speaker map — fusion still requires a strong self-intro or voice match.
+
 Apply order (per diarized ID): strong unique voice (skip the speaker if a mention disagrees); else a **strong self-introduction** mention; else strong style if that knob is on; else leave unnamed. A name or profile claimed by two speakers in the same transcript skips both.
 
 Disposable review dump: `speaker_profiles/.cache/identify/{managed_id}.identify.v1.json`. Confirmed links and speaker-map sidecars remain the identity / display authorities.

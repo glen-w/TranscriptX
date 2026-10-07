@@ -68,7 +68,7 @@ Implications:
 - **config_dir**: User/app config, persistent, not safe to auto-delete.  
   - `profiles/` lives under config_dir (user-editable config presets).
   - `config.json` holds project settings including the Custom Questions library (`analysis.llm_custom_qa.saved_questions`).
-  - `identify.json` holds Settings → Speakers ingest defaults (`auto_name` / `auto_link` / `style_only_apply`; all default false). Not voice consent.
+  - `identify.json` holds Settings → Speakers ingest defaults (`auto_name` / `auto_link` / `style_only_apply`, all default false; `name_token_policy` default `hybrid`; optional `twenty_enabled` / `twenty_role` / `twenty_base_url`). Secrets stay in env (`TWENTY_API_KEY`). Not voice consent.
   - With Docker Compose, set `HOST_CONFIG_DIR` to a host directory **outside the git clone** (same pattern as `HOST_TRANSCRIPTS_DIR` / `HOST_OUTPUT_DIR`) so Settings survive wiping `./data`. Default remains `./data/.transcriptx`.
 - **outputs_dir**: App-managed analysis outputs, reconstructable by re-running.
 - **state_dir**: App state (processing state, run/analysis locks, rename journal), persistent, reconstructable in part. Lives under `data_dir/state/`.
@@ -109,7 +109,7 @@ config_dir/                     # configuration
   profiles/                     # module/workflow/STT/UI-layout named presets (not speaker profiles)
   install_profile               # optional marker: core | full
   config.json                   # project settings bag
-  identify.json                 # Settings → Speakers ingest defaults (auto_name / auto_link / style_only_apply; default all false)
+  identify.json                 # Settings → Speakers ingest defaults (auto_name / auto_link / style_only_apply; name_token_policy; optional Twenty)
   interface_menus.json          # Settings → Interface action strips (schema v1; see docs/contracts/interface-menus.md)
 
 data_dir/                       # app-managed working state
@@ -126,7 +126,7 @@ data_dir/                       # app-managed working state
       samples/ embeddings/ vectors/
       privacy.voice_settings.json
       active_generation.json generations/
-    .cache/                     # disposable caches (.cache/voice/, .cache/identify/ fusion + name_suggestions, listing aggregates)
+    .cache/                     # disposable caches (.cache/voice/, .cache/identify/ fusion + name_suggestions + twenty_people.v1.json)
   outputs/
     groups/                     # group analysis run outputs (per group uuid / run id)
   preprocessing/

@@ -50,7 +50,7 @@ def collect_person_mentions(
         for ent_text, label in extract_named_entities(text):
             if label != "PERSON":
                 continue
-            titled = title_person_name(ent_text)
+            titled = title_person_name(ent_text, apply_gazetteer=False)
             if not titled:
                 continue
             person_mentions.append(
@@ -83,12 +83,17 @@ def build_roster(
     for row in people:
         if not isinstance(row, dict):
             continue
-        display = title_person_name(str(row.get("display_name") or ""))
+        display = title_person_name(
+            str(row.get("display_name") or ""), apply_gazetteer=False
+        )
         if not display:
             continue
         key = normalize_person_key(display)
         if not key:
             continue
+        alias_keys = tuple(
+            str(x).casefold() for x in (row.get("alias_keys") or ()) if str(x).strip()
+        )
         sample = ""
         for mention in row.get("mentions") or []:
             if isinstance(mention, dict) and mention.get("text"):
@@ -105,6 +110,7 @@ def build_roster(
                     if str(x).strip()
                 ),
                 sample_quote=sample,
+                alias_keys=alias_keys,
             )
         )
     roster.sort(key=lambda p: (-p.mention_count, p.display_name))
@@ -121,6 +127,8 @@ def allowed_name_keys(
     )
 
     keys = {p.normalized_key for p in roster}
+    for person in roster:
+        keys.update(person.alias_keys)
     for segment in segments:
         if not isinstance(segment, Mapping):
             continue

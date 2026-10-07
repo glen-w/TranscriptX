@@ -122,6 +122,53 @@ def _moderator_assignments(
     return out
 
 
+def _add_crm_options(
+    per_speaker: dict[str, list[NameOption]],
+    seen_per: dict[str, set[str]],
+    roster: Sequence[RosterPerson],
+) -> None:
+    from transcriptx.core.speaker_profiles.identify.settings import (
+        load_identify_settings,
+    )
+    from transcriptx.core.speaker_profiles.identify.twenty import (
+        get_people_index,
+        unique_crm_person,
+    )
+
+    ident = load_identify_settings()
+    if not ident.twenty_enabled or ident.twenty_role == "off":
+        return
+    index = get_people_index(ident)
+    if index is None or not index.people:
+        return
+    conf = "likely" if ident.twenty_role == "gate" else "possible"
+    for speaker, bucket in per_speaker.items():
+        local = [o.display_name for o in bucket]
+        local.extend(
+            p.display_name for p in roster if speaker in p.mentioned_by_speakers
+        )
+        seen_hits: set[str] = set()
+        for name in local:
+            hit = unique_crm_person(name, index)
+            if hit is None:
+                continue
+            display = hit.identity_name()
+            key = normalize_person_key(display)
+            if not key or key in seen_hits:
+                continue
+            seen_hits.add(key)
+            _add_option(
+                bucket,
+                seen_per[speaker],
+                NameOption(
+                    display_name=display,
+                    basis="crm",
+                    confidence=conf,  # type: ignore[arg-type]
+                    quote="Twenty CRM people record",
+                ),
+            )
+
+
 def _add_option(
     bucket: list[NameOption],
     seen: set[str],
@@ -233,10 +280,13 @@ def build_deterministic_options(
                 ),
             )
 
-    def rank_key(opt: NameOption) -> tuple[int, str]:
+    _add_crm_options(per_speaker, seen_per, roster)
+
+    def rank_key(opt: NameOption) -> tuple[int, int, str]:
         order = {
             "self_intro": 0,
             "moderator_list": 1,
+            "crm": 2,
             "vocative": 3,
             "roster": 4,
         }

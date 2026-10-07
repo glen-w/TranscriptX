@@ -257,6 +257,7 @@ def suggest_rename_stems(
     transcript_path: Path | str,
     *,
     force_refresh: bool = False,
+    on_demand: bool = False,
 ) -> RenameSuggestionsResult:
     """Build assistive rename stems (never writes library names)."""
     path = Path(transcript_path)
@@ -267,7 +268,7 @@ def suggest_rename_stems(
         getattr(input_cfg, "smart_rename_pattern", "{yymmdd}_{period}_{n}")
         or "{yymmdd}_{period}_{n}"
     )
-    if content_mode != "auto":
+    if content_mode != "auto" and not on_demand:
         return _empty_result(path, pattern)
 
     suggest_transcript = bool(getattr(input_cfg, "rename_suggest_transcript", True))
