@@ -161,11 +161,9 @@ def _maybe_llm_cues(
         require_ollama_analysis,
         resolve_llm_runtime,
     )
+    from transcriptx.core.analysis.llm_support.prompts import build_bounded_user_prompt
     from transcriptx.core.llm.errors import LLMConfigurationError, LLMModelMissingError
-    from transcriptx.core.llm.prompting import (
-        build_bounded_user_prompt,
-        require_prompt_budget,
-    )
+    from transcriptx.core.llm.prompting import require_prompt_budget
     from transcriptx.core.llm.thinking_models import is_thinking_model
 
     config = get_config()
