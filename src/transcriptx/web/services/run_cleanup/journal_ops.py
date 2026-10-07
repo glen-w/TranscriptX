@@ -72,6 +72,9 @@ def new_journaled_operation(
                     warnings=plan.warnings,
                     blocking_errors=plan.blocking_errors,
                     can_execute=plan.can_execute,
+                    classifier_version=plan.classifier_version,
+                    newest_run_policy_version=plan.newest_run_policy_version,
+                    retain_policy=plan.retain_policy,
                 ),
                 staging_destinations=staging_map,
             )

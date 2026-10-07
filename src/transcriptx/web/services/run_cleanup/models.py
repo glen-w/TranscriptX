@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-CLEANUP_POLICY_VERSION = 7
+CLEANUP_POLICY_VERSION = 8
 JOURNAL_SCHEMA_VERSION = 1
 # Pre-epoch envelope number for the same journal format (renumbered 3→1 at
 # schema epoch). Writers emit JOURNAL_SCHEMA_VERSION; readers still recover
@@ -20,6 +20,9 @@ READABLE_JOURNAL_SCHEMA_VERSIONS = frozenset(
 )
 CLEANUP_RESULT_SCHEMA_VERSION = 1
 STAGING_DIR_NAME = ".cleanup_staging"
+# Sidecar under each subject dir for keep-files salvaged from old runs
+# (DELETE_OLD + retain policy). Not a run directory; classifier skips it.
+RETAINED_DIR_NAME = ".retained"
 CONFIRM_DELETE_ALL = "DELETE ALL"
 CONFIRM_DELETE_OLD = "DELETE OLD RUNS"
 CLEANUP_BUSY = "CLEANUP_BUSY"
@@ -33,6 +36,29 @@ FD_BUDGET_SAFETY_RESERVE = 64
 class CleanupMode(str, Enum):
     DELETE_ALL = "DELETE_ALL"
     DELETE_OLD = "DELETE_OLD"
+
+
+@dataclass(frozen=True)
+class CleanupRetainPolicy:
+    """Keep-file salvage policy for DELETE_OLD (ignored for DELETE_ALL).
+
+    When enabled, matching files are copied to
+    ``{subject_dir}/.retained/{run_id}/…`` before the old run tree is staged
+    and deleted. The newest run per subject is never salvaged or deleted.
+    """
+
+    keep_human_readable: bool = False
+    keep_llm_summaries: bool = False
+
+    @property
+    def enabled(self) -> bool:
+        return self.keep_human_readable or self.keep_llm_summaries
+
+    def signature(self) -> dict[str, bool]:
+        return {
+            "keep_human_readable": self.keep_human_readable,
+            "keep_llm_summaries": self.keep_llm_summaries,
+        }
 
 
 class CleanupStatus(str, Enum):
@@ -189,6 +215,8 @@ class CleanupPlan:
     # Bound into plan_id (policy ≥ 7); defaults keep older test constructors valid.
     classifier_version: int = 1
     newest_run_policy_version: int = 1
+    # Bound into plan_id (policy ≥ 8); default preserves older constructors.
+    retain_policy: CleanupRetainPolicy = field(default_factory=CleanupRetainPolicy)
 
     def __post_init__(self) -> None:
         kinds = [r.kind for r in self.roots]
@@ -369,13 +397,16 @@ def compute_plan_id(
     exclusions: Sequence[CleanupExclusion],
     classifier_version: int = 1,
     newest_run_policy_version: int = 1,
+    retain_policy: CleanupRetainPolicy | None = None,
 ) -> str:
     """Stable sha256 plan id bound to mode, policy, classifier, newest-run, roots."""
+    policy = retain_policy if retain_policy is not None else CleanupRetainPolicy()
     payload = {
         "mode": mode.value,
         "policy_version": policy_version,
         "classifier_version": classifier_version,
         "newest_run_policy_version": newest_run_policy_version,
+        "retain_policy": policy.signature(),
         "roots": [_root_payload(r) for r in roots],
         "candidates": [_target_identity_payload(t) for t in candidates],
         "retained": [_target_identity_payload(t) for t in retained],

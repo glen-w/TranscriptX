@@ -77,6 +77,8 @@ def compare_with_lock_skip_masks(
         return False, "classifier_version mismatch under lock"
     if planned.newest_run_policy_version != rediscovered.newest_run_policy_version:
         return False, "newest_run_policy_version mismatch under lock"
+    if planned.retain_policy.signature() != rediscovered.retain_policy.signature():
+        return False, "retain_policy mismatch under lock"
     if list(map(_root_tuple, planned.roots)) != list(
         map(_root_tuple, rediscovered.roots)
     ):

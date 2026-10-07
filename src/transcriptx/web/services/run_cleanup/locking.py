@@ -233,6 +233,7 @@ def revalidate_execution_set_under_lock(
         blocking,
         host.outputs_dir,
         host.group_outputs_dir,
+        retain_policy=plan.retain_policy,
     )
     ok, reason = compare_with_lock_skip_masks(
         planned=plan, rediscovered=es, lock_results=lock_results
