@@ -355,6 +355,9 @@ class TranscriptXConfig:
                 "rename_content_suggestions": getattr(
                     self.input, "rename_content_suggestions", "off"
                 ),
+                "rename_default_case": getattr(
+                    self.input, "rename_default_case", "lower"
+                ),
                 "rename_suggest_transcript": getattr(
                     self.input, "rename_suggest_transcript", True
                 ),

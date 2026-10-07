@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
+from transcriptx.core.utils.rename.suggestions.models import RawRenameCue
 from transcriptx.core.utils.rename.suggestions.service import suggest_rename_stems
 
 
@@ -124,3 +125,52 @@ def test_suggest_rename_stems_title_only_when_no_event_date(tmp_path):
     assert result.prefill
     assert not result.prefill.startswith("2")
     assert "future" in result.prefill.lower() or "ai" in result.prefill.lower()
+
+
+@pytest.mark.unit
+def test_on_demand_runs_llm_when_ollama_configured(tmp_path: Path) -> None:
+    tpath = tmp_path / "webinar.json"
+    _write_transcript(
+        tpath,
+        [{"text": "Welcome to our webinar on fisheries management."}],
+    )
+    llm_cues = [
+        RawRenameCue(
+            basis="llm",
+            confidence="likely",
+            detail="Local LLM suggestion 1",
+            title="Fisheries Forum",
+        ),
+        RawRenameCue(
+            basis="llm",
+            confidence="likely",
+            detail="Local LLM suggestion 2",
+            title="Marine Stocks",
+        ),
+        RawRenameCue(
+            basis="llm",
+            confidence="likely",
+            detail="Local LLM suggestion 3",
+            title="Ocean Policy",
+        ),
+    ]
+    with patch(
+        "transcriptx.core.utils.rename.suggestions.service.get_config"
+    ) as cfg_mock:
+        inp = cfg_mock.return_value.input
+        inp.rename_content_suggestions = "off"
+        inp.rename_suggest_transcript = True
+        inp.rename_suggest_llm = False
+        inp.rename_suggest_web = False
+        inp.rename_suggestions_effort = "low"
+        inp.smart_rename_pattern = "{yymmdd}_{title}"
+        cfg_mock.return_value.llm.enabled = True
+        cfg_mock.return_value.llm.provider = "ollama"
+        with patch(
+            "transcriptx.core.utils.rename.suggestions.service._maybe_llm_cues",
+            return_value=(llm_cues, "3 rename suggestions from local LLM (`test`).", "test", "settings"),
+        ):
+            result = suggest_rename_stems(tpath, on_demand=True, force_refresh=True)
+    llm_options = [o for o in result.options if o.basis == "llm"]
+    assert len(llm_options) == 3
+    assert result.status.startswith("3 rename suggestions")

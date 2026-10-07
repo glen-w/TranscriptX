@@ -77,6 +77,11 @@ COMMON_SETTINGS_SCHEMA: tuple[CommonSettingField, ...] = (
         label="Content rename suggestions",
     ),
     CommonSettingField(
+        key="input.rename_default_case",
+        group="Rename",
+        label="Default rename case",
+    ),
+    CommonSettingField(
         key="input.rename_suggest_transcript",
         group="Rename",
         label="Suggest from transcript",

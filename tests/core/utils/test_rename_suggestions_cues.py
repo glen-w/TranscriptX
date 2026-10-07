@@ -11,6 +11,7 @@ from transcriptx.core.utils.rename.smart_name import validate_smart_rename_patte
 from transcriptx.core.utils.rename.suggestions.models import RawRenameCue
 from transcriptx.core.utils.rename.suggestions.render import render_stem_from_cue, slug_title
 from transcriptx.core.utils.rename.suggestions.transcript_cues import (
+    extract_title_from_text,
     extract_transcript_cues,
     looks_like_public_event,
     parse_date_from_text,
@@ -22,6 +23,29 @@ def test_parse_date_from_recorded_on_phrase() -> None:
     parsed, quote = parse_date_from_text(text)
     assert parsed == date(2026, 3, 12)
     assert "recorded" in quote.lower()
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Welcome to our webinar on high seas governance and marine policy.",
+        "Thanks for joining. Welcome to our webinar on climate adaptation.",
+        "This webinar is on biodiversity in the deep ocean.",
+    ],
+)
+def test_moderator_webinar_intro_title_is_event_keyword_only(line: str) -> None:
+    assert extract_title_from_text(line) == "webinar"
+    cues = extract_transcript_cues([{"text": line}])
+    title_cues = [c for c in cues if c.basis == "transcript_title"]
+    assert title_cues and title_cues[0].title == "webinar"
+    opt = render_stem_from_cue(
+        title_cues[0],
+        pattern="{yymmdd}_{period}_{n}",
+        transcript_stem="zoom_download",
+        existing_stems=[],
+    )
+    assert opt is not None
+    assert opt.stem == "webinar"
 
 
 def test_transcript_date_beats_file_mtime_in_ranking_order() -> None:

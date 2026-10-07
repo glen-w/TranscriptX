@@ -26,6 +26,7 @@ from transcriptx.core.utils.rename.suggestions.cache import (
 )
 from transcriptx.core.utils.rename.suggestions.llm import (
     RENAME_LLM_INSTRUCTION,
+    RENAME_LLM_SUGGESTION_COUNT,
     build_llm_excerpt,
     run_rename_llm,
 )
@@ -90,6 +91,7 @@ def build_rename_suggestions_cache_key(
         "effort": effort,
         "pattern": pattern,
         "llm_model": llm_model_tag,
+        "llm_suggestion_count": RENAME_LLM_SUGGESTION_COUNT,
     }
     return hashlib.sha256(
         json.dumps(payload, sort_keys=True).encode("utf-8")
@@ -128,11 +130,32 @@ def _file_mtime_cue(path: Path) -> RawRenameCue | None:
     )
 
 
-def _maybe_llm_cue(
+def _effective_suggest_llm(input_cfg: Any, *, on_demand: bool) -> bool:
+    configured = bool(getattr(input_cfg, "rename_suggest_llm", False))
+    if configured:
+        return True
+    if not on_demand:
+        return False
+    config = get_config()
+    llm_cfg = config.llm
+    if not llm_cfg.enabled or (llm_cfg.provider or "").strip().lower() != "ollama":
+        return False
+    try:
+        from transcriptx.core.analysis.llm_support.model_selection import (
+            resolve_module_llm_model,
+        )
+
+        resolve_module_llm_model(llm_cfg, RENAME_SUGGESTIONS_CONSUMER_ID)
+        return True
+    except Exception:
+        return False
+
+
+def _maybe_llm_cues(
     segments: Sequence[Mapping[str, Any]],
     *,
     effort: str,
-) -> tuple[RawRenameCue | None, str, str | None, str | None]:
+) -> tuple[list[RawRenameCue], str, str | None, str | None]:
     from transcriptx.core.analysis.llm_support.runtime import (
         build_ollama_analysis_client,
         require_ollama_analysis,
@@ -150,7 +173,7 @@ def _maybe_llm_cue(
     try:
         require_ollama_analysis(llm_cfg)
     except LLMConfigurationError:
-        return None, "Transcript cues only (LLM disabled).", None, None
+        return [], "Transcript cues only (LLM disabled).", None, None
     try:
         runtime = resolve_llm_runtime(
             llm_cfg=llm_cfg,
@@ -160,14 +183,14 @@ def _maybe_llm_cue(
     except (LLMModelMissingError, ValueError) as exc:
         logger.warning("Rename suggestion model resolve failed: %s", exc)
         return (
-            None,
+            [],
             "No model configured for rename_suggestions; showing other cues only.",
             None,
             None,
         )
     if is_thinking_model(runtime.model):
         return (
-            None,
+            [],
             f"Model `{runtime.model}` is unsafe for JSON rename suggestions; "
             "pick a non-thinking tag under Settings → Models for "
             "`rename_suggestions`.",
@@ -182,21 +205,26 @@ def _maybe_llm_cue(
         )
     except LLMConfigurationError as exc:
         logger.warning("Rename suggestion prompt budget: %s", exc)
-        return None, str(exc), runtime.model, runtime.model_source
+        return [], str(exc), runtime.model, runtime.model_source
 
     excerpt = build_llm_excerpt(segments)
+    n = RENAME_LLM_SUGGESTION_COUNT
     body = f"""<<<EXCERPT>>>
 {excerpt}
 <<<END EXCERPT>>>
 
 Return JSON:
 {{
-  "event_date": "YYYY-MM-DD" or null,
-  "title": string or null,
-  "quote": string (verbatim span from EXCERPT supporting event_date, or empty),
-  "public_event": boolean
+  "suggestions": [
+    {{
+      "event_date": "YYYY-MM-DD" or null,
+      "title": string or null,
+      "quote": string (verbatim span from EXCERPT supporting event_date, or empty)
+    }}
+  ]
 }}
-Only set event_date when quote is copied from EXCERPT."""
+Provide exactly {n} objects in suggestions with distinct short titles.
+Only set event_date when quote is copied verbatim from EXCERPT."""
     user_prompt, _ = build_bounded_user_prompt(
         instruction=RENAME_LLM_INSTRUCTION,
         transcript_block=body,
@@ -205,24 +233,32 @@ Only set event_date when quote is copied from EXCERPT."""
     client = build_ollama_analysis_client(llm_cfg=llm_cfg, runtime=runtime)
     if not client.is_available():
         return (
-            None,
+            [],
             "Ollama is not reachable; showing other cues only.",
             runtime.model,
             runtime.model_source,
         )
-    cue = run_rename_llm(
+    cues = run_rename_llm(
         client,
         user_prompt=user_prompt,
         excerpt_for_quotes=excerpt,
         temperature=float(llm_cfg.default_temperature),
         max_tokens=int(runtime.max_output_tokens),
     )
-    status = (
-        f"Suggestions refined with local LLM (`{runtime.model}`)."
-        if cue
-        else f"LLM `{runtime.model}` could not suggest metadata; showing other cues."
-    )
-    return cue, status, runtime.model, runtime.model_source
+    if len(cues) >= n:
+        status = (
+            f"{len(cues)} rename suggestions from local LLM (`{runtime.model}`)."
+        )
+    elif cues:
+        status = (
+            f"LLM `{runtime.model}` returned {len(cues)} of {n} suggestions; "
+            "showing other cues too."
+        )
+    else:
+        status = (
+            f"LLM `{runtime.model}` could not suggest metadata; showing other cues."
+        )
+    return cues, status, runtime.model, runtime.model_source
 
 
 def _rank_and_dedupe(options: list[RenameOption]) -> tuple[RenameOption, ...]:
@@ -272,7 +308,7 @@ def suggest_rename_stems(
         return _empty_result(path, pattern)
 
     suggest_transcript = bool(getattr(input_cfg, "rename_suggest_transcript", True))
-    suggest_llm = bool(getattr(input_cfg, "rename_suggest_llm", False))
+    suggest_llm = _effective_suggest_llm(input_cfg, on_demand=on_demand)
     suggest_web = bool(getattr(input_cfg, "rename_suggest_web", False))
     effort = str(getattr(input_cfg, "rename_suggestions_effort", "low") or "low")
 
@@ -319,12 +355,11 @@ def suggest_rename_stems(
     if suggest_transcript:
         raw_cues.extend(extract_transcript_cues(segments))
     if suggest_llm:
-        llm_cue, llm_status, llm_model, llm_model_source = _maybe_llm_cue(
+        llm_cues, llm_status, llm_model, llm_model_source = _maybe_llm_cues(
             segments, effort=effort
         )
         status_parts.append(llm_status)
-        if llm_cue:
-            raw_cues.append(llm_cue)
+        raw_cues.extend(llm_cues)
     title_for_web = _best_title(raw_cues)
     if suggest_web and looks_like_public_event(path.name, segments):
         query = build_web_query(title=title_for_web, filename=path.name)

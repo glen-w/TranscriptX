@@ -32,6 +32,14 @@ _RE_RECORDED_ON = re.compile(
     rf"{_RE_DAY_MONTH_YEAR.pattern})",
     re.IGNORECASE,
 )
+_RE_WELCOME_EVENT_ON = re.compile(
+    r"\bwelcome\s+to\s+(?:(?:the|this|our)\s+)?(webinar|webcast)\s+on\b",
+    re.IGNORECASE,
+)
+_RE_THIS_EVENT_ON = re.compile(
+    r"\bthis\s+(webinar|webcast)\s+is\s+on\b",
+    re.IGNORECASE,
+)
 _RE_WELCOME_TITLE = re.compile(
     r"(?:welcome to|this (?:webinar|webcast|session) (?:is|on)|today(?:'s)? (?:webinar|session) (?:is|on))\s+"
     r"([A-Z0-9][^.!?\n]{4,80})",
@@ -127,10 +135,34 @@ def parse_date_from_text(text: str) -> tuple[date | None, str]:
     return None, ""
 
 
+def _moderator_event_type_keyword(text: str) -> str:
+    """Return ``webinar`` / ``webcast`` for stock moderator intros, not the topic clause."""
+    if not text:
+        return ""
+    for pattern in (_RE_WELCOME_EVENT_ON, _RE_THIS_EVENT_ON):
+        match = pattern.search(text)
+        if match:
+            return match.group(1).lower()
+    filler = re.compile(
+        r"^(?:our|the|this)\s+(webinar|webcast)\s+on\b",
+        re.IGNORECASE,
+    )
+    welcome = _RE_WELCOME_TITLE.search(text)
+    if welcome:
+        tail = welcome.group(1).strip(" .,:;\"'")
+        m = filler.match(tail)
+        if m:
+            return m.group(1).lower()
+    return ""
+
+
 def extract_title_from_text(text: str) -> str:
     """Heuristic short title from transcript excerpt."""
     if not text:
         return ""
+    event_kw = _moderator_event_type_keyword(text)
+    if event_kw:
+        return event_kw
     match = _RE_WELCOME_TITLE.search(text)
     if match:
         title = match.group(1).strip(" .,:;\"'")

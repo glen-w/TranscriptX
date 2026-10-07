@@ -17,6 +17,9 @@ from transcriptx.core.utils.rename.smart_name import (
     suggest_smart_rename_base_name,
 )
 from transcriptx.core.utils.rename.title_stem import (
+    BubbleTokenCase,
+    format_bubble_token,
+    format_rename_stem_case,
     propose_dated_title,
     stem_looks_like_natural_language_title,
     title_word_bubbles,
@@ -80,6 +83,68 @@ def sticky_smart_rename_keys(form_key: str) -> tuple[str, str]:
     return (f"{form_key}__bubbles", f"{form_key}__date_root")
 
 
+def sticky_bubble_case_key(form_key: str) -> str:
+    """Session key for the active rename case (tokens + new file name)."""
+    return f"{form_key}__bubble_case"
+
+
+_RENAME_CASE_WIDGET_SUFFIXES = ("tokens", "filename")
+
+
+def _rename_case_widget_key(form_key: str, suffix: str) -> str:
+    return f"{form_key}__rename_case_{suffix}"
+
+
+_BUBBLE_CASE_LABELS: tuple[str, ...] = ("Title case", "UPPERCASE", "lowercase")
+_BUBBLE_CASE_BY_LABEL: dict[str, BubbleTokenCase] = {
+    "Title case": "title",
+    "UPPERCASE": "upper",
+    "lowercase": "lower",
+}
+_CASE_LABEL_BY_VALUE: dict[BubbleTokenCase, str] = {
+    value: label for label, value in _BUBBLE_CASE_BY_LABEL.items()
+}
+
+
+def _configured_rename_default_case() -> BubbleTokenCase:
+    try:
+        from transcriptx.core.utils.config_provider import get_config
+
+        raw = str(
+            getattr(getattr(get_config(), "input", None), "rename_default_case", "lower")
+            or "lower"
+        )
+        if raw in _CASE_LABEL_BY_VALUE:
+            return raw
+    except Exception:
+        pass
+    return "lower"
+
+
+def _default_rename_case_label() -> str:
+    return _CASE_LABEL_BY_VALUE[_configured_rename_default_case()]
+
+
+def _rename_case_from_session(form_key: str, session_state) -> BubbleTokenCase:
+    label = str(
+        session_state.get(sticky_bubble_case_key(form_key))
+        or _default_rename_case_label()
+    )
+    return _BUBBLE_CASE_BY_LABEL.get(label, _configured_rename_default_case())
+
+
+def _stem_with_session_case(form_key: str, stem: str, session_state) -> str:
+    return format_rename_stem_case(stem, _rename_case_from_session(form_key, session_state))
+
+
+def _reset_rename_case_from_config(form_key: str, session_state=None) -> None:
+    ss = st.session_state if session_state is None else session_state
+    label = _default_rename_case_label()
+    ss[sticky_bubble_case_key(form_key)] = label
+    for suffix in _RENAME_CASE_WIDGET_SUFFIXES:
+        ss[_rename_case_widget_key(form_key, suffix)] = label
+
+
 def sticky_content_rename_keys(form_key: str) -> tuple[str, str, str]:
     """Return (options_key, pick_key, status_key) for content rename suggestions."""
     return (
@@ -113,6 +178,9 @@ def clear_rename_form_session_keys(form_key: str, session_state=None) -> None:
         ss.pop(key, None)
     for key in sticky_smart_rename_keys(form_key):
         ss.pop(key, None)
+    ss.pop(sticky_bubble_case_key(form_key), None)
+    for suffix in _RENAME_CASE_WIDGET_SUFFIXES:
+        ss.pop(_rename_case_widget_key(form_key, suffix), None)
     for key in sticky_content_rename_keys(form_key):
         ss.pop(key, None)
     ss.pop(sticky_nl_title_reuse_key(form_key), None)
@@ -172,7 +240,9 @@ def _store_content_suggestion_result(
 
     if content_result.prefill:
         session_state[suggestion_key] = content_result.prefill
-        session_state[target_key] = content_result.prefill
+        session_state[target_key] = _stem_with_session_case(
+            form_key, content_result.prefill, session_state
+        )
         if stem_looks_like_natural_language_title(path.stem):
             session_state[bubbles_key] = list(title_word_bubbles(path.stem))
             session_state[nl_key] = True
@@ -245,6 +315,7 @@ def bind_suggested_rename_name(
     options_key, pick_key, status_key = sticky_content_rename_keys(form_key)
     nl_key = sticky_nl_title_reuse_key(form_key)
     if st.session_state.get(bound_key) != fingerprint:
+        _reset_rename_case_from_config(form_key)
         mode, _pattern, legacy = _input_rename_settings()
         content_mode = _rename_content_suggestions_mode()
         if content_mode == "auto":
@@ -299,7 +370,9 @@ def bind_suggested_rename_name(
             st.session_state[pick_key] = labels[0] if labels else ""
             st.session_state[bound_key] = fingerprint
             st.session_state[suggestion_key] = suggested
-            st.session_state[target_key] = suggested
+            st.session_state[target_key] = _stem_with_session_case(
+                form_key, suggested, st.session_state
+            )
             return str(st.session_state.get(suggestion_key) or path.stem)
 
         use_smart = (
@@ -334,7 +407,9 @@ def bind_suggested_rename_name(
                 suggested = path.stem
         st.session_state[bound_key] = fingerprint
         st.session_state[suggestion_key] = suggested
-        st.session_state[target_key] = suggested
+        st.session_state[target_key] = _stem_with_session_case(
+            form_key, suggested, st.session_state
+        )
     return str(st.session_state.get(suggestion_key) or path.stem)
 
 
@@ -360,8 +435,60 @@ def _render_content_suggestion_dropdown(form_key: str) -> None:
         st.session_state[pick_key] = chosen
         stem = label_to_stem.get(chosen)
         if stem:
-            st.session_state[target_key] = stem
+            st.session_state[target_key] = _stem_with_session_case(
+                form_key, stem, st.session_state
+            )
         st.rerun()
+
+
+def _bubble_case_for_form(form_key: str) -> BubbleTokenCase:
+    return _rename_case_from_session(form_key, st.session_state)
+
+
+def _sync_rename_case_widgets(form_key: str) -> str:
+    master_key = sticky_bubble_case_key(form_key)
+    label = str(st.session_state.get(master_key) or _default_rename_case_label())
+    if label not in _BUBBLE_CASE_BY_LABEL:
+        label = _default_rename_case_label()
+        st.session_state[master_key] = label
+    for suffix in _RENAME_CASE_WIDGET_SUFFIXES:
+        widget_key = _rename_case_widget_key(form_key, suffix)
+        if st.session_state.get(widget_key) != label:
+            st.session_state[widget_key] = label
+    return label
+
+
+def _on_rename_case_change(form_key: str, suffix: str) -> None:
+    widget_key = _rename_case_widget_key(form_key, suffix)
+    label = str(st.session_state.get(widget_key) or _default_rename_case_label())
+    if label not in _BUBBLE_CASE_BY_LABEL:
+        label = _default_rename_case_label()
+    master_key = sticky_bubble_case_key(form_key)
+    st.session_state[master_key] = label
+    for other in _RENAME_CASE_WIDGET_SUFFIXES:
+        if other == suffix:
+            continue
+        st.session_state[_rename_case_widget_key(form_key, other)] = label
+    _, target_key, _ = sticky_suggested_name_keys(form_key)
+    current = str(st.session_state.get(target_key) or "")
+    if current:
+        case = _BUBBLE_CASE_BY_LABEL[label]
+        st.session_state[target_key] = format_rename_stem_case(current, case)
+
+
+def _render_rename_case_selectbox(form_key: str, suffix: str) -> None:
+    _sync_rename_case_widgets(form_key)
+    st.selectbox(
+        "Case",
+        _BUBBLE_CASE_LABELS,
+        key=_rename_case_widget_key(form_key, suffix),
+        on_change=_on_rename_case_change,
+        args=(form_key, suffix),
+        label_visibility="collapsed",
+        help=widget_help(
+            "Applies to token buttons and the new file name (each underscore-separated part)."
+        ),
+    )
 
 
 def _render_token_bubbles(form_key: str) -> None:
@@ -370,18 +497,24 @@ def _render_token_bubbles(form_key: str) -> None:
     bubbles = st.session_state.get(bubbles_key) or []
     if not bubbles:
         return
-    st.caption("Click a token to append it to the new file name.")
+    caption_col, case_col = st.columns([4, 1])
+    with caption_col:
+        st.caption("Click a token to append it to the new file name.")
+    with case_col:
+        _render_rename_case_selectbox(form_key, "tokens")
+    case = _bubble_case_for_form(form_key)
     cols = st.columns(min(len(bubbles), 6))
     for idx, token in enumerate(bubbles):
         col = cols[idx % len(cols)]
+        label = format_bubble_token(str(token), case)
         with col:
             if st.button(
-                token,
+                label,
                 key=f"{form_key}__bubble_{idx}_{token}",
                 use_container_width=True,
             ):
                 current = str(st.session_state.get(target_key) or "")
-                st.session_state[target_key] = append_token_to_name(current, token)
+                st.session_state[target_key] = append_token_to_name(current, label)
                 st.rerun()
 
 
@@ -513,17 +646,24 @@ def render_transcript_rename_form(
     ):
         _render_content_suggestion_dropdown(form_key)
 
-    with st.form(form_key, clear_on_submit=False):
-        st.text_input("Current file name", value=current_name, disabled=True)
-        target = st.text_input(
+    st.text_input("Current file name", value=current_name, disabled=True)
+    name_col, case_col = st.columns([4, 1])
+    with name_col:
+        st.text_input(
             "New file name",
             key=target_key,
             help=widget_help(_DEFAULT_HELP),
         )
+    with case_col:
+        st.caption("Case")
+        _render_rename_case_selectbox(form_key, "filename")
+
+    with st.form(form_key, clear_on_submit=False):
         submitted = st.form_submit_button(submit_label)
     if not submitted:
         return
 
+    target = str(st.session_state.get(target_key) or "")
     result = RenameService.rename_transcript_and_audio(path, target)
     phrase = RenameService._audio_outcome_phrase(
         result.audio_kind, result.audio_renamed

@@ -17,7 +17,6 @@ from transcriptx.web.components.playback_panel import (
     resolve_playback_context,
 )
 from transcriptx.web.components.rename_form import (
-    bind_suggested_rename_name,
     clear_rename_form_session_keys,
     render_transcript_rename_form,
 )
@@ -38,7 +37,24 @@ from transcriptx.web.state import (
 _FORM_KEY = "rename_transcript_page_form"
 _PICKER_KEY = "rename_transcript_select"
 _SELECTED_PATH_KEY = "rename_transcript_selected_path"
+_RENAME_SUCCESS_KEY = "rename_transcript_rename_success"
 _PREVIEW_LIMIT = 10
+
+
+def _clear_rename_success_state() -> None:
+    st.session_state.pop(_RENAME_SUCCESS_KEY, None)
+
+
+def _rename_success_payload() -> dict | None:
+    raw = st.session_state.get(_RENAME_SUCCESS_KEY)
+    return raw if isinstance(raw, dict) else None
+
+
+def _shows_rename_success(path: Path | str) -> bool:
+    payload = _rename_success_payload()
+    if not payload:
+        return False
+    return paths_match(payload.get("path"), path)
 
 
 def _transcript_ns(transcript_path: str | Path) -> str:
@@ -81,9 +97,13 @@ def apply_rename_page_post_rename(result: RenameResult) -> None:
             new_t,
             session_resolver=make_session_path_resolver(),
         )
-        bind_suggested_rename_name(new_t, form_key=_FORM_KEY, date_prefix_prefill=True)
+        st.session_state[_RENAME_SUCCESS_KEY] = {
+            "path": str(new_t),
+            "new_base_name": result.new_base_name or Path(new_t).stem,
+        }
     else:
         st.session_state.pop(_SELECTED_PATH_KEY, None)
+        _clear_rename_success_state()
 
 
 def _path_is_file(path: str | Path | None) -> bool:
@@ -247,6 +267,7 @@ def render_rename_transcript_page() -> None:
     if prev_selected and not paths_match(prev_selected, active):
         clear_rename_form_session_keys(_FORM_KEY)
         clear_rename_page_path_keys(prev_selected)
+        _clear_rename_success_state()
     st.session_state[_SELECTED_PATH_KEY] = str(active)
 
     if not _path_is_file(active):
@@ -273,6 +294,16 @@ def render_rename_transcript_page() -> None:
         light_meta = get_cached_light_transcript_metadata()
     except Exception:
         light_meta = None
+
+    if _shows_rename_success(active):
+        payload = _rename_success_payload() or {}
+        new_name = str(payload.get("new_base_name") or active.stem)
+        st.success(f"Transcript was renamed successfully to `{new_name}`.")
+        if st.button("Rename again", key="rename_transcript_rename_again"):
+            _clear_rename_success_state()
+            clear_rename_form_session_keys(_FORM_KEY)
+            st.rerun()
+        return
 
     render_transcript_rename_form(
         active,

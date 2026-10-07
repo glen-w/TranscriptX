@@ -17,6 +17,7 @@ SmartRenameMode = Literal[
     "off",
 ]
 RenameContentSuggestionsMode = Literal["off", "auto"]
+RenameDefaultCase = Literal["title", "upper", "lower"]
 
 
 class InputSettingsModel(BaseModel):
@@ -30,6 +31,13 @@ class InputSettingsModel(BaseModel):
     smart_rename_mode: SmartRenameMode = Field(default="suggest_import")
     smart_rename_pattern: str = Field(default="{yymmdd}_{period}_{n}")
     rename_content_suggestions: RenameContentSuggestionsMode = Field(default="off")
+    rename_default_case: RenameDefaultCase = Field(
+        default="lower",
+        description=(
+            "Default case for rename token buttons and the new file name field "
+            "(title / upper / lower)."
+        ),
+    )
     rename_suggest_transcript: bool = Field(default=True)
     rename_suggest_llm: bool = Field(default=False)
     rename_suggest_web: bool = Field(default=False)

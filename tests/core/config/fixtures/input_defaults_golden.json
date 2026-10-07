@@ -3,14 +3,15 @@
   "playback_skip_seconds_long": 60.0,
   "playback_skip_seconds_short": 10.0,
   "prefill_rename_with_date_prefix": true,
+  "recordings_folders": [
+    "/Users/89298/Documents/recordings"
+  ],
   "rename_content_suggestions": "off",
+  "rename_default_case": "lower",
   "rename_suggest_llm": false,
   "rename_suggest_transcript": true,
   "rename_suggest_web": false,
   "rename_suggestions_effort": "low",
-  "recordings_folders": [
-    "/workspace/data/recordings"
-  ],
   "smart_rename_mode": "suggest_import",
   "smart_rename_pattern": "{yymmdd}_{period}_{n}",
   "wav_folders": [
