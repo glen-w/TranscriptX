@@ -2479,3 +2479,17 @@ Follow-up: expand testing of knobs-heavy GUI pages (Settings Analysis, Custom QA
 ### Validation
 - New test: **1 passed** on the host.
 - **Production code:** none in this expansion.
+
+## 83. Expansion (2026-10-07) – last five merges plus suggestion warm
+
+### Trigger
+Light-test and deep-test of PRs #72–#77 (in-app transcription, speaker-name suggestions, Windows inbox-watch, Theme D reader, content rename suggestions, library warm).
+
+### Tests added
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/unit/test_transcriptx_cli.py` | **+2** | `transcriptx identify-speakers` dispatch without importing the voice stack; `--help` lists host commands and does not launch Streamlit |
+| `tests/core/config/delegation_test_utils.py` | count | Pydantic ownership invariant 725/741 → 730/746 after the five `input.rename_*` fields |
+
+### Classified pre-existing (`pytest -q` on this machine)
+Four failures match the 2026-10-03 local `.env` path contamination (not these merges): manifest `config_source` `project` vs `default`, pydantic output-path goldens, and `test_finds_audio_by_stripped_copy_suffix_when_transcript_renamed` resolving a host recording. Quarantine remains empty. Not re-enabled.

@@ -6,6 +6,11 @@ import sys
 from typing import Sequence
 
 _CLI_COMMANDS: dict[str, str] = {
+    "import": "transcriptx.import_transcript",
+    "admit-originals": "transcriptx.admit_originals",
+    "analyze": "transcriptx.analyze",
+    "rename": "transcriptx.rename_managed",
+    "backup": "transcriptx.backup",
     "warm-suggestions": "transcriptx.warm_suggestions",
     "identify-speakers": "transcriptx.identify_speakers",
 }
@@ -16,12 +21,21 @@ def _print_cli_help() -> None:
         "Usage: transcriptx [COMMAND] [ARGS...]\n"
         "\n"
         "Commands (host automation; no Streamlit):\n"
+        "  import             Managed-import transcript file(s) into the library\n"
+        "  admit-originals    Admit files already under originals/\n"
+        "  analyze            Run analysis on one managed transcript\n"
+        "  rename             Rename a managed transcript (+ linked audio)\n"
+        "  backup             Workspace ZIP create / verify / restore\n"
         "  warm-suggestions   Warm assistive LLM rename / speaker-name caches\n"
         "  identify-speakers  Auto-identify speakers (voice + text fusion)\n"
         "\n"
-        "With no command, launches the Streamlit web UI (same as transcriptx.web).\n"
+        "Interactive workspaces (Corrections, Speaker ID review, Charts/Ask)\n"
+        "stay in the GUI. With no command, launches the Streamlit web UI.\n"
         "Examples:\n"
         "  transcriptx\n"
+        "  transcriptx import path/to/raw.json\n"
+        "  transcriptx analyze --path library/foo.json --preset balanced\n"
+        "  transcriptx backup create\n"
         "  transcriptx warm-suggestions --all\n"
         "  transcriptx identify-speakers --all-unnamed --dry-run\n"
     )

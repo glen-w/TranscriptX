@@ -1,6 +1,9 @@
 """CLI: admit originals/ transcripts into the managed library.
 
-Invoked as ``python -m transcriptx.admit_originals`` (not ``transcriptx <subcommand>``).
+Invoked as:
+
+- ``transcriptx admit-originals …``
+- ``python -m transcriptx.admit_originals …``
 
 Sets ``TRANSCRIPTX_TRANSCRIPTS_DIR`` from ``--transcripts-root`` *after* ``.env``
 bootstrap and *before* importing path constants, so inbox-watch can point admit

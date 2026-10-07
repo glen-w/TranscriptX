@@ -23,6 +23,9 @@ Concept → Authority:
 - **Public surfaces & support** → `docs/public_surfaces.md`
 - **Terms (index only)** → `docs/TERMS.md`
 - **Local LLM modules** → `docs/runtime/llm.md`
+- **Host transcription (BYO import and optional in-app STT)** → `docs/runtime/transcription.md` (support boundary: `docs/public_surfaces.md` §1.6)
+- **Assistive speaker-name and rename suggestion caches** → `docs/runtime/llm-suggestion-batch.md`
+- **Full-file transcript reader (Theme D)** → `docs/runtime/karaoke-playback.md`
 - **Lexical diversity** → `docs/runtime/lexical_diversity.md`
 - **Keyphrases (B16)** → `docs/runtime/keyphrases.md`
 - **Epistemic markers (B6)** → `docs/runtime/epistemic_markers.md`

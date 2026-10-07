@@ -91,7 +91,7 @@ TranscriptX runs in file-first mode by default, with groups, corrections, and ot
 
 ## Web interface (Streamlit)
 
-**Console entry point:** After install, `transcriptx` runs the same code as `python -m transcriptx.web`. Flags: `--host`, `--port` (defaults `127.0.0.1` and `8501`; also read from `TRANSCRIPTX_HOST` / `TRANSCRIPTX_PORT`). This does not accept analysis subcommands — use the browser UI or the Python API (see [generated/cli.md](../generated/cli.md)).
+**Console entry point:** After install, `transcriptx` with no command runs the same code as `python -m transcriptx.web`. Flags: `--host`, `--port` (defaults `127.0.0.1` and `8501`; also read from `TRANSCRIPTX_HOST` / `TRANSCRIPTX_PORT`). Host automation allowlist includes `import`, `admit-originals`, `analyze` (single managed transcript), `rename`, `backup`, `warm-suggestions`, and `identify-speakers` — see [generated/cli.md](../generated/cli.md) and [public_surfaces.md](../public_surfaces.md) §1.7.
 
 The Streamlit app reads options from `.streamlit/config.toml` when present.
 

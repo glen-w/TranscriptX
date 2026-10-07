@@ -73,7 +73,7 @@ In all these cases, fix the doc by:
 To avoid drift between the web launcher, Docker setup, Python API docs, and architecture docs, also check:
 
 1. **Regenerate and review `--help` output**  
-   Run `transcriptx --help` (or `python -m transcriptx.web --help`). The installed console script only launches Streamlit (`--host`, `--port`). Update [docs/generated/cli.md](generated/cli.md) so launcher flags and Python API examples match the code. Do not document removed terminal subcommands.
+   Run `transcriptx --help` for the host automation allowlist and `python -m transcriptx.web --help` for launcher flags (`--host`, `--port`). With no command, `transcriptx` launches Streamlit. Update [docs/generated/cli.md](generated/cli.md) and [public_surfaces.md](../public_surfaces.md) §1.7 when adding allowlisted subcommands. Do not invent subcommands outside that allowlist.
 
 2. **Verify README examples**  
    Ensure installation (Docker happy path and native helper) and first-analysis steps in [README.md](../README.md) are runnable with the current code. README is a user-guide entry: outcomes, GUI labels, install, privacy. It must summarize and link to contracts instead of restating rules. Do not put schema-epoch, install-marker, or public-surfaces tables on the README.
