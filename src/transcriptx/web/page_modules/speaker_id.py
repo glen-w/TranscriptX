@@ -1961,6 +1961,72 @@ def _render_voice_suggestions(
 # ── CCv2 workspace mount (Theme C) ────────────────────────────────────────────
 
 
+def _render_managed_identify_actions(
+    *,
+    transcript_path: str,
+    speaker_ids: list[str],
+    ignored: List[str],
+    active_id: str,
+    profile_ctx,
+    name_suggestions: dict | None,
+) -> None:
+    """Suggest names / voice / auto-identify controls (managed library only)."""
+    if not profile_ctx.is_managed:
+        return
+    llm_on = False
+    try:
+        from transcriptx.core.utils.config import get_config
+
+        cfg = get_config().llm
+        llm_on = bool(cfg.enabled and (cfg.provider or "").strip().lower() == "ollama")
+    except Exception:
+        llm_on = False
+    suggest_label = (
+        "Suggest names (transcript + LLM)"
+        if llm_on
+        else "Suggest names (transcript only)"
+    )
+    st.button(
+        suggest_label,
+        key=widget_key(transcript_path, "suggest_names"),
+        icon=ic.SEARCH,
+        help=widget_help(
+            "Build a people roster from the transcript and propose names "
+            "per speaker. Pick a suggestion in the Name field — nothing is "
+            "saved until you choose save (✓). The LLM pass uses the "
+            "`speaker_name_suggestions` model from Settings → Models."
+        ),
+        on_click=_cb_suggest_speaker_names,
+        args=(str(transcript_path), profile_ctx),
+    )
+    if name_suggestions and name_suggestions.get("status_message"):
+        st.caption(str(name_suggestions.get("status_message")))
+    with st.expander("Voice suggestions", expanded=False):
+        _render_voice_suggestions(
+            transcript_path=transcript_path,
+            speaker_ids=speaker_ids,
+            ignored=ignored,
+            active_id=active_id,
+            profile_ctx=profile_ctx,
+        )
+    st.button(
+        "Apply auto-identify",
+        key=widget_key(transcript_path, "apply_auto_identify"),
+        icon=ic.CHECK_ALL,
+        help=widget_help(
+            "Run voice + text identification on unnamed speakers and write "
+            "display names and profile links when confident. Does not enrol "
+            "voice samples. Probabilistic — review names after."
+        ),
+        on_click=_cb_apply_auto_identify,
+        args=(str(transcript_path),),
+    )
+    st.caption(
+        "Auto-identify uses enrolled voices and names in the dialogue. "
+        "It is not identity verification."
+    )
+
+
 def _render_ccv2_speaker_workspace(
     *,
     transcript_path: str,
@@ -2049,6 +2115,15 @@ def _render_ccv2_speaker_workspace(
         name_suggestions=name_suggestions,
     )
 
+    _render_managed_identify_actions(
+        transcript_path=transcript_path,
+        speaker_ids=speaker_ids,
+        ignored=ignored,
+        active_id=active_id,
+        profile_ctx=profile_ctx,
+        name_suggestions=name_suggestions,
+    )
+
     result_key = stable_workspace_key(str(Path(transcript_path).resolve()))
 
     def _on_command() -> None:
@@ -2100,59 +2175,6 @@ def _render_ccv2_speaker_workspace(
 
     _maybe_poll_pending_clips(transcript_path, data)
 
-    if profile_ctx.is_managed:
-        llm_on = False
-        try:
-            from transcriptx.core.utils.config import get_config
-
-            cfg = get_config().llm
-            llm_on = bool(cfg.enabled and (cfg.provider or "").strip().lower() == "ollama")
-        except Exception:
-            llm_on = False
-        suggest_label = (
-            "Suggest names (transcript + LLM)"
-            if llm_on
-            else "Suggest names (transcript only)"
-        )
-        st.button(
-            suggest_label,
-            key=widget_key(transcript_path, "suggest_names"),
-            icon=ic.SEARCH,
-            help=widget_help(
-                "Build a people roster from the transcript and propose names "
-                "per speaker. Pick a suggestion in the Name field — nothing is "
-                "saved until you choose save (✓). The LLM pass uses the "
-                "`speaker_name_suggestions` model from Settings → Models."
-            ),
-            on_click=_cb_suggest_speaker_names,
-            args=(str(transcript_path), profile_ctx),
-        )
-        if name_suggestions and name_suggestions.get("status_message"):
-            st.caption(str(name_suggestions.get("status_message")))
-        with st.expander("Voice suggestions", expanded=False):
-            _render_voice_suggestions(
-                transcript_path=transcript_path,
-                speaker_ids=speaker_ids,
-                ignored=ignored,
-                active_id=active_id,
-                profile_ctx=profile_ctx,
-            )
-        st.button(
-            "Apply auto-identify",
-            key=widget_key(transcript_path, "apply_auto_identify"),
-            icon=ic.CHECK_ALL,
-            help=widget_help(
-                "Run voice + text identification on unnamed speakers and write "
-                "display names and profile links when confident. Does not enrol "
-                "voice samples. Probabilistic — review names after."
-            ),
-            on_click=_cb_apply_auto_identify,
-            args=(str(transcript_path),),
-        )
-        st.caption(
-            "Auto-identify uses enrolled voices and names in the dialogue. "
-            "It is not identity verification."
-        )
     return True
 
 

@@ -7,6 +7,7 @@ from datetime import date
 from typing import Any, Literal
 
 SuggestionBasis = Literal[
+    "existing_title",
     "filename_datetime",
     "transcript_date",
     "transcript_title",

@@ -38,6 +38,39 @@ def test_mode_off_returns_empty_without_loading_segments(tmp_path: Path) -> None
 
 
 @pytest.mark.unit
+def test_existing_natural_language_title_always_in_options(tmp_path: Path) -> None:
+    title = "Webinar on Implementing the BBNJ in the SWIO Region"
+    tpath = tmp_path / f"{title}.json"
+    _write_transcript(
+        tpath,
+        [
+            {
+                "text": (
+                    "Welcome to our webinar on high seas governance. "
+                    "Take us through your presentation."
+                )
+            }
+        ],
+    )
+    with patch(
+        "transcriptx.core.utils.rename.suggestions.service.get_config"
+    ) as cfg_mock:
+        inp = cfg_mock.return_value.input
+        inp.rename_content_suggestions = "auto"
+        inp.rename_suggest_transcript = True
+        inp.rename_suggest_llm = False
+        inp.rename_suggest_web = False
+        inp.smart_rename_pattern = "{yymmdd}_{period}_{n}"
+        cfg_mock.return_value.llm.enabled = False
+        result = suggest_rename_stems(tpath, force_refresh=True)
+
+    expected = "Webinar_on_Implementing_the_BBNJ_in_the_SWIO_Region"
+    assert any(o.stem == expected and o.basis == "existing_title" for o in result.options)
+    assert result.options[0].stem == expected
+    assert result.prefill == expected
+
+
+@pytest.mark.unit
 def test_on_demand_runs_when_mode_off(tmp_path: Path) -> None:
     tpath = tmp_path / "webinar.json"
     _write_transcript(

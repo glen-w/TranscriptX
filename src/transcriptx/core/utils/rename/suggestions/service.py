@@ -38,7 +38,6 @@ from transcriptx.core.utils.rename.suggestions.models import (
 from transcriptx.core.utils.rename.suggestions.render import (
     list_sibling_stems,
     render_stem_from_cue,
-
 )
 from transcriptx.core.utils.rename.suggestions.transcript_cues import (
     extract_transcript_cues,
@@ -46,6 +45,10 @@ from transcriptx.core.utils.rename.suggestions.transcript_cues import (
     transcript_source_mtime,
 )
 from transcriptx.core.utils.rename.suggestions.web import build_web_query, fetch_web_cue
+from transcriptx.core.utils.rename.title_stem import (
+    stem_looks_like_natural_language_title,
+    underscore_title,
+)
 
 logger = get_logger()
 
@@ -53,12 +56,13 @@ RENAME_SUGGESTIONS_CONSUMER_ID = "rename_suggestions"
 
 _CONF_RANK = {"strong": 0, "likely": 1, "possible": 2, "file": 3}
 _BASIS_RANK = {
-    "transcript_date": 0,
-    "web": 1,
-    "filename_datetime": 2,
-    "llm": 3,
-    "transcript_title": 4,
-    "file_mtime": 5,
+    "existing_title": 0,
+    "transcript_date": 1,
+    "web": 2,
+    "filename_datetime": 3,
+    "llm": 4,
+    "transcript_title": 5,
+    "file_mtime": 6,
 }
 
 
@@ -81,6 +85,7 @@ def build_rename_suggestions_cache_key(
     effort: str,
     pattern: str,
     llm_model_tag: str,
+    existing_title_stem: str = "",
 ) -> str:
     payload = {
         "fingerprint": fingerprint,
@@ -92,10 +97,28 @@ def build_rename_suggestions_cache_key(
         "pattern": pattern,
         "llm_model": llm_model_tag,
         "llm_suggestion_count": RENAME_LLM_SUGGESTION_COUNT,
+        "existing_title_stem": existing_title_stem,
     }
     return hashlib.sha256(
         json.dumps(payload, sort_keys=True).encode("utf-8")
     ).hexdigest()
+
+
+def _existing_title_option(path: Path) -> RenameOption | None:
+    """Underscored form of the current stem when it is already a human title."""
+    stem = path.stem
+    if not stem_looks_like_natural_language_title(stem):
+        return None
+    titled = underscore_title(stem)
+    if not titled:
+        return None
+    return RenameOption(
+        stem=titled,
+        basis="existing_title",
+        confidence="strong",
+        detail="Current title with spaces replaced by underscores",
+        title=titled,
+    )
 
 
 def _filename_cue(path: Path) -> RawRenameCue | None:
@@ -260,7 +283,11 @@ def _rank_and_dedupe(options: list[RenameOption]) -> tuple[RenameOption, ...]:
             o.stem,
         ),
     )
+    existing = next((o for o in ordered if o.basis == "existing_title"), None)
     out: list[RenameOption] = []
+    if existing is not None and existing.stem:
+        out.append(existing)
+        seen.add(existing.stem)
     for opt in ordered:
         if not opt.stem or opt.stem in seen:
             continue
@@ -303,6 +330,8 @@ def suggest_rename_stems(
 
     segments = load_transcript_segments(path)
     fingerprint = fingerprint_segments(segments)
+    existing_title_opt = _existing_title_option(path)
+    existing_title_stem = existing_title_opt.stem if existing_title_opt else ""
 
     llm_model_tag = "llm-off"
     if suggest_llm:
@@ -324,6 +353,7 @@ def suggest_rename_stems(
         effort=effort,
         pattern=pattern,
         llm_model_tag=llm_model_tag,
+        existing_title_stem=existing_title_stem,
     )
     if not force_refresh:
         cached = load_cached_rename_suggestions(
@@ -349,7 +379,9 @@ def suggest_rename_stems(
         )
         status_parts.append(llm_status)
         raw_cues.extend(llm_cues)
-    title_for_web = _best_title(raw_cues)
+    title_for_web = _best_title(raw_cues) or (
+        existing_title_opt.title if existing_title_opt else ""
+    )
     if suggest_web and looks_like_public_event(path.name, segments):
         query = build_web_query(title=title_for_web, filename=path.name)
         web_cue = fetch_web_cue(query)
@@ -361,6 +393,8 @@ def suggest_rename_stems(
 
     existing = list_sibling_stems(path)
     options: list[RenameOption] = []
+    if existing_title_opt is not None:
+        options.append(existing_title_opt)
     for cue in raw_cues:
         if cue.basis == "file_mtime" and not cue.event_date:
             continue
