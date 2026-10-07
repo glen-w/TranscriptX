@@ -116,7 +116,8 @@ def _render_run_in_app(default_input: str) -> None:
     st.caption(
         "Host-orchestrated STT: Streamlit calls a local provider (whispermlx on "
         "macOS, or WhisperX Docker). Engines stay out of the analysis image. "
-        "If no provider is available here, use Copy command and run it on the host."
+        "whispermlx runs on the Mac host, not inside Compose. If no provider is "
+        "available here, use Copy command on the host. Stacks: docs/recipes/stt-stacks."
     )
     providers = get_transcription_providers()
     labels = [p.info().label for p in providers]

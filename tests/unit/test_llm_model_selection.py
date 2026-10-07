@@ -16,6 +16,7 @@ from transcriptx.app.workflows.analysis import (
 )
 from transcriptx.app.workflows.batch import run_batch_analysis
 from transcriptx.core.analysis.llm_support.model_selection import (
+    LLM_MODEL_CONSUMER_IDS,
     LlmModelSelection,
     bind_llm_model_selection,
     get_bound_llm_model_selection,
@@ -199,6 +200,38 @@ def test_resolve_precedence_request_over_profile_over_global():
     resolved = resolve_module_llm_model(cfg2, "llm_summary")
     assert resolved.model == "global-model:1"
     assert resolved.source == "global"
+
+
+def test_all_live_llm_consumers_are_registered():
+    assert set(LLM_MODEL_CONSUMER_IDS) == {
+        "narrative_summary",
+        "llm_summary",
+        "llm_speaker_summary",
+        "llm_action_items",
+        "llm_custom_qa",
+        "chart_descriptions",
+        "group_llm_synthesis",
+        "topic_shift",
+        "speaker_name_suggestions",
+        "corrections_studio",
+        "rag",
+    }
+
+
+def test_interactive_consumers_resolve_from_model_pack():
+    sel = LlmModelSelection(
+        mode="per_module",
+        shared_model="shared-fallback",
+        module_models={
+            "speaker_name_suggestions": "names:7b",
+            "corrections_studio": "corr:7b",
+            "rag": "ask:7b",
+        },
+    )
+    cfg = _llm_cfg(model_selection=sel)
+    assert resolve_module_llm_model(cfg, "speaker_name_suggestions").model == "names:7b"
+    assert resolve_module_llm_model(cfg, "corrections_studio").model == "corr:7b"
+    assert resolve_module_llm_model(cfg, "rag").model == "ask:7b"
 
 
 def test_per_module_fallback_to_shared_then_global():
@@ -756,3 +789,103 @@ def test_selection_none_compat_uses_global():
     resolved = resolve_module_llm_model(cfg, "llm_summary", selection_override=None)
     assert resolved.source == "global"
     assert resolved.model == "global-model:1"
+
+
+def test_rag_answer_uses_registered_consumer_model(monkeypatch):
+    from transcriptx.core.rag.answer import answer
+    from transcriptx.core.rag.retrieve import Hit
+
+    seen: dict[str, str] = {}
+
+    class FakeClient:
+        model = "ask:7b"
+
+        def generate(self, **_kwargs):
+            return "ok"
+
+        def is_available(self):
+            return True
+
+    def fake_get_llm_client(_cfg=None, *, model=None):
+        seen["model"] = model
+        return FakeClient()
+
+    monkeypatch.setattr(
+        "transcriptx.core.rag.answer.get_llm_client", fake_get_llm_client
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.config.get_config",
+        lambda: SimpleNamespace(llm=_llm_cfg(model="global-model:1")),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.llm_support.model_selection.require_resolved_model",
+        lambda llm_cfg, consumer_id: SimpleNamespace(model="ask:7b", source="profile"),
+    )
+
+    hit = Hit(
+        chunk_index=0,
+        text="hello",
+        score=1.0,
+        t_start=0.0,
+        t_end=1.0,
+        segment_index_start=0,
+        segment_index_end=0,
+    )
+    stream = answer("who?", hits=[hit])
+    assert "".join(stream) == "ok"
+    assert seen["model"] == "ask:7b"
+
+
+def test_corrections_discovery_passes_consumer_id(monkeypatch):
+    from transcriptx.core.analysis.llm_support.runtime import LLMRuntime
+    from transcriptx.services.corrections_studio.llm import discovery as disc
+
+    captured: dict[str, str] = {}
+
+    monkeypatch.setattr(
+        disc,
+        "resolve_llm_runtime",
+        lambda **kw: captured.update(kw)
+        or LLMRuntime(
+            effort="low",
+            profile_name="low",
+            model="corr:7b",
+            max_input_chars=1000,
+            request_timeout=5.0,
+            max_output_tokens=64,
+        ),
+    )
+
+    class FakeClient:
+        def is_available(self):
+            return False
+
+    monkeypatch.setattr(
+        disc, "build_ollama_analysis_client", lambda **_k: FakeClient()
+    )
+    result = disc.run_llm_discovery(
+        segments=[{"speaker": "A", "text": "hello", "start": 0, "end": 1}],
+        transcript_key="tk",
+        llm_cfg=SimpleNamespace(
+            enabled=True, provider="ollama", base_url="http://127.0.0.1:11434"
+        ),
+        corrections_llm=SimpleNamespace(
+            enabled=True,
+            effort="low",
+            request_timeout_seconds=5.0,
+            total_wall_clock_seconds=10.0,
+            max_chunks=1,
+            chunk_max_segments=40,
+            chunk_overlap_segments=0,
+            max_candidates_per_chunk=5,
+            max_candidates_per_transcript=10,
+            continue_on_failure=True,
+            assess_deterministic=False,
+        ),
+        speaker_names=[],
+        memory_pairs=[],
+        known_acronyms=[],
+        known_org_phrases={},
+    )
+    assert captured.get("consumer_id") == "corrections_studio"
+    assert result.diagnostics.outcome in {"unavailable", "skipped", "failed", "partial"}

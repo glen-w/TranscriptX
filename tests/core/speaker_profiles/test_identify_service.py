@@ -21,6 +21,7 @@ def transcript(tmp_path: Path) -> Path:
             {
                 "segments": [
                     {"speaker": "SPEAKER_00", "text": "Hi everyone, I'm Maya."},
+                    {"speaker": "SPEAKER_00", "text": "My name is Maya."},
                     {
                         "speaker": "SPEAKER_01",
                         "text": "Thanks Maya, this is Jordan speaking.",

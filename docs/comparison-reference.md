@@ -11,7 +11,7 @@ Legend: **Yes** = first-class · **Partial** = adjacent or lighter · **No** = a
 | Capability | TranscriptX | Scriberr | Nanosamurai | RiverScript | Otter / Fireflies | Gong / Chorus / Avoma | CallMiner-class |
 |------------|-------------|----------|-------------|-------------|-------------------|------------------------|-----------------|
 | Local / air-gapped analysis | Yes | Yes (local mode) | Partial (self-hosted STT; NVIDIA GPU; not turnkey air-gap) | No (hosted SaaS; on-device VAD only) | No | No | No |
-| Built-in speech-to-text | No (BYO) | Yes | Yes (live + refine + final) | Yes | Yes | Yes (via capture) | Partial |
+| Built-in speech-to-text | Partial (host-orchestrated; BYO default) | Yes | Yes (live + refine + final) | Yes | Yes | Yes (via capture) | Partial |
 | Meeting bot / auto-join | No | No | No | No (system-audio capture instead) | Yes | Yes | Partial |
 | Language, speakers, and interaction analysis | Yes | No | No | No | Partial | Partial–Yes | Yes (CC domain) |
 | Emotion / interaction / voice stacks | Yes | No | Partial (enrollment / diarization) | No | Partial | Partial | Yes (domain) |
@@ -110,7 +110,7 @@ Legend as above.
 | Capability | TranscriptX | noScribe | CAQDAS (NVivo / MAXQDA / ATLAS.ti / Quirkos) | DoReveal / Dovetail | Oral History as Data |
 |------------|-------------|----------|-----------------------------------------------|---------------------|----------------------|
 | Local / air-gapped analysis | Yes | Yes (STT + editor) | Partial (desktop apps; some cloud collab) | No | Yes (static site you host) |
-| Built-in speech-to-text | No (BYO) | Yes | Partial | Yes | No |
+| Built-in speech-to-text | Partial (host-orchestrated; BYO default) | Yes | Partial | Yes | No |
 | Researcher coding / codebook / memos | No | No | Yes | Partial–Yes (tags + AI) | Partial (CSV tags) |
 | Automatic analysis of language and interaction | Yes | No | No | Partial (AI themes) | No |
 | Emotion / interaction / voice stacks | Yes | No | No | Partial (DoReveal: emotion in synthesis) | No |

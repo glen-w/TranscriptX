@@ -8,7 +8,7 @@ This page covers Compose, mounts, and container pitfalls. Storage layout, output
 - [Output contract](../contracts/output-contract-v1.md)
 - [Run outcome contract](../run_outcome_contract.md)
 
-The analysis container does not run WhisperX or other transcription engines. Generate transcripts on the host (see [transcription.md](transcription.md)), then **Import Transcript** in the web UI.
+The analysis container does not run WhisperX, whispermlx, or other transcription engines. **whispermlx** stays on the macOS host. Generate transcripts on the host (or use Transcribe Audio **Copy command**), then **Import Transcript** / **Admit from originals/**. How to run analysis Compose next to host STT and optional Whisper-WebUI: [STT stacks](../recipes/stt-stacks/README.md). Mainstream GUI path: [transcription.md](transcription.md).
 
 ## Quickstart
 

@@ -51,6 +51,8 @@ def test_transcribe_audio_page_has_run_and_copy_paths():
     assert "Run in app" in source
     assert "Copy command" in source
     assert "PowerShell" in source
+    assert "stt-stacks" in source
+    assert "Mac host" in source
 
 
 @pytest.mark.unit

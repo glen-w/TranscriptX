@@ -69,6 +69,7 @@ def build_workspace_data(
     samples_page_size: int = 10,
     link_targets: Sequence[Mapping[str, Any]] | None = None,
     recipe_hint: str | None = None,
+    name_suggestions: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build JSON-serialisable ``data=`` for the Speaker ID CCv2 component."""
     mapping_rev = mapping_revision_from_state(speaker_map, ignored_speakers)
@@ -142,6 +143,7 @@ def build_workspace_data(
         "link_profile_allowed": link_profile_allowed,
         "link_targets": [dict(row) for row in (link_targets or ())],
         "recipe_hint": recipe_hint or "",
+        "name_suggestions": dict(name_suggestions) if name_suggestions else None,
         "capabilities": {
             "ffmpeg": bool(controller.ffmpeg_available()),
             "profile_link": link_profile_allowed,

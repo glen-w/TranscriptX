@@ -56,6 +56,7 @@ runtime/corrections-viewer
 runtime/karaoke-playback
 runtime/corrections-llm
 TERMS
+recipes/stt-stacks/README
 recipes/whisperx/README
 recipes/whisper-webui/README
 ```

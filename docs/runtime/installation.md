@@ -10,7 +10,7 @@ No local Python required. Copy `.env.example` to `.env`, set `HOST_RECORDINGS_DI
 docker compose up transcriptx-web
 ```
 
-Open http://localhost:8501. The first run builds the image. Container notes: [docker.md](docker.md).
+Open http://localhost:8501. The first run builds the image. Container notes: [docker.md](docker.md). Speech-to-text stays on the host (whispermlx on macOS); stacks: [STT stacks](../recipes/stt-stacks/README.md).
 
 ## Native (from this repository)
 

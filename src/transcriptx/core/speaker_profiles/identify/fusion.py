@@ -137,15 +137,17 @@ def _fuse_one(
 
     if mention is not None:
         conf = mention.confidence or "possible"
-        return FusedDecision(
-            local_speaker_key=speaker,
-            action="apply",
-            display_name=mention.display_name,
-            profile_id=mention.profile_id,
-            channels=channels,
-            confidence=conf,
-            evidence=evidence,
-        )
+        primary_kind = (mention.evidence or {}).get("primary_kind")
+        if conf == "strong" and primary_kind == "self_intro":
+            return FusedDecision(
+                local_speaker_key=speaker,
+                action="apply",
+                display_name=mention.display_name,
+                profile_id=mention.profile_id,
+                channels=channels,
+                confidence=conf,
+                evidence=evidence,
+            )
 
     if style_only_apply and _is_strong(style) and style is not None:
         return FusedDecision(

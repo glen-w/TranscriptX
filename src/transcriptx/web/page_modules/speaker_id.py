@@ -25,7 +25,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Sequence
+from typing import Any, Dict, List, Sequence
 
 import streamlit as st
 
@@ -859,6 +859,61 @@ def _identify_badge_suffix(transcript_path: Path | str, speaker_id: str) -> str:
     if not bits:
         return ""
     return " · " + " / ".join(bits)
+
+
+def _load_name_suggestions_for_workspace(
+    transcript_path: str,
+    profile_ctx: TranscriptProfileContext,
+    *,
+    force_refresh: bool = False,
+) -> dict[str, Any] | None:
+    if not profile_ctx.is_managed or not profile_ctx.managed_transcript_id:
+        return None
+    from transcriptx.core.speaker_profiles.identify.suggestions import (
+        suggest_speaker_names,
+    )
+    from transcriptx.core.speaker_profiles.identify.suggestions.cache import (
+        load_suggestions_artefact,
+    )
+    from transcriptx.core.speaker_profiles.identify.suggestions.service import (
+        fingerprint_segments,
+    )
+    from transcriptx.core.speaker_profiles.resolver import load_transcript_segments
+
+    if force_refresh:
+        result = suggest_speaker_names(
+            transcript_path,
+            managed_transcript_id=profile_ctx.managed_transcript_id,
+            force_refresh=True,
+        )
+        if result.error:
+            return {
+                "status_message": f"Could not suggest names: {result.error}",
+                "llm_used": False,
+                "roster": [],
+                "by_speaker": {},
+            }
+        return result.workspace_payload()
+
+    cached = load_suggestions_artefact(profile_ctx.managed_transcript_id)
+    if cached is None:
+        return None
+    try:
+        segments = load_transcript_segments(transcript_path)
+        fp = fingerprint_segments(segments)
+        if cached.transcript_fingerprint != fp:
+            return None
+    except Exception:
+        return None
+    return cached.workspace_payload()
+
+
+def _cb_suggest_speaker_names(
+    transcript_path: str, profile_ctx: TranscriptProfileContext
+) -> None:
+    _load_name_suggestions_for_workspace(
+        transcript_path, profile_ctx, force_refresh=True
+    )
 
 
 def _cb_apply_auto_identify(transcript_path: str) -> None:
@@ -1970,6 +2025,9 @@ def _render_ccv2_speaker_workspace(
         draft_name=current_name,
         profile_ctx=profile_ctx,
     )
+    name_suggestions = _load_name_suggestions_for_workspace(
+        str(transcript_path), profile_ctx
+    )
     data = build_workspace_data(
         transcript_path=str(transcript_path),
         speaker_ids=speaker_ids,
@@ -1988,6 +2046,7 @@ def _render_ccv2_speaker_workspace(
         samples_page_size=_LINES_PER_PAGE,
         link_targets=link_set.to_workspace_payload(),
         recipe_hint=link_set.recipe_hint,
+        name_suggestions=name_suggestions,
     )
 
     result_key = stable_workspace_key(str(Path(transcript_path).resolve()))
@@ -2042,6 +2101,34 @@ def _render_ccv2_speaker_workspace(
     _maybe_poll_pending_clips(transcript_path, data)
 
     if profile_ctx.is_managed:
+        llm_on = False
+        try:
+            from transcriptx.core.utils.config import get_config
+
+            cfg = get_config().llm
+            llm_on = bool(cfg.enabled and (cfg.provider or "").strip().lower() == "ollama")
+        except Exception:
+            llm_on = False
+        suggest_label = (
+            "Suggest names (transcript + LLM)"
+            if llm_on
+            else "Suggest names (transcript only)"
+        )
+        st.button(
+            suggest_label,
+            key=widget_key(transcript_path, "suggest_names"),
+            icon=ic.SEARCH,
+            help=widget_help(
+                "Build a people roster from the transcript and propose names "
+                "per speaker. Pick a suggestion in the Name field — nothing is "
+                "saved until you choose save (✓). The LLM pass uses the "
+                "`speaker_name_suggestions` model from Settings → Models."
+            ),
+            on_click=_cb_suggest_speaker_names,
+            args=(str(transcript_path), profile_ctx),
+        )
+        if name_suggestions and name_suggestions.get("status_message"):
+            st.caption(str(name_suggestions.get("status_message")))
         with st.expander("Voice suggestions", expanded=False):
             _render_voice_suggestions(
                 transcript_path=transcript_path,

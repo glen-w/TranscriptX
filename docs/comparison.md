@@ -54,7 +54,7 @@ Legend: **Yes** = first-class · **Partial** = adjacent or lighter · **No** = a
 | Capability | TranscriptX | STT / capture tools | Meeting assistants | CAQDAS / AI-qual |
 |------------|-------------|---------------------|-------------------|------------------|
 | Local / air-gapped analysis | Yes | Often yes (self-hosted STT) | No | Partial (desktop apps) |
-| Built-in speech-to-text | No (BYO) | Yes | Yes | Partial |
+| Built-in speech-to-text | Partial (host-orchestrated; BYO default) | Yes | Yes | Partial |
 | Meeting bot / auto-join | No | No (or system-audio instead) | Yes | No |
 | Language, speakers, and interaction analysis | Yes | No | Partial | No |
 | Researcher coding / codebook / memos | No | No | No | Yes |
@@ -76,7 +76,7 @@ Aligned with [PRODUCT.md](PRODUCT.md):
 - Jeffersonian / GAT conversation-analytic transcription
 - Public oral-history exhibit sites
 
-**Post-1.0 direction:** optional host-orchestrated in-app transcription (whispermlx / WhisperX Docker) is the first Theme **H** slice in [ROADMAP.md](ROADMAP.md). BYO import stays the default; Parakeet/Canary/YouTube remain later.
+**Theme H (shipped):** optional host-orchestrated STT (whispermlx on macOS, WhisperX Docker) — [STT stacks](recipes/stt-stacks/README.md). BYO import stays the default; Parakeet/Canary/YouTube remain later ([ROADMAP.md](ROADMAP.md)).
 
 Limits users should know: [known_limitations.md](known_limitations.md).
 

@@ -164,13 +164,28 @@ def normalize_person_key(name: str) -> str:
     return normalize_display_name(name).casefold()
 
 
-def _extract_names(pattern: re.Pattern[str], text: str) -> list[str]:
+def extract_pattern_names(pattern: re.Pattern[str], text: str) -> list[str]:
+    """Extract person names matched by a mention regex pattern."""
     out: list[str] = []
     for match in pattern.finditer(text):
         titled = title_person_name(match.group(1))
         if titled:
             out.append(titled)
     return out
+
+
+def extract_self_intro_names(text: str) -> list[str]:
+    return extract_pattern_names(_SELF_INTRO_RE, text)
+
+
+def extract_vocative_names(text: str) -> list[str]:
+    return extract_pattern_names(_VOCATIVE_RE, text) + extract_pattern_names(
+        _LEADING_VOCATIVE_RE, text
+    )
+
+
+def _extract_names(pattern: re.Pattern[str], text: str) -> list[str]:
+    return extract_pattern_names(pattern, text)
 
 
 def extract_mention_candidates(
@@ -195,12 +210,19 @@ def extract_mention_candidates(
             speakers.append(speaker)
 
     votes: dict[str, Counter[str]] = defaultdict(Counter)
+    self_votes: dict[str, Counter[str]] = defaultdict(Counter)
+    vocative_votes: dict[str, Counter[str]] = defaultdict(Counter)
     evidence: dict[str, list[dict[str, str]]] = defaultdict(list)
 
     def vote(target: str, name: str, kind: str, text: str) -> None:
         if not target or not name:
             return
-        votes[target][normalize_person_key(name)] += 1
+        key = normalize_person_key(name)
+        votes[target][key] += 1
+        if kind == "self_intro":
+            self_votes[target][key] += 1
+        else:
+            vocative_votes[target][key] += 1
         evidence[target].append({"kind": kind, "name": name, "text": text[:160]})
 
     other_of_two = None
@@ -251,6 +273,13 @@ def extract_mention_candidates(
         )
         if not display:
             continue
+        self_count = self_votes[speaker].get(best_key, 0)
+        voc_count = vocative_votes[speaker].get(best_key, 0)
+        primary_kind = (
+            "self_intro"
+            if self_count > 0 and self_count >= voc_count
+            else "vocative"
+        )
         winners[speaker] = ChannelCandidate(
             channel="mention",
             display_name=display,
@@ -259,6 +288,9 @@ def extract_mention_candidates(
             confidence="strong" if best_count >= 2 else "possible",
             evidence={
                 "vote_count": best_count,
+                "primary_kind": primary_kind,
+                "self_intro_votes": self_count,
+                "vocative_votes": voc_count,
                 "samples": evidence[speaker][:8],
             },
         )

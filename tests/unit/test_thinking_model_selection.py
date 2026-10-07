@@ -163,6 +163,10 @@ def test_launch_gate_allows_thinking_for_plain_text_only() -> None:
 @pytest.mark.unit
 def test_selected_json_consumers_and_selection_helper() -> None:
     assert "chart_descriptions" in LLM_JSON_FORMAT_CONSUMER_IDS
+    assert "speaker_name_suggestions" in LLM_JSON_FORMAT_CONSUMER_IDS
+    assert "corrections_studio" in LLM_JSON_FORMAT_CONSUMER_IDS
+    assert "topic_shift" in LLM_JSON_FORMAT_CONSUMER_IDS
+    assert "rag" not in LLM_JSON_FORMAT_CONSUMER_IDS
     consumers = _selected_json_consumers(
         ["llm_summary", "chart_descriptions"], include_group=False
     )

@@ -2,7 +2,7 @@
 
 TranscriptX **analyses** transcripts after they are in the library.
 
-**Import Transcript** admits JSON, SRT, VTT, and other supported files in the web UI. **Transcribe Audio** can **run a host-orchestrated provider** (whispermlx on macOS, WhisperX Docker when the daemon is reachable) or **generate a copyable command** for host-side tools. Engines stay **out of the analysis image**.
+**Import Transcript** admits JSON, SRT, VTT, and other supported files in the web UI. **Transcribe Audio** can **run a host-orchestrated provider** (whispermlx on macOS, WhisperX Docker when the daemon is reachable) or **generate a copyable command** for host-side tools. Engines stay **out of the analysis image**. Running Compose analysis, host whispermlx, and optional WhisperX/WebUI **together**: [STT stacks](../recipes/stt-stacks/README.md).
 
 This page is the mainstream path: you already have a transcript, or you have audio and will transcribe it here or on the host. Host watchers, bulk scripts, merge profiles, and the Python import API are under [Host STT automation](host-stt.md) and [Audio prep](audio-prep.md).
 
@@ -20,10 +20,10 @@ Walkthrough with screenshots: [First analysis](../workflows/first-analysis.md).
 
 1. Put the audio files in one folder on your computer (absolute path the Streamlit process can read).
 2. Open **Transcribe Audio**.
-3. Prefer **Run in app** when a provider is available:
+3. Prefer **Run in app** when a provider is available (native GUI on the Mac for whispermlx; see [STT stacks](../recipes/stt-stacks/README.md)):
    - **whispermlx** — macOS host with `whispermlx` on PATH (or `WHISPERMLX` in `whisperx.env`).
    - **WhisperX Docker** — `docker` on PATH and a reachable daemon; CUDA uses `--gpus all`.
-4. If no provider is available from this process (typical when Streamlit runs inside `transcriptx-web` without a Docker socket or MLX binary), switch to **Copy command**, pick a tool, and run the snippet **on the host**.
+4. If no provider is available from this process (typical when Streamlit runs inside `transcriptx-web`), switch to **Copy command**, pick a tool, and run the snippet **on the host**.
 5. POSIX snippets paste into macOS, Linux, Git Bash, or WSL. **PowerShell** snippets are a second builder for Windows hosts. Streamlit does not execute copied snippets.
 6. With **Import result into library** on, a successful Run admits JSON automatically. Otherwise open **Import Transcript**.
 
@@ -43,7 +43,7 @@ Keep analysis in Docker if you like; still run whispermlx on the Mac host, or mo
 
 Compatible JSON from WhisperX, [Scriberr](https://scriberr.app/), AssemblyAI, Deepgram, Otter, Google, Colab, or a manual edit. Subtitle exports (**SRT** / **WebVTT**) from Whisper-WebUI, [RiverScript](https://riverscript.com/), or [noScribe](https://noscribe.de/en/) are importable, as are [aTrain](https://github.com/aTrainTranscription/aTrain) **TXT** (and JSON if it matches the segment shape).
 
-TranscriptX does not run any transcription engine; it consumes files you provide. Where it sits next to STT, meeting, and qualitative-research products: [comparison.md](../comparison.md).
+The analysis image does not embed a transcription engine. The GUI can orchestrate **whispermlx** or **WhisperX Docker** when those tools are visible to the Streamlit process; otherwise it consumes files you provide (BYO import or Copy command). Where it sits next to STT, meeting, and qualitative-research products: [comparison.md](../comparison.md).
 
 Naming such as `*_transcriptx.json` matches project conventions, but **naming alone is not enough**. Add files through **Import Transcript** so the library copy, sidecar, and archived original are created. Schema and layout: [STORAGE.md](STORAGE.md). Programmatic import: [Host STT automation](host-stt.md#python-api).
 
@@ -77,12 +77,13 @@ Transcription runs on the **host** (whispermlx binary, WhisperX Docker, or Whisp
 | Host (terminal or in-app provider) | `whispermlx` / `whispermlx-missing` (macOS), WhisperX `docker run`, optional Whisper-WebUI Docker, `inbox-watch` |
 | `transcriptx-web` (Docker or native) | Import, library, analysis, artifacts; optional STT **orchestration** only when the provider binary/daemon is visible to that process |
 
-The recommended install runs analysis in a **Linux** container. **whispermlx** typically lives in a **macOS** venv and cannot be run from inside that container. Keeping engines out of the analysis image avoids bloating it.
+The recommended install runs analysis in a **Linux** container. **whispermlx** must run on the **macOS host** (Metal/MLX); it cannot run inside that container. Keeping engines out of the analysis image avoids bloating it. Stacks, shared folders, and when **Run in app** works: [STT stacks](../recipes/stt-stacks/README.md).
 
 **Theme H:** optional in-app / host-orchestrated transcription is shipped for Whisper-class providers — [ROADMAP.md](../ROADMAP.md) theme **H**. NVIDIA Parakeet/Canary and YouTube ingest are later. In-app directory watch for audio auto-transcribe is theme **G2** + **H3** — [directory_watcher.md](directory_watcher.md).
 
 ## Advanced
 
+- [STT stacks](../recipes/stt-stacks/README.md) — Compose + host whispermlx + optional WhisperX / WebUI
 - [Host STT automation](host-stt.md) — whispermlx-missing, inbox-watch `--transcribe`, config, Python import API
 - [Audio prep](audio-prep.md) — Tools → Preprocessing / Auto-merge before you transcribe
 - [Directory watcher](directory_watcher.md) — in-app inbox; audio `auto_transcribe` when an STT provider is available

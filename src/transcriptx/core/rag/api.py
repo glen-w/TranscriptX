@@ -7,8 +7,6 @@ import os
 from pathlib import Path
 from typing import Any, List, Optional
 
-from transcriptx.core.llm import get_llm_client
-
 from .answer import AnswerStream, answer as _answer
 from .embed import OllamaEmbedder
 from .flags import ollama_base_url_from_env, parse_rag_enabled
@@ -152,8 +150,12 @@ class RagAPI:
         self._require_scope(session_slug, run_id)
         hits = self.search(question, session_slug, run_id, k=k)
 
-        client = get_llm_client()
-        return _answer(question, hits=hits, client=client)
+        override = getattr(self.settings, "llm_model", None)
+        return _answer(
+            question,
+            hits=hits,
+            llm_model=str(override).strip() if override else None,
+        )
 
     def index_status(self) -> dict:
         """Check if index exists and is fresh."""

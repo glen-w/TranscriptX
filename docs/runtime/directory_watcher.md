@@ -17,7 +17,7 @@ Inbox files are **never deleted or modified**. Admission always copies into app 
 ## Ops notes
 
 - Runs only while `transcriptx-web` is running (in-process supervisor). Stopping the container stops watching.
-- Docker: watch a mounted inbox such as `/mnt/transcript-inbox` (`HOST_TRANSCRIPT_INBOX_DIR`). Paths must be absolute **inside** the container.
+- Docker: watch a mounted inbox such as `/mnt/transcript-inbox` (`HOST_TRANSCRIPT_INBOX_DIR`). Paths must be absolute **inside** the container. **`auto_transcribe` from Compose** needs a provider visible *inside* `transcriptx-web` (usually none). Prefer host `inbox-watch` + whispermlx — [STT stacks](../recipes/stt-stacks/README.md).
 - Debounce (~2s) plus size/mtime stability checks before admit; identity is re-checked at admit time (fail closed if the file moved/grew).
 - Job records and activity live under `data_dir/watcher/` (see [STORAGE.md](STORAGE.md)).
 - Prefer Settings UI for enablement; env overrides are for automation.

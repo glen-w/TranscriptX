@@ -56,10 +56,10 @@ Host-script merge order, env keys, and `--admit-python` live in [host-stt.md](ho
 Three local channels contribute candidates; an explicit table then apply or skip:
 
 1. **Voice** — strong unique ECAPA suggestion against enrolled references (voice privacy on, corpus not empty).
-2. **Mentions** — self-introductions and vocatives in the transcript text; unique-winner clustering; optional unique match to an existing profile display name.
+2. **Mentions** — self-introductions in the transcript text (at least two agreeing cues on the same name); unique-winner clustering; optional unique match to an existing profile display name. Single vocatives and other weak dialogue hits are **not** auto-written — use **Suggest names** in Speaker Identification to review them as dropdown options.
 3. **Style** — function-word / turn / question vectors versus prior linked text. Used as corroboration. Style-only apply stays off unless `style_only_apply` is enabled in `identify.json`.
 
-Apply order (per diarized ID): strong unique voice (skip the speaker if a mention disagrees); else a unique mention; else strong style if that knob is on; else leave unnamed. A name or profile claimed by two speakers in the same transcript skips both.
+Apply order (per diarized ID): strong unique voice (skip the speaker if a mention disagrees); else a **strong self-introduction** mention; else strong style if that knob is on; else leave unnamed. A name or profile claimed by two speakers in the same transcript skips both.
 
 Disposable review dump: `speaker_profiles/.cache/identify/{managed_id}.identify.v1.json`. Confirmed links and speaker-map sidecars remain the identity / display authorities.
 

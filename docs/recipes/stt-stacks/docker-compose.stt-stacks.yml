@@ -1,0 +1,22 @@
+# Optional STT extras next to transcriptx-web. Does not replace docker-compose.yml.
+# whispermlx is not a service here — it must run on the macOS host.
+#
+# From repo root:
+#   docker compose -f docker-compose.yml -f docker-compose.override.yml \
+#     -f docs/recipes/stt-stacks/docker-compose.stt-stacks.yml up -d
+#
+# See README.md in this directory.
+
+services:
+  whisper-webui:
+    image: jhj0517/whisper-webui:v1.0.8-4def223
+    container_name: transcriptx-whisper-webui
+    ports:
+      - "127.0.0.1:${PORT:-7860}:7860"
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+    volumes:
+      - ${CLONE_DIR:-${HOME}/Whisper-WebUI}/models:/Whisper-WebUI/models
+      - ${OUTDIR:-${HOME}/whisper-webui-outputs}:/Whisper-WebUI/outputs
+      - ${CLONE_DIR:-${HOME}/Whisper-WebUI}/configs:/Whisper-WebUI/configs
+    restart: unless-stopped

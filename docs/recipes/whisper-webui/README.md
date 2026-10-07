@@ -2,6 +2,8 @@
 
 Use this when you want a local webpage that transcribes audio, then import the subtitles into TranscriptX.
 
+To start this **at the same time** as `transcriptx-web`, use the merged Compose command in [STT stacks](../stt-stacks/README.md) (do not expect whispermlx inside Docker).
+
 ## What this is for
 
 1. Deploy Whisper-WebUI (Docker below — recommended).

@@ -51,6 +51,21 @@ export type SpeakerRow = {
   ignored: boolean;
 };
 
+export type NameSuggestionOption = {
+  display_name: string;
+  basis?: string;
+  confidence?: string;
+  quote?: string;
+  label?: string;
+};
+
+export type NameSuggestionsPayload = {
+  status_message?: string;
+  llm_used?: boolean;
+  roster?: { display_name: string; mention_count?: number; sample_quote?: string }[];
+  by_speaker?: Record<string, NameSuggestionOption[]>;
+};
+
 export type LinkTargetRow = {
   mode: string;
   reason?: string;
@@ -80,6 +95,7 @@ export type WorkspaceData = {
   link_profile_allowed?: boolean;
   link_targets?: LinkTargetRow[];
   recipe_hint?: string;
+  name_suggestions?: NameSuggestionsPayload | null;
   capabilities?: { ffmpeg?: boolean; profile_link?: boolean };
   ui?: { status?: string; disabled?: boolean; flash?: string | null };
   paging?: {
@@ -508,6 +524,81 @@ export function rankLinkRows(rows: LinkTargetRow[], draftName: string): LinkTarg
   return [...matches, ...actions, ...rest];
 }
 
+export function applyNamePick(
+  nameInput: HTMLInputElement,
+  pick: HTMLSelectElement,
+  option: NameSuggestionOption,
+): void {
+  const name = option.display_name || "";
+  nameInput.value = name;
+  if (name) {
+    const existing = Array.from(pick.options).some((o) => o.value === name);
+    if (!existing) {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = option.label || name;
+      pick.appendChild(opt);
+    }
+    pick.value = name;
+  }
+  nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function renderNameSuggestions(root: Element, data: WorkspaceData): void {
+  const pick = root.querySelector<HTMLSelectElement>(".tx-sid-name-pick");
+  const datalist = root.querySelector<HTMLDataListElement>(".tx-sid-name-datalist");
+  const hint = root.querySelector<HTMLElement>(".tx-sid-name-hint");
+  const rosterBox = root.querySelector<HTMLElement>(".tx-sid-roster");
+  const rosterList = root.querySelector<HTMLElement>(".tx-sid-roster-list");
+  if (!pick || !datalist || !hint || !rosterBox || !rosterList) return;
+
+  const payload = data.name_suggestions;
+  const options =
+    payload?.by_speaker?.[data.active_speaker_id] || ([] as NameSuggestionOption[]);
+
+  pick.replaceChildren();
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = options.length
+    ? "Suggested names…"
+    : "No suggestions yet";
+  pick.appendChild(placeholder);
+  datalist.replaceChildren();
+  for (const opt of options) {
+    const pickOpt = document.createElement("option");
+    pickOpt.value = opt.display_name;
+    pickOpt.textContent = opt.label || opt.display_name;
+    pick.appendChild(pickOpt);
+    const dl = document.createElement("option");
+    dl.value = opt.display_name;
+    datalist.appendChild(dl);
+  }
+
+  const selected = pick.value;
+  const active = options.find((o) => o.display_name === selected);
+  if (active?.quote) {
+    hint.textContent = active.quote;
+  } else if (payload?.status_message && !options.length) {
+    hint.textContent = payload.status_message;
+  } else {
+    hint.textContent = "";
+  }
+
+  const roster = payload?.roster || [];
+  rosterList.replaceChildren();
+  if (roster.length) {
+    rosterBox.hidden = false;
+    for (const person of roster) {
+      const li = document.createElement("li");
+      const count = person.mention_count ? ` (${person.mention_count})` : "";
+      li.textContent = `${person.display_name}${count}`;
+      rosterList.appendChild(li);
+    }
+  } else {
+    rosterBox.hidden = true;
+  }
+}
+
 function renderLinkTargets(root: Element, data: WorkspaceData): void {
   const select = qs<HTMLSelectElement>(root, ".tx-sid-link-select");
   const chip = qs<HTMLElement>(root, ".tx-sid-link-chip");
@@ -591,6 +682,7 @@ function applyData(root: Element, data: WorkspaceData, state: InstanceState): vo
     nameInput.value = data.draft_name || "";
   }
   renderLinkTargets(root, data);
+  renderNameSuggestions(root, data);
   const disabled = Boolean(data.ui?.disabled || state.mutating);
   for (const sel of [".tx-sid-save", ".tx-sid-ignore", ".tx-sid-prev", ".tx-sid-next"]) {
     qs<HTMLButtonElement>(root, sel).disabled = disabled;
@@ -730,10 +822,25 @@ function wireOnce(
   qs<HTMLButtonElement>(root, ".tx-sid-next").addEventListener("click", () =>
     state.handlers.onNext(),
   );
-  qs<HTMLInputElement>(root, ".tx-sid-name-input").addEventListener("input", () => {
+  const nameInput = qs<HTMLInputElement>(root, ".tx-sid-name-input");
+  const namePick = qs<HTMLSelectElement>(root, ".tx-sid-name-pick");
+  nameInput.addEventListener("input", () => {
     const data = state.lastDataRef;
     if (!data) return;
     renderLinkTargets(root, data);
+  });
+  namePick.addEventListener("change", () => {
+    const data = state.lastDataRef;
+    if (!data) return;
+    const payload = data.name_suggestions;
+    const options =
+      payload?.by_speaker?.[data.active_speaker_id] || ([] as NameSuggestionOption[]);
+    const chosen = options.find((o) => o.display_name === namePick.value);
+    if (chosen) {
+      applyNamePick(nameInput, namePick, chosen);
+      renderLinkTargets(root, data);
+      renderNameSuggestions(root, data);
+    }
   });
   const keyTarget: EventTarget =
     "addEventListener" in host ? host : (root as HTMLElement);
@@ -797,5 +904,6 @@ export const __test = {
   expectedSpeakerForCommand(data: WorkspaceData, _optimistic: string | null): string {
     return data.active_speaker_id;
   },
+  applyNamePick,
   findPlayableSample,
 };

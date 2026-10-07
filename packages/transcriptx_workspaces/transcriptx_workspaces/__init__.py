@@ -33,8 +33,17 @@ _SPEAKER_ID_HTML = """
               <div class="tx-sid-naming">
                 <label class="tx-sid-name-label">
                   <span>Name</span>
-                  <input type="text" class="tx-sid-name-input" autocomplete="off" />
+                  <input type="text" class="tx-sid-name-input" list="tx-sid-name-datalist" autocomplete="off" />
+                  <datalist class="tx-sid-name-datalist" id="tx-sid-name-datalist"></datalist>
+                  <select class="tx-sid-name-pick" aria-label="Suggested names">
+                    <option value="">Suggested names…</option>
+                  </select>
                 </label>
+                <p class="tx-sid-name-hint" aria-live="polite"></p>
+                <div class="tx-sid-roster" hidden>
+                  <div class="tx-sid-roster-title">People mentioned</div>
+                  <ul class="tx-sid-roster-list"></ul>
+                </div>
                 <label class="tx-sid-link-label">
                   <span>Profile</span>
                   <select class="tx-sid-link-select"></select>

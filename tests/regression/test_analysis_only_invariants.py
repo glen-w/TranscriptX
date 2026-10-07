@@ -146,6 +146,20 @@ def test_compose_no_socket_mount():
     ), "docker-compose.yml must not mount the Docker socket (analysis-only image)"
 
 
+def test_stt_stacks_compose_stays_engine_free():
+    """Optional STT stacks file must not mount the Docker socket or start whispermlx."""
+    repo_root = os.path.join(os.path.dirname(__file__), "..", "..")
+    compose_path = os.path.join(
+        repo_root, "docs", "recipes", "stt-stacks", "docker-compose.stt-stacks.yml"
+    )
+    if not os.path.isfile(compose_path):
+        pytest.skip("stt-stacks compose not found")
+    with open(compose_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    assert "/var/run/docker.sock" not in content
+    assert not re.search(r"(?m)^\s+whispermlx\s*:", content)
+
+
 def test_dockerfile_bakes_nltk_data():
     """Dockerfile may pre-download NLTK data for sentiment; NLTK-dependent tests are excluded from default suite."""
     repo_root = os.path.join(os.path.dirname(__file__), "..", "..")
