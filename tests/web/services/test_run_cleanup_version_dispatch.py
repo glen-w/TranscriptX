@@ -54,7 +54,7 @@ def _target(tmp_path: Path) -> CleanupTarget:
 
 @pytest.mark.unit
 def test_versions_phase_b1() -> None:
-    assert CLEANUP_POLICY_VERSION == 7
+    assert CLEANUP_POLICY_VERSION == 8
     assert JOURNAL_SCHEMA_VERSION == 1
     assert LEGACY_JOURNAL_SCHEMA_VERSION == 3
     assert READABLE_JOURNAL_SCHEMA_VERSIONS == frozenset({1, 3})

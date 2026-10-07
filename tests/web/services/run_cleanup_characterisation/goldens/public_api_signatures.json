@@ -112,6 +112,13 @@
         "keyword_only": false,
         "kind": "POSITIONAL_OR_KEYWORD",
         "name": "session_id"
+      },
+      {
+        "annotation": "CleanupRetainPolicy | None",
+        "default": null,
+        "keyword_only": true,
+        "kind": "KEYWORD_ONLY",
+        "name": "retain_policy"
       }
     ],
     "return_annotation": "tuple[str, CleanupPreview]"

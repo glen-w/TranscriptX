@@ -24,6 +24,7 @@ from transcriptx.web.services.run_cleanup.models import (
     CLEANUP_BUSY,
     PLATFORM_UNSUPPORTED,
     CleanupAuthorization,
+    CleanupMode,
     CleanupPlan,
     CleanupResult,
     CleanupStatus,
@@ -248,7 +249,9 @@ def execute_claimed(
         handle_store.store_result(handle_token, session_id, result)
         return result
 
-    rediscovered = planning.build_plan(host, plan.mode)
+    rediscovered = planning.build_plan(
+        host, plan.mode, retain_policy=plan.retain_policy
+    )
     if rediscovered.plan_id != plan.plan_id or rediscovered.blocking_errors:
         result = CleanupResult(
             operation_id="",
@@ -462,6 +465,39 @@ def execute_claimed(
                 target.subject_id,
                 target.run_id,
             )
+            if plan.retain_policy.enabled and plan.mode is CleanupMode.DELETE_OLD:
+                from transcriptx.web.services.run_cleanup.retain import (
+                    salvage_keep_files,
+                )
+
+                copied, retain_errors = salvage_keep_files(
+                    target, plan.retain_policy
+                )
+                if copied:
+                    logger.info(
+                        "cleanup retained %d keep-file(s) for %s/%s/%s",
+                        copied,
+                        target.subject_type.value,
+                        target.subject_id,
+                        target.run_id,
+                    )
+                if retain_errors:
+                    acc.extend_errors(retain_errors)
+                    acc.append_target(
+                        CleanupTargetResult(
+                            subject_type=target.subject_type,
+                            subject_id=target.subject_id,
+                            run_id=target.run_id,
+                            root_relative_path=target.root_relative_path,
+                            canonical_path=target.canonical_path,
+                            status=TargetStatus.STAGING_FAILED,
+                            message="; ".join(retain_errors),
+                            filesystem_dev=target.filesystem_dev,
+                            filesystem_ino=target.filesystem_ino,
+                            root_kind=target.subject_type,
+                        )
+                    )
+                    continue
             if first_rename:
                 fault_point("before_first_rename")
             outcome = staging_phase.stage_one(

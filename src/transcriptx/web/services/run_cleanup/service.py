@@ -15,6 +15,7 @@ from transcriptx.web.services.run_cleanup.models import (
     CleanupMode,
     CleanupPreview,
     CleanupResult,
+    CleanupRetainPolicy,
 )
 from transcriptx.web.services.run_cleanup.runtime import CleanupRuntime
 
@@ -134,9 +135,15 @@ class RunCleanupService:
     # --- public façade ---
 
     def preview_cleanup(
-        self, mode: CleanupMode, session_id: str
+        self,
+        mode: CleanupMode,
+        session_id: str,
+        *,
+        retain_policy: CleanupRetainPolicy | None = None,
     ) -> tuple[str, CleanupPreview]:
-        return planning.preview_cleanup(self, mode, session_id)
+        return planning.preview_cleanup(
+            self, mode, session_id, retain_policy=retain_policy
+        )
 
     def execute_cleanup(
         self,

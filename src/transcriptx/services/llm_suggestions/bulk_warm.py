@@ -115,7 +115,6 @@ def _speaker_name_cache_fresh(
 
 
 def _rename_cache_fresh(transcript_path: Path, segments: Sequence[dict]) -> bool:
-    path = Path(transcript_path)
     config = get_config()
     input_cfg = config.input
     content_mode = str(getattr(input_cfg, "rename_content_suggestions", "off") or "off")

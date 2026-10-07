@@ -15,6 +15,7 @@ from transcriptx.web.services.run_cleanup.fingerprint import (
     compute_tree_fingerprint,
 )
 from transcriptx.web.services.run_cleanup.models import (
+    RETAINED_DIR_NAME,
     STAGING_DIR_NAME,
     CleanupExclusion,
     CleanupTarget,
@@ -369,6 +370,10 @@ class RunRootClassifier:
                         root_kind=subject_type,
                     )
                 )
+                continue
+
+            if run_id == RETAINED_DIR_NAME:
+                # Keep-file sidecar from DELETE_OLD retain policy — not a run.
                 continue
 
             try:

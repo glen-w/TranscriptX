@@ -23,7 +23,11 @@
   "mode": "DELETE_ALL",
   "newest_run_policy_version": 1,
   "plan_id": "<PLAN_ID>",
-  "policy_version": 7,
+  "policy_version": 8,
+  "retain_policy": {
+    "keep_human_readable": false,
+    "keep_llm_summaries": false
+  },
   "retained": [],
   "roots": [
     {

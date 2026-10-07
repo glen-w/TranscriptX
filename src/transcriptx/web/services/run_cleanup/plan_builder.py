@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -19,6 +19,7 @@ from transcriptx.web.services.run_cleanup.models import (
     CleanupExclusion,
     CleanupMode,
     CleanupPlan,
+    CleanupRetainPolicy,
     CleanupTarget,
     RootIdentity,
     SubjectType,
@@ -40,6 +41,7 @@ class ExecutionSet:
     can_execute: bool
     blocking_errors: tuple[str, ...]
     warnings: tuple[str, ...]
+    retain_policy: CleanupRetainPolicy = field(default_factory=CleanupRetainPolicy)
 
 
 def partition_for_mode(
@@ -108,8 +110,15 @@ def build_execution_set(
     group_outputs_dir: Path,
     *,
     warnings: list[str] | None = None,
+    retain_policy: CleanupRetainPolicy | None = None,
 ) -> ExecutionSet:
     warnings = list(warnings or [])
+    policy = retain_policy if retain_policy is not None else CleanupRetainPolicy()
+    if policy.enabled and mode is not CleanupMode.DELETE_OLD:
+        warnings.append(
+            "Retain policy applies only to DELETE_OLD; ignoring keep-file flags."
+        )
+        policy = CleanupRetainPolicy()
     eligible: list[CleanupTarget] = []
     exclusions: list[CleanupExclusion] = []
     candidates: list[CleanupTarget] = []
@@ -157,6 +166,7 @@ def build_execution_set(
         can_execute=can_execute,
         blocking_errors=tuple(blocking),
         warnings=tuple(warnings),
+        retain_policy=policy,
     )
 
 
@@ -179,6 +189,7 @@ def execution_set_signature(es: ExecutionSet) -> str:
         "policy_version": es.policy_version,
         "classifier_version": es.classifier_version,
         "newest_run_policy_version": es.newest_run_policy_version,
+        "retain_policy": es.retain_policy.signature(),
         "roots": [
             {
                 "kind": r.kind.value,
@@ -217,6 +228,7 @@ def execution_set_to_plan(es: ExecutionSet) -> CleanupPlan:
         exclusions=es.exclusions,
         classifier_version=es.classifier_version,
         newest_run_policy_version=es.newest_run_policy_version,
+        retain_policy=es.retain_policy,
     )
     return CleanupPlan(
         plan_id=plan_id,
@@ -232,4 +244,5 @@ def execution_set_to_plan(es: ExecutionSet) -> CleanupPlan:
         can_execute=es.can_execute,
         classifier_version=es.classifier_version,
         newest_run_policy_version=es.newest_run_policy_version,
+        retain_policy=es.retain_policy,
     )

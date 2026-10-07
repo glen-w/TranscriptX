@@ -9,6 +9,7 @@ from transcriptx.web.services.run_cleanup.models import (
     CleanupMode,
     CleanupPlan,
     CleanupPreview,
+    CleanupRetainPolicy,
     plan_to_preview,
 )
 from transcriptx.web.services.run_cleanup.path_helpers import validate_roots
@@ -16,7 +17,12 @@ from transcriptx.web.services.run_cleanup.path_helpers import validate_roots
 logger = get_logger()
 
 
-def build_plan(host, mode: CleanupMode) -> CleanupPlan:
+def build_plan(
+    host,
+    mode: CleanupMode,
+    *,
+    retain_policy: CleanupRetainPolicy | None = None,
+) -> CleanupPlan:
     from transcriptx.web.services.run_cleanup.plan_builder import (
         build_execution_set,
         execution_set_to_plan,
@@ -31,15 +37,24 @@ def build_plan(host, mode: CleanupMode) -> CleanupPlan:
         blocking,
         host.outputs_dir,
         host.group_outputs_dir,
+        retain_policy=retain_policy,
     )
     return execution_set_to_plan(es)
 
 
 def preview_cleanup(
-    host, mode: CleanupMode, session_id: str
+    host,
+    mode: CleanupMode,
+    session_id: str,
+    *,
+    retain_policy: CleanupRetainPolicy | None = None,
 ) -> tuple[str, CleanupPreview]:
-    logger.info("cleanup preview start mode=%s", mode.value)
-    plan = build_plan(host, mode)
+    logger.info(
+        "cleanup preview start mode=%s retain=%s",
+        mode.value,
+        (retain_policy or CleanupRetainPolicy()).signature(),
+    )
+    plan = build_plan(host, mode, retain_policy=retain_policy)
     # May raise HandleStoreFullError when capacity is exhausted by protected entries.
     token = handle_store.create_handle(plan, session_id)
     preview = plan_to_preview(plan)
