@@ -97,24 +97,48 @@ Host helpers write raw engine JSON under `originals/` only. Library admission re
 
 ## Host inbox watcher (`inbox-watch`)
 
-Optional **host-side** companion (not the in-app Settings → Watcher). Watches a drop folder for new **audio** and/or **transcripts**. Streamlit never runs it. After convert/copy, STT is `--transcribe` (default `whispermlx-missing`). Admission into the library is **off by default**; pass `--admit` (or `"admit_to_library": true`) to run `python -m transcriptx.admit_originals` after convert/copy/STT.
+Optional **host-side** companion (not the in-app Settings → Watcher). Watches a drop folder for new **audio** and/or **transcripts**. Streamlit never runs it. After convert/copy, STT is `--transcribe` (default `whispermlx-missing` on configs that omit the key — that default is the **macOS MLX** path). Admission into the library is **off by default**; pass `--admit` (or `"admit_to_library": true`) to run `python -m transcriptx.admit_originals` after convert/copy/STT.
 
-Install once from the repo root:
+### OS honesty
+
+| Host OS | Analysis GUI | inbox-watch STT | Notes |
+|---------|--------------|-----------------|-------|
+| **macOS** | Compose or native | Default `whispermlx-missing`, or `command` | Preferred stack; optional launchd agent below |
+| **Linux** | Compose | `--transcribe none` or `command` (WhisperX `docker run` / BYO) | No whispermlx. Convert + admit work with `ffmpeg` on PATH |
+| **Windows** | Docker Desktop / WSL2 Compose | `--transcribe none` or `command` | No whispermlx. No launchd/Task Scheduler sample yet. Use `py -3` or a venv with `Scripts\python.exe` |
+
+Combined stacks: [STT stacks](../recipes/stt-stacks/README.md).
+
+### Install / run
+
+**macOS / Linux** (from the repo root):
 
 ```bash
 mkdir -p ~/.local/bin
 install -m 755 scripts/inbox-watch.py ~/.local/bin/inbox-watch
 which inbox-watch
+# or without installing:
+python3 scripts/inbox-watch.py --once --dry-run …
 ```
 
-Or run without installing: `python3 scripts/inbox-watch.py --once --dry-run …`.
+**Windows** (PowerShell or cmd; from the repo root):
+
+```text
+py -3 scripts\inbox-watch.py --once --dry-run …
+```
+
+Requires `ffmpeg.exe` on `PATH` (or `--ffmpeg`) for `--watch-audio`. For `--admit`, discovery looks for `.transcriptx\Scripts\python.exe` and `.venv\Scripts\python.exe` (as well as Unix `bin/python` layouts). Override with:
+
+```text
+py -3 scripts\inbox-watch.py --once --admit --admit-python .transcriptx\Scripts\python.exe …
+```
 
 | Mode | What it does | Skip when |
 |------|----------------|-----------|
 | `--watch-audio` (default on) | Convert new inbox audio to 16 kHz mono 64k MP3 in the recordings folder | Recordings already has that stem (any audio extension) |
 | `--transcribe` | Host STT after convert: `whispermlx-missing` (default), `none`, or `command` | `--no-watch-audio` skips convert and STT. `none` never invokes STT. With `--skip-serial`, `whispermlx-missing` also skips Auto-merge serial groups |
 | `--watch-transcripts` (default on) | Copy new JSON/SRT/VTT/txt/html into the transcripts dest | Dest already has that stem (any transcript extension) |
-| `--admit` (default off) | After audio/transcript handling, admit eligible files in the transcripts dest (typically `originals/`) into the library | Already-imported stems; `foo (1).json` archive names. Requires a Python that can `import transcriptx` (`--admit-python` or `.transcriptx/bin/python`) |
+| `--admit` (default off) | After audio/transcript handling, admit eligible files in the transcripts dest (typically `originals/`) into the library | Already-imported stems; `foo (1).json` archive names. Requires a Python that can `import transcriptx` (`--admit-python`, or `.transcriptx/bin/python` / `.transcriptx\Scripts\python.exe`) |
 | `--auto-name` | After admit, auto-write speaker display names (implies `--admit`; also `--auto-link` unless `--no-auto-link`) | Fail-open: leaves `SPEAKER_*` when voice/text fusion is unsure. Needs enrolled voices for returning speakers; in-transcript names can still label first meetings |
 | `--auto-link` | After admit, create longitudinal profile links for matched enrolled / named profiles (`link_method: auto_identified`) | No new profiles from first-meeting names; does not enrol voice samples |
 | `--no-watch-audio` / `--no-watch-transcripts` | Disable that mode | At least one mode must stay on |
@@ -123,9 +147,9 @@ Or run without installing: `python3 scripts/inbox-watch.py --once --dry-run …`
 
 | `--transcribe` | Behaviour |
 |----------------|-----------|
-| `whispermlx-missing` | After convert, run `whispermlx-missing` once per cycle (macOS MLX path) |
-| `none` | Convert, copy, and optional `--admit` only. Honest path on Linux/Windows until a host command exists; `whispermlx-missing` is not required |
-| `command` | Run `--transcribe-cmd` / config `transcribe_cmd` once per cycle, as an argv list (`shell=False`) |
+| `whispermlx-missing` | After convert, run `whispermlx-missing` once per cycle (**macOS MLX only**; not available on Windows/Linux) |
+| `none` | Convert, copy, and optional `--admit` only. Default honest path on Linux/Windows |
+| `command` | Run `--transcribe-cmd` / config `transcribe_cmd` once per cycle, as an argv list (`shell=False`). Typical Windows/Linux STT hand-off (WhisperX Docker or BYO) |
 
 `transcribe_cmd` is a JSON array of strings, or one CLI string passed through `shlex.split`. Placeholders `{recordings}`, `{transcripts}`, and `{env_file}` substitute only as a whole argv token or inside a single argv (for example `-v` then `{recordings}:/audio`). Unknown `{…}` tokens fail closed. `{recordings}` and `{transcripts}` are required. Empty `transcribe_cmd` with `transcribe=command` is a config error before ffmpeg runs.
 
@@ -182,7 +206,7 @@ ffmpeg (audio mode): `-nostdin -y -ac 1 -ar 16000 -c:a libmp3lame -b:a 64k -f mp
 
 | Setting | Default | Override |
 |---------|---------|----------|
-| When to stage | Auto: macOS `diskutil` Ejectable/Removable; Linux `/media/` or `/run/media/` (sysfs `removable` when available). Detection failure does **not** stage | `--stage-local` / `--no-stage-local`, JSON `stage_local`, env `INBOX_WATCH_STAGE_LOCAL` |
+| When to stage | Auto: macOS `diskutil` Ejectable/Removable; Linux `/media/` or `/run/media/` (sysfs `removable` when available). **Windows has no auto detection** — use `--stage-local` for USB drops. Detection failure does **not** stage | `--stage-local` / `--no-stage-local`, JSON `stage_local`, env `INBOX_WATCH_STAGE_LOCAL` |
 | Stage dir | `{recordings}/.inbox-staging/` (hidden from `whispermlx-missing`, which only scans the recordings top level) | `--stage-dir`, JSON `stage_dir`, env `INBOX_WATCH_STAGE_DIR` |
 
 A complete staged file with the same size as the inbox original is **reused** on the next cycle (resume after a failed convert). A half-written `.inbox-staging.{name}.partial` is discarded and the copy is retried. After a successful convert, the staged copy is moved into the WAV backup folder when `--backup-wav` is on; otherwise it is deleted. Inbox sources are still kept unless `--delete-originals` / `--move-processed`.

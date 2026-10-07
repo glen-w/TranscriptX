@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -1485,3 +1486,50 @@ class TestTranscribeModes:
         cfg = iw.resolve_config(args, config_path=config_path)
         assert cfg.transcribe == "whispermlx-missing"
         assert cfg.transcribe_cmd == ()
+
+
+def test_find_admit_python_discovers_windows_scripts_layout(
+    iw, tmp_path: Path, monkeypatch
+):
+    """Windows venv uses Scripts\\python.exe, not bin/python."""
+    repo = tmp_path / "repo"
+    scripts_py = repo / ".transcriptx" / "Scripts" / "python.exe"
+    scripts_py.parent.mkdir(parents=True)
+    scripts_py.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(iw, "find_repo_root", lambda: repo)
+    monkeypatch.setattr(
+        iw,
+        "python_can_import_admit",
+        lambda python: Path(python) == scripts_py,
+    )
+    found = iw.find_admit_python(None)
+    assert found == scripts_py
+
+
+def test_find_admit_python_discovers_unix_bin_layout(
+    iw, tmp_path: Path, monkeypatch
+):
+    repo = tmp_path / "repo"
+    unix_py = repo / ".transcriptx" / "bin" / "python"
+    unix_py.parent.mkdir(parents=True)
+    unix_py.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(iw, "find_repo_root", lambda: repo)
+    monkeypatch.setattr(
+        iw,
+        "python_can_import_admit",
+        lambda python: Path(python) == unix_py,
+    )
+    found = iw.find_admit_python(None)
+    assert found == unix_py
+
+
+def test_is_same_or_under_normcase(iw, tmp_path: Path):
+    root = tmp_path / "Inbox"
+    child = root / "file.wav"
+    root.mkdir()
+    child.write_text("x", encoding="utf-8")
+    assert iw.is_same_or_under(child, root) is True
+    # Same path with different string casing (meaningful on Windows; no-op on POSIX)
+    assert iw.is_same_or_under(child, Path(os.path.normcase(str(root)))) is True
