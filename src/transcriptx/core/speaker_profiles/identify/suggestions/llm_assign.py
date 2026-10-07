@@ -147,7 +147,10 @@ def parse_llm_response(
         sid = str(row.get("speaker_id") or "").strip()
         if sid not in speaker_ids:
             continue
-        name = title_person_name(str(row.get("display_name") or ""))
+        name = title_person_name(
+            str(row.get("display_name") or ""),
+            apply_gazetteer=False,
+        )
         if not name or normalize_person_key(name) not in allowed_keys:
             continue
         basis_raw = str(row.get("basis") or "peer_reference")

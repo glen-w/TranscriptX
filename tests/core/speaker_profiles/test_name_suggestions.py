@@ -206,6 +206,28 @@ def test_llm_parser_accepts_roster_name() -> None:
 
 
 @pytest.mark.unit
+def test_llm_parser_accepts_roster_name_outside_gazetteer() -> None:
+    raw = json.dumps(
+        {
+            "assignments": [
+                {
+                    "speaker_id": "SPEAKER_00",
+                    "display_name": "Xylia Voron",
+                    "basis": "self_intro",
+                    "quote": "I'm Xylia",
+                }
+            ]
+        }
+    )
+    parsed = parse_llm_response(
+        raw,
+        allowed_keys={"xylia voron"},
+        speaker_ids={"SPEAKER_00"},
+    )
+    assert parsed["SPEAKER_00"].display_name == "Xylia Voron"
+
+
+@pytest.mark.unit
 def test_merge_llm_inserts_ahead_of_roster() -> None:
     det = {"SPEAKER_00": (NameOption("Maya", "roster", "possible", quote=""),)}
     llm = {

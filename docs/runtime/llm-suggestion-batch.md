@@ -7,7 +7,7 @@ High-compute **assistive** passes (speaker name dropdowns, rename stem prefills)
 | Consumer | GUI surface | Cache location |
 |----------|-------------|----------------|
 | `speaker_name_suggestions` | Speaker Identification → Name dropdown (after warm, no **Suggest names** click) | `speaker_profiles/.cache/identify/{managed_id}.name_suggestions.v1.json` |
-| `rename_suggestions` | Rename Transcript / import rename forms when **Content rename suggestions** is `auto` | `{data_dir}/.cache/rename/*.rename_suggestions.v1.json` |
+| `rename_suggestions` | Rename Transcript / import rename — **Suggest names** button (always); also auto-prefill when **Content rename suggestions** is `auto` | `{data_dir}/.cache/rename/*.rename_suggestions.v1.json` |
 
 Caches invalidate when transcript content fingerprints change or when rename knobs / model tags in the cache key change (see [llm.md](llm.md) consumers).
 
@@ -21,12 +21,13 @@ Caches invalidate when transcript content fingerprints change or when rename kno
 
 1. Managed library transcripts (admitted with import sidecars).
 2. For LLM passes: Ollama running; Models preset assigns non-thinking tags for `speaker_name_suggestions` and/or `rename_suggestions` ([llm.md](llm.md)).
-3. Rename warm: `input.rename_content_suggestions=auto` and optional `rename_suggest_llm` / web knobs ([settings.md](settings.md)).
+3. Rename **batch warm** (Settings pre-load / `warm-suggestions --rename`): `input.rename_content_suggestions=auto` and optional `rename_suggest_llm` / web knobs ([settings.md](settings.md)). On-demand **Suggest names** on the rename form does not require `auto`; it still honors `rename_suggest_transcript` / `rename_suggest_llm` / `rename_suggest_web`.
 
 ## GUI
 
 - **Settings → Speakers → Assistive LLM suggestions → Pre-load name suggestions (LLM)** — library-wide speaker-name cache warm.
-- **Settings → Configuration** — when content rename suggestions are `auto`, **Pre-load rename suggestions** appears above the config editor.
+- **Rename Transcript** (and import rename) — **Suggest names (transcript + LLM)** warms or refreshes rename suggestion cache for the selected transcript.
+- **Settings → Configuration** — when content rename suggestions are `auto`, **Pre-load rename suggestions** appears above the config editor (library-wide rename warm).
 
 ## CLI (cron-shaped)
 
@@ -120,4 +121,4 @@ TRANSCRIPTX_DATA_DIR=/path/to/data \
 - [settings.md](settings.md) — rename and voice knobs
 - [STORAGE.md](STORAGE.md) — disposable `.cache/` under `speaker_profiles` and `data_dir`
 - [speaker-identification.md](../workflows/speaker-identification.md) — Suggest names UX
-- [rename-transcript.md](../workflows/rename-transcript.md) — content rename suggestions
+- [rename-transcript.md](../workflows/rename-transcript.md) — rename form UX and suggestions

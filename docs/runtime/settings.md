@@ -73,7 +73,7 @@ Draft overrides are reported with run-layer provenance (`source: run`) by design
 - **Advanced/raw** exposes every registered config leaf (except profile activation keys). Registry fields may mark `advanced=True` for documentation; the GUI does not yet use that flag to partition the form — the toggle is the partition.
 - Prefer Common or Analysis presets unless you know why a leaf matters.
 
-## Smart rename (device filenames)
+## Smart rename and rename forms
 
 Settings → Configuration → **Rename** (also under Advanced as `input.*`):
 
@@ -82,19 +82,30 @@ Settings → Configuration → **Rename** (also under Advanced as `input.*`):
 | `input.smart_rename_mode` | `suggest_import` | `auto_import` / `suggest_import` / `suggest_rename_only` / `off` |
 | `input.smart_rename_pattern` | `{yymmdd}_{period}_{n}` | Deterministic template rendered from the recording datetime |
 | `input.prefill_rename_with_date_prefix` | `true` | Legacy YYMMDD_ + stem prefill when smart mode is `off` |
-| `input.rename_content_suggestions` | `off` | `off` / `auto` — when `auto`, rename forms can prefill a full stem and show a dropdown of other candidates |
-| `input.rename_suggest_transcript` | `true` | Use transcript date/title cues (when content suggestions are `auto`) |
+| `input.rename_content_suggestions` | `off` | `off` / `auto` — when `auto`, rename/import forms prefill from the suggestion service on open and show **Suggested names** |
+| `input.rename_suggest_transcript` | `true` | Transcript date/title cues when suggestions run (`auto` or **Suggest names** on the form) |
 | `input.rename_suggest_llm` | `false` | Optional local LLM pass (Ollama; model from Settings → Models → `rename_suggestions`) |
 | `input.rename_suggest_web` | `false` | Optional web lookup for public-event-like files (short query only; not the transcript body) |
 | `input.rename_suggestions_effort` | `low` | Effort tier for the rename-suggestion LLM pass (`max_input_chars`, timeout, output tokens) |
 
 Supported pattern tokens: `{yymmdd}`, `{yyyymmdd}`, `{yyyy}`, `{yy}`, `{mm}`, `{dd}`, `{hhmmss}`, `{hhmm}`, `{hh}`, `{period}` (`morning`/`afternoon`/`evening`/`night`), `{n}` (collision sequence), `{stem}`, `{title}` (slug from transcript/LLM/web title cues).
 
-Device stems understood include `RYYYYMMDD-HHMMSS`, `YYYYMMDDHHMMSS`, and `YYMMDD-HHMMSS`. In rename forms, the date root is prefilled and other tokens appear as clickable append buttons.
+Device stems understood include `RYYYYMMDD-HHMMSS`, `YYYYMMDDHHMMSS`, and `YYMMDD-HHMMSS`, plus messaging-app and field-recorder patterns parsed in code (`smart_name.py`).
+
+### Rename form prefill (smart + titles)
+
+On **Rename Transcript** and import rename (when `smart_rename_mode` is not `off`):
+
+- **Device-style filename** — prefills the **date root** (`YYMMDD_`) from the recording filename or file mtime when needed. Optional clickable token: `{period}` (morning/afternoon/evening/night) to append to the new name.
+- **Descriptive title** (already a human-readable stem, not a device pattern) — prefills `YYMMDD_` plus an **underscore-separated** version of the current title (spaces, hyphens, and CamelCase split into words). Word token buttons help edit the title portion; common stopwords are omitted from buttons only.
+
+Legacy `prefill_rename_with_date_prefix` still applies when smart rename is `off`.
 
 ### Content rename suggestions (assistive)
 
-When `input.rename_content_suggestions` is `auto`, rename/import forms call the suggestion service: transcript date and title cues (default on), optional local LLM (`rename_suggestions` consumer; effort via `input.rename_suggestions_effort`), and optional web lookup for public-event-like filenames or dialogue (short DuckDuckGo query — never the transcript body). The form prefills the top-ranked **full stem** and lists alternatives in **Suggested names**; nothing is written until you submit **Rename**. Event dates from transcript/web/LLM beat the file’s download/mtime date (shown as “file date, not the event date”). With no event date, a title-only stem may be offered without inventing a `YYMMDD_` from file time. Results are cached under `{data_dir}/.cache/rename/`. `auto_import` smart rename stays filename-only.
+The rename form always shows **Suggest names (transcript + LLM)** (or **transcript only** when Ollama is off). That button runs the suggestion service on demand and fills **Suggested names**, even when `input.rename_content_suggestions` is `off`.
+
+When `input.rename_content_suggestions` is `auto`, the same service also runs when you open the form: transcript date and title cues (default on), optional local LLM (`rename_suggestions` consumer; effort via `input.rename_suggestions_effort`), and optional web lookup for public-event-like filenames or dialogue (short DuckDuckGo query — never the transcript body). The top-ranked **full stem** is prefilled and alternatives appear in **Suggested names**; nothing is written until you submit **Rename**. Event dates from transcript/web/LLM beat the file’s download/mtime date (shown as “file date, not the event date”). With no event date, a title-only stem may be offered without inventing a `YYMMDD_` from file time. Results are cached under `{data_dir}/.cache/rename/`. `auto_import` smart rename on import stays filename-only.
 
 ## “Profile” taxonomy (do not conflate)
 
