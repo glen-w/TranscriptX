@@ -134,6 +134,84 @@ def test_import_transcript_cli_calls_workflow(monkeypatch, tmp_path: Path) -> No
 
 
 @pytest.mark.unit
+def test_import_transcript_parse_args() -> None:
+    from transcriptx.import_transcript import parse_args
+
+    args = parse_args(["one.json", "two.srt", "--overwrite"])
+    assert [p.name for p in args.paths] == ["one.json", "two.srt"]
+    assert args.overwrite is True
+
+    minimal = parse_args(["only.vtt"])
+    assert minimal.overwrite is False
+    assert len(minimal.paths) == 1
+
+
+@pytest.mark.unit
+def test_import_transcript_cli_multi_file_partial_failure(
+    monkeypatch, tmp_path: Path, capsys
+) -> None:
+    from transcriptx import import_transcript as mod
+    import transcriptx.io.managed_import_workflow as miw
+
+    good = tmp_path / "good.json"
+    bad = tmp_path / "bad.json"
+    good.write_text("{}", encoding="utf-8")
+    bad.write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr(
+        mod,
+        "parse_args",
+        lambda argv=None: SimpleNamespace(paths=[bad, good], overwrite=True),
+    )
+    monkeypatch.setattr("transcriptx._bootstrap.bootstrap", lambda: None)
+
+    def fake_import(path, *, overwrite=False, **_kwargs):
+        if path.name == "bad.json":
+            raise OSError("read failed")
+        return SimpleNamespace(
+            json_path=tmp_path / "managed" / "good.json",
+            speaker_map_error=None,
+        )
+
+    monkeypatch.setattr(miw, "run_managed_import_workflow", fake_import)
+
+    assert mod.main([]) == 1
+    captured = capsys.readouterr()
+    assert "read failed" in captured.err
+    assert "good.json" in captured.out
+
+
+@pytest.mark.unit
+def test_import_transcript_cli_prints_speaker_map_note(
+    monkeypatch, tmp_path: Path, capsys
+) -> None:
+    from transcriptx import import_transcript as mod
+    import transcriptx.io.managed_import_workflow as miw
+
+    src = tmp_path / "raw.json"
+    src.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        mod,
+        "parse_args",
+        lambda argv=None: SimpleNamespace(paths=[src], overwrite=False),
+    )
+    monkeypatch.setattr("transcriptx._bootstrap.bootstrap", lambda: None)
+    monkeypatch.setattr(
+        miw,
+        "run_managed_import_workflow",
+        lambda path, **_: SimpleNamespace(
+            json_path=tmp_path / "out.json",
+            speaker_map_error="no speakers in file",
+        ),
+    )
+
+    assert mod.main([]) == 0
+    captured = capsys.readouterr()
+    assert "speaker map" in captured.err
+    assert "no speakers in file" in captured.err
+
+
+@pytest.mark.unit
 def test_analyze_cli_calls_run_analysis(monkeypatch, tmp_path: Path) -> None:
     from transcriptx import analyze as mod
 
