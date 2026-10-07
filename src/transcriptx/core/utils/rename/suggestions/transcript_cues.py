@@ -5,9 +5,14 @@ from __future__ import annotations
 import re
 from calendar import month_abbr, month_name
 from datetime import date, datetime
+from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from transcriptx.core.utils.rename.suggestions.models import RawRenameCue
+from transcriptx.core.utils.rename.title_stem import (
+    split_title_tokens,
+    stem_looks_like_natural_language_title,
+)
 
 _MONTHS = "|".join(
     sorted(
@@ -46,9 +51,11 @@ _RE_WELCOME_TITLE = re.compile(
     re.IGNORECASE,
 )
 _PUBLIC_FILENAME_MARKERS = re.compile(
-    r"zoom|webex|teams|gotowebinar|streamyard|webinar|webcast|gmt\d",
+    r"zoom|webex|teams|gotowebinar|streamyard|webinar|webcast|youtube|gmt\d",
     re.IGNORECASE,
 )
+_TITLE_STOPWORDS = frozenset({"a", "an", "the", "of", "and", "or", "in", "on", "for", "to"})
+_MIN_NL_TITLE_TOKENS = 4
 _PUBLIC_TRANSCRIPT_MARKERS = re.compile(
     r"thanks for joining|welcome to the (?:webinar|webcast)|this session is being recorded",
     re.IGNORECASE,
@@ -180,11 +187,26 @@ def extract_title_from_text(text: str) -> str:
     return ""
 
 
+def _stem_qualifies_for_web_lookup(stem: str) -> bool:
+    if not stem_looks_like_natural_language_title(stem):
+        return False
+    tokens = [
+        t
+        for t in split_title_tokens(stem)
+        if t.lower() not in _TITLE_STOPWORDS
+    ]
+    return len(tokens) >= _MIN_NL_TITLE_TOKENS
+
+
 def looks_like_public_event(filename: str, segments: Sequence[Mapping[str, Any]]) -> bool:
-    if _PUBLIC_FILENAME_MARKERS.search(filename or ""):
+    name = filename or ""
+    if _PUBLIC_FILENAME_MARKERS.search(name):
         return True
     blob = " ".join(_segment_text(s) for s in segments[:40])
-    return bool(_PUBLIC_TRANSCRIPT_MARKERS.search(blob))
+    if _PUBLIC_TRANSCRIPT_MARKERS.search(blob):
+        return True
+    stem = Path(name).stem if name else ""
+    return _stem_qualifies_for_web_lookup(stem)
 
 
 def build_cue_excerpt(segments: Sequence[Mapping[str, Any]], *, max_lines: int = 80) -> str:

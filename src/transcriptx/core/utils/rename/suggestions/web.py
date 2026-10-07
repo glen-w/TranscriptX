@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from datetime import date
+from pathlib import Path
 from typing import Sequence
 import httpx
 
@@ -42,6 +43,16 @@ def build_web_query(
         elif title:
             parts.append("webinar")
     query = " ".join(parts).strip()
+    return query[:120]
+
+
+def build_youtube_web_query(*, title: str, filename: str = "") -> str:
+    """Short DuckDuckGo query biased toward YouTube watch pages (no API key)."""
+    stem = Path(filename).stem if filename else ""
+    base = (title.strip() or stem.replace("_", " ")).strip()[:80]
+    if not base:
+        return ""
+    query = f"{base} site:youtube.com"
     return query[:120]
 
 
@@ -89,3 +100,22 @@ def fetch_web_cue(query: str, *, timeout: float = 8.0) -> RawRenameCue | None:
         title=title,
         _priority=2,
     )
+
+
+def fetch_web_cue_from_title(
+    *,
+    title: str,
+    filename: str = "",
+    host_names: Sequence[str] = (),
+    timeout: float = 8.0,
+) -> RawRenameCue | None:
+    """Try YouTube-biased search first, then general event query."""
+    yt_query = build_youtube_web_query(title=title, filename=filename)
+    if yt_query:
+        cue = fetch_web_cue(yt_query, timeout=timeout)
+        if cue is not None:
+            return cue
+    general = build_web_query(
+        title=title, host_names=host_names, filename=filename
+    )
+    return fetch_web_cue(general, timeout=timeout)

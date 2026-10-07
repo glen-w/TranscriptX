@@ -27,7 +27,7 @@ Remote network activity occurs only when the user (or install profile) explicitl
 
 - Hugging Face / spaCy **model downloads** on first use
 - Optional **Ollama** (typically local; user-configured host)
-- Optional **rename web lookup** (`input.rename_suggest_web`) — a short event query to DuckDuckGo HTML when rename suggestions run (Settings `rename_content_suggestions=auto` or **Suggest names** on the rename form); transcript body is not sent
+- Optional **rename web lookup** (`input.rename_suggest_web`) — short title-only queries to DuckDuckGo HTML (`site:youtube.com` first, then a general event query) when rename suggestions run (Settings `rename_content_suggestions=auto` or **Suggest names** on the rename form); transcript body is not sent; no YouTube Data API
 - Optional dependency / image pulls during install
 
 Default Docker Compose binds the GUI to loopback — see [SECURITY.md](../../SECURITY.md).

@@ -5,7 +5,9 @@ from __future__ import annotations
 from transcriptx.core.utils.rename.suggestions.transcript_cues import looks_like_public_event
 from transcriptx.core.utils.rename.suggestions.web import (
     build_web_query,
+    build_youtube_web_query,
     fetch_web_cue,
+    fetch_web_cue_from_title,
     parse_dates_from_html,
 )
 
@@ -23,6 +25,44 @@ def test_web_query_never_includes_transcript_secret() -> None:
 def test_public_filename_adds_webinar_to_query() -> None:
     query = build_web_query(title="Acme Launch", filename="zoom_webinar_01.mp3")
     assert "webinar" in query.lower()
+
+
+def test_youtube_query_uses_site_operator() -> None:
+    query = build_youtube_web_query(
+        title="Youth Voices High Seas",
+        filename="youth_voices.json",
+    )
+    assert "site:youtube.com" in query
+    assert "Youth" in query
+
+
+def test_fetch_web_cue_from_title_tries_youtube_then_general(monkeypatch) -> None:
+    calls: list[str] = []
+
+    class _Resp:
+        status_code = 200
+        text = ""
+
+    def _get(_url, *, params=None, **_k):
+        q = (params or {}).get("q", "")
+        calls.append(q)
+        if "site:youtube.com" in q:
+            return _Resp()
+        html = """
+        <a class="result__a">Acme webinar recap</a>
+        <a class="result__snippet">Held March 12, 2026 online.</a>
+        """
+        return type("_R", (), {"status_code": 200, "text": html})()
+
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.suggestions.web.httpx.get",
+        _get,
+    )
+    cue = fetch_web_cue_from_title(title="Acme Launch", filename="zoom.mp3")
+    assert cue is not None
+    assert cue.event_date is not None
+    assert calls[0].endswith("site:youtube.com") or "site:youtube.com" in calls[0]
+    assert len(calls) >= 2
 
 
 def test_parse_dates_from_fixture_html() -> None:

@@ -95,7 +95,7 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections / viewer click-drag | **done for 1.0** (Phase 9 Speaker ID; Studio CCv2 + viewer edit; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md)) |
 | D. Playback & reading UX | Karaoke-style word highlight; CCv2 full-file reader | **done for 1.0** (reader workspace + clip rollback; see [karaoke-playback.md](runtime/karaoke-playback.md)) |
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
-| F. Library & organisation | Transcript tagging; Groups interaction rules | Mid 1.x |
+| F. Library & organisation | Transcript tagging; Groups interaction rules; optional YouTube API rename metadata | Mid 1.x |
 | G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** narrow Windows convert/admit + pluggable STT shipped; service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
 | H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Parakeet/Canary/YouTube later | **[~] H1–H4 shipped**; H5+ deferred |
 | I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Deferred except H1 job channel |
@@ -185,6 +185,8 @@ Beyond 1.0 resource envelopes: help users plan and choose runs on *their* machin
 ### F. Library & organisation
 
 - **Transcript tagging** — library visibility / kind labels (e.g. `meeting`, `voice note`, `lone speaker`). Tags are organisation metadata, not an analysis module.
+
+- **YouTube Data API for rename assist (deferred)** — optional backend for content rename suggestions (`rename_suggest_web`) when the operator supplies a Google Cloud API key: YouTube Data API v3 search + `videos` metadata (`publishedAt`, canonical title) for public YouTube-hosted events, instead of or ahead of today’s DuckDuckGo HTML + `site:youtube.com` bias. Privacy: short title/search queries only; never the transcript body; opt-in key (settings or env); quota and key hygiene documented. Mid–late 1.x; not required for warm-suggestions or import rename to work today.
 
   **Design before build — interaction with Groups:** tags and groups must stay distinct. Tags find/filter/surface individual transcripts; Groups are analysis cohorts. Tagging must not create or imply group membership. Tags may filter the group member picker but must not auto-materialise a Group. Decide whether “more visible” means facet filters, pin/favourite, or both. Kind tags may later feed soft suitability hints; keep them optional metadata. Prefer transcript-local / library storage; keep tags out of group run schemas unless a deliberate filter snapshot is needed.
 
@@ -279,7 +281,7 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 | **H2** WhisperX Docker provider | **[x]** registered; CUDA `--gpus all` or CPU |
 | **H3** Watcher `auto_transcribe` + queued drain | **[x]** when a provider is available |
 | **H4** Docs / install honesty | **[x]** this page + [transcription.md](runtime/transcription.md) + [stt-stacks](recipes/stt-stacks/README.md) |
-| **H5+** NVIDIA Parakeet/Canary, YouTube ingest, HTTP STT sidecar | **[ ] deferred** until the Whisper path is boring |
+| **H5+** NVIDIA Parakeet/Canary, YouTube URL ingest (download/transcribe), HTTP STT sidecar | **[ ] deferred** until the Whisper path is boring (rename metadata via YouTube API is theme **F**, not H5) |
 
 **Architecture (locked):** host-orchestrated providers (fork #2, narrow). No silent cloud STT. Apple MLX stays host/binary; CUDA via WhisperX Docker.
 

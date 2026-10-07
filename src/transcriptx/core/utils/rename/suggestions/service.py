@@ -44,7 +44,7 @@ from transcriptx.core.utils.rename.suggestions.transcript_cues import (
     looks_like_public_event,
     transcript_source_mtime,
 )
-from transcriptx.core.utils.rename.suggestions.web import build_web_query, fetch_web_cue
+from transcriptx.core.utils.rename.suggestions.web import fetch_web_cue_from_title
 from transcriptx.core.utils.rename.title_stem import (
     stem_looks_like_natural_language_title,
     underscore_title,
@@ -383,8 +383,10 @@ def suggest_rename_stems(
         existing_title_opt.title if existing_title_opt else ""
     )
     if suggest_web and looks_like_public_event(path.name, segments):
-        query = build_web_query(title=title_for_web, filename=path.name)
-        web_cue = fetch_web_cue(query)
+        web_cue = fetch_web_cue_from_title(
+            title=title_for_web,
+            filename=path.name,
+        )
         if web_cue:
             raw_cues.append(web_cue)
     mtime_cue = _file_mtime_cue(path)
