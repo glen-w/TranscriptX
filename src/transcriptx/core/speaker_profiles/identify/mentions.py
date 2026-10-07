@@ -7,6 +7,11 @@ from collections import Counter, defaultdict
 from typing import Any, Mapping, Sequence
 
 from transcriptx.core.speaker_profiles.identify.models import ChannelCandidate
+from transcriptx.core.speaker_profiles.identify.name_gazetteer import gazetteer_covers
+from transcriptx.core.speaker_profiles.identify.settings import (
+    IdentifySettings,
+    load_identify_settings,
+)
 from transcriptx.io.speaker_map_resolver import (
     normalize_diarized_id,
     normalize_display_name,
@@ -99,7 +104,6 @@ _STOP = frozenset(
         "one",
         "two",
         "three",
-        "okay",
         "alright",
         "anyway",
         "maybe",
@@ -110,8 +114,51 @@ _STOP = frozenset(
         "team",
         "folks",
         "guys",
-        "everyone",
+        "honoured",
+        "honored",
+        "advised",
+        "looking",
+        "forward",
+        "whether",
+        "question",
+        "welcome",
+        "joined",
+        "delighted",
+        "pleased",
+        "glad",
+        "happy",
+        "excited",
+        "calling",
+        "joining",
+        "speaking",
+        "here",
+        "for",
+        "to",
+        "with",
+        "from",
+        "about",
+        "into",
+        "onto",
+        "when",
+        "what",
+        "who",
+        "why",
+        "how",
+        "also",
+        "very",
+        "much",
+        "part",
+        "admin",
+        "knowledge",
+        "data",
+        "speak",
+        "join",
+        "joined",
     }
+)
+
+_LEADING_REJECT = frozenset(
+    {"for", "to", "with", "from", "about", "if", "when", "whether", "and", "but"}
 )
 
 _NAME_TOKEN = r"[A-Za-z][A-Za-z'`-]{1,30}"
@@ -119,7 +166,8 @@ _NAME_GROUP = rf"({_NAME_TOKEN}(?:\s+{_NAME_TOKEN}){{0,2}})"
 
 _SELF_INTRO_RE = re.compile(
     rf"\b(?:i(?:'m| am)|this is|my name is|i am called|i'm called)\s+"
-    rf"{_NAME_GROUP}\b",
+    rf"{_NAME_GROUP}"
+    rf"(?!\s+(?:to|for|and|with|that|the|a|an)\b)\b",
     re.IGNORECASE,
 )
 _VOCATIVE_RE = re.compile(
@@ -143,12 +191,62 @@ def _segment_speaker(segment: Mapping[str, Any]) -> str:
     return normalize_diarized_id(raw)
 
 
-def title_person_name(raw: str) -> str:
+def _crm_admits(display: str, settings: IdentifySettings) -> bool:
+    if not settings.twenty_enabled or settings.twenty_role != "gate":
+        return False
+    try:
+        from transcriptx.core.speaker_profiles.identify.twenty import (
+            get_people_index,
+            unique_crm_person,
+        )
+    except Exception:
+        return False
+    return unique_crm_person(display, get_people_index(settings)) is not None
+
+
+def passes_name_policy(
+    tokens: Sequence[str],
+    *,
+    settings: IdentifySettings | None = None,
+    apply_gazetteer: bool = True,
+) -> bool:
+    """True when remaining name tokens pass the configured token policy."""
+    parts = [t for t in tokens if t]
+    if not parts or len(parts) > 3:
+        return False
+    if any(t.casefold() in _STOP for t in parts):
+        return False
+    if not apply_gazetteer:
+        return True
+    ident = settings or load_identify_settings()
+    policy = ident.name_token_policy
+    if policy == "soft":
+        return True
+    covered = gazetteer_covers(parts)
+    if covered:
+        return True
+    if policy == "strict":
+        return _crm_admits(" ".join(parts), ident)
+    display = " ".join(parts)
+    return _crm_admits(display, ident)
+
+
+def title_person_name(
+    raw: str,
+    *,
+    apply_gazetteer: bool = True,
+    settings: IdentifySettings | None = None,
+) -> str:
     """Normalise an extracted person name for display (Maya, Mary Jane)."""
     cleaned = re.sub(r"\s+", " ", str(raw or "").strip())
     cleaned = cleaned.strip(".,;:!?")
+    raw_tokens = [t for t in cleaned.split(" ") if t]
+    if raw_tokens and raw_tokens[0].casefold() in _LEADING_REJECT:
+        raw_tokens = raw_tokens[1:]
+    if raw_tokens and raw_tokens[0].casefold() in _STOP:
+        return ""
     parts = []
-    for token in cleaned.split(" "):
+    for token in raw_tokens:
         lowered = token.lower()
         if not token or lowered in _STOP:
             continue
@@ -156,6 +254,10 @@ def title_person_name(raw: str) -> str:
             return ""
         parts.append(token[:1].upper() + token[1:].lower())
     if not parts or len(parts) > 3:
+        return ""
+    if not passes_name_policy(
+        parts, settings=settings, apply_gazetteer=apply_gazetteer
+    ):
         return ""
     return " ".join(parts)
 
@@ -168,7 +270,7 @@ def extract_pattern_names(pattern: re.Pattern[str], text: str) -> list[str]:
     """Extract person names matched by a mention regex pattern."""
     out: list[str] = []
     for match in pattern.finditer(text):
-        titled = title_person_name(match.group(1))
+        titled = title_person_name(match.group(1), apply_gazetteer=True)
         if titled:
             out.append(titled)
     return out
@@ -276,9 +378,7 @@ def extract_mention_candidates(
         self_count = self_votes[speaker].get(best_key, 0)
         voc_count = vocative_votes[speaker].get(best_key, 0)
         primary_kind = (
-            "self_intro"
-            if self_count > 0 and self_count >= voc_count
-            else "vocative"
+            "self_intro" if self_count > 0 and self_count >= voc_count else "vocative"
         )
         winners[speaker] = ChannelCandidate(
             channel="mention",

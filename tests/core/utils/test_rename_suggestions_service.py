@@ -37,6 +37,26 @@ def test_mode_off_returns_empty_without_loading_segments(tmp_path: Path) -> None
 
 
 @pytest.mark.unit
+def test_on_demand_runs_when_mode_off(tmp_path: Path) -> None:
+    tpath = tmp_path / "webinar.json"
+    _write_transcript(
+        tpath,
+        [{"text": "Recorded on 2026-03-12. Welcome to the Acme product webinar."}],
+    )
+    with patch(
+        "transcriptx.core.utils.rename.suggestions.service.get_config"
+    ) as cfg_mock:
+        inp = cfg_mock.return_value.input
+        inp.rename_content_suggestions = "off"
+        inp.rename_suggest_transcript = True
+        inp.rename_suggest_llm = False
+        inp.rename_suggest_web = False
+        inp.smart_rename_pattern = "{yymmdd}_{period}_{n}"
+        result = suggest_rename_stems(tpath, on_demand=True, force_refresh=True)
+    assert result.options
+
+
+@pytest.mark.unit
 def test_auto_mode_builds_options(tmp_path: Path) -> None:
     tpath = tmp_path / "webinar.json"
     _write_transcript(

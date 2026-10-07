@@ -164,8 +164,43 @@ def test_sticky_smart_rename_prefills_date_root(
     assert suggested == "260810_"
     bubbles_key, date_root_key = sticky_smart_rename_keys(form_key)
     assert ss[date_root_key] == "260810_"
-    assert "evening" in ss[bubbles_key]
-    assert "1" in ss[bubbles_key]
+    assert ss[bubbles_key] == ["evening"]
+
+
+@pytest.mark.unit
+def test_sticky_natural_language_title_prefill(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import os
+    import time
+    from datetime import datetime
+
+    import transcriptx.web.components.rename_form as form_mod
+    from transcriptx.web.components.rename_form import sticky_smart_rename_keys
+
+    title = "Our Ocean Beyond Borders Understanding the High Seas Treaty"
+    path = tmp_path / f"{title}.json"
+    path.write_text("{}", encoding="utf-8")
+    recorded = datetime(2026, 9, 8, 23, 54, 13)
+    os.utime(path, (time.mktime(recorded.timetuple()),) * 2)
+
+    ss: dict = {}
+    monkeypatch.setattr(form_mod, "st", SimpleNamespace(session_state=ss))
+    monkeypatch.setattr(
+        form_mod,
+        "_input_rename_settings",
+        lambda: ("suggest_rename_only", "{yymmdd}_{period}_{n}", True),
+    )
+
+    form_key = "nl_title_form"
+    suggested = bind_suggested_rename_name(
+        path, form_key=form_key, date_prefix_prefill=True, enable_smart=True
+    )
+    assert suggested.startswith("260908_Our_Ocean_Beyond_Borders")
+    bubbles_key, _ = sticky_smart_rename_keys(form_key)
+    assert "Ocean" in ss[bubbles_key]
+    assert "Treaty" in ss[bubbles_key]
+    assert "the" not in ss[bubbles_key]
 
 
 @pytest.mark.unit

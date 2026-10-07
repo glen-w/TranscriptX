@@ -134,8 +134,7 @@ def test_suggest_smart_rename_base_name(tmp_path: Path) -> None:
     assert suggestion is not None
     assert suggestion.full == "260810_evening_1"
     assert suggestion.date_root == "260810_"
-    assert "evening" in suggestion.token_bubbles
-    assert "1" in suggestion.token_bubbles
+    assert suggestion.token_bubbles == ("evening",)
 
 
 @pytest.mark.unit

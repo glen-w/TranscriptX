@@ -20,7 +20,9 @@ _VOICE_PRIVACY_FLASH = "_voice_privacy_flash"
 _VOICE_PRIVACY_ERROR = "_voice_privacy_error"
 
 
-def disabled_voice_matching_info(*, revoked_at: str | None, settings_file_exists: bool) -> str:
+def disabled_voice_matching_info(
+    *, revoked_at: str | None, settings_file_exists: bool
+) -> str:
     """Status copy when matching is off. Env default is mentioned only if no file."""
     if revoked_at:
         return (
@@ -467,21 +469,130 @@ def render_speakers_panel() -> None:
             "names still corroborate."
         ),
     )
+    policy_labels = {
+        "hybrid": "Hybrid (gazetteer on weak tokens)",
+        "strict": "Strict (every token in gazetteer or Twenty)",
+        "soft": "Soft (gazetteer ranks only)",
+    }
+    policy_choice = st.selectbox(
+        "Name-token policy",
+        options=list(policy_labels.keys()),
+        index=list(policy_labels.keys()).index(
+            ident.name_token_policy
+            if ident.name_token_policy in policy_labels
+            else "hybrid"
+        ),
+        format_func=lambda k: policy_labels[k],
+        key="identify_name_token_policy",
+        help=widget_help(
+            "How extracted names are checked against the bundled given/surname "
+            "lists. Hybrid is the default. Strict requires gazetteer (or a "
+            "unique Twenty match when Twenty is a gate). Soft never rejects."
+        ),
+    )
+    twenty_enabled = st.checkbox(
+        "Look up names in Twenty CRM",
+        value=ident.twenty_enabled,
+        key="identify_twenty_enabled",
+        help=widget_help(
+            "Optional. Read-only People lookup. API key stays in env "
+            "TWENTY_API_KEY (same as Paperful). Never writes the CRM."
+        ),
+    )
+    twenty_role_labels = {
+        "off": "Off (ignore CRM even if enabled)",
+        "evidence": "Evidence (dropdown option only)",
+        "gate": "Gate (can admit names missing from the gazetteer)",
+    }
+    twenty_role = st.selectbox(
+        "Twenty role",
+        options=list(twenty_role_labels.keys()),
+        index=list(twenty_role_labels.keys()).index(
+            ident.twenty_role if ident.twenty_role in twenty_role_labels else "off"
+        ),
+        format_func=lambda k: twenty_role_labels[k],
+        key="identify_twenty_role",
+        disabled=not twenty_enabled,
+    )
+    twenty_base = st.text_input(
+        "Twenty base URL (optional; TWENTY_BASE_URL env wins)",
+        value=ident.twenty_base_url,
+        key="identify_twenty_base_url",
+        disabled=not twenty_enabled,
+    )
     if (
         auto_name != ident.auto_name
         or auto_link != ident.auto_link
         or style_only != ident.style_only_apply
+        or policy_choice != ident.name_token_policy
+        or twenty_enabled != ident.twenty_enabled
+        or twenty_role != ident.twenty_role
+        or str(twenty_base or "").strip() != ident.twenty_base_url
     ):
-        from transcriptx.core.speaker_profiles.identify.settings import IdentifySettings
-
         save_identify_settings(
-            IdentifySettings(
-                auto_name=bool(auto_name),
-                auto_link=bool(auto_link),
-                style_only_apply=bool(style_only),
+            ident.model_copy(
+                update={
+                    "auto_name": bool(auto_name),
+                    "auto_link": bool(auto_link),
+                    "style_only_apply": bool(style_only),
+                    "name_token_policy": policy_choice,
+                    "twenty_enabled": bool(twenty_enabled),
+                    "twenty_role": twenty_role if twenty_enabled else "off",
+                    "twenty_base_url": str(twenty_base or "").strip().rstrip("/"),
+                }
             )
         )
         st.caption("Saved ingest auto-identify defaults.")
+        ident = load_identify_settings()
+
+    if ident.twenty_enabled:
+        from transcriptx.core.speaker_profiles.identify.twenty import (
+            cache_is_fresh,
+            load_people_cache,
+            refresh_people_cache,
+            twenty_ready,
+        )
+
+        if not twenty_ready(ident):
+            st.caption(
+                "Twenty is enabled but not ready. Set TWENTY_API_KEY and "
+                "TWENTY_BASE_URL in `.env` (Paperful uses the same names)."
+            )
+        else:
+            cached = load_people_cache()
+            if cached is not None:
+                st.caption(
+                    f"Twenty people cache: {len(cached.people)} names "
+                    f"(fetched {cached.fetched_at or 'unknown'}"
+                    f"{'' if cache_is_fresh(cached) else ', stale'})."
+                )
+            col_a, col_b = st.columns(2)
+            if col_a.button(
+                "Test Twenty connection",
+                key="identify_twenty_test",
+                icon=ic.VERIFY,
+            ):
+                try:
+                    idx = refresh_people_cache(ident)
+                    if idx.error:
+                        st.error(f"Twenty lookup failed: {idx.error}")
+                    else:
+                        st.success(f"Twenty reachable — {len(idx.people)} people.")
+                except Exception as exc:
+                    st.error(f"Twenty lookup failed: {exc}")
+            if col_b.button(
+                "Refresh Twenty names",
+                key="identify_twenty_refresh",
+                icon=ic.REFRESH,
+            ):
+                try:
+                    idx = refresh_people_cache(ident)
+                    if idx.error:
+                        st.error(f"Refresh failed: {idx.error}")
+                    else:
+                        st.success(f"Cached {len(idx.people)} Twenty people.")
+                except Exception as exc:
+                    st.error(f"Refresh failed: {exc}")
 
     st.caption(
         "Probabilistic local match — not identity verification. "
@@ -530,9 +641,7 @@ def render_speakers_panel() -> None:
                 )
             )
             st.info(VOICE_PRIVACY_USER_NOTICE)
-            ensure_idempotency_key(
-                st.session_state, "voice_privacy_enable_replace_op"
-            )
+            ensure_idempotency_key(st.session_state, "voice_privacy_enable_replace_op")
             st.button(
                 "Replace settings and enable voice matching",
                 key="voice_privacy_enable_replace",
@@ -613,7 +722,9 @@ def render_speakers_panel() -> None:
                     "Re-enable and re-enrol to restore matching."
                 )
             elif flash == "wiped":
-                st.warning("Voice wipe finished. Matching stays off until you re-enable.")
+                st.warning(
+                    "Voice wipe finished. Matching stays off until you re-enable."
+                )
             if status.allowed:
                 st.success("Local voice matching is enabled.")
                 _render_bulk_voice_ops()
@@ -654,12 +765,8 @@ def render_speakers_panel() -> None:
                     on_click=_cb_voice_privacy_enable,
                 )
             elif status.wipe_required or status.block_reason == "wipe_required":
-                st.warning(
-                    status.detail or "Voice wipe required after revocation."
-                )
-                ensure_idempotency_key(
-                    st.session_state, "voice_privacy_wipe_resume_op"
-                )
+                st.warning(status.detail or "Voice wipe required after revocation.")
+                ensure_idempotency_key(st.session_state, "voice_privacy_wipe_resume_op")
                 st.button(
                     "Resume voice wipe",
                     key="voice_wipe_resume",

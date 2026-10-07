@@ -659,7 +659,6 @@ def bubble_tokens_for_suggestion(
 ) -> tuple[str, ...]:
     """Clickable append bubbles (non-date tokens useful while composing a name)."""
     ordered: list[str] = []
-    pattern_tokens = extract_pattern_tokens(pattern)
 
     def _add(value: str) -> None:
         v = (value or "").strip()
@@ -668,16 +667,6 @@ def bubble_tokens_for_suggestion(
 
     if "period" in tokens:
         _add(tokens["period"])
-    _add(sequence)
-    if "hhmm" in tokens:
-        _add(tokens["hhmm"])
-    if "hhmmss" in tokens:
-        _add(tokens["hhmmss"])
-    for name in pattern_tokens:
-        if name in DATE_ROOT_TOKENS or name in {"n", "stem"}:
-            continue
-        if name in tokens:
-            _add(tokens[name])
     return tuple(ordered)
 
 

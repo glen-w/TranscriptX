@@ -275,20 +275,61 @@ function retryDelayMs(attempt: number): number {
   return Math.min(CLIP_RETRY_CAP_MS, CLIP_RETRY_BASE_MS * 2 ** attempt);
 }
 
+function setClipStatus(root: Element, message: string): void {
+  qs<HTMLElement>(root, ".tx-sid-clip-status").textContent = message;
+}
+
+/**
+ * Load clip bytes into the shared <audio> element and optionally start playback.
+ *
+ * Returns true when the blob URL was attached. ``autoplay`` defaults to true for
+ * ▶ clicks (user gesture). Async fulfill after "Preparing…" must pass
+ * ``autoplay: false`` — browsers reject play() without a gesture, and a swallowed
+ * NotAllowedError left the player loaded but silent.
+ */
 function playSampleBlob(
   state: InstanceState,
   root: Element,
   sample: SampleRow,
   maxBlob: number,
+  opts: { autoplay?: boolean } = {},
 ): boolean {
   if (!sample.clip_b64) return false;
   const url = ensureBlobUrl(state, sample.clip_id, sample.clip_b64, maxBlob);
   if (!url) return false;
+  const autoplay = opts.autoplay !== false;
   if (state.audio.src !== url) {
     state.audio.src = url;
+  } else if (autoplay) {
+    try {
+      state.audio.currentTime = 0;
+    } catch {
+      // Ignore seek errors on freshly attached sources.
+    }
   }
-  void state.audio.play().catch(() => undefined);
-  qs<HTMLElement>(root, ".tx-sid-clip-status").textContent = "";
+  if (!autoplay) {
+    setClipStatus(root, "Ready — click ▶ to play");
+    return true;
+  }
+  // Clear "Preparing…" immediately on ▶; restore a message only if play() rejects.
+  setClipStatus(root, "");
+  void state.audio
+    .play()
+    .then(() => {
+      setClipStatus(root, "");
+    })
+    .catch((err: unknown) => {
+      const name =
+        err && typeof err === "object" && "name" in err
+          ? String((err as { name?: unknown }).name)
+          : "";
+      if (name === "AbortError") return;
+      if (name === "NotAllowedError") {
+        setClipStatus(root, "Ready — click ▶ to play");
+        return;
+      }
+      setClipStatus(root, "Playback failed — click ▶ again.");
+    });
   return true;
 }
 
@@ -334,16 +375,19 @@ function requestClipPlay(
   sample: SampleRow,
 ): void {
   const maxBlob = data.budgets?.max_blob_bytes ?? DEFAULT_MAX_BLOB;
-  if (playSampleBlob(state, root, sample, maxBlob)) {
-    clearPendingPlay(state, root);
+  if (playSampleBlob(state, root, sample, maxBlob, { autoplay: true })) {
+    clearRetryTimers(state);
+    state.pendingPlay = null;
     return;
   }
   const status = sample.clip_status || "";
   if (status === "unavailable" || status === "too_large") {
     clearRetryTimers(state);
     state.pendingPlay = null;
-    qs<HTMLElement>(root, ".tx-sid-clip-status").textContent =
-      status === "too_large" ? "Clip too large to load." : "Clip unavailable.";
+    setClipStatus(
+      root,
+      status === "too_large" ? "Clip too large to load." : "Clip unavailable.",
+    );
     return;
   }
   clearRetryTimers(state);
@@ -353,7 +397,7 @@ function requestClipPlay(
     end: sample.end,
     attempt: 0,
   };
-  qs<HTMLElement>(root, ".tx-sid-clip-status").textContent = "Preparing clip…";
+  setClipStatus(root, "Preparing clip…");
   fireCommand(state, data, "enqueue_clip", {
     clip_id: sample.clip_id,
     start: sample.start,
@@ -386,8 +430,11 @@ function tryFulfillPendingPlay(
   const sample = findPlayableSample(data, pending);
   if (!sample) return;
   const maxBlob = data.budgets?.max_blob_bytes ?? DEFAULT_MAX_BLOB;
-  if (playSampleBlob(state, root, sample, maxBlob)) {
-    clearPendingPlay(state, root);
+  // Prefer autoplay when the browser allows it (e.g. prior media engagement).
+  // NotAllowedError surfaces "Ready — click ▶"; a follow-up ▶ has a gesture.
+  if (playSampleBlob(state, root, sample, maxBlob, { autoplay: true })) {
+    clearRetryTimers(state);
+    state.pendingPlay = null;
     return;
   }
   if (
@@ -396,10 +443,12 @@ function tryFulfillPendingPlay(
   ) {
     clearRetryTimers(state);
     state.pendingPlay = null;
-    qs<HTMLElement>(root, ".tx-sid-clip-status").textContent =
+    setClipStatus(
+      root,
       sample.clip_status === "too_large"
         ? "Clip too large to load."
-        : "Clip unavailable.";
+        : "Clip unavailable.",
+    );
   }
 }
 
@@ -906,4 +955,5 @@ export const __test = {
   },
   applyNamePick,
   findPlayableSample,
+  playSampleBlob,
 };

@@ -212,6 +212,7 @@ where = ["src"]
 "transcriptx.web" = ["assets/*"]
 "transcriptx.preprocessing.lexicons" = ["*.json"]
 "transcriptx.preprocessing.stopwords" = ["*.json"]
+"transcriptx.preprocessing.names" = ["*.json"]
 
 [tool.black]
 line-length = 88
