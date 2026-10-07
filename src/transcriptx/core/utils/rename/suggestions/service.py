@@ -70,7 +70,7 @@ def _empty_result(path: Path, pattern: str, status: str = "") -> RenameSuggestio
     )
 
 
-def _cache_key(
+def build_rename_suggestions_cache_key(
     *,
     fingerprint: str,
     content_mode: str,
@@ -289,7 +289,7 @@ def suggest_rename_stems(
         except Exception:
             llm_model_tag = "llm-unresolved"
 
-    cache_key = _cache_key(
+    cache_key = build_rename_suggestions_cache_key(
         fingerprint=fingerprint,
         content_mode=content_mode,
         suggest_transcript=suggest_transcript,

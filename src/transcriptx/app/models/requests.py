@@ -143,6 +143,18 @@ class GroupAnalysisRequest:
 
 
 @dataclass
+class WarmSuggestionsRequest:
+    """Input for library-wide assistive LLM suggestion cache warm."""
+
+    warm_speaker_names: bool = False
+    warm_rename: bool = False
+    warm_all: bool = False
+    transcript_paths: Optional[list[Path]] = None
+    force_refresh: bool = False
+    dry_run: bool = False
+
+
+@dataclass
 class BatchAnalysisRequest:
     """Input for batch analysis. Provide either transcript_paths or folder."""
 

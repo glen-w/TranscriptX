@@ -126,7 +126,7 @@ data_dir/                       # app-managed working state
       samples/ embeddings/ vectors/
       privacy.voice_settings.json
       active_generation.json generations/
-    .cache/                     # disposable listing/aggregate caches only (.cache/voice/ and .cache/identify/ disposable)
+    .cache/                     # disposable caches (.cache/voice/, .cache/identify/ fusion + name_suggestions, listing aggregates)
   outputs/
     groups/                     # group analysis run outputs (per group uuid / run id)
   preprocessing/

@@ -249,6 +249,13 @@ def render_configuration_panel(
         )
         st.code(json.dumps(effective_config, indent=2), language="json")
 
+    from transcriptx.web.ui.settings.llm_suggestions_panel import (
+        render_rename_suggestion_bulk,
+    )
+
+    st.divider()
+    render_rename_suggestion_bulk()
+
     st.divider()
     st.subheader("Edit configuration")
     st.caption(

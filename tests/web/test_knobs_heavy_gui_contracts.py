@@ -487,6 +487,26 @@ def test_speakers_panel_wires_voice_privacy_knobs() -> None:
 
 
 @pytest.mark.unit
+def test_llm_suggestions_panel_wires_bulk_warm_knobs() -> None:
+    speakers = Path("src/transcriptx/web/ui/settings/speakers_panel.py").read_text()
+    panel = Path("src/transcriptx/web/ui/settings/llm_suggestions_panel.py").read_text()
+    config = Path("src/transcriptx/web/ui/settings/configuration_panel.py").read_text()
+    for needle in (
+        "Assistive LLM suggestions",
+        "render_speaker_name_suggestion_bulk",
+        "Pre-load name suggestions (LLM)",
+        "llm_name_bulk_warm_btn",
+        "BulkLlmSuggestionsService",
+        "render_rename_suggestion_bulk",
+        "Pre-load rename suggestions",
+        "llm_rename_bulk_warm_btn",
+        "transcriptx warm-suggestions",
+        "run_warm_suggestions",
+    ):
+        assert needle in speakers or needle in panel or needle in config, needle
+
+
+@pytest.mark.unit
 def test_disabled_voice_matching_info_does_not_contradict_file_authority() -> None:
     from transcriptx.web.ui.settings.speakers_panel import disabled_voice_matching_info
 

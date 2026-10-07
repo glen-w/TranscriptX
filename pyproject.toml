@@ -192,7 +192,7 @@ full = [
 ]
 
 [project.scripts]
-transcriptx = "transcriptx.web.__main__:main"
+transcriptx = "transcriptx.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/glen-w/TranscriptX"
