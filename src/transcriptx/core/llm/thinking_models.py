@@ -27,6 +27,7 @@ LLM_JSON_FORMAT_CONSUMER_IDS: frozenset[str] = frozenset(
         "chart_descriptions",
         "group_llm_synthesis",
         "speaker_name_suggestions",
+        "rename_suggestions",
         "corrections_studio",
         "topic_shift",
     }

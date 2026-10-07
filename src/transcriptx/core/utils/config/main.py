@@ -352,6 +352,21 @@ class TranscriptXConfig:
                 "smart_rename_pattern": getattr(
                     self.input, "smart_rename_pattern", "{yymmdd}_{period}_{n}"
                 ),
+                "rename_content_suggestions": getattr(
+                    self.input, "rename_content_suggestions", "off"
+                ),
+                "rename_suggest_transcript": getattr(
+                    self.input, "rename_suggest_transcript", True
+                ),
+                "rename_suggest_llm": getattr(
+                    self.input, "rename_suggest_llm", False
+                ),
+                "rename_suggest_web": getattr(
+                    self.input, "rename_suggest_web", False
+                ),
+                "rename_suggestions_effort": getattr(
+                    self.input, "rename_suggestions_effort", "low"
+                ),
                 "file_selection_mode": getattr(
                     self.input, "file_selection_mode", "prompt"
                 ),

@@ -66,6 +66,10 @@ install error. Corrections Studio review can roll back with
 ``TX_CORRECTIONS_WORKSPACE_COMPONENT=0``. See
 [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
 
+## Content rename suggestions
+
+Assistive full-stem suggestions (`input.rename_content_suggestions=auto`, default `off`) are **drafts**: transcript heuristics, optional local LLM, and optional web lookup can mis-rank dates or titles (especially webinars with no clear event date in the file). Web lookup sends a short query only when the filename or opening dialogue looks like a public event and `rename_suggest_web` is enabled. Suggestions do not rename until you submit **Rename**; `auto_import` does not use content stems.
+
 ## Theme D reader (full-file playback)
 
 The Transcript **reader workspace** plays the resolved source audio via a

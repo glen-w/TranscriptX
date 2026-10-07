@@ -3,6 +3,11 @@
   "playback_skip_seconds_long": 60.0,
   "playback_skip_seconds_short": 10.0,
   "prefill_rename_with_date_prefix": true,
+  "rename_content_suggestions": "off",
+  "rename_suggest_llm": false,
+  "rename_suggest_transcript": true,
+  "rename_suggest_web": false,
+  "rename_suggestions_effort": "low",
   "recordings_folders": [
     "/workspace/data/recordings"
   ],

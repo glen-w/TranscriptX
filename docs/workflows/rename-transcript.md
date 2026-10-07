@@ -32,6 +32,8 @@ The sample is [imported](../runtime/transcription.md) (see [First analysis](firs
 
 Smart suggestions from device filename patterns may appear as token buttons when enabled — optional helpers, not required for this walkthrough.
 
+When **Content rename suggestions** is set to `auto` (Settings → Configuration → Rename), the rename form can prefill a full proposed stem and list other candidates in a dropdown (transcript cues, optional local LLM, optional web lookup for public-event-like files). Nothing is renamed until you submit **Rename**. Web auto-fetch sends a short event query, not the transcript body.
+
 ## What to notice
 
 - Rename updates managed library naming; it is not an export/share step.

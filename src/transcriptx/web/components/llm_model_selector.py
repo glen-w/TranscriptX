@@ -221,7 +221,7 @@ def _management_thinking_caption_text(installed: Sequence[str]) -> str | None:
         "Installed list is live from Ollama and includes thinking-family tags: "
         f"{listed}. They are unsafe as a shared default for JSON modules "
         "(narrative_summary, llm_action_items, chart_descriptions, "
-        "group_llm_synthesis, speaker_name_suggestions, "
+        "group_llm_synthesis, speaker_name_suggestions, rename_suggestions, "
         "corrections_studio, topic_shift)."
     )
 

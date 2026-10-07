@@ -59,6 +59,84 @@
     "sensitivity": "normal",
     "type": "bool"
   },
+  "input.rename_content_suggestions": {
+    "advanced": false,
+    "category": "input",
+    "choices": [
+      "off",
+      "auto"
+    ],
+    "default": "off",
+    "description": "",
+    "key": "input.rename_content_suggestions",
+    "max": null,
+    "min": null,
+    "path": "input.rename_content_suggestions",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "input.rename_suggest_llm": {
+    "advanced": false,
+    "category": "input",
+    "choices": null,
+    "default": false,
+    "description": "",
+    "key": "input.rename_suggest_llm",
+    "max": null,
+    "min": null,
+    "path": "input.rename_suggest_llm",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
+  "input.rename_suggest_transcript": {
+    "advanced": false,
+    "category": "input",
+    "choices": null,
+    "default": true,
+    "description": "",
+    "key": "input.rename_suggest_transcript",
+    "max": null,
+    "min": null,
+    "path": "input.rename_suggest_transcript",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
+  "input.rename_suggest_web": {
+    "advanced": false,
+    "category": "input",
+    "choices": null,
+    "default": false,
+    "description": "",
+    "key": "input.rename_suggest_web",
+    "max": null,
+    "min": null,
+    "path": "input.rename_suggest_web",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
+  "input.rename_suggestions_effort": {
+    "advanced": false,
+    "category": "input",
+    "choices": [
+      "low",
+      "medium",
+      "high",
+      "max"
+    ],
+    "default": "low",
+    "description": "Effort tier for rename-suggestion LLM when llm.provider is ollama. Controls max_input_chars, request_timeout, and max_output_tokens for that pass only. Model is chosen under Settings → Models for consumer rename_suggestions.",
+    "key": "input.rename_suggestions_effort",
+    "max": null,
+    "min": null,
+    "path": "input.rename_suggestions_effort",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
   "input.recordings_folders": {
     "advanced": false,
     "category": "input",

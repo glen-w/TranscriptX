@@ -1,6 +1,6 @@
 {
-  "total_registry_keys": 741,
-  "pydantic_owned_keys": 725,
+  "total_registry_keys": 746,
+  "pydantic_owned_keys": 730,
   "non_pydantic_baseline_keys": 16,
   "pilot_count": 55,
   "per_pilot_key_counts": {
@@ -11,7 +11,7 @@
     "acts": 21,
     "dashboard_overview": 5,
     "output": 9,
-    "input": 8,
+    "input": 13,
     "logging": 6,
     "group_analysis": 9,
     "audio_preprocessing": 18,
