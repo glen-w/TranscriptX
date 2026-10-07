@@ -16,6 +16,12 @@ from transcriptx.core.utils.rename.smart_name import (
     smart_rename_suggests_in_rename_workflow,
     suggest_smart_rename_base_name,
 )
+from transcriptx.core.utils.rename.title_stem import (
+    propose_dated_title,
+    stem_looks_like_natural_language_title,
+    title_word_bubbles,
+)
+from transcriptx.web import icons as ic
 from transcriptx.web.services.rename_service import RenameResult, RenameService
 from transcriptx.web.components.info_tooltip import widget_help
 
@@ -83,6 +89,10 @@ def sticky_content_rename_keys(form_key: str) -> tuple[str, str, str]:
     )
 
 
+def sticky_nl_title_reuse_key(form_key: str) -> str:
+    return f"{form_key}__nl_title_reuse"
+
+
 def _rename_content_suggestions_mode() -> str:
     try:
         from transcriptx.core.utils.config_provider import get_config
@@ -105,6 +115,96 @@ def clear_rename_form_session_keys(form_key: str, session_state=None) -> None:
         ss.pop(key, None)
     for key in sticky_content_rename_keys(form_key):
         ss.pop(key, None)
+    ss.pop(sticky_nl_title_reuse_key(form_key), None)
+
+
+def _smart_prefill_from_suggestion(
+    path: Path,
+    suggestion: SmartRenameSuggestion,
+) -> tuple[str, list[str], str, bool]:
+    """Return (suggested_name, bubbles, date_root, nl_title_reuse)."""
+    stem = path.stem
+    if suggestion.date_root and stem_looks_like_natural_language_title(stem):
+        return (
+            propose_dated_title(suggestion.date_root, stem),
+            list(title_word_bubbles(stem)),
+            suggestion.date_root,
+            True,
+        )
+    if suggestion.date_root:
+        return (
+            suggestion.date_root,
+            list(suggestion.token_bubbles),
+            suggestion.date_root,
+            False,
+        )
+    if suggestion.full:
+        return (
+            suggestion.full,
+            list(suggestion.token_bubbles),
+            suggestion.date_root,
+            False,
+        )
+    return (stem, [], "", False)
+
+
+def _store_content_suggestion_result(
+    path: Path,
+    form_key: str,
+    content_result,
+    *,
+    session_state,
+) -> None:
+    options_key, pick_key, status_key = sticky_content_rename_keys(form_key)
+    bubbles_key, date_root_key = sticky_smart_rename_keys(form_key)
+    _, target_key, suggestion_key = sticky_suggested_name_keys(form_key)
+    nl_key = sticky_nl_title_reuse_key(form_key)
+
+    labels: list[str] = []
+    label_to_stem: dict[str, str] = {}
+    for opt in content_result.options:
+        label = f"{opt.stem} — {opt.basis}, {opt.confidence}"
+        labels.append(label)
+        label_to_stem[label] = opt.stem
+    session_state[options_key] = label_to_stem
+    session_state[status_key] = content_result.status
+    session_state[pick_key] = labels[0] if labels else ""
+
+    if content_result.prefill:
+        session_state[suggestion_key] = content_result.prefill
+        session_state[target_key] = content_result.prefill
+        if stem_looks_like_natural_language_title(path.stem):
+            session_state[bubbles_key] = list(title_word_bubbles(path.stem))
+            session_state[nl_key] = True
+        else:
+            session_state.pop(bubbles_key, None)
+            session_state.pop(date_root_key, None)
+            session_state.pop(nl_key, None)
+
+
+def _cb_suggest_rename_names(transcript_path: str, form_key: str) -> None:
+    from transcriptx.core.utils.rename.suggestions import suggest_rename_stems
+
+    path = Path(transcript_path)
+    result = suggest_rename_stems(path, force_refresh=True, on_demand=True)
+    _store_content_suggestion_result(
+        path, form_key, result, session_state=st.session_state
+    )
+
+
+def _rename_suggest_button_label() -> str:
+    try:
+        from transcriptx.core.utils.config import get_config
+
+        cfg = get_config().llm
+        llm_on = bool(cfg.enabled and (cfg.provider or "").strip().lower() == "ollama")
+    except Exception:
+        llm_on = False
+    return (
+        "Suggest names (transcript + LLM)"
+        if llm_on
+        else "Suggest names (transcript only)"
+    )
 
 
 def _resolve_smart_suggestion(
@@ -143,6 +243,7 @@ def bind_suggested_rename_name(
     bubbles_key, date_root_key = sticky_smart_rename_keys(form_key)
     fingerprint = _path_fingerprint(path)
     options_key, pick_key, status_key = sticky_content_rename_keys(form_key)
+    nl_key = sticky_nl_title_reuse_key(form_key)
     if st.session_state.get(bound_key) != fingerprint:
         mode, _pattern, legacy = _input_rename_settings()
         content_mode = _rename_content_suggestions_mode()
@@ -160,8 +261,13 @@ def bind_suggested_rename_name(
             st.session_state[status_key] = content_result.status
             if content_result.prefill:
                 suggested = content_result.prefill
-                st.session_state[bubbles_key] = []
-                st.session_state[date_root_key] = ""
+                if stem_looks_like_natural_language_title(path.stem):
+                    st.session_state[bubbles_key] = list(title_word_bubbles(path.stem))
+                    st.session_state[nl_key] = True
+                else:
+                    st.session_state[bubbles_key] = []
+                    st.session_state[date_root_key] = ""
+                    st.session_state.pop(nl_key, None)
             else:
                 use_smart = (
                     enable_smart
@@ -174,14 +280,13 @@ def bind_suggested_rename_name(
                 suggestion = _resolve_smart_suggestion(
                     path, enable_smart=bool(use_smart)
                 )
-                if suggestion is not None and suggestion.date_root:
-                    suggested = suggestion.date_root
-                    st.session_state[bubbles_key] = list(suggestion.token_bubbles)
-                    st.session_state[date_root_key] = suggestion.date_root
-                elif suggestion is not None and suggestion.full:
-                    suggested = suggestion.full
-                    st.session_state[bubbles_key] = list(suggestion.token_bubbles)
-                    st.session_state[date_root_key] = suggestion.date_root
+                if suggestion is not None:
+                    suggested, bubbles, date_root, nl_reuse = (
+                        _smart_prefill_from_suggestion(path, suggestion)
+                    )
+                    st.session_state[bubbles_key] = bubbles
+                    st.session_state[date_root_key] = date_root
+                    st.session_state[nl_key] = nl_reuse
                 elif date_prefix_prefill:
                     suggested = suggest_rename_base_name(
                         path,
@@ -208,17 +313,17 @@ def bind_suggested_rename_name(
         st.session_state.pop(pick_key, None)
         st.session_state.pop(status_key, None)
         suggestion = _resolve_smart_suggestion(path, enable_smart=bool(use_smart))
-        if suggestion is not None and suggestion.date_root:
-            suggested = suggestion.date_root
-            st.session_state[bubbles_key] = list(suggestion.token_bubbles)
-            st.session_state[date_root_key] = suggestion.date_root
-        elif suggestion is not None and suggestion.full:
-            suggested = suggestion.full
-            st.session_state[bubbles_key] = list(suggestion.token_bubbles)
-            st.session_state[date_root_key] = suggestion.date_root
+        if suggestion is not None:
+            suggested, bubbles, date_root, nl_reuse = _smart_prefill_from_suggestion(
+                path, suggestion
+            )
+            st.session_state[bubbles_key] = bubbles
+            st.session_state[date_root_key] = date_root
+            st.session_state[nl_key] = nl_reuse
         else:
             st.session_state.pop(bubbles_key, None)
             st.session_state.pop(date_root_key, None)
+            st.session_state.pop(nl_key, None)
             if date_prefix_prefill:
                 suggested = suggest_rename_base_name(
                     path,
@@ -368,11 +473,17 @@ def render_transcript_rename_form(
     _, target_key, _ = sticky_suggested_name_keys(form_key)
     bubbles_key, _ = sticky_smart_rename_keys(form_key)
     has_bubbles = bool(st.session_state.get(bubbles_key))
+    nl_reuse = bool(st.session_state.get(sticky_nl_title_reuse_key(form_key)))
 
     _render_rename_heading(title, as_subheader=as_subheader, show_heading=show_heading)
     if caption:
         st.caption(caption)
-    if has_bubbles:
+    if nl_reuse:
+        st.caption(
+            "Recording date is prefilled from the filename when available; the "
+            "rest is your existing title with spaces replaced by underscores."
+        )
+    elif has_bubbles:
         st.caption(
             "Suggested date root is prefilled from the recording filename when "
             "available. Use the token buttons to build a custom title."
@@ -385,7 +496,21 @@ def render_transcript_rename_form(
 
     # Bubbles live outside the form so clicks can update the text field immediately.
     _render_token_bubbles(form_key)
-    if _rename_content_suggestions_mode() == "auto":
+    st.button(
+        _rename_suggest_button_label(),
+        key=f"{form_key}__suggest_rename",
+        icon=ic.SEARCH,
+        help=widget_help(
+            "Build rename candidates from the transcript and optional local LLM. "
+            "Pick a suggestion below — nothing is renamed until you submit Rename. "
+            "Uses the `rename_suggestions` model from Settings → Models when LLM is on."
+        ),
+        on_click=_cb_suggest_rename_names,
+        args=(str(path), form_key),
+    )
+    if _rename_content_suggestions_mode() == "auto" or (
+        st.session_state.get(sticky_content_rename_keys(form_key)[0])
+    ):
         _render_content_suggestion_dropdown(form_key)
 
     with st.form(form_key, clear_on_submit=False):

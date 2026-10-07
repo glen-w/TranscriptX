@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Mapping, Sequence
 
 from transcriptx.core.analysis.entity_sentiment import normalize_entity_name
+from transcriptx.core.analysis.names.clustering import cluster_people_rows
 from transcriptx.utils.text_utils import is_named_speaker
 
 
@@ -98,6 +99,10 @@ def build_names_catalog(
             }
         )
 
+    people = cluster_people_rows(people)
+    for person in people:
+        mentions = list(person.get("mentions") or [])
+        person["mentions"] = mentions[:max_mentions_per_person]
     people.sort(key=lambda row: (-row["mention_count"], row["display_name"].casefold()))
     total_mentions = sum(person["mention_count"] for person in people)
     return {

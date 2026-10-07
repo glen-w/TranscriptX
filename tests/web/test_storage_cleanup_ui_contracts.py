@@ -76,6 +76,20 @@ def test_speakers_panel_renders_speaker_profile_toggles(monkeypatch):
             )
             return value
 
+        def selectbox(self, label, options=None, index=0, **_k):
+            opts = list(options or [])
+            if not opts:
+                return None
+            if 0 <= int(index) < len(opts):
+                return opts[int(index)]
+            return opts[0]
+
+        def text_input(self, *_a, **_k):
+            return ""
+
+        def columns(self, n):
+            return [self for _ in range(int(n) if n else 1)]
+
         def caption(self, *_a, **_k):
             pass
 

@@ -34,6 +34,9 @@ logger = get_logger()
 SPEAKER_NAME_SUGGESTIONS_CONSUMER_ID = "speaker_name_suggestions"
 
 
+EXTRACTOR_REVISION = "name-extract.v2"
+
+
 def fingerprint_segments(segments: Sequence[Mapping[str, Any]]) -> str:
     """Stable hash of diarized speaker + text content."""
     rows: list[dict[str, str]] = []
@@ -43,7 +46,8 @@ def fingerprint_segments(segments: Sequence[Mapping[str, Any]]) -> str:
         spk = str(segment.get("speaker_diarized_id") or segment.get("speaker") or "")
         text = str(segment.get("text") or segment.get("transcript") or "")
         rows.append({"speaker": spk, "text": text})
-    return sha256_text(json.dumps(rows, sort_keys=True, ensure_ascii=False))
+    payload = {"rev": EXTRACTOR_REVISION, "rows": rows}
+    return sha256_text(json.dumps(payload, sort_keys=True, ensure_ascii=False))
 
 
 def _try_llm_assignments(

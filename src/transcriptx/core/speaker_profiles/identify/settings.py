@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,7 +12,10 @@ from transcriptx.core.utils.paths import PATHS
 from transcriptx.io.atomic_json import write_json_atomic
 
 IDENTIFY_SETTINGS_FILENAME = "identify.json"
-IDENTIFY_SETTINGS_SCHEMA_VERSION = 1
+IDENTIFY_SETTINGS_SCHEMA_VERSION = 2
+
+NameTokenPolicy = Literal["hybrid", "strict", "soft"]
+TwentyRole = Literal["off", "evidence", "gate"]
 
 
 class IdentifySettings(BaseModel):
@@ -23,6 +27,10 @@ class IdentifySettings(BaseModel):
     auto_name: bool = False
     auto_link: bool = False
     style_only_apply: bool = False
+    name_token_policy: NameTokenPolicy = "hybrid"
+    twenty_enabled: bool = False
+    twenty_role: TwentyRole = "off"
+    twenty_base_url: str = ""
 
 
 def identify_settings_path(*, config_dir: Path | None = None) -> Path:
@@ -55,4 +63,6 @@ def save_identify_settings(
 ) -> None:
     path = identify_settings_path(config_dir=config_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
-    write_json_atomic(path, settings.model_dump(mode="python"), indent=2)
+    payload = settings.model_dump(mode="python")
+    payload["schema_version"] = IDENTIFY_SETTINGS_SCHEMA_VERSION
+    write_json_atomic(path, payload, indent=2)

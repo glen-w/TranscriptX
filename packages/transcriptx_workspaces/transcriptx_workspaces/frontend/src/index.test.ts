@@ -121,4 +121,62 @@ describe("Speaker ID workspace lifecycle helpers", () => {
       }),
     ).toBeUndefined();
   });
+
+  it("async clip fulfill loads without autoplay and prompts ▶", () => {
+    if (typeof URL === "undefined" || typeof URL.createObjectURL !== "function") {
+      return;
+    }
+    const created: string[] = [];
+    const origCreate = URL.createObjectURL.bind(URL);
+    const origRevoke = URL.revokeObjectURL?.bind(URL);
+    URL.createObjectURL = ((blob: Blob) => {
+      const url = `blob:test-${created.length}`;
+      created.push(url);
+      return url;
+    }) as typeof URL.createObjectURL;
+    if (URL.revokeObjectURL) {
+      URL.revokeObjectURL = (() => undefined) as typeof URL.revokeObjectURL;
+    }
+    try {
+      document.body.innerHTML = `
+        <div class="tx-sid-root">
+          <audio class="tx-sid-audio"></audio>
+          <div class="tx-sid-clip-status">Preparing clip…</div>
+        </div>
+      `;
+      const root = document.querySelector(".tx-sid-root") as HTMLElement;
+      const audio = root.querySelector("audio") as HTMLAudioElement;
+      const playCalls: string[] = [];
+      audio.play = (() => {
+        playCalls.push("play");
+        return Promise.resolve();
+      }) as typeof audio.play;
+
+      const state = {
+        blobUrls: new Map<string, string>(),
+        blobBytes: 0,
+        audio,
+      } as any;
+      const sample = {
+        clip_id: "c1",
+        start: 0,
+        end: 1,
+        text: "hi",
+        clip_b64: btoa("ID3fake"),
+      };
+      const ok = __test.playSampleBlob(state, root, sample, 1_000_000, {
+        autoplay: false,
+      });
+      expect(ok).toBe(true);
+      expect(playCalls).toEqual([]);
+      expect(root.querySelector(".tx-sid-clip-status")?.textContent).toBe(
+        "Ready — click ▶ to play",
+      );
+      expect(created.length).toBe(1);
+      expect(audio.src).toContain("blob:test-0");
+    } finally {
+      URL.createObjectURL = origCreate;
+      if (origRevoke && URL.revokeObjectURL) URL.revokeObjectURL = origRevoke;
+    }
+  });
 });

@@ -12,6 +12,7 @@ SuggestionBasis = Literal[
     "roster",
     "moderator_intro",
     "peer_reference",
+    "crm",
 ]
 SuggestionConfidence = Literal["strong", "possible", "likely"]
 
@@ -36,6 +37,7 @@ class RosterPerson:
     mention_count: int
     mentioned_by_speakers: tuple[str, ...] = ()
     sample_quote: str = ""
+    alias_keys: tuple[str, ...] = ()
 
 
 @dataclass
@@ -71,6 +73,7 @@ class NameSuggestionsResult:
                     "mention_count": p.mention_count,
                     "mentioned_by_speakers": list(p.mentioned_by_speakers),
                     "sample_quote": p.sample_quote,
+                    "alias_keys": list(p.alias_keys),
                 }
                 for p in self.roster
             ],
@@ -110,6 +113,7 @@ class NameSuggestionsResult:
                         str(x) for x in (row.get("mentioned_by_speakers") or ())
                     ),
                     sample_quote=str(row.get("sample_quote") or ""),
+                    alias_keys=tuple(str(x) for x in (row.get("alias_keys") or ())),
                 )
             )
         per: dict[str, tuple[NameOption, ...]] = {}
@@ -187,6 +191,7 @@ def _option_label(option: NameOption) -> str:
         "roster": "Mentioned in transcript",
         "moderator_intro": "Moderator introduction (LLM)",
         "peer_reference": "Referenced by another speaker (LLM)",
+        "crm": "In Twenty CRM",
     }
     bit = basis_labels.get(option.basis, option.basis)
     return f"{option.display_name} — {bit}"
