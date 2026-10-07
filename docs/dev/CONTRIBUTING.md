@@ -123,3 +123,10 @@ When adding/changing transcript import adapters:
 ## Development and testing
 
 See [developer_quickstart.md](../developer_quickstart.md) for pipeline structure, adding analysis modules, and testing. Run tests from the repo root (e.g. `pytest`); see `tests/README.md` and the Makefile for CI and smoke tests.
+
+**Before opening a PR**, skim [tests/README.md](../../tests/README.md) § *CI watchlist* and, when touching settings or registry code, [config_architecture.md](config_architecture.md) (ownership snapshot + config golden fixtures). Typical misses:
+
+- New Pydantic config field without updating ownership totals, `registry_ownership_snapshot.json`, and the pilot’s `*_golden.json` files.
+- Path defaults in goldens that work on your laptop but not on CI (use `<REPO>/data/...` shapes documented in `test_pydantic_bridge_drift.py`).
+- New Streamlit buttons with fixed English labels missing `icon=` from `transcriptx.web.icons`.
+- User-facing settings changes without `.env.example` / `ENV_KEY_REGISTRY` when a new env mapping is introduced.

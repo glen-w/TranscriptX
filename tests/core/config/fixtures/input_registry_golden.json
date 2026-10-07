@@ -64,7 +64,7 @@
     "category": "input",
     "choices": null,
     "default": [
-      "/Users/89298/Documents/recordings"
+      "<REPO>/data/recordings"
     ],
     "description": "",
     "key": "input.recordings_folders",

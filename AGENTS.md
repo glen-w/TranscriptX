@@ -53,8 +53,12 @@ managed-import workflow. There is no long-running backend beyond the Streamlit p
   gate is pre-commit**, whose config is at the non-default path `config/.pre-commit-config.yaml`
   (pinned `black 23.12.1`, `ruff 0.1.6`, `mypy 1.8.0`); run it with
   `pre-commit run -a -c config/.pre-commit-config.yaml`. `ruff` is only provided via pre-commit, not `.[dev]`.
-- **Known pre-existing `make test-fast` failures (NOT environment problems):** ~36 tests fail because
-  committed golden snapshots embed machine-specific values — the original author's absolute paths
-  (`/Users/89298/Documents/transcriptx/...`, e.g. `tests/core/config/test_pydantic_bridge_drift.py`)
-  and a fixed `torch_version` (`2.2.2`, e.g. `tests/unit/test_emotion_family_characterization.py`).
-  These fail on any other machine / newer torch and are unrelated to setup. Smoke gate is green.
+- **CI `make test-fast` watchlist:** config/registry PRs must update ownership snapshot + pilot
+  goldens + `delegation_test_utils` counts when adding Pydantic fields; path defaults in goldens must
+  use portable `<REPO>/data/...` forms (see `docs/dev/config_architecture.md`, `tests/README.md` § CI
+  watchlist). Streamlit pages: literal `st.button("…")` labels require `icon=` from `web/icons.py`
+  (`tests/web/test_icons.py`). CI sets isolated `TRANSCRIPTX_DATA_DIR`/`TRANSCRIPTX_OUTPUT_DIR`; a local
+  repo `.env` can make config drift tests fail on a laptop while CI is green.
+- **Other local-only golden drift:** some characterization snapshots still pin machine-specific paths
+  or `torch_version`; they may fail off the author's machine / on newer torch and are unrelated to
+  venv setup. Smoke gate is the fast signal for environment health.

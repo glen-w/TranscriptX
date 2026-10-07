@@ -20,6 +20,7 @@ from transcriptx.web.components.rename_form import (
     clear_rename_form_session_keys,
     render_transcript_rename_form,
 )
+from transcriptx.web import icons as ic
 from transcriptx.web.navigation import make_session_path_resolver
 from transcriptx.web.services.rename_preview_clips import (
     mapped_speaker_summary_labels,
@@ -299,7 +300,11 @@ def render_rename_transcript_page() -> None:
         payload = _rename_success_payload() or {}
         new_name = str(payload.get("new_base_name") or active.stem)
         st.success(f"Transcript was renamed successfully to `{new_name}`.")
-        if st.button("Rename again", key="rename_transcript_rename_again"):
+        if st.button(
+            "Rename again",
+            key="rename_transcript_rename_again",
+            icon=ic.RENAME,
+        ):
             _clear_rename_success_state()
             clear_rename_form_session_keys(_FORM_KEY)
             st.rerun()
