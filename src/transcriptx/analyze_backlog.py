@@ -6,8 +6,8 @@ Invoked as:
 - ``python -m transcriptx.analyze_backlog …``
 
 Discovers managed library transcripts, optionally requires a complete speaker
-map, skips those that already have analysis outputs, and runs analysis
-(default: thorough / full).
+map and/or specific named speakers, skips those that already have analysis
+outputs, and runs analysis (default: thorough / full).
 """
 
 from __future__ import annotations
@@ -49,6 +49,17 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--require-named-speaker",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help=(
+            "Only analyze transcripts that include this display name among "
+            "effective named speakers (case-insensitive). Repeatable; all "
+            "names must match."
+        ),
+    )
+    parser.add_argument(
         "--allow-unnamed-speakers",
         action="store_true",
         help="Pass through to analyze when speakers are still diarized labels.",
@@ -73,20 +84,57 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _effective_named_display_names(transcript_path: Path) -> set[str]:
+    """Return casefolded effective display names from the speaker map sidecar."""
+    from transcriptx.io.speaker_map_resolver import (
+        SpeakerMapResolver,
+        is_effective_speaker_name,
+    )
+
+    state = SpeakerMapResolver().load_mapping(transcript_path)
+    ignored = set(state.ignored_speakers)
+    names: set[str] = set()
+    for speaker_id, display_name in state.speaker_map.items():
+        if speaker_id in ignored:
+            continue
+        if not is_effective_speaker_name(speaker_id, display_name):
+            continue
+        folded = str(display_name).strip().casefold()
+        if folded:
+            names.add(folded)
+    return names
+
+
+def _has_required_named_speakers(
+    transcript_path: Path, required_names: Sequence[str]
+) -> bool:
+    if not required_names:
+        return True
+    present = _effective_named_display_names(transcript_path)
+    for name in required_names:
+        if str(name).strip().casefold() not in present:
+            return False
+    return True
+
+
 def _discover_backlog(
     *,
     require_complete_speakers: bool,
+    require_named_speakers: Sequence[str] = (),
 ) -> list[Path]:
     from transcriptx.app.controllers.library_controller import LibraryController
 
-    ctrl = LibraryController()
+    required = [n for n in require_named_speakers if str(n).strip()]
     backlog: list[Path] = []
-    for meta in ctrl.list_transcripts():
+    for meta in LibraryController().list_transcripts():
         if meta.has_analysis_outputs:
             continue
         if require_complete_speakers and meta.speaker_map_status != "complete":
             continue
-        backlog.append(Path(meta.path))
+        path = Path(meta.path)
+        if required and not _has_required_named_speakers(path, required):
+            continue
+        backlog.append(path)
     backlog.sort(key=lambda p: str(p))
     return backlog
 
@@ -97,15 +145,21 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     bootstrap()
 
+    required_names = list(args.require_named_speaker or [])
     targets = _discover_backlog(
         require_complete_speakers=bool(args.require_complete_speakers),
+        require_named_speakers=required_names,
     )
     if args.max and args.max > 0:
         targets = targets[: int(args.max)]
 
+    named_note = (
+        f", require_named_speakers={required_names!r}" if required_names else ""
+    )
     print(
         f"backlog: {len(targets)} transcript(s) "
-        f"(require_complete_speakers={bool(args.require_complete_speakers)})"
+        f"(require_complete_speakers={bool(args.require_complete_speakers)}"
+        f"{named_note})"
     )
     if args.dry_run:
         for path in targets:
