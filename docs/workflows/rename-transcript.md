@@ -27,7 +27,7 @@ The sample is [imported](../runtime/transcription.md) (see [First analysis](firs
 3. Under **Rename transcript**, note **Current file name**. **New file name** may already be prefilled:
    - Device recording names → `YYMMDD_` date root (optional **period** token button).
    - Descriptive titles → `YYMMDD_` plus an underscore version of the title, with word token buttons to tweak.
-   - Click **Suggest names (transcript + LLM)** for transcript/LLM/web candidates in **Suggested names** (works even when Settings content rename suggestions are `off`).
+   - Click **Suggest names (transcript + LLM)** for transcript/LLM/web candidates in **Suggested names** (works even when Settings content rename suggestions are `off`). When the current name is already a descriptive title, its underscore form is always listed there.
    Edit the field as needed (for example `planning_review_launch` or a `YYMMDD_`-prefixed stem).
 
 4. Submit **Rename**. A success message reports the old and new base names (and whether linked audio was renamed).
