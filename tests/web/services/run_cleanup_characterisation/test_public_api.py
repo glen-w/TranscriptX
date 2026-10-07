@@ -63,7 +63,8 @@ def test_public_api_signatures_snapshot():
     # Explicit contracts called out in the plan.
     assert payload["__init__"]["parameters"][0]["keyword_only"] is True
     preview_params = {p["name"]: p for p in payload["preview_cleanup"]["parameters"]}
-    assert set(preview_params) == {"mode", "session_id"}
+    assert set(preview_params) == {"mode", "session_id", "retain_policy"}
+    assert preview_params["retain_policy"]["keyword_only"] is True
     assert "session_id" in {p["name"] for p in payload["execute_cleanup"]["parameters"]}
     assert_golden("public_api_signatures.json", payload)
 
