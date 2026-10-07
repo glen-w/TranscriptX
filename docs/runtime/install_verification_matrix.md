@@ -21,7 +21,7 @@
 |----|--------|-------|
 | macOS (Apple Silicon / Intel) | Supported-with-caveats | Prefer **Docker CPU** for predictable installs. Native Apple **MPS** is not universally validated for every optional model — see [installation.md](installation.md). If MPS init or model execution fails, use `TRANSCRIPTX_FORCE_CPU=1`. Host `.[bertopic]`/`[full]` may fail when `llvmlite` wheels are unavailable; Docker `image_pip_check` remains the fuller-stack image proof. |
 | Linux (x86_64 / aarch64) | Supported | GPU via NVIDIA toolkit when available |
-| Windows | Best-effort | Native Windows is not a primary CI target; WSL2 + Docker recommended. Native `whispermlx-missing` on Windows is **not** a 1.0 cell. `inbox-watch --transcribe none` / `--transcribe command` is the G3 host-STT selection slice; Windows admit venv discovery and PowerShell snippets remain parked. |
+| Windows | Best-effort | Native Windows is not a primary CI target; WSL2 + Docker recommended. Native `whispermlx` / `whispermlx-missing` is **not** a cell. Host convert/copy/admit works via `py -3 scripts\inbox-watch.py` with `--transcribe none` or `command`; admit discovers `.transcriptx\Scripts\python.exe`. Transcribe Audio **PowerShell** Copy command is shipped (Theme K). No Task Scheduler sample; no native GUI launcher. |
 
 ## Install paths
 

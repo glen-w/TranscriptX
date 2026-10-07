@@ -4,7 +4,7 @@
 
 **Parked (2026-09-03):** do **not** implement Windows/Linux host-script portability before **1.0**. Tracked as 1.x theme **G3** in [ROADMAP.md](../ROADMAP.md#g3-host-companion-scripts-on-windows--linux-parked-post-10). 1.0 stays macOS-typical `inbox-watch` / whispermlx + Docker (WSL2 on Windows).
 
-**Code since this snapshot (2026-10-06):** `inbox-watch --transcribe none|command` and Transcribe Audio POSIX path honesty landed under G3. Windows `Scripts\python.exe` admit discovery, PowerShell builders, and service samples remain parked. Prefer [host-stt.md](../runtime/host-stt.md) and current `scripts/inbox-watch.py` over the “always whispermlx-missing” findings below.
+**Code since this snapshot:** `inbox-watch --transcribe none|command` and Transcribe Audio path honesty landed under G3 (2026-10-06). PowerShell Copy command (Theme K) and Windows `Scripts\python.exe` admit discovery + docs honesty (G3 Narrow, 2026-10-07) shipped. Service samples and Windows USB auto-stage remain parked. Prefer [host-stt.md](../runtime/host-stt.md), [stt-stacks](../recipes/stt-stacks/README.md) topology E, and current `scripts/inbox-watch.py` over the “always whispermlx-missing” / “admit discovery broken” findings below.
 
 Static reconstruction of the **host-side** TranscriptX tree (processes that run *outside* `transcriptx-web`) as of 2026-09-03. No Windows or Linux host was executed. CI is `ubuntu-latest` only (`.github/workflows/ci.yml`). Where docs and code disagree, **code wins**.
 

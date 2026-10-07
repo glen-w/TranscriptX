@@ -96,7 +96,7 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | D. Playback & reading UX | Karaoke-style word highlight; reader polish that Components unlock | With / after C — **[~] Transcript karaoke MVP** |
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
 | F. Library & organisation | Transcript tagging; Groups interaction rules | Mid 1.x |
-| G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** pluggable host STT + POSIX path honesty called; Windows admit/service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
+| G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** narrow Windows convert/admit + pluggable STT shipped; service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
 | H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Parakeet/Canary/YouTube later | **[~] H1–H4 shipped**; H5+ deferred |
 | I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Deferred except H1 job channel |
 | J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 — deferred vs STT |
@@ -216,27 +216,30 @@ Automatically notice new recordings (and/or transcript files) in a monitored fol
 - Prefer explicit user enablement; default-off on shared machines
 - **Next:** in-app audio → STT → import is theme **H** (`auto_transcribe` when a provider is available). Host `inbox-watch --transcribe none|command` can convert or call a host argv without whispermlx. Short voice notes are **G4**, not this bullet and not a second G2 on the same folder.
 
-#### G3. Host companion scripts on Windows / Linux (parked; post-1.0)
+#### G3. Host companion scripts on Windows / Linux (narrow shipped; services parked)
 
-**1.0 stance:** `inbox-watch` / `whispermlx-missing` stay **macOS-typical** (Apple MLX + Unix venv paths + bash install docs). Linux analysis is Docker; Windows is WSL2 + Docker. Copyable Transcribe Audio snippets stay POSIX shell. Not a 1.0 gate.
+**1.0 stance:** `whispermlx-missing` stays **macOS-only**. Linux analysis is Docker; Windows is WSL2 + Docker for the GUI. Host convert/copy/admit on Windows/Linux uses `inbox-watch --transcribe none|command`. Not a 1.0 gate that Windows matches Mac mlx.
 
-Evidence (do not implement from this list before 1.0): [host-side Windows/Linux compatibility review](reviews/host-side-windows-linux-compat-2026-09-03.md).
+Evidence: [host-side Windows/Linux compatibility review](reviews/host-side-windows-linux-compat-2026-09-03.md). Operator stacks: [stt-stacks](recipes/stt-stacks/README.md) topology E.
 
 **1.x intent:** make the **host Python scripts** actually runnable on Windows (and honest on Linux without whispermlx), without pretending MLX exists off Darwin.
 
-**Called (this slice):** pluggable host STT on `inbox-watch` (`--transcribe whispermlx-missing|none|command` + `--transcribe-cmd` argv template) and Transcribe Audio **path honesty** (case-insensitive audio suffixes; strip trailing `\` as well as `/`; POSIX paste notes). `inbox-watch` stays stdlib-only and does not import the in-app provider registry.
+**Called:**
 
-**Owner split:** G3 owns host-script STT *selection* and copyable-command path honesty. Theme **H** owns in-app `TranscriptionProvider.transcribe()` (whispermlx + WhisperX Docker orchestration). Theme **K** owns extra copyable engines and the PowerShell builder.
+| Slice | Status |
+|-------|--------|
+| Pluggable host STT (`--transcribe none\|command`) + path honesty | **[x]** |
+| PowerShell Copy command (Theme **K**) | **[x]** |
+| Windows admit discovery (`.transcriptx\Scripts\python.exe`) + docs honesty | **[x]** |
+
+**Owner split:** G3 owns host-script STT *selection* and convert/admit portability. Theme **H** owns in-app providers. Theme **K** owns PowerShell builders.
 
 **Still parked:**
 
 | Slice | Notes |
 |-------|--------|
-| **Convert / copy / admit on Windows** | `py -3 scripts\inbox-watch.py`; discover `.transcriptx\Scripts\python.exe`; `ffmpeg.exe` on PATH; `--admit` without Unix `bin/python` only. |
-| **PowerShell snippets** | Theme **K**: PowerShell or Git-Bash-safe *second* builder. Current snippets stay POSIX (Git Bash / WSL on Windows). |
 | **Service samples** | Templated Task Scheduler / systemd user unit — not a personal `scripts/macos/*.plist` with absolute home paths. |
-
-**Decision fork:** **Narrow** (Windows convert/copy/admit + docs) · **Invest** (pluggable STT called; remaining OS portability still parked) · **Defer** (stay Mac host STT + WSL2). Do not make Windows a silent 1.0 support cell.
+| **Windows USB auto-stage** | No removable-volume detection; operators use `--stage-local`. |
 
 **Non-goals for 1.0:** native `transcriptx.ps1` GUI launcher; CI `windows-latest` matrix; shipping whispermlx on Windows.
 

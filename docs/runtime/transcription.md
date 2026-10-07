@@ -18,6 +18,14 @@ Walkthrough with screenshots: [First analysis](../workflows/first-analysis.md).
 
 ## If you still need to transcribe audio
 
+| Host OS | Analysis | Preferred STT |
+|---------|----------|---------------|
+| **macOS** | Compose or native | Host **whispermlx** (Run in app when native; Copy command / `inbox-watch` when Compose) |
+| **Linux** | Compose | Host **WhisperX Docker** (Copy command or `inbox-watch --transcribe command`) |
+| **Windows** | Docker Desktop / WSL2 Compose | Same WhisperX / WebUI path; Transcribe Audio **PowerShell** Copy command. No whispermlx. Host convert/admit: `py -3 scripts\inbox-watch.py --transcribe none` |
+
+Stacks and shared folders: [STT stacks](../recipes/stt-stacks/README.md).
+
 1. Put the audio files in one folder on your computer (absolute path the Streamlit process can read).
 2. Open **Transcribe Audio**.
 3. Prefer **Run in app** when a provider is available (native GUI on the Mac for whispermlx; see [STT stacks](../recipes/stt-stacks/README.md)):

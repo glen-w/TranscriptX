@@ -13,9 +13,10 @@ Mainstream Transcribe Audio steps: [transcription.md](../../runtime/transcriptio
 | Piece | Process | Typical URL / command | Role |
 |-------|---------|------------------------|------|
 | TranscriptX GUI | `transcriptx-web` Compose **or** native `./transcriptx.sh` | http://127.0.0.1:8501 | Import, admit, analysis. **Run in app** only if providers are visible. |
-| whispermlx | **macOS host** (`PATH` or `WHISPERMLX`) | `whispermlx …` / `whispermlx-missing` / `inbox-watch` | Preferred STT on Apple Silicon. |
-| WhisperX | Host `docker run` (Copy command) | Transcribe Audio → Copy command | Diarized JSON when Docker is on the host. |
+| whispermlx | **macOS host** (`PATH` or `WHISPERMLX`) | `whispermlx …` / `whispermlx-missing` / `inbox-watch` | Preferred STT on Apple Silicon. **Not** on Windows/Linux. |
+| WhisperX | Host `docker run` (Copy command; POSIX or PowerShell) | Transcribe Audio → Copy command | Diarized JSON when Docker is on the host. Primary STT on Linux/Windows. |
 | Whisper-WebUI | Optional extra Compose service | http://127.0.0.1:7860 | Gradio UI → SRT/VTT → Import Transcript. |
+| inbox-watch (non-Mac) | Host Python | `--transcribe none` or `command` | Convert/copy/admit; STT via WhisperX argv or BYO. |
 
 Pick **one** Streamlit process for a given library (`TRANSCRIPTX_DATA_DIR` / `HOST_TRANSCRIPTS_DIR`). Do not run Compose GUI and native GUI against the same data dir at once.
 
@@ -108,19 +109,45 @@ docker compose \
 
 (`HOST_RECORDINGS_DIR` must be set in `.env` for the analysis service.)
 
+### E — Windows / Linux host inbox (no whispermlx)
+
+Use when analysis is Compose and the host is **not** macOS.
+
+1. `docker compose up -d transcriptx-web` (on Windows: Docker Desktop or WSL2).
+2. Host convert + optional admit (no MLX):
+
+   ```bash
+   # Linux
+   python3 scripts/inbox-watch.py --once --transcribe none --admit \
+     --inbox … --recordings … --transcripts …/originals
+
+   # Windows (PowerShell / cmd)
+   py -3 scripts\inbox-watch.py --once --transcribe none --admit ^
+     --inbox … --recordings … --transcripts …\originals
+   ```
+
+3. STT: either
+   - Transcribe Audio → **Copy command** → WhisperX Docker (**PowerShell** builder on Windows), paste on the host; or
+   - `inbox-watch --transcribe command` with a `transcribe_cmd` argv (WhisperX `docker run` or BYO) — [host-stt.md](../../runtime/host-stt.md#host-inbox-watcher-inbox-watch).
+4. Import / Admit into the library as usual.
+
+**Not available on Windows/Linux:** whispermlx, `whispermlx-missing` as a working STT binary, macOS launchd agent, auto USB stage detection (use `--stage-local` if needed). There is no Task Scheduler sample yet; run `--once` from Task Scheduler yourself or keep a console `--watch`.
+
 ## What this recipe will not do
 
 - Put whispermlx inside `transcriptx-web`.
 - Mount the Docker socket into the analysis container (forbidden by analysis-only invariants).
 - Start Parakeet / Canary / YouTube (theme **H5+**, deferred).
 - Auto-join meeting bots.
+- Ship whispermlx or a Mac-parity login agent on Windows.
 
 ## Troubleshooting
 
 | Symptom | Likely cause |
 |---------|----------------|
 | Run in app: provider unavailable in Compose GUI | Expected. Use topology A Copy command / host watchers, or topology B native GUI. |
-| whispermlx not found | Install on macOS host; `which whispermlx`; set `WHISPERMLX` in `whisperx.env`. |
+| whispermlx not found | Install on macOS host; `which whispermlx`; set `WHISPERMLX` in `whisperx.env`. On Windows/Linux use topology C or E instead. |
+| `--admit` cannot find Python on Windows | Use `.transcriptx\Scripts\python.exe` or pass `--admit-python`. |
 | JSON on disk, empty library | Wrote `originals/` but did not Admit; or Import all from folder pointed at the wrong inbox. |
 | WhisperX 403 / gated model | `HF_TOKEN` + accept pyannote terms — [WhisperX recipe](../whisperx/README.md#troubleshooting). |
 | Two GUIs fighting | Stop Compose or native; one Streamlit per library. |

@@ -12,9 +12,10 @@ The transcripts destination must be ``…/transcripts/originals`` (or another
 non-library folder). Config that points at the managed library root (the
 directory that already contains ``metadata/`` / ``imports/``) is rejected.
 
-Install:
+Install (macOS/Linux):
     install -m 755 scripts/inbox-watch.py ~/.local/bin/inbox-watch
     (ensure ~/.local/bin is on PATH)
+Windows: py -3 scripts\\inbox-watch.py …  (ffmpeg.exe on PATH; --transcribe none|command)
 
 Modes (independent; at least one required):
     --watch-audio         Convert new inbox audio → recordings as 16 kHz mono 64k MP3
@@ -1102,7 +1103,17 @@ def classify_path(path: Path | str) -> Kind:
 
 def is_same_or_under(path: Path, root: Path) -> bool:
     try:
-        path.resolve().relative_to(root.resolve())
+        resolved_path = path.resolve()
+        resolved_root = root.resolve()
+        # Windows paths are case-insensitive; normcase avoids false negatives
+        # when the same folder is spelled with different drive-letter case.
+        if os.path.normcase(str(resolved_path)) == os.path.normcase(
+            str(resolved_root)
+        ):
+            return True
+        Path(os.path.normcase(str(resolved_path))).relative_to(
+            Path(os.path.normcase(str(resolved_root)))
+        )
         return True
     except (ValueError, OSError):
         return False
@@ -1493,9 +1504,13 @@ def find_admit_python(explicit: Path | None) -> Path | None:
     repo_root = find_repo_root()
     if repo_root is not None:
         for rel in (
+            # Unix / macOS venv layouts
             ".transcriptx/bin/python",
             ".transcriptx/bin/python3",
             ".venv/bin/python",
+            # Windows venv layouts (Scripts\python.exe)
+            ".transcriptx/Scripts/python.exe",
+            ".venv/Scripts/python.exe",
         ):
             path = repo_root / rel
             if path.is_file():
@@ -2379,7 +2394,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(
                 "ERROR: no Python that can import transcriptx "
                 "(set --admit-python to the native TranscriptX venv, "
-                "for example .transcriptx/bin/python).",
+                "for example .transcriptx/bin/python or "
+                ".transcriptx\\Scripts\\python.exe on Windows).",
                 file=sys.stderr,
             )
             return 2
