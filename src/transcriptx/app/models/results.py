@@ -90,6 +90,18 @@ class MergeResult:
 
 
 @dataclass
+class WarmSuggestionsResult:
+    """Result of assistive LLM suggestion cache warm."""
+
+    success: bool
+    ok_count: int = 0
+    skipped_fresh_count: int = 0
+    error_count: int = 0
+    errors: list[str] = field(default_factory=list)
+    log_lines: list[str] = field(default_factory=list)
+
+
+@dataclass
 class BatchAnalysisResult:
     """Result of batch analysis."""
 

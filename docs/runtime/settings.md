@@ -133,6 +133,8 @@ Settings → Speakers controls the Speakers directory filters and optional local
 
 Order: name and **link** a seed cast → Enrol all → Pre-load → confirm suggestions in Speaker Identification. Empty corpus → analyse succeeds with no match. Scores never auto-name. Full walkthrough: [Assist naming with voice](../workflows/speaker-voice-matching.md).
 
+**Assistive LLM suggestions** (name dropdowns, rename prefills) can be warmed library-wide from Settings or cron — see [llm-suggestion-batch.md](llm-suggestion-batch.md). Distinct from voice pre-load above.
+
 ## Related docs
 
 - [installation.md](installation.md) — normal install; [installation details](installation-advanced.md) — extras and install profiles

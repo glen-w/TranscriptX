@@ -58,6 +58,8 @@ Effort-profile `model` fields are **not** part of this chain when a consumer id 
 
 Rename suggestion LLM (`rename_suggestions`) uses `input.rename_suggestions_effort` for `max_input_chars`, request timeout, and `max_output_tokens` on that pass only (not global `llm.max_input_chars`).
 
+**Overnight warm:** library-wide assistive caches for `speaker_name_suggestions` and `rename_suggestions` (GUI pre-load or `python -m transcriptx.warm_suggestions`) — see [llm-suggestion-batch.md](llm-suggestion-batch.md).
+
 On the run form, **Project default** reflects the already-applied project `llm.model_selection` pack. **Custom (this run)** (under Change for this run) keeps free-edited widgets for this launch only. Unavailable saved tags are cleared with an explanation (no silent substitute); launch stays gated until an installed model is chosen when LLM modules are selected.
 
 If LLM is disabled or the provider is not Ollama while selected modules (or enabled group synthesis) need LLM, the launch button stays disabled. Non-LLM analysis remains runnable when no live-LLM modules are in the effective module list.

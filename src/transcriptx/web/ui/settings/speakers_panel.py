@@ -488,6 +488,13 @@ def render_speakers_panel() -> None:
         "USB path: inbox-watch --watch --auto-name."
     )
 
+    from transcriptx.web.ui.settings.llm_suggestions_panel import (
+        render_speaker_name_suggestion_bulk,
+    )
+
+    st.subheader("Assistive LLM suggestions")
+    render_speaker_name_suggestion_bulk()
+
     st.subheader("Local voice matching")
     try:
         from transcriptx.core.speaker_profiles.layout import speaker_profiles_dir

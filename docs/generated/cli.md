@@ -67,6 +67,23 @@ python -m transcriptx.identify_speakers --all-unnamed --dry-run
 
 Flags override `{config_dir}/identify.json` for that run. `--dry-run` prints decisions and writes nothing. Host USB path: `inbox-watch --auto-name`.
 
+## Warm assistive LLM suggestion caches
+
+`transcriptx warm-suggestions` (or `python -m transcriptx.warm_suggestions`) precomputes assistive **speaker name** and **rename** suggestion caches for managed transcripts (confirm-to-apply in the GUI; does not rename files or write speaker maps). See [llm-suggestion-batch.md](../runtime/llm-suggestion-batch.md).
+
+```bash
+transcriptx warm-suggestions --all
+transcriptx warm-suggestions --speaker-names --dry-run
+transcriptx warm-suggestions --rename --force --path FILE.json
+```
+
+```python
+from transcriptx.app.models.requests import WarmSuggestionsRequest
+from transcriptx.app.workflows import run_warm_suggestions
+
+run_warm_suggestions(WarmSuggestionsRequest(warm_all=True))
+```
+
 ## Speaker Identification
 
 ```python
