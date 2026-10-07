@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
@@ -313,3 +314,36 @@ def test_on_demand_runs_llm_when_ollama_configured(tmp_path: Path) -> None:
     llm_options = [o for o in result.options if o.basis == "llm"]
     assert len(llm_options) == 3
     assert result.status.startswith("3 rename suggestions")
+
+
+@pytest.mark.unit
+def test_web_lookup_runs_for_natural_language_title_stem(tmp_path: Path) -> None:
+    stem = "youth_voices_from_the_high_seas_stories_of_ocean_action"
+    tpath = tmp_path / f"{stem}.json"
+    _write_transcript(tpath, [{"text": "Opening remarks on ocean action."}])
+    web_cue = RawRenameCue(
+        basis="web",
+        confidence="likely",
+        detail="Web result: Youth Voices",
+        event_date=date(2026, 6, 25),
+        title="Youth Voices from the High Seas",
+        _priority=2,
+    )
+    with patch(
+        "transcriptx.core.utils.rename.suggestions.service.get_config"
+    ) as cfg_mock:
+        inp = cfg_mock.return_value.input
+        inp.rename_content_suggestions = "auto"
+        inp.rename_suggest_transcript = True
+        inp.rename_suggest_llm = False
+        inp.rename_suggest_web = True
+        inp.smart_rename_pattern = "{yymmdd}_{title}"
+        with patch(
+            "transcriptx.core.utils.rename.suggestions.service.fetch_web_cue_from_title",
+            return_value=web_cue,
+        ) as fetch_mock:
+            result = suggest_rename_stems(tpath, force_refresh=True)
+    fetch_mock.assert_called_once()
+    web_options = [o for o in result.options if o.basis == "web"]
+    assert web_options
+    assert web_options[0].stem.startswith("260625_")

@@ -115,3 +115,16 @@ def test_slug_collapses_underscores() -> None:
 def test_public_event_filename() -> None:
     assert looks_like_public_event("Zoom_Webinar_Audio.mp3", [])
     assert not looks_like_public_event("voice_memo.m4a", [])
+
+
+def test_public_event_natural_language_title_stem() -> None:
+    stem = "youth_voices_from_the_high_seas_stories_of_ocean_action.json"
+    assert looks_like_public_event(stem, [])
+
+
+def test_public_event_short_title_not_web_eligible() -> None:
+    assert not looks_like_public_event("team_sync_notes.json", [])
+
+
+def test_public_event_youtube_filename() -> None:
+    assert looks_like_public_event("youtube_live_recording.json", [])

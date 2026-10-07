@@ -33,7 +33,7 @@ Optional Ollama / Local AI modules are stochastic. Re-runs can differ. Artifacts
 Optional assistive stems on **Rename Transcript** / import rename forms (`input.rename_content_suggestions=auto`). Default is **off**.
 
 - **Not authoritative:** Dates and titles are heuristics (transcript regex, optional local LLM, optional web snippet parse). Webinars without an explicit date in the file or dialogue may stay title-only or show a weak **file date** (import/mtime) — that is not the event date.
-- **Web lookup** (`input.rename_suggest_web`) is off by default, requires network, and only runs for public-event-like filenames or dialogue. It sends a short search query built from title cues, not the transcript body.
+- **Web lookup** (`input.rename_suggest_web`) is off by default, requires network, and runs for webinar/platform filenames, public-event dialogue, or long descriptive title stems. It sends short DuckDuckGo queries (YouTube-biased first, then general); not the transcript body and not the YouTube Data API.
 - **LLM** uses consumer `rename_suggestions` and `rename_suggestions_effort`; thinking-family models are skipped for JSON safety (same policy as other JSON consumers — see [llm.md](runtime/llm.md)).
 - Nothing renames until you submit **Rename**; import auto-apply still uses device-filename smart rename only.
 
@@ -68,7 +68,7 @@ install error. Corrections Studio review can roll back with
 
 ## Content rename suggestions
 
-Assistive full-stem suggestions (`input.rename_content_suggestions=auto`, default `off`) are **drafts**: transcript heuristics, optional local LLM, and optional web lookup can mis-rank dates or titles (especially webinars with no clear event date in the file). Web lookup sends a short query only when the filename or opening dialogue looks like a public event and `rename_suggest_web` is enabled. Suggestions do not rename until you submit **Rename**; `auto_import` does not use content stems.
+Assistive full-stem suggestions (`input.rename_content_suggestions=auto`, default `off`) are **drafts**: transcript heuristics, optional local LLM, and optional web lookup can mis-rank dates or titles (especially webinars with no clear event date in the file). Web lookup sends short DuckDuckGo queries only when eligibility rules match and `rename_suggest_web` is enabled. Suggestions do not rename until you submit **Rename**; `auto_import` does not use content stems.
 
 ## Theme D reader (full-file playback)
 
