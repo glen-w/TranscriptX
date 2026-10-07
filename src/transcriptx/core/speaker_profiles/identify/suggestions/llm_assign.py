@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import json
-import re
 from typing import Any, Mapping, Sequence
 
+from transcriptx.core.analysis.llm_support.json_parse import loads_llm_json
+from transcriptx.core.llm.json_generate import generate_json
 from transcriptx.core.llm.llm_client import LLMClient
 from transcriptx.core.speaker_profiles.identify.mentions import (
     normalize_person_key,
@@ -127,13 +127,9 @@ def parse_llm_response(
     allowed_keys: set[str],
     speaker_ids: set[str],
 ) -> dict[str, NameOption]:
-    text = raw.strip()
-    if text.startswith("```"):
-        text = re.sub(r"^```(?:json)?\s*", "", text)
-        text = re.sub(r"\s*```$", "", text)
     try:
-        payload = json.loads(text)
-    except json.JSONDecodeError:
+        payload = loads_llm_json(raw)
+    except Exception:
         return {}
     if not isinstance(payload, dict):
         return {}
@@ -212,12 +208,12 @@ def run_llm_assignments(
     if max_input_chars is not None and len(prompt) > max_input_chars:
         prompt = prompt[: max(0, max_input_chars)]
     try:
-        raw = client.generate(
+        raw = generate_json(
+            client,
             prompt=prompt,
             system_prompt=_SYSTEM,
             temperature=temperature,
             max_tokens=max_tokens,
-            response_format="json",
         )
     except Exception as exc:
         logger.warning("Speaker name suggestion LLM failed: %s", exc)

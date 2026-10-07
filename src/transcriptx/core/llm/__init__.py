@@ -13,7 +13,8 @@ from transcriptx.core.llm.errors import (
     LLM_CONFIGURATION_ERROR,
     LLMConfigurationError,
 )
-from transcriptx.core.llm.llm_client import LLMClient, NullLLMClient
+from transcriptx.core.llm.json_generate import generate_json
+from transcriptx.core.llm.llm_client import JsonResponseFormat, LLMClient, NullLLMClient
 from transcriptx.core.llm.ollama_client import (
     OllamaClient,
     normalize_base_url,
@@ -89,6 +90,8 @@ def get_llm_client(
 __all__ = [
     "LLMClient",
     "NullLLMClient",
+    "JsonResponseFormat",
+    "generate_json",
     "OllamaClient",
     "LLMConfigurationError",
     "LLM_CONFIGURATION_ERROR",

@@ -8,7 +8,7 @@ import socket
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, Mapping, Optional, Sequence
 from urllib.parse import urlparse
 from dataclasses import dataclass
 
@@ -447,14 +447,24 @@ class OllamaClient(LLMClient):
         system_prompt: Optional[str] = None,
         temperature: float,
         max_tokens: Optional[int] = None,
-        response_format: Optional[str] = None,
+        response_format: Optional[str | Mapping[str, Any]] = None,
     ) -> str:
         if temperature < 0 or temperature > 2:
             raise LLMConfigurationError("LLM temperature must be between 0 and 2")
-        if response_format is not None and response_format not in {"json"}:
-            raise LLMConfigurationError(
-                "LLM response_format must be None or 'json' for Ollama"
-            )
+        if response_format is not None:
+            if isinstance(response_format, str):
+                if response_format != "json":
+                    raise LLMConfigurationError(
+                        "LLM response_format must be None, 'json', or a JSON Schema object"
+                    )
+            elif not isinstance(response_format, Mapping):
+                raise LLMConfigurationError(
+                    "LLM response_format must be None, 'json', or a JSON Schema object"
+                )
+            elif not response_format:
+                raise LLMConfigurationError(
+                    "LLM response_format JSON Schema object must be non-empty"
+                )
 
         body: dict[str, Any] = {
             "model": self._model,
@@ -468,7 +478,11 @@ class OllamaClient(LLMClient):
         if system_prompt is not None:
             body["system"] = system_prompt
         if response_format is not None:
-            body["format"] = response_format
+            body["format"] = (
+                dict(response_format)
+                if isinstance(response_format, Mapping)
+                else response_format
+            )
         num_predict = max_tokens if max_tokens is not None else self._max_output_tokens
         if num_predict is not None:
             body["options"]["num_predict"] = num_predict
