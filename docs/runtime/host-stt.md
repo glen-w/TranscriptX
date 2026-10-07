@@ -1,8 +1,10 @@
 # Host STT automation
 
-Advanced host-side transcription helpers. Mainstream path (Import Transcript, Transcribe Audio command generation): [Transcription](transcription.md). Audio merge/preprocess before STT: [Audio prep](audio-prep.md).
+Advanced host-side transcription helpers. Mainstream path (Import Transcript, Transcribe Audio): [Transcription](transcription.md). Running Compose + host whispermlx + optional WhisperX/WebUI: [STT stacks](../recipes/stt-stacks/README.md). Audio merge/preprocess before STT: [Audio prep](audio-prep.md).
 
 There is no `transcriptx transcript …` terminal subcommand. Validate and import from the GUI, or from code as below.
+
+**whispermlx is macOS-host only.** Do not `docker exec` into `transcriptx-web` to run it.
 
 ## Finding whispermlx
 

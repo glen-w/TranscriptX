@@ -18,13 +18,20 @@ def _voice(name: str, profile: str, *, confidence: str = "strong") -> ChannelCan
     )
 
 
-def _mention(name: str, profile: str | None = None) -> ChannelCandidate:
+def _mention(
+    name: str,
+    profile: str | None = None,
+    *,
+    confidence: str = "possible",
+    primary_kind: str = "vocative",
+) -> ChannelCandidate:
     return ChannelCandidate(
         channel="mention",
         display_name=name,
         profile_id=profile,
-        confidence="possible",
+        confidence=confidence,
         score=1.0,
+        evidence={"primary_kind": primary_kind},
     )
 
 
@@ -64,11 +71,26 @@ def test_strong_voice_conflicts_with_mention() -> None:
 
 
 @pytest.mark.unit
-def test_mention_only_applies_name() -> None:
+def test_weak_mention_does_not_apply_name() -> None:
     decisions = fuse_speaker_candidates(
         speaker_ids=["SPEAKER_00"],
         voice={},
         mentions={"SPEAKER_00": _mention("Sam")},
+        style={},
+    )
+    assert decisions[0].action == "skip"
+    assert decisions[0].skip_reason == "abstain"
+
+
+def test_strong_self_intro_mention_applies_name() -> None:
+    decisions = fuse_speaker_candidates(
+        speaker_ids=["SPEAKER_00"],
+        voice={},
+        mentions={
+            "SPEAKER_00": _mention(
+                "Sam", confidence="strong", primary_kind="self_intro"
+            )
+        },
         style={},
     )
     assert decisions[0].action == "apply"
@@ -81,7 +103,14 @@ def test_mention_matching_profile_can_link() -> None:
     decisions = fuse_speaker_candidates(
         speaker_ids=["SPEAKER_00"],
         voice={},
-        mentions={"SPEAKER_00": _mention("Maya", "p-maya")},
+        mentions={
+            "SPEAKER_00": _mention(
+                "Maya",
+                "p-maya",
+                confidence="strong",
+                primary_kind="self_intro",
+            )
+        },
         style={},
     )
     assert decisions[0].action == "apply"
@@ -132,8 +161,12 @@ def test_collision_same_display_name() -> None:
         speaker_ids=["SPEAKER_00", "SPEAKER_01"],
         voice={},
         mentions={
-            "SPEAKER_00": _mention("Sam"),
-            "SPEAKER_01": _mention("Sam"),
+            "SPEAKER_00": _mention(
+                "Sam", confidence="strong", primary_kind="self_intro"
+            ),
+            "SPEAKER_01": _mention(
+                "Sam", confidence="strong", primary_kind="self_intro"
+            ),
         },
         style={},
     )

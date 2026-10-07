@@ -115,8 +115,9 @@ def resolve_llm_runtime(
     request bind / ``model_override`` → ``llm.model_selection`` →
     ``llm.model`` / default.
 
-    Without ``consumer_id`` (e.g. Corrections Studio), effort-profile
-    ``model`` may still override global ``llm.model``.
+    Without ``consumer_id``, effort-profile ``model`` may still override
+    global ``llm.model``. Live callers should pass a registered consumer id
+    so Settings → Models / ``llm_models`` profiles apply.
     """
     from transcriptx.core.analysis.llm_support.model_selection import (
         resolve_module_llm_model,

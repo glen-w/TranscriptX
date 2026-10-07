@@ -1,6 +1,8 @@
 # WhisperX standalone (optional reference recipe)
 
-Use this when you want diarized WhisperX JSON, then import it into TranscriptX. These files are **optional standalone examples**. TranscriptX can orchestrate WhisperX via **Transcribe Audio → Run in app** when Docker is visible to the GUI; this recipe remains the copy/run-on-host path.
+Use this when you want diarized WhisperX JSON, then import it into TranscriptX. These files are **optional standalone examples**. They are **not** started by `docker compose up transcriptx-web`.
+
+TranscriptX can orchestrate WhisperX via **Transcribe Audio → Run in app** only when the **Streamlit process** has a `docker` CLI and a reachable daemon (typical: **native** GUI on the host). The analysis Compose service does not. Alongside Compose, use **Copy command** on the host. Combined operator recipe: [STT stacks](../stt-stacks/README.md).
 
 ## What this is for
 
@@ -27,6 +29,8 @@ Use this when you want diarized WhisperX JSON, then import it into TranscriptX. 
 Env-configurable settings live in `whisperx.env.example` in this directory. A historical map from the old in-app `TranscriptionConfig` fields to these env vars is in the [archive migration table](https://github.com/glen-w/TranscriptX/blob/main/docs/archive/migrations/whisperx_transcriptionconfig.md) (not required for new setups; not in the hosted guide).
 
 ## Run WhisperX
+
+This Compose file starts a long-running container for `docker exec`. **Run in app** does **not** use it; it runs `docker run --rm`. Prefer host Copy command + output under `HOST_TRANSCRIPTS_DIR/originals/` when wiring to the library.
 
 **Using Compose (from this directory):**
 

@@ -155,7 +155,11 @@ def _run_llm_discovery_inner(
     continue_on_failure = bool(getattr(corrections_llm, "continue_on_failure", True))
 
     effort = str(getattr(corrections_llm, "effort", "low") or "low")
-    runtime = resolve_llm_runtime(llm_cfg=llm_cfg, effort=effort)
+    runtime = resolve_llm_runtime(
+        llm_cfg=llm_cfg,
+        effort=effort,
+        consumer_id="corrections_studio",
+    )
     req_timeout = float(getattr(corrections_llm, "request_timeout_seconds", 120.0))
     runtime = replace(runtime, request_timeout=req_timeout)
     empty_fp["model"] = runtime.model

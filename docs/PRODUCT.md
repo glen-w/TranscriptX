@@ -28,7 +28,7 @@ Import and organise transcripts; explore language, themes, speakers, interaction
 |------|---------|
 | Primary | Streamlit GUI (`transcriptx` / `python -m transcriptx.web`) |
 | Secondary | Typed Python API (`transcriptx.app.workflows`, managed import) |
-| Transcription | BYO import remains default. Optional **host-orchestrated** in-app STT (whispermlx / WhisperX Docker) plus **command-generation** handoff. No silent cloud STT. See [ROADMAP.md](ROADMAP.md) theme **H** |
+| Transcription | BYO import remains default. Optional **host-orchestrated** in-app STT (whispermlx on macOS host / WhisperX Docker) plus **command-generation** handoff. No silent cloud STT. Stacks: [stt-stacks](recipes/stt-stacks/README.md). Theme **H**: [ROADMAP.md](ROADMAP.md) |
 | Operational | Docker Compose; modest `website/` (GitHub Pages); hosted docs pending RTD go-live |
 
 First-run experience relies on **task documentation** (the [README](../README.md) plus [five common workflows](workflows/index.md); full set in the same index) and a **clear, complete GUI** — not Guided/Full presentation modes, in-app checklists, or a bundled demo project (those were trialled and removed; see [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) §16). Surfaces: [public surfaces](public_surfaces.md).

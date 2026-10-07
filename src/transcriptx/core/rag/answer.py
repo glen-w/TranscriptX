@@ -119,9 +119,19 @@ def answer(
     # Build prompts for LLM
     system_prompt, user_prompt = build_prompt(question, context)
 
-    # Get LLM client
     if client is None:
-        client = get_llm_client()
+        from transcriptx.core.analysis.llm_support.model_selection import (
+            require_resolved_model,
+        )
+        from transcriptx.core.utils.config import get_config
+
+        config = get_config()
+        override = (llm_model or "").strip() or None
+        if override:
+            client = get_llm_client(config, model=override)
+        else:
+            resolved = require_resolved_model(config.llm, "rag")
+            client = get_llm_client(config, model=resolved.model)
 
     # Call LLM (non-streaming for P0; streaming added in P1)
     answer_text = client.generate(

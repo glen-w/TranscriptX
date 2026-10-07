@@ -48,7 +48,7 @@ On **Run Analysis** (Transcript, Group, and Batch), the **LLM setup** section ap
 
 Per-run selections are snapshotted onto the analysis request and do **not** rewrite `llm.model` unless you save a Model preset under Settings → Models (or activate one under Settings → Configuration → Active Profiles).
 
-**Resolution precedence** for each LLM consumer (`narrative_summary`, `llm_summary`, `llm_speaker_summary`, `llm_action_items`, `llm_custom_qa`, `chart_descriptions`, `group_llm_synthesis`):
+**Resolution precedence** for each LLM consumer (`narrative_summary`, `llm_summary`, `llm_speaker_summary`, `llm_action_items`, `llm_custom_qa`, `chart_descriptions`, `group_llm_synthesis`, `topic_shift`, `speaker_name_suggestions`, `corrections_studio`, `rag`):
 
 1. Request override from Run Analysis / Batch
 2. Active `llm_models` profile applied onto `llm.model_selection`
@@ -60,7 +60,7 @@ On the run form, **Project default** reflects the already-applied project `llm.m
 
 If LLM is disabled or the provider is not Ollama while selected modules (or enabled group synthesis) need LLM, the launch button stays disabled. Non-LLM analysis remains runnable when no live-LLM modules are in the effective module list.
 
-**Thinking models (JSON-unsafe):** tags matching `qwen3*` (including `qwen3.8` / `qwen3.6`), `deepseek-r1*`, and `gpt-oss*` often put tokens in Ollama’s `thinking` field and leave `response` empty when TranscriptX requests `format=json`. That fails `narrative_summary`, `llm_action_items`, `chart_descriptions`, and `group_llm_synthesis`. The installed list is live from Ollama (`/api/tags`, short cache; **Refresh models** under Settings → Models). Settings → Models shows every installed tag in the shared picker. The compact Run Analysis selector **hides** thinking tags from shared picks whenever any JSON module is selected, and from per-module rows for JSON consumers, and names the omitted tags under the picker. Launch stays gated if a saved preset still assigns a thinking tag to a JSON consumer. Prefer non-thinking tags such as `gemma3:*`, `qwen2.5:*`, `llama3.2:*`, `mistral:*`, or `mistral-nemo` for those modules (plain-text `llm_summary` / `llm_speaker_summary` may still work with thinking models).
+**Thinking models (JSON-unsafe):** tags matching `qwen3*` (including `qwen3.8` / `qwen3.6`), `deepseek-r1*`, and `gpt-oss*` often put tokens in Ollama’s `thinking` field and leave `response` empty when TranscriptX requests `format=json`. That fails `narrative_summary`, `llm_action_items`, `chart_descriptions`, `group_llm_synthesis`, `speaker_name_suggestions`, `corrections_studio`, and `topic_shift`. The installed list is live from Ollama (`/api/tags`, short cache; **Refresh models** under Settings → Models). Settings → Models shows every installed tag in the shared picker. The compact Run Analysis selector **hides** thinking tags from shared picks whenever any JSON module is selected, and from per-module rows for JSON consumers, and names the omitted tags under the picker. Launch stays gated if a saved preset still assigns a thinking tag to a JSON consumer. Prefer non-thinking tags such as `gemma3:*`, `qwen2.5:*`, `llama3.2:*`, `mistral:*`, or `mistral-nemo` for those modules (plain-text `llm_summary` / `llm_speaker_summary` may still work with thinking models).
 
 ### Complementary Ollama picks for transcript analysis
 

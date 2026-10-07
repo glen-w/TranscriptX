@@ -28,6 +28,18 @@ describe("Speaker ID workspace lifecycle helpers", () => {
     ]);
   });
 
+  it("fills the name input when a suggestion is picked", () => {
+    document.body.innerHTML = `
+      <input class="tx-sid-name-input" />
+      <select class="tx-sid-name-pick"></select>
+    `;
+    const input = document.querySelector(".tx-sid-name-input") as HTMLInputElement;
+    const pick = document.querySelector(".tx-sid-name-pick") as HTMLSelectElement;
+    __test.applyNamePick(input, pick, { display_name: "Maya" });
+    expect(input.value).toBe("Maya");
+    expect(pick.value).toBe("Maya");
+  });
+
   it("parses link target tokens for save_name", () => {
     expect(__test.parseLinkToken("none")).toEqual({
       link_mode: "none",

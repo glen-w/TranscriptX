@@ -23,7 +23,7 @@ export TRANSCRIPTX_CORRECTIONS_LLM_ENABLED=1
 
 Local `docker compose up` (with `docker-compose.override.yml`) defaults these on when unset. Production-like runs that use only `docker-compose.yml` leave Corrections Studio LLM off unless you set the vars.
 
-Ollama must be running on the host with the configured model pulled.
+Ollama must be running on the host with the configured model pulled. Discovery uses the `corrections_studio` consumer from the active Model preset (Settings → Models), then falls back to `llm.model`.
 
 ### Config file
 

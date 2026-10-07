@@ -275,7 +275,7 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 | **H1** Durable jobs + GUI Run path (whispermlx) | **[x]** `data_dir/transcription/jobs/` + Transcribe Audio **Run in app** |
 | **H2** WhisperX Docker provider | **[x]** registered; CUDA `--gpus all` or CPU |
 | **H3** Watcher `auto_transcribe` + queued drain | **[x]** when a provider is available |
-| **H4** Docs / install honesty | **[x]** this page + [transcription.md](runtime/transcription.md) |
+| **H4** Docs / install honesty | **[x]** this page + [transcription.md](runtime/transcription.md) + [stt-stacks](recipes/stt-stacks/README.md) |
 | **H5+** NVIDIA Parakeet/Canary, YouTube ingest, HTTP STT sidecar | **[ ] deferred** until the Whisper path is boring |
 
 **Architecture (locked):** host-orchestrated providers (fork #2, narrow). No silent cloud STT. Apple MLX stays host/binary; CUDA via WhisperX Docker.

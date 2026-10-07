@@ -75,7 +75,7 @@ docker compose up transcriptx-web
 
 Open http://localhost:8501. The first run builds the image.
 
-**Native (from git — not PyPI).** Python 3.10–3.12. From the repo: `./transcriptx.sh` creates a `.transcriptx` virtualenv and starts the web UI. Use that launcher, or `pip install -e ".[full,web]"`, so chart modules can finish a **Balanced** run. Details: [installation](docs/runtime/installation.md). Docker notes: [docker](docs/runtime/docker.md). How to turn audio into a file: [transcription](docs/runtime/transcription.md).
+**Native (from git — not PyPI).** Python 3.10–3.12. From the repo: `./transcriptx.sh` creates a `.transcriptx` virtualenv and starts the web UI. Use that launcher, or `pip install -e ".[full,web]"`, so chart modules can finish a **Balanced** run. Details: [installation](docs/runtime/installation.md). Docker notes: [docker](docs/runtime/docker.md). How to turn audio into a file: [transcription](docs/runtime/transcription.md). Compose + host whispermlx: [STT stacks](docs/recipes/stt-stacks/README.md).
 
 ## Advanced and developer docs
 

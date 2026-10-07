@@ -57,7 +57,8 @@ class RagSettings:
 
     # Chat model (reuses TRANSCRIPTX_LLM settings when enabled)
     llm_model: Optional[str] = None
-    """Chat model for answering. If None, uses default from LLMClient."""
+    """Optional chat-model override. If None, uses the `rag` consumer from
+    the active llm_models pack / ``llm.model``."""
 
     llm_timeout_s: float = 30.0
     """Timeout for LLM calls."""

@@ -92,6 +92,38 @@
   color: inherit;
 }
 
+.tx-sid-name-pick {
+  margin-top: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--tx-sid-border);
+  background: transparent;
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.tx-sid-name-hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--tx-sid-muted);
+  font-style: italic;
+}
+
+.tx-sid-roster {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+}
+
+.tx-sid-roster-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.tx-sid-roster-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
 .tx-sid-link-label {
   display: flex;
   flex-direction: column;

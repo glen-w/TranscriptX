@@ -132,6 +132,8 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/groups/group_charts_topic_shift_temporal_contract.md | Contract: group aggregate topic_shift temporal overlay (Tier 2) | live | contract | current | — | retain | — | CONTRACT_INDEX / groups | docs/groups/group_charts_topic_shift_temporal_contract.md | yes |
 | docs/groups/group_llm_synthesis_contract.md | Group LLM synthesis contract | live | contract | current | — | retain | — | CONTRACT_INDEX / groups | docs/groups/group_llm_synthesis_contract.md | yes |
 | docs/public_surfaces.md | Public surfaces contract | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/public_surfaces.md | yes |
+| docs/recipes/stt-stacks/README.md | Run analysis Compose with host whispermlx and optional WhisperX/WebUI | live | user | current | — | retain | — | transcription.md | docs/runtime/transcription.md | yes |
+| docs/recipes/stt-stacks/docker-compose.stt-stacks.yml | Optional Whisper-WebUI service merged with transcriptx-web | live | user | current | — | retain | — | stt-stacks README | docs/recipes/stt-stacks/README.md | yes |
 | docs/recipes/whisperx/README.md | WhisperX standalone (optional reference recipe) | live | user | current | — | retain | — | transcription.md | docs/runtime/transcription.md | yes |
 | docs/recipes/whisper-webui/README.md | Whisper-WebUI Gradio (optional interoperability recipe) | live | user | current | — | retain | — | transcription.md | docs/runtime/transcription.md | yes |
 | docs/recipes/whisper-webui/docker-compose.whisper-webui.yml | Whisper-WebUI recipe compose (localhost/CPU) | live | user | current | — | retain | — | whisper-webui README | docs/recipes/whisper-webui/README.md | yes |
