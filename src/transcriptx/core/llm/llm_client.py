@@ -7,9 +7,12 @@ to analysis modules that use LLM capabilities.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Any, Mapping, Optional, Union
 
 from transcriptx.core.llm.errors import LLMConfigurationError
+
+# ``"json"`` for free-form JSON, or an Ollama JSON Schema object for structured output.
+JsonResponseFormat = Union[str, Mapping[str, Any]]
 
 
 class LLMClient(ABC):
@@ -33,7 +36,7 @@ class LLMClient(ABC):
         system_prompt: Optional[str] = None,
         temperature: float,
         max_tokens: Optional[int] = None,
-        response_format: Optional[str] = None,
+        response_format: Optional[JsonResponseFormat] = None,
     ) -> str:
         """
         Generate text from prompt.
@@ -43,7 +46,7 @@ class LLMClient(ABC):
             system_prompt: Optional system prompt for context
             temperature: Sampling temperature (0.0-2.0)
             max_tokens: Maximum tokens to generate
-            response_format: Optional structured output hint (e.g. ``"json"``)
+            response_format: ``\"json\"``, a JSON Schema mapping, or None
 
         Returns:
             Generated text
@@ -79,7 +82,7 @@ class NullLLMClient(LLMClient):
         system_prompt: Optional[str] = None,
         temperature: float,
         max_tokens: Optional[int] = None,
-        response_format: Optional[str] = None,
+        response_format: Optional[JsonResponseFormat] = None,
     ) -> str:
         """Raise error - LLM client not configured."""
         raise LLMConfigurationError(

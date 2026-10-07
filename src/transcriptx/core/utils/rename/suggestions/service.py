@@ -207,25 +207,11 @@ def _maybe_llm_cues(
 
     excerpt = build_llm_excerpt(segments)
     n = RENAME_LLM_SUGGESTION_COUNT
-    body = f"""<<<EXCERPT>>>
-{excerpt}
-<<<END EXCERPT>>>
-
-Return JSON:
-{{
-  "suggestions": [
-    {{
-      "event_date": "YYYY-MM-DD" or null,
-      "title": string or null,
-      "quote": string (verbatim span from EXCERPT supporting event_date, or empty)
-    }}
-  ]
-}}
-Provide exactly {n} objects in suggestions with distinct short titles.
-Only set event_date when quote is copied verbatim from EXCERPT."""
+    # Keep the transcript envelope as excerpt-only; schema lives in system +
+    # Ollama format= JSON Schema so truncation cannot drop the contract.
     user_prompt, _ = build_bounded_user_prompt(
         instruction=RENAME_LLM_INSTRUCTION,
-        transcript_block=body,
+        transcript_block=excerpt,
         max_input_chars=int(runtime.max_input_chars),
     )
     client = build_ollama_analysis_client(llm_cfg=llm_cfg, runtime=runtime)
@@ -236,7 +222,7 @@ Only set event_date when quote is copied verbatim from EXCERPT."""
             runtime.model,
             runtime.model_source,
         )
-    cues = run_rename_llm(
+    cues, llm_error = run_rename_llm(
         client,
         user_prompt=user_prompt,
         excerpt_for_quotes=excerpt,
@@ -251,6 +237,11 @@ Only set event_date when quote is copied verbatim from EXCERPT."""
         status = (
             f"LLM `{runtime.model}` returned {len(cues)} of {n} suggestions; "
             "showing other cues too."
+        )
+    elif llm_error:
+        detail = llm_error if len(llm_error) <= 160 else llm_error[:157] + "..."
+        status = (
+            f"LLM `{runtime.model}` failed ({detail}); showing other cues."
         )
     else:
         status = (

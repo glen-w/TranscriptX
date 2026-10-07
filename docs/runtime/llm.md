@@ -56,7 +56,7 @@ Per-run selections are snapshotted onto the analysis request and do **not** rewr
 
 Effort-profile `model` fields are **not** part of this chain when a consumer id is set. Corrections Studio (no consumer id) may still use an effort-profile model over global `llm.model`.
 
-Rename suggestion LLM (`rename_suggestions`) uses `input.rename_suggestions_effort` for `max_input_chars`, request timeout, and `max_output_tokens` on that pass only (not global `llm.max_input_chars`).
+Rename suggestion LLM (`rename_suggestions`) uses `input.rename_suggestions_effort` for `max_input_chars`, request timeout, and `max_output_tokens` on that pass only (not global `llm.max_input_chars`). Assistive JSON callers (`rename_suggestions`, `speaker_name_suggestions`) go through `transcriptx.core.llm.generate_json` with keyword-only `prompt=` / `system_prompt=`; rename also sends an Ollama JSON Schema `format` payload (falling back to `format=json`) so the GUI status can surface real failures instead of a silent empty cue list.
 
 **Overnight warm:** library-wide assistive caches for `speaker_name_suggestions` and `rename_suggestions` (GUI pre-load or `python -m transcriptx.warm_suggestions`) — see [llm-suggestion-batch.md](llm-suggestion-batch.md).
 

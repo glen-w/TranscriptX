@@ -128,6 +128,112 @@ def test_suggest_rename_stems_title_only_when_no_event_date(tmp_path):
 
 
 @pytest.mark.unit
+def test_maybe_llm_cues_prompt_is_excerpt_only(tmp_path: Path) -> None:
+    """Schema must not live inside the bounded transcript envelope."""
+    from transcriptx.core.utils.rename.suggestions.service import _maybe_llm_cues
+
+    segments = [{"text": "Welcome to the Acme product webinar on fisheries."}]
+    captured: dict = {}
+
+    class _Client:
+        def is_available(self) -> bool:
+            return True
+
+        def generate(self, **kwargs):  # type: ignore[no-untyped-def]
+            captured["prompt"] = kwargs.get("prompt")
+            return json.dumps(
+                {
+                    "suggestions": [
+                        {"title": "Acme Webinar", "event_date": None, "quote": ""},
+                        {"title": "Fisheries", "event_date": None, "quote": ""},
+                        {"title": "Product Launch", "event_date": None, "quote": ""},
+                    ]
+                }
+            )
+
+    with patch(
+        "transcriptx.core.utils.rename.suggestions.service.get_config"
+    ) as cfg_mock:
+        cfg_mock.return_value.llm.enabled = True
+        cfg_mock.return_value.llm.provider = "ollama"
+        cfg_mock.return_value.llm.default_temperature = 0.0
+        with patch(
+            "transcriptx.core.analysis.llm_support.runtime.require_ollama_analysis"
+        ):
+            with patch(
+                "transcriptx.core.analysis.llm_support.runtime.resolve_llm_runtime"
+            ) as rt:
+                rt.return_value.model = "gemma3:12b"
+                rt.return_value.model_source = "settings"
+                rt.return_value.max_input_chars = 48000
+                rt.return_value.max_output_tokens = 512
+                with patch(
+                    "transcriptx.core.analysis.llm_support.runtime.build_ollama_analysis_client",
+                    return_value=_Client(),
+                ):
+                    with patch(
+                        "transcriptx.core.llm.thinking_models.is_thinking_model",
+                        return_value=False,
+                    ):
+                        cues, status, model, _ = _maybe_llm_cues(
+                            segments, effort="low"
+                        )
+    assert model == "gemma3:12b"
+    assert len(cues) == 3
+    assert "rename suggestions from local LLM" in status
+    prompt = captured["prompt"]
+    assert "Welcome to the Acme product webinar" in prompt
+    assert "<<<TRANSCRIPT>>>" in prompt
+    assert "<<<EXCERPT>>>" not in prompt
+    assert "Return JSON:" not in prompt
+    assert '"event_date"' not in prompt
+
+
+@pytest.mark.unit
+def test_maybe_llm_cues_surfaces_generate_failure() -> None:
+    from transcriptx.core.utils.rename.suggestions.service import _maybe_llm_cues
+
+    class _Client:
+        def is_available(self) -> bool:
+            return True
+
+        def generate(self, **kwargs):  # type: ignore[no-untyped-def]
+            raise TypeError("got multiple values for argument 'temperature'")
+
+    with patch(
+        "transcriptx.core.utils.rename.suggestions.service.get_config"
+    ) as cfg_mock:
+        cfg_mock.return_value.llm.enabled = True
+        cfg_mock.return_value.llm.provider = "ollama"
+        cfg_mock.return_value.llm.default_temperature = 0.0
+        with patch(
+            "transcriptx.core.analysis.llm_support.runtime.require_ollama_analysis"
+        ):
+            with patch(
+                "transcriptx.core.analysis.llm_support.runtime.resolve_llm_runtime"
+            ) as rt:
+                rt.return_value.model = "gemma3:12b"
+                rt.return_value.model_source = "settings"
+                rt.return_value.max_input_chars = 48000
+                rt.return_value.max_output_tokens = 512
+                with patch(
+                    "transcriptx.core.analysis.llm_support.runtime.build_ollama_analysis_client",
+                    return_value=_Client(),
+                ):
+                    with patch(
+                        "transcriptx.core.llm.thinking_models.is_thinking_model",
+                        return_value=False,
+                    ):
+                        cues, status, model, _ = _maybe_llm_cues(
+                            [{"text": "hello webinar"}], effort="low"
+                        )
+    assert cues == []
+    assert model == "gemma3:12b"
+    assert "failed" in status
+    assert "multiple values" in status
+
+
+@pytest.mark.unit
 def test_on_demand_runs_llm_when_ollama_configured(tmp_path: Path) -> None:
     tpath = tmp_path / "webinar.json"
     _write_transcript(

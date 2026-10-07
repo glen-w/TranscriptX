@@ -338,6 +338,30 @@ def test_generate_rejects_unknown_response_format() -> None:
 
 
 @pytest.mark.unit
+def test_generate_accepts_json_schema_response_format() -> None:
+    client = OllamaClient()
+    captured: dict = {}
+    schema = {
+        "type": "object",
+        "properties": {"suggestions": {"type": "array"}},
+        "required": ["suggestions"],
+    }
+
+    def _fake_post(path: str, body: dict, *, timeout: float) -> str:
+        captured["body"] = body
+        return json.dumps({"response": '{"suggestions":[]}'})
+
+    with patch.object(client, "_http_post", side_effect=_fake_post):
+        out = client.generate(
+            prompt="user",
+            temperature=0.0,
+            response_format=schema,
+        )
+    assert out == '{"suggestions":[]}'
+    assert captured["body"]["format"] == schema
+
+
+@pytest.mark.unit
 @pytest.mark.parametrize("temperature", [-0.1, 2.1])
 def test_generate_rejects_out_of_range_temperature(temperature: float) -> None:
     client = OllamaClient()
