@@ -1,6 +1,6 @@
 """CLI: auto-identify speakers on managed (or local) transcripts.
 
-Invoked as ``python -m transcriptx.identify_speakers`` (not ``transcriptx <subcommand>``).
+Invoked as ``transcriptx identify-speakers`` or ``python -m transcriptx.identify_speakers``.
 """
 
 from __future__ import annotations

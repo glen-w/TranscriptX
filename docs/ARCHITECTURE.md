@@ -23,11 +23,11 @@ TranscriptX is structured in two layers:
 - **Engine** — Pipeline, modules, and shared context. Responsible for execution and artifact production.
 - **GUI** — Streamlit-based web interface (primary product surface). Provides transcript processing, speaker identification, analysis browsing, batch operations, audio preparation, settings, groups, and more.
 
-**High-interaction workspaces (Theme C):** Speaker Identification, Corrections Studio review, and Correct-mode word selection mount Streamlit Components v2 (`packages/transcriptx_workspaces`) while Streamlit remains the shell. Domain mutations go through shared application services (`app/speaker_id`, `app/corrections`). Speaker ID has no classic-widget fallback. See [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md). A custom non-Streamlit frontend is a post-1.0 escalation (roadmap theme **I**), not current architecture.
+**High-interaction workspaces (Theme C):** Speaker Identification, Corrections Studio review, and Correct-mode word selection mount Streamlit Components v2 (`packages/transcriptx_workspaces`) while Streamlit remains the shell. Domain mutations go through shared application services (`app/speaker_id`, `app/corrections`). Speaker ID has no classic-widget fallback. See [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md). Theme D adds a full-file transcript reader (`reader_workspace`) in that package, with loopback Range audio; `TX_READER_WORKSPACE_COMPONENT=0` keeps clip karaoke ([karaoke-playback.md](runtime/karaoke-playback.md)). A custom non-Streamlit frontend is a post-1.0 escalation (roadmap theme **I**), not current architecture.
 
-Scripting and automation use the Python API directly (`app.workflows`, `core.pipeline`). Transcription is **external**; the GUI may generate commands for external tools rather than running a built-in engine.
+Scripting and automation use the Python API directly (`app.workflows`, `core.pipeline`). Transcription engines stay out of the analysis image. The GUI can orchestrate host whispermlx or WhisperX Docker when those tools are visible to the Streamlit process, or copy a command for the host ([transcription.md](runtime/transcription.md)).
 
-Primary surface is the Streamlit GUI; secondary is the typed Python API. Transcription is BYO plus optional host-orchestrated STT and command generation.
+Primary surface is the Streamlit GUI; secondary is the typed Python API. Transcription is BYO plus optional host-orchestrated STT and command generation. Host console allowlist (`transcriptx import|admit-originals|analyze|rename|backup|warm-suggestions|identify-speakers`) wraps pipeline/ops workflows; with no command, `transcriptx` launches the web UI. See [public_surfaces.md](public_surfaces.md) §1.7.
 
 ## Components
 
@@ -46,7 +46,7 @@ For detailed storage roots and directory layout, see `docs/runtime/STORAGE.md`.
 ## Docker (summary)
 
 - Docker Compose is a supported way to run TranscriptX in containers (no local Python install). See `docs/runtime/docker.md` for compose configuration, volume layout, and environment variables.
-- Transcription is external; TranscriptX consumes diarized transcript JSON (see `docs/runtime/transcription.md`).
+- The analysis image does not embed a transcription engine. BYO import and optional host-orchestrated STT are in `docs/runtime/transcription.md`.
 
 ## Extension points
 

@@ -54,19 +54,33 @@ This document defines which TranscriptX surfaces are **supported** and which are
 - Supported product path remains: transcript in the library → analysis. BYO import is unchanged.
 - Corpus helpers such as `scripts/whispermlx-missing.py` and `scripts/inbox-watch.py` are documented user-facing scripts when referenced from runtime docs. They are not a replacement for managed import: they write raw engine output under `originals/`. `inbox-watch --transcribe` selects host STT (`whispermlx-missing` default on macOS, `none`, or `command` with an argv template). On Windows/Linux use `none` or `command` — whispermlx is Mac-only ([stt-stacks](recipes/stt-stacks/README.md)). `scripts/voice-note-watch.py` is a separate host side-script for short notes (own inbox, plain text, no library admit). It is not a Streamlit page and must not share the library `inbox-watch` inbox. Optional `inbox-watch --admit` subprocesses `python -m transcriptx.admit_originals`, which calls `admit_and_register` (same admission path as Import Transcript); admit discovers Unix `bin/python` and Windows `Scripts\python.exe` venvs. Optional `--auto-name` / `--auto-link` (and `python -m transcriptx.identify_speakers`) run speaker auto-identify after admit — [auto-identify.md](runtime/auto-identify.md). `transcriptx warm-suggestions` (module `python -m transcriptx.warm_suggestions`) warms assistive LLM rename/name suggestion caches for cron/overnight runs — [llm-suggestion-batch.md](runtime/llm-suggestion-batch.md). `transcriptx identify-speakers` dispatches to `python -m transcriptx.identify_speakers`. With no subcommand, `transcriptx` still launches the Streamlit UI. Streamlit does not execute these host scripts.
 - Audio **preprocess** / **merge** are available in the GUI under **System → Tools** (Preprocessing and Merge tabs), with CLI helpers `scripts/audio_preprocess.py` / `scripts/audio_merge.py` for automation. Documented in transcription docs; 1.x theme **G1** still decides invest in transcript-part stitching vs remove helpers ([ROADMAP.md](ROADMAP.md)).
-- **Workspace backup / restore** is available in the GUI under **Settings → Storage**, with helper script `scripts/workspace_backup.py` and Python API `transcriptx.services.workspace_backup` for large corpora. Normative rules: [contracts/workspace-backup.md](contracts/workspace-backup.md). This is **not** a `transcriptx <subcommand>` CLI.
+- **Workspace backup / restore** is available in the GUI under **Settings → Storage**, via `transcriptx backup` / `python -m transcriptx.backup`, helper script `scripts/workspace_backup.py`, and Python API `transcriptx.services.workspace_backup`. Normative rules: [contracts/workspace-backup.md](contracts/workspace-backup.md).
+
+### 1.7 Host automation CLI (allowlist)
+
+The `transcriptx` console script (`transcriptx.cli:main`) supports a **fixed allowlist** of host automation subcommands that wrap the same workflows/services as the GUI write paths. Each command also has a `python -m transcriptx.*` equivalent. Interactive workspaces (Corrections Studio, Speaker Identification review, Overview/Insights/Charts/Ask) remain GUI-only.
+
+| Subcommand | Role |
+|------------|------|
+| `import` | Managed import of transcript file(s) |
+| `admit-originals` | Admit files already under `originals/` |
+| `analyze` | Run analysis on **one** managed transcript |
+| `rename` | Managed transcript rename (+ linked audio) |
+| `backup` | Workspace ZIP create / verify / restore |
+| `warm-suggestions` | Warm assistive LLM suggestion caches |
+| `identify-speakers` | Voice + text auto-identify (not the interactive workspace) |
+
+With no command, `transcriptx` launches the Streamlit UI (`--host` / `--port`). Do not invent additional subcommands outside this allowlist without updating this contract. Also: `transcriptx admit-originals` is equivalent to `python -m transcriptx.admit_originals` (used by `inbox-watch --admit`).
 
 ## 2. Not supported surfaces / patterns
 
 The following patterns are **explicitly not supported** and should be avoided in user flows, docs, and contributions:
 
-### 2.1 Direct CLI analysis commands
+### 2.1 Unsupported CLI patterns
 
-- There is **no supported** `transcriptx <subcommand>` analysis CLI.
-- The `transcriptx` console script:
-  - Only launches the web interface.
-  - Accepts `--host` and `--port` flags.
-- Any usage of `transcriptx analyze ...`, `transcriptx transcript ...`, or similar subcommands is considered deprecated and unsupported.
+- Subcommands **outside** the §1.7 allowlist (for example `transcriptx transcript …`, `transcriptx search …`, or ad-hoc flags that bypass managed import).
+- Using `analyze` on arbitrary non-managed JSON (same rule as §2.3).
+- Treating the host CLI as a substitute for interactive GUI workspaces (corrections review, Speaker ID naming UI, chart/Ask browsing).
 
 ### 2.2 Legacy Streamlit entry (`web/streamlit_app.py`)
 
@@ -110,7 +124,7 @@ The following patterns are **explicitly not supported** and should be avoided in
 This section describes **public surface contract violations**, how they are detected, and the expected behavior.
 
 - **Invalid states (examples)**:
-  - Docs or examples that present unsupported CLI subcommands (for example, `transcriptx analyze ...`) as if they were supported.
+  - Docs or examples that present subcommands outside the §1.7 allowlist as if they were supported.
   - Features or codepaths that rely on direct filesystem manipulation of managed storage instead of using documented public APIs.
   - Workflows that bypass the managed import workflow while still claiming library-valid analysis guarantees.
 - **Detection**:

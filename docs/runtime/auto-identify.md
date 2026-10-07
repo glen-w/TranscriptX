@@ -30,7 +30,7 @@ What it does **not** do:
 | **Speaker Identification** | **Apply auto-identify** on a managed library transcript. Badges show auto-named / auto-linked. Rename or relink as usual. |
 | **Host inbox-watch** | `--auto-name` / `--auto-link` (and `--no-auto-*`). `--auto-name` implies `--admit` and turns auto-link on unless you pass `--no-auto-link`. Env: `INBOX_WATCH_AUTO_NAME` / `INBOX_WATCH_AUTO_LINK`. |
 | **Admit helper** | `python -m transcriptx.admit_originals --auto-name --auto-link` after a successful admit (admit still succeeds if identify fails). |
-| **Standalone CLI** | `python -m transcriptx.identify_speakers` (not a `transcriptx <subcommand>`). |
+| **Standalone CLI** | `transcriptx identify-speakers` or `python -m transcriptx.identify_speakers`. |
 
 USB drop → convert → transcribe → admit → named transcript:
 

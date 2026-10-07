@@ -38,7 +38,7 @@ Most tools in this space optimise one or more of:
 4. **Analyse** — language, speakers, interaction, comparing several conversations over time
 5. **Code (researcher-applied)** — codebooks, memos, highlights, thematic grids (CAQDAS / AI-qual)
 
-TranscriptX is built for **(4)**, with a local-first library and optional local AI (Ollama). Transcription is **external** by design. Self-hosted tools such as [Scriberr](https://github.com/rishikanthc/Scriberr), [noScribe](https://github.com/kaixxx/noScribe), [aTrain](https://github.com/aTrainTranscription/aTrain), and [nanosamur.ai](https://github.com/nanosamurai/nanosamurai), and hosted capture workspaces such as [RiverScript](https://riverscript.com/), are natural **upstreams**: produce transcripts, then import into TranscriptX. CAQDAS and AI-qual tools sit **beside** TranscriptX (different analysis job), not as STT substitutes.
+TranscriptX is built for **(4)**, with a local-first library and optional local AI (Ollama). Speech-to-text engines stay outside the analysis image (optional host orchestration, or bring-your-own files). Self-hosted tools such as [Scriberr](https://github.com/rishikanthc/Scriberr), [noScribe](https://github.com/kaixxx/noScribe), [aTrain](https://github.com/aTrainTranscription/aTrain), and [nanosamur.ai](https://github.com/nanosamurai/nanosamurai), and hosted capture workspaces such as [RiverScript](https://riverscript.com/), are natural **upstreams**: produce transcripts, then import into TranscriptX. CAQDAS and AI-qual tools sit **beside** TranscriptX (different analysis job), not as STT substitutes.
 
 ```text
 Audio / meetings  →  STT / notes tool  →  transcript files  →  TranscriptX analysis
