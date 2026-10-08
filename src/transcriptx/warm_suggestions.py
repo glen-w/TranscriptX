@@ -71,8 +71,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
 
     from transcriptx._bootstrap import bootstrap
+    from transcriptx.core.config.persistence import apply_project_config_to_live_facade
 
     bootstrap()
+    apply_project_config_to_live_facade()
 
     paths = [Path(p).expanduser() for p in args.paths] if args.paths else None
     request = WarmSuggestionsRequest(
