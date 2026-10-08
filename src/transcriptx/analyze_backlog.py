@@ -243,7 +243,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     from transcriptx._bootstrap import bootstrap
 
+    from transcriptx.core.config.persistence import apply_project_config_to_live_facade
+
     bootstrap()
+    apply_project_config_to_live_facade()
 
     if args.llm_effort:
         _apply_llm_effort(str(args.llm_effort))
