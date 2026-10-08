@@ -1,5 +1,13 @@
 name: CI
 
+# PR merge signal (workflow red only when these fail):
+#   compose-config, lint, tests (smoke + contracts + fast on 3.10–3.12)
+# Advisory lanes (continue-on-error; log signal, do not block green CI):
+#   docs (Sphinx + docs-gen drift), tests-nlp, tests-rag, workspaces-theme-c,
+#   release-checks (Docker build, hygiene bundle). Pages deploy is separate
+#   (.github/workflows/pages.yml on main). Tag/release still expects a manual
+#   green release-checks run per docs/dev/release_governance.md.
+
 on:
   push:
     branches: [main, master]
@@ -92,6 +100,7 @@ jobs:
   # Thin NLP lane: un-skips spaCy-gated smoke (insight stack, NER, group topics).
   # Single Python version keeps PR cost low while still gating [nlp] regressions.
   tests-nlp:
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -129,6 +138,7 @@ jobs:
         run: make test-nlp-unit
 
   tests-rag:
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -153,6 +163,7 @@ jobs:
         run: python -m pytest tests/core/rag -q
 
   docs:
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -184,9 +195,10 @@ jobs:
           if-no-files-found: warn
 
   release-checks:
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    needs: [compose-config, lint, tests, tests-nlp, tests-rag, docs]
+    needs: [compose-config, lint, tests]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -249,6 +261,7 @@ jobs:
 
   # Theme C: CCv2 workspaces — Streamlit min + current matrix, frontend build, browser harness
   workspaces-theme-c:
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:

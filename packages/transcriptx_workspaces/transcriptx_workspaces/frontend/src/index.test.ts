@@ -28,6 +28,28 @@ describe("Speaker ID workspace lifecycle helpers", () => {
     ]);
   });
 
+  it("partitions people mentioned for repeat-only display with overflow", () => {
+    const roster = [
+      { display_name: "Richard", mention_count: 5 },
+      { display_name: "Rsas", mention_count: 4 },
+      { display_name: "Unclos", mention_count: 3 },
+      { display_name: "Jade", mention_count: 2 },
+      { display_name: "Jay Johns", mention_count: 2 },
+      { display_name: "Chris", mention_count: 1 },
+      { display_name: "Extra", mention_count: 2 },
+    ];
+    const { head, tail } = __test.partitionRosterForDisplay(roster);
+    expect(head.map((p) => p.display_name)).toEqual([
+      "Richard",
+      "Rsas",
+      "Unclos",
+      "Jade",
+      "Jay Johns",
+    ]);
+    expect(tail.map((p) => p.display_name)).toEqual(["Extra"]);
+    expect(head.some((p) => p.mention_count === 1)).toBe(false);
+  });
+
   it("fills the name input when a suggestion is picked", () => {
     document.body.innerHTML = `
       <input class="tx-sid-name-input" />

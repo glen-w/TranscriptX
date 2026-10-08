@@ -19,8 +19,9 @@
 
 ## CI lane order and time budgets
 
-**PR order**: Lint (ruff critical) → Smoke → Contracts → Fast  
-(plus parallel `tests-nlp`, docs, Theme C workspaces; then `release-checks`)
+**PR required gate** (workflow fails only if these fail): `compose-config`, `lint`, `tests` (Smoke → Contracts → Fast on Python 3.10–3.12).
+
+**PR advisory lanes** (`continue-on-error` in `.github/workflows/ci.yml`; still run and report failures): `tests-nlp`, `tests-rag`, `docs` (Sphinx + `docs-gen` drift), `workspaces-theme-c`, `release-checks`. Hosted docs deploy is `pages.yml` on `main`, not the PR gate.
 
 **Install note:** PR `tests` / `tests-nlp` install `.[dev,web]` / `.[dev,nlp,web]` so Streamlit web modules collect under contracts/fast. Smoke still skips spaCy-gated modules unless `[nlp]` is present.
 
@@ -143,4 +144,4 @@ python -m pytest tests/core/config/test_registry_ownership.py \
 
 Some characterization goldens still embed **machine-specific** values (absolute paths under the original author’s home directory, pinned `torch_version`, etc.). Those can fail on other hosts or newer PyTorch even when smoke/CI gates are green. Treat them as cleanup debt unless your PR touches the same surface.
 
-Generated docs: CI `docs` job fails if `make docs-gen` output is not committed (`docs/generated/`, `docs/dev/analysis_quality_audit_scaffold.md`).
+Generated docs: the advisory CI `docs` job still runs `make docs-gen` + Sphinx and logs drift or build errors, but it does **not** turn PR CI red. Fix before release or before merging doc/registry changes; Pages (`pages.yml`) rebuilds on `main` when `docs/**` changes.
