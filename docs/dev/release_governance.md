@@ -13,7 +13,7 @@ Release hygiene **A1–A10**, Config **1.7** atomic apply, Config **1.8** curate
 ## Checklist
 
 1. All Wave 0 acceptance criteria green (release hygiene A1–A10 + Config 1.7 atomic apply + docs/inventory parity).
-2. **Green CI on the exact intended release commit** (full Python matrix 3.10–3.12 + `compose-config` + `release-checks`). Failed or cancelled matrix members block.
+2. **Green CI on the exact intended release commit** — PR workflow only **requires** `compose-config`, `lint`, and `tests` (smoke + contracts + fast on 3.10–3.12). Before tagging, also confirm advisory jobs were green on that SHA (especially `release-checks`, and `docs` / `pages.yml` if the release touches documentation). Failed or cancelled required matrix members block.
 3. `pyproject.toml` version matches the intended tag (`v` prefix aside).
 4. Dated Keep-a-Changelog section for that version in `CHANGELOG.md`.
 5. Clean worktree (`git status --porcelain=v1 --untracked-files=all` empty of unexpected paths).

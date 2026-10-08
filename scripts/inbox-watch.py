@@ -2363,8 +2363,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         if watch_loop:
             _log(f"Waiting for inbox: {cfg.inbox}")
         else:
-            print(f"ERROR: inbox is not a directory: {cfg.inbox}", file=sys.stderr)
-            return 2
+            # USB / volume often unmounted at night; --once should no-op cleanly.
+            print(f"inbox absent (nothing to do): {cfg.inbox}", file=sys.stderr)
+            return 0
 
     ffmpeg: Path | None = None
     missing: Path | None = None

@@ -59,12 +59,42 @@ export type NameSuggestionOption = {
   label?: string;
 };
 
+export type RosterPerson = {
+  display_name: string;
+  mention_count?: number;
+  sample_quote?: string;
+};
+
 export type NameSuggestionsPayload = {
   status_message?: string;
   llm_used?: boolean;
-  roster?: { display_name: string; mention_count?: number; sample_quote?: string }[];
+  roster?: RosterPerson[];
   by_speaker?: Record<string, NameSuggestionOption[]>;
 };
+
+/** People mentioned panel: repeat mentions only; up to 5 visible, rest in overflow. */
+const ROSTER_MIN_MENTIONS = 2;
+const ROSTER_HEAD_COUNT = 5;
+
+export function partitionRosterForDisplay(roster: RosterPerson[]): {
+  head: RosterPerson[];
+  tail: RosterPerson[];
+} {
+  const repeated = roster.filter(
+    (person) => (person.mention_count ?? 0) >= ROSTER_MIN_MENTIONS,
+  );
+  return {
+    head: repeated.slice(0, ROSTER_HEAD_COUNT),
+    tail: repeated.slice(ROSTER_HEAD_COUNT),
+  };
+}
+
+function appendRosterListItem(list: HTMLElement, person: RosterPerson): void {
+  const li = document.createElement("li");
+  const count = person.mention_count ? ` (${person.mention_count})` : "";
+  li.textContent = `${person.display_name}${count}`;
+  list.appendChild(li);
+}
 
 export type LinkTargetRow = {
   mode: string;
@@ -633,15 +663,29 @@ function renderNameSuggestions(root: Element, data: WorkspaceData): void {
     hint.textContent = "";
   }
 
-  const roster = payload?.roster || [];
+  const { head, tail } = partitionRosterForDisplay(payload?.roster || []);
   rosterList.replaceChildren();
-  if (roster.length) {
+  rosterBox.querySelector(".tx-sid-roster-overflow")?.remove();
+  if (head.length || tail.length) {
     rosterBox.hidden = false;
-    for (const person of roster) {
-      const li = document.createElement("li");
-      const count = person.mention_count ? ` (${person.mention_count})` : "";
-      li.textContent = `${person.display_name}${count}`;
-      rosterList.appendChild(li);
+    for (const person of head) {
+      appendRosterListItem(rosterList, person);
+    }
+    if (tail.length) {
+      const details = document.createElement("details");
+      details.className = "tx-sid-roster-overflow";
+      const summary = document.createElement("summary");
+      summary.className = "tx-sid-roster-overflow-summary";
+      summary.textContent =
+        tail.length === 1 ? "1 more" : `${tail.length} more`;
+      details.appendChild(summary);
+      const overflowList = document.createElement("ul");
+      overflowList.className = "tx-sid-roster-overflow-list";
+      for (const person of tail) {
+        appendRosterListItem(overflowList, person);
+      }
+      details.appendChild(overflowList);
+      rosterBox.appendChild(details);
     }
   } else {
     rosterBox.hidden = true;
@@ -954,6 +998,7 @@ export const __test = {
     return data.active_speaker_id;
   },
   applyNamePick,
+  partitionRosterForDisplay,
   findPlayableSample,
   playSampleBlob,
 };

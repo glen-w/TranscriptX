@@ -124,6 +124,22 @@
   padding-left: 1.1rem;
 }
 
+.tx-sid-roster-overflow {
+  margin-top: 0.35rem;
+}
+
+.tx-sid-roster-overflow-summary {
+  cursor: pointer;
+  color: var(--tx-sid-muted);
+  font-size: 0.85rem;
+  user-select: none;
+}
+
+.tx-sid-roster-overflow-list {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+}
+
 .tx-sid-link-label {
   display: flex;
   flex-direction: column;
