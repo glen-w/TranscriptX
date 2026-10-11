@@ -356,6 +356,18 @@ def run_analysis(
     _selection_token = bind_llm_model_selection(
         _coerce_llm_model_selection(request.llm_model_selection)
     )
+    from transcriptx.core.llm.json_with_fallback import (
+        begin_json_fallback_scope,
+        end_json_fallback_scope,
+    )
+    from transcriptx.core.utils.config import get_config as _get_config_for_fallback
+
+    _llm_for_fallback = _get_config_for_fallback().llm
+    _fallback_token = begin_json_fallback_scope(
+        preferred_model=getattr(_llm_for_fallback, "model", None),
+        fallback_model=getattr(_llm_for_fallback, "fallback_model", None),
+        threshold=getattr(_llm_for_fallback, "preferred_failure_threshold", 2),
+    )
     # Resolve/bind only when llm_custom_qa is selected — avoid failing unrelated runs.
     _qa_token = None
     if "llm_custom_qa" in (filtered or []):
@@ -380,6 +392,7 @@ def run_analysis(
     except Exception as e:
         _pipeline_exception = e
     finally:
+        end_json_fallback_scope(_fallback_token)
         if _qa_token is not None:
             reset_custom_qa_questions(_qa_token)
         reset_llm_model_selection(_selection_token)
@@ -685,6 +698,18 @@ def run_group_analysis(
     _selection_token = bind_llm_model_selection(
         _coerce_llm_model_selection(request.llm_model_selection)
     )
+    from transcriptx.core.llm.json_with_fallback import (
+        begin_json_fallback_scope,
+        end_json_fallback_scope,
+    )
+    from transcriptx.core.utils.config import get_config as _get_config_for_fallback
+
+    _llm_for_fallback = _get_config_for_fallback().llm
+    _fallback_token = begin_json_fallback_scope(
+        preferred_model=getattr(_llm_for_fallback, "model", None),
+        fallback_model=getattr(_llm_for_fallback, "fallback_model", None),
+        threshold=getattr(_llm_for_fallback, "preferred_failure_threshold", 2),
+    )
     _qa_token = None
     if "llm_custom_qa" in (filtered or []):
         _qa_effective = resolve_effective_custom_qa_questions(
@@ -706,6 +731,7 @@ def run_group_analysis(
     except Exception as e:
         _pipeline_exception = e
     finally:
+        end_json_fallback_scope(_fallback_token)
         if _qa_token is not None:
             reset_custom_qa_questions(_qa_token)
         reset_llm_model_selection(_selection_token)

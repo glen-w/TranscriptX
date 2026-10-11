@@ -78,7 +78,7 @@
     "insight_eligibility": 3,
     "insights": 8,
     "keyphrases": 15,
-    "llm": 14,
+    "llm": 17,
     "llm_action_items_settings": 2,
     "llm_custom_qa_settings": 16,
     "llm_speaker_summary_settings": 1,
@@ -109,6 +109,6 @@
     "workflow": 13
   },
   "pilot_count": 55,
-  "pydantic_owned_keys": 731,
-  "total_registry_keys": 747
+  "pydantic_owned_keys": 734,
+  "total_registry_keys": 750
 }

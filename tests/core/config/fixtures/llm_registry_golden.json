@@ -69,6 +69,34 @@
     "sensitivity": "normal",
     "type": "bool"
   },
+  "llm.fallback_model": {
+    "advanced": false,
+    "category": "llm",
+    "choices": null,
+    "default": null,
+    "description": "Secondary Ollama tag used when the preferred model returns unusable JSON (empty response / parse failure). Leave empty to disable fallback.",
+    "key": "llm.fallback_model",
+    "max": null,
+    "min": null,
+    "path": "llm.fallback_model",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "str"
+  },
+  "llm.json_prefer_think_off": {
+    "advanced": false,
+    "category": "llm",
+    "choices": null,
+    "default": true,
+    "description": "When True, JSON-format Ollama requests send think=false if the model advertises that thinking can be disabled (/api/show).",
+    "key": "llm.json_prefer_think_off",
+    "max": null,
+    "min": null,
+    "path": "llm.json_prefer_think_off",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
   "llm.max_input_chars": {
     "advanced": false,
     "category": "llm",
@@ -155,6 +183,20 @@
     "scope": "project",
     "sensitivity": "normal",
     "type": "str"
+  },
+  "llm.preferred_failure_threshold": {
+    "advanced": false,
+    "category": "llm",
+    "choices": null,
+    "default": 2,
+    "description": "After this many preferred-model JSON failures in one warm/analysis run, remaining JSON calls use only the secondary model.",
+    "key": "llm.preferred_failure_threshold",
+    "max": null,
+    "min": 1.0,
+    "path": "llm.preferred_failure_threshold",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
   },
   "llm.provider": {
     "advanced": false,

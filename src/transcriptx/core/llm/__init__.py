@@ -30,9 +30,19 @@ from transcriptx.core.llm.ollama_client import (
 from transcriptx.core.llm.thinking_models import (
     LLM_JSON_FORMAT_CONSUMER_IDS,
     THINKING_MODEL_NAME_MARKERS,
+    ThinkingProfile,
     filter_models_for_json_consumers,
     is_thinking_model,
+    resolve_thinking_profile,
     selection_uses_thinking_for_json,
+)
+from transcriptx.core.llm.json_with_fallback import (
+    JsonFallbackLLMClient,
+    JsonGenerateOutcome,
+    begin_json_fallback_scope,
+    end_json_fallback_scope,
+    get_last_json_generate_outcome,
+    wrap_client_with_json_fallback,
 )
 
 if TYPE_CHECKING:
@@ -75,10 +85,20 @@ def get_llm_client(
         else:
             resolved_model = llm.model or _DEFAULT_OLLAMA_MODEL
         base_url = resolve_ollama_base_url(llm.base_url or _DEFAULT_OLLAMA_BASE_URL)
-        return OllamaClient(
+        from transcriptx.core.llm.json_with_fallback import wrap_client_with_json_fallback
+        from transcriptx.core.llm.ollama_client import build_ollama_client
+
+        primary = build_ollama_client(
             base_url=base_url,
             model=resolved_model,
             seed=int(llm.seed),
+            request_timeout=float(llm.request_timeout),
+            availability_timeout=float(llm.availability_timeout),
+            max_output_tokens=llm.max_output_tokens,
+        )
+        return wrap_client_with_json_fallback(
+            primary,
+            llm_cfg=llm,
             request_timeout=float(llm.request_timeout),
             availability_timeout=float(llm.availability_timeout),
             max_output_tokens=llm.max_output_tokens,
@@ -108,7 +128,15 @@ __all__ = [
     "show_ollama_model",
     "LLM_JSON_FORMAT_CONSUMER_IDS",
     "THINKING_MODEL_NAME_MARKERS",
+    "ThinkingProfile",
     "filter_models_for_json_consumers",
     "is_thinking_model",
+    "resolve_thinking_profile",
     "selection_uses_thinking_for_json",
+    "JsonFallbackLLMClient",
+    "JsonGenerateOutcome",
+    "begin_json_fallback_scope",
+    "end_json_fallback_scope",
+    "get_last_json_generate_outcome",
+    "wrap_client_with_json_fallback",
 ]

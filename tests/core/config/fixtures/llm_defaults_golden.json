@@ -4,6 +4,8 @@
   "base_url": null,
   "default_temperature": 0.3,
   "enabled": false,
+  "fallback_model": null,
+  "json_prefer_think_off": true,
   "max_input_chars": 48000,
   "max_output_tokens": 2048,
   "model": null,
@@ -12,6 +14,7 @@
     "module_models": {},
     "shared_model": null
   },
+  "preferred_failure_threshold": 2,
   "provider": "null",
   "request_timeout": 1350.0,
   "seed": 42

@@ -20,7 +20,7 @@ Caches invalidate when transcript content fingerprints change or when rename kno
 ## Prerequisites
 
 1. Managed library transcripts (admitted with import sidecars).
-2. For LLM passes: Ollama running; Models preset assigns non-thinking tags for `speaker_name_suggestions` and/or `rename_suggestions` ([llm.md](llm.md)).
+2. For LLM passes: Ollama running; Models preset assigns tags for `speaker_name_suggestions` and/or `rename_suggestions`. Thinking tags work when `/api/show` allows `think: false` and/or `llm.fallback_model` is set to a JSON-safe secondary ([llm.md](llm.md)).
 3. Rename **batch warm** (Settings pre-load / `warm-suggestions --rename`): `input.rename_content_suggestions=auto` and optional `rename_suggest_llm` / web knobs ([settings.md](settings.md)). On-demand **Suggest names** on the rename form does not require `auto`; it still honors `rename_suggest_transcript` / `rename_suggest_llm` / `rename_suggest_web`.
 
 ## GUI

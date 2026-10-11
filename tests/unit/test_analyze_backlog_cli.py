@@ -20,7 +20,10 @@ def test_analyze_backlog_dry_run(monkeypatch, tmp_path: Path, capsys) -> None:
     monkeypatch.setattr(
         mod,
         "_discover_backlog",
-        lambda *, require_complete_speakers, require_named_speakers=(): [a, b],
+        lambda *, analysis_preset, require_complete_speakers, require_named_speakers=(), **_: [
+            a,
+            b,
+        ],
     )
     monkeypatch.setattr("transcriptx._bootstrap.bootstrap", lambda: None)
     rc = mod.main(["--dry-run", "--preset", "thorough"])
@@ -41,7 +44,9 @@ def test_analyze_backlog_runs_analysis(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(
         mod,
         "_discover_backlog",
-        lambda *, require_complete_speakers, require_named_speakers=(): [path],
+        lambda *, analysis_preset, require_complete_speakers, require_named_speakers=(), **_: [
+            path,
+        ],
     )
     monkeypatch.setattr("transcriptx._bootstrap.bootstrap", lambda: None)
 
@@ -120,7 +125,10 @@ def test_discover_backlog_filters_named_speaker(monkeypatch, tmp_path: Path) -> 
         "_has_required_named_speakers",
         lambda path, required: path == keep,
     )
+    monkeypatch.setattr(mod, "_has_completed_preset_run", lambda path, preset: False)
+    monkeypatch.setattr(mod, "_named_speaker_count", lambda path: 2)
     found = mod._discover_backlog(
+        analysis_preset="thorough",
         require_complete_speakers=True,
         require_named_speakers=["Glen"],
     )
@@ -135,7 +143,14 @@ def test_analyze_backlog_passes_require_named_speaker(
 
     seen: dict = {}
 
-    def fake_discover(*, require_complete_speakers, require_named_speakers=()):
+    def fake_discover(
+        *,
+        analysis_preset,
+        require_complete_speakers,
+        require_named_speakers=(),
+        **_,
+    ):
+        seen["preset"] = analysis_preset
         seen["complete"] = require_complete_speakers
         seen["named"] = list(require_named_speakers)
         return []

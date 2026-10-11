@@ -37,6 +37,7 @@ class LLMClient(ABC):
         temperature: float,
         max_tokens: Optional[int] = None,
         response_format: Optional[JsonResponseFormat] = None,
+        think: bool | str | None = None,
     ) -> str:
         """
         Generate text from prompt.
@@ -47,6 +48,8 @@ class LLMClient(ABC):
             temperature: Sampling temperature (0.0-2.0)
             max_tokens: Maximum tokens to generate
             response_format: ``\"json\"``, a JSON Schema mapping, or None
+            think: Ollama thinking control (``True``/``False``/level); ``None``
+                leaves the body field unset (provider default / auto policy).
 
         Returns:
             Generated text
@@ -83,6 +86,7 @@ class NullLLMClient(LLMClient):
         temperature: float,
         max_tokens: Optional[int] = None,
         response_format: Optional[JsonResponseFormat] = None,
+        think: bool | str | None = None,
     ) -> str:
         """Raise error - LLM client not configured."""
         raise LLMConfigurationError(

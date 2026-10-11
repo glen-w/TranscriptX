@@ -20,6 +20,7 @@ _ALLOWED_KWONLY = frozenset(
         "temperature",
         "max_tokens",
         "response_format",
+        "think",
     }
 )
 

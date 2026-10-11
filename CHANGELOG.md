@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **LLM JSON primary/secondary:** `llm.fallback_model` + `llm.preferred_failure_threshold` (Settings → Models; env `TRANSCRIPTX_LLM_*`). JSON generates send `think: false` when Ollama `/api/show` allows it; unusable preferred JSON falls back once and can stick to the secondary for the rest of a warm/analysis run. Docs: [llm.md](docs/runtime/llm.md).
 - **Speaker name suggestions:** Suggest names builds a spaCy PERSON roster plus dialogue cues (self-intro, moderator list, vocative) into a per-speaker dropdown; optional Ollama pass uses the `speaker_name_suggestions` Model preset consumer. Naming stays user-confirmed. Auto-identify mentions now require a strong self-intro (weak vocatives no longer auto-write).
 - **Content rename suggestions:** Optional assistive full stems on rename forms (`input.rename_content_suggestions=auto`, default off): transcript date/title cues, optional local LLM (`rename_suggestions` consumer + `rename_suggestions_effort`), optional web lookup for webinar-like files (short query only). Dropdown + prefill; commit only on **Rename**. `{title}` smart-rename token; cache under `data_dir/.cache/rename/`. Docs: [settings](docs/runtime/settings.md#content-rename-suggestions-assistive), [rename workflow](docs/workflows/rename-transcript.md).
 - **LLM consumers in Model presets:** `speaker_name_suggestions`, `rename_suggestions`, `corrections_studio`, and `rag` resolve through Settings → Models / `llm_models` packs like analysis modules.
