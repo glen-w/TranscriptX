@@ -14,7 +14,8 @@ from typing import Any
 from transcriptx.core.config.models.llm_summary import LLMSummaryEffort
 from transcriptx.core.llm import DEFAULT_OLLAMA_MODEL
 from transcriptx.core.llm.errors import LLMConfigurationError
-from transcriptx.core.llm.ollama_client import OllamaClient, build_ollama_client
+from transcriptx.core.llm.llm_client import LLMClient
+from transcriptx.core.llm.ollama_client import build_ollama_client
 
 __all__ = [
     "LLMEffortProfile",
@@ -156,11 +157,16 @@ def build_ollama_analysis_client(
     *,
     llm_cfg: Any,
     runtime: LLMRuntime,
-) -> OllamaClient:
-    """Instantiate Ollama for a transcript-direct module using resolved limits."""
+) -> LLMClient:
+    """Instantiate Ollama for a transcript-direct module using resolved limits.
+
+    When ``llm.fallback_model`` is set, wraps the primary client so JSON-format
+    generates can fall back once (and trip a run-scoped breaker).
+    """
+    from transcriptx.core.llm.json_with_fallback import wrap_client_with_json_fallback
     from transcriptx.core.llm.metrics import RecorderBackedLlmMetricsSink
 
-    return build_ollama_client(
+    primary = build_ollama_client(
         base_url=llm_cfg.base_url,
         model=runtime.model,
         seed=int(llm_cfg.seed),
@@ -169,6 +175,13 @@ def build_ollama_analysis_client(
         max_output_tokens=runtime.max_output_tokens,
         metrics_sink=RecorderBackedLlmMetricsSink(),
         effort=str(runtime.effort),
+    )
+    return wrap_client_with_json_fallback(
+        primary,
+        llm_cfg=llm_cfg,
+        request_timeout=float(runtime.request_timeout),
+        availability_timeout=float(llm_cfg.availability_timeout),
+        max_output_tokens=runtime.max_output_tokens,
     )
 
 

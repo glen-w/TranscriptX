@@ -105,16 +105,32 @@ def _speaker_name_cache_fresh(
     transcript_path: Path,
     segments: Sequence[dict],
 ) -> bool:
+    from transcriptx.core.speaker_profiles.identify.suggestions.cache import (
+        model_tag_for_cache,
+    )
+
     fp = fingerprint_segments(segments)
     model_tag = resolve_assigned_speaker_name_model_tag(use_llm=True)
-    return (
-        load_cached_suggestions(
+    cached = load_cached_suggestions(
+        managed_transcript_id,
+        transcript_fingerprint=fp,
+        model_tag=model_tag,
+    )
+    # Cues-only / failed preferred writes must not block a later warm retry.
+    if cached is not None and bool(cached.llm_used):
+        return True
+    # Successful secondary (fallback) warm also counts as fresh for this fingerprint.
+    fallback = getattr(get_config().llm, "fallback_model", None)
+    fallback_tag = model_tag_for_cache(fallback) if fallback else ""
+    if fallback_tag and fallback_tag != model_tag:
+        secondary = load_cached_suggestions(
             managed_transcript_id,
             transcript_fingerprint=fp,
-            model_tag=model_tag,
+            model_tag=fallback_tag,
         )
-        is not None
-    )
+        if secondary is not None and bool(secondary.llm_used):
+            return True
+    return False
 
 
 def _rename_cache_fresh(transcript_path: Path, segments: Sequence[dict]) -> bool:

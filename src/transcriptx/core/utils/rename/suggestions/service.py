@@ -187,7 +187,6 @@ def _maybe_llm_cues(
     from transcriptx.core.analysis.llm_support.prompts import build_bounded_user_prompt
     from transcriptx.core.llm.errors import LLMConfigurationError, LLMModelMissingError
     from transcriptx.core.llm.prompting import require_prompt_budget
-    from transcriptx.core.llm.thinking_models import is_thinking_model
 
     config = get_config()
     llm_cfg = config.llm
@@ -208,15 +207,6 @@ def _maybe_llm_cues(
             "No model configured for rename_suggestions; showing other cues only.",
             None,
             None,
-        )
-    if is_thinking_model(runtime.model):
-        return (
-            [],
-            f"Model `{runtime.model}` is unsafe for JSON rename suggestions; "
-            "pick a non-thinking tag under Settings → Models for "
-            "`rename_suggestions`.",
-            runtime.model,
-            runtime.model_source,
         )
     try:
         require_prompt_budget(
@@ -252,25 +242,37 @@ def _maybe_llm_cues(
         temperature=float(llm_cfg.default_temperature),
         max_tokens=int(runtime.max_output_tokens),
     )
+    from transcriptx.core.llm.json_with_fallback import get_last_json_generate_outcome
+
+    outcome = get_last_json_generate_outcome()
+    producing = (
+        outcome.model if outcome is not None and outcome.model else runtime.model
+    )
+    source = (
+        "fallback"
+        if outcome is not None and outcome.used_fallback
+        else runtime.model_source
+    )
     if len(cues) >= n:
-        status = (
-            f"{len(cues)} rename suggestions from local LLM (`{runtime.model}`)."
-        )
+        status = f"{len(cues)} rename suggestions from local LLM (`{producing}`)."
+        if outcome is not None and outcome.used_fallback:
+            status = (
+                f"{len(cues)} rename suggestions from local LLM (`{producing}`; "
+                f"preferred `{runtime.model}` failed JSON)."
+            )
     elif cues:
         status = (
-            f"LLM `{runtime.model}` returned {len(cues)} of {n} suggestions; "
+            f"LLM `{producing}` returned {len(cues)} of {n} suggestions; "
             "showing other cues too."
         )
     elif llm_error:
         detail = llm_error if len(llm_error) <= 160 else llm_error[:157] + "..."
-        status = (
-            f"LLM `{runtime.model}` failed ({detail}); showing other cues."
-        )
+        status = f"LLM `{producing}` failed ({detail}); showing other cues."
     else:
         status = (
-            f"LLM `{runtime.model}` could not suggest metadata; showing other cues."
+            f"LLM `{producing}` could not suggest metadata; showing other cues."
         )
-    return cues, status, runtime.model, runtime.model_source
+    return cues, status, producing, source
 
 
 def _rank_and_dedupe(options: list[RenameOption]) -> tuple[RenameOption, ...]:

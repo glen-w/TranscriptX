@@ -80,6 +80,25 @@
       "title": "Enabled",
       "type": "boolean"
     },
+    "fallback_model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Secondary Ollama tag used when the preferred model returns unusable JSON (empty response / parse failure). Leave empty to disable fallback.",
+      "title": "Fallback Model"
+    },
+    "json_prefer_think_off": {
+      "default": true,
+      "description": "When True, JSON-format Ollama requests send think=false if the model advertises that thinking can be disabled (/api/show).",
+      "title": "Json Prefer Think Off",
+      "type": "boolean"
+    },
     "max_input_chars": {
       "default": 48000,
       "description": "Maximum characters of transcript text sent to the LLM after prompt wrapping.",
@@ -115,6 +134,13 @@
     "model_selection": {
       "$ref": "#/$defs/LLMModelSelectionSettingsModel",
       "description": "Resolved model pack from the active llm_models profile."
+    },
+    "preferred_failure_threshold": {
+      "default": 2,
+      "description": "After this many preferred-model JSON failures in one warm/analysis run, remaining JSON calls use only the secondary model.",
+      "minimum": 1,
+      "title": "Preferred Failure Threshold",
+      "type": "integer"
     },
     "provider": {
       "default": "null",

@@ -43,6 +43,28 @@ class LLMSettingsModel(BaseModel):
         default=None,
         description="Provider model name (e.g. Ollama tag).",
     )
+    fallback_model: str | None = Field(
+        default=None,
+        description=(
+            "Secondary Ollama tag used when the preferred model returns unusable "
+            "JSON (empty response / parse failure). Leave empty to disable fallback."
+        ),
+    )
+    preferred_failure_threshold: int = Field(
+        default=2,
+        ge=1,
+        description=(
+            "After this many preferred-model JSON failures in one warm/analysis "
+            "run, remaining JSON calls use only the secondary model."
+        ),
+    )
+    json_prefer_think_off: bool = Field(
+        default=True,
+        description=(
+            "When True, JSON-format Ollama requests send think=false if the model "
+            "advertises that thinking can be disabled (/api/show)."
+        ),
+    )
     base_url: str | None = Field(
         default=None,
         description="Provider base URL (e.g. http://localhost:11434/).",

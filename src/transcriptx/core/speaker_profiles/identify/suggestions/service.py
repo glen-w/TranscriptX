@@ -8,8 +8,9 @@ from typing import Any, Mapping, Sequence
 
 from transcriptx.core.speaker_profiles.hashing import sha256_text
 from transcriptx.core.speaker_profiles.identify.suggestions.cache import (
-    resolve_assigned_speaker_name_model_tag,
     load_cached_suggestions,
+    model_tag_for_cache,
+    resolve_assigned_speaker_name_model_tag,
     write_cached_suggestions,
 )
 from transcriptx.core.speaker_profiles.identify.suggestions.deterministic import (
@@ -66,7 +67,7 @@ def _try_llm_assignments(
         resolve_llm_runtime,
     )
     from transcriptx.core.llm.errors import LLMConfigurationError, LLMModelMissingError
-    from transcriptx.core.llm.thinking_models import is_thinking_model
+    from transcriptx.core.llm.json_with_fallback import get_last_json_generate_outcome
 
     config = get_config()
     llm_cfg = config.llm
@@ -98,17 +99,6 @@ def _try_llm_assignments(
             None,
         )
 
-    if is_thinking_model(runtime.model):
-        return (
-            per_speaker,
-            False,
-            f"Model `{runtime.model}` is unsafe for JSON speaker naming; "
-            "showing transcript cues only. Pick a non-thinking tag under "
-            "Settings → Models for `speaker_name_suggestions`.",
-            runtime.model,
-            runtime.model_source,
-        )
-
     client = build_ollama_analysis_client(llm_cfg=llm_cfg, runtime=runtime)
     speaker_ids = sorted(per_speaker.keys())
     allowed = allowed_name_keys(roster, segments)
@@ -122,21 +112,33 @@ def _try_llm_assignments(
         max_tokens=int(runtime.max_output_tokens),
         max_input_chars=int(runtime.max_input_chars),
     )
+    outcome = get_last_json_generate_outcome()
+    producing = (
+        outcome.model
+        if outcome is not None and outcome.model
+        else runtime.model
+    )
     if llm_opts:
+        status = f"Suggestions refined with local LLM (`{producing}`)."
+        if outcome is not None and outcome.used_fallback:
+            status = (
+                f"Suggestions refined with local LLM (`{producing}`; "
+                f"preferred `{runtime.model}` failed JSON)."
+            )
         return (
             merge_llm_options(per_speaker, llm_opts),
             True,
-            f"Suggestions refined with local LLM (`{runtime.model}`).",
-            runtime.model,
-            runtime.model_source,
+            status,
+            producing,
+            "fallback" if outcome and outcome.used_fallback else runtime.model_source,
         )
     if client.is_available():
         return (
             per_speaker,
             False,
-            f"LLM `{runtime.model}` could not suggest names; "
+            f"LLM `{producing}` could not suggest names; "
             "showing transcript cues only.",
-            runtime.model,
+            producing,
             runtime.model_source,
         )
     return (
@@ -168,14 +170,14 @@ def suggest_speaker_names(
         )
 
     fp = fingerprint_segments(segments)
-    cache_tag = resolve_assigned_speaker_name_model_tag(use_llm=use_llm)
+    assigned_tag = resolve_assigned_speaker_name_model_tag(use_llm=use_llm)
     if managed_transcript_id and not force_refresh:
         cached = load_cached_suggestions(
             managed_transcript_id,
             transcript_fingerprint=fp,
-            model_tag=cache_tag,
+            model_tag=assigned_tag,
         )
-        if cached is not None:
+        if cached is not None and (not use_llm or cached.llm_used):
             return cached
 
     roster = build_roster(segments)
@@ -193,6 +195,13 @@ def suggest_speaker_names(
         per_speaker, llm_used, status, llm_model, llm_model_source = (
             _try_llm_assignments(segments, per_speaker, roster)
         )
+
+    # Cache under the producing model when LLM succeeded; otherwise under the
+    # assigned tag (cues-only). Warm freshness requires llm_used (see bulk_warm).
+    if llm_used and llm_model:
+        cache_tag = model_tag_for_cache(llm_model)
+    else:
+        cache_tag = assigned_tag
 
     result = NameSuggestionsResult(
         transcript_path=str(path),

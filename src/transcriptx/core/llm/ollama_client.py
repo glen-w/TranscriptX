@@ -448,6 +448,7 @@ class OllamaClient(LLMClient):
         temperature: float,
         max_tokens: Optional[int] = None,
         response_format: Optional[str | Mapping[str, Any]] = None,
+        think: bool | str | None = None,
     ) -> str:
         if temperature < 0 or temperature > 2:
             raise LLMConfigurationError("LLM temperature must be between 0 and 2")
@@ -483,6 +484,11 @@ class OllamaClient(LLMClient):
                 if isinstance(response_format, Mapping)
                 else response_format
             )
+        resolved_think = self._resolve_think_for_request(
+            response_format=response_format, think=think
+        )
+        if resolved_think is not None:
+            body["think"] = resolved_think
         num_predict = max_tokens if max_tokens is not None else self._max_output_tokens
         if num_predict is not None:
             body["options"]["num_predict"] = num_predict
@@ -567,6 +573,45 @@ class OllamaClient(LLMClient):
             **provider_fields,
         )
         return response_text
+
+    def _resolve_think_for_request(
+        self,
+        *,
+        response_format: Optional[str | Mapping[str, Any]],
+        think: bool | str | None,
+    ) -> bool | str | None:
+        """Return the ``think`` body field, or None to omit it.
+
+        Explicit ``think`` wins. For JSON requests with no explicit value, send
+        ``false`` when ``/api/show`` advertises that the model can disable thinking.
+        """
+        if think is not None:
+            return think
+        if response_format is None:
+            return None
+        try:
+            from transcriptx.core.llm.ollama_capabilities import (
+                thinking_controls_for_model,
+            )
+            from transcriptx.core.utils.config import get_config
+
+            prefer_off = True
+            try:
+                prefer_off = bool(
+                    getattr(get_config().llm, "json_prefer_think_off", True)
+                )
+            except Exception:
+                prefer_off = True
+            if not prefer_off:
+                return None
+            controls = thinking_controls_for_model(
+                self._model, base_url=self._base_url
+            )
+            if controls.can_disable_thinking:
+                return False
+        except Exception:
+            return None
+        return None
 
     def _emit_metrics(self, **kwargs: Any) -> None:
         try:

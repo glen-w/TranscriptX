@@ -427,6 +427,12 @@ ENV_KEY_REGISTRY: tuple[EnvKey, ...] = (
         invalid_policy="warn_skip",
     ),
     _env_key("TRANSCRIPTX_LLM_MODEL", ("llm", "model"), coerce_str),
+    _env_key("TRANSCRIPTX_LLM_FALLBACK_MODEL", ("llm", "fallback_model"), coerce_str),
+    _env_key(
+        "TRANSCRIPTX_LLM_PREFERRED_FAILURE_THRESHOLD",
+        ("llm", "preferred_failure_threshold"),
+        coerce_int,
+    ),
     _env_key("TRANSCRIPTX_LLM_BASE_URL", ("llm", "base_url"), coerce_str),
     _env_key("TRANSCRIPTX_LLM_SEED", ("llm", "seed"), coerce_int),
     _env_key(

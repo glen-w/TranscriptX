@@ -60,6 +60,20 @@ def test_validate_rejects_unknown_llm_key() -> None:
 
 
 @pytest.mark.unit
+def test_validate_accepts_llm_json_fallback_keys() -> None:
+    validate_raw_config_dict(
+        {
+            "llm": {
+                "enabled": True,
+                "fallback_model": "gemma3:12b",
+                "preferred_failure_threshold": 2,
+                "json_prefer_think_off": True,
+            }
+        }
+    )
+
+
+@pytest.mark.unit
 def test_validate_rejects_legacy_audio_bool_key() -> None:
     with pytest.raises(ConfigLoadError, match="normalize_mode") as exc:
         validate_raw_config_dict({"audio_preprocessing": {"normalize_enabled": True}})

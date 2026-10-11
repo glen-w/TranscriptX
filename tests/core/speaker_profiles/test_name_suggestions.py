@@ -279,12 +279,15 @@ def test_workspace_payload_includes_name_suggestions() -> None:
 
 
 @pytest.mark.unit
-def test_llm_pass_skips_thinking_model(monkeypatch) -> None:
+def test_llm_pass_attempts_thinking_model(monkeypatch) -> None:
+    """Thinking tags are no longer hard-skipped; generate path runs (may fail)."""
     from types import SimpleNamespace
 
     from transcriptx.core.speaker_profiles.identify.suggestions.service import (
         _try_llm_assignments,
     )
+
+    called: dict[str, bool] = {"assign": False}
 
     monkeypatch.setattr(
         "transcriptx.core.analysis.llm_support.runtime.require_ollama_analysis",
@@ -297,11 +300,38 @@ def test_llm_pass_skips_thinking_model(monkeypatch) -> None:
             model_source="profile",
             max_output_tokens=2048,
             max_input_chars=48000,
+            effort="low",
+            request_timeout=30.0,
         ),
     )
     monkeypatch.setattr(
         "transcriptx.core.speaker_profiles.identify.suggestions.service.get_config",
-        lambda: SimpleNamespace(llm=SimpleNamespace(enabled=True, provider="ollama")),
+        lambda: SimpleNamespace(
+            llm=SimpleNamespace(
+                enabled=True,
+                provider="ollama",
+                default_temperature=0.1,
+                fallback_model=None,
+            )
+        ),
+    )
+
+    class _Client:
+        def is_available(self) -> bool:
+            return True
+
+    monkeypatch.setattr(
+        "transcriptx.core.analysis.llm_support.runtime.build_ollama_analysis_client",
+        lambda **_k: _Client(),
+    )
+
+    def _fake_assign(*_a, **_k):
+        called["assign"] = True
+        return {}
+
+    monkeypatch.setattr(
+        "transcriptx.core.speaker_profiles.identify.suggestions.service.run_llm_assignments",
+        _fake_assign,
     )
     roster = (RosterPerson("Maya", "maya", 1, (), ""),)
     per, used, status, model, source = _try_llm_assignments(
@@ -309,9 +339,10 @@ def test_llm_pass_skips_thinking_model(monkeypatch) -> None:
         {"SPEAKER_00": ()},
         roster,
     )
+    assert called["assign"] is True
     assert used is False
     assert model == "qwen3:8b"
-    assert "JSON speaker naming" in status
+    assert "could not suggest names" in status
     assert per == {"SPEAKER_00": ()}
 
 
