@@ -53,6 +53,7 @@ class NameSuggestionsResult:
     llm_used: bool = False
     llm_model: str | None = None
     llm_model_source: str | None = None
+    cache_model_tag: str | None = None
     from_cache: bool = False
     error: str | None = None
 
@@ -66,6 +67,7 @@ class NameSuggestionsResult:
             "llm_used": self.llm_used,
             "llm_model": self.llm_model,
             "llm_model_source": self.llm_model_source,
+            "cache_model_tag": self.cache_model_tag,
             "roster": [
                 {
                     "display_name": p.display_name,
@@ -149,6 +151,7 @@ class NameSuggestionsResult:
             llm_used=bool(raw.get("llm_used")),
             llm_model=raw.get("llm_model"),
             llm_model_source=raw.get("llm_model_source"),
+            cache_model_tag=raw.get("cache_model_tag"),
             from_cache=True,
             error=raw.get("error"),
         )

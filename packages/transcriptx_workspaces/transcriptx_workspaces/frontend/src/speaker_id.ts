@@ -65,9 +65,18 @@ export type RosterPerson = {
   sample_quote?: string;
 };
 
+export type NameSuggestionModelRun = {
+  model_tag: string;
+  llm_model?: string;
+  status_message?: string;
+};
+
 export type NameSuggestionsPayload = {
   status_message?: string;
   llm_used?: boolean;
+  llm_model?: string | null;
+  selected_model_tag?: string;
+  available_models?: NameSuggestionModelRun[];
   roster?: RosterPerson[];
   by_speaker?: Record<string, NameSuggestionOption[]>;
 };

@@ -145,6 +145,10 @@ def _reset_rename_case_from_config(form_key: str, session_state=None) -> None:
         ss[_rename_case_widget_key(form_key, suffix)] = label
 
 
+def sticky_rename_variant_key(form_key: str) -> str:
+    return f"{form_key}__rename_variant_cache_key"
+
+
 def sticky_content_rename_keys(form_key: str) -> tuple[str, str, str]:
     """Return (options_key, pick_key, status_key) for content rename suggestions."""
     return (
@@ -183,6 +187,7 @@ def clear_rename_form_session_keys(form_key: str, session_state=None) -> None:
         ss.pop(_rename_case_widget_key(form_key, suffix), None)
     for key in sticky_content_rename_keys(form_key):
         ss.pop(key, None)
+    ss.pop(sticky_rename_variant_key(form_key), None)
     ss.pop(sticky_nl_title_reuse_key(form_key), None)
 
 
@@ -260,6 +265,8 @@ def _cb_suggest_rename_names(transcript_path: str, form_key: str) -> None:
     _store_content_suggestion_result(
         path, form_key, result, session_state=st.session_state
     )
+    if result.cache_key:
+        st.session_state[sticky_rename_variant_key(form_key)] = result.cache_key
 
 
 def _rename_suggest_button_label() -> str:
@@ -413,12 +420,67 @@ def bind_suggested_rename_name(
     return str(st.session_state.get(suggestion_key) or path.stem)
 
 
-def _render_content_suggestion_dropdown(form_key: str) -> None:
+def _rename_variants_for_path(path: Path):
+    from transcriptx.core.speaker_profiles.identify.suggestions.service import (
+        fingerprint_segments,
+    )
+    from transcriptx.core.speaker_profiles.resolver import load_transcript_segments
+    from transcriptx.core.utils.rename.suggestions.cache import (
+        list_cached_rename_variants,
+    )
+
+    segments = load_transcript_segments(path)
+    fp = fingerprint_segments(segments)
+    return list_cached_rename_variants(fp)
+
+
+def _render_rename_variant_picker(path: Path, form_key: str) -> None:
+    variants = _rename_variants_for_path(path)
+    keyed = [v for v in variants if v.cache_key]
+    if len(keyed) <= 1:
+        return
+    variant_key = sticky_rename_variant_key(form_key)
+    labels: dict[str, str] = {}
+    for row in keyed:
+        model = row.llm_model or "transcript only"
+        labels[row.cache_key] = f"{model} — {row.status or 'cached'}"
+    cache_keys = list(labels.keys())
+    if variant_key not in st.session_state:
+        st.session_state[variant_key] = cache_keys[0]
+    current = str(st.session_state.get(variant_key) or cache_keys[0])
+    if current not in labels:
+        st.session_state[variant_key] = cache_keys[0]
+        current = cache_keys[0]
+
+    def _on_variant_change() -> None:
+        chosen = st.session_state.get(f"{variant_key}__widget")
+        st.session_state[variant_key] = chosen
+        picked = next((v for v in keyed if v.cache_key == chosen), None)
+        if picked is not None:
+            _store_content_suggestion_result(
+                path, form_key, picked, session_state=st.session_state
+            )
+        st.rerun()
+
+    st.selectbox(
+        "Suggestion source (model / settings)",
+        cache_keys,
+        index=cache_keys.index(current),
+        format_func=lambda key: labels.get(key, key),
+        key=f"{variant_key}__widget",
+        on_change=_on_variant_change,
+    )
+
+
+def _render_content_suggestion_dropdown(
+    form_key: str, transcript_path: Path | str
+) -> None:
     options_key, pick_key, status_key = sticky_content_rename_keys(form_key)
     _, target_key, _ = sticky_suggested_name_keys(form_key)
     label_to_stem = st.session_state.get(options_key) or {}
     if not label_to_stem:
         return
+    _render_rename_variant_picker(Path(transcript_path), form_key)
     status = str(st.session_state.get(status_key) or "")
     if status:
         st.caption(status)
@@ -644,7 +706,7 @@ def render_transcript_rename_form(
     if _rename_content_suggestions_mode() == "auto" or (
         st.session_state.get(sticky_content_rename_keys(form_key)[0])
     ):
-        _render_content_suggestion_dropdown(form_key)
+        _render_content_suggestion_dropdown(form_key, path)
 
     st.text_input("Current file name", value=current_name, disabled=True)
     name_col, case_col = st.columns([4, 1])

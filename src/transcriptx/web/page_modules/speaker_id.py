@@ -861,11 +861,16 @@ def _identify_badge_suffix(transcript_path: Path | str, speaker_id: str) -> str:
     return " · " + " / ".join(bits)
 
 
+def _name_suggestion_model_pick_key(transcript_path: str) -> str:
+    return widget_key(transcript_path, "name_suggestion_model_tag")
+
+
 def _load_name_suggestions_for_workspace(
     transcript_path: str,
     profile_ctx: TranscriptProfileContext,
     *,
     force_refresh: bool = False,
+    selected_model_tag: str | None = None,
 ) -> dict[str, Any] | None:
     if not profile_ctx.is_managed or not profile_ctx.managed_transcript_id:
         return None
@@ -873,7 +878,7 @@ def _load_name_suggestions_for_workspace(
         suggest_speaker_names,
     )
     from transcriptx.core.speaker_profiles.identify.suggestions.cache import (
-        load_suggestions_artefact,
+        build_name_suggestions_workspace_payload,
     )
     from transcriptx.core.speaker_profiles.identify.suggestions.service import (
         fingerprint_segments,
@@ -893,19 +898,33 @@ def _load_name_suggestions_for_workspace(
                 "roster": [],
                 "by_speaker": {},
             }
-        return result.workspace_payload()
+        try:
+            segments = load_transcript_segments(transcript_path)
+            fp = fingerprint_segments(segments)
+        except Exception:
+            fp = result.transcript_fingerprint
+        pick = result.cache_model_tag or selected_model_tag
+        if pick:
+            st.session_state[_name_suggestion_model_pick_key(transcript_path)] = pick
+        return build_name_suggestions_workspace_payload(
+            profile_ctx.managed_transcript_id,
+            transcript_fingerprint=fp,
+            selected_model_tag=pick,
+        ) or result.workspace_payload()
 
-    cached = load_suggestions_artefact(profile_ctx.managed_transcript_id)
-    if cached is None:
-        return None
     try:
         segments = load_transcript_segments(transcript_path)
         fp = fingerprint_segments(segments)
-        if cached.transcript_fingerprint != fp:
-            return None
     except Exception:
         return None
-    return cached.workspace_payload()
+    pick = selected_model_tag or st.session_state.get(
+        _name_suggestion_model_pick_key(transcript_path)
+    )
+    return build_name_suggestions_workspace_payload(
+        profile_ctx.managed_transcript_id,
+        transcript_fingerprint=fp,
+        selected_model_tag=str(pick) if pick else None,
+    )
 
 
 def _cb_suggest_speaker_names(
@@ -1999,6 +2018,41 @@ def _render_managed_identify_actions(
         on_click=_cb_suggest_speaker_names,
         args=(str(transcript_path), profile_ctx),
     )
+    available = (name_suggestions or {}).get("available_models") or []
+    if len(available) > 1:
+        labels = {
+            str(row.get("model_tag") or ""): (
+                f"{row.get('llm_model') or 'transcript only'}"
+                f" — {row.get('status_message') or 'cached'}"
+            )
+            for row in available
+            if row.get("model_tag")
+        }
+        if labels:
+            pick_key = _name_suggestion_model_pick_key(transcript_path)
+            tags = list(labels.keys())
+            if pick_key not in st.session_state:
+                st.session_state[pick_key] = (
+                    (name_suggestions or {}).get("selected_model_tag") or tags[0]
+                )
+            current = str(st.session_state.get(pick_key) or tags[0])
+            if current not in labels:
+                st.session_state[pick_key] = tags[0]
+                current = tags[0]
+
+            def _on_model_pick_change() -> None:
+                st.session_state[pick_key] = st.session_state.get(
+                    f"{pick_key}__widget"
+                )
+
+            st.selectbox(
+                "Suggestion source (model)",
+                tags,
+                index=tags.index(current),
+                format_func=lambda tag: labels.get(tag, tag),
+                key=f"{pick_key}__widget",
+                on_change=_on_model_pick_change,
+            )
     if name_suggestions and name_suggestions.get("status_message"):
         st.caption(str(name_suggestions.get("status_message")))
     with st.expander("Voice suggestions", expanded=False):
@@ -2091,8 +2145,11 @@ def _render_ccv2_speaker_workspace(
         draft_name=current_name,
         profile_ctx=profile_ctx,
     )
+    model_pick_key = _name_suggestion_model_pick_key(str(transcript_path))
     name_suggestions = _load_name_suggestions_for_workspace(
-        str(transcript_path), profile_ctx
+        str(transcript_path),
+        profile_ctx,
+        selected_model_tag=st.session_state.get(model_pick_key),
     )
     data = build_workspace_data(
         transcript_path=str(transcript_path),

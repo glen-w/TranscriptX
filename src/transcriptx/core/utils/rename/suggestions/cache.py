@@ -48,3 +48,30 @@ def write_cached_rename_suggestions(result: RenameSuggestionsResult) -> Path | N
     path.parent.mkdir(parents=True, exist_ok=True)
     write_json_atomic(path, result.to_dict(), indent=2)
     return path
+
+
+def list_cached_rename_variants(
+    transcript_fingerprint: str,
+) -> list[RenameSuggestionsResult]:
+    """All fresh rename suggestion runs for a transcript fingerprint."""
+    root = _cache_root()
+    if not root.is_dir():
+        return []
+    rows: list[tuple[float, RenameSuggestionsResult]] = []
+    for path in root.glob("*.rename_suggestions.v1.json"):
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(raw, dict):
+            continue
+        if raw.get("transcript_fingerprint") != transcript_fingerprint:
+            continue
+        parsed = RenameSuggestionsResult.from_dict(raw)
+        try:
+            mtime = path.stat().st_mtime
+        except OSError:
+            mtime = 0.0
+        rows.append((mtime, parsed))
+    rows.sort(key=lambda item: item[0], reverse=True)
+    return [item[1] for item in rows]
