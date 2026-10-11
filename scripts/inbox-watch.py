@@ -30,6 +30,10 @@ Preview:
 Normal once (cron / launchd):
     inbox-watch --once
 
+    When the inbox volume is absent, --once still scans the recordings folder
+    via whispermlx-missing (and runs admit when enabled); only the inbox drop
+    folder is skipped.
+
 Poll (USB volume may be absent; first cycle still runs missing/admit):
     inbox-watch --watch
     inbox-watch --watch --admit
@@ -1708,6 +1712,15 @@ def looks_like_managed_library_root(path: Path) -> bool:
         return False
 
 
+def recordings_pass_when_inbox_absent(cfg: EffectiveConfig) -> bool:
+    """Whether --once should continue when the inbox path is missing.
+
+    Matches --watch first-cycle behavior: host STT on recordings still runs
+    overnight when USB is unmounted.
+    """
+    return cfg.watch_audio and cfg.transcribe != TRANSCRIBE_NONE
+
+
 def validate_layout(cfg: EffectiveConfig) -> str | None:
     if not cfg.watch_audio and not cfg.watch_transcripts:
         return "Enable at least one of watch_audio / watch_transcripts."
@@ -2359,11 +2372,16 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     assert cfg.inbox is not None
     watch_loop = bool(args.watch_loop)
-    if not args.dry_run and not cfg.inbox.is_dir():
+    if not cfg.inbox.is_dir():
         if watch_loop:
-            _log(f"Waiting for inbox: {cfg.inbox}")
-        else:
-            # USB / volume often unmounted at night; --once should no-op cleanly.
+            if not args.dry_run:
+                _log(f"Waiting for inbox: {cfg.inbox}")
+        elif recordings_pass_when_inbox_absent(cfg):
+            print(
+                f"inbox absent (skipping inbox scan; recordings STT): {cfg.inbox}",
+                file=sys.stderr,
+            )
+        elif not args.dry_run:
             print(f"inbox absent (nothing to do): {cfg.inbox}", file=sys.stderr)
             return 0
 

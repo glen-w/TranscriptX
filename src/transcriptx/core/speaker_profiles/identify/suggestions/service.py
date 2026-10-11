@@ -8,6 +8,7 @@ from typing import Any, Mapping, Sequence
 
 from transcriptx.core.speaker_profiles.hashing import sha256_text
 from transcriptx.core.speaker_profiles.identify.suggestions.cache import (
+    resolve_assigned_speaker_name_model_tag,
     load_cached_suggestions,
     write_cached_suggestions,
 )
@@ -167,10 +168,12 @@ def suggest_speaker_names(
         )
 
     fp = fingerprint_segments(segments)
+    cache_tag = resolve_assigned_speaker_name_model_tag(use_llm=use_llm)
     if managed_transcript_id and not force_refresh:
         cached = load_cached_suggestions(
             managed_transcript_id,
             transcript_fingerprint=fp,
+            model_tag=cache_tag,
         )
         if cached is not None:
             return cached
@@ -201,10 +204,11 @@ def suggest_speaker_names(
         llm_used=llm_used,
         llm_model=llm_model,
         llm_model_source=llm_model_source,
+        cache_model_tag=cache_tag,
     )
     if managed_transcript_id:
         try:
-            write_cached_suggestions(result)
+            write_cached_suggestions(result, model_tag=cache_tag)
         except Exception as exc:
             logger.warning("Failed to cache name suggestions: %s", exc)
     return result

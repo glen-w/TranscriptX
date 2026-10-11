@@ -17,7 +17,9 @@ from transcriptx.core.speaker_profiles.identify.suggestions.llm_assign import (
     parse_llm_response,
 )
 from transcriptx.core.speaker_profiles.identify.suggestions.cache import (
+    build_name_suggestions_workspace_payload,
     load_cached_suggestions,
+    model_tag_for_cache,
     write_cached_suggestions,
 )
 from transcriptx.core.speaker_profiles.identify.suggestions.models import (
@@ -395,15 +397,95 @@ def test_suggestions_cache_roundtrip(tmp_path) -> None:
         status_message="ok",
         llm_used=False,
     )
-    path = write_cached_suggestions(result, root=tmp_path)
+    tag = model_tag_for_cache(None)
+    path = write_cached_suggestions(result, model_tag=tag, root=tmp_path)
     assert path is not None and path.is_file()
     loaded = load_cached_suggestions(
-        "mt-1", transcript_fingerprint="abc", root=tmp_path
+        "mt-1",
+        transcript_fingerprint="abc",
+        model_tag=tag,
+        root=tmp_path,
     )
     assert loaded is not None
     assert loaded.roster[0].display_name == "Maya"
     assert loaded.per_speaker["SPEAKER_00"][0].display_name == "Maya"
     stale = load_cached_suggestions(
-        "mt-1", transcript_fingerprint="other", root=tmp_path
+        "mt-1",
+        transcript_fingerprint="other",
+        model_tag=tag,
+        root=tmp_path,
     )
     assert stale is None
+
+
+@pytest.mark.unit
+def test_suggestions_cache_keeps_separate_model_runs(tmp_path) -> None:
+    base = NameSuggestionsResult(
+        transcript_path="/tmp/t.json",
+        managed_transcript_id="mt-1",
+        transcript_fingerprint="abc",
+        per_speaker={},
+        status_message="a",
+        llm_model="model-a",
+        cache_model_tag=model_tag_for_cache("model-a"),
+    )
+    other = NameSuggestionsResult(
+        transcript_path="/tmp/t.json",
+        managed_transcript_id="mt-1",
+        transcript_fingerprint="abc",
+        per_speaker={},
+        status_message="b",
+        llm_model="model-b",
+        cache_model_tag=model_tag_for_cache("model-b"),
+    )
+    write_cached_suggestions(base, model_tag=base.cache_model_tag, root=tmp_path)
+    write_cached_suggestions(other, model_tag=other.cache_model_tag, root=tmp_path)
+    loaded_a = load_cached_suggestions(
+        "mt-1",
+        transcript_fingerprint="abc",
+        model_tag=base.cache_model_tag,
+        root=tmp_path,
+    )
+    loaded_b = load_cached_suggestions(
+        "mt-1",
+        transcript_fingerprint="abc",
+        model_tag=other.cache_model_tag,
+        root=tmp_path,
+    )
+    assert loaded_a is not None and loaded_a.status_message == "a"
+    assert loaded_b is not None and loaded_b.status_message == "b"
+    assert loaded_a.llm_model == "model-a"
+    assert loaded_b.llm_model == "model-b"
+
+
+@pytest.mark.unit
+def test_workspace_payload_lists_model_variants(tmp_path) -> None:
+    tag_a = model_tag_for_cache("model-a")
+    tag_b = model_tag_for_cache("model-b")
+    for tag, model, msg in (
+        (tag_a, "model-a", "run a"),
+        (tag_b, "model-b", "run b"),
+    ):
+        write_cached_suggestions(
+            NameSuggestionsResult(
+                transcript_path="/tmp/t.json",
+                managed_transcript_id="mt-1",
+                transcript_fingerprint="fp",
+                per_speaker={},
+                status_message=msg,
+                llm_model=model,
+                cache_model_tag=tag,
+            ),
+            model_tag=tag,
+            root=tmp_path,
+        )
+    payload = build_name_suggestions_workspace_payload(
+        "mt-1",
+        transcript_fingerprint="fp",
+        selected_model_tag=tag_b,
+        root=tmp_path,
+    )
+    assert payload is not None
+    assert payload["selected_model_tag"] == tag_b
+    assert len(payload["available_models"]) == 2
+    assert payload["status_message"] == "run b"

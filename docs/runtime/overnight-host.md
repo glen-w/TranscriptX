@@ -26,11 +26,14 @@ Companion script (not a `transcriptx` subcommand): `scripts/inbox-watch.py` — 
 
 Typical overnight order (01:00–07:00 local):
 
-1. **`cleanup-runs --mode delete-old --keep-human-readable --keep-llm-summaries`**  
-   Delete older run directories; salvage readable transcripts, `report.md`/`report.txt`, and `*_llm_summary.*` into `{subject}/.retained/{run_id}/` first.
+1. **`inbox-watch.py --once`**  
+   Inbox admit/convert when the drop folder is mounted; always runs
+   **whispermlx-missing** on the configured recordings folder (and admit when
+   enabled), even when the USB inbox is absent. Runs **before** analysis and
+   `warm-suggestions` so new library entries are included.
 
-2. **`inbox-watch.py --once`**  
-   One admit/STT pass from the configured inbox (USB may be absent).
+2. **`cleanup-runs --mode delete-old --keep-human-readable --keep-llm-summaries`**  
+   Delete older run directories; salvage readable transcripts, `report.md`/`report.txt`, and `*_llm_summary.*` into `{subject}/.retained/{run_id}/` first.
 
 3. **`analyze-modules --modules transcript_output,llm_summary --allow-unnamed-speakers`**  
    Whole library. Speakers need not be identified. Skips a transcript when the newest committed run’s `modules_run` already includes every requested module.

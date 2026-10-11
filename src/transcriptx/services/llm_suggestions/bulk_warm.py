@@ -9,6 +9,7 @@ from typing import Callable, Optional, Sequence
 
 from transcriptx.core.speaker_profiles.identify.suggestions.cache import (
     load_cached_suggestions,
+    resolve_assigned_speaker_name_model_tag,
 )
 from transcriptx.core.speaker_profiles.identify.suggestions.service import (
     fingerprint_segments,
@@ -105,10 +106,12 @@ def _speaker_name_cache_fresh(
     segments: Sequence[dict],
 ) -> bool:
     fp = fingerprint_segments(segments)
+    model_tag = resolve_assigned_speaker_name_model_tag(use_llm=True)
     return (
         load_cached_suggestions(
             managed_transcript_id,
             transcript_fingerprint=fp,
+            model_tag=model_tag,
         )
         is not None
     )

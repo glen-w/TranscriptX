@@ -380,6 +380,26 @@ class TestMissingInvocation:
         assert rc == 0
         assert seen["n"] == 1
 
+    def test_once_runs_missing_when_inbox_absent(self, iw, tmp_path: Path, monkeypatch):
+        inbox = tmp_path / "missing-inbox"
+        recordings = tmp_path / "recordings"
+        transcripts = tmp_path / "transcripts"
+        recordings.mkdir()
+        transcripts.mkdir()
+        iw.CONFIG_PATH = tmp_path / "noconfig.json"
+        seen = {"n": 0}
+
+        def capture(_cmd):
+            seen["n"] += 1
+            return 0
+
+        monkeypatch.setattr(iw, "run_whispermlx_missing", capture)
+        rc = iw.main(
+            _once_args(inbox, recordings, transcripts, ["--no-watch-transcripts"])
+        )
+        assert rc == 0
+        assert seen["n"] == 1
+
 
 @pytest.mark.unit
 class TestConfig:

@@ -6,10 +6,10 @@ High-compute **assistive** passes (speaker name dropdowns, rename stem prefills)
 
 | Consumer | GUI surface | Cache location |
 |----------|-------------|----------------|
-| `speaker_name_suggestions` | Speaker Identification → Name dropdown (after warm, no **Suggest names** click) | `speaker_profiles/.cache/identify/{managed_id}.name_suggestions.v1.json` |
+| `speaker_name_suggestions` | Speaker Identification → Name dropdown (after warm, no **Suggest names** click) | `speaker_profiles/.cache/identify/{managed_id}.{model_tag}.name_suggestions.v1.json` (legacy single-file caches still load) |
 | `rename_suggestions` | Rename Transcript / import rename — **Suggest names** button (always); also auto-prefill when **Content rename suggestions** is `auto` | `{data_dir}/.cache/rename/*.rename_suggestions.v1.json` |
 
-Caches invalidate when transcript content fingerprints change or when rename knobs / model tags in the cache key change (see [llm.md](llm.md) consumers).
+Caches invalidate when transcript content fingerprints change or when rename knobs / model tags in the cache key change (see [llm.md](llm.md) consumers). Re-running warm or **Suggest names** with a different `speaker_name_suggestions` or `rename_suggestions` model keeps prior runs on disk; Speaker Identification and the rename form expose a **Suggestion source (model)** picker when more than one cached run exists.
 
 ## What this is not
 
