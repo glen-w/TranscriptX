@@ -6,6 +6,14 @@
   </picture>
 </p>
 
+<p align="center">
+  <a href="https://github.com/glen-w/TranscriptX/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/glen-w/TranscriptX/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/glen-w/TranscriptX/actions/workflows/ci.yml"><img alt="Test coverage" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/glen-w/TranscriptX/main/badges/coverage.json"></a>
+  <a href="https://glenwright.earth/TranscriptX/guide/"><img alt="Docs" src="https://img.shields.io/badge/docs-glenwright.earth-blue"></a>
+  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-blue">
+  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue"></a>
+</p>
+
 TranscriptX is a local-first workbench for people who want to think with transcripts.
 
 Import conversations you already have. See themes, speakers, and evidence.
