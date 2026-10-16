@@ -73,6 +73,15 @@
   min-height: calc(100% - var(--tx-header-height));
 }
 
+/* Sphinx /guide/: shared marketing header is the only site title */
+body:has(.tx-site-chrome) .sidebar-brand {
+  display: none;
+}
+
+body:has(.tx-site-chrome) .mobile-header .header-center {
+  display: none;
+}
+
 @media (max-width: 720px) {
   .tx-site-chrome .nav-toggle {
     display: inline-flex;
