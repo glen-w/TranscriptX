@@ -47,6 +47,11 @@ def test_sphinx_guide_keeps_site_header_chrome() -> None:
     assert "tx-site-chrome" in page_tmpl
     assert "workflows/index" in page_tmpl
     assert "pathto(master_doc)" in page_tmpl
+    chrome_css = (ROOT / "website" / "chrome" / "site_chrome.css").read_text(
+        encoding="utf-8"
+    )
+    assert "body:has(.tx-site-chrome) .sidebar-brand" in chrome_css
+    assert "body:has(.tx-site-chrome) .mobile-header .header-center" in chrome_css
 
 
 @pytest.mark.unit
