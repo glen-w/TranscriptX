@@ -73,7 +73,7 @@ build/
 .coverage
 .coverage.*
 coverage.xml
-coverage.json
+/coverage.json
 coverage-core.json
 htmlcov/
 .tox/
