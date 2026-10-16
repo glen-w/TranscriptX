@@ -1,4 +1,5 @@
 # Refresh badges/coverage.json after a green CI run on main.
+# Pushes to the unprotected `badges` branch (main requires PRs).
 # The commit message skips CI so this cannot loop.
 name: Coverage badge
 
@@ -23,18 +24,30 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           name: coverage-json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
       - name: Write Shields endpoint
-        run: python3 scripts/coverage_badge.py coverage.json badges/coverage.json
-      - name: Commit badge when the percentage changes
+        run: python3 scripts/coverage_badge.py coverage.json /tmp/coverage-shield.json
+      - name: Publish badge to badges branch
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin badges 2>/dev/null || true
+          if git show-ref --verify --quiet refs/remotes/origin/badges; then
+            git checkout -B badges origin/badges
+          else
+            git checkout --orphan badges
+            git rm -rf . 2>/dev/null || true
+          fi
+
+          mkdir -p badges
+          cp /tmp/coverage-shield.json badges/coverage.json
           git add badges/coverage.json
           git diff --cached --quiet && exit 0
-          git -c user.name="github-actions[bot]" \
-              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-              commit -m "chore: refresh coverage badge [skip ci]"
-          git push
+          git commit -m "chore: refresh coverage badge [skip ci]"
+          git push origin HEAD:badges
