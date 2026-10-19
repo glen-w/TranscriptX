@@ -6,8 +6,26 @@
     <title>TranscriptX — think with your transcripts</title>
     <meta
       name="description"
-      content="TranscriptX is a local-first workbench for exploring transcripts: themes, speakers, evidence, and exports you keep on your machine."
+      content="Local desk for transcripts you already have: themes, speakers, evidence. Optional: run Whisper on your own machine. Not transcriptx.ai."
     />
+    <link rel="canonical" href="https://glenwright.earth/TranscriptX/" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://glenwright.earth/TranscriptX/" />
+    <meta property="og:title" content="TranscriptX — think with your transcripts" />
+    <meta property="og:description" content="Local desk for transcripts you already have: themes, speakers, evidence. Optional: run Whisper on your own machine. Not transcriptx.ai." />
+    <meta property="og:image" content="https://glenwright.earth/TranscriptX/images/share-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="TranscriptX application showing Overview with summary and metrics after analysis" />
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://glenwright.earth/TranscriptX/" />
+    <meta name="twitter:title" content="TranscriptX — think with your transcripts" />
+    <meta name="twitter:description" content="Local desk for transcripts you already have: themes, speakers, evidence. Optional: run Whisper on your own machine. Not transcriptx.ai." />
+    <meta name="twitter:image" content="https://glenwright.earth/TranscriptX/images/share-card.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -56,6 +74,9 @@
           <p class="lede">
             Import conversations you already have. See themes, speakers, and
             evidence in one place. Optional local AI stays on your computer.
+          </p>
+          <p class="fine" style="margin-top: 1rem; opacity: 0.75;">
+            This is <strong>TranscriptX</strong> (local analysis workbench), not transcriptx.ai and not the Transcribe tool.
           </p>
           <div class="cta-row">
             <a class="btn primary" href="#product">See how it works</a>
@@ -235,6 +256,9 @@
             Source files and analysis results stay on your computer. Optional
             AI uses Ollama locally and stays off until you turn it on. Nothing
             here is a hosted analysis service.
+          </p>
+          <p>
+            <strong>Bring transcripts you already have.</strong> Optional: <a href="./guide/comparison.html">run Whisper on your own machine from the app</a>. Whispermlx is macOS-only; Linux and Windows use WhisperX in Docker.
           </p>
         </div>
       </section>
