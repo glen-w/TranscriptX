@@ -45,7 +45,7 @@ def assert_ownership_invariant_unchanged() -> None:
     assert len(PYDANTIC_REGISTRY_PILOTS) == 55
     assert len(pilot_keys) == 734
     assert len(baseline) == 16
-    assert len(reg) == 750
+    assert len(reg) == 753
 
 
 def normalize_for_parity(obj: Any) -> Any:

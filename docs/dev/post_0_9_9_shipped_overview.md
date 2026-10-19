@@ -57,7 +57,7 @@ Status language matches [docs/ROADMAP.md](../ROADMAP.md): **done** / **[~] in pr
 
 ### 2. Insights quality (Theme A)
 
-Shared phrase / eligibility floors raised; insights composer deepened (schema v3 with evidence, confidence, abstention); deterministic summary/highlights honesty tightened; greeting-dominated noise reduced on large transcripts. Design: [theme_a_insights_quality.md](theme_a_insights_quality.md). This strengthens the deterministic base unfamiliar users see on Overview / Insights without adding modules (freeze still holds).
+Shared phrase / eligibility floors raised; insights composer deepened (schema v3 with evidence, confidence, abstention); deterministic summary/highlights honesty tightened; greeting-dominated noise reduced on large transcripts. Design: [theme_a_insights_quality.md](theme_a_insights_quality.md). This strengthens the deterministic base unfamiliar users see on Overview / Insights without adding modules (freeze still holds). **2026-10 presentation closeout:** Insights `insufficient_signal` shows info only (no sparse theme lists); Overview compact Actions/Highlights omit empty chrome; At a glance scan hint (see overview_presentation P3).
 
 ### 3. Operator workflows: rename, Tools, merge, watcher
 

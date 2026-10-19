@@ -169,7 +169,7 @@ def test_highlights_compact_skips_empty_unthemed(
     monkeypatch.setattr(oc, "st", _St)
     oc.render_highlights_compact(ctx, SimpleNamespace())
     assert writes == []
-    assert infos == ["No highlight themes for this run."]
+    assert infos == []
 
 
 @pytest.mark.unit

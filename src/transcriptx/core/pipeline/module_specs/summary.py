@@ -116,4 +116,21 @@ def build_summary_module_definitions(
             ],
             "enhancements": [],
         },
+        "insights_narrative": {
+            "description": (
+                "Local-AI narrative gloss over deterministic insights themes (B18)"
+            ),
+            "dependencies": ["insights", "highlights"],
+            "category": "medium",
+            "determinism_tier": "T2",
+            "requirements": [
+                Requirement.SEGMENTS,
+                Requirement.SEGMENT_TIMESTAMPS,
+                Requirement.SPEAKER_LABELS,
+            ],
+            "enhancements": [],
+            "requires_llm": True,
+            "exclude_from_default": True,
+            "finalize_phase": True,
+        },
     }

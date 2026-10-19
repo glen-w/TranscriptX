@@ -56,6 +56,7 @@ from transcriptx.web.services.chart_llm_description import (
     resolve_chart_llm_description,
 )
 from transcriptx.web.services.llm_feedback_service import get_llm_feedback_service
+from transcriptx.web.blocks.loader import ArtifactContentLoader
 from transcriptx.web.services.chart_view_model_service import (
     ChartGalleryFamily,
     ChartModuleGroupCounts,
@@ -64,6 +65,7 @@ from transcriptx.web.services.chart_view_model_service import (
     compute_chart_badges,
     family_from_overview_slot,
     group_charts_into_families,
+    named_speaker_count_from_content_loader,
     resolve_chart_display_description,
 )
 from transcriptx.web.services.export_service import ExportService
@@ -619,11 +621,15 @@ def _build_view_from_session(
     missing_behavior: str,
     max_items: Optional[int],
     overview_enabled: bool = True,
+    run_root: Path | None = None,
 ):
     chart_source = st.session_state.get(CHARTS_KEY_SOURCE_PRESET, "All") or "All"
     _apply_source_tag_coupling(chart_source)
     sync_kind_toggles_from_pills(st.session_state)
     ensure_charts_scope_filter(st.session_state)
+    loader = (
+        ArtifactContentLoader(run_root, tuple(all_charts)) if run_root is not None else None
+    )
     return build_charts_gallery_view(
         all_charts,
         module=st.session_state.get(CHARTS_KEY_FILTER_MODULE),
@@ -638,6 +644,7 @@ def _build_view_from_session(
         missing_behavior=missing_behavior,
         max_items=max_items,
         overview_enabled=overview_enabled,
+        named_speaker_count=named_speaker_count_from_content_loader(loader),
     )
 
 
@@ -677,6 +684,7 @@ def _charts_filters_and_gallery_fragment(
         missing_behavior=missing_behavior,
         max_items=max_items,
         overview_enabled=overview_enabled,
+        run_root=run_root,
     )
     visible_module_ids = [g.module_id for g in view.module_groups]
     st.session_state["_charts_visible_module_ids"] = list(visible_module_ids)

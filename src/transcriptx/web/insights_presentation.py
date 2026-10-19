@@ -27,6 +27,29 @@ GUIDED_MIN_HIGHLIGHT_QUOTE_CHARS = 24
 GUIDED_HIGHLIGHT_OVERLAP_IOU = 0.55
 FULL_THEME_ROW_CAP = 8
 
+
+def resolve_insights_display_cap(placement: Any | None) -> int | None:
+    """Theme list cap from placement params or config overview_theme_cap."""
+    if placement is None:
+        return None
+    params = getattr(placement, "params", None) or {}
+    if not isinstance(params, dict):
+        return None
+    if "display_cap" in params:
+        try:
+            return int(params["display_cap"])
+        except (TypeError, ValueError):
+            return None
+    if params.get("use_overview_theme_cap"):
+        try:
+            from transcriptx.core.utils.config import get_config
+
+            return int(get_config().analysis.insights.counts.overview_theme_cap)
+        except Exception:
+            return None
+    return None
+
+
 # Stable presentation order for language / style / salience blocks
 # (used when grouping former Analysis placements).
 ANALYSIS_GROUP_ORDER: tuple[tuple[str, str, tuple[str, ...]], ...] = (

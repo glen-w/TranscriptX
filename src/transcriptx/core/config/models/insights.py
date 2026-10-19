@@ -18,3 +18,9 @@ class InsightsSettingsModel(BaseModel):
     min_theme_score: float = Field(default=0.18, ge=0.0, le=1.0)
     min_themes_for_signal: int = Field(default=2, ge=1, le=10)
     topic_boost: float = Field(default=0.05, ge=0.0, le=0.5)
+    narrative_enabled: bool = Field(
+        default=False,
+        description="When true, insights_narrative may run (requires LLM + module selection).",
+    )
+    narrative_min_evidence_quotes: int = Field(default=1, ge=1, le=8)
+    narrative_max_chars: int = Field(default=1200, ge=200, le=4000)

@@ -242,6 +242,7 @@ def build_charts_gallery_view(
     missing_behavior: str,
     max_items: int | None,
     overview_enabled: bool = True,
+    named_speaker_count: int | None = None,
 ) -> ChartsGalleryViewModel:
     """Apply filters once; derive overview, module rows, and export set from the result."""
     filtered = apply_chart_filters(
@@ -260,6 +261,7 @@ def build_charts_gallery_view(
         missing_behavior=missing_behavior,
         max_items=max_items,
         overview_enabled=overview_enabled,
+        named_speaker_count=named_speaker_count,
     )
     # Hide overview section when filtering leaves no usable slots.
     visible_overview = [
@@ -627,6 +629,7 @@ def build_overview_slots(
     missing_behavior: str,
     max_items: int | None,
     overview_enabled: bool = True,
+    named_speaker_count: int | None = None,
 ) -> List[Dict[str, Any]]:
     from transcriptx.core.analysis.chart_descriptions.overview import (
         resolve_overview_viz_ids,
@@ -643,6 +646,7 @@ def build_overview_slots(
         user_overview=user_overview or None,
         max_items=max_items,
         overview_enabled=overview_enabled,
+        named_speaker_count=named_speaker_count,
     )
 
     slots: List[Dict[str, Any]] = []
@@ -690,3 +694,24 @@ def build_overview_slots(
                 }
             )
     return slots
+
+
+def named_speaker_count_from_content_loader(loader: Any) -> int | None:
+    """Best-effort named speaker count from stats/report artifacts on the run."""
+    if loader is None:
+        return None
+    payload = loader.load_json("stats", "_stats.json")
+    if not isinstance(payload, dict):
+        payload = loader.load_first_module_json("stats")
+    if not isinstance(payload, dict):
+        return None
+    overview = payload.get("overview")
+    if isinstance(overview, dict):
+        for key in ("speaker_count_named", "speaker_count_total", "speaker_count"):
+            value = overview.get(key)
+            if isinstance(value, (int, float)) and value >= 0:
+                return int(value)
+    speakers = payload.get("speakers")
+    if isinstance(speakers, list) and speakers:
+        return len(speakers)
+    return None

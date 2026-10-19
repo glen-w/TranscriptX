@@ -204,6 +204,16 @@ def _insights_contract_title(placement: BlockPlacement | None, focus: str) -> st
     return str(placement.params.get("title", defaults[focus]))
 
 
+def _quote_text_by_id(highlights: Dict[str, Any] | None) -> dict[str, str]:
+    if not isinstance(highlights, dict):
+        return {}
+    from transcriptx.core.analysis.highlights.post_process import (
+        highlight_quote_text_by_id,
+    )
+
+    return highlight_quote_text_by_id(highlights)
+
+
 def _render_theme_and_idea_lists(
     *,
     key_themes: list,
@@ -211,6 +221,7 @@ def _render_theme_and_idea_lists(
     theme_cap: int,
     idea_cap: int,
     guided: bool,
+    quote_text_by_id: dict[str, str] | None = None,
 ) -> None:
     st.markdown("**Content terms**")
     shown = 0
@@ -229,6 +240,18 @@ def _render_theme_and_idea_lists(
                 st.write(f"- {phrase} ({total:.3f}, {confidence})")
             else:
                 st.write(f"- {phrase} ({total:.3f})")
+            if quote_text_by_id:
+                evidence_ids = row.get("evidence_quote_ids") or []
+                snippets: list[str] = []
+                for qid in evidence_ids:
+                    snippet = quote_text_by_id.get(str(qid), "").strip()
+                    if snippet:
+                        snippets.append(snippet)
+                if snippets:
+                    preview = snippets[0]
+                    if len(preview) > 160:
+                        preview = preview[:157].rstrip() + "…"
+                    st.caption(f"Evidence: “{preview}”")
         shown += 1
         if shown >= theme_cap:
             break
@@ -281,8 +304,29 @@ def _style_detail_rows(style_markers: dict) -> list[dict[str, Any]]:
     return flat
 
 
+def _render_insights_narrative(narrative_payload: Dict[str, Any] | None) -> None:
+    if not isinstance(narrative_payload, dict):
+        return
+    text = str(narrative_payload.get("narrative") or "").strip()
+    if not text:
+        return
+    from transcriptx.web.blocks.llm_presentation import (
+        llm_surface_badges,
+        render_badge_row,
+    )
+
+    st.markdown("**Theme narrative**")
+    render_badge_row(llm_surface_badges())
+    st.write(text)
+
+
 def _render_insights_payload(
-    insights: Dict[str, Any], *, focus: str = "all", display_cap: int | None = None
+    insights: Dict[str, Any],
+    *,
+    focus: str = "all",
+    display_cap: int | None = None,
+    highlights: Dict[str, Any] | None = None,
+    narrative_payload: Dict[str, Any] | None = None,
 ) -> None:
     from transcriptx.web.insights_presentation import (
         FULL_THEME_ROW_CAP,
@@ -327,8 +371,10 @@ def _render_insights_payload(
     idea_cap = theme_cap
     show_content = focus in {"all", "content"}
     show_style = focus in {"all", "style"}
+    quote_text_by_id = _quote_text_by_id(highlights) if show_content else {}
 
-    if show_content and status == "insufficient_signal":
+    content_abstained = show_content and status == "insufficient_signal"
+    if content_abstained:
         st.info("Not enough clear content themes in this transcript.")
         key_themes = []
         recurring_ideas = []
@@ -375,33 +421,49 @@ def _render_insights_payload(
             if status != "insufficient_signal":
                 st.info("No meaningful themes or recurring ideas for this transcript.")
         elif focus == "style":
-            st.info("No meaningful style markers for this transcript.")
+            st.info("No style indicators.")
         else:
             st.info("No meaningful content-vs-style rows for this transcript.")
+        return
+
+    if content_abstained and focus == "content":
+        return
+    if content_abstained and focus == "all" and style_empty:
         return
 
     if show_content and show_style:
         col_a, col_b = st.columns(2)
         with col_a:
+            if not content_abstained:
+                _render_theme_and_idea_lists(
+                    key_themes=key_themes,
+                    recurring_ideas=recurring_ideas,
+                    theme_cap=theme_cap,
+                    idea_cap=idea_cap,
+                    guided=guided,
+                    quote_text_by_id=quote_text_by_id,
+                )
+        with col_b:
+            _render_style_indicator_list(style_rows, guided=guided)
+    elif show_content:
+        if not content_abstained:
             _render_theme_and_idea_lists(
                 key_themes=key_themes,
                 recurring_ideas=recurring_ideas,
                 theme_cap=theme_cap,
                 idea_cap=idea_cap,
                 guided=guided,
+                quote_text_by_id=quote_text_by_id,
             )
-        with col_b:
-            _render_style_indicator_list(style_rows, guided=guided)
-    elif show_content:
-        _render_theme_and_idea_lists(
-            key_themes=key_themes,
-            recurring_ideas=recurring_ideas,
-            theme_cap=theme_cap,
-            idea_cap=idea_cap,
-            guided=guided,
-        )
     elif show_style:
         _render_style_indicator_list(style_rows, guided=guided)
+
+    if show_content and not content_abstained and quote_text_by_id:
+        st.caption(
+            "More notable passages are listed under **Insights → Highlights**."
+        )
+    if show_content and not content_abstained:
+        _render_insights_narrative(narrative_payload)
 
     details_needed = False
     if show_content and (
@@ -530,7 +592,13 @@ def render_insights_contract(ctx: BlockContext, placement: BlockPlacement) -> No
         if not insights:
             st.info(member_empty_hint("insights"))
             return
-        _render_insights_payload(insights, focus=focus)
+        from transcriptx.web.insights_presentation import resolve_insights_display_cap
+
+        _render_insights_payload(
+            insights,
+            focus=focus,
+            display_cap=resolve_insights_display_cap(placement),
+        )
         _render_view_raw_file_link(
             ctx,
             "insights",
@@ -579,7 +647,19 @@ def render_insights_contract(ctx: BlockContext, placement: BlockPlacement) -> No
                         link_key=f"insights_partial_raw_{focus_key}",
                     )
                     return
-    _render_insights_payload(insights, focus=focus)
+    from transcriptx.web.insights_presentation import resolve_insights_display_cap
+
+    highlights_payload = _load_analysis_json(loader, "highlights", "_highlights.json")
+    narrative_payload = _load_analysis_json(
+        loader, "insights_narrative", "_insights_narrative.json"
+    )
+    _render_insights_payload(
+        insights,
+        focus=focus,
+        display_cap=resolve_insights_display_cap(placement),
+        highlights=highlights_payload,
+        narrative_payload=narrative_payload,
+    )
 
 
 def _highlights_theme_visible(theme: Dict[str, Any]) -> bool:

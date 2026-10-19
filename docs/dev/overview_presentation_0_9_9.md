@@ -82,13 +82,14 @@ Evidence run: `R20241026-121652` / `20260726_015208_30728241` (Thorough, **parti
 
 ### Overview organisation & presentation
 
-- [ ] **Actions / Highlights / Summaries / Speakers** — clearer organisation and presentation (grouping, priority order, less wall-of-content); no Analysis panel
+- [~] **Actions / Highlights / Summaries / Speakers** — clearer organisation and presentation (grouping, priority order, less wall-of-content); no Analysis panel — **Theme A closeout (2026-10):** Overview omits empty Actions/Highlights chrome; At a glance scan hint
 - [ ] **Summaries** — content looks good; confirm placement/weight vs Actions/Highlights so the page scans as one composition
-- [ ] **Section hierarchy** — consistent headings, expand/collapse defaults, and “what to look at first” for a completed (or partial) run
-- [ ] **Partial-run honesty on Overview** — timed-out / FAIL modules (e.g. `llm_action_items`, `llm_custom_qa`) should not look like silent gaps; surface status without burying successes
+- [x] **Section hierarchy** — consistent headings, expand/collapse defaults, and “what to look at first” for a completed (or partial) run — **Theme A closeout:** At a glance caption + quieter empty compact sections
+- [~] **Partial-run honesty on Overview** — timed-out / FAIL modules (e.g. `llm_action_items`, `llm_custom_qa`) should not look like silent gaps; surface status without burying successes — **Theme A closeout:** failed/blocked compact sections still surface; empty/not-run sections omitted (run status block unchanged)
 
 ### Charts — full catalogue assessment
 
+- [x] **Registry matrix** — automated presence classes + monologue overview strip filters multi-speaker defaults (`test_chart_catalogue_presence.py`; `filter_overview_viz_ids_for_named_speakers`)
 - [ ] **Every chart output** on a **1-speaker** transcript — open each chart; assess look, readability, empty/error states, and whether the chart is useful / honest for that speaker layout
 - [ ] **Every chart output** on a **2-speaker** transcript — same (can reuse maintainer Thorough run `R20241026-121652` as the two-speaker corpus if still available)
 - [ ] **Every chart output** on a **multi-speaker** transcript — same (≥3 speakers)
@@ -101,7 +102,7 @@ Add bullets here as Insights / Artifacts / Settings findings appear — keep eac
 | ID | Finding | Surface | Severity (draft) | Notes |
 |----|---------|---------|------------------|-------|
 | P1 | Insights Analysis is a catch-all without a user question; retire tab and redistribute | Insights | must-fix for unfamiliar-user comfort | Implemented 2026-08-07; supersedes “organise Analysis in place” |
-| P2 | Thorough chart catalogue review (1 / 2 / multi-speaker) | Charts | TBD per chart | Seeded 2026-07-26; page chrome already smoked |
+| P2 | Thorough chart catalogue review (1 / 2 / multi-speaker) | Charts | TBD per chart | Registry matrix + 1-spk overview honesty landed 2026-10; per-chart manual pass remains |
 | P3 | Overview Actions/Highlights/Summaries hierarchy | Overview | polish → likely must-fix | Seeded 2026-07-26; align with four question-shaped surfaces |
 
 ---

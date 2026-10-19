@@ -8,5 +8,8 @@
   "enabled": true,
   "min_theme_score": 0.18,
   "min_themes_for_signal": 2,
-  "topic_boost": 0.05
+  "topic_boost": 0.05,
+  "narrative_enabled": false,
+  "narrative_min_evidence_quotes": 1,
+  "narrative_max_chars": 1200
 }
