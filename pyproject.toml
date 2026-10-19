@@ -63,6 +63,7 @@ dependencies = [
 [project.optional-dependencies]
 rag = [
     "lancedb>=0.21,<0.26",
+    "pyarrow>=14.0.0,<24.0.0",
     "httpx>=0.25.0",
 ]
 dev = [
@@ -188,6 +189,7 @@ full = [
     "yake>=0.4.8",
     "keybert>=0.8.0",
     "lancedb>=0.21,<0.26",
+    "pyarrow>=14.0.0,<24.0.0",
     "httpx>=0.25.0",
 ]
 

@@ -158,6 +158,8 @@ keybert>=0.8.0
 # Ask / RAG (LanceDB + HTTP embed client)
 # ============================================================================
 lancedb>=0.21,<0.26
+# pyarrow 24+ requires numpy>=2; stack pins numpy 1.26 for spacy/torch.
+pyarrow>=14.0.0,<24.0.0
 httpx>=0.25.0
 
 # ============================================================================

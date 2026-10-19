@@ -16,6 +16,7 @@ _CLI_COMMANDS: dict[str, str] = {
     "backup": "transcriptx.backup",
     "warm-suggestions": "transcriptx.warm_suggestions",
     "identify-speakers": "transcriptx.identify_speakers",
+    "library-paths": "transcriptx.library_paths",
 }
 
 
@@ -49,6 +50,7 @@ def _print_cli_help() -> None:
         "  transcriptx backup create\n"
         "  transcriptx warm-suggestions --all\n"
         "  transcriptx identify-speakers --all-unnamed --dry-run\n"
+        "  transcriptx library-paths --recent 3 --missing-modules transcript_output,llm_summary\n"
     )
 
 

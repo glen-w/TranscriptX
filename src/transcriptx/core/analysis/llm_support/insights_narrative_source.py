@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from transcriptx.core.analysis.highlights.post_process import highlight_quote_text_by_id
 from transcriptx.core.analysis.llm_module_errors import (
