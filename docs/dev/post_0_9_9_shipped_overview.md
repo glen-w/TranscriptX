@@ -31,7 +31,7 @@ Status language matches [docs/ROADMAP.md](../ROADMAP.md): **done** / **[~] in pr
 
 | Cluster | ROADMAP | Shipped shape | Follow-ons still open |
 |---------|---------|---------------|------------------------|
-| Insights quality | **A** | Deterministic floors, schema-v3 composer (evidence / confidence / abstention), quieter empty states | Overview hierarchy polish; Charts catalogue audit; B18 LLM narratives deferred |
+| Insights quality | **A** | Deterministic floors, schema-v3 composer; quieter empty/abstention UI; 2026-10: evidence captions, opt-in `insights_narrative` (B18 MVP), chart overview monologue filter | Overview hierarchy polish; per-chart Charts catalogue manual pass |
 | Corrections in reader | **B** | Transcript **Correct** mode: word/span propose, atomic accept-and-apply, scoped sidecar | Studio remains batch/review; CCv2 selection polish |
 | High-interaction workspaces | **C** | CCv2 Speaker ID **default-on** in this wave (`TX_SPEAKER_ID_WORKSPACE_COMPONENT` rollback then still existed) | **Follow-on (2026-10, 1.0):** Phase 9 CCv2-only Speaker ID; Studio review CCv2; viewer click-drag; `[web]` installs the package |
 | Playback / karaoke | **D** | Clip-scoped Transcript karaoke + honesty when timings missing; Playing badge / follow-along | **Follow-on (2026-10):** CCv2 full-file `reader_workspace` + loopback Range media; clip path remains Correct-mode / `TX_READER_WORKSPACE_COMPONENT=0` rollback |
@@ -57,7 +57,7 @@ Status language matches [docs/ROADMAP.md](../ROADMAP.md): **done** / **[~] in pr
 
 ### 2. Insights quality (Theme A)
 
-Shared phrase / eligibility floors raised; insights composer deepened (schema v3 with evidence, confidence, abstention); deterministic summary/highlights honesty tightened; greeting-dominated noise reduced on large transcripts. Design: [theme_a_insights_quality.md](theme_a_insights_quality.md). This strengthens the deterministic base unfamiliar users see on Overview / Insights without adding modules (freeze still holds). **2026-10 presentation closeout:** Insights `insufficient_signal` shows info only (no sparse theme lists); Overview compact Actions/Highlights omit empty chrome; At a glance scan hint (see overview_presentation P3).
+Shared phrase / eligibility floors raised; insights composer deepened (schema v3 with evidence, confidence, abstention); deterministic summary/highlights honesty tightened; greeting-dominated noise reduced on large transcripts. Design: [theme_a_insights_quality.md](theme_a_insights_quality.md). **2026-10 presentation closeout:** Insights `insufficient_signal` shows info only (no sparse theme lists); Overview compact Actions/Highlights omit empty chrome; At a glance scan hint (see overview_presentation P3). **2026-10 deferred wave:** Insights theme rows show resolved evidence captions; optional finalize module **`insights_narrative`** (B18, gated by `analysis.insights.narrative_enabled`); Charts default overview strip drops multi-speaker slots on monologues when stats report one named speaker.
 
 ### 3. Operator workflows: rename, Tools, merge, watcher
 
@@ -98,7 +98,7 @@ Measured assessment then upgrades ([gui_performance_assessment_2026-08-11.md](..
 |----------------|---------------------|
 | **0.9.9 Overview presentation** | Cut already done at baseline. Builder Edit + Charts overview selector help residual presentation debt; full Charts catalogue + Overview hierarchy polish remain deferred. |
 | **Informal stranger test** | Done October 2026. Not a release gate, and not a substitute for severity triage. |
-| **Module freeze** | Held — no new analysis modules. Theme A deepens existing deterministic insights. |
+| **Module freeze** | Held for 0.9.x broad expansion; **exception:** finalize LLM module `insights_narrative` (B18 MVP, opt-in, not default-recommended). Theme A deterministic `insights` remains T0. |
 | **1.0 success criterion** | Install → useful result → export without undocumented developer knowledge. Informal stranger test (2026-10) is not a release gate. |
 | **Safe-to-defer list (historical)** | Themes **B/C/D** and **G2 Phase 1** were listed as post-1.0 in older programme text; they are now partially or Phase-1 shipped on the 0.9.9 line. Treat ROADMAP theme status as authority for those items. |
 

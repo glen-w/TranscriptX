@@ -1,6 +1,6 @@
 # Theme A — Insights & analysis quality
 
-Status: done for wave (deterministic + presentation closeout; deepen-in-place continues under ROADMAP §A)  
+Status: done for wave (deterministic + presentation closeout + deferred charts/B18 MVP); deepen-in-place continues under ROADMAP §A  
 Last updated: 2026-10-19
 
 **Roadmap home:** [docs/ROADMAP.md](../ROADMAP.md) §A  
@@ -59,7 +59,7 @@ Stronger deterministic / hybrid insights: clearer, more useful non-LLM outputs w
 | Condition | User-facing copy |
 |-----------|------------------|
 | Insights module not run / failed | Existing quiet unavailable / module-required hint |
-| `status == insufficient_signal` (content focus) | “Not enough clear content themes in this transcript.” |
+| `status == insufficient_signal` (content focus) | “Not enough clear content themes in this transcript.” (info only — no sparse theme list chrome) |
 | Eligibility / highlights missing for content block | “Content themes need Insight eligibility and Highlights in this run.” |
 | Style markers empty | “No style indicators.” (unchanged) |
 | Deterministic summary abstains on focus | Overview still shows speaker count / duration; no invented focus clause |
@@ -75,8 +75,20 @@ Stronger deterministic / hybrid insights: clearer, more useful non-LLM outputs w
 | `min_themes_for_signal` | 2 | Below this → abstain |
 | `overview_theme_cap` | 5 | Suggested UI cap on Overview |
 | `topic_boost` | 0.05 | Soft score boost when topic label overlaps |
+| `narrative_enabled` | false | Allow `insights_narrative` finalize module to run when selected |
+| `narrative_min_evidence_quotes` | 1 | Minimum themes with resolved highlight quote text before B18 narrative |
+| `narrative_max_chars` | 1200 | Cap on Local AI theme narrative length |
 
 Eligibility: `analysis.insight_eligibility.min_score` default `0.18`; `require_spread_or_recurrence_for_singletons` default `true`.
+
+### B18 operator path (`insights_narrative`)
+
+1. Run **`insights`** (needs `insight_eligibility` + `highlights`) so schema-v3 rows include `evidence_quote_ids`.
+2. Set **`analysis.insights.narrative_enabled`** to `true` (Settings → Configuration or profile).
+3. Include module **`insights_narrative`** in the run (not in the default recommended list; finalize-phase, requires Ollama).
+4. In **Insights → Themes and ideas**, deterministic lists stay canonical; optional **Theme narrative** appears below with a Local AI badge when the artifact exists. Theme rows may show a one-line **Evidence** caption when quote text resolves.
+
+Does not replace `llm_summary` or Overview summary hero prose.
 
 ## Acceptance checklist
 
@@ -89,13 +101,13 @@ Eligibility: `analysis.insight_eligibility.min_score` default `0.18`; `require_s
 - [x] `PHRASE_QUALITY_VERSION` bumped when hard-reject semantics change (`3` — bump only when hard-reject semantics change again)
 - [x] Corpus before/after notes for 2–3 English meetings — standing evidence in **Corpus probe notes** below (mini + large fixture probes, 2026-08-10); optional owner-machine meeting notes still welcome
 
-## Out of scope (this theme wave)
+## Out of scope / follow-on
 
-- New module IDs
 - Multilingual phrase-resource expansion (Theme M / known limitation)
 - SQLite analytics (Theme J)
 - Reintroducing Insights → Analysis tab
-- B18 shipped as opt-in `insights_narrative` (enable config + select module); full shared P2 platform for B10/B11 remains backlog
+- Full shared **P2** provenance platform for B10/B11 (B18 MVP uses P2-lite on insights rows only)
+- Per-chart manual Charts catalogue pass (registry matrix + monologue overview honesty landed 2026-10; see [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md) P2)
 
 ## Corpus probe notes (deep-test 2026-08-10)
 

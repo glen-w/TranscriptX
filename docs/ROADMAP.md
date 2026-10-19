@@ -116,7 +116,7 @@ Public positioning today: [comparison.md](comparison.md). Analysis backlog: [ana
 
 Insights and related analysis presentation work for 1.0; do not freeze quality here.
 
-Design: [theme_a_insights_quality.md](dev/theme_a_insights_quality.md). **Deterministic schema-v3 wave shipped 0.9.9.5 (#6); presentation closeout 2026-10** (Insights abstention UI, Overview compact empty chrome, P3 hierarchy partial).
+Design: [theme_a_insights_quality.md](dev/theme_a_insights_quality.md). **Deterministic schema-v3 wave shipped 0.9.9.5 (#6); presentation closeout 2026-10** (Insights abstention UI, Overview compact empty chrome, P3 hierarchy partial). **Deferred wave 2026-10:** chart overview monologue honesty (`filter_overview_viz_ids_for_named_speakers`); theme **evidence_quote_ids** in Insights UI; opt-in **B18** `insights_narrative` (config `narrative_enabled` + module selection).
 
 - Stronger **deterministic** outputs (clearer, more useful non-LLM / hybrid insights; less noise) — **core wave done**; deepen-in-place from backlog continues
 - Reassess **GUI layout** for Insights and analysis result surfaces (hierarchy, scannability, what to show first)

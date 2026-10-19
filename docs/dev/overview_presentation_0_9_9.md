@@ -76,7 +76,7 @@ Evidence run: `R20241026-121652` / `20260726_015208_30728241` (Thorough, **parti
 - [x] **Remove Insights → Analysis** from section nav; keep modules/blocks
 - [x] **Summary** — place keyphrases + content themes / recurring ideas; keep summary body primary; avoid a second wall of tables
 - [x] **Speakers** — place lexical diversity, politeness, epistemic (and style markers) as speaker-comparison content alongside LLM speaker summaries
-- [ ] **Highlights** — surface or link any existing analysis-backed extreme / notable passages; defer new detectors
+- [~] **Highlights** — surface or link any existing analysis-backed extreme / notable passages; defer new detectors — **Theme A 2026-10:** Insights Themes caption points to Highlights; evidence captions on theme rows when quotes resolve
 - [x] **Artifacts / provenance** — ensure raw JSON/CSV and provenance remain reachable without an Analysis section
 - [x] Layout contracts / GUI tests updated for four-section Insights nav
 

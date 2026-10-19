@@ -29,7 +29,7 @@ The figure is the Charts gallery from the BBNJ webinar Balanced run.
 
 3. Scan the chart gallery or module sections for visuals that answer a concrete question (for example speaker share, topic shift, or interaction patterns — depending on which modules completed).
 
-4. If a chart looks sparse, check **Overview** run status for skipped/failed modules before assuming the feature is broken. Re-run with **Balanced** or **Thorough** after naming speakers ([Identify and name speakers](speaker-identification.md)) when speaker-aware charts are empty.
+4. If a chart looks sparse, check **Overview** run status for skipped/failed modules before assuming the feature is broken. Re-run with **Balanced** or **Thorough** after naming speakers ([Identify and name speakers](speaker-identification.md)) when speaker-aware charts are empty. On **single-speaker** transcripts, the Charts **overview** strip omits multi-speaker default slots (for example interaction networks) when run **stats** report one named speaker — open the full gallery for any charts that did run.
 
 5. Use **Insights** when you need quotable evidence; use **Charts** when you need a spatial/time overview of the same run.
 

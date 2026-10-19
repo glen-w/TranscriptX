@@ -48,7 +48,7 @@ On **Run Analysis** (Transcript, Group, and Batch), the **LLM setup** section ap
 
 Per-run selections are snapshotted onto the analysis request and do **not** rewrite `llm.model` unless you save a Model preset under Settings → Models (or activate one under Settings → Configuration → Active Profiles).
 
-**Resolution precedence** for each LLM consumer (`narrative_summary`, `llm_summary`, `llm_speaker_summary`, `llm_action_items`, `llm_custom_qa`, `chart_descriptions`, `group_llm_synthesis`, `topic_shift`, `speaker_name_suggestions`, `rename_suggestions`, `corrections_studio`, `rag`):
+**Resolution precedence** for each LLM consumer (`narrative_summary`, `insights_narrative`, `llm_summary`, `llm_speaker_summary`, `llm_action_items`, `llm_custom_qa`, `chart_descriptions`, `group_llm_synthesis`, `topic_shift`, `speaker_name_suggestions`, `rename_suggestions`, `corrections_studio`, `rag`):
 
 1. Request override from Run Analysis / Batch
 2. Active `llm_models` profile applied onto `llm.model_selection`
@@ -103,8 +103,9 @@ If a selected model is missing at generate time, the LLM consumer fails with a c
 | `llm_action_items` | Structured meeting extracts (decision / commitment / action_item / proposal / open_question) with owner, deadline, status, quote (strict JSON, `default_temperature`) | segments + speaker labels |
 | `llm_custom_qa` | Answers to user-defined questions with grounded citations (strict JSON envelope+rows; empty questions succeed without Ollama) | segments |
 | `chart_descriptions` | Finalize-phase per-chart LLM narratives (temperature 0.0, JSON). Excluded from DAG execution; run by the run-finalization coordinator after all charts exist | selected + `analysis.chart_descriptions.enabled` + LLM enabled |
+| `insights_narrative` | Short Local AI narrative over deterministic **insights** theme rows + highlight quote text (temperature 0.0, JSON). Finalize-phase; gated by `analysis.insights.narrative_enabled` (default `false`) | `insights`, `highlights`; see [theme_a_insights_quality.md](../dev/theme_a_insights_quality.md) |
 
-All LLM modules except finalize-phase `chart_descriptions` are included in the **recommended** default module list when enabled. `chart_descriptions` is selectable and recommended with other LLM modules but executes only in finalization. Uncheck **Use recommended modules** in Run Analysis (or pass an explicit `modules` list via the API) to opt out. When LLM is disabled they are **skipped** before execution (not failed) with reason `LLM disabled`. For `chart_descriptions`, a skipped generation is still **committed** (ACTIVE + epoch) with **zero client calls**.
+All LLM modules except finalize-phase `chart_descriptions` and `insights_narrative` are included in the **recommended** default module list when enabled. `chart_descriptions` is selectable and recommended with other LLM modules but executes only in finalization. `insights_narrative` is **not** default-recommended: enable `analysis.insights.narrative_enabled` and add the module explicitly. Uncheck **Use recommended modules** in Run Analysis (or pass an explicit `modules` list via the API) to opt out. When LLM is disabled they are **skipped** before execution (not failed) with reason `LLM disabled`. For `chart_descriptions`, a skipped generation is still **committed** (ACTIVE + epoch) with **zero client calls**. When `narrative_enabled` is false, `insights_narrative` skips with `narrative_disabled`.
 
 ### `analysis.chart_descriptions`
 
@@ -426,6 +427,7 @@ print('errors:', result.errors)
 Expected artifacts per module under the run output directory:
 
 - `narrative_summary/data/global/*_narrative_summary.json` (+ `.md`)
+- `insights_narrative/data/global/*_insights_narrative.json` (+ `.md`) when `analysis.insights.narrative_enabled` and module selected
 - `llm_summary/data/global/*_llm_summary.json` (+ `.md`)
 - `llm_speaker_summary/data/speakers/*_llm_speaker_summary.json` (+ `.md`) per named speaker
 - `llm_speaker_summary/data/global/*_llm_speaker_summary_index.json` (+ `.md`)
