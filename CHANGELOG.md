@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-19
+
+First public **1.0** release (git tag `v1.0.0`). Delivers the post-**0.9.9.5** stabilisation programme plus October Theme A deferred work (insights evidence UI, chart overview honesty, opt-in B18 `insights_narrative`), `transcriptx library-paths` for night automation, and RAG `pyarrow` pin for the numpy 1.26 stack.
+
 ### Added
 
 - **LLM JSON primary/secondary:** `llm.fallback_model` + `llm.preferred_failure_threshold` (Settings → Models; env `TRANSCRIPTX_LLM_*`). JSON generates send `think: false` when Ollama `/api/show` allows it; unusable preferred JSON falls back once and can stick to the secondary for the rest of a warm/analysis run. Docs: [llm.md](docs/runtime/llm.md).
