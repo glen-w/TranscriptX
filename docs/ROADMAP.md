@@ -97,7 +97,7 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
 | F. Library & organisation | Transcript tagging; Groups interaction rules; optional YouTube API rename metadata | Mid 1.x |
 | G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** narrow Windows convert/admit + pluggable STT shipped; service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
-| H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Parakeet/Canary/YouTube later | **[~] H1–H4 shipped**; H5+ deferred |
+| H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Parakeet/Canary/YouTube later; streaming STT (H6) deferred | **[~] H1–H4 shipped**; H5+ / H6 deferred |
 | I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Deferred except H1 job channel |
 | J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 — deferred vs STT |
 | K. External STT command generation | Broader copyable host CLIs until / beside theme H | **[~] PowerShell builder shipped** |
@@ -116,9 +116,9 @@ Public positioning today: [comparison.md](comparison.md). Analysis backlog: [ana
 
 Insights and related analysis presentation work for 1.0; do not freeze quality here.
 
-Design: [theme_a_insights_quality.md](dev/theme_a_insights_quality.md).
+Design: [theme_a_insights_quality.md](dev/theme_a_insights_quality.md). **Deterministic schema-v3 wave shipped 0.9.9.5 (#6); presentation closeout 2026-10** (Insights abstention UI, Overview compact empty chrome, P3 hierarchy partial). **Deferred wave 2026-10:** chart overview monologue honesty (`filter_overview_viz_ids_for_named_speakers`); theme **evidence_quote_ids** in Insights UI; opt-in **B18** `insights_narrative` (config `narrative_enabled` + module selection).
 
-- Stronger **deterministic** outputs (clearer, more useful non-LLM / hybrid insights; less noise)
+- Stronger **deterministic** outputs (clearer, more useful non-LLM / hybrid insights; less noise) — **core wave done**; deepen-in-place from backlog continues
 - Reassess **GUI layout** for Insights and analysis result surfaces (hierarchy, scannability, what to show first)
 - Align with Overview presentation polish from **0.9.9** where patterns overlap; keep LLM insights honestly labelled
 - Revisit module-level insight eligibility / empty states so partial runs stay trustworthy
@@ -282,6 +282,7 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 | **H3** Watcher `auto_transcribe` + queued drain | **[x]** when a provider is available |
 | **H4** Docs / install honesty | **[x]** this page + [transcription.md](runtime/transcription.md) + [stt-stacks](recipes/stt-stacks/README.md) |
 | **H5+** NVIDIA Parakeet/Canary, YouTube URL ingest (download/transcribe), HTTP STT sidecar | **[ ] deferred** until the Whisper path is boring (rename metadata via YouTube API is theme **F**, not H5) |
+| **H6** Real-time / streaming STT (WebSocket sessions, turn detection, partials) | **[ ] deferred** — live captions, in-session notes, voice-agent upstream; not batch file jobs (H1–H4). Design reference: [AssemblyAI — Real-time transcription in Python (Universal-3.6 Pro Realtime)](https://www.assemblyai.com/blog/real-time-transcription-python). **Opt-in cloud only** (explicit API key; document audio leaving the machine); local batch STT remains the default path. Partial text UX may overlap theme **D** if we ever surface streaming in the reader. |
 
 **Architecture (locked):** host-orchestrated providers (fork #2, narrow). No silent cloud STT. Apple MLX stays host/binary; CUDA via WhisperX Docker.
 

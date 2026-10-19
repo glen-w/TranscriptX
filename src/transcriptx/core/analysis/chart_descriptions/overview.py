@@ -8,6 +8,7 @@ from transcriptx.core.analysis.chart_descriptions.inventory import (
     LogicalChartDescriptor,
 )
 from transcriptx.core.utils.chart_registry import (
+    filter_overview_viz_ids_for_named_speakers,
     get_chart_registry,
     get_default_group_overview_charts,
     get_default_overview_charts,
@@ -26,6 +27,7 @@ def resolve_overview_viz_ids(
     user_overview: Sequence[str] | None,
     max_items: int | None,
     overview_enabled: bool = True,
+    named_speaker_count: int | None = None,
 ) -> list[str]:
     """Effective dashboard overview viz_ids from config + registry defaults.
 
@@ -42,6 +44,11 @@ def resolve_overview_viz_ids(
         enabled = list(get_default_overview_charts())
     if isinstance(max_items, int) and max_items > 0:
         enabled = enabled[:max_items]
+    if run_kind != "group" and named_speaker_count is not None:
+        enabled = filter_overview_viz_ids_for_named_speakers(
+            enabled,
+            named_speaker_count=max(0, int(named_speaker_count)),
+        )
     return enabled
 
 

@@ -262,6 +262,39 @@ def test_insights_focus_splits_content_and_style(monkeypatch) -> None:
 
 
 @pytest.mark.unit
+def test_insights_insufficient_signal_hides_sparse_theme_lists(monkeypatch) -> None:
+    import transcriptx.web.blocks.implementations.insights as ib
+
+    DummyHomeStreamlit.session_state = {}
+    captions: list[str] = []
+    writes: list[str] = []
+    infos: list[str] = []
+    monkeypatch.setattr(ib, "st", DummyHomeStreamlit)
+    monkeypatch.setattr(
+        DummyHomeStreamlit, "caption", lambda text, *a, **k: captions.append(str(text))
+    )
+    monkeypatch.setattr(
+        DummyHomeStreamlit, "write", lambda text, *a, **k: writes.append(str(text))
+    )
+    monkeypatch.setattr(
+        DummyHomeStreamlit, "info", lambda text, *a, **k: infos.append(str(text))
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.insights_presentation.is_insights_guided", lambda: True
+    )
+    payload = {
+        "status": "insufficient_signal",
+        "key_themes": [{"phrase": "weak filler", "score": {"total": 0.01}}],
+        "recurring_ideas": [],
+        "style_markers": {},
+    }
+    ib._render_insights_payload(payload, focus="content")
+    assert any("Not enough clear content themes" in msg for msg in infos)
+    assert not any("No key themes" in c for c in captions)
+    assert writes == []
+
+
+@pytest.mark.unit
 def test_malformed_insights_payload_fails_gracefully(monkeypatch) -> None:
     import transcriptx.web.blocks.implementations.insights as ib
 

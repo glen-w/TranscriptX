@@ -97,6 +97,29 @@ def _label_is_low_information(label: str) -> bool:
     return not decision.include
 
 
+def highlight_quote_text_by_id(highlights: Dict[str, Any]) -> Dict[str, str]:
+    """Map stable quote ids to quote text for UI and grounded narratives."""
+    tk = str(highlights.get("transcript_key") or "unknown")
+    out: Dict[str, str] = {}
+    for quote in collect_highlight_quotes(highlights):
+        if not isinstance(quote, dict):
+            continue
+        text = str(quote.get("quote") or "").strip()
+        if not text:
+            continue
+        out[stable_quote_id(quote, tk)] = text
+    sections = highlights.get("sections") or {}
+    for row in sections.get("emblematic_phrases", {}).get("phrases", []) or []:
+        if not isinstance(row, dict):
+            continue
+        for ex in row.get("examples") or []:
+            if isinstance(ex, dict) and ex.get("quote"):
+                text = str(ex.get("quote") or "").strip()
+                if text:
+                    out[stable_quote_id(ex, tk)] = text
+    return out
+
+
 def collect_highlight_quotes(highlights: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Union of cold_open items and conflict anchor quotes (deduped by stable id)."""
     sections = highlights.get("sections") or {}

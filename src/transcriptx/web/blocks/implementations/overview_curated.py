@@ -55,6 +55,10 @@ def _loader(ctx: BlockContext):
     return ctx.services.content_loader
 
 
+def _overview_compact_show_failure(outcome: str) -> bool:
+    return outcome in {"failed", "blocked"}
+
+
 def _summary_source_badge(kind: SummaryKind) -> str:
     if kind in {"llm_summary", "narrative_summary"}:
         return AI_OUTPUT_BADGE
@@ -556,6 +560,10 @@ def render_at_a_glance(ctx: BlockContext, _placement: BlockPlacement) -> None:
     with c6:
         st.metric("Size on disk", format_bytes_display(disk_bytes))
     st.caption(f"Run status: {status.user_facing_label}")
+    st.caption(
+        "Start with the summary above, then speakers; meeting extracts and "
+        "highlights appear below when this run produced them."
+    )
 
 
 def _format_pct(value: object) -> str:
@@ -710,13 +718,14 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
     )
     from transcriptx.web.run_health_presentation import module_outcome_state
 
-    st.subheader(TITLE_MEETING_EXTRACTS)
-    st.caption(HUMAN_REVIEW_BANNER)
     loader = _loader(ctx)
     run_root = ctx.run_root
     if loader is None and run_root is None:
-        st.info(quiet_unavailable_message(TITLE_MEETING_EXTRACTS))
         return
+
+    def _render_header() -> None:
+        st.subheader(TITLE_MEETING_EXTRACTS)
+        st.caption(HUMAN_REVIEW_BANNER)
 
     if run_root is not None and is_group_run(run_root):
         rows = load_group_content_rows(run_root, "llm_action_items", "action_item_rows")
@@ -729,32 +738,53 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
             record_type = str(row.get("record_type") or "action_item")
             type_label = RECORD_TYPE_LABELS.get(record_type, record_type)
             suffix = f" — {owner}" if owner else ""
+            if shown == 0:
+                _render_header()
             st.write(f"- [{type_label}] {text}{suffix}")
             shown += 1
         if shown:
             if len(rows) > 5:
                 st.caption(f"+{len(rows) - 5} more on Insights → Meeting extracts")
-            return
-        st.info(quiet_unavailable_message(TITLE_MEETING_EXTRACTS))
-        st.caption(
-            "Browse per-session extracts on Insights → Meeting extracts when available."
-        )
         return
 
     if loader is None:
-        st.info(quiet_unavailable_message(TITLE_MEETING_EXTRACTS))
         return
     payload = loader.load_json("llm_action_items", "_llm_action_items.json")
     md = loader.load_text("llm_action_items", "_llm_action_items.md")
     rated = cleaned_llm_output_text(md) if md else ""
-    if not rated and isinstance(payload, dict):
-        items = payload.get("items") or []
-        if isinstance(items, list):
-            rated = "\n".join(
-                str(it.get("text") or "")
-                for it in items
-                if isinstance(it, dict) and it.get("text")
-            )
+    items = (payload or {}).get("items") if isinstance(payload, dict) else None
+    if not rated and isinstance(items, list):
+        rated = "\n".join(
+            str(it.get("text") or "")
+            for it in items
+            if isinstance(it, dict) and it.get("text")
+        )
+    diagnostics = (
+        (payload or {}).get("diagnostics") if isinstance(payload, dict) else None
+    )
+    trunc_warn = truncated_output_user_warning(diagnostics)
+    empty_warn = empty_extracts_user_warning(diagnostics)
+    has_item_rows = bool(
+        items
+        and any(
+            isinstance(it, dict) and str(it.get("text") or "").strip() for it in items
+        )
+    )
+    has_md_body = bool(md and str(md).strip())
+    outcome = module_outcome_state(
+        run_root, "llm_action_items", run_results=ctx.run_results
+    )
+    show_failure = _overview_compact_show_failure(outcome)
+    show_section = (
+        has_item_rows
+        or has_md_body
+        or show_failure
+        or bool(trunc_warn or empty_warn)
+    )
+    if not show_section:
+        return
+
+    _render_header()
     rel = resolve_artifact_rel_path(
         loader, "llm_action_items", "_llm_action_items.md"
     ) or resolve_artifact_rel_path(
@@ -772,17 +802,11 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
         placement_id=_placement.placement_id,
         widget_key=f"fb_ai_ov_{_placement.placement_id}",
     )
-    diagnostics = (
-        (payload or {}).get("diagnostics") if isinstance(payload, dict) else None
-    )
-    trunc_warn = truncated_output_user_warning(diagnostics)
     if trunc_warn:
         st.warning(trunc_warn)
-    empty_warn = empty_extracts_user_warning(diagnostics)
     if empty_warn:
         st.warning(empty_warn)
-    items = (payload or {}).get("items") if isinstance(payload, dict) else None
-    if items:
+    if has_item_rows:
         for item in items[:5]:
             if not isinstance(item, dict):
                 continue
@@ -798,16 +822,12 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
         return
     if empty_warn:
         return
-    if md:
+    if has_md_body:
         render_markdown_without_heading_or_provenance(md)
         return
 
-    outcome = module_outcome_state(
-        run_root, "llm_action_items", run_results=ctx.run_results
-    )
-    if outcome == "failed" and run_root is not None:
+    if show_failure and run_root is not None:
         st.info(quiet_unavailable_message(TITLE_MEETING_EXTRACTS, outcome=outcome))
-        # Prefer guidance from run_results via shared formatter.
         from transcriptx.core.pipeline.manifest_loader import load_run_results
         from transcriptx.core.pipeline.run_outcome_truth import (
             project_canonical_outcomes,
@@ -836,17 +856,18 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
                 error_code=None,
             )
         )
-        return
-    st.info(quiet_unavailable_message(TITLE_MEETING_EXTRACTS))
 
 
 def render_highlights_compact(ctx: BlockContext, _placement: BlockPlacement) -> None:
-    st.subheader("Highlights")
+    from transcriptx.web.run_health_presentation import module_outcome_state
+
     loader = _loader(ctx)
     run_root = ctx.run_root
     if loader is None and run_root is None:
-        st.info(quiet_unavailable_message("Highlights"))
         return
+
+    def _render_header() -> None:
+        st.subheader("Highlights")
 
     if run_root is not None and is_group_run(run_root):
         rows = load_group_content_rows(run_root, "highlights", "highlight_rows")
@@ -854,31 +875,32 @@ def render_highlights_compact(ctx: BlockContext, _placement: BlockPlacement) -> 
         for row in rows[:5]:
             text = str(row.get("text") or "").strip()
             if text:
+                if shown == 0:
+                    _render_header()
                 st.write(f"- {text[:160]}")
                 shown += 1
-        if shown:
-            return
-        st.info(quiet_unavailable_message("Highlights"))
-        st.caption(
-            "Browse per-session highlights on Insights → Highlights when available."
-        )
         return
 
     if loader is None:
-        st.info(quiet_unavailable_message("Highlights"))
         return
     highlights = loader.load_json("highlights", "_highlights.json")
     if not highlights:
-        st.info(quiet_unavailable_message("Highlights"))
+        outcome = module_outcome_state(
+            run_root, "highlights", run_results=ctx.run_results
+        )
+        if _overview_compact_show_failure(outcome):
+            _render_header()
+            st.info(quiet_unavailable_message("Highlights", outcome=outcome))
         return
     themes = highlights.get("themes") or highlights.get("top_themes") or []
     quotes = highlights.get("quotes") or highlights.get("items") or []
     shown = 0
+    lines: list[str] = []
     for theme in themes:
         if not isinstance(theme, dict):
             label = str(theme).strip()
             if label and label.lower() != "unthemed":
-                st.write(f"- {label}")
+                lines.append(f"- {label}")
                 shown += 1
                 if shown >= 3:
                     break
@@ -892,7 +914,7 @@ def render_highlights_compact(ctx: BlockContext, _placement: BlockPlacement) -> 
             continue
         label = theme.get("label") or theme.get("theme") or theme.get("name")
         if label:
-            st.write(f"- {label}")
+            lines.append(f"- {label}")
             shown += 1
             if shown >= 3:
                 break
@@ -903,10 +925,13 @@ def render_highlights_compact(ctx: BlockContext, _placement: BlockPlacement) -> 
             else:
                 text = str(q)
             if text:
-                st.write(f"- {str(text)[:160]}")
+                lines.append(f"- {str(text)[:160]}")
                 shown += 1
     if shown == 0:
-        st.info("No highlight themes for this run.")
+        return
+    _render_header()
+    for line in lines:
+        st.write(line)
 
 
 def render_run_status_compact(ctx: BlockContext, _placement: BlockPlacement) -> None:

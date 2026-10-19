@@ -163,7 +163,7 @@ def test_overview_compact_has_no_session_picker(tmp_path: Path) -> None:
         curated.render_highlights_compact(_ctx(run), _placement("highlights_compact"))
     assert st.selectbox.call_count == 0
     infos = [str(c.args[0]) for c in st.info.call_args_list if c.args]
-    assert infos  # quiet unavailable
+    assert not infos
 
 
 def test_overview_compact_shows_rollup_without_picker(tmp_path: Path) -> None:

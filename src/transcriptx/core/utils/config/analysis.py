@@ -1044,6 +1044,9 @@ class InsightsConfig:
     min_theme_score: float = field(init=False, repr=True)
     min_themes_for_signal: int = field(init=False, repr=True)
     topic_boost: float = field(init=False, repr=True)
+    narrative_enabled: bool = field(init=False, repr=True)
+    narrative_min_evidence_quotes: int = field(init=False, repr=True)
+    narrative_max_chars: int = field(init=False, repr=True)
 
     def __post_init__(self) -> None:
         from transcriptx.core.config.models.insights import InsightsSettingsModel

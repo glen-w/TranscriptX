@@ -83,6 +83,48 @@
     "sensitivity": "normal",
     "type": "float"
   },
+  "analysis.insights.narrative_enabled": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": false,
+    "description": "When true, insights_narrative may run (requires LLM + module selection).",
+    "key": "analysis.insights.narrative_enabled",
+    "max": null,
+    "min": null,
+    "path": "analysis.insights.narrative_enabled",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
+  "analysis.insights.narrative_max_chars": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 1200,
+    "description": "",
+    "key": "analysis.insights.narrative_max_chars",
+    "max": 4000.0,
+    "min": 200.0,
+    "path": "analysis.insights.narrative_max_chars",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
+  "analysis.insights.narrative_min_evidence_quotes": {
+    "advanced": false,
+    "category": "analysis",
+    "choices": null,
+    "default": 1,
+    "description": "",
+    "key": "analysis.insights.narrative_min_evidence_quotes",
+    "max": 8.0,
+    "min": 1.0,
+    "path": "analysis.insights.narrative_min_evidence_quotes",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "int"
+  },
   "analysis.insights.min_themes_for_signal": {
     "advanced": false,
     "category": "analysis",

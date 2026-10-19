@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Literal
+from typing import Dict, Iterable, List, Optional, Literal, Sequence
 
 import fnmatch
 import re
@@ -167,6 +167,51 @@ def _load_chart_definitions() -> List[ChartDefinition]:
             )
         )
     return definitions
+
+
+# Modules skipped by the pipeline when the transcript has fewer than two named speakers.
+_MODULES_REQUIRING_MULTIPLE_NAMED_SPEAKERS: frozenset[str] = frozenset(
+    {
+        "conversation_loops",
+        "contagion",
+        "echoes",
+        "interactions",
+        "qa_analysis",
+        "semantic_similarity",
+    }
+)
+
+
+def chart_requires_multiple_named_speakers(chart_def: ChartDefinition) -> bool:
+    """True when a chart is misleading or unavailable on monologue-style transcripts."""
+    if chart_def.module in _MODULES_REQUIRING_MULTIPLE_NAMED_SPEAKERS:
+        return True
+    if "multi_speaker" in chart_def.viz_id:
+        return True
+    if chart_def.cardinality in {"speaker_set", "paired_static_dynamic"}:
+        return True
+    return False
+
+
+def filter_overview_viz_ids_for_named_speakers(
+    viz_ids: Sequence[str],
+    *,
+    named_speaker_count: int,
+) -> List[str]:
+    """Drop multi-speaker overview slots when fewer than two named speakers exist."""
+    if named_speaker_count >= 2:
+        return list(viz_ids)
+    registry = get_chart_registry()
+    kept: List[str] = []
+    for viz_id in viz_ids:
+        chart_def = registry.get(viz_id)
+        if chart_def is None:
+            kept.append(viz_id)
+            continue
+        if chart_requires_multiple_named_speakers(chart_def):
+            continue
+        kept.append(viz_id)
+    return kept
 
 
 DEFAULT_OVERVIEW_VIZ_IDS: List[str] = [

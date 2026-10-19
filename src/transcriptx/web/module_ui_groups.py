@@ -39,6 +39,7 @@ MODULE_UI_GROUPS: tuple[ModuleUIGroup, ...] = (
             "summary",
             "highlights",
             "insights",
+            "insights_narrative",
         ),
     ),
     ModuleUIGroup(

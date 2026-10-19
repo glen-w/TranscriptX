@@ -550,6 +550,27 @@ def test_default_overview_viz_ids_exist():
         assert get_chart_definition(viz_id) is not None
 
 
+def test_resolve_overview_filters_multi_speaker_defaults_for_monologue():
+    from transcriptx.core.analysis.chart_descriptions.overview import (
+        resolve_overview_viz_ids,
+    )
+
+    one = resolve_overview_viz_ids(
+        run_kind="transcript",
+        user_overview=None,
+        max_items=None,
+        named_speaker_count=1,
+    )
+    two = resolve_overview_viz_ids(
+        run_kind="transcript",
+        user_overview=None,
+        max_items=None,
+        named_speaker_count=2,
+    )
+    assert "interactions.network.global" not in one
+    assert "interactions.network.global" in two
+
+
 def test_default_overview_charts_exist_in_registry():
     registry = get_chart_registry()
     missing = [

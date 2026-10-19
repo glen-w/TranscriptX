@@ -1,7 +1,7 @@
 # Theme A — Insights & analysis quality
 
-Status: active (1.x)  
-Last updated: 2026-08-10
+Status: done for wave (deterministic + presentation closeout + deferred charts/B18 MVP); deepen-in-place continues under ROADMAP §A  
+Last updated: 2026-10-19
 
 **Roadmap home:** [docs/ROADMAP.md](../ROADMAP.md) §A  
 **Product constraint:** Prefer deepen-in-place; label Deterministic vs Local AI honestly; do not keep weak deterministic fallbacks merely to claim non-AI coverage ([PRODUCT.md](../PRODUCT.md)).
@@ -19,7 +19,7 @@ Stronger deterministic / hybrid insights: clearer, more useful non-LLM outputs w
 5. **Topic soft boost only** — `topic_modeling` may boost an existing theme when labels overlap; it never invents themes. Dependency remains soft (missing topics = no boost).
 6. **Overview focus honesty** — deterministic overview omits a focus clause when no high-tier theme labels survive; no fallback to emblematic filler phrases for focus text.
 7. **Hybrid inherits base** — `narrative_summary` continues to rewrite only the deterministic summary findings; improving summary improves hybrid without prompt inventiveness.
-8. **B18 LLM insight narratives** — deferred until provenance fields (P2-lite on schema v3 rows) are stable; Local AI only, never replacing deterministic theme lists.
+8. **B18 LLM insight narratives** — optional `insights_narrative` finalize module (gated by `analysis.insights.narrative_enabled`); Local AI only, never replacing deterministic theme lists; uses P2-lite `evidence_quote_ids` + highlight quote text.
 
 ## Signal rules
 
@@ -59,7 +59,7 @@ Stronger deterministic / hybrid insights: clearer, more useful non-LLM outputs w
 | Condition | User-facing copy |
 |-----------|------------------|
 | Insights module not run / failed | Existing quiet unavailable / module-required hint |
-| `status == insufficient_signal` (content focus) | “Not enough clear content themes in this transcript.” |
+| `status == insufficient_signal` (content focus) | “Not enough clear content themes in this transcript.” (info only — no sparse theme list chrome) |
 | Eligibility / highlights missing for content block | “Content themes need Insight eligibility and Highlights in this run.” |
 | Style markers empty | “No style indicators.” (unchanged) |
 | Deterministic summary abstains on focus | Overview still shows speaker count / duration; no invented focus clause |
@@ -75,27 +75,39 @@ Stronger deterministic / hybrid insights: clearer, more useful non-LLM outputs w
 | `min_themes_for_signal` | 2 | Below this → abstain |
 | `overview_theme_cap` | 5 | Suggested UI cap on Overview |
 | `topic_boost` | 0.05 | Soft score boost when topic label overlaps |
+| `narrative_enabled` | false | Allow `insights_narrative` finalize module to run when selected |
+| `narrative_min_evidence_quotes` | 1 | Minimum themes with resolved highlight quote text before B18 narrative |
+| `narrative_max_chars` | 1200 | Cap on Local AI theme narrative length |
 
 Eligibility: `analysis.insight_eligibility.min_score` default `0.18`; `require_spread_or_recurrence_for_singletons` default `true`.
 
+### B18 operator path (`insights_narrative`)
+
+1. Run **`insights`** (needs `insight_eligibility` + `highlights`) so schema-v3 rows include `evidence_quote_ids`.
+2. Set **`analysis.insights.narrative_enabled`** to `true` (Settings → Configuration or profile).
+3. Include module **`insights_narrative`** in the run (not in the default recommended list; finalize-phase, requires Ollama).
+4. In **Insights → Themes and ideas**, deterministic lists stay canonical; optional **Theme narrative** appears below with a Local AI badge when the artifact exists. Theme rows may show a one-line **Evidence** caption when quote text resolves.
+
+Does not replace `llm_summary` or Overview summary hero prose.
+
 ## Acceptance checklist
 
-- [ ] Banned fillers never appear in `insights.key_themes` or `summary.key_themes` (unit + smoke)
-- [ ] Abstention path covered when only weak phrases exist
-- [ ] Evidence quote ids present when highlights themes attach
-- [ ] Deterministic overview omits filler focus
-- [ ] Commitments require content beyond light-verb stems
-- [ ] Insights UI hides empty/abstention sections instead of sparse tables
-- [ ] `PHRASE_QUALITY_VERSION` bumped when hard-reject semantics change
-- [ ] Corpus before/after notes for 2–3 English meetings (manual)
+- [x] Banned fillers never appear in `insights.key_themes` or `summary.key_themes` (unit + smoke)
+- [x] Abstention path covered when only weak phrases exist
+- [x] Evidence quote ids present when highlights themes attach
+- [x] Deterministic overview omits filler focus
+- [x] Commitments require content beyond light-verb stems
+- [x] Insights UI hides empty/abstention sections instead of sparse tables
+- [x] `PHRASE_QUALITY_VERSION` bumped when hard-reject semantics change (`3` — bump only when hard-reject semantics change again)
+- [x] Corpus before/after notes for 2–3 English meetings — standing evidence in **Corpus probe notes** below (mini + large fixture probes, 2026-08-10); optional owner-machine meeting notes still welcome
 
-## Out of scope (this theme wave)
+## Out of scope / follow-on
 
-- New module IDs
 - Multilingual phrase-resource expansion (Theme M / known limitation)
 - SQLite analytics (Theme J)
 - Reintroducing Insights → Analysis tab
-- Full B18 Local-AI insight narratives (follow-on after P2-lite)
+- Full shared **P2** provenance platform for B10/B11 (B18 MVP uses P2-lite on insights rows only)
+- Per-chart manual Charts catalogue pass (registry matrix + monologue overview honesty landed 2026-10; see [overview_presentation_0_9_9.md](overview_presentation_0_9_9.md) P2)
 
 ## Corpus probe notes (deep-test 2026-08-10)
 

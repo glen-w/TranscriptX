@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+from types import SimpleNamespace
+
 from transcriptx.web.insights_presentation import (
     GUIDED_HIGHLIGHT_CARD_CAP,
     GUIDED_RANKED_ROW_CAP,
@@ -13,9 +15,19 @@ from transcriptx.web.insights_presentation import (
     dedupe_overlapping_highlights,
     highlight_quote_eligible,
     order_analysis_placements,
+    resolve_insights_display_cap,
     theme_label_for_user,
     truncate_for_preview,
 )
+
+
+@pytest.mark.unit
+def test_resolve_insights_display_cap_from_params() -> None:
+    assert resolve_insights_display_cap(None) is None
+    assert (
+        resolve_insights_display_cap(SimpleNamespace(params={"display_cap": 3})) == 3
+    )
+    assert resolve_insights_display_cap(SimpleNamespace(params={})) is None
 
 
 @pytest.mark.unit
