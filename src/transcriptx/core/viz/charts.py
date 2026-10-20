@@ -6,8 +6,9 @@ This module centralizes Plotly availability checks and warning-once behavior.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from transcriptx.core.utils.lazy_imports import optional_import
 from transcriptx.core.utils.logger import get_logger
@@ -26,6 +27,23 @@ logger = get_logger()
 
 _plotly_available: Optional[bool] = None
 _warned_missing_plotly: bool = False
+
+
+def plotly_include_js_mode() -> Union[bool, str]:
+    """How Plotly JS is embedded in saved HTML.
+
+    Default ``cdn`` keeps dynamic chart artifacts ~50KB instead of ~5MB each
+    (fullscreen iframe cost). Set ``TX_PLOTLY_INCLUDE_JS=inline`` (or ``true``)
+    for fully offline/self-contained HTML.
+    """
+    raw = (os.environ.get("TX_PLOTLY_INCLUDE_JS") or "cdn").strip().lower()
+    if raw in {"inline", "true", "1", "yes", "on"}:
+        return True
+    if raw in {"cdn", "directory"}:
+        return raw
+    if raw in {"false", "0", "no", "off"}:
+        return False
+    return "cdn"
 
 
 def is_plotly_available() -> bool:
@@ -93,7 +111,7 @@ def save_dynamic_chart(fig: Any, chart_path: Path) -> Optional[Path]:
     write_html(
         fig,
         file=str(chart_path),
-        include_plotlyjs=True,
+        include_plotlyjs=plotly_include_js_mode(),
         full_html=True,
     )
     return chart_path

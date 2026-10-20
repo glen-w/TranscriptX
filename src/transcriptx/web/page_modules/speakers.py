@@ -28,7 +28,11 @@ from transcriptx.core.speaker_profiles.discovery import (
 )
 from transcriptx.core.speaker_profiles.errors import StaleUpdateError
 from transcriptx.core.speaker_profiles.integrity import run_integrity_scan
-from transcriptx.core.speaker_profiles.layout import speaker_profiles_dir
+from transcriptx.core.speaker_profiles.layout import (
+    links_dir,
+    profiles_dir,
+    speaker_profiles_dir,
+)
 from transcriptx.core.speaker_profiles.models import SpeakerProfileV1
 from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
 from transcriptx.core.speaker_profiles.service import SpeakerProfileService
@@ -358,6 +362,54 @@ def _render_recovery_banners(root) -> None:
                     st.error(f"Recovery failed: {exc}")
 
 
+_SPEAKERS_SNAP_CACHE_KEY = "_speakers_aggregation_snap_cache"
+
+
+def _profiles_store_fingerprint(root: Path) -> tuple[int, int, int, int]:
+    """Cheap invalidation key: profile/link counts + max mtimes (ns)."""
+    pref = profiles_dir(root)
+    lref = links_dir(root)
+    p_mtime = p_count = 0
+    l_mtime = l_count = 0
+    if pref.is_dir():
+        for path in pref.glob("*.speaker_profile.json"):
+            p_count += 1
+            try:
+                p_mtime = max(p_mtime, path.stat().st_mtime_ns)
+            except OSError:
+                pass
+    if lref.is_dir():
+        for path in lref.glob("*.speaker_link.json"):
+            l_count += 1
+            try:
+                l_mtime = max(l_mtime, path.stat().st_mtime_ns)
+            except OSError:
+                pass
+    return (p_count, p_mtime, l_count, l_mtime)
+
+
+def _get_speakers_aggregation_snapshot(
+    *, root: Path, include_ignored: bool
+) -> AggregationSnapshot:
+    """Reuse snapshot within a session until profile/link store fingerprint changes."""
+    fp = (
+        str(root),
+        bool(include_ignored),
+        _profiles_store_fingerprint(root),
+    )
+    cached = st.session_state.get(_SPEAKERS_SNAP_CACHE_KEY)
+    if (
+        isinstance(cached, tuple)
+        and len(cached) == 2
+        and cached[0] == fp
+        and cached[1] is not None
+    ):
+        return cached[1]
+    snap = build_aggregation_snapshot(root=root, include_ignored=include_ignored)
+    st.session_state[_SPEAKERS_SNAP_CACHE_KEY] = (fp, snap)
+    return snap
+
+
 def render_speakers_page() -> None:
     render_page_shell("Speakers", _SPEAKERS_DESCRIPTION, badges=None, actions=None)
     root = speaker_profiles_dir()
@@ -366,7 +418,7 @@ def render_speakers_page() -> None:
 
     include_ignored = bool(st.session_state.get(INCLUDE_IGNORED_SESSION_KEY, False))
 
-    snap = build_aggregation_snapshot(
+    snap = _get_speakers_aggregation_snapshot(
         root=root,
         include_ignored=include_ignored,
     )
@@ -712,10 +764,26 @@ def _render_profile_detail(
         p4.metric("Collisions", agg.collision_count)
         p5.metric("Repair required", agg.repair_required_count)
 
-    tab_ov, tab_app, tab_tr, tab_id, tab_life = st.tabs(
-        ["Overview", "Appearances", "Trends", "Identity", "Voice & lifecycle"]
+    detail_tabs = (
+        "Overview",
+        "Appearances",
+        "Trends",
+        "Identity",
+        "Voice & lifecycle",
     )
-    with tab_ov:
+    detail_key = f"speakers_detail_tab_{profile.profile_id}"
+    if st.session_state.get(detail_key) not in detail_tabs:
+        st.session_state[detail_key] = detail_tabs[0]
+    detail_tab = st.segmented_control(
+        "Profile section",
+        options=list(detail_tabs),
+        key=detail_key,
+        label_visibility="collapsed",
+    )
+    if detail_tab not in detail_tabs:
+        detail_tab = detail_tabs[0]
+
+    if detail_tab == "Overview":
         if profile.notes:
             st.markdown(profile.notes)
         else:
@@ -725,8 +793,7 @@ def _render_profile_detail(
             "Enrol trusted voice for all profiles, then Pre-load voice suggestions. "
             "Confirm matches in Speaker Identification; scores never auto-name."
         )
-
-    with tab_app:
+    elif detail_tab == "Appearances":
         links_by_id = {
             link.link_id: link
             for link in snap.links_by_profile.get(profile.profile_id, ())
@@ -738,8 +805,7 @@ def _render_profile_detail(
             links_by_id=links_by_id,
             profile_blocked=profile_blocked,
         )
-
-    with tab_tr:
+    elif detail_tab == "Trends":
         _render_detail_charts(
             snap,
             profile.profile_id,
@@ -761,14 +827,12 @@ def _render_profile_detail(
             profile,
             include_ignored=include_ignored,
         )
-
-    with tab_id:
+    elif detail_tab == "Identity":
         if not profile_blocked:
             _render_edit_form(profile, root=snap.root)
         else:
             st.caption("Identity edits disabled while this profile is blocked.")
-
-    with tab_life:
+    else:
         if not profile_blocked and profile.status == "active":
             _render_voice_controls(snap=snap, profile=profile)
         if not profile_blocked and profile.status == "active":

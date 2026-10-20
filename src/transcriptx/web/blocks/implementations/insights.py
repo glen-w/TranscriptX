@@ -1046,11 +1046,17 @@ def _highlights_browser_fragment(
                 st.rerun()
         return
 
-    # Full controls — complete list, no eligibility cull (still dedupe overlaps)
-    display = dedupe_overlapping_highlights(filtered)
-    if not display:
+    # Full controls — no eligibility cull (still dedupe overlaps); windowed.
+    all_cards = dedupe_overlapping_highlights(filtered)
+    if not all_cards:
         st.caption("No highlights match the current filters.")
         return
+    page_size = max(GUIDED_HIGHLIGHT_CARD_CAP, 12)
+    shown_count = int(
+        st.session_state.get("highlights_full_shown", page_size) or page_size
+    )
+    shown_count = max(page_size, shown_count)
+    display = all_cards[:shown_count]
     accent_ctx = load_accent_resolve_context()
     for index, card in enumerate(display):
         _render_highlight_card(
@@ -1062,6 +1068,14 @@ def _highlights_browser_fragment(
             accent_ctx=accent_ctx,
             audio_available=audio_available,
         )
+    if len(all_cards) > shown_count:
+        if st.button(
+            f"Show more ({len(all_cards) - shown_count} remaining)",
+            key="highlights_full_show_more",
+            icon=ic.SHOW_MORE,
+        ):
+            st.session_state["highlights_full_shown"] = shown_count + page_size
+            st.rerun()
 
 
 def _render_highlight_rows_rollup(rows: list[Dict[str, Any]]) -> None:

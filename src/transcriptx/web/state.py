@@ -29,6 +29,8 @@ LIBRARY_FILTER_TAGS_KEY = "library_filter_tags"
 LIBRARY_SHOW_PATH_KEY = "library_show_path"
 LIBRARY_EXPORT_TAGS_KEY = "library_export_tags"
 LIBRARY_EXPORT_KINDS_KEY = "library_export_kinds"
+LIBRARY_TABLE_SHOWN_KEY = "library_table_shown"
+LIBRARY_FILTER_SIG_KEY = "_library_filter_sig"
 IMPORT_LAST_TRANSCRIPT_PATH = "import_last_transcript_path"
 # One-shot: action-menu identity navigation → workflow picker pages (Speaker ID, etc.).
 WORKFLOW_NAV_TRANSCRIPT_PATH = "_workflow_nav_transcript_path"

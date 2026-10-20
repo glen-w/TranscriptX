@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -292,6 +293,34 @@ def test_speakers_browser_missing_profile_errors(monkeypatch) -> None:
 
     assert any("missing from the snapshot" in e for e in _SpeakersStreamlit.errors)
     assert detail_calls == []
+
+
+@pytest.mark.unit
+def test_speakers_aggregation_snapshot_reused_within_session(monkeypatch, tmp_path) -> None:
+    """Fingerprint-stable visits must not rebuild the aggregation snapshot."""
+    import transcriptx.web.page_modules.speakers as mod
+
+    _SpeakersStreamlit.reset()
+    root = tmp_path / "spk"
+    root.mkdir()
+    (root / "profiles").mkdir()
+    (root / "links").mkdir()
+    builds: list[int] = []
+    snap = _snap()
+
+    def _build(**_k):
+        builds.append(1)
+        return snap
+
+    monkeypatch.setattr(mod, "st", _SpeakersStreamlit)
+    monkeypatch.setattr(mod, "build_aggregation_snapshot", _build)
+    monkeypatch.setattr(mod, "profiles_dir", lambda r: Path(r) / "profiles")
+    monkeypatch.setattr(mod, "links_dir", lambda r: Path(r) / "links")
+
+    a = mod._get_speakers_aggregation_snapshot(root=root, include_ignored=False)
+    b = mod._get_speakers_aggregation_snapshot(root=root, include_ignored=False)
+    assert a is b is snap
+    assert len(builds) == 1
 
 
 @pytest.mark.unit

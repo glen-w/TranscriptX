@@ -85,6 +85,13 @@ def reset_config_for_tests() -> None:
     _global_config = None
     if hasattr(_main, "_config"):
         _main._config = None
+    # Pair with project-config hydrate gate so the next apply reloads disk.
+    try:
+        from transcriptx.core.config.persistence import clear_live_facade_hydrate_gate
+
+        clear_live_facade_hydrate_gate()
+    except Exception:
+        pass
 
 
 __all__ = [

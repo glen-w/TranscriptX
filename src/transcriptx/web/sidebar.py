@@ -281,14 +281,16 @@ def render_sidebar(
         ):
             _apply_navigation(page_key)
 
+    # Resolve readiness once per sidebar paint — context_readiness calls
+    # SubjectService.resolve_current_subject (path + analysis target).
+    readiness = context_readiness(session_state)
+
     def _render_nav_spec(spec: PageSpec, *, key_suffix: str = "") -> None:
         if spec.key == "Corrections Studio" and not corrections_studio_available:
             return
         if spec.key == "Ask" and not _ask_nav_enabled():
             return
-        access = evaluate_page_access(
-            spec.key, prerequisites, context_readiness(session_state)
-        )
+        access = evaluate_page_access(spec.key, prerequisites, readiness)
         _nav_button(
             spec,
             key_suffix=key_suffix,

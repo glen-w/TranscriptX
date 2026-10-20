@@ -231,6 +231,22 @@ def test_library_inspector_shows_no_linked_audio(monkeypatch) -> None:
     assert any("No linked audio" in cap for cap in _DummyStreamlit.captions)
 
 
+def test_library_table_windows_to_page_size(monkeypatch) -> None:
+    """Large filtered corpora must not paint every row into the dataframe."""
+    import transcriptx.web.page_modules.library as mod
+
+    _DummyStreamlit.session_state = {"library_filter_sort": "name"}
+    _DummyStreamlit.selected_rows = []
+    rows = [_row(f"t{i:03d}") for i in range(60)]
+    _patch_library(monkeypatch, rows)
+
+    mod.render_library()
+
+    assert _DummyStreamlit.captured_df is not None
+    assert len(_DummyStreamlit.captured_df) == mod._LIBRARY_PAGE_SIZE
+    assert any("60 of 60" in c or "60 of" in c for c in _DummyStreamlit.captions)
+
+
 def test_library_delete_on_primary_strip_by_default() -> None:
     from transcriptx.web.action_menus.catalog import (
         SECTION_ALLOWLISTS,

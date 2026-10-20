@@ -104,6 +104,17 @@ def test_save_dynamic_chart_branches(tmp_path: Path) -> None:
         out = ch.save_dynamic_chart(MagicMock(), tmp_path / "b.html")
     assert out == tmp_path / "b.html"
     write_html.assert_called_once()
+    assert write_html.call_args.kwargs.get("include_plotlyjs") == "cdn"
+
+
+@pytest.mark.unit
+def test_plotly_include_js_mode_env(monkeypatch) -> None:
+    monkeypatch.delenv("TX_PLOTLY_INCLUDE_JS", raising=False)
+    assert ch.plotly_include_js_mode() == "cdn"
+    monkeypatch.setenv("TX_PLOTLY_INCLUDE_JS", "inline")
+    assert ch.plotly_include_js_mode() is True
+    monkeypatch.setenv("TX_PLOTLY_INCLUDE_JS", "directory")
+    assert ch.plotly_include_js_mode() == "directory"
 
 
 @pytest.mark.unit

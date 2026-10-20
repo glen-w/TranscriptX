@@ -146,7 +146,21 @@ def load_project_config() -> Optional[Dict[str, Any]]:
     return load_config_safe(get_project_config_path())
 
 
-def apply_project_config_to_live_facade() -> bool:
+# Process-level gate so Streamlit script re-exec does not re-read config.json
+# on every full-app rerun. Tests that ``reset_config_for_tests()`` should pass
+# ``force=True`` (or call ``clear_live_facade_hydrate_gate``).
+_live_facade_hydrated_mtime: float | None = None
+_live_facade_hydrated_path: str | None = None
+
+
+def clear_live_facade_hydrate_gate() -> None:
+    """Forget the last applied project-config mtime (tests / forced reload)."""
+    global _live_facade_hydrated_mtime, _live_facade_hydrated_path
+    _live_facade_hydrated_mtime = None
+    _live_facade_hydrated_path = None
+
+
+def apply_project_config_to_live_facade(*, force: bool = False) -> bool:
     """Load ``CONFIG_DIR/config.json`` into the process-global live facade.
 
     Settings panels (Questions library, analysis presets, …) read
@@ -154,14 +168,33 @@ def apply_project_config_to_live_facade() -> bool:
     written via :func:`patch_project_config_keys` survive on disk but appear
     empty after process restart (e.g. Docker recreate).
 
-    Returns True when a project config file was applied.
+    Skips the disk read when the same path+mtime was already applied in this
+    process (Streamlit re-runs the entry script on every interaction). Pass
+    ``force=True`` after ``reset_config_for_tests`` or when an external writer
+    must be re-read.
+
+    Returns True when a project config file was applied (or already current).
     """
+    global _live_facade_hydrated_mtime, _live_facade_hydrated_path
     path = get_project_config_path()
     if not path.is_file():
         return False
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return False
+    path_s = str(path)
+    if (
+        not force
+        and _live_facade_hydrated_mtime == mtime
+        and _live_facade_hydrated_path == path_s
+    ):
+        return True
     from transcriptx.core.utils.config import load_config
 
     load_config(str(path))
+    _live_facade_hydrated_mtime = mtime
+    _live_facade_hydrated_path = path_s
     return True
 
 

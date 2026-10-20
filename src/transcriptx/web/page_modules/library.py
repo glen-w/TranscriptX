@@ -64,13 +64,18 @@ from transcriptx.web.state import (
     LIBRARY_EXPORT_TAGS_KEY,
     LIBRARY_FILTER_PRESET_KEY,
     LIBRARY_FILTER_QUERY_KEY,
+    LIBRARY_FILTER_SIG_KEY,
     LIBRARY_FILTER_SORT_KEY,
     LIBRARY_FILTER_SOURCE_KEY,
     LIBRARY_FILTER_TAGS_KEY,
     LIBRARY_SELECTED_TRANSCRIPT_PATH,
     LIBRARY_SHOW_PATH_KEY,
     LIBRARY_TABLE_EPOCH_KEY,
+    LIBRARY_TABLE_SHOWN_KEY,
 )
+
+# Progressive window — matches Transcript segments / Insights Guided caps.
+_LIBRARY_PAGE_SIZE = 50
 
 _LIBRARY_DESCRIPTION = (
     "Find and manage transcripts — what you have, what state they are in, "
@@ -296,6 +301,24 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
     visible = apply_library_filter(rows, library_filter)
     st.caption(f"{len(visible)} of {len(rows)} transcripts")
 
+    filter_sig = (
+        library_filter.preset,
+        library_filter.query,
+        library_filter.sort,
+        library_filter.source_id,
+        tuple(library_filter.tags or ()),
+    )
+    if st.session_state.get(LIBRARY_FILTER_SIG_KEY) != filter_sig:
+        st.session_state[LIBRARY_FILTER_SIG_KEY] = filter_sig
+        st.session_state[LIBRARY_TABLE_SHOWN_KEY] = _LIBRARY_PAGE_SIZE
+
+    shown = int(
+        st.session_state.get(LIBRARY_TABLE_SHOWN_KEY, _LIBRARY_PAGE_SIZE)
+        or _LIBRARY_PAGE_SIZE
+    )
+    shown = max(_LIBRARY_PAGE_SIZE, shown)
+    window = visible[:shown]
+
     show_path = st.toggle(
         "Show path column",
         value=False,
@@ -303,7 +326,7 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
         help=widget_help("Include the on-disk managed path in the library table."),
     )
     table = pd.DataFrame(
-        [inventory_table_row(row, include_path=show_path) for row in visible]
+        [inventory_table_row(row, include_path=show_path) for row in window]
     )
     event = st.dataframe(
         table,
@@ -313,7 +336,19 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
         selection_mode="single-row",
         key=f"library_inventory_table_{int(st.session_state.get(LIBRARY_TABLE_EPOCH_KEY) or 0)}",
     )
-    _selection_from_dataframe(event, visible)
+    _selection_from_dataframe(event, window)
+    if len(visible) > shown:
+        remaining = len(visible) - shown
+        if st.button(
+            f"Show more ({remaining} remaining)",
+            key="library_show_more",
+            icon=ic.SHOW_MORE,
+        ):
+            st.session_state[LIBRARY_TABLE_SHOWN_KEY] = shown + _LIBRARY_PAGE_SIZE
+            try:
+                st.rerun(scope="fragment")
+            except st.errors.StreamlitAPIException:
+                st.rerun()
 
     _render_export_by_tag(rows, library_filter.tags)
 

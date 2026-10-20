@@ -120,9 +120,14 @@ def _render_results_section(
             st.divider()
 
 
-@st.fragment
+@st.fragment(run_every=0.4)
 def _search_interaction_fragment() -> None:
-    """Query input, filters, and results without full-app rerun."""
+    """Query input, filters, and results without full-app rerun.
+
+    ``run_every`` replaces worker-blocking ``time.sleep`` debounce: while the
+    query is still settling we show cached hits (if any) and return; the next
+    timed fragment tick runs the search after the pause.
+    """
     # Initialize session state for debouncing and caching
     if "global_search_last_change" not in st.session_state:
         st.session_state["global_search_last_change"] = time.time()
@@ -248,16 +253,13 @@ def _search_interaction_fragment() -> None:
         )
     )
 
-    # When user has typed but we're still in debounce: show cached results if any,
-    # then schedule a rerun after the remainder of the debounce so search runs once
-    # they've stopped typing (Streamlit only reruns on widget interaction, so without
-    # this we'd never rerun after pause).
+    # While typing: show cached results if any, then return. The fragment's
+    # run_every tick finishes the search after debounce — never sleep the worker.
     if (
         is_within_debounce
         and len(query) >= 3
         and query != st.session_state.get("global_search_last_searched_query")
     ):
-        # Show cached results while waiting (if available)
         cached_response = st.session_state.get("global_search_cached_response")
         if cached_response is not None and (
             cached_response.substring_results or cached_response.fuzzy_results
@@ -283,10 +285,9 @@ def _search_interaction_fragment() -> None:
                     "fuzzy matches",
                     query,
                 )
-        sleep_ms = debounce_ms - time_since_change_ms
-        if sleep_ms > 10:  # avoid tiny sleeps
-            time.sleep(sleep_ms / 1000.0)
-        st.rerun()
+        else:
+            st.caption("Searching when you pause typing…")
+        return
 
     if len(query) < 3:
         return

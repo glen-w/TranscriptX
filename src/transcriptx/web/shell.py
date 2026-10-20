@@ -7,6 +7,7 @@ Kept separate from ``app.py`` so the entry module focuses on routing and pages.
 from __future__ import annotations
 
 import base64
+from functools import lru_cache
 from pathlib import Path
 
 import streamlit as st
@@ -19,6 +20,9 @@ _LOGO_ICON = _ASSETS_DIR / "transcriptx_icon.png"
 _LOGO_FULL = _ASSETS_DIR / "transcriptx_logo.png"
 _LOGO_DARK = _ASSETS_DIR / "transcriptx_logo_dark.png"
 _FAVICON = _ASSETS_DIR / "favicon.ico"
+
+# Session key: avoid re-pushing ~35KB CSS + chrome JS on every full-app rerun.
+_GLOBAL_STYLES_SESSION_KEY = "_tx_global_styles_injected"
 
 
 def brand_logo_path(*, for_dark_chrome: bool = True) -> Path | None:
@@ -36,7 +40,10 @@ def brand_logo_path(*, for_dark_chrome: bool = True) -> Path | None:
     return None
 
 
-def _logo_data_uri(path: Path) -> str:
+@lru_cache(maxsize=8)
+def _logo_data_uri(path_str: str) -> str:
+    """Cache base64 logos process-wide (files are ~150–200KB each)."""
+    path = Path(path_str)
     raw = path.read_bytes()
     b64 = base64.b64encode(raw).decode("ascii")
     suffix = path.suffix.lower()
@@ -59,20 +66,20 @@ def render_brand_logo(*, width: int = 200) -> None:
     if light_chrome is not None:
         parts.append(
             f'<img class="tx-logo-light-chrome" '
-            f'src="{_logo_data_uri(light_chrome)}" width="{width}" '
+            f'src="{_logo_data_uri(str(light_chrome))}" width="{width}" '
             f'alt="TranscriptX" />'
         )
     if dark_chrome is not None and dark_chrome != light_chrome:
         parts.append(
             f'<img class="tx-logo-dark-chrome" '
-            f'src="{_logo_data_uri(dark_chrome)}" width="{width}" '
+            f'src="{_logo_data_uri(str(dark_chrome))}" width="{width}" '
             f'alt="" aria-hidden="true" />'
         )
     elif dark_chrome is not None:
         # Only one asset available — single img, no theme swap needed.
         parts = [
             '<div class="tx-sidebar-brand">',
-            f'<img src="{_logo_data_uri(dark_chrome)}" width="{width}" '
+            f'<img src="{_logo_data_uri(str(dark_chrome))}" width="{width}" '
             f'alt="TranscriptX" />',
         ]
     parts.append("</div>")
@@ -235,8 +242,15 @@ _SHELL_RUNTIME_JS = """
 """
 
 
-def inject_global_styles() -> None:
-    """Inject shared CSS and sidebar chrome-sync / scroll helpers."""
+def inject_global_styles(*, force: bool = False) -> None:
+    """Inject shared CSS and sidebar chrome-sync / scroll helpers.
+
+    Once per browser session by default — Streamlit keeps the DOM styles across
+    full-app reruns; re-pushing ~35KB CSS + MutationObserver JS on every nav
+    click is pure tax. Pass ``force=True`` after intentional style revisions.
+    """
+    if not force and st.session_state.get(_GLOBAL_STYLES_SESSION_KEY):
+        return
     st.markdown(
         """
 <style>
@@ -1230,3 +1244,4 @@ def inject_global_styles() -> None:
     )
     # st.markdown strips <script>; st.html is the Streamlit 1.55+ way to run JS.
     st.html(_SHELL_RUNTIME_JS, unsafe_allow_javascript=True)
+    st.session_state[_GLOBAL_STYLES_SESSION_KEY] = True
