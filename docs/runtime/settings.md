@@ -34,14 +34,25 @@ Edit Quick / Balanced / Thorough policies (and optional full module overrides) u
 
 ### Single-speaker / unnamed-speaker behavior
 
+**Content-first runs (T0):** Some modules (topics, word clouds, global sentiment, transcript quality, exports, and similar) can run when **no human names** exist yet — for example after import when labels are still `SPEAKER_00` or when captions had no speakers. Interaction and multi-speaker modules still skip until you name speakers, enable the ungate below, or re-transcribe with diarization.
+
 By default, modules require **human-named** speakers. Diarized placeholders (`SPEAKER_00`, …) do not count until you name speakers in Speaker Identification. Modules that need multiple speakers (conversation loops, contagion, interactions, semantic similarity, Q&A, echoes, and others) skip when the named-speaker count is below their minimum. For group runs, the module list is filtered by the minimum named speaker count across members.
 
-To run modules on diarized labels without naming speakers:
+| Tier | When to use | Knobs |
+|------|-------------|-------|
+| **T0** | No speaker labels or only `SPEAKER_00` with no names | Default content modules (`min_named_speakers: 0`); Overview shows “No speaker labels” when applicable |
+| **T1** | Single-speaker monologue with one diarized label (`SPEAKER_00`) | **Treat as single speaker** (per run or `analysis.treat_as_single_speaker` / `TRANSCRIPTX_ANALYSIS_TREAT_AS_SINGLE_SPEAKER`) — ungates modules that need ≥1 speaker only when turn-taking count is exactly **1**; does **not** satisfy multi-speaker modules |
+| **T2** | Diarized multi-speaker, names optional | **Allow analysis without named speakers** (global or per run) — uses turn-taking counts for gates |
+| **T3** | Named speakers (default policy) | Name speakers in Speaker Identification; Balanced/Thorough presets expect human names |
+
+To run modules on diarized labels without naming speakers (T2):
 
 - **Global:** Settings → `analysis.allow_unnamed_speakers` (or env `TRANSCRIPTX_ANALYSIS_ALLOW_UNNAMED_SPEAKERS`)
 - **Per run:** Run Analysis checkbox **Allow analysis without named speakers**
 
 Either knob ungates the pipeline (global **or** per-run). When ungated, speaker-count gates use turn-taking labels and per-speaker artifacts include unidentified speakers.
+
+For a **single** diarized speaker only (T1), use **Treat as single speaker** on Run Analysis (or CLI `--treat-as-single-speaker`). This is narrower than T2: it does not ungate when two or more turn-taking speakers are present.
 
 ## Configuration scopes
 

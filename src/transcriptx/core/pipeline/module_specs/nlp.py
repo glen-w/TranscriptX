@@ -55,6 +55,7 @@ def build_nlp_module_definitions(
             "requirements": default_requirements,
             "enhancements": [],
             "required_extras": ["nlp"],
+            "min_named_speakers": 0,
         },
         "names": {
             "description": "People mentioned (PERSON entities catalog)",
@@ -64,6 +65,7 @@ def build_nlp_module_definitions(
             "requirements": default_requirements,
             "enhancements": [],
             "required_extras": ["nlp"],
+            "min_named_speakers": 0,
         },
         "sentiment": {
             "description": "Sentiment Analysis",
@@ -72,6 +74,7 @@ def build_nlp_module_definitions(
             "determinism_tier": "T1",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
+            "min_named_speakers": 0,
         },
         "epistemic_markers": {
             "description": "Hedging / certainty / epistemic markers",
@@ -89,5 +92,6 @@ def build_nlp_module_definitions(
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
             "required_extras": ["nlp"],
+            "min_named_speakers": 0,
         },
     }

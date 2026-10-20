@@ -27,6 +27,7 @@ def build_topics_module_definitions(
             "determinism_tier": "T2",
             "requirements": default_requirements,
             "enhancements": [],
+            "min_named_speakers": 0,
         },
         "bertopic": {
             "description": (
@@ -42,6 +43,7 @@ def build_topics_module_definitions(
             # Embedding + UMAP/HDBSCAN can be slow on large transcripts; hang
             # protection is enforced by the DAG adapter (continues on timeout).
             "timeout_seconds": 3600,
+            "min_named_speakers": 0,
         },
         "wordclouds": {
             "description": "Word Cloud Generation",
@@ -51,5 +53,6 @@ def build_topics_module_definitions(
             "determinism_tier": "T1",
             "requirements": default_requirements,
             "enhancements": [],
+            "min_named_speakers": 0,
         },
     }

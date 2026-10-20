@@ -268,6 +268,11 @@ ENV_KEY_REGISTRY: tuple[EnvKey, ...] = (
         coerce_bool_on_off,
     ),
     _env_key(
+        "TRANSCRIPTX_ANALYSIS_TREAT_AS_SINGLE_SPEAKER",
+        ("analysis", "treat_as_single_speaker"),
+        coerce_bool_on_off,
+    ),
+    _env_key(
         "TRANSCRIPTX_WAV_FOLDERS", ("input", "wav_folders"), coerce_json_or_csv_list
     ),
     _env_key(

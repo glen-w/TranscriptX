@@ -100,6 +100,25 @@ def test_default_host_env_file_avoids_container_install_tree(tmp_path: Path) -> 
 
 
 @pytest.mark.unit
+def test_nemo_parakeet_docker_recipe() -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.NEMO_PARAKEET_DOCKER,
+        input_path="/data/audio/meeting.mp3",
+        output_dir="/data/out",
+        docker_image="nvcr.io/nvidia/nemo:24.07.1",
+        model="nvidia/parakeet-tdt-0.6b-v3",
+    )
+    cmd = generate_transcription_command(params)
+    assert "docker run" in cmd.shell
+    assert "--gpus all" in cmd.shell
+    assert "/data/audio/meeting.mp3" in cmd.shell or "/audio" in cmd.shell
+    assert "/data/out" in cmd.shell or "/output" in cmd.shell
+    assert "nemo_json_to_whisperx" in cmd.shell
+    assert "parakeet-tdt" in cmd.shell
+    assert any("macOS" in n or "whispermlx" in n for n in cmd.notes)
+
+
+@pytest.mark.unit
 def test_whisperx_docker_recipe() -> None:
     params = CommandGenParams(
         tool=TranscriptionTool.WHISPERX_DOCKER,

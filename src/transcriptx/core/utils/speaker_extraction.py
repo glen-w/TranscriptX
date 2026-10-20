@@ -151,7 +151,13 @@ def count_turn_taking_speakers(
             continue
 
         db_id = segment.get("speaker_db_id")
-        key: Union[str, int] = int(db_id) if db_id is not None else str(label)
+        if db_id is None:
+            key: Union[str, int] = str(label)
+        else:
+            try:
+                key = int(db_id)
+            except (TypeError, ValueError):
+                key = db_id if isinstance(db_id, (str, int)) else str(db_id)
         if key in ignored or str(key) in ignored:
             continue
 

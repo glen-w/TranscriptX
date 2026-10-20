@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-20
+
+Undiarized resilience (T0/T1) plus Theme K→H5 NeMo Parakeet/Canary path (git tag `v1.0.1`).
+
+### Added
+
+- **T0 content-first analysis:** content modules (`min_named_speakers: 0`) run when there are no human-named speakers; Overview info banner when named count is zero. CocktailASR / noisy-Whisper BYO docs.
+- **T1 `treat_as_single_speaker`:** per-run / config / CLI / GUI opt-in so a single diarized label (e.g. import-minted `SPEAKER_00`) ungates modules needing ≥1 speaker without full unnamed-speaker mode.
+- **Theme K / H5 NeMo:** Copy-command Parakeet/Canary recipes, `nemo_json_to_whisperx` converter, registered `parakeet_docker` provider (stub via `TRANSCRIPTX_PARAKEET_STUB=1`), recipe + NOTICE / trust rows.
+
+### Changed
+
+- ROADMAP **Next** slices for T0/T1/Theme K/H5 marked done; settings docs document the T0–T3 ladder.
+
 ## [1.0.0] - 2026-10-19
 
 First public **1.0** release (git tag `v1.0.0`). Delivers the post-**0.9.9.5** stabilisation programme plus October Theme A deferred work (insights evidence UI, chart overview honesty, opt-in B18 `insights_narrative`), `transcriptx library-paths` for night automation, and RAG `pyarrow` pin for the numpy 1.26 stack.

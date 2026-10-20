@@ -389,6 +389,8 @@ class AnalysisConfig:
     exclude_unidentified_from_speaker_charts: bool = field(init=False, repr=True)
     # When True, run modules on diarized labels (SPEAKER_00, …) without naming
     allow_unnamed_speakers: bool = field(init=False, repr=True)
+    # T1: monologue opt-in when exactly one turn-taking speaker exists
+    treat_as_single_speaker: bool = field(init=False, repr=True)
 
     # Corrections settings
     corrections: CorrectionsConfig = field(default_factory=CorrectionsConfig)

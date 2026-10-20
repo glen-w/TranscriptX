@@ -18,6 +18,9 @@ components when the corresponding install profile or feature is enabled:
 6. Optional BERTopic / UMAP / HDBSCAN stack and their transitive licences
 7. Optional SpeechBrain / ECAPA voice embedding models for speaker match
 8. Optional user-selected Ollama models (licence depends on the model the user pulls)
+9. Optional NVIDIA NeMo ASR weights (e.g. Parakeet TDT, Canary) when Theme K / `parakeet_docker`
+   Run-in-app or Copy-command recipes are used — typically **CC-BY-4.0** on Hugging Face / NGC;
+   user-triggered download on first run. See docs/recipes/parakeet/README.md.
 
 TranscriptX itself does not claim ownership of these weights or lexicons.
 Local-first operation: analysis runs on the user’s machine; model downloads

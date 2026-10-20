@@ -22,6 +22,7 @@ def build_summary_module_definitions(
                 Requirement.SPEAKER_LABELS,
             ],
             "enhancements": [],
+            "min_named_speakers": 0,
         },
         "summary": {
             "description": "Executive brief summary derived from highlights",
@@ -34,6 +35,7 @@ def build_summary_module_definitions(
                 Requirement.SPEAKER_LABELS,
             ],
             "enhancements": [],
+            "min_named_speakers": 0,
         },
         "narrative_summary": {
             "description": "Grounded executive narrative from deterministic summary (LLM)",
@@ -56,6 +58,7 @@ def build_summary_module_definitions(
             "requirements": [Requirement.SEGMENTS],
             "enhancements": [],
             "requires_llm": True,
+            "min_named_speakers": 0,
         },
         "llm_speaker_summary": {
             "description": "Abstractive per-speaker summaries via local LLM",
@@ -90,6 +93,7 @@ def build_summary_module_definitions(
             "requirements": [Requirement.SEGMENTS],
             "enhancements": [],
             "requires_llm": True,
+            "min_named_speakers": 0,
         },
         "chart_descriptions": {
             "description": (
@@ -115,6 +119,7 @@ def build_summary_module_definitions(
                 Requirement.SPEAKER_LABELS,
             ],
             "enhancements": [],
+            "min_named_speakers": 0,
         },
         "insights_narrative": {
             "description": (

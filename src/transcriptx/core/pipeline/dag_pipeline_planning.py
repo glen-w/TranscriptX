@@ -72,13 +72,20 @@ def compute_review_before_run_for_pipeline(
     allow_unnamed_speakers = bool(
         getattr(speaker_options, "allow_unnamed_speakers", False)
     )
+    treat_as_single_speaker = bool(
+        getattr(speaker_options, "treat_as_single_speaker", False)
+    )
     try:
         from transcriptx.core.pipeline.speaker_ungate import (
             resolve_allow_unnamed_speakers,
+            resolve_treat_as_single_speaker,
         )
 
         allow_unnamed_speakers = resolve_allow_unnamed_speakers(
             per_run=allow_unnamed_speakers
+        )
+        treat_as_single_speaker = resolve_treat_as_single_speaker(
+            per_run=treat_as_single_speaker
         )
     except Exception:
         pass
@@ -88,6 +95,7 @@ def compute_review_before_run_for_pipeline(
             include_unidentified_speakers=speaker_options.include_unidentified,
             anonymise_speakers=speaker_options.anonymise,
             allow_unnamed_speakers=allow_unnamed_speakers,
+            treat_as_single_speaker=treat_as_single_speaker,
             batch_mode=True,
             output_dir=output_dir,
             transcript_key=transcript_key,
@@ -97,9 +105,9 @@ def compute_review_before_run_for_pipeline(
             named_speaker_count = gating_named_speaker_count(transcript_path, context)
             turn_taking_speaker_count = gating_turn_taking_speaker_count(context)
             try:
-                allow_unnamed_speakers = bool(
-                    (context.get_runtime_flags() or {}).get("allow_unnamed_speakers")
-                )
+                flags = context.get_runtime_flags() or {}
+                allow_unnamed_speakers = bool(flags.get("allow_unnamed_speakers"))
+                treat_as_single_speaker = bool(flags.get("treat_as_single_speaker"))
             except Exception:
                 pass
     except Exception:
@@ -171,6 +179,7 @@ def compute_review_before_run_for_pipeline(
                     named_speaker_count=named_speaker_count,
                     turn_taking_speaker_count=turn_taking_speaker_count,
                     allow_unnamed_speakers=allow_unnamed_speakers,
+                    treat_as_single_speaker=treat_as_single_speaker,
                 )
                 if reason_text:
                     modules_skipped.append(

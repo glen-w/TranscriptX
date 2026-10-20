@@ -56,6 +56,8 @@ def test_no_docker_invocation_strings():
             "web/page_modules/transcribe_audio.py",
             # Theme H: host-orchestrated WhisperX Docker provider (not analysis-image STT).
             "services/transcription/whisperx_docker_provider.py",
+            # Theme H5: host-orchestrated NeMo Parakeet Docker provider.
+            "services/transcription/parakeet_docker_provider.py",
         }
     )
     patterns = [

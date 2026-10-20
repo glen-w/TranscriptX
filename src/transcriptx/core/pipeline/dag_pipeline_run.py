@@ -35,6 +35,7 @@ def speaker_gate_skip_reason(
     named_speaker_count: Optional[int],
     turn_taking_speaker_count: Optional[int],
     allow_unnamed_speakers: bool = False,
+    treat_as_single_speaker: bool = False,
 ) -> Optional[str]:
     """
     Return a skip reason if a module fails its speaker-count gate, else ``None``.
@@ -42,13 +43,21 @@ def speaker_gate_skip_reason(
     By default all modules require human-named speakers. When
     ``allow_unnamed_speakers`` is True, the gate uses turn-taking speaker counts
     (diarization labels such as ``SPEAKER_00`` count) for every module.
+    When ``treat_as_single_speaker`` is True and exactly one turn-taking speaker
+    exists, the gate uses turn-taking counts (T1 monologue opt-in).
     """
     from transcriptx.core.pipeline.module_registry import (
         effective_min_named_speakers,
     )
+    from transcriptx.core.pipeline.speaker_ungate import use_turn_taking_speaker_gate
 
     min_required = effective_min_named_speakers(module_info)
-    if allow_unnamed_speakers:
+    use_turn_taking = use_turn_taking_speaker_gate(
+        allow_unnamed_speakers=allow_unnamed_speakers,
+        treat_as_single_speaker=treat_as_single_speaker,
+        turn_taking_speaker_count=turn_taking_speaker_count,
+    )
+    if use_turn_taking:
         count = turn_taking_speaker_count
         reason = f"requires at least {min_required} speakers"
     else:
@@ -184,6 +193,9 @@ def build_execute_pipeline_context(
             anonymise_speakers=speaker_options.anonymise,
             allow_unnamed_speakers=bool(
                 getattr(speaker_options, "allow_unnamed_speakers", False)
+            ),
+            treat_as_single_speaker=bool(
+                getattr(speaker_options, "treat_as_single_speaker", False)
             ),
             batch_mode=True,
             output_dir=output_dir,

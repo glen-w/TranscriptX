@@ -16,7 +16,10 @@ from transcriptx.core.pipeline.dag_pipeline_run import (
     gating_turn_taking_speaker_count,
     speaker_gate_skip_reason,
 )
-from transcriptx.core.pipeline.module_registry import get_module_info
+from transcriptx.core.pipeline.module_registry import (
+    effective_min_named_speakers,
+    get_module_info,
+)
 from transcriptx.utils.text_utils import (
     get_pipeline_allow_unnamed_speakers,
     is_analysis_speaker_label,
@@ -70,6 +73,15 @@ def test_count_turn_taking_excludes_unknown_placeholders() -> None:
 
 
 @pytest.mark.unit
+def test_count_turn_taking_accepts_non_int_db_id() -> None:
+    segs = [
+        {"speaker": "Alice", "speaker_db_id": "b1", "text": "a"},
+        {"speaker": "Bob", "speaker_db_id": "b2", "text": "b"},
+    ]
+    assert count_turn_taking_speakers(segs) == 2
+
+
+@pytest.mark.unit
 def test_count_turn_taking_groups_by_db_id_when_present() -> None:
     # Same db_id with differing label text should collapse to one speaker.
     segs = [
@@ -118,6 +130,63 @@ def test_gating_turn_taking_count_fails_open_on_error() -> None:
 
 
 # --- speaker_gate_skip_reason (default: named required) -------------------
+
+
+@pytest.mark.unit
+def test_registry_wordclouds_effective_min_named_is_zero() -> None:
+    info = get_module_info("wordclouds")
+    assert info is not None
+    assert effective_min_named_speakers(info) == 0
+
+
+@pytest.mark.unit
+def test_gate_t0_content_module_runs_with_zero_named_speakers() -> None:
+    info = _mod(min_named_speakers=0)
+    assert (
+        speaker_gate_skip_reason(
+            info,
+            named_speaker_count=0,
+            turn_taking_speaker_count=1,
+            allow_unnamed_speakers=False,
+        )
+        is None
+    )
+
+
+@pytest.mark.unit
+def test_gate_t1_treat_single_monologue_not_multi_diarized() -> None:
+    info = _mod(min_named_speakers=1)
+    reason = speaker_gate_skip_reason(
+        info,
+        named_speaker_count=0,
+        turn_taking_speaker_count=2,
+        allow_unnamed_speakers=False,
+        treat_as_single_speaker=True,
+    )
+    assert reason is not None
+    assert "named speakers" in reason
+    assert (
+        speaker_gate_skip_reason(
+            info,
+            named_speaker_count=0,
+            turn_taking_speaker_count=1,
+            allow_unnamed_speakers=False,
+            treat_as_single_speaker=True,
+        )
+        is None
+    )
+
+
+@pytest.mark.unit
+def test_gate_t0_multi_speaker_still_requires_two_when_ungated() -> None:
+    info = _mod(min_named_speakers=0, requires_multiple_speakers=True)
+    reason = speaker_gate_skip_reason(
+        info,
+        named_speaker_count=0,
+        turn_taking_speaker_count=1,
+        allow_unnamed_speakers=True,
+    )
+    assert reason == "requires at least 2 speakers"
 
 
 @pytest.mark.unit
@@ -258,7 +327,7 @@ def test_former_turn_taking_modules_no_longer_opt_in(module_name: str) -> None:
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("module_name", ["stats", "sentiment", "echoes"])
+@pytest.mark.parametrize("module_name", ["stats", "echoes"])
 def test_modules_require_named_speakers_by_default(module_name: str) -> None:
     info = get_module_info(module_name)
     assert info is not None
@@ -270,3 +339,20 @@ def test_modules_require_named_speakers_by_default(module_name: str) -> None:
     )
     assert reason is not None
     assert "named speakers" in reason
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("module_name", ["sentiment", "wordclouds", "transcript_quality"])
+def test_t0_content_modules_skip_name_gate(module_name: str) -> None:
+    info = get_module_info(module_name)
+    assert info is not None
+    assert effective_min_named_speakers(info) == 0
+    assert (
+        speaker_gate_skip_reason(
+            info,
+            named_speaker_count=0,
+            turn_taking_speaker_count=1,
+            allow_unnamed_speakers=False,
+        )
+        is None
+    )

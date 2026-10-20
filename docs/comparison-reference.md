@@ -78,6 +78,7 @@ Qualitative-research cluster (noScribe, CAQDAS, DoReveal / Dovetail, Oral Histor
 - **[Vosk](https://alphacephei.com/vosk/)** — lightweight offline ASR (small models, streaming API, embedded/Raspberry Pi). Weaker than Whisper-class models on noisy/multi-speaker audio; a library, not a workbench.
 - **[Kaldi](https://kaldi-asr.org/)** — research ASR toolkit (recipes, custom training). Steep CLI/Linux curve; no GUI.
 - **Mozilla DeepSpeech** — historically common; **official development stopped**. Prefer Whisper-class or Vosk for new local STT work.
+- **[CocktailASR-1](https://github.com/xiaomi-research/xiaomi-cocktailasr-1)** (Xiaomi, Apache-2.0) — **target-speaker** ASR for overlapping speech: enroll a short reference clip, transcribe only that voice (empty output if absent). Large CUDA SpeechLLM; not diarized multi-speaker JSON. BYO only — not a TranscriptX Run-in-app provider. Use when Whisper/WhisperX is noisy on cocktail-party audio; see [transcription.md](runtime/transcription.md#when-whisper-is-noisy-or-speech-overlaps).
 
 ## Meeting assistants (SaaS)
 

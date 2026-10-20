@@ -32,6 +32,7 @@ class RunManifestInput(BaseModel):
     output_dir: Optional[str] = None
     include_unidentified_speakers: bool = False
     allow_unnamed_speakers: bool = False
+    treat_as_single_speaker: bool = False
     skip_confirm: bool = False
     persist: bool = False
     run_id: Optional[str] = Field(
@@ -64,6 +65,7 @@ class RunManifestInput(BaseModel):
         output_dir: Optional[str] = None,
         include_unidentified_speakers: bool = False,
         allow_unnamed_speakers: bool = False,
+        treat_as_single_speaker: bool = False,
         persist: bool = False,
         run_id: Optional[str] = None,
         config_overrides: Optional[Dict[str, Any]] = None,
@@ -80,6 +82,7 @@ class RunManifestInput(BaseModel):
             output_dir=output_dir,
             include_unidentified_speakers=include_unidentified_speakers,
             allow_unnamed_speakers=allow_unnamed_speakers,
+            treat_as_single_speaker=treat_as_single_speaker,
             skip_confirm=skip_confirm,
             persist=persist,
             run_id=run_id,

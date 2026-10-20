@@ -71,7 +71,9 @@ def test_flat_analysis_pilots_are_disjoint_and_complete() -> None:
             "readability_metrics",
         }
     )
-    assert field_map["analysis_speakers"] == frozenset({"allow_unnamed_speakers"})
+    assert field_map["analysis_speakers"] == frozenset(
+        {"allow_unnamed_speakers", "treat_as_single_speaker"}
+    )
     assert field_map["analysis_interaction"] == frozenset(
         {
             "interaction_overlap_threshold",
@@ -96,8 +98,8 @@ def test_flat_analysis_pilots_are_disjoint_and_complete() -> None:
         }
     )
     assert len(field_map["analysis_legacy_semantic"]) == 25
-    assert len(field_map["analysis_speakers"]) == 1
-    assert len(seen) == 8 + 6 + 5 + 1 + 12 + 3 + 25
+    assert len(field_map["analysis_speakers"]) == 2
+    assert len(seen) == 8 + 6 + 5 + 2 + 12 + 3 + 25
 
 
 def test_dashboard_display_and_overview_fields_are_disjoint() -> None:

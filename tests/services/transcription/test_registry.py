@@ -25,6 +25,10 @@ class TestRegistry:
         ids = {p.provider_id for p in get_transcription_providers()}
         assert "whisperx_docker" in ids
 
+    def test_parakeet_docker_registered(self):
+        ids = {p.provider_id for p in get_transcription_providers()}
+        assert "parakeet_docker" in ids
+
     def test_unknown_provider_error(self):
         with pytest.raises(UnknownTranscriptionProviderError):
             get_provider("nonexistent")

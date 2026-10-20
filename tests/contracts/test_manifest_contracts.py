@@ -12,7 +12,12 @@ from transcriptx.core.pipeline.manifest_builder import build_output_manifest
 from tests.contracts.normalization import normalize_manifest
 
 
-def test_output_manifest_snapshot(tmp_path: Path) -> None:
+def test_output_manifest_snapshot(tmp_path: Path, monkeypatch) -> None:
+    # Isolate from a developer project config.json (would set config_source=project).
+    monkeypatch.setattr(
+        "transcriptx.core.config.persistence.get_project_config_path",
+        lambda: tmp_path / "missing_project_config.json",
+    )
     run_dir = tmp_path / "run"
     (run_dir / ".transcriptx").mkdir(parents=True)
     (run_dir / "stats" / "data" / "global").mkdir(parents=True)
