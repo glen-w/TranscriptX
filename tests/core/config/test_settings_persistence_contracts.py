@@ -109,15 +109,19 @@ def test_apply_project_config_to_live_facade_restores_saved_questions(
     }
     save_project_config(payload)
     reset_config_for_tests()
+    config_persistence.clear_live_facade_hydrate_gate()
     assert get_config().analysis.llm_custom_qa.saved_questions == []
 
-    assert config_persistence.apply_project_config_to_live_facade() is True
+    assert config_persistence.apply_project_config_to_live_facade(force=True) is True
     live = get_config().analysis.llm_custom_qa.saved_questions
     assert len(live) == 1
     first = live[0]
     text = first["text"] if isinstance(first, dict) else first.text
     assert text == "What was decided?"
+    # Second call with unchanged mtime must not re-read (still reports applied).
+    assert config_persistence.apply_project_config_to_live_facade() is True
     reset_config_for_tests()
+    config_persistence.clear_live_facade_hydrate_gate()
 
 
 def test_apply_project_config_to_live_facade_noop_when_missing(
@@ -129,5 +133,7 @@ def test_apply_project_config_to_live_facade_noop_when_missing(
     monkeypatch.setattr(config_persistence, "CONFIG_DIR", cfg_dir)
     monkeypatch.setattr(config_persistence, "CONFIG_DRAFTS_DIR", cfg_dir / "drafts")
     reset_config_for_tests()
+    config_persistence.clear_live_facade_hydrate_gate()
     assert config_persistence.apply_project_config_to_live_facade() is False
     reset_config_for_tests()
+    config_persistence.clear_live_facade_hydrate_gate()

@@ -375,6 +375,17 @@ def _render_export(ctx: RunScopedPageContext) -> None:
     )
 
 
+def _artifacts_section_body(ctx: RunScopedPageContext) -> None:
+    """Browse / Preview / Export widgets (mounted as a fragment by the page body)."""
+    section = _section_nav()
+    if section == "Browse":
+        _render_browse(ctx)
+    elif section == "Preview":
+        _render_preview(ctx)
+    else:
+        _render_export(ctx)
+
+
 def _render_artifacts_body(ctx: RunScopedPageContext) -> None:
     reconcile_artifact_selection(
         st.session_state,
@@ -394,13 +405,8 @@ def _render_artifacts_body(ctx: RunScopedPageContext) -> None:
         badges=None,
         actions=None,
     )
-    section = _section_nav()
-    if section == "Browse":
-        _render_browse(ctx)
-    elif section == "Preview":
-        _render_preview(ctx)
-    else:
-        _render_export(ctx)
+    # Dynamic fragment so section toggles stay off the full-app shell path.
+    st.fragment(_artifacts_section_body)(ctx)
 
 
 def render_artifacts() -> None:

@@ -296,3 +296,39 @@ def test_render_search_invokes_fragment(monkeypatch) -> None:
     mod.render_search()
 
     assert calls
+
+
+@pytest.mark.unit
+def test_search_debounce_does_not_sleep_worker(monkeypatch) -> None:
+    """Typing pause must not block the Streamlit worker with time.sleep."""
+    import transcriptx.web.page_modules.search as mod
+
+    _patch_search(monkeypatch, mod)
+    slept: list[float] = []
+    monkeypatch.setattr(
+        mod,
+        "time",
+        SimpleNamespace(
+            time=lambda: 1_000.05,
+            sleep=lambda s: slept.append(float(s)),
+        ),
+    )
+    search_mock = MagicMock()
+    monkeypatch.setattr(mod, "SearchService", lambda: search_mock)
+    _SearchStreamlit.query = "hello"
+    # Stable filters + last_change "just now" → within 300ms debounce window.
+    filters = SearchFilters(speaker_keys=[], session_slugs=None)
+    _SearchStreamlit.session_state = {
+        "global_search_last_change": 1_000.0,
+        "global_search_last_query": "hello",
+        "global_search_last_searched_query": None,
+        "global_search_cached_response": None,
+        "global_search_cached_filters": filters,
+    }
+
+    frag = mod._search_interaction_fragment.__wrapped__
+    frag()
+
+    assert slept == []
+    search_mock.search_all_transcripts.assert_not_called()
+    assert _SearchStreamlit.rerun_calls == 0

@@ -43,24 +43,21 @@ def test_resolve_output_dir_destinations(monkeypatch, tmp_path) -> None:
 
 
 @pytest.mark.unit
-def test_tools_page_renders_tabs_and_panels(monkeypatch) -> None:
+def test_tools_page_renders_only_active_panel(monkeypatch) -> None:
     import transcriptx.web.page_modules.tools as mod
 
     DummyHomeStreamlit.session_state = {}
     rendered: list[str] = []
     captions: list[str] = []
 
-    class _TabCtx:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *_a):
-            return False
-
     class _St(DummyHomeStreamlit):
-        @staticmethod
-        def tabs(labels):
-            return [_TabCtx() for _ in labels]
+        @classmethod
+        def segmented_control(cls, _label, options, *, key=None, **_kwargs):
+            if key is not None and key in cls.session_state:
+                current = cls.session_state[key]
+                if current in options:
+                    return current
+            return options[0]
 
         @staticmethod
         def caption(msg, **_k):
@@ -86,30 +83,25 @@ def test_tools_page_renders_tabs_and_panels(monkeypatch) -> None:
 
     mod.render_tools_page()
 
-    assert rendered == ["preprocess", "auto-merge", "manual-merge"]
+    assert rendered == ["preprocess"]
     assert any("Prepare recordings" in c for c in captions)
 
 
 @pytest.mark.unit
-def test_tools_page_force_tab_reorders(monkeypatch) -> None:
+def test_tools_page_force_tab_selects_auto_merge(monkeypatch) -> None:
     import transcriptx.web.page_modules.tools as mod
-    from transcriptx.web.navigation import TOOLS_HUB_FORCE_TAB_KEY
+    from transcriptx.web.navigation import TOOLS_HUB_FORCE_TAB_KEY, TOOLS_HUB_TAB_KEY
 
     DummyHomeStreamlit.session_state = {TOOLS_HUB_FORCE_TAB_KEY: "Auto-merge"}
-    seen_labels: list[list[str]] = []
-
-    class _TabCtx:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *_a):
-            return False
+    rendered: list[str] = []
 
     class _St(DummyHomeStreamlit):
-        @staticmethod
-        def tabs(labels):
-            seen_labels.append(list(labels))
-            return [_TabCtx() for _ in labels]
+        @classmethod
+        def segmented_control(cls, _label, options, *, key=None, **_kwargs):
+            current = cls.session_state.get(key)
+            if current in options:
+                return current
+            return options[0]
 
         @staticmethod
         def caption(*_a, **_k):
@@ -121,14 +113,16 @@ def test_tools_page_force_tab_reorders(monkeypatch) -> None:
 
     monkeypatch.setattr(mod, "st", _St)
     monkeypatch.setattr(mod, "render_dependency_banner", lambda: True)
-    monkeypatch.setattr(mod, "render_preprocess_panel", lambda **_k: None)
-    monkeypatch.setattr(mod, "render_auto_merge_panel", lambda **_k: None)
-    monkeypatch.setattr(mod, "render_manual_merge_panel", lambda **_k: None)
+    monkeypatch.setattr(mod, "render_preprocess_panel", lambda **_k: rendered.append("p"))
+    monkeypatch.setattr(
+        mod, "render_auto_merge_panel", lambda **_k: rendered.append("auto")
+    )
+    monkeypatch.setattr(mod, "render_manual_merge_panel", lambda **_k: rendered.append("m"))
 
     mod.render_tools_page()
 
-    assert seen_labels
-    assert seen_labels[0][0] == "Auto-merge"
+    assert rendered == ["auto"]
+    assert DummyHomeStreamlit.session_state[TOOLS_HUB_TAB_KEY] == "Auto-merge"
     assert TOOLS_HUB_FORCE_TAB_KEY not in DummyHomeStreamlit.session_state
 
 
@@ -138,20 +132,15 @@ def test_tools_page_force_tab_merge_alias(monkeypatch) -> None:
     from transcriptx.web.navigation import TOOLS_HUB_FORCE_TAB_KEY, TOOLS_HUB_TAB_KEY
 
     DummyHomeStreamlit.session_state = {TOOLS_HUB_FORCE_TAB_KEY: "Merge"}
-    seen_labels: list[list[str]] = []
-
-    class _TabCtx:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *_a):
-            return False
+    rendered: list[str] = []
 
     class _St(DummyHomeStreamlit):
-        @staticmethod
-        def tabs(labels):
-            seen_labels.append(list(labels))
-            return [_TabCtx() for _ in labels]
+        @classmethod
+        def segmented_control(cls, _label, options, *, key=None, **_kwargs):
+            current = cls.session_state.get(key)
+            if current in options:
+                return current
+            return options[0]
 
         @staticmethod
         def caption(*_a, **_k):
@@ -163,13 +152,15 @@ def test_tools_page_force_tab_merge_alias(monkeypatch) -> None:
 
     monkeypatch.setattr(mod, "st", _St)
     monkeypatch.setattr(mod, "render_dependency_banner", lambda: True)
-    monkeypatch.setattr(mod, "render_preprocess_panel", lambda **_k: None)
-    monkeypatch.setattr(mod, "render_auto_merge_panel", lambda **_k: None)
-    monkeypatch.setattr(mod, "render_manual_merge_panel", lambda **_k: None)
+    monkeypatch.setattr(mod, "render_preprocess_panel", lambda **_k: rendered.append("p"))
+    monkeypatch.setattr(
+        mod, "render_auto_merge_panel", lambda **_k: rendered.append("auto")
+    )
+    monkeypatch.setattr(mod, "render_manual_merge_panel", lambda **_k: rendered.append("m"))
 
     mod.render_tools_page()
 
-    assert seen_labels[0][0] == "Auto-merge"
+    assert rendered == ["auto"]
     assert DummyHomeStreamlit.session_state[TOOLS_HUB_TAB_KEY] == "Auto-merge"
     assert TOOLS_HUB_FORCE_TAB_KEY not in DummyHomeStreamlit.session_state
 
@@ -177,23 +168,18 @@ def test_tools_page_force_tab_merge_alias(monkeypatch) -> None:
 @pytest.mark.unit
 def test_tools_page_force_manual_merge_tab(monkeypatch) -> None:
     import transcriptx.web.page_modules.tools as mod
-    from transcriptx.web.navigation import TOOLS_HUB_FORCE_TAB_KEY
+    from transcriptx.web.navigation import TOOLS_HUB_FORCE_TAB_KEY, TOOLS_HUB_TAB_KEY
 
     DummyHomeStreamlit.session_state = {TOOLS_HUB_FORCE_TAB_KEY: "Manual merge"}
-    seen_labels: list[list[str]] = []
-
-    class _TabCtx:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *_a):
-            return False
+    rendered: list[str] = []
 
     class _St(DummyHomeStreamlit):
-        @staticmethod
-        def tabs(labels):
-            seen_labels.append(list(labels))
-            return [_TabCtx() for _ in labels]
+        @classmethod
+        def segmented_control(cls, _label, options, *, key=None, **_kwargs):
+            current = cls.session_state.get(key)
+            if current in options:
+                return current
+            return options[0]
 
         @staticmethod
         def caption(*_a, **_k):
@@ -205,14 +191,19 @@ def test_tools_page_force_manual_merge_tab(monkeypatch) -> None:
 
     monkeypatch.setattr(mod, "st", _St)
     monkeypatch.setattr(mod, "render_dependency_banner", lambda: True)
-    monkeypatch.setattr(mod, "render_preprocess_panel", lambda **_k: None)
-    monkeypatch.setattr(mod, "render_auto_merge_panel", lambda **_k: None)
-    monkeypatch.setattr(mod, "render_manual_merge_panel", lambda **_k: None)
+    monkeypatch.setattr(mod, "render_preprocess_panel", lambda **_k: rendered.append("p"))
+    monkeypatch.setattr(
+        mod, "render_auto_merge_panel", lambda **_k: rendered.append("auto")
+    )
+    monkeypatch.setattr(
+        mod, "render_manual_merge_panel", lambda **_k: rendered.append("manual")
+    )
 
     mod.render_tools_page()
 
-    assert seen_labels[0][0] == "Manual merge"
-    assert seen_labels[0][1:] == ["Preprocessing", "Auto-merge"]
+    assert rendered == ["manual"]
+    assert DummyHomeStreamlit.session_state[TOOLS_HUB_TAB_KEY] == "Manual merge"
+    assert TOOLS_HUB_FORCE_TAB_KEY not in DummyHomeStreamlit.session_state
 
 
 @pytest.mark.unit

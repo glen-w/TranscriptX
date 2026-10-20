@@ -36,6 +36,22 @@ SCENARIOS: list[tuple[str, dict[str, object]]] = [
         "navigation_rerun_charts",
         {"page": "Charts"},
     ),
+    (
+        "navigation_rerun_settings",
+        {"page": "Settings"},
+    ),
+    (
+        "navigation_rerun_speakers",
+        {"page": "Speakers"},
+    ),
+    (
+        "navigation_rerun_transcript",
+        {"page": "Transcript"},
+    ),
+    (
+        "navigation_rerun_artifacts",
+        {"page": "Artifacts"},
+    ),
 ]
 
 
