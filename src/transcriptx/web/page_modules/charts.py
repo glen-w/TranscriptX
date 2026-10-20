@@ -702,6 +702,17 @@ def _charts_filters_and_gallery_fragment(
         extra=lambda: _render_export_under_badges(run_root, view.filtered_charts),
     )
 
+    named_count = named_speaker_count_from_content_loader(
+        ArtifactContentLoader(run_root, tuple(all_charts))
+    )
+    if named_count == 0:
+        st.info(
+            "No named speakers — content-oriented charts only. Name speakers in "
+            "Speaker Identification, enable **Allow analysis without named speakers** "
+            "on Run Analysis, or re-transcribe with diarization to unlock "
+            "interaction charts."
+        )
+
     st.text_input(
         "Search charts…",
         key=CHARTS_KEY_SEARCH,

@@ -69,6 +69,7 @@ Sourced from [runtime/models.md](../runtime/models.md) defaults and pinned HF pr
 | BERTopic stack | See BERTopic / UMAP / HDBSCAN deps | Embedding model as above | Local; heavy | Optional (`[bertopic]` / `[full]`) |
 | Ollama LLM modules (optional) | Model-dependent (user-chosen Ollama models) | User pulls models into Ollama | Local when Ollama is local; label AI outputs | Optional — document |
 | Voice / speaker-match embeddings (ECAPA / `[voice]`) | See SpeechBrain / model cards | Optional extras; may download | **Speaker-identity sensitive** — privacy notice v2 | Optional (`[voice]`) |
+| NeMo Parakeet TDT / Canary ASR (Theme K / `parakeet_docker`) | **CC-BY-4.0** (typical Hub / NGC cards) | User-triggered on CUDA host; not in analysis image | Local STT when user runs recipe; stub mode for dev only | Optional — [recipes/parakeet](../recipes/parakeet/README.md) |
 
 ### NOTICE
 

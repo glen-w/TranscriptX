@@ -660,6 +660,17 @@ def _run_analysis_config_and_launch_fragment(
             "analysis.allow_unnamed_speakers."
         ),
     )
+    treat_as_single_speaker = st.checkbox(
+        "Treat as single speaker",
+        value=False,
+        key="run_analysis_treat_as_single_speaker",
+        help=(
+            "For monologue or caption imports with one diarized label (often "
+            "SPEAKER_00), run per-speaker modules without naming. Does not enable "
+            "multi-speaker interaction modules. Settings → "
+            "analysis.treat_as_single_speaker."
+        ),
+    )
 
     st.markdown(
         '<div class="tx-run-analysis-footer" aria-hidden="true"></div>',
@@ -699,6 +710,7 @@ def _run_analysis_config_and_launch_fragment(
             profile=resolved.profile,
             analysis_preset=resolved.preset,
             allow_unnamed_speakers=allow_unnamed_speakers,
+            treat_as_single_speaker=treat_as_single_speaker,
             llm_model_selection=llm_selection,
             llm_custom_qa_questions=qa_request_questions,
         )
@@ -715,6 +727,7 @@ def _run_analysis_config_and_launch_fragment(
             analysis_preset=resolved.preset,
             include_unidentified_speakers=False,
             allow_unnamed_speakers=allow_unnamed_speakers,
+            treat_as_single_speaker=treat_as_single_speaker,
             llm_model_selection=llm_selection,
             llm_custom_qa_questions=qa_request_questions,
         )

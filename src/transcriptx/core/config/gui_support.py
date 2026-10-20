@@ -163,6 +163,11 @@ COMMON_SETTINGS_SCHEMA: tuple[CommonSettingField, ...] = (
         group="Speakers",
         label="Allow analysis without named speakers",
     ),
+    CommonSettingField(
+        key="analysis.treat_as_single_speaker",
+        group="Speakers",
+        label="Treat as single speaker (monologue)",
+    ),
     # Semantic similarity (nested module config; public module id is semantic_similarity)
     CommonSettingField(
         key="analysis.semantic_similarity.enabled",

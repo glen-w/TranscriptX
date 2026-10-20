@@ -106,7 +106,9 @@ class ModuleInfo:
 
 def effective_min_named_speakers(info: ModuleInfo) -> int:
     """Return the effective minimum named speaker count for a module."""
-    return max(info.min_named_speakers, 2 if info.requires_multiple_speakers else 1)
+    if info.requires_multiple_speakers:
+        return max(info.min_named_speakers, 2)
+    return max(info.min_named_speakers, 0)
 
 
 class ModuleRegistry:

@@ -18,6 +18,7 @@ def build_exports_module_definitions(
             "determinism_tier": "T0",
             "requirements": default_requirements,
             "enhancements": [Enhancement.SPEAKER_DISPLAY_NAMES],
+            "min_named_speakers": 0,
         },
         "simplified_transcript": {
             "description": "Simplified transcript (tics, agreements, repetitions removed)",

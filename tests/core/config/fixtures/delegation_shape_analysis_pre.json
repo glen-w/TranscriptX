@@ -66,6 +66,7 @@
   ],
   "exclude_unidentified_from_speaker_charts": true,
   "allow_unnamed_speakers": false,
+  "treat_as_single_speaker": false,
   "corrections": {
     "enabled": true,
     "interactive_review": true,

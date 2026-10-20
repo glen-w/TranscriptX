@@ -566,6 +566,7 @@ ANALYSIS_PARTIAL: list[dict[str, Any]] = [
         "model_class": "AnalysisSpeakersSettingsModel",
         "fields": [
             "allow_unnamed_speakers",
+            "treat_as_single_speaker",
         ],
     },
     {

@@ -19,6 +19,8 @@ class TranscriptionTool(str, Enum):
     WHISPERMLX_MISSING = "whispermlx_missing"
     WHISPERX_DOCKER = "whisperx_docker"
     WHISPER_WEBUI_DOCKER = "whisper_webui_docker"
+    NEMO_PARAKEET_DOCKER = "nemo_parakeet_docker"
+    NEMO_CANARY_DOCKER = "nemo_canary_docker"
 
 
 # Common Whisper / whispermlx / WhisperX model ids for the command generator.
@@ -325,6 +327,65 @@ docker run --rm \\
     )
 
 
+_DEFAULT_NEMO_IMAGE = "nvcr.io/nvidia/nemo:24.07.1"
+_PARAKEET_MODEL_DEFAULT = "nvidia/parakeet-tdt-0.6b-v3"
+_CANARY_MODEL_DEFAULT = "nvidia/canary-1b"
+
+
+def build_nemo_parakeet_docker(params: CommandGenParams) -> GeneratedCommand:
+    return _build_nemo_asr_docker(
+        params,
+        title="NeMo Parakeet Docker (Theme K)",
+        model_hint=_PARAKEET_MODEL_DEFAULT,
+    )
+
+
+def build_nemo_canary_docker(params: CommandGenParams) -> GeneratedCommand:
+    return _build_nemo_asr_docker(
+        params,
+        title="NeMo Canary Docker (Theme K)",
+        model_hint=_CANARY_MODEL_DEFAULT,
+    )
+
+
+def _build_nemo_asr_docker(
+    params: CommandGenParams, *, title: str, model_hint: str
+) -> GeneratedCommand:
+    audio_mount = _strip_trailing_separators(params.input_path)
+    out_mount = _strip_trailing_separators(params.output_dir)
+    image = params.docker_image.strip() or _DEFAULT_NEMO_IMAGE
+    model = params.model.strip() or model_hint
+    shell = f"""# {title} — Linux CUDA host (not macOS Run-in-app).
+# On macOS prefer whispermlx; use this Copy command on a CUDA machine only.
+# 1) Run NeMo transcription into JSONL (customize inner command per recipe).
+# 2) Convert to WhisperX-shaped JSON for Import Transcript.
+
+mkdir -p {_q(out_mount)}
+
+docker run --rm --gpus all \\
+  -v {_q(audio_mount)}:/audio:ro \\
+  -v {_q(out_mount)}:/output \\
+  {_q(image)} \\
+  bash -lc 'echo "Replace with NeMo transcribe for model {model}; see docs/recipes/parakeet/" && exit 1'
+
+# After NeMo writes hypotheses.jsonl under the output mount:
+python3 -m transcriptx.services.transcription.nemo_json_to_whisperx \\
+  --input {_q(out_mount)}/hypotheses.jsonl \\
+  --output {_q(out_mount)}/$(basename "{audio_mount}").json
+"""
+    notes = (
+        "Theme K only — not Run-in-app until Wave 4 provider is configured on host.",
+        "Full recipe: docs/recipes/parakeet/README.md",
+        "CC-BY-4.0 NeMo weights; user-triggered download on first run.",
+        "Expected output: WhisperX-shaped JSON for Import Transcript.",
+    )
+    return GeneratedCommand(
+        title=title,
+        shell=shell.strip() + "\n",
+        notes=notes,
+    )
+
+
 def build_whisper_webui_docker(params: CommandGenParams) -> GeneratedCommand:
     """Deploy jhj0517/Whisper-WebUI (Gradio) via Docker — copyable only."""
     out_mount = _strip_trailing_separators(params.output_dir) or "./outputs"
@@ -398,10 +459,18 @@ def generate_transcription_command(params: CommandGenParams) -> GeneratedCommand
         generated = build_whisperx_docker(params)
     elif params.tool is TranscriptionTool.WHISPER_WEBUI_DOCKER:
         generated = build_whisper_webui_docker(params)
+    elif params.tool is TranscriptionTool.NEMO_PARAKEET_DOCKER:
+        generated = build_nemo_parakeet_docker(params)
+    elif params.tool is TranscriptionTool.NEMO_CANARY_DOCKER:
+        generated = build_nemo_canary_docker(params)
     else:
         raise ValueError(f"Unknown transcription tool: {params.tool!r}")
     extra_notes = (_POSIX_PASTE_NOTE,)
-    if params.tool is TranscriptionTool.WHISPERX_DOCKER:
+    if params.tool in (
+        TranscriptionTool.WHISPERX_DOCKER,
+        TranscriptionTool.NEMO_PARAKEET_DOCKER,
+        TranscriptionTool.NEMO_CANARY_DOCKER,
+    ):
         extra_notes = extra_notes + (_WINDOWS_MOUNT_NOTE,)
     return GeneratedCommand(
         title=generated.title,
@@ -448,10 +517,18 @@ def generate_transcription_command_powershell(
         generated = _build_whisperx_docker_powershell(params)
     elif params.tool is TranscriptionTool.WHISPER_WEBUI_DOCKER:
         generated = _build_whisper_webui_powershell(params)
+    elif params.tool is TranscriptionTool.NEMO_PARAKEET_DOCKER:
+        generated = build_nemo_parakeet_docker(params)
+    elif params.tool is TranscriptionTool.NEMO_CANARY_DOCKER:
+        generated = build_nemo_canary_docker(params)
     else:
         raise ValueError(f"Unknown transcription tool: {params.tool!r}")
     notes = generated.notes + (_POWERSHELL_PASTE_NOTE,)
-    if params.tool is TranscriptionTool.WHISPERX_DOCKER:
+    if params.tool in (
+        TranscriptionTool.WHISPERX_DOCKER,
+        TranscriptionTool.NEMO_PARAKEET_DOCKER,
+        TranscriptionTool.NEMO_CANARY_DOCKER,
+    ):
         notes = notes + (_WINDOWS_MOUNT_NOTE,)
     return GeneratedCommand(
         title=generated.title + " (PowerShell)",

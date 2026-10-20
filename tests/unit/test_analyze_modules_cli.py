@@ -113,3 +113,41 @@ def test_analyze_modules_runs_analysis(monkeypatch, tmp_path: Path) -> None:
     assert len(called) == 1
     assert called[0].modules == ["transcript_output", "llm_summary"]
     assert called[0].allow_unnamed_speakers is True
+
+
+@pytest.mark.unit
+def test_analyze_modules_passes_treat_as_single_speaker(
+    monkeypatch, tmp_path: Path
+) -> None:
+    from transcriptx import analyze_modules as mod
+
+    path = tmp_path / "t.json"
+    path.write_text("{}", encoding="utf-8")
+    called: list = []
+
+    monkeypatch.setattr(
+        mod,
+        "_discover_targets",
+        lambda *, modules, force: [(path, ["stats"])],
+    )
+    monkeypatch.setattr("transcriptx._bootstrap.bootstrap", lambda: None)
+
+    def fake_run(request):
+        called.append(request)
+        return SimpleNamespace(
+            success=True,
+            status="completed",
+            run_dir=tmp_path / "run",
+            warnings=[],
+            errors=[],
+        )
+
+    import transcriptx.app.workflows.analysis as analysis_mod
+
+    monkeypatch.setattr(analysis_mod, "run_analysis", fake_run)
+    rc = mod.main(
+        ["--modules", "stats", "--treat-as-single-speaker", "--max", "1"]
+    )
+    assert rc == 0
+    assert len(called) == 1
+    assert called[0].treat_as_single_speaker is True

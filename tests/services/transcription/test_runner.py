@@ -127,7 +127,7 @@ def test_drain_queued_watcher_jobs_submits(tmp_path: Path, monkeypatch) -> None:
         store = wstore
 
     monkeypatch.setattr(
-        "transcriptx.services.transcription.registry.any_provider_available",
+        "transcriptx.services.transcription.runner.any_provider_available",
         lambda: True,
     )
     monkeypatch.setattr(

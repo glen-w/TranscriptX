@@ -320,14 +320,14 @@ def execute_single_module(
             except Exception:
                 flags = {}
             allow_unnamed = bool(flags.get("allow_unnamed_speakers"))
-            turn_taking_count = (
-                gating_turn_taking_speaker_count(context) if allow_unnamed else None
-            )
+            treat_single = bool(flags.get("treat_as_single_speaker"))
+            turn_taking_count = gating_turn_taking_speaker_count(context)
             reason_text = speaker_gate_skip_reason(
                 module_info,
                 named_speaker_count=named_speaker_count,
                 turn_taking_speaker_count=turn_taking_count,
                 allow_unnamed_speakers=allow_unnamed,
+                treat_as_single_speaker=treat_single,
             )
             if reason_text:
                 return ModuleExecOutcome(status="skipped", skip_reason=reason_text)

@@ -15,3 +15,11 @@ class AnalysisSpeakersSettingsModel(BaseModel):
             "as eligible speakers instead of skipping until human names exist."
         ),
     )
+    treat_as_single_speaker: bool = Field(
+        default=False,
+        description=(
+            "When True, a single turn-taking speaker (e.g. import-minted SPEAKER_00) "
+            "counts for modules that need at least one speaker without enabling full "
+            "unnamed-speaker mode for multi-speaker meetings."
+        ),
+    )

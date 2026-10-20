@@ -29,6 +29,57 @@ This is **owner machine hygiene**, not a 1.0 product feature. Layout contracts: 
 
 ---
 
+## Next (post-Now): Undiarized resilience + ASR plug-in ladder
+
+**Priority:** First product work after Now — ahead of registering any new Theme **H** provider.
+Research basis: [Open source ASR for TranscriptX](../reports/Open%20source%20ASR%20for%20TranscriptX.md) (2026-10). **Implementation plan (waves 1–4):** [.cursor/plans/2026-10-20-undiarized-asr-waves.md](../.cursor/plans/2026-10-20-undiarized-asr-waves.md). Keeps H1–H4 Whisper Run-in-app and Theme **K** command-gen as the shipped STT surface. Do **not** register a third `TranscriptionProvider` until the Whisper path is boring and a Parakeet admit converter has golden fixtures.
+
+**Why this is next:** Industry pipelines treat plain SRT/VTT/Whisper-without-`--diarize` as first-class content. TranscriptX already ungates **diarized-but-unnamed** labels (`allow_unnamed_speakers`) and filters monologue overview charts, but speakerless imports still hard-block most modules. Softening that edge is higher leverage than adding another ASR engine. Open engines that matter for later: NVIDIA **Parakeet/Canary** (Theme K → H5), FunASR/SenseVoice and Distil-Whisper (BYO/Copy), Xiaomi **CocktailASR-1** (watchlist — enrolled focus-speaker only, not a WhisperX replacement; see [CocktailASR article](https://aiinnovatortech.com/latest-ai-news/xiaomi-cocktailasr-1-speech-recognition) and primary [xiaomi-research/xiaomi-cocktailasr-1](https://github.com/xiaomi-research/xiaomi-cocktailasr-1)).
+
+### Capability ladder (speaker tiers)
+
+| Tier | Signal | Runs | Skips / honesty | Status |
+|------|--------|------|-----------------|--------|
+| **T0 Undiarized** | No speaker field / all `None` | Global content: topics, wordclouds, readability, global sentiment, `llm_summary`, transcript_quality, exports | Interaction + per-speaker; Overview banner “No speaker labels” | **Next** — loosen `SPEAKER_LABELS` on content modules; never crash |
+| **T1 Synthetic monologue** | User opts “Treat as single speaker” | Modules needing ≥1 speaker; per-speaker = whole-file | `requires_multiple_speakers` | **Next** — opt-in only; never invent without consent |
+| **T2 Diarized unnamed** | `SPEAKER_00`… + `allow_unnamed_speakers` | Interaction + per-speaker under anonymous IDs | Named-only UX may stay limited | **Shipped** |
+| **T3 Named speakers** | Human names via Speaker ID | Full Balanced/Thorough; profiles | None for speaker reasons | **Default policy** (keep) |
+
+**Policy vs resilience:** default product policy stays **T3** for meaningful Balanced runs. Pipeline resilience must admit **T0**, skip with stable reasons, and offer **T1** plus Theme **H** re-STT with `--diarize` to climb to **T2**. Never invent **T2** labels without audio evidence.
+
+### Provider / command-gen tiers
+
+| Tier | Engines | Action |
+|------|---------|--------|
+| **1 — Host providers (H)** | whispermlx (Mac), WhisperX Docker (CUDA/CPU) | Harden only until boring |
+| **2 — Theme K → H5** | NeMo Parakeet TDT, Canary (± Canary-Qwen); optional faster-whisper / whisper.cpp / sherpa-onnx | Copyable `docker run` + **WhisperX-shaped JSON converter** into `originals/`; Import remains the gate; promote to registered provider only after H5 entry criteria |
+| **3 — BYO / Copy recipes** | Whisper-WebUI, FunASR/SenseVoice, Distil-Whisper, Vosk, Scriberr / noScribe / aTrain | Document export → Import; adapters only if recurring shapes fail |
+| **Watchlist** | CocktailASR-1 (focus-speaker / enrollment), HTTP STT sidecar, YouTube URL ingest (H5+), H6 streaming, DiCoW | Research / later; not Whisper replacements |
+| **Reject** | In-process NeMo/Whisper in the analysis image; silent cloud STT; SeamlessM4T/MMS as commercial defaults (CC-BY-NC); DeepSpeech; Kaldi-as-product; meeting bots | Architecture / license / wrong job |
+
+**CocktailASR-1 stance:** optional enrolled **focus-speaker** path only (reference clip → target-only text; empty output on negatives). Not multi-speaker diarized JSON. Needs enrollment UX, empty-output handling, and timing adapters before any provider work. ~35 GB CUDA SpeechLLM; pin hashes / local mirror if ever enabled.
+
+### Decision forks (locked)
+
+1. **Narrow Whisper Run-in-app** until H5 — no third provider for novelty.
+2. **Engines outside the analysis image** — Docker/host CLI only; Compose analysis never mounts STT.
+3. **No silent cloud STT** — BYO import or explicit opt-in only.
+4. **Theme K before H5 registry** — Parakeet/Canary converter + trust-matrix row + Mac honesty (“use whispermlx”) gate H5.
+5. **Diarization optional** — content-first T0; Speakers-required is policy, not a crash.
+6. **CocktailASR ≠ Whisper** — focus-speaker plugin or watchlist; never primary meeting ASR.
+
+### Concrete next slices
+
+- [x] **T0** content-only path + Overview honesty for speakerless SRT/VTT / Whisper-without-diarize
+- [x] **T1** “Treat as single speaker” opt-in (import or Run Analysis)
+- [x] **Theme K:** Parakeet (then Canary) command-gen + JSONL → `{segments:[{start,end,text,speaker?}]}` converter + golden fixtures
+- [x] **H5 entry:** converter + CUDA Docker recipe + trust/NOTICE row; optional registered `parakeet_docker` provider (stub mode for dev/CI)
+- [ ] Defer CocktailASR / streaming / HTTP sidecar until the slices above land
+
+Cross-links: Theme **H** (in-app providers), Theme **K** (command generation), [transcription.md](runtime/transcription.md), [settings.md](runtime/settings.md) (`allow_unnamed_speakers`), [comparison.md](comparison.md).
+
+---
+
 ## Current state
 
 - Streamlit GUI + typed Python API; managed import; file-backed storage/sidecars
@@ -59,6 +110,7 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Overview / results presentation | Retire Insights Analysis tab; redistribute into Summary / Speakers / Actions / Highlights — [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | **0.9.9** (Charts/Overview hierarchy residuals deferred) |
 | Post-0.9.9 wave (interim) | Early 1.x A–D + operator UX — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md) | **0.9.9.5** |
 | **Owner local folder cleanup** | Unambiguous library / `originals/` / inbox / recordings mounts — see **Now** above | **now (top priority)** |
+| **Undiarized resilience + ASR ladder** | T0/T1 speaker tiers; Parakeet Theme K→H5; CocktailASR watchlist — see **Next** above | **next (post-Now)** |
 | Informal stranger test | Tried by someone who had not used the app | **done** (2026-10); not a release gate |
 
 **Module freeze:** no new analysis modules in 0.9.x unless required to complete or repair the 1.0 journey. Backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
@@ -97,10 +149,10 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
 | F. Library & organisation | Transcript tagging; Groups interaction rules; optional YouTube API rename metadata | Mid 1.x |
 | G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** narrow Windows convert/admit + pluggable STT shipped; service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
-| H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Parakeet/Canary/YouTube later; streaming STT (H6) deferred | **[~] H1–H4 shipped**; H5+ / H6 deferred |
+| H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Parakeet/Canary/YouTube later; streaming STT (H6) deferred | **[~] H1–H4 shipped**; H5+ gated by **Next** (Theme K converter first) |
 | I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Deferred except H1 job channel |
 | J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 — deferred vs STT |
-| K. External STT command generation | Broader copyable host CLIs until / beside theme H | **[~] PowerShell builder shipped** |
+| K. External STT command generation | Broader copyable host CLIs until / beside theme H; Parakeet/Canary converter is the next K slice | **[~] PowerShell builder shipped**; Parakeet CLI in **Next** |
 | L. Polish & onboarding extras | Coach-marks, bundled demos, aesthetics — only if capacity | Anytime light |
 | M. Research / citeable methods | Optional B4-style methods; multilingual beyond small subset | Later 1.x+ |
 | N. Multi-provider LLM (opt-in) | OpenAI-compatible / LiteLLM gateway beyond Ollama; never silent cloud default | Mid–late 1.x |
@@ -281,14 +333,15 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 | **H2** WhisperX Docker provider | **[x]** registered; CUDA `--gpus all` or CPU |
 | **H3** Watcher `auto_transcribe` + queued drain | **[x]** when a provider is available |
 | **H4** Docs / install honesty | **[x]** this page + [transcription.md](runtime/transcription.md) + [stt-stacks](recipes/stt-stacks/README.md) |
-| **H5+** NVIDIA Parakeet/Canary, YouTube URL ingest (download/transcribe), HTTP STT sidecar | **[ ] deferred** until the Whisper path is boring (rename metadata via YouTube API is theme **F**, not H5) |
+| **H5+** NVIDIA Parakeet/Canary, YouTube URL ingest (download/transcribe), HTTP STT sidecar | **[ ] deferred** — enter only after **Next** Theme K converter + Whisper path boring (YouTube *rename* metadata is theme **F**, not H5) |
 | **H6** Real-time / streaming STT (WebSocket sessions, turn detection, partials) | **[ ] deferred** — live captions, in-session notes, voice-agent upstream; not batch file jobs (H1–H4). Design reference: [AssemblyAI — Real-time transcription in Python (Universal-3.6 Pro Realtime)](https://www.assemblyai.com/blog/real-time-transcription-python). **Opt-in cloud only** (explicit API key; document audio leaving the machine); local batch STT remains the default path. Partial text UX may overlap theme **D** if we ever surface streaming in the reader. |
+| **Watchlist** CocktailASR-1 / DiCoW | **[ ]** enrolled focus-speaker or diarization-conditioned Whisper peers — see **Next**; not Balanced meeting defaults |
 
-**Architecture (locked):** host-orchestrated providers (fork #2, narrow). No silent cloud STT. Apple MLX stays host/binary; CUDA via WhisperX Docker.
+**Architecture (locked):** host-orchestrated providers (fork #2, narrow). No silent cloud STT. Apple MLX stays host/binary; CUDA via WhisperX Docker (NeMo Docker only after H5 entry). Undiarized resilience (T0/T1) is owned by **Next**, not by shipping more engines.
 
 **Job UX:** queue/progress/cancel/retry via the file-backed job store (not Streamlit `session_state` alone). This is the Theme **I** durable channel; loopback API / PWA / SPA stay deferred.
 
-**Decision fork:** **Narrow** (Whisper-only host orchestration). Invest in Parakeet/Canary later. Do not half-ship a silent cloud STT.
+**Decision fork:** **Narrow** (Whisper-only host orchestration until H5). Climb Parakeet/Canary via Theme **K** converter first (see **Next**). Do not half-ship a silent cloud STT. Do not treat CocktailASR as a WhisperX replacement.
 
 **Non-goals for this theme:** meeting bots that auto-join Zoom/Meet; becoming a chat-over-audio product; replacing the analysis module DAG; in-process NeMo in the analysis image.
 
@@ -343,6 +396,8 @@ Until/beside theme **H**, keep improving **copyable host commands** on Transcrib
 **Windows / PowerShell snippets:** Transcribe Audio can emit a **PowerShell** snippet (Theme **K**) as well as POSIX. Theme **G3** already owns POSIX path honesty (`.MP3`, trailing `\`) and `inbox-watch --transcribe` / `--transcribe-cmd`.
 
 **Saved presets:** Transcribe Audio can save/load/delete command-gen form presets under `.transcriptx/profiles/stt_commands/` (host paths and flags only — never `HF_TOKEN`; tokens stay in `whisperx.env`).
+
+**Next K slice (see Next above):** NeMo **Parakeet** (then **Canary**) copyable `docker run` plus a WhisperX-shaped JSON converter into `originals/` with golden fixtures — the admit path that gates Theme **H5**. Optional faster-whisper / whisper.cpp / sherpa-onnx commands stay documentation-grade unless they share that converter. FunASR/SenseVoice and CocktailASR stay BYO/watchlist, not first-class K presets.
 
 ---
 

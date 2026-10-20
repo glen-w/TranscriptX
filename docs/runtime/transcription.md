@@ -60,7 +60,16 @@ Naming such as `*_transcriptx.json` matches project conventions, but **naming al
 These stay outside the analysis image. **Run in app** orchestrates `docker run` / `whispermlx` from the Streamlit process when those binaries are visible. **Copy command** still never executes the snippet.
 
 - **WhisperX** — Transcribe Audio → **Run in app** (WhisperX Docker) or **Copy command** → **WhisperX Docker**. Full recipe: [docs/recipes/whisperx/](../recipes/whisperx/README.md).
+- **NeMo Parakeet / Canary** — Transcribe Audio → **Copy command** → NeMo presets (Theme K), or **Run in app** → NeMo Parakeet Docker when configured (`parakeet_docker`). Convert JSONL with `nemo_json_to_whisperx`, then Import. Recipe: [docs/recipes/parakeet/](../recipes/parakeet/README.md). CUDA Linux host only; on macOS prefer whispermlx.
 - **Whisper-WebUI** — Gradio UI; hand-off is **SRT/VTT → Import Transcript**. Full recipe (including Apple Silicon notes): [docs/recipes/whisper-webui/README.md](../recipes/whisper-webui/README.md). On Apple Silicon the container is expected to use **CPU** inference; prefer host **whispermlx** when Metal/MLX speed matters.
+
+## When Whisper is noisy or speech overlaps
+
+| Situation | Suggested path |
+|-----------|----------------|
+| **Multi-speaker meeting**, everyone should appear in the transcript | Re-transcribe with **WhisperX** and enable **diarization** (`--diarize` in Copy command or provider options). Recipe: [WhisperX](../recipes/whisperx/README.md). |
+| **One enrolled voice** in a loud room (cocktail party, TV in background) | BYO **[CocktailASR-1](https://github.com/xiaomi-research/xiaomi-cocktailasr-1)** (Apache-2.0, large CUDA SpeechLLM): short **reference clip** of the target speaker, then mixture audio → **one** transcript stream (or empty if that voice is absent). Not Run-in-app; not multi-speaker diarized JSON. You still need timed text for import (segment the output or use a WhisperX-shaped adapter). Research: [Open source ASR for TranscriptX](../../reports/Open%20source%20ASR%20for%20TranscriptX.md); product stance: [ROADMAP](../ROADMAP.md) § Next. |
+| **Plain captions** (YouTube, Whisper without diarize, SRT/VTT) | Import as usual — unlabeled turns become `SPEAKER_00` on admit. Content-oriented analysis can run without naming speakers (T0). For a **single** diarized speaker, check **Treat as single speaker** on Run Analysis (T1). Multi-speaker interaction charts need names, diarized labels via **Allow analysis without named speakers** (T2), or re-transcribe with diarization — see [settings.md](settings.md). |
 
 ## Import a whole folder
 
@@ -87,7 +96,7 @@ Transcription runs on the **host** (whispermlx binary, WhisperX Docker, or Whisp
 
 The recommended install runs analysis in a **Linux** container. **whispermlx** must run on the **macOS host** (Metal/MLX); it cannot run inside that container. Keeping engines out of the analysis image avoids bloating it. Stacks, shared folders, and when **Run in app** works: [STT stacks](../recipes/stt-stacks/README.md).
 
-**Theme H:** optional in-app / host-orchestrated transcription is shipped for Whisper-class providers — [ROADMAP.md](../ROADMAP.md) theme **H**. NVIDIA Parakeet/Canary and YouTube ingest are later. In-app directory watch for audio auto-transcribe is theme **G2** + **H3** — [directory_watcher.md](directory_watcher.md).
+**Theme H:** optional in-app / host-orchestrated transcription is shipped for Whisper-class providers (`whispermlx`, `whisperx_docker`) and optional **`parakeet_docker`** (CUDA NeMo Parakeet — configure per [recipes/parakeet](../recipes/parakeet/README.md); dev stub via `TRANSCRIPTX_PARAKEET_STUB=1`) — [ROADMAP.md](../ROADMAP.md) theme **H**. **Theme K** Copy commands for NeMo Parakeet/Canary share the same JSONL → WhisperX converter. YouTube ingest is later. In-app directory watch for audio auto-transcribe is theme **G2** + **H3** — [directory_watcher.md](directory_watcher.md).
 
 ## Advanced
 

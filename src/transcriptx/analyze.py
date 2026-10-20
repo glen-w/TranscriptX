@@ -56,6 +56,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Allow analysis when speakers are still diarized labels.",
     )
     parser.add_argument(
+        "--treat-as-single-speaker",
+        action="store_true",
+        help="Treat a single diarized speaker as eligible (monologue opt-in).",
+    )
+    parser.add_argument(
         "--include-unidentified-speakers",
         action="store_true",
         help="Include unidentified speakers in speaker-scoped modules.",
@@ -91,6 +96,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             analysis_preset=args.analysis_preset,
             modules=modules,
             allow_unnamed_speakers=bool(args.allow_unnamed_speakers),
+            treat_as_single_speaker=bool(args.treat_as_single_speaker),
             include_unidentified_speakers=bool(args.include_unidentified_speakers),
         )
     )

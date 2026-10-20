@@ -231,6 +231,7 @@ def test_analyze_cli_calls_run_analysis(monkeypatch, tmp_path: Path) -> None:
         analysis_preset="balanced",
         modules="stats",
         allow_unnamed_speakers=True,
+        treat_as_single_speaker=False,
         include_unidentified_speakers=False,
     ))
     monkeypatch.setattr("transcriptx._bootstrap.bootstrap", lambda: None)

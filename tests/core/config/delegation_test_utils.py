@@ -43,9 +43,9 @@ def assert_ownership_invariant_unchanged() -> None:
     pilot_keys = all_pydantic_field_dotpaths()
     baseline = serialize_non_pydantic_registry_baseline(reg)
     assert len(PYDANTIC_REGISTRY_PILOTS) == 55
-    assert len(pilot_keys) == 737
+    assert len(pilot_keys) == 738
     assert len(baseline) == 16
-    assert len(reg) == 753
+    assert len(reg) == 754
 
 
 def normalize_for_parity(obj: Any) -> Any:

@@ -55,6 +55,8 @@ _TOOL_LABELS = {
     TranscriptionTool.WHISPERMLX_MISSING: "whispermlx-missing (skip existing JSON)",
     TranscriptionTool.WHISPERX_DOCKER: "WhisperX Docker (external recipe)",
     TranscriptionTool.WHISPER_WEBUI_DOCKER: "Whisper-WebUI Docker (Gradio)",
+    TranscriptionTool.NEMO_PARAKEET_DOCKER: "NeMo Parakeet Docker (Theme K, CUDA Linux)",
+    TranscriptionTool.NEMO_CANARY_DOCKER: "NeMo Canary Docker (Theme K, CUDA Linux)",
 }
 
 _DEFAULT_WEBUI_IMAGE = "jhj0517/whisper-webui:v1.0.8-4def223"
@@ -203,6 +205,27 @@ def _render_run_in_app(default_input: str) -> None:
             value=_DEFAULT_WHISPERX_IMAGE,
             key="tx_run_image",
         )
+    if provider_id == "parakeet_docker":
+        device = st.selectbox(
+            "Device",
+            options=["cpu", "cuda"],
+            index=1,
+            key="tx_run_parakeet_device",
+            help=widget_help(
+                "cuda adds --gpus all. Parakeet is intended for CUDA Linux hosts."
+            ),
+        )
+        docker_image = st.text_input(
+            "NeMo Docker image",
+            value="nvcr.io/nvidia/nemo:24.07.1",
+            key="tx_run_parakeet_image",
+            help=widget_help("Pinned NeMo image; see docs/recipes/parakeet/."),
+        )
+        model = st.text_input(
+            "Parakeet model id",
+            value="nvidia/parakeet-tdt-0.6b-v3",
+            key="tx_run_parakeet_model",
+        )
 
     options = TranscriptionOptions(
         provider_id=provider_id,
@@ -214,7 +237,12 @@ def _render_run_in_app(default_input: str) -> None:
         batch_size=batch_size,
         min_speakers=min_speakers,
         max_speakers=max_speakers,
-        docker_image=docker_image.strip() or _DEFAULT_WHISPERX_IMAGE,
+        docker_image=docker_image.strip()
+        or (
+            "nvcr.io/nvidia/nemo:24.07.1"
+            if provider_id == "parakeet_docker"
+            else _DEFAULT_WHISPERX_IMAGE
+        ),
     )
     availability = get_provider(provider_id).is_available(options)
     if availability.available:
@@ -616,6 +644,28 @@ def render_transcribe_audio_page() -> None:
                 "PATH name or absolute path. Overridden by WHISPERMLX in the env file when set."
             ),
         )
+    if tool in (
+        TranscriptionTool.NEMO_PARAKEET_DOCKER,
+        TranscriptionTool.NEMO_CANARY_DOCKER,
+    ):
+        docker_image = st.text_input(
+            "NeMo Docker image",
+            value="nvcr.io/nvidia/nemo:24.07.1",
+            key="tx_cmdgen_nemo_image",
+            help=widget_help("Pinned NeMo image for CUDA host transcription."),
+        )
+        if tool is TranscriptionTool.NEMO_CANARY_DOCKER:
+            model = st.text_input(
+                "Canary model id",
+                value="nvidia/canary-1b",
+                key="tx_cmdgen_canary_model",
+            )
+        else:
+            model = st.text_input(
+                "Parakeet model id",
+                value="nvidia/parakeet-tdt-0.6b-v3",
+                key="tx_cmdgen_parakeet_model",
+            )
     if tool is TranscriptionTool.WHISPERX_DOCKER:
         device = st.selectbox(
             "Device",

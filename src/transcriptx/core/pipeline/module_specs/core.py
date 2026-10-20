@@ -26,6 +26,7 @@ def build_core_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
+            "min_named_speakers": 0,
         },
         "transcript_quality": {
             "description": "ASR Confidence",
@@ -34,6 +35,7 @@ def build_core_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS],
             "enhancements": [Enhancement.WORD_CONFIDENCE],
+            "min_named_speakers": 0,
         },
         "insight_eligibility": {
             "description": "Shared content-vs-style insight eligibility pipeline",
@@ -42,6 +44,7 @@ def build_core_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
+            "min_named_speakers": 0,
         },
         "temporal_dynamics": {
             "description": "Temporal Dynamics Analysis",
