@@ -1,0 +1,23 @@
+# Optional LiteLLM proxy sidecar. Not part of the TranscriptX analysis image.
+# Operators point llm.provider=openai_compatible at http://127.0.0.1:4000/v1.
+# Validate without pulling: docker compose -f docker-compose.litellm.yml config
+#
+# Pin the image tag/digest for production. TranscriptX does not vendor LiteLLM.
+
+name: transcriptx-litellm-recipe
+
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: transcriptx-litellm
+    ports:
+      # Localhost only — do not publish on 0.0.0.0 by default.
+      - "127.0.0.1:${LITELLM_PORT:-4000}:4000"
+    environment:
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-local}
+      - OPENAI_API_KEY=${LITELLM_UPSTREAM_API_KEY:-}
+      - ANTHROPIC_API_KEY=${LITELLM_UPSTREAM_ANTHROPIC_KEY:-}
+    volumes:
+      - ${LITELLM_CONFIG:-./litellm.config.yaml}:/app/config.yaml:ro
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--host", "0.0.0.0"]
+    restart: unless-stopped

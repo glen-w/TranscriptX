@@ -19,6 +19,7 @@ export TRANSCRIPTX_LLM_SEED=42
 # export TRANSCRIPTX_LLM_BASE_URL=http://127.0.0.1:4000/v1
 # export TRANSCRIPTX_LLM_MODEL=qwen2.5:7b
 # export TRANSCRIPTX_LLM_API_KEY=...   # or OPENAI_API_KEY; omit on local servers without auth
+# Optional LiteLLM proxy: docs/recipes/litellm/
 ```
 
 Or in `config.json`:
