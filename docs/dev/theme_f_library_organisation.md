@@ -1,6 +1,6 @@
 # Theme F — Library organisation
 
-Status: design locked for kind tags / Groups picker; pin/favourite deferred  
+Status: kind tags, Groups picker filter, and opt-in YouTube Data API rename shipped; pin/favourite deferred  
 Roadmap: [ROADMAP.md](../ROADMAP.md) §F
 
 ## Locked decisions
@@ -11,7 +11,7 @@ Roadmap: [ROADMAP.md](../ROADMAP.md) §F
 4. **Kind vocabulary (first-class chips):** `meeting`, `voice note`, `lone speaker`. Existing semantic tags (`idea`, `reflection`, `todo`, `question`) remain valid free-form tags.
 5. **Auto-seed is optional and manual-wins.** Suggested kind tags use `source=auto` only when the tag is not already present. Manual tags are never overwritten.
 6. **Visibility this wave is facets only.** Pin/favourite is deferred.
-7. **YouTube Data API rename** is a later Theme F slice (opt-in key). It is not required for tagging.
+7. **YouTube Data API rename** is opt-in via `TRANSCRIPTX_YOUTUBE_API_KEY` (title queries only). DuckDuckGo remains the no-key path. It is not required for tagging.
 
 ## Storage
 

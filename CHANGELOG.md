@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **B18 operator polish:** clearer `narrative_enabled` Settings copy and a Run Analysis hint when `insights_narrative` is selected.
 - **Theme F kind tags:** `voice note` / `lone speaker` kinds, Library inspector chips, and manual-wins auto-seed helpers. Tags still never create Groups.
 - **Theme F Groups picker:** optional library-tag AND-filter on create/edit membership. Filtering is not membership.
+- **Theme F YouTube rename:** optional YouTube Data API v3 lookup via `TRANSCRIPTX_YOUTUBE_API_KEY` (title queries only; DuckDuckGo remains the no-key path).
 
 ## [1.0.1] - 2026-10-20
 

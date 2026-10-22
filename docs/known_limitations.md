@@ -33,7 +33,7 @@ Optional Ollama / Local AI modules are stochastic. Re-runs can differ. Artifacts
 Optional assistive stems on **Rename Transcript** / import rename forms (`input.rename_content_suggestions=auto`). Default is **off**.
 
 - **Not authoritative:** Dates and titles are heuristics (transcript regex, optional local LLM, optional web snippet parse). Webinars without an explicit date in the file or dialogue may stay title-only or show a weak **file date** (import/mtime) — that is not the event date.
-- **Web lookup** (`input.rename_suggest_web`) is off by default, requires network, and runs for webinar/platform filenames, public-event dialogue, or long descriptive title stems. It sends short DuckDuckGo queries (YouTube-biased first, then general); not the transcript body and not the YouTube Data API.
+- **Web lookup** (`input.rename_suggest_web`) is off by default, requires network, and runs for webinar/platform filenames, public-event dialogue, or long descriptive title stems. It sends short title queries only (never the transcript body). With `TRANSCRIPTX_YOUTUBE_API_KEY` it uses YouTube Data API v3; otherwise DuckDuckGo HTML (YouTube-biased first, then general).
 - **LLM** uses consumer `rename_suggestions` and `rename_suggestions_effort`; thinking-family tags use `think: false` when advertised and may fall back to `llm.fallback_model` (same policy as other JSON consumers — see [llm.md](runtime/llm.md)).
 - Nothing renames until you submit **Rename**; import auto-apply still uses device-filename smart rename only.
 

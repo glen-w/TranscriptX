@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
-from transcriptx.core.utils.rename.suggestions.transcript_cues import looks_like_public_event
+from transcriptx.core.utils.rename.suggestions.transcript_cues import (
+    looks_like_public_event,
+)
 from transcriptx.core.utils.rename.suggestions.web import (
     build_web_query,
     build_youtube_web_query,
     fetch_web_cue,
     fetch_web_cue_from_title,
+    fetch_youtube_api_cue,
     parse_dates_from_html,
+    parse_youtube_published_at,
 )
 
 
@@ -19,7 +23,9 @@ def test_web_query_never_includes_transcript_secret() -> None:
     )
     assert "SECRET_PHRASE_XYZ" not in query
     assert len(query) <= 120
-    assert not looks_like_public_event("voice_memo.m4a", [{"text": "SECRET_PHRASE_XYZ"}])
+    assert not looks_like_public_event(
+        "voice_memo.m4a", [{"text": "SECRET_PHRASE_XYZ"}]
+    )
 
 
 def test_public_filename_adds_webinar_to_query() -> None:
@@ -37,6 +43,7 @@ def test_youtube_query_uses_site_operator() -> None:
 
 
 def test_fetch_web_cue_from_title_tries_youtube_then_general(monkeypatch) -> None:
+    monkeypatch.delenv("TRANSCRIPTX_YOUTUBE_API_KEY", raising=False)
     calls: list[str] = []
 
     class _Resp:
@@ -89,3 +96,95 @@ def test_fetch_web_cue_returns_none_on_http_error(monkeypatch) -> None:
         _get,
     )
     assert fetch_web_cue("acme webinar") is None
+
+
+def test_parse_youtube_published_at() -> None:
+    parsed = parse_youtube_published_at("2026-03-12T15:04:05Z")
+    assert parsed is not None
+    assert parsed.year == 2026
+    assert parsed.month == 3
+    assert parsed.day == 12
+
+
+def test_fetch_youtube_api_cue_uses_search_then_videos() -> None:
+    calls: list[str] = []
+
+    class _Resp:
+        def __init__(self, payload, status=200):
+            self.status_code = status
+            self._payload = payload
+
+        def json(self):
+            return self._payload
+
+    def _get(url, *, params=None, **_k):
+        calls.append(url)
+        if url.endswith("/search"):
+            assert "SECRET" not in str(params.get("q"))
+            return _Resp(
+                {
+                    "items": [
+                        {
+                            "id": {"videoId": "abc123"},
+                            "snippet": {"title": "Acme webinar"},
+                        }
+                    ]
+                }
+            )
+        return _Resp(
+            {
+                "items": [
+                    {
+                        "id": "abc123",
+                        "snippet": {
+                            "title": "Acme webinar",
+                            "publishedAt": "2026-03-12T15:04:05Z",
+                        },
+                    }
+                ]
+            }
+        )
+
+    cue = fetch_youtube_api_cue("Acme webinar", api_key="test-key", http_get=_get)
+    assert cue is not None
+    assert cue.event_date is not None
+    assert cue.event_date.day == 12
+    assert "YouTube Data API" in cue.detail
+    assert len(calls) == 2
+
+
+def test_fetch_web_cue_from_title_prefers_youtube_api(monkeypatch) -> None:
+    monkeypatch.setenv("TRANSCRIPTX_YOUTUBE_API_KEY", "k")
+
+    class _Cue:
+        event_date = None
+
+    def _api(query, *, api_key, timeout=8.0, **_k):
+        assert query == "Acme Launch"
+        assert api_key == "k"
+        from datetime import date
+
+        from transcriptx.core.utils.rename.suggestions.models import RawRenameCue
+
+        return RawRenameCue(
+            basis="web",
+            confidence="likely",
+            detail="YouTube Data API: Acme Launch",
+            event_date=date(2026, 3, 12),
+            title="Acme Launch",
+            _priority=2,
+        )
+
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.suggestions.web.fetch_youtube_api_cue",
+        _api,
+    )
+    ddg_calls: list[str] = []
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.suggestions.web.fetch_web_cue",
+        lambda q, **_k: ddg_calls.append(q) or None,
+    )
+    cue = fetch_web_cue_from_title(title="Acme Launch", filename="zoom.mp3")
+    assert cue is not None
+    assert "YouTube Data API" in cue.detail
+    assert ddg_calls == []
