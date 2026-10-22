@@ -5,6 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from transcriptx.web import icons as ic
+from transcriptx.services.transcription.honesty import AUTO_TRANSCRIBE_PROVIDER_LIST
 from transcriptx.services.watcher import (
     DirectoryWatcherSettings,
     get_watcher_service,
@@ -75,7 +76,7 @@ def render_watcher_panel() -> None:
             help=widget_help(
                 "offer: queue audio for Transcribe Audio. ignore: skip audio. "
                 "auto_transcribe: run an available host STT provider and import "
-                "the result (whispermlx or WhisperX Docker)."
+                f"the result ({AUTO_TRANSCRIBE_PROVIDER_LIST})."
             ),
         )
 

@@ -118,6 +118,8 @@ def test_validate_for_enable_requires_paths_and_gates_auto_transcribe(
     )
     errs2 = settings2.validate_for_enable()
     assert any("auto_transcribe" in e for e in errs2)
+    assert any("Parakeet" in e for e in errs2)
+    assert any("Compose" in e for e in errs2)
 
     monkeypatch.setattr(
         "transcriptx.services.transcription.registry.any_provider_available",

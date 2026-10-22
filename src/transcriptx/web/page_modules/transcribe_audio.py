@@ -24,6 +24,10 @@ from transcriptx.services.transcription.command_gen import (
     looks_like_container_install_path,
 )
 from transcriptx.services.transcription.env import default_conversion_options
+from transcriptx.services.transcription.honesty import (
+    RUN_IN_APP_CAPTION,
+    TRANSCRIBE_PAGE_INFO,
+)
 from transcriptx.services.transcription.job_store import TranscriptionJobState
 from transcriptx.services.transcription.registry import (
     any_provider_available,
@@ -115,12 +119,7 @@ def _poll_active_job() -> None:
 
 def _render_run_in_app(default_input: str) -> None:
     st.subheader("Run in app")
-    st.caption(
-        "Host-orchestrated STT: Streamlit calls a local provider (whispermlx on "
-        "macOS, or WhisperX Docker). Engines stay out of the analysis image. "
-        "whispermlx runs on the Mac host, not inside Compose. If no provider is "
-        "available here, use Copy command on the host. Stacks: docs/recipes/stt-stacks."
-    )
+    st.caption(RUN_IN_APP_CAPTION)
     providers = get_transcription_providers()
     labels = [p.info().label for p in providers]
     ids = [p.provider_id for p in providers]
@@ -428,12 +427,7 @@ def render_transcribe_audio_page() -> None:
         '<div class="main-header">Transcribe Audio</div>',
         unsafe_allow_html=True,
     )
-    st.info(
-        "Run transcription **in the app** when a host provider is available "
-        "(whispermlx on macOS, WhisperX Docker otherwise), or **copy a command** "
-        "and run it on the host. Results are admitted with **Import Transcript** "
-        "unless you enabled in-app import."
-    )
+    st.info(TRANSCRIBE_PAGE_INFO)
 
     _apply_pending_preset_load()
 

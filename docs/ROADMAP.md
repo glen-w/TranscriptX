@@ -332,7 +332,7 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 | **H1** Durable jobs + GUI Run path (whispermlx) | **[x]** `data_dir/transcription/jobs/` + Transcribe Audio **Run in app** |
 | **H2** WhisperX Docker provider | **[x]** registered; CUDA `--gpus all` or CPU |
 | **H3** Watcher `auto_transcribe` + queued drain | **[x]** when a provider is available |
-| **H4** Docs / install honesty | **[x]** this page + [transcription.md](runtime/transcription.md) + [stt-stacks](recipes/stt-stacks/README.md) |
+| **H4** Docs / install honesty | **[x]** this page + [transcription.md](runtime/transcription.md) + [stt-stacks](recipes/stt-stacks/README.md); Compose GUI cannot see host whispermlx; watcher `auto_transcribe` names Parakeet Docker |
 | **H5+** NVIDIA Parakeet/Canary, YouTube URL ingest (download/transcribe), HTTP STT sidecar | **[ ] deferred** — enter only after **Next** Theme K converter + Whisper path boring (YouTube *rename* metadata is theme **F**, not H5) |
 | **H6** Real-time / streaming STT (WebSocket sessions, turn detection, partials) | **[ ] deferred** — live captions, in-session notes, voice-agent upstream; not batch file jobs (H1–H4). Design reference: [AssemblyAI — Real-time transcription in Python (Universal-3.6 Pro Realtime)](https://www.assemblyai.com/blog/real-time-transcription-python). **Opt-in cloud only** (explicit API key; document audio leaving the machine); local batch STT remains the default path. Partial text UX may overlap theme **D** if we ever surface streaming in the reader. |
 | **Watchlist** CocktailASR-1 / DiCoW | **[ ]** enrolled focus-speaker or diarization-conditioned Whisper peers — see **Next**; not Balanced meeting defaults |

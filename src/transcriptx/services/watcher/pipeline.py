@@ -128,13 +128,14 @@ def process_watched_path(
             )
 
             if not any_provider_available():
+                from transcriptx.services.transcription.honesty import (
+                    AUTO_TRANSCRIBE_UNAVAILABLE,
+                )
+
                 return store.update(
                     job,
                     state=JobState.FAILED,
-                    detail=(
-                        "auto_transcribe requires an available host STT provider "
-                        "(whispermlx or WhisperX Docker)."
-                    ),
+                    detail=AUTO_TRANSCRIBE_UNAVAILABLE,
                 )
             store.update(
                 job,

@@ -94,10 +94,11 @@ class DirectoryWatcherSettings(BaseModel):
             )
 
             if not any_provider_available():
-                errors.append(
-                    "audio_mode=auto_transcribe requires an available host STT "
-                    "provider (whispermlx on macOS, or WhisperX Docker)."
+                from transcriptx.services.transcription.honesty import (
+                    AUTO_TRANSCRIBE_UNAVAILABLE,
                 )
+
+                errors.append("audio_mode=" + AUTO_TRANSCRIBE_UNAVAILABLE)
         return errors
 
 
