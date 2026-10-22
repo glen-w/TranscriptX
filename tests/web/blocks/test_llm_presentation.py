@@ -32,6 +32,42 @@ class TestProvenanceBadges:
     def test_provider_only(self) -> None:
         assert lp.provenance_badges({"provider": "ollama"}) == ["ollama"]
 
+
+@pytest.mark.unit
+class TestAiOutputBadgeHonesty:
+    def test_ollama_stays_local_ai(self) -> None:
+        assert lp.resolve_ai_output_badge({"provider": "ollama"}) == lp.AI_OUTPUT_BADGE
+        assert lp.llm_surface_badges({"model": "m", "provider": "ollama"}) == [
+            lp.AI_OUTPUT_BADGE,
+            "m",
+            "ollama",
+        ]
+
+    def test_remote_openai_compatible_is_not_local_ai(self) -> None:
+        badges = lp.llm_surface_badges(
+            {
+                "model": "gpt-4o-mini",
+                "provider": "openai_compatible",
+                "base_url": "https://api.example.com/v1",
+            }
+        )
+        assert badges[0] == lp.REMOTE_AI_OUTPUT_BADGE
+        assert "Local AI" not in badges
+        assert "left this machine" in lp.resolve_ai_output_caption(
+            {"provider": "openai_compatible", "base_url": "https://api.example.com/v1"}
+        )
+
+    def test_loopback_openai_compatible_is_plain_ai(self) -> None:
+        assert (
+            lp.resolve_ai_output_badge(
+                {
+                    "provider": "openai_compatible",
+                    "base_url": "http://127.0.0.1:4000/v1",
+                }
+            )
+            == lp.COMPATIBLE_AI_OUTPUT_BADGE
+        )
+
     def test_blank_values_are_skipped(self) -> None:
         assert (
             lp.provenance_badges(

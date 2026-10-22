@@ -9,6 +9,7 @@ from typing import Any, Dict, Tuple
 from transcriptx.core.corrections.memory import load_memory
 from transcriptx.core.store.corrections_session_store import session_path_for_transcript
 from transcriptx.core.utils.canonicalization import compute_transcript_identity_hash
+from transcriptx.core.llm.openai_compatible_client import is_live_llm_provider
 from transcriptx.core.utils.config import get_config
 from transcriptx.io import load_segments
 from transcriptx.io.speaker_map_resolver import SpeakerMapResolver, SpeakerMapState
@@ -225,7 +226,7 @@ def compute_live_manifest_and_hash(
         and getattr(corrections_llm, "enabled", False)
         and llm_cfg is not None
         and getattr(llm_cfg, "enabled", False)
-        and (getattr(llm_cfg, "provider", None) or "null").strip().lower() == "ollama"
+        and is_live_llm_provider(getattr(llm_cfg, "provider", None), enabled=True)
     ):
         model = str(getattr(llm_cfg, "model", "") or "")
         llm_fp = compute_llm_fingerprint(

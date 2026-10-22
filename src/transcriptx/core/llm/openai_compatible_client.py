@@ -251,3 +251,24 @@ def base_url_is_loopback(base_url: str) -> bool:
     except ValueError:
         return False
     return host in {"127.0.0.1", "localhost", "::1", "host.docker.internal"}
+
+
+LIVE_LLM_PROVIDERS = frozenset({"ollama", "openai_compatible"})
+
+
+def is_live_llm_provider(provider: str | None, *, enabled: bool = True) -> bool:
+    if not enabled:
+        return False
+    return (provider or "").strip().lower() in LIVE_LLM_PROVIDERS
+
+
+def remote_llm_privacy_caption(base_url: str | None) -> str | None:
+    """Caption when openai_compatible sends transcript text off-box. None if local."""
+    url = (base_url or "").strip()
+    if not url:
+        return (
+            "openai_compatible requires llm.base_url. There is no silent cloud default."
+        )
+    if base_url_is_loopback(url):
+        return None
+    return f"Remote LLM: transcript text is sent to {url}. This is not Local AI."

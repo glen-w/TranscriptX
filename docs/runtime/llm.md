@@ -19,6 +19,7 @@ export TRANSCRIPTX_LLM_SEED=42
 # export TRANSCRIPTX_LLM_BASE_URL=http://127.0.0.1:4000/v1
 # export TRANSCRIPTX_LLM_MODEL=qwen2.5:7b
 # export TRANSCRIPTX_LLM_API_KEY=...   # or OPENAI_API_KEY; omit on local servers without auth
+# Optional LiteLLM proxy: docs/recipes/litellm/
 ```
 
 Or in `config.json`:
@@ -44,7 +45,7 @@ Configure timeout via `llm.request_timeout` / `TRANSCRIPTX_LLM_REQUEST_TIMEOUT` 
 
 ## Run Analysis model selection
 
-On **Run Analysis** (Transcript, Group, and Batch), the **LLM setup** section appears only when the effective module list includes a live-LLM consumer (registry `requires_llm` modules that still need a live call), or when group analysis has `group_llm_synthesis` enabled. When `llm.enabled` and `provider=ollama`, that section shows the project-active Model preset and optional **Change for this run** overrides (shared model or per-module), including a **Model information** expander with installed-tag guidance. Non-LLM presets hide the section entirely so model overrides are not offered for irrelevant runs.
+On **Run Analysis** (Transcript, Group, and Batch), the **LLM setup** section appears only when the effective module list includes a live-LLM consumer (registry `requires_llm` modules that still need a live call), or when group analysis has `group_llm_synthesis` enabled. When `llm.enabled` and `provider=ollama`, that section shows the project-active Model preset and optional **Change for this run** overrides (shared model or per-module), including a **Model information** expander with installed-tag guidance. When `provider=openai_compatible`, it shows a free-form model id (no `/api/tags` picker) and a privacy warning if `llm.base_url` is not loopback. Non-LLM presets hide the section entirely so model overrides are not offered for irrelevant runs. Default provider remains `ollama` or `null` — cloud is never silent-enabled.
 
 **Settings → Models** owns management actions:
 

@@ -66,7 +66,9 @@ _BASIS_RANK = {
 }
 
 
-def _empty_result(path: Path, pattern: str, status: str = "") -> RenameSuggestionsResult:
+def _empty_result(
+    path: Path, pattern: str, status: str = ""
+) -> RenameSuggestionsResult:
     return RenameSuggestionsResult(
         transcript_path=str(path),
         transcript_fingerprint="",
@@ -161,7 +163,9 @@ def _effective_suggest_llm(input_cfg: Any, *, on_demand: bool) -> bool:
         return False
     config = get_config()
     llm_cfg = config.llm
-    if not llm_cfg.enabled or (llm_cfg.provider or "").strip().lower() != "ollama":
+    from transcriptx.core.llm.openai_compatible_client import is_live_llm_provider
+
+    if not is_live_llm_provider(llm_cfg.provider, enabled=bool(llm_cfg.enabled)):
         return False
     try:
         from transcriptx.core.analysis.llm_support.model_selection import (
@@ -269,9 +273,7 @@ def _maybe_llm_cues(
         detail = llm_error if len(llm_error) <= 160 else llm_error[:157] + "..."
         status = f"LLM `{producing}` failed ({detail}); showing other cues."
     else:
-        status = (
-            f"LLM `{producing}` could not suggest metadata; showing other cues."
-        )
+        status = f"LLM `{producing}` could not suggest metadata; showing other cues."
     return cues, status, producing, source
 
 
@@ -342,7 +344,9 @@ def suggest_rename_stems(
                 resolve_module_llm_model,
             )
 
-            llm_model_tag = resolve_module_llm_model(config.llm, RENAME_SUGGESTIONS_CONSUMER_ID).model
+            llm_model_tag = resolve_module_llm_model(
+                config.llm, RENAME_SUGGESTIONS_CONSUMER_ID
+            ).model
         except Exception:
             llm_model_tag = "llm-unresolved"
 

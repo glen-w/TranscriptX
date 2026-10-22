@@ -516,12 +516,26 @@ def launch_gate_reasons(
     if not selection_needs_live_llm(selected_modules, include_group=include_group):
         return reasons
 
-    if not llm_enabled or (provider or "").strip().lower() != "ollama":
+    provider_n = (provider or "").strip().lower()
+    from transcriptx.core.llm.openai_compatible_client import is_live_llm_provider
+
+    if not is_live_llm_provider(provider_n, enabled=llm_enabled):
         reasons.append(
-            "LLM modules are selected but LLM is disabled or provider is not Ollama. "
-            "Enable Ollama under Settings → Configuration; manage models under "
-            "Settings → Models."
+            "LLM modules are selected but LLM is disabled or the provider is not "
+            "Ollama / openai_compatible. Enable LLM under Settings → Configuration; "
+            "manage models under Settings → Models."
         )
+        return reasons
+    if provider_n == "openai_compatible":
+        sel = selection.normalized()
+        has_model = bool((sel.shared_model or "").strip()) or any(
+            str(v).strip() for v in (sel.module_models or {}).values()
+        )
+        if not has_model:
+            reasons.append(
+                "Enter a model id for the OpenAI-compatible endpoint "
+                "(Settings → Models or the field below)."
+            )
         return reasons
 
     if list_error:
@@ -837,10 +851,16 @@ def render_compact_llm_setup(
     st.markdown("#### LLM setup")
     st.caption(f"Project default · `{summary}`")
 
-    if not llm.enabled or provider != "ollama":
+    from transcriptx.core.llm.openai_compatible_client import (
+        is_live_llm_provider,
+        remote_llm_privacy_caption,
+    )
+
+    if not is_live_llm_provider(provider, enabled=bool(llm.enabled)):
         st.caption(
-            "LLM is disabled or not set to Ollama. Enable it under "
-            "Settings → Configuration; manage Model presets under Settings → Models."
+            "LLM is disabled or provider is not Ollama / openai_compatible. "
+            "Enable it under Settings → Configuration; manage Model presets under "
+            "Settings → Models."
         )
         gates = launch_gate_reasons(
             selection=LlmModelSelection(),
@@ -854,6 +874,43 @@ def render_compact_llm_setup(
         for reason in gates:
             st.caption(reason)
         return None, gates, summary
+
+    if provider == "openai_compatible":
+        privacy = remote_llm_privacy_caption(llm.base_url)
+        if privacy:
+            st.warning(privacy)
+        else:
+            st.caption(
+                "OpenAI-compatible endpoint (loopback). Enter a free-form model id — "
+                "there is no Ollama /api/tags picker for this provider."
+            )
+        default_model = (llm.model or "").strip()
+        model_id = st.text_input(
+            "Model id",
+            value=default_model,
+            key=_key("run_llm_openai", "model"),
+            help=widget_help(
+                "Free-form model id for the Chat Completions endpoint. "
+                "Not an Ollama tag list."
+            ),
+        )
+        selection = LlmModelSelection(
+            mode="shared",
+            shared_model=(model_id or "").strip() or None,
+        )
+        gates = launch_gate_reasons(
+            selection=selection,
+            selected_modules=selected_modules,
+            installed=(),
+            list_error=None,
+            include_group=include_group,
+            llm_enabled=bool(llm.enabled),
+            provider=provider,
+        )
+        for reason in gates:
+            st.caption(reason)
+        label = selection.shared_model or default_model or "openai_compatible"
+        return selection, gates, label
 
     installed, list_error = cached_list_ollama_models(llm.base_url)
     if list_error:
@@ -940,14 +997,41 @@ def render_llm_models_settings_panel() -> None:
 
     st.markdown("#### Model presets")
     st.caption(
-        "Manage Ollama tags and Model presets used by analysis. "
+        "Manage model ids and Model presets used by analysis. "
         "Run Analysis only overrides models for a single launch."
     )
 
-    if not llm.enabled or provider != "ollama":
+    from transcriptx.core.llm.openai_compatible_client import (
+        is_live_llm_provider,
+        remote_llm_privacy_caption,
+    )
+
+    if not is_live_llm_provider(provider, enabled=bool(llm.enabled)):
         st.info(
-            "LLM is disabled or provider is not Ollama. Enable Ollama under "
-            "Settings → Configuration before managing models."
+            "LLM is disabled or provider is not Ollama / openai_compatible. "
+            "Enable LLM under Settings → Configuration before managing models."
+        )
+        return
+
+    if provider == "openai_compatible":
+        privacy = remote_llm_privacy_caption(llm.base_url)
+        if privacy:
+            st.warning(privacy)
+        st.caption(
+            "OpenAI-compatible provider: enter a free-form model id. "
+            "The Ollama /api/tags picker is hidden."
+        )
+        current = (llm.model or "").strip()
+        st.text_input(
+            "Model id",
+            value=current,
+            key=_key(key_prefix, "openai_model"),
+            disabled=True,
+            help=widget_help(
+                "Set llm.model under Settings → Configuration (or env "
+                "TRANSCRIPTX_LLM_MODEL). API keys stay in "
+                "TRANSCRIPTX_LLM_API_KEY / OPENAI_API_KEY."
+            ),
         )
         return
 
@@ -1007,7 +1091,9 @@ def render_llm_models_settings_panel() -> None:
         key=_key(key_prefix, "save_fallback"),
         icon=ic.SAVE,
     ):
-        fb_val = None if chosen_fallback in (_UNSET_MODEL, "", None) else chosen_fallback
+        fb_val = (
+            None if chosen_fallback in (_UNSET_MODEL, "", None) else chosen_fallback
+        )
         llm.fallback_model = fb_val
         llm.preferred_failure_threshold = int(new_thr)
         save_project_config(config.to_dict())

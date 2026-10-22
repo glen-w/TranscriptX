@@ -164,3 +164,15 @@ def test_base_url_is_loopback() -> None:
     assert base_url_is_loopback("http://127.0.0.1:4000/v1")
     assert base_url_is_loopback("http://localhost:8000")
     assert not base_url_is_loopback("https://api.openai.com/v1")
+
+
+def test_remote_privacy_caption() -> None:
+    from transcriptx.core.llm.openai_compatible_client import (
+        remote_llm_privacy_caption,
+    )
+
+    assert remote_llm_privacy_caption("http://127.0.0.1:4000") is None
+    assert "not Local AI" in (
+        remote_llm_privacy_caption("https://api.openai.com/v1") or ""
+    )
+    assert "base_url" in (remote_llm_privacy_caption("") or "")

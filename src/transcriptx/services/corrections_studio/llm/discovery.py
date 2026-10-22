@@ -81,8 +81,10 @@ def _soft_gate_enabled(llm_cfg: Any, corrections_llm: Any) -> bool:
         return False
     if llm_cfg is None or not getattr(llm_cfg, "enabled", False):
         return False
+    from transcriptx.core.llm.openai_compatible_client import is_live_llm_provider
+
     provider = (getattr(llm_cfg, "provider", None) or "null").strip().lower()
-    return provider == "ollama"
+    return is_live_llm_provider(provider, enabled=True)
 
 
 def _endpoint_is_local(base_url: str) -> bool:
