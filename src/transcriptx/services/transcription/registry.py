@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from transcriptx.app.models.requests import TranscriptionOptions
 from transcriptx.services.transcription.provider import TranscriptionProvider
+from transcriptx.services.transcription.granite_mlx_provider import (
+    GraniteMLXProvider,
+)
 from transcriptx.services.transcription.whispermlx_provider import WhisperMLXProvider
 from transcriptx.services.transcription.parakeet_docker_provider import (
     ParakeetDockerProvider,
@@ -16,6 +21,7 @@ _PROVIDERS: dict[str, TranscriptionProvider] = {
     WhisperMLXProvider.provider_id: WhisperMLXProvider(),
     WhisperXDockerProvider.provider_id: WhisperXDockerProvider(),
     ParakeetDockerProvider.provider_id: ParakeetDockerProvider(),
+    GraniteMLXProvider.provider_id: GraniteMLXProvider(),
 }
 
 _DEFAULT_FALLBACK_ID = WhisperMLXProvider.provider_id
@@ -57,19 +63,7 @@ def resolve_default_provider(
 def _relaxed_options(options: TranscriptionOptions) -> TranscriptionOptions:
     if not options.diarize:
         return options
-    return TranscriptionOptions(
-        provider_id=options.provider_id,
-        model=options.model,
-        language=options.language,
-        diarize=False,
-        timeout_seconds=options.timeout_seconds,
-        device=options.device,
-        compute_type=options.compute_type,
-        batch_size=options.batch_size,
-        min_speakers=options.min_speakers,
-        max_speakers=options.max_speakers,
-        docker_image=options.docker_image,
-    )
+    return replace(options, diarize=False)
 
 
 def any_provider_available(

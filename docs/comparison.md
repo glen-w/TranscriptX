@@ -76,7 +76,7 @@ Aligned with [PRODUCT.md](PRODUCT.md):
 - Jeffersonian / GAT conversation-analytic transcription
 - Public oral-history exhibit sites
 
-**Theme H (shipped):** optional host-orchestrated STT (whispermlx on macOS, WhisperX Docker) — [STT stacks](recipes/stt-stacks/README.md). BYO import stays the default; Parakeet/Canary/YouTube remain later ([ROADMAP.md](ROADMAP.md)).
+**Theme H (shipped):** optional host-orchestrated STT (whispermlx and Granite Speech mlx-audio on macOS, WhisperX Docker) — [STT stacks](recipes/stt-stacks/README.md). BYO import stays the default; YouTube ingest remains later ([ROADMAP.md](ROADMAP.md)).
 
 Limits users should know: [known_limitations.md](known_limitations.md).
 

@@ -39,6 +39,20 @@ class TestTranscriptionModelsContract:
         assert "hf_token" not in names
         assert "HF_TOKEN" not in names
 
+    def test_keyword_bias_defaults_off(self):
+        opts = TranscriptionOptions(
+            provider_id="whispermlx",
+            model="large-v3",
+            language="en",
+            diarize=False,
+        )
+        assert opts.keyword_bias_enabled is False
+        assert opts.keyword_list_name is None
+        assert opts.keywords == ()
+        names = {f.name for f in fields(TranscriptionOptions)}
+        assert "keyword_bias_enabled" in names
+        assert "keywords" in names
+
     def test_provider_result_has_required_debug_fields(self):
         names = {f.name for f in fields(TranscriptionProviderResult)}
         assert {"output_dir", "returncode", "duration_seconds", "stderr_tail"} <= names

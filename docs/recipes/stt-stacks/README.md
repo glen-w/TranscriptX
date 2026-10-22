@@ -14,6 +14,7 @@ Mainstream Transcribe Audio steps: [transcription.md](../../runtime/transcriptio
 |-------|---------|------------------------|------|
 | TranscriptX GUI | `transcriptx-web` Compose **or** native `./transcriptx.sh` | http://127.0.0.1:8501 | Import, admit, analysis. **Run in app** only if providers are visible. |
 | whispermlx | **macOS host** (`PATH` or `WHISPERMLX`) | `whispermlx …` / `whispermlx-missing` / `inbox-watch` | Preferred STT on Apple Silicon. **Not** on Windows/Linux. |
+| Granite Speech | **macOS host** (`MLX_AUDIO_PYTHON` + mlx-audio) | Transcribe Audio → Granite Speech (MLX) | Apache-2.0; keyword lists; Plus speaker attribution. Not in analysis venv. [granite-speech](../granite-speech/README.md). |
 | WhisperX | Host `docker run` (Copy command; POSIX or PowerShell) | Transcribe Audio → Copy command | Diarized JSON when Docker is on the host. Primary STT on Linux/Windows. |
 | NeMo Parakeet / Canary | CUDA host `docker run` + JSONL converter (Theme K; optional Run in app `parakeet_docker`) | Transcribe Audio → Copy command → NeMo presets | WhisperX-shaped JSON via `nemo_json_to_whisperx` — [parakeet/README.md](../parakeet/README.md). Not on macOS Run-in-app. |
 | Whisper-WebUI | Optional extra Compose service | http://127.0.0.1:7860 | Gradio UI → SRT/VTT → Import Transcript. |

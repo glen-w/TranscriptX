@@ -53,6 +53,8 @@ def test_transcribe_audio_page_has_run_and_copy_paths():
     assert "PowerShell" in source
     assert "stt-stacks" in source
     assert "Mac host" in source
+    assert "Keyword biasing" in source
+    assert "Granite Speech" in source
 
 
 @pytest.mark.unit
@@ -93,6 +95,7 @@ def test_providers_include_whispermlx_and_whisperx_docker():
     ids = {p.provider_id for p in get_transcription_providers()}
     assert "whispermlx" in ids
     assert "whisperx_docker" in ids
+    assert "granite_mlx" in ids
 
 
 @pytest.mark.unit

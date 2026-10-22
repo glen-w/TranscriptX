@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -91,9 +92,16 @@ def default_transcription_options(
     env: Mapping[str, str] | None = None,
 ) -> TranscriptionOptions:
     merged = env if env is not None else load_merged_env()
+    provider_id = merged.get("TRANSCRIPTX_TRANSCRIPTION_PROVIDER", "whispermlx")
+    if provider_id == "granite_mlx":
+        default_model = merged.get(
+            "GRANITE_SPEECH_MODEL", "ibm-granite/granite-speech-5.0-2b"
+        )
+    else:
+        default_model = merged.get("WHISPERMLX_MODEL", "large-v3")
     return TranscriptionOptions(
-        provider_id=merged.get("TRANSCRIPTX_TRANSCRIPTION_PROVIDER", "whispermlx"),
-        model=merged.get("WHISPERMLX_MODEL", "large-v3"),
+        provider_id=provider_id,
+        model=default_model,
         language=merged.get("WHISPERMLX_LANGUAGE", "en"),
         diarize=parse_bool(merged.get("WHISPERMLX_DIARIZE"), default=True),
         timeout_seconds=parse_int(merged.get("WHISPERMLX_TIMEOUT_SECONDS"), default=0),
@@ -103,6 +111,9 @@ def default_transcription_options(
         docker_image=merged.get(
             "WHISPERX_DOCKER_IMAGE", "ghcr.io/m-bain/whisperx:latest"
         ),
+        keyword_bias_enabled=False,
+        keyword_list_name=None,
+        keywords=(),
     )
 
 
@@ -139,7 +150,13 @@ def build_transcription_options(
     base = default_transcription_options(env)
     if not overrides:
         return base
-    return TranscriptionOptions(
+    keywords = overrides.get("keywords", base.keywords)
+    if keywords is None:
+        keywords = ()
+    elif not isinstance(keywords, tuple):
+        keywords = tuple(str(item) for item in keywords)
+    return replace(
+        base,
         provider_id=str(overrides.get("provider_id", base.provider_id)),
         model=str(overrides.get("model", base.model)),
         language=str(overrides.get("language", base.language)),
@@ -151,4 +168,9 @@ def build_transcription_options(
         min_speakers=overrides.get("min_speakers", base.min_speakers),
         max_speakers=overrides.get("max_speakers", base.max_speakers),
         docker_image=str(overrides.get("docker_image", base.docker_image)),
+        keyword_bias_enabled=bool(
+            overrides.get("keyword_bias_enabled", base.keyword_bias_enabled)
+        ),
+        keyword_list_name=overrides.get("keyword_list_name", base.keyword_list_name),
+        keywords=keywords,
     )

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import threading
 from collections.abc import Callable, Sequence
+from dataclasses import replace
 from pathlib import Path
 from typing import Optional
 
@@ -113,19 +114,7 @@ def _options_for_run(
     provider = resolve_default_provider(base)
     if provider.provider_id == base.provider_id:
         return base
-    return TranscriptionOptions(
-        provider_id=provider.provider_id,
-        model=base.model,
-        language=base.language,
-        diarize=base.diarize,
-        timeout_seconds=base.timeout_seconds,
-        device=base.device,
-        compute_type=base.compute_type,
-        batch_size=base.batch_size,
-        min_speakers=base.min_speakers,
-        max_speakers=base.max_speakers,
-        docker_image=base.docker_image,
-    )
+    return replace(base, provider_id=provider.provider_id)
 
 
 class TranscriptionJobRunner:

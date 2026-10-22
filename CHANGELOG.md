@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Library archive:** Inspector **Archive transcript** / **Unarchive transcript** on Library. Optional `library_archived` on the import sidecar (`SIDECAR_SCHEMA_VERSION` stays 1). Pickers and Home hide archived items; Library and Search have **Include archived transcripts**. Contract: [STORAGE.md](docs/runtime/STORAGE.md#library-archive). Walkthrough: [archive a transcript](docs/workflows/archive-transcript.md).
+- **Granite Speech mlx-audio provider** (`granite_mlx`): host-orchestrated IBM Granite Speech on Apple Silicon (Apache-2.0). 5.0-2b for transcription/keywords; 4.1-2b-plus when Diarize is on. Stub: `TRANSCRIPTX_GRANITE_STUB=1`. Recipe: [granite-speech](docs/recipes/granite-speech/README.md).
+- **Keyword biasing** (default off): named lists under Settings → Keywords; Transcribe Audio applies them to Granite decode (max 2,000 terms).
 
 ### Changed
 

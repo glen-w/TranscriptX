@@ -137,3 +137,17 @@ def test_saved_profile_json_has_no_secret_keys(tmp_path: Path) -> None:
     assert "hf_token" not in raw
     assert "api_key" not in raw
     assert '"env_file": "whisperx.env"' in raw
+
+
+@pytest.mark.unit
+def test_keyword_fields_roundtrip() -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.GRANITE_MLX,
+        input_path="/a.wav",
+        output_dir="/b",
+        keyword_bias_enabled=True,
+        keyword_list_name="acronyms",
+        keywords=("NATO",),
+    )
+    restored = command_gen_params_from_dict(command_gen_params_to_dict(params))
+    assert restored == params

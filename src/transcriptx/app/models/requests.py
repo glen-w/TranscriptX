@@ -199,6 +199,9 @@ class TranscriptionOptions:
     min_speakers: int | None = None
     max_speakers: int | None = None
     docker_image: str = "ghcr.io/m-bain/whisperx:latest"
+    keyword_bias_enabled: bool = False
+    keyword_list_name: str | None = None
+    keywords: tuple[str, ...] = ()
 
 
 @dataclass

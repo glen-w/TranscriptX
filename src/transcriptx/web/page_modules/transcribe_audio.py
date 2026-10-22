@@ -23,6 +23,15 @@ from transcriptx.services.transcription.command_gen import (
     generate_transcription_command_powershell,
     looks_like_container_install_path,
 )
+from transcriptx.services.transcription.granite_mlx_provider import (
+    GRANITE_MODEL_OPTIONS,
+    MODEL_ASR,
+    MODEL_SAA,
+)
+from transcriptx.services.transcription.keyword_lists import (
+    list_lists as list_keyword_lists,
+    resolve_run_keywords,
+)
 from transcriptx.services.transcription.env import default_conversion_options
 from transcriptx.services.transcription.job_store import TranscriptionJobState
 from transcriptx.services.transcription.registry import (
@@ -57,6 +66,7 @@ _TOOL_LABELS = {
     TranscriptionTool.WHISPER_WEBUI_DOCKER: "Whisper-WebUI Docker (Gradio)",
     TranscriptionTool.NEMO_PARAKEET_DOCKER: "NeMo Parakeet Docker (Theme K, CUDA Linux)",
     TranscriptionTool.NEMO_CANARY_DOCKER: "NeMo Canary Docker (Theme K, CUDA Linux)",
+    TranscriptionTool.GRANITE_MLX: "Granite Speech mlx-audio (macOS host)",
 }
 
 _DEFAULT_WEBUI_IMAGE = "jhj0517/whisper-webui:v1.0.8-4def223"
@@ -69,6 +79,50 @@ _BLANK_PRESET = "—"
 _MODE_RUN = "Run in app"
 _MODE_COPY = "Copy command"
 _KEY_ACTIVE_JOB = "tx_stt_active_job_id"
+
+
+_KEYWORD_BLANK = "—"
+
+
+def _render_keyword_bias_fields(
+    *, key_prefix: str, granite_active: bool
+) -> tuple[bool, str | None, tuple[str, ...]]:
+    names = list_keyword_lists()
+    options = [_KEYWORD_BLANK] + names
+    with st.expander("Keyword biasing", expanded=False):
+        enabled = st.checkbox(
+            "Enable keyword biasing",
+            value=False,
+            key=f"{key_prefix}_keyword_bias",
+            help=widget_help(
+                "Bias Granite decode toward acronyms and names. Default off. "
+                "Cap 2000 terms. Whisper providers ignore this in v1."
+            ),
+        )
+        if not granite_active:
+            st.caption("Lists are saved; Granite Speech applies them at decode time.")
+        selected = st.selectbox(
+            "Saved list",
+            options=options,
+            key=f"{key_prefix}_keyword_list",
+            help=widget_help("Named lists from Settings → Keywords."),
+        )
+        extra = st.text_area(
+            "Extra terms this run",
+            value="",
+            key=f"{key_prefix}_keywords_extra",
+            help=widget_help(
+                "One term per line, or commas. Merged with the saved list."
+            ),
+        )
+        list_name = None if selected == _KEYWORD_BLANK else selected
+        keywords, warning = resolve_run_keywords(
+            enabled=bool(enabled), list_name=list_name, extra=extra or ""
+        )
+        if warning:
+            st.warning(warning)
+        st.caption("Manage lists under Settings → Keywords.")
+        return bool(enabled), list_name, keywords
 
 
 def _provider_label(provider_id: str) -> str:
@@ -116,10 +170,12 @@ def _poll_active_job() -> None:
 def _render_run_in_app(default_input: str) -> None:
     st.subheader("Run in app")
     st.caption(
-        "Host-orchestrated STT: Streamlit calls a local provider (whispermlx on "
-        "macOS, or WhisperX Docker). Engines stay out of the analysis image. "
-        "whispermlx runs on the Mac host, not inside Compose. If no provider is "
-        "available here, use Copy command on the host. Stacks: docs/recipes/stt-stacks."
+        "Host-orchestrated STT: Streamlit calls a local provider (whispermlx or "
+        "Granite Speech mlx-audio on macOS, WhisperX Docker, or Parakeet Docker). "
+        "Engines stay out of the analysis image. "
+        "whispermlx and Granite run on the Mac host, not inside Compose. If no "
+        "provider is available here, use Copy command on the host. "
+        "Stacks: docs/recipes/stt-stacks."
     )
     providers = get_transcription_providers()
     labels = [p.info().label for p in providers]
@@ -164,11 +220,16 @@ def _render_run_in_app(default_input: str) -> None:
             help=widget_help("ISO language code (e.g. en)."),
         )
     with col_b:
+        diarize_help = (
+            "Uses granite-speech-4.1-2b-plus speaker attribution. No HF_TOKEN."
+            if provider_id == "granite_mlx"
+            else "Split speakers. Needs HF_TOKEN in whisperx.env for Whisper."
+        )
         diarize = st.checkbox(
             "Diarize",
             value=True,
             key="tx_run_diarize",
-            help=widget_help("Split speakers. Needs HF_TOKEN in whisperx.env."),
+            help=widget_help(diarize_help),
         )
         import_into_library = st.checkbox(
             "Import result into library",
@@ -242,6 +303,30 @@ def _render_run_in_app(default_input: str) -> None:
             value="nvidia/parakeet-tdt-0.6b-v3",
             key="tx_run_parakeet_model",
         )
+    if provider_id == "granite_mlx":
+        granite_default = MODEL_SAA if bool(diarize) else MODEL_ASR
+        if "tx_run_granite_model" not in st.session_state:
+            st.session_state["tx_run_granite_model"] = granite_default
+        model = st.selectbox(
+            "Granite checkpoint",
+            options=list(GRANITE_MODEL_OPTIONS),
+            key="tx_run_granite_model",
+            accept_new_options=True,
+            help=widget_help(
+                "5.0-2b for accuracy and punctuation; 4.1-2b-plus when diarizing. "
+                "Custom HF ids are allowed."
+            ),
+        )
+        st.caption(
+            "Diarize uses Plus speaker attribution (no HF_TOKEN). "
+            "Segment times are chunk-based; not WhisperX word timestamps. "
+            "Recipe: docs/recipes/granite-speech/."
+        )
+
+    keyword_bias_enabled, keyword_list_name, keywords = _render_keyword_bias_fields(
+        key_prefix="tx_run",
+        granite_active=provider_id == "granite_mlx",
+    )
 
     options = TranscriptionOptions(
         provider_id=provider_id,
@@ -259,6 +344,9 @@ def _render_run_in_app(default_input: str) -> None:
             if provider_id == "parakeet_docker"
             else _DEFAULT_WHISPERX_IMAGE
         ),
+        keyword_bias_enabled=keyword_bias_enabled,
+        keyword_list_name=keyword_list_name,
+        keywords=keywords,
     )
     availability = get_provider(provider_id).is_available(options)
     if availability.available:
@@ -446,7 +534,8 @@ def render_transcribe_audio_page() -> None:
     )
     st.info(
         "Run transcription **in the app** when a host provider is available "
-        "(whispermlx on macOS, WhisperX Docker otherwise), or **copy a command** "
+        "(whispermlx or Granite Speech on macOS, WhisperX Docker otherwise), "
+        "or **copy a command** "
         "and run it on the host. Results are admitted with **Import Transcript** "
         "unless you enabled in-app import."
     )
@@ -507,6 +596,12 @@ def render_transcribe_audio_page() -> None:
             "`docs/recipes/whisper-webui/README.md`. "
             "**Apple Silicon: expect CPU inference** (prefer whispermlx for MLX speed). "
             "Export **SRT/VTT** → **Import Transcript**."
+        )
+    if tool is TranscriptionTool.GRANITE_MLX:
+        st.caption(
+            "Apple Silicon host: `pip install -U mlx-audio jinja2` and set "
+            "`MLX_AUDIO_PYTHON`. Not inside Compose analysis. "
+            "See `docs/recipes/granite-speech/README.md`."
         )
 
     col_a, col_b = st.columns(2)
@@ -682,6 +777,19 @@ def render_transcribe_audio_page() -> None:
                 value="nvidia/parakeet-tdt-0.6b-v3",
                 key="tx_cmdgen_parakeet_model",
             )
+    if tool is TranscriptionTool.GRANITE_MLX:
+        granite_default = MODEL_SAA if bool(diarize) else MODEL_ASR
+        if "tx_cmdgen_granite_model" not in st.session_state:
+            st.session_state["tx_cmdgen_granite_model"] = granite_default
+        model = st.selectbox(
+            "Granite checkpoint",
+            options=list(GRANITE_MODEL_OPTIONS),
+            key="tx_cmdgen_granite_model",
+            accept_new_options=True,
+            help=widget_help(
+                "5.0-2b for accuracy; 4.1-2b-plus when diarizing. Custom HF ids allowed."
+            ),
+        )
     if tool is TranscriptionTool.WHISPERX_DOCKER:
         device = st.selectbox(
             "Device",
@@ -791,6 +899,11 @@ def render_transcribe_audio_page() -> None:
             "(Import Transcript). Alternate formats are not generated here."
         )
 
+    keyword_bias_enabled, keyword_list_name, keywords = _render_keyword_bias_fields(
+        key_prefix="tx_cmdgen",
+        granite_active=tool is TranscriptionTool.GRANITE_MLX,
+    )
+
     params = CommandGenParams(
         tool=tool,
         input_path=input_path.strip(),
@@ -819,6 +932,9 @@ def render_transcribe_audio_page() -> None:
         webui_port=webui_port,
         webui_clone_dir=webui_clone_dir.strip() or "$HOME/Whisper-WebUI",
         expected_output_format=expected_output_format,
+        keyword_bias_enabled=keyword_bias_enabled,
+        keyword_list_name=keyword_list_name,
+        keywords=keywords,
     )
 
     _render_preset_controls(params)
