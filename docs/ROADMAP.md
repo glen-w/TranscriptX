@@ -431,7 +431,7 @@ Only if capacity remains after core themes:
 | Piece | Notes |
 |-------|--------|
 | **OpenAI-compatible `LLMClient`** | **[x]** `openai_compatible` behind `generate` / `is_available`; JSON → `response_format` |
-| **LiteLLM (or equivalent) gateway** | Prefer a **sidecar / proxy** ([LiteLLM](https://github.com/BerriAI/litellm)) over embedding the full SDK in the analysis image; one `base_url` reaches many backends |
+| **LiteLLM (or equivalent) gateway** | **[x]** optional sidecar recipe ([recipes/litellm](recipes/litellm/README.md)); not in the analysis image; one `base_url` reaches many backends |
 | **Keep Ollama as default path** | **[x]** Do not force local traffic through the gateway; Settings / Run Analysis Ollama UX stays for `provider=ollama` |
 | **Model selection honesty** | **[x]** Free-form model ids when not on Ollama tags; remote endpoints labelled Remote AI |
 | **Privacy / trust** | **[x]** Explicit opt-in only; document remote data flow; align with [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md) |

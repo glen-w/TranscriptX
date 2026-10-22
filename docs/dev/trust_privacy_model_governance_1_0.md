@@ -27,7 +27,7 @@ Remote network activity occurs only when the user (or install profile) explicitl
 
 - Hugging Face / spaCy **model downloads** on first use
 - Optional **Ollama** (typically local; user-configured host)
-- Optional **openai_compatible** LLM (`llm.provider`; explicit `llm.base_url` required — no silent cloud default). Transcript content is sent to that endpoint. API key from `TRANSCRIPTX_LLM_API_KEY` / `OPENAI_API_KEY` only.
+- Optional **openai_compatible** LLM (`llm.provider`; explicit `llm.base_url` required — no silent cloud default). Transcript content is sent to that endpoint. API key from `TRANSCRIPTX_LLM_API_KEY` / `OPENAI_API_KEY` only. An optional [LiteLLM sidecar](../recipes/litellm/README.md) is a loopback proxy; upstreams may still be remote.
 - Optional **rename web lookup** (`input.rename_suggest_web`) — short title-only queries when rename suggestions run (Settings `rename_content_suggestions=auto` or **Suggest names** on the rename form); transcript body is not sent. With `TRANSCRIPTX_YOUTUBE_API_KEY` this uses YouTube Data API v3 (`search` + `videos`); otherwise DuckDuckGo HTML (`site:youtube.com` first, then a general event query)
 - Optional dependency / image pulls during install
 

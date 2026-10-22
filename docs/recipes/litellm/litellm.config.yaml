@@ -1,0 +1,13 @@
+# Example LiteLLM config for a single OpenAI-compatible upstream.
+# Copy and set LITELLM_UPSTREAM_* in the environment (never commit keys).
+# If the upstream is remote, transcript prompts leave this machine.
+
+model_list:
+  - model_name: default
+    litellm_params:
+      model: openai/default
+      api_base: os.environ/LITELLM_UPSTREAM_API_BASE
+      api_key: os.environ/LITELLM_UPSTREAM_API_KEY
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

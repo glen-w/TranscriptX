@@ -148,6 +148,28 @@ def test_compose_no_socket_mount():
     ), "docker-compose.yml must not mount the Docker socket (analysis-only image)"
 
 
+def test_litellm_sidecar_compose_is_optional_and_loopback():
+    """LiteLLM recipe must not join the analysis image or bind 0.0.0.0."""
+    repo_root = os.path.join(os.path.dirname(__file__), "..", "..")
+    compose_path = os.path.join(
+        repo_root, "docs", "recipes", "litellm", "docker-compose.litellm.yml"
+    )
+    assert os.path.isfile(compose_path)
+    with open(compose_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    assert "/var/run/docker.sock" not in content
+    assert "127.0.0.1:" in content
+    assert "0.0.0.0:" not in content.split("ports:", 1)[-1].split("environment:", 1)[0]
+    root_compose = os.path.join(repo_root, "docker-compose.yml")
+    with open(root_compose, "r", encoding="utf-8") as f:
+        root = f.read()
+    assert "litellm" not in root.lower()
+    requirements = os.path.join(repo_root, "requirements.txt")
+    with open(requirements, "r", encoding="utf-8") as f:
+        reqs = f.read().lower()
+    assert "litellm" not in reqs
+
+
 def test_stt_stacks_compose_stays_engine_free():
     """Optional STT stacks file must not mount the Docker socket or start whispermlx."""
     repo_root = os.path.join(os.path.dirname(__file__), "..", "..")
