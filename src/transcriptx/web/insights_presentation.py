@@ -22,6 +22,8 @@ GUIDED_ANALYSIS_SECTION_CAP = 4
 GUIDED_RANKED_ROW_CAP = 5
 GUIDED_HIGHLIGHT_CARD_CAP = 5
 GUIDED_SUMMARY_PREVIEW_CHARS = 1800
+EVIDENCE_QUOTE_CAP = 3
+EVIDENCE_PREVIEW_CHARS = 160
 GUIDED_METADATA_CHIP_CAP = 4
 GUIDED_MIN_HIGHLIGHT_QUOTE_CHARS = 24
 GUIDED_HIGHLIGHT_OVERLAP_IOU = 0.55
@@ -253,6 +255,27 @@ def theme_label_for_user(label: str | None, *, is_unthemed: bool = False) -> str
     if is_unthemed or raw.lower() in {"", "unthemed", "untagged"}:
         return "Other highlights"
     return raw
+
+
+def evidence_quote_previews(
+    evidence_ids: Any,
+    quote_text_by_id: dict[str, str] | None,
+    *,
+    cap: int = EVIDENCE_QUOTE_CAP,
+    max_chars: int = EVIDENCE_PREVIEW_CHARS,
+) -> tuple[list[str], int]:
+    """Return truncated quote previews and how many resolved quotes were omitted."""
+    if not quote_text_by_id or not evidence_ids:
+        return [], 0
+    snippets: list[str] = []
+    for qid in evidence_ids:
+        snippet = quote_text_by_id.get(str(qid), "").strip()
+        if not snippet:
+            continue
+        if len(snippet) > max_chars:
+            snippet = snippet[: max_chars - 1].rstrip() + "…"
+        snippets.append(snippet)
+    return snippets[:cap], max(0, len(snippets) - cap)
 
 
 def truncate_for_preview(

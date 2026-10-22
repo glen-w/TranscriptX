@@ -83,7 +83,7 @@ Evidence run: `R20241026-121652` / `20260726_015208_30728241` (Thorough, **parti
 ### Overview organisation & presentation
 
 - [~] **Actions / Highlights / Summaries / Speakers** — clearer organisation and presentation (grouping, priority order, less wall-of-content); no Analysis panel — **Theme A closeout (2026-10):** Overview omits empty Actions/Highlights chrome; At a glance scan hint
-- [ ] **Summaries** — content looks good; confirm placement/weight vs Actions/Highlights so the page scans as one composition
+- [x] **Summaries** — Standard Overview order is Summary → At a glance → Highlights → Actions → Speakers → run status (Highlights before Actions so the page scans as one composition)
 - [x] **Section hierarchy** — consistent headings, expand/collapse defaults, and “what to look at first” for a completed (or partial) run — **Theme A closeout:** At a glance caption + quieter empty compact sections
 - [~] **Partial-run honesty on Overview** — timed-out / FAIL modules (e.g. `llm_action_items`, `llm_custom_qa`) should not look like silent gaps; surface status without burying successes — **Theme A closeout:** failed/blocked compact sections still surface; empty/not-run sections omitted (run status block unchanged)
 

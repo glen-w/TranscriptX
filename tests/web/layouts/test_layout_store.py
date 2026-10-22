@@ -316,10 +316,16 @@ def test_default_layout_is_standard_curated() -> None:
     layout = LayoutProfileStore.load_layout("default")
     assert layout.title == "Standard"
     block_ids = [b.block_id for b in layout.pages["overview"].blocks]
-    assert block_ids[0] == "transcript_summary_hero"
+    assert block_ids == [
+        "transcript_summary_hero",
+        "at_a_glance",
+        "highlights_compact",
+        "action_items_compact",
+        "speaker_summary_cards",
+        "run_status_compact",
+    ]
     assert "module_metrics" not in block_ids
     assert "export_panel" not in block_ids
-    assert "run_status_compact" in block_ids
 
 
 def test_default_insights_commitments_live_in_actions() -> None:
