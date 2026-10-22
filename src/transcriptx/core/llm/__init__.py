@@ -34,6 +34,7 @@ from transcriptx.core.llm.openai_compatible_client import (
     build_openai_compatible_client,
     is_live_llm_provider,
     normalize_openai_base_url,
+    LOOPBACK_LLM_PROXY_CAPTION,
     remote_llm_privacy_caption,
     resolve_openai_api_key,
 )
@@ -150,6 +151,7 @@ __all__ = [
     "resolve_openai_api_key",
     "base_url_is_loopback",
     "is_live_llm_provider",
+    "LOOPBACK_LLM_PROXY_CAPTION",
     "remote_llm_privacy_caption",
     "LIVE_LLM_PROVIDERS",
     "normalize_base_url",

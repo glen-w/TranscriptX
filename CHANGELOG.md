@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Docs truth:** ROADMAP, llm/settings/known-limitations, STT public surfaces, and workflows match shipped T0/T1, Theme A polish, Theme F tags, Theme H Parakeet, and Theme N `openai_compatible` + LiteLLM sidecar. Kind-tag auto-seed remains helpers-only.
+- **Privacy labelling:** Overview summary, Insights narrative, Custom QA, and Charts LLM captions use `resolve_ai_output_badge` instead of a hardcoded Local AI badge. `openai_compatible` provenance stores a redacted host-only `base_url`. Loopback LiteLLM is labelled AI with an upstream-proxy caption.
 
 - **T0/T1 honesty:** Overview, Charts page, and Charts overview block share a zero-named-speakers banner. Import captions placeholder `SPEAKER_00` labels and points at **Treat as single speaker**. Content modules `understandability`, `lexical_diversity`, `epistemic_markers`, `simplified_transcript`, `topic_shift`, and `moments` now use `min_named_speakers: 0`.
 - **NeMo converter goldens:** `pred_text` / `transcript` JSONL (blank lines skipped), list JSON with optional speaker, and wrapped `{segments}` shapes.

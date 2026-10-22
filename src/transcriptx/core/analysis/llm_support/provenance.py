@@ -3,10 +3,40 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 
 __all__ = [
     "build_llm_provenance",
+    "redact_llm_base_url",
 ]
+
+
+def redact_llm_base_url(base_url: str | None) -> str:
+    """Scheme + host + port only. Drop userinfo, path, query, and fragment."""
+    raw = (base_url or "").strip()
+    if not raw:
+        return ""
+    try:
+        parsed = urlparse(raw)
+    except ValueError:
+        return ""
+    host = (parsed.hostname or "").strip()
+    if not host:
+        return ""
+    scheme = (parsed.scheme or "http").strip().lower() or "http"
+    netloc = host
+    if parsed.port:
+        netloc = f"{host}:{parsed.port}"
+    return f"{scheme}://{netloc}"
+
+
+def _configured_llm_base_url() -> str:
+    try:
+        from transcriptx.core.utils.config import get_config
+
+        return str(getattr(get_config().llm, "base_url", "") or "").strip()
+    except Exception:
+        return ""
 
 
 def build_llm_provenance(
@@ -25,6 +55,7 @@ def build_llm_provenance(
     truncation: Optional[Dict[str, Any]] = None,
     model_digest: Optional[str] = None,
     model_selection_source: Optional[str] = None,
+    base_url: Optional[str] = None,
 ) -> Dict[str, Any]:
     try:
         from transcriptx import __version__ as transcriptx_version
@@ -53,4 +84,10 @@ def build_llm_provenance(
         prov["model_digest"] = model_digest
     if model_selection_source:
         prov["model_selection_source"] = model_selection_source
+    if (provider or "").strip().lower() == "openai_compatible":
+        redacted = redact_llm_base_url(
+            base_url if base_url is not None else _configured_llm_base_url()
+        )
+        if redacted:
+            prov["base_url"] = redacted
     return prov

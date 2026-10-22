@@ -68,6 +68,27 @@ class TestAiOutputBadgeHonesty:
             == lp.COMPATIBLE_AI_OUTPUT_BADGE
         )
 
+    def test_historical_remote_provenance_does_not_use_live_config(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            "transcriptx.core.utils.config.get_config",
+            lambda: type(
+                "Cfg",
+                (),
+                {"llm": type("L", (), {"base_url": "http://127.0.0.1:4000"})()},
+            )(),
+        )
+        assert (
+            lp.resolve_ai_output_badge(
+                {
+                    "provider": "openai_compatible",
+                    "base_url": "https://api.example.com/v1",
+                }
+            )
+            == lp.REMOTE_AI_OUTPUT_BADGE
+        )
+
     def test_blank_values_are_skipped(self) -> None:
         assert (
             lp.provenance_badges(

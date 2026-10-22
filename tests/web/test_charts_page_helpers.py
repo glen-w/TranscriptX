@@ -317,3 +317,34 @@ def test_chart_text_preference_survives_filter_reset() -> None:
     assert session[CHARTS_KEY_SEARCH] == ""
     assert session[CHARTS_KEY_CHART_TEXT] == CHARTS_CHART_TEXT_NONE
     assert charts_filters_are_dirty(session) is False
+
+
+@pytest.mark.unit
+def test_chart_llm_description_uses_remote_ai_badge(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from transcriptx.web.page_modules import charts as charts_mod
+
+    monkeypatch.setattr(
+        charts_mod,
+        "_chart_llm_provenance",
+        lambda: {
+            "provider": "openai_compatible",
+            "base_url": "https://api.example.com/v1",
+            "model": "m",
+        },
+    )
+    badges: list[list[str]] = []
+    monkeypatch.setattr(
+        charts_mod, "render_badge_row", lambda labels: badges.append(list(labels))
+    )
+    monkeypatch.setattr(charts_mod.st, "markdown", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        charts_mod, "_render_chart_llm_feedback", lambda *_a, **_k: None
+    )
+    charts_mod._render_chart_llm_description(
+        "hello", feedback_key="k", chart=_chart("c1")
+    )
+    assert badges
+    assert badges[0][0] == "Remote AI"
+    assert "Local AI" not in badges[0]

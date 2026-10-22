@@ -262,6 +262,12 @@ def is_live_llm_provider(provider: str | None, *, enabled: bool = True) -> bool:
     return (provider or "").strip().lower() in LIVE_LLM_PROVIDERS
 
 
+LOOPBACK_LLM_PROXY_CAPTION = (
+    "OpenAI-compatible endpoint is loopback. A proxy such as LiteLLM can still "
+    "forward prompts to a remote upstream. This is labelled AI, not Local AI."
+)
+
+
 def remote_llm_privacy_caption(base_url: str | None) -> str | None:
     """Caption when openai_compatible sends transcript text off-box. None if local."""
     url = (base_url or "").strip()

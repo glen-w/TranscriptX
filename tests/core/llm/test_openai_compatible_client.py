@@ -176,3 +176,11 @@ def test_remote_privacy_caption() -> None:
         remote_llm_privacy_caption("https://api.openai.com/v1") or ""
     )
     assert "base_url" in (remote_llm_privacy_caption("") or "")
+    from transcriptx.core.llm.openai_compatible_client import (
+        LOOPBACK_LLM_PROXY_CAPTION,
+    )
+
+    assert "not Local AI" in LOOPBACK_LLM_PROXY_CAPTION
+    assert "upstream" in LOOPBACK_LLM_PROXY_CAPTION.lower() or "forward" in (
+        LOOPBACK_LLM_PROXY_CAPTION.lower()
+    )

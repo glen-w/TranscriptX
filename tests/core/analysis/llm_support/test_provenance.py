@@ -50,6 +50,7 @@ def test_build_llm_provenance_full_shape() -> None:
     assert prov["generation_options"] == {"temperature": 0.0, "seed": 42}
     assert prov["max_output_tokens"] == 2048
     assert isinstance(prov["transcriptx_version"], str)
+    assert "base_url" not in prov
 
 
 @pytest.mark.unit
@@ -70,3 +71,57 @@ def test_build_llm_provenance_minimal_omits_optionals() -> None:
     assert "truncated" not in prov
     assert prov["generation_options"] == {}
     assert prov["max_output_tokens"] is None
+    assert "base_url" not in prov
+
+
+@pytest.mark.unit
+def test_redact_llm_base_url_drops_userinfo_path_and_query() -> None:
+    from transcriptx.core.analysis.llm_support.provenance import redact_llm_base_url
+
+    assert (
+        redact_llm_base_url("https://user:secret@api.example.com:8443/v1/chat?x=1")
+        == "https://api.example.com:8443"
+    )
+    assert redact_llm_base_url("http://127.0.0.1:4000/v1") == "http://127.0.0.1:4000"
+    assert redact_llm_base_url("") == ""
+    assert redact_llm_base_url("not a url") == ""
+
+
+@pytest.mark.unit
+def test_openai_compatible_provenance_persists_redacted_base_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    prov = build_llm_provenance(
+        module_name="llm_summary",
+        prompt_version="v1",
+        provider="openai_compatible",
+        model="gpt-4o-mini",
+        seed=1,
+        temperature=0.0,
+        max_output_tokens=16,
+        llm_request_sha256="req",
+        base_url="https://user:key@api.example.com/v1?token=abc",
+    )
+    assert prov["base_url"] == "https://api.example.com"
+    assert "user" not in prov["base_url"]
+    assert "secret" not in str(prov)
+    assert "token=" not in str(prov)
+
+    monkeypatch.delenv("TRANSCRIPTX_LLM_API_KEY", raising=False)
+
+    from_config = build_llm_provenance(
+        module_name="llm_summary",
+        prompt_version="v1",
+        provider="openai_compatible",
+        model="m",
+        seed=1,
+        temperature=0.0,
+        max_output_tokens=None,
+        llm_request_sha256="req",
+        base_url=None,
+    )
+    # Live config may be empty in tests; if present it is still redacted.
+    if "base_url" in from_config:
+        assert "://" in from_config["base_url"]
+        assert "@" not in from_config["base_url"]
+        assert "?" not in from_config["base_url"]
