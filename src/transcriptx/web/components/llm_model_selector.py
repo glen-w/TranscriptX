@@ -852,6 +852,7 @@ def render_compact_llm_setup(
     st.caption(f"Project default · `{summary}`")
 
     from transcriptx.core.llm.openai_compatible_client import (
+        LOOPBACK_LLM_PROXY_CAPTION,
         is_live_llm_provider,
         remote_llm_privacy_caption,
     )
@@ -880,9 +881,10 @@ def render_compact_llm_setup(
         if privacy:
             st.warning(privacy)
         else:
+            st.caption(LOOPBACK_LLM_PROXY_CAPTION)
             st.caption(
-                "OpenAI-compatible endpoint (loopback). Enter a free-form model id — "
-                "there is no Ollama /api/tags picker for this provider."
+                "Enter a free-form model id — there is no Ollama /api/tags picker "
+                "for this provider."
             )
         default_model = (llm.model or "").strip()
         model_id = st.text_input(
@@ -1002,6 +1004,7 @@ def render_llm_models_settings_panel() -> None:
     )
 
     from transcriptx.core.llm.openai_compatible_client import (
+        LOOPBACK_LLM_PROXY_CAPTION,
         is_live_llm_provider,
         remote_llm_privacy_caption,
     )
@@ -1017,6 +1020,8 @@ def render_llm_models_settings_panel() -> None:
         privacy = remote_llm_privacy_caption(llm.base_url)
         if privacy:
             st.warning(privacy)
+        if not privacy:
+            st.caption(LOOPBACK_LLM_PROXY_CAPTION)
         st.caption(
             "OpenAI-compatible provider: enter a free-form model id. "
             "The Ollama /api/tags picker is hidden."

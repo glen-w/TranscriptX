@@ -317,7 +317,7 @@ def _render_insights_narrative(narrative_payload: Dict[str, Any] | None) -> None
     )
 
     st.markdown("**Theme narrative**")
-    render_badge_row(llm_surface_badges())
+    render_badge_row(llm_surface_badges(narrative_payload.get("provenance")))
     st.write(text)
 
 

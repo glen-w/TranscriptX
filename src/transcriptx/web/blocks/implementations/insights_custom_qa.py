@@ -20,8 +20,8 @@ from transcriptx.core.llm_feedback.models import (
 )
 from transcriptx.web.blocks.context import BlockContext
 from transcriptx.web.blocks.llm_presentation import (
-    AI_OUTPUT_BADGE,
     feedback_subject_type,
+    llm_surface_badges,
     render_badge_row,
 )
 from transcriptx.web.blocks.placement import BlockPlacement
@@ -175,7 +175,7 @@ def _render_answer_card(
                         and segs
                         and st.button(
                             f"Jump to segment {segs[0]}",
-        icon=ic.TARGET,
+                            icon=ic.TARGET,
                             key=f"{key_prefix}_jump_{row.get('question_index')}_{i}",
                         )
                     ):
@@ -204,8 +204,6 @@ def render_llm_custom_qa_block(ctx: BlockContext, placement: BlockPlacement) -> 
         st.info(empty_hint)
         return
 
-    render_badge_row([AI_OUTPUT_BADGE])
-
     from transcriptx.web.blocks.group_content import (
         group_rollup_empty_hint,
         is_group_run,
@@ -215,6 +213,15 @@ def render_llm_custom_qa_block(ctx: BlockContext, placement: BlockPlacement) -> 
 
     if is_group_run(run_root):
         rows = load_group_content_rows(run_root, "llm_custom_qa", "qa_answer_rows")
+        group_prov = next(
+            (
+                row.get("provenance")
+                for row in rows
+                if isinstance(row, dict) and isinstance(row.get("provenance"), dict)
+            ),
+            None,
+        )
+        render_badge_row(llm_surface_badges(group_prov))
         from transcriptx.core.analysis.llm_custom_qa.readers import (
             load_group_member_failures,
         )
@@ -268,6 +275,13 @@ def render_llm_custom_qa_block(ctx: BlockContext, placement: BlockPlacement) -> 
     if not payload:
         st.info(empty_hint)
         return
+    render_badge_row(
+        llm_surface_badges(
+            payload.get("provenance")
+            if isinstance(payload.get("provenance"), dict)
+            else None
+        )
+    )
     st.caption(
         f"outcome=`{_escape(payload.get('outcome'))}` "
         f"hash=`{_escape(str(payload.get('questions_hash') or '')[:12])}` "

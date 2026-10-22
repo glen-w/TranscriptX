@@ -28,7 +28,7 @@ from transcriptx.web.charts_filter_state import (
     set_charts_open_modules,
     sync_kind_toggles_from_pills,
 )
-from transcriptx.web.blocks.llm_presentation import AI_OUTPUT_BADGE, render_badge_row
+from transcriptx.web.blocks.llm_presentation import llm_surface_badges, render_badge_row
 from transcriptx.web.components.action_links import (
     render_action_link,
     render_download_link,
@@ -140,11 +140,26 @@ _CHARTS_FB_SUBJECT_ID = "_charts_fb_subject_id"
 _CHARTS_FB_SUBJECT_TYPE = "_charts_fb_subject_type"
 
 
+def _chart_llm_provenance() -> dict[str, Any] | None:
+    """Live LLM config so chart narratives are not hard-labelled Local AI."""
+    try:
+        from transcriptx.core.utils.config import get_config
+
+        llm = get_config().llm
+        return {
+            "provider": getattr(llm, "provider", "") or "",
+            "base_url": getattr(llm, "base_url", "") or "",
+            "model": getattr(llm, "model", "") or "",
+        }
+    except Exception:
+        return None
+
+
 def _render_chart_llm_description(
     llm_text: str, *, feedback_key: str, chart: Artifact
 ) -> None:
-    """Show Local AI label before chart LLM narrative + optional feedback."""
-    render_badge_row([AI_OUTPUT_BADGE])
+    """Show Local AI / Remote AI / AI label before chart LLM narrative."""
+    render_badge_row(llm_surface_badges(_chart_llm_provenance()))
     st.markdown(llm_text)
     _render_chart_llm_feedback(chart, llm_text, key=feedback_key)
 

@@ -223,3 +223,36 @@ def test_evidence_quote_previews_caps_and_remaining() -> None:
     assert remaining == 1
     assert evidence_quote_previews([], quotes) == ([], 0)
     assert evidence_quote_previews(["q1"], None) == ([], 0)
+
+
+@pytest.mark.unit
+def test_insights_narrative_uses_remote_ai_badge(monkeypatch) -> None:
+    from transcriptx.web.blocks.implementations import insights as ins
+
+    badges: list[list[str]] = []
+    monkeypatch.setattr(
+        ins,
+        "st",
+        SimpleNamespace(
+            markdown=lambda *_a, **_k: None,
+            write=lambda *_a, **_k: None,
+        ),
+    )
+    import transcriptx.web.blocks.llm_presentation as lp
+
+    monkeypatch.setattr(
+        lp, "render_badge_row", lambda labels: badges.append(list(labels))
+    )
+    ins._render_insights_narrative(
+        {
+            "narrative": "hello",
+            "provenance": {
+                "provider": "openai_compatible",
+                "base_url": "https://api.example.com/v1",
+                "model": "m",
+            },
+        }
+    )
+    assert badges
+    assert badges[0][0] == "Remote AI"
+    assert "Local AI" not in badges[0]

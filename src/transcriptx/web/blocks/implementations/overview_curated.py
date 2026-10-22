@@ -23,13 +23,13 @@ from transcriptx.web.blocks.group_content import (
 )
 from transcriptx.core.llm_feedback.models import FeedbackSurface
 from transcriptx.web.blocks.llm_presentation import (
-    AI_OUTPUT_BADGE,
     cleaned_llm_output_text,
     llm_surface_badges,
     provenance_badges,
     render_badge_row,
     render_badge_row_with_feedback,
     render_markdown_without_heading_or_provenance,
+    resolve_ai_output_badge,
     resolve_artifact_rel_path,
     strip_commitments_section,
     strip_leading_markdown_heading,
@@ -59,9 +59,9 @@ def _overview_compact_show_failure(outcome: str) -> bool:
     return outcome in {"failed", "blocked"}
 
 
-def _summary_source_badge(kind: SummaryKind) -> str:
+def _summary_source_badge(kind: SummaryKind, provenance: dict | None = None) -> str:
     if kind in {"llm_summary", "narrative_summary"}:
-        return AI_OUTPUT_BADGE
+        return resolve_ai_output_badge(provenance)
     return "Deterministic"
 
 
@@ -79,8 +79,11 @@ def _summary_hero_badges(candidate, *, run_results: dict | None = None) -> list[
     preset = _analysis_preset_badge(run_results)
     if preset:
         badges.append(preset)
-    badges.append(_summary_source_badge(candidate.kind))
-    badges.extend(provenance_badges((candidate.payload or {}).get("provenance")))
+    provenance = (candidate.payload or {}).get("provenance")
+    badges.append(_summary_source_badge(candidate.kind, provenance))
+    badges.extend(
+        provenance_badges(provenance if isinstance(provenance, dict) else None)
+    )
     return badges
 
 
@@ -776,10 +779,7 @@ def render_action_items_compact(ctx: BlockContext, _placement: BlockPlacement) -
     )
     show_failure = _overview_compact_show_failure(outcome)
     show_section = (
-        has_item_rows
-        or has_md_body
-        or show_failure
-        or bool(trunc_warn or empty_warn)
+        has_item_rows or has_md_body or show_failure or bool(trunc_warn or empty_warn)
     )
     if not show_section:
         return
@@ -960,7 +960,9 @@ def render_run_status_compact(ctx: BlockContext, _placement: BlockPlacement) -> 
                     f"Blocked: {summary.blocked_count}"
                 )
             if st.button(
-                "Open Diagnostics", key="run_status_open_diagnostics", icon=ic.DIAGNOSTICS
+                "Open Diagnostics",
+                key="run_status_open_diagnostics",
+                icon=ic.DIAGNOSTICS,
             ):
                 st.session_state["page"] = "Diagnostics"
                 st.rerun()

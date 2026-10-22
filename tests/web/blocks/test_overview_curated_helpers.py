@@ -24,6 +24,23 @@ def test_summary_source_badge_llm_vs_standard() -> None:
     assert oc._summary_source_badge("llm_summary") == "Local AI"
     assert oc._summary_source_badge("narrative_summary") == "Local AI"
     assert oc._summary_source_badge("executive_summary") == "Deterministic"
+    assert (
+        oc._summary_source_badge(
+            "llm_summary",
+            {
+                "provider": "openai_compatible",
+                "base_url": "https://api.example.com/v1",
+            },
+        )
+        == "Remote AI"
+    )
+    assert (
+        oc._summary_source_badge(
+            "llm_summary",
+            {"provider": "openai_compatible", "base_url": "http://127.0.0.1:4000"},
+        )
+        == "AI"
+    )
 
 
 @pytest.mark.unit
@@ -76,6 +93,18 @@ def test_summary_hero_badges_include_named_analysis_preset() -> None:
         "Local AI"
     ]
     assert oc._summary_hero_badges(cand, run_results={}) == ["Local AI"]
+
+    remote = SimpleNamespace(
+        kind="llm_summary",
+        payload={
+            "provenance": {
+                "provider": "openai_compatible",
+                "base_url": "https://api.example.com/v1",
+            }
+        },
+    )
+    assert oc._summary_hero_badges(remote, run_results={})[0] == "Remote AI"
+    assert "Local AI" not in oc._summary_hero_badges(remote, run_results={})
 
 
 @pytest.mark.unit
