@@ -10,6 +10,7 @@ from transcriptx.core.llm import (
     OpenAICompatibleClient,
     get_llm_client,
 )
+from transcriptx.core.llm.errors import LLMGenerationError
 from transcriptx.core.llm.openai_compatible_client import (
     openai_response_format,
     resolve_openai_api_key,
@@ -96,7 +97,7 @@ def test_generate_posts_chat_completions(monkeypatch) -> None:
         captured["authorization"] = req.get_header("Authorization")
         return _Resp()
 
-    monkeypatch.setattr(occ.urllib.request, "urlopen", _urlopen)
+    monkeypatch.setattr(occ, "http_urlopen", _urlopen)
     monkeypatch.setenv("TRANSCRIPTX_LLM_API_KEY", "secret")
     client = OpenAICompatibleClient(
         base_url="http://127.0.0.1:4000/v1",
@@ -117,9 +118,57 @@ def test_generate_posts_chat_completions(monkeypatch) -> None:
 
     body = json.loads(captured["body"])
     assert body["model"] == "local-model"
+    assert body["stream"] is False
     assert body["response_format"] == {"type": "json_object"}
     assert body["messages"][0]["role"] == "system"
     assert captured["authorization"] == "Bearer secret"
+
+
+def test_normalize_rejects_non_http_schemes() -> None:
+    from transcriptx.core.llm.openai_compatible_client import normalize_openai_base_url
+
+    with pytest.raises(LLMConfigurationError, match="http or https"):
+        normalize_openai_base_url("file:///etc/passwd")
+    with pytest.raises(LLMConfigurationError, match="http or https"):
+        normalize_openai_base_url("gopher://127.0.0.1")
+
+
+def test_http_error_does_not_include_api_key(monkeypatch) -> None:
+    import urllib.error
+
+    def _urlopen(req, timeout=None):
+        raise urllib.error.HTTPError(
+            req.full_url, 401, "Unauthorized", hdrs=None, fp=None  # type: ignore[arg-type]
+        )
+
+    monkeypatch.setattr(occ, "http_urlopen", _urlopen)
+    client = OpenAICompatibleClient(
+        base_url="http://127.0.0.1:4000/v1",
+        model="m",
+        api_key="super-secret-key",
+    )
+    with pytest.raises(occ.LLMGenerationError) as excinfo:
+        client.generate(prompt="hi", temperature=0.0)
+    assert "super-secret-key" not in str(excinfo.value)
+    assert "401" in str(excinfo.value)
+
+
+def test_no_redirect_handler_refuses_follow() -> None:
+    from transcriptx.core.llm.openai_compatible_client import _NoRedirectHandler
+
+    handler = _NoRedirectHandler()
+    req = occ.urllib.request.Request("http://127.0.0.1:4000/v1/models")
+    assert (
+        handler.redirect_request(
+            req,
+            fp=None,
+            code=302,
+            msg="Found",
+            headers={},
+            newurl="http://169.254.169.254/",
+        )
+        is None
+    )
 
 
 def test_is_available_hits_models(monkeypatch) -> None:
@@ -139,7 +188,7 @@ def test_is_available_hits_models(monkeypatch) -> None:
         urls.append(req.full_url)
         return _Resp()
 
-    monkeypatch.setattr(occ.urllib.request, "urlopen", _urlopen)
+    monkeypatch.setattr(occ, "http_urlopen", _urlopen)
     client = OpenAICompatibleClient(
         base_url="http://127.0.0.1:4000",
         model="m",
@@ -153,7 +202,7 @@ def test_is_available_false_on_error(monkeypatch) -> None:
     def _urlopen(*_a, **_k):
         raise TimeoutError("nope")
 
-    monkeypatch.setattr(occ.urllib.request, "urlopen", _urlopen)
+    monkeypatch.setattr(occ, "http_urlopen", _urlopen)
     client = OpenAICompatibleClient(base_url="http://127.0.0.1:9", model="m")
     assert client.is_available() is False
 

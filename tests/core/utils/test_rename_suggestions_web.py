@@ -188,3 +188,72 @@ def test_fetch_web_cue_from_title_prefers_youtube_api(monkeypatch) -> None:
     assert cue is not None
     assert "YouTube Data API" in cue.detail
     assert ddg_calls == []
+
+
+def test_fetch_web_cue_from_title_falls_back_to_ddg_on_api_failure(monkeypatch) -> None:
+    monkeypatch.setenv("TRANSCRIPTX_YOUTUBE_API_KEY", "secret-youtube-key")
+    api_calls: list[str] = []
+
+    def _api(query, *, api_key, timeout=8.0, **_k):
+        api_calls.append(query)
+        assert api_key == "secret-youtube-key"
+        assert "SECRET" not in query
+        return None
+
+    html = """
+    <a class="result__a">Acme webinar recap</a>
+    <a class="result__snippet">Held March 12, 2026 online.</a>
+    """
+
+    def _ddg(q, **_k):
+        from datetime import date
+
+        from transcriptx.core.utils.rename.suggestions.models import RawRenameCue
+
+        assert "secret-youtube-key" not in q
+        return RawRenameCue(
+            basis="web",
+            confidence="likely",
+            detail="Web result: Acme webinar recap",
+            event_date=date(2026, 3, 12),
+            title="Acme webinar recap",
+            _priority=2,
+        )
+
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.suggestions.web.fetch_youtube_api_cue",
+        _api,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.rename.suggestions.web.fetch_web_cue",
+        _ddg,
+    )
+    cue = fetch_web_cue_from_title(title="Acme Launch", filename="zoom.mp3")
+    assert cue is not None
+    assert "YouTube Data API" not in cue.detail
+    assert api_calls == ["Acme Launch"]
+
+
+def test_fetch_youtube_api_cue_http_error_returns_none_without_key() -> None:
+    import httpx
+
+    def _get(url, *, params=None, **_k):
+        raise httpx.HTTPError("boom secret-youtube-key")
+
+    cue = fetch_youtube_api_cue(
+        "Acme Launch", api_key="secret-youtube-key", http_get=_get
+    )
+    assert cue is None
+
+
+def test_fetch_youtube_api_cue_empty_items_returns_none() -> None:
+    class _Resp:
+        status_code = 403
+
+        def json(self):
+            return {"error": {"message": "quota"}}
+
+    cue = fetch_youtube_api_cue(
+        "Acme Launch", api_key="secret-youtube-key", http_get=lambda *_a, **_k: _Resp()
+    )
+    assert cue is None

@@ -104,6 +104,13 @@ def resolve_topic_shift_enrichment_model(
             status="ok", model=resolved_model, source=resolved_source
         )
 
+    provider = str(getattr(llm_cfg, "provider", "") or "").strip().lower()
+    if provider == "openai_compatible":
+        # Free-form model ids are not listed on Ollama /api/tags.
+        return TopicShiftEnrichmentModelResolution(
+            status="ok", model=resolved_model, source=resolved_source
+        )
+
     installed: Sequence[str]
     probe_error: str | None = None
     if installed_models_provider is not None:

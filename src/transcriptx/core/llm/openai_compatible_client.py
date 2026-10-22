@@ -35,6 +35,21 @@ def resolve_openai_api_key() -> str:
     )
 
 
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Refuse redirects so a loopback endpoint cannot bounce to metadata IPs."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001
+        return None
+
+
+_OPENER = urllib.request.build_opener(_NoRedirectHandler)
+
+
+def http_urlopen(req: urllib.request.Request, *, timeout: float):
+    """urlopen that does not follow redirects. Tests may monkeypatch this."""
+    return _OPENER.open(req, timeout=timeout)
+
+
 def normalize_openai_base_url(base_url: str) -> str:
     url = (base_url or "").strip().rstrip("/")
     if not url:
@@ -42,6 +57,9 @@ def normalize_openai_base_url(base_url: str) -> str:
             "openai_compatible requires llm.base_url "
             "(do not omit it — there is no silent cloud default)."
         )
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"}:
+        raise LLMConfigurationError("LLM base_url must use http or https")
     if url.endswith("/v1"):
         return url
     return url + "/v1"
@@ -135,6 +153,7 @@ class OpenAICompatibleClient(LLMClient):
             "messages": messages,
             "temperature": temperature,
             "seed": self._seed,
+            "stream": False,
         }
         mapped = openai_response_format(response_format)
         if mapped is not None:
@@ -184,7 +203,7 @@ class OpenAICompatibleClient(LLMClient):
         url = f"{self._base_url}{path}"
         req = urllib.request.Request(url, method="GET", headers=self._headers())
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with http_urlopen(req, timeout=timeout) as resp:
                 return resp.read().decode("utf-8")
         except Exception as exc:
             raise self._wrap_network_error(exc) from exc
@@ -199,15 +218,20 @@ class OpenAICompatibleClient(LLMClient):
             headers=self._headers(),
         )
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with http_urlopen(req, timeout=timeout) as resp:
                 return resp.read().decode("utf-8")
         except Exception as exc:
             raise self._wrap_network_error(exc) from exc
 
+    def _redact(self, text: str) -> str:
+        if self._api_key and self._api_key in text:
+            return text.replace(self._api_key, "[redacted]")
+        return text
+
     def _wrap_network_error(self, exc: Exception) -> Exception:
         if isinstance(exc, urllib.error.HTTPError):
             return LLMGenerationError(
-                f"OpenAI-compatible HTTP error {exc.code}: {exc.reason}"
+                self._redact(f"OpenAI-compatible HTTP error {exc.code}: {exc.reason}")
             )
         if isinstance(exc, urllib.error.URLError):
             if isinstance(exc.reason, socket.timeout) or isinstance(

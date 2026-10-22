@@ -107,12 +107,13 @@ def _try_generate_titles(
     Soft-fails to skipped/partial without raising into the deterministic path.
     """
     try:
-        from transcriptx.core.llm.ollama_client import (
-            OllamaClient,
-            resolve_ollama_base_url,
+        from transcriptx.core.analysis.llm_support.runtime import (
+            LLMRuntime,
+            build_ollama_analysis_client,
+            require_ollama_analysis,
         )
     except Exception as exc:  # pragma: no cover
-        logger.info("topic_shift enrichment: OllamaClient unavailable: %s", exc)
+        logger.info("topic_shift enrichment: LLM client unavailable: %s", exc)
         return "skipped", [], None
 
     lines = [_span_prompt_block(span) for span in spans[:40]]
@@ -126,20 +127,18 @@ def _try_generate_titles(
         "Spans:\n" + "\n".join(lines)
     )
     try:
-        base = resolve_ollama_base_url(
-            str(getattr(llm_cfg, "base_url", None) or "http://localhost:11434")
-        )
+        require_ollama_analysis(llm_cfg)
         timeout = float(getattr(llm_cfg, "request_timeout", 120.0) or 120.0)
-        client = OllamaClient(
-            base_url=base,
+        runtime = LLMRuntime(
+            effort="low",
+            profile_name="low",
             model=model,
-            seed=int(getattr(llm_cfg, "seed", 42) or 42),
+            max_input_chars=48_000,
             request_timeout=min(timeout, 180.0),
-            availability_timeout=float(
-                getattr(llm_cfg, "availability_timeout", 7.5) or 7.5
-            ),
             max_output_tokens=1024,
+            model_source="request",
         )
+        client = build_ollama_analysis_client(llm_cfg=llm_cfg, runtime=runtime)
         raw = client.generate(
             prompt=prompt,
             temperature=0.2,

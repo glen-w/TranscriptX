@@ -182,14 +182,26 @@ class ParakeetDockerProvider:
                 duration_seconds=time.time() - started,
                 error=str(exc),
             )
-        cmd = build_parakeet_docker_argv(
-            docker_binary=str(binary),
-            image=image,
-            audio_path=audio_path,
-            output_dir=output_dir,
-            model=model,
-            device=options.device,
-        )
+        try:
+            cmd = build_parakeet_docker_argv(
+                docker_binary=str(binary),
+                image=image,
+                audio_path=audio_path,
+                output_dir=output_dir,
+                model=model,
+                device=options.device,
+            )
+        except ValueError as exc:
+            return TranscriptionProviderResult(
+                success=False,
+                json_path=None,
+                output_dir=output_dir,
+                returncode=None,
+                stdout_tail=(),
+                stderr_tail=(),
+                duration_seconds=time.time() - started,
+                error=str(exc),
+            )
         try:
             proc = subprocess.run(
                 cmd,
