@@ -79,6 +79,14 @@ def resolve_hf_cache_mount() -> str | None:
     return str(path) if path.is_dir() else None
 
 
+def _safe_docker_token(value: str, *, kind: str) -> str:
+    """Reject argv tokens that Docker would treat as flags (``-e``, ``--network``)."""
+    raw = (value or "").strip()
+    if not raw or raw.startswith("-"):
+        raise ValueError(f"unsafe Parakeet {kind}")
+    return raw
+
+
 def build_parakeet_docker_argv(
     *,
     docker_binary: str,
@@ -94,8 +102,12 @@ def build_parakeet_docker_argv(
     output_dir = output_dir.resolve()
     stem = audio_path.stem
     jsonl_name = f"{stem}.jsonl"
-    model_id = (model or "").strip() or PARAKEET_MODEL_DEFAULT
-    image_id = (image or "").strip() or DEFAULT_NEMO_IMAGE
+    model_id = _safe_docker_token(
+        (model or "").strip() or PARAKEET_MODEL_DEFAULT, kind="model"
+    )
+    image_id = _safe_docker_token(
+        (image or "").strip() or DEFAULT_NEMO_IMAGE, kind="image"
+    )
     cmd: list[str] = [str(docker_binary), "run", "--rm"]
     if (device or "").strip().lower() == "cuda":
         cmd.extend(["--gpus", "all"])

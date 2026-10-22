@@ -41,6 +41,23 @@ def test_resolve_never_falls_through_to_default_ollama_model() -> None:
     assert resolved.model != DEFAULT_OLLAMA_MODEL
 
 
+def test_resolve_skips_ollama_install_probe_for_openai_compatible() -> None:
+    llm_cfg = SimpleNamespace(
+        provider="openai_compatible",
+        model="gpt-4o-mini",
+        model_selection=None,
+        base_url="https://api.example.com/v1",
+    )
+    resolved = resolve_topic_shift_enrichment_model(
+        llm_cfg,
+        installed_models_provider=lambda: (_ for _ in ()).throw(
+            AssertionError("must not probe /api/tags")
+        ),
+    )
+    assert resolved.status == "ok"
+    assert resolved.model == "gpt-4o-mini"
+
+
 def test_resolve_uses_bound_per_module_selection() -> None:
     llm_cfg = SimpleNamespace(model=None, model_selection=None)
     token = bind_llm_model_selection(
@@ -237,17 +254,12 @@ def test_try_generate_titles_rejects_generic_and_keeps_summary(monkeypatch) -> N
                 }
             )
 
-    monkeypatch.setattr(
-        enrich_mod,
-        "OllamaClient",
-        _Client,
-        raising=False,
-    )
-    # Patch inside the import path used by _try_generate_titles
-    import transcriptx.core.llm.ollama_client as oc
+    import transcriptx.core.analysis.llm_support.runtime as runtime_mod
 
-    monkeypatch.setattr(oc, "OllamaClient", _Client)
-    monkeypatch.setattr(oc, "resolve_ollama_base_url", lambda x: x)
+    monkeypatch.setattr(
+        runtime_mod, "build_ollama_analysis_client", lambda **_k: _Client()
+    )
+    monkeypatch.setattr(runtime_mod, "require_ollama_analysis", lambda *_a, **_k: None)
 
     outcome, entries, _ = enrich_mod._try_generate_titles(
         model="m:1",
@@ -266,6 +278,8 @@ def test_try_generate_titles_rejects_generic_and_keeps_summary(monkeypatch) -> N
             },
         ],
         llm_cfg=SimpleNamespace(
+            enabled=True,
+            provider="ollama",
             base_url="http://localhost:11434",
             request_timeout=30,
             seed=1,
