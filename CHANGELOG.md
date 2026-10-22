@@ -9,11 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Docs truth:** ROADMAP, llm/settings/known-limitations, STT public surfaces, and workflows match shipped T0/T1, Theme A polish, Theme F tags, Theme H Parakeet, and Theme N `openai_compatible` + LiteLLM sidecar. Kind-tag auto-seed remains helpers-only.
+
 - **T0/T1 honesty:** Overview, Charts page, and Charts overview block share a zero-named-speakers banner. Import captions placeholder `SPEAKER_00` labels and points at **Treat as single speaker**. Content modules `understandability`, `lexical_diversity`, `epistemic_markers`, `simplified_transcript`, `topic_shift`, and `moments` now use `min_named_speakers: 0`.
 - **NeMo converter goldens:** `pred_text` / `transcript` JSONL (blank lines skipped), list JSON with optional speaker, and wrapped `{segments}` shapes.
 - **Theme A Overview/evidence:** Standard Overview places Highlights before Actions; Insights theme rows show up to three evidence quotes plus a Highlights remainder caption.
 - **B18 operator polish:** clearer `narrative_enabled` Settings copy and a Run Analysis hint when `insights_narrative` is selected.
-- **Theme F kind tags:** `voice note` / `lone speaker` kinds, Library inspector chips, and manual-wins auto-seed helpers. Tags still never create Groups.
+- **Theme F kind tags:** `voice note` / `lone speaker` kinds, Library inspector chips, and manual-wins auto-seed helpers (`suggest_kind_tags` / `merge_auto_tags_manual_wins`). Helpers are **not** called on admit. Tags still never create Groups.
 - **Theme F Groups picker:** optional library-tag AND-filter on create/edit membership. Filtering is not membership.
 - **Theme F YouTube rename:** optional YouTube Data API v3 lookup via `TRANSCRIPTX_YOUTUBE_API_KEY` (title queries only; DuckDuckGo remains the no-key path).
 - **Theme H Whisper honesty:** Transcribe Audio and watcher `auto_transcribe` copy state that Streamlit in `transcriptx-web` cannot see host `whispermlx`, and name WhisperX / Parakeet Docker as in-app alternatives.

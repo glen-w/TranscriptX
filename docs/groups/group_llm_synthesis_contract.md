@@ -59,7 +59,7 @@ Resolver compares these to **live** collect files, not only ACTIVE≡COMMIT.
 
 **`cancelled` / lock timeout / pre-COMMIT exceptions:** attempt status in run_results only; **never** ACTIVE/COMMIT `overall_status`; ACTIVE unchanged.
 
-Intentional skip/fail (disabled, non-Ollama, validation) **does** COMMIT + flip ACTIVE.
+Intentional skip/fail (disabled, non-live provider, validation) **does** COMMIT + flip ACTIVE.
 
 ## overall_status (ACTIVE/COMMIT only)
 
@@ -67,7 +67,7 @@ See `compute_overall_status` / plan matrix: `success` | `partial` | `failed` | `
 
 ## Config
 
-`analysis.group_llm_synthesis.enabled` (default `true`), `effort` (`low|medium|high|max`, default `high`). Effort resolves **effective** per-call limits without mutating global `llm.*`. Ollama-only via `require_ollama_analysis`.
+`analysis.group_llm_synthesis.enabled` (default `true`), `effort` (`low|medium|high|max`, default `high`). Effort resolves **effective** per-call limits without mutating global `llm.*`. Live-provider gate (`ollama` or `openai_compatible`) via `require_ollama_analysis`.
 
 ## Prompts
 

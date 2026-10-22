@@ -25,7 +25,7 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 | [First analysis](workflows/first-analysis.md) | Import a sample → Balanced run → Overview |
 | [Identify and name speakers](workflows/speaker-identification.md) | Name diarized labels (optional Apply auto-identify) |
 | [Investigate with evidence](workflows/investigate-evidence.md) | Question → transcript lines |
-| [Local AI synthesis](workflows/local-ai-synthesis.md) | Optional Ollama summary / extracts |
+| [Local AI synthesis](workflows/local-ai-synthesis.md) | Optional live LLM summary / extracts |
 | [Export results](workflows/export-results.md) | ZIP / HTML / EPUB |
 | [Explore Charts](workflows/charts.md) | Run-scoped charts |
 | [Bundle into a group](workflows/groups.md) | Several transcripts together |
@@ -42,7 +42,7 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 | [Installation details](runtime/installation-advanced.md) | Extras, profiles, env, gates |
 | [Docker](runtime/docker.md) | Compose-based runtime |
 | [Settings](runtime/settings.md) | GUI scopes, presets, knobs |
-| [LLM (Ollama)](runtime/llm.md) | Optional local AI |
+| [LLM](runtime/llm.md) | Optional Ollama or `openai_compatible` |
 | [Models](runtime/models.md) | Analysis model defaults |
 | [Workspace backup / restore](backup_and_restore.md) | Full-workspace ZIP |
 
@@ -51,13 +51,15 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 | Doc | Purpose |
 |-----|---------|
 | [Transcription](runtime/transcription.md) | Bring a file, Run in app, or generate a host STT command |
-| [STT stacks](recipes/stt-stacks/README.md) | Compose + host whispermlx + optional WhisperX / WebUI |
+| [STT stacks](recipes/stt-stacks/README.md) | Compose + host whispermlx + optional WhisperX / WebUI / Parakeet |
 | [Host STT automation](runtime/host-stt.md) | whispermlx-missing, inbox-watch (`--transcribe`), voice-note-watch, Python import |
 | [Auto-identify speakers](runtime/auto-identify.md) | Auto-name / auto-link after ingest (Settings, inbox-watch, CLI) |
 | [Audio prep](runtime/audio-prep.md) | Tools → Preprocessing / Auto-merge |
 | [Directory watcher](runtime/directory_watcher.md) | In-app inbox → import |
 | [WhisperX recipe](recipes/whisperx/README.md) | Optional WhisperX Docker |
 | [Whisper-WebUI recipe](recipes/whisper-webui/README.md) | Optional Gradio recipe |
+| [Parakeet recipe](recipes/parakeet/README.md) | Optional NeMo Parakeet Docker Run-in-app |
+| [LiteLLM sidecar](recipes/litellm/README.md) | Optional loopback LLM gateway |
 
 ## Read, correct, export
 

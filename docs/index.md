@@ -7,7 +7,7 @@ Use **Import Transcript** for JSON, SRT, VTT, and other supported formats. Need 
 **See how it works:** [first analysis](workflows/first-analysis.md) — import the sample, name speakers, run **Balanced**, read **Overview**.  
 **Everyday jobs:** [Using TranscriptX](workflows/index.md).  
 **Is this for me?** [How TranscriptX compares](comparison.md).  
-**Privacy:** files stay on your computer; optional local AI is [Ollama](runtime/llm.md) and off by default.
+**Privacy:** files stay on your computer; optional AI is [Ollama](runtime/llm.md) (default) or opt-in `openai_compatible`, and off by default.
 
 The GitHub [README](https://github.com/glen-w/TranscriptX#readme) is the same first-run story.
 
@@ -59,6 +59,8 @@ TERMS
 recipes/stt-stacks/README
 recipes/whisperx/README
 recipes/whisper-webui/README
+recipes/parakeet/README
+recipes/litellm/README
 ```
 
 ```{toctree}

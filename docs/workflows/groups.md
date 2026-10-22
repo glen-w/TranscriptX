@@ -37,6 +37,7 @@ At least one managed transcript is in the library (see [First analysis](first-an
 - Groups are membership containers, not a second library. Transcripts stay first-class; the group references them.
 - Creating a group does not run analysis by itself — use **Run Analysis** with target **Group**.
 - Empty-state copy on Groups points you back to Library when no groups exist yet.
+- **Filter picker by library tags** is an optional AND-filter on the member picker. Filtering is not membership; tags never create a Group.
 
 ## You should now have…
 

@@ -96,7 +96,7 @@ Settings → Configuration → **Rename** (also under Advanced as `input.*`):
 | `input.rename_content_suggestions` | `off` | `off` / `auto` — when `auto`, rename/import forms prefill from the suggestion service on open and show **Suggested names** |
 | `input.rename_default_case` | `lower` | Default case for rename token buttons and the new file name field: `title` / `upper` / `lower` |
 | `input.rename_suggest_transcript` | `true` | Transcript date/title cues when suggestions run (`auto` or **Suggest names** on the form) |
-| `input.rename_suggest_llm` | `false` | Optional local LLM pass when suggestions run in **auto** mode (Ollama; model from Settings → Models → `rename_suggestions`). **Suggest names** on the rename form also runs the LLM when Ollama is enabled and a `rename_suggestions` model is configured, even if this flag is off. The LLM returns **three** distinct title options per run. |
+| `input.rename_suggest_llm` | `false` | Optional live-LLM pass when suggestions run in **auto** mode (Ollama or `openai_compatible`; model from Settings → Models → `rename_suggestions`). **Suggest names** on the rename form also runs the LLM when a live provider is enabled and a `rename_suggestions` model is configured, even if this flag is off. The LLM returns **three** distinct title options per run. |
 | `input.rename_suggest_web` | `false` | Optional web lookup for public-event-like files (short query only; not the transcript body). If `TRANSCRIPTX_YOUTUBE_API_KEY` is set, uses YouTube Data API v3 `search` + `videos` (`publishedAt`, title) first; otherwise DuckDuckGo HTML (`site:youtube.com` then a general event query). Eligible when the filename looks like a webinar/platform recording, dialogue matches public-event markers, or the stem is a multi-word descriptive title (four or more non-stopword tokens). |
 | `input.rename_suggestions_effort` | `low` | Effort tier for the rename-suggestion LLM pass (`max_input_chars`, timeout, output tokens) |
 
@@ -115,9 +115,9 @@ Legacy `prefill_rename_with_date_prefix` still applies when smart rename is `off
 
 ### Content rename suggestions (assistive)
 
-The rename form always shows **Suggest names (transcript + LLM)** (or **transcript only** when Ollama is off). That button runs the suggestion service on demand and fills **Suggested names**, even when `input.rename_content_suggestions` is `off`.
+The rename form always shows **Suggest names (transcript + LLM)** (or **transcript only** when no live LLM provider is enabled). That button runs the suggestion service on demand and fills **Suggested names**, even when `input.rename_content_suggestions` is `off`.
 
-When `input.rename_content_suggestions` is `auto`, the same service also runs when you open the form: transcript date and title cues (default on), optional local LLM (`rename_suggestions` consumer; effort via `input.rename_suggestions_effort`), and optional web lookup for eligible filenames, dialogue, or long descriptive title stems (short DuckDuckGo queries, YouTube-biased first — never the transcript body). If the current stem already looks like a descriptive title, its underscore form is always included (and preferred) in **Suggested names**. The top-ranked **full stem** is prefilled and alternatives appear in **Suggested names**; nothing is written until you submit **Rename**. Event dates from transcript/web/LLM beat the file’s download/mtime date (shown as “file date, not the event date”). With no event date, a title-only stem may be offered without inventing a `YYMMDD_` from file time. Results are cached under `{data_dir}/.cache/rename/`. `auto_import` smart rename on import stays filename-only.
+When `input.rename_content_suggestions` is `auto`, the same service also runs when you open the form: transcript date and title cues (default on), optional live LLM (`rename_suggestions` consumer; effort via `input.rename_suggestions_effort`), and optional web lookup for eligible filenames, dialogue, or long descriptive title stems (short DuckDuckGo queries, YouTube-biased first — never the transcript body). If the current stem already looks like a descriptive title, its underscore form is always included (and preferred) in **Suggested names**. The top-ranked **full stem** is prefilled and alternatives appear in **Suggested names**; nothing is written until you submit **Rename**. Event dates from transcript/web/LLM beat the file’s download/mtime date (shown as “file date, not the event date”). With no event date, a title-only stem may be offered without inventing a `YYMMDD_` from file time. Results are cached under `{data_dir}/.cache/rename/`. `auto_import` smart rename on import stays filename-only.
 
 ## “Profile” taxonomy (do not conflate)
 
@@ -163,6 +163,6 @@ Order: name and **link** a seed cast → Enrol all → Pre-load → confirm sugg
 - [installation.md](installation.md) — normal install; [installation details](installation-advanced.md) — extras and install profiles
 - [STORAGE.md](STORAGE.md) — config_dir layout and precedence
 - [auto-identify.md](auto-identify.md) — Speakers ingest knobs (`identify.json`)
-- [models.md](models.md) / [llm.md](llm.md) — model and Ollama knobs
+- [models.md](models.md) / [llm.md](llm.md) — model and live-LLM knobs
 - Developer architecture: [config_architecture.md](../dev/config_architecture.md)
 - Assessment / backlog: [settings_knobs_assessment.md](../dev/settings_knobs_assessment.md)

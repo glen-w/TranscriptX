@@ -53,7 +53,10 @@ You can also browse **Charts**, save custom questions, and turn on optional [loc
 ## On your machine
 
 Source files and analysis results stay on your computer. Optional AI uses
-[Ollama](docs/runtime/llm.md) locally and stays off until you turn it on.
+[Ollama](docs/runtime/llm.md) locally by default and stays off until you turn
+it on. Operators can point `openai_compatible` at an explicit `base_url`
+(optional [LiteLLM sidecar](docs/recipes/litellm/README.md)). In-app STT is
+host-orchestrated Whisper or [Parakeet Docker](docs/recipes/parakeet/README.md).
 
 Limits: [known limitations](docs/known_limitations.md). Third-party models: [NOTICE](NOTICE).
 

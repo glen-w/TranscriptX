@@ -29,12 +29,11 @@ This is **owner machine hygiene**, not a 1.0 product feature. Layout contracts: 
 
 ---
 
-## Next (post-Now): Undiarized resilience + ASR plug-in ladder
+## Next (post-Now): remaining ASR ladder
 
-**Priority:** First product work after Now — ahead of registering any new Theme **H** provider.
-Research basis: [Open source ASR for TranscriptX](../reports/Open%20source%20ASR%20for%20TranscriptX.md) (2026-10). **Implementation plan (waves 1–4):** [.cursor/plans/2026-10-20-undiarized-asr-waves.md](../.cursor/plans/2026-10-20-undiarized-asr-waves.md). Keeps H1–H4 Whisper Run-in-app and Theme **K** command-gen as the shipped STT surface. Do **not** register a third `TranscriptionProvider` until the Whisper path is boring and a Parakeet admit converter has golden fixtures.
+**Shipped:** T0/T1 honesty, Theme **K** NeMo converter goldens, and Theme **H5** registered `parakeet_docker` (production `docker run` + CI stub; Canary copy-only). Whisper Run-in-app (H1–H4) stays the default STT surface. Research basis: [Open source ASR for TranscriptX](../reports/Open%20source%20ASR%20for%20TranscriptX.md) (2026-10). Waves 1–4: [.cursor/plans/2026-10-20-undiarized-asr-waves.md](../.cursor/plans/2026-10-20-undiarized-asr-waves.md).
 
-**Why this is next:** Industry pipelines treat plain SRT/VTT/Whisper-without-`--diarize` as first-class content. TranscriptX already ungates **diarized-but-unnamed** labels (`allow_unnamed_speakers`) and filters monologue overview charts, but speakerless imports still hard-block most modules. Softening that edge is higher leverage than adding another ASR engine. Open engines that matter for later: NVIDIA **Parakeet/Canary** (Theme K → H5), FunASR/SenseVoice and Distil-Whisper (BYO/Copy), Xiaomi **CocktailASR-1** (watchlist — enrolled focus-speaker only, not a WhisperX replacement; see [CocktailASR article](https://aiinnovatortech.com/latest-ai-news/xiaomi-cocktailasr-1-speech-recognition) and primary [xiaomi-research/xiaomi-cocktailasr-1](https://github.com/xiaomi-research/xiaomi-cocktailasr-1)).
+**Still deferred:** CocktailASR-1 (enrolled focus-speaker only, not a WhisperX replacement; see [CocktailASR article](https://aiinnovatortech.com/latest-ai-news/xiaomi-cocktailasr-1-speech-recognition) and [xiaomi-research/xiaomi-cocktailasr-1](https://github.com/xiaomi-research/xiaomi-cocktailasr-1)), H6 streaming, HTTP STT sidecar, YouTube *URL ingest* (rename metadata is Theme **F**). FunASR/SenseVoice and Distil-Whisper stay BYO/Copy.
 
 ### Capability ladder (speaker tiers)
 
@@ -52,7 +51,7 @@ Research basis: [Open source ASR for TranscriptX](../reports/Open%20source%20ASR
 | Tier | Engines | Action |
 |------|---------|--------|
 | **1 — Host providers (H)** | whispermlx (Mac), WhisperX Docker (CUDA/CPU) | Harden only until boring |
-| **2 — Theme K → H5** | NeMo Parakeet TDT, Canary (± Canary-Qwen); optional faster-whisper / whisper.cpp / sherpa-onnx | Copyable `docker run` + **WhisperX-shaped JSON converter** into `originals/`; Import remains the gate; promote to registered provider only after H5 entry criteria |
+| **2 — Theme K → H5** | NeMo Parakeet TDT (registered `parakeet_docker`); Canary copy-only; optional faster-whisper / whisper.cpp / sherpa-onnx | Copyable `docker run` + WhisperX-shaped JSON converter into `originals/`; Import remains the gate; Canary is not a Run-in-app provider |
 | **3 — BYO / Copy recipes** | Whisper-WebUI, FunASR/SenseVoice, Distil-Whisper, Vosk, Scriberr / noScribe / aTrain | Document export → Import; adapters only if recurring shapes fail |
 | **Watchlist** | CocktailASR-1 (focus-speaker / enrollment), HTTP STT sidecar, YouTube URL ingest (H5+), H6 streaming, DiCoW | Research / later; not Whisper replacements |
 | **Reject** | In-process NeMo/Whisper in the analysis image; silent cloud STT; SeamlessM4T/MMS as commercial defaults (CC-BY-NC); DeepSpeech; Kaldi-as-product; meeting bots | Architecture / license / wrong job |
@@ -61,7 +60,7 @@ Research basis: [Open source ASR for TranscriptX](../reports/Open%20source%20ASR
 
 ### Decision forks (locked)
 
-1. **Narrow Whisper Run-in-app** until H5 — no third provider for novelty.
+1. **Narrow Whisper Run-in-app** as the default path; Parakeet is the one extra registered provider (H5). No further engines for novelty.
 2. **Engines outside the analysis image** — Docker/host CLI only; Compose analysis never mounts STT.
 3. **No silent cloud STT** — BYO import or explicit opt-in only.
 4. **Theme K before H5 registry** — Parakeet/Canary converter + trust-matrix row + Mac honesty (“use whispermlx”) gate H5.
@@ -74,7 +73,7 @@ Research basis: [Open source ASR for TranscriptX](../reports/Open%20source%20ASR
 - [x] **T1** “Treat as single speaker” opt-in (import or Run Analysis)
 - [x] **Theme K:** Parakeet (then Canary) command-gen + JSONL → `{segments:[{start,end,text,speaker?}]}` converter + golden fixtures
 - [x] **H5 entry:** converter + CUDA Docker recipe + trust/NOTICE row; registered `parakeet_docker` provider (production `docker run` + stub for dev/CI; Canary copy-only)
-- [ ] Defer CocktailASR / streaming / HTTP sidecar until the slices above land
+- [ ] Defer CocktailASR / streaming / HTTP sidecar / YouTube URL ingest (the slices above have landed)
 
 Cross-links: Theme **H** (in-app providers), Theme **K** (command generation), [transcription.md](runtime/transcription.md), [settings.md](runtime/settings.md) (`allow_unnamed_speakers`), [comparison.md](comparison.md).
 
@@ -83,11 +82,11 @@ Cross-links: Theme **H** (in-app providers), Theme **K** (command generation), [
 ## Current state
 
 - Streamlit GUI + typed Python API; managed import; file-backed storage/sidecars
-- Broad analysis module set (language, speakers, interactions, emotion, voice, groups, optional Ollama)
+- Broad analysis module set (language, speakers, interactions, emotion, voice, groups, optional live LLM)
 - Contracts for storage, run outcomes, outputs, and public surfaces
-- Package on a **0.9.x** stabilisation track toward 1.0
+- Package **1.0.1**; Unreleased holds Theme A polish, Theme F library tags, Theme H Parakeet recipe, and Theme N `openai_compatible` + LiteLLM sidecar
 
-Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription is BYO plus in-app **command-generation** (0.9.4) and optional **host-orchestrated STT** (theme **H**: whispermlx / WhisperX Docker, durable jobs). Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Post-0.9.9 wave cut as interim **`0.9.9.5`**: early 1.x Themes **A–D**, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, backup/restore — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md). Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **done for 1.0** (Speaker ID Phase 9, Studio review, viewer click-drag); Theme **D** CCv2 full-file reader **done for 1.0** (clip karaoke remains Correct-mode / `TX_READER_WORKSPACE_COMPONENT=0` rollback). Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
+Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription is BYO plus in-app **command-generation** (0.9.4) and optional **host-orchestrated STT** (theme **H**: whispermlx / WhisperX Docker / Parakeet Docker, durable jobs). Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Post-0.9.9 wave cut as interim **`0.9.9.5`**: early 1.x Themes **A–D**, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, backup/restore — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md). Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **done for 1.0** (Speaker ID Phase 9, Studio review, viewer click-drag); Theme **D** CCv2 full-file reader **done for 1.0** (clip karaoke remains Correct-mode / `TX_READER_WORKSPACE_COMPONENT=0` rollback). Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
 
 ---
 
@@ -110,7 +109,7 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Overview / results presentation | Retire Insights Analysis tab; redistribute into Summary / Speakers / Actions / Highlights — [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | **0.9.9** (Charts/Overview hierarchy residuals deferred) |
 | Post-0.9.9 wave (interim) | Early 1.x A–D + operator UX — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md) | **0.9.9.5** |
 | **Owner local folder cleanup** | Unambiguous library / `originals/` / inbox / recordings mounts — see **Now** above | **now (top priority)** |
-| **Undiarized resilience + ASR ladder** | T0/T1 speaker tiers; Parakeet Theme K→H5; CocktailASR watchlist — see **Next** above | **[~] T0/T1 honesty shipped; converter/H5 recipe still hardening** |
+| **Undiarized resilience + ASR ladder** | T0/T1 speaker tiers; Parakeet Theme K→H5; CocktailASR watchlist — see **Next** above | **[x] T0/T1 honesty + converter + H5 Parakeet recipe**; remainder deferred |
 | Informal stranger test | Tried by someone who had not used the app | **done** (2026-10); not a release gate |
 
 **Module freeze:** no new analysis modules in 0.9.x unless required to complete or repair the 1.0 journey. Backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
@@ -147,15 +146,15 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections / viewer click-drag | **done for 1.0** (Phase 9 Speaker ID; Studio CCv2 + viewer edit; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md)) |
 | D. Playback & reading UX | Karaoke-style word highlight; CCv2 full-file reader | **done for 1.0** (reader workspace + clip rollback; see [karaoke-playback.md](runtime/karaoke-playback.md)) |
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
-| F. Library & organisation | Transcript tagging; Groups interaction rules; optional YouTube API rename metadata | Mid 1.x |
+| F. Library & organisation | Transcript tagging; Groups interaction rules; optional YouTube API rename metadata | **[~] kind tags / Groups filter / YouTube rename shipped**; pin later |
 | G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** narrow Windows convert/admit + pluggable STT shipped; service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
-| H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Parakeet production recipe shipped; Canary copy-only; YouTube URL / H6 deferred | **[~] H1–H5 Parakeet recipe**; H5+ remainder deferred |
+| H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Parakeet production recipe shipped; Canary copy-only; YouTube URL / H6 deferred | **[x] H1–H5 Parakeet recipe**; H5+ remainder deferred |
 | I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Deferred except H1 job channel |
 | J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 — deferred vs STT |
-| K. External STT command generation | Broader copyable host CLIs until / beside theme H; Parakeet/Canary converter + production `docker run` snippet | **[~] PowerShell + NeMo copy commands shipped** |
+| K. External STT command generation | Broader copyable host CLIs until / beside theme H; Parakeet/Canary converter + production `docker run` snippet | **[x] PowerShell + NeMo copy commands + converter goldens + Parakeet `docker run`** |
 | L. Polish & onboarding extras | Coach-marks, bundled demos, aesthetics — only if capacity | Anytime light |
 | M. Research / citeable methods | Optional B4-style methods; multilingual beyond small subset | Later 1.x+ |
-| N. Multi-provider LLM (opt-in) | OpenAI-compatible / LiteLLM gateway beyond Ollama; never silent cloud default | Mid–late 1.x |
+| N. Multi-provider LLM (opt-in) | OpenAI-compatible / LiteLLM gateway beyond Ollama; never silent cloud default | **[x] Narrow `openai_compatible` + LiteLLM sidecar recipe**; Ollama remains default |
 | → 2.0 | Personal audio intelligence companion | Vision |
 
 **GUI / shell path (post-1.0):** Streamlit remains the analysis workbench shell. Theme **C** is the escape hatch for workstation pages, not a prelude to abandoning Streamlit. A fully custom non-Streamlit UI is **architecturally feasible** (`app/` and `core/` are already UI-agnostic) but **timing-poor and high-cost** (no HTTP API today; dual-run of the Streamlit page surface and GUI tests dominates). Theme **I** owns installable-shell spikes and, if capacity exists after 1.0, the only reversible enabling step: a loopback application API over existing controllers. Escalate to a custom local frontend only after the Theme C evidence gate — see §C and §I.
@@ -168,7 +167,7 @@ Public positioning today: [comparison.md](comparison.md). Analysis backlog: [ana
 
 Insights and related analysis presentation work for 1.0; do not freeze quality here.
 
-Design: [theme_a_insights_quality.md](dev/theme_a_insights_quality.md). **Deterministic schema-v3 wave shipped 0.9.9.5 (#6); presentation closeout 2026-10** (Insights abstention UI, Overview compact empty chrome). **Shipped 1.0.0:** chart overview monologue honesty (`filter_overview_viz_ids_for_named_speakers`); theme **evidence_quote_ids** in Insights UI; opt-in **B18** `insights_narrative`. **Deepen-in-place continues:** Overview composition (Highlights before Actions), multi-quote evidence captions, B18 operator polish.
+Design: [theme_a_insights_quality.md](dev/theme_a_insights_quality.md). **Deterministic schema-v3 wave shipped 0.9.9.5 (#6); presentation closeout 2026-10** (Insights abstention UI, Overview compact empty chrome). **Shipped 1.0.0:** chart overview monologue honesty (`filter_overview_viz_ids_for_named_speakers`); theme **evidence_quote_ids** in Insights UI; opt-in **B18** `insights_narrative`. **Shipped Unreleased:** Standard Overview Highlights-before-Actions, multi-quote evidence captions, B18 operator polish. Further deepen-in-place follows the analysis-module backlog.
 
 - Stronger **deterministic** outputs (clearer, more useful non-LLM / hybrid insights; less noise) — **core wave done**; deepen-in-place from backlog continues
 - Reassess **GUI layout** for Insights and analysis result surfaces (hierarchy, scannability, what to show first)
@@ -236,7 +235,7 @@ Beyond 1.0 resource envelopes: help users plan and choose runs on *their* machin
 
 ### F. Library & organisation
 
-- **Transcript tagging** — library visibility / kind labels (`meeting`, `voice note`, `lone speaker`). Tags are organisation metadata, not an analysis module. Design: [theme_f_library_organisation.md](dev/theme_f_library_organisation.md). Kind chips + auto-seed (manual wins), Groups picker AND-filter, and opt-in YouTube Data API rename shipped. Pin/favourite remains later.
+- **Transcript tagging** — library visibility / kind labels (`meeting`, `voice note`, `lone speaker`). Tags are organisation metadata, not an analysis module. Design: [theme_f_library_organisation.md](dev/theme_f_library_organisation.md). Kind chips, Groups picker AND-filter, and opt-in YouTube Data API rename shipped. Kind-tag auto-seed helpers exist (`suggest_kind_tags` / `merge_auto_tags_manual_wins`) but are **not** called on admit. Pin/favourite remains later.
 
 - **YouTube Data API for rename assist** — **[x]** optional backend for content rename suggestions (`rename_suggest_web`) when the operator supplies `TRANSCRIPTX_YOUTUBE_API_KEY`: YouTube Data API v3 search + `videos` metadata (`publishedAt`, canonical title) for public YouTube-hosted events, ahead of DuckDuckGo HTML + `site:youtube.com`. Privacy: short title/search queries only; never the transcript body. DuckDuckGo remains the default when no key is set.
 
@@ -333,7 +332,7 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 | **H2** WhisperX Docker provider | **[x]** registered; CUDA `--gpus all` or CPU |
 | **H3** Watcher `auto_transcribe` + queued drain | **[x]** when a provider is available |
 | **H4** Docs / install honesty | **[x]** this page + [transcription.md](runtime/transcription.md) + [stt-stacks](recipes/stt-stacks/README.md); Compose GUI cannot see host whispermlx; watcher `auto_transcribe` names Parakeet Docker |
-| **H5+** NVIDIA Parakeet/Canary, YouTube URL ingest (download/transcribe), HTTP STT sidecar | **[~] Parakeet production `docker run` shipped** (stub still for CI; Canary copy-only; no `canary_docker`). YouTube URL ingest and HTTP STT sidecar remain deferred (YouTube *rename* metadata is theme **F**, not H5) |
+| **H5+** NVIDIA Parakeet/Canary, YouTube URL ingest (download/transcribe), HTTP STT sidecar | **[x] Parakeet production `docker run` shipped** (stub still for CI; Canary copy-only; no `canary_docker`). YouTube URL ingest and HTTP STT sidecar remain deferred (YouTube *rename* metadata is theme **F**, not H5) |
 | **H6** Real-time / streaming STT (WebSocket sessions, turn detection, partials) | **[ ] deferred** — live captions, in-session notes, voice-agent upstream; not batch file jobs (H1–H4). Design reference: [AssemblyAI — Real-time transcription in Python (Universal-3.6 Pro Realtime)](https://www.assemblyai.com/blog/real-time-transcription-python). **Opt-in cloud only** (explicit API key; document audio leaving the machine); local batch STT remains the default path. Partial text UX may overlap theme **D** if we ever surface streaming in the reader. |
 | **Watchlist** CocktailASR-1 / DiCoW | **[ ]** enrolled focus-speaker or diarization-conditioned Whisper peers — see **Next**; not Balanced meeting defaults |
 
@@ -397,7 +396,7 @@ Until/beside theme **H**, keep improving **copyable host commands** on Transcrib
 
 **Saved presets:** Transcribe Audio can save/load/delete command-gen form presets under `.transcriptx/profiles/stt_commands/` (host paths and flags only — never `HF_TOKEN`; tokens stay in `whisperx.env`).
 
-**Next K slice (see Next above):** NeMo **Parakeet** (then **Canary**) copyable `docker run` plus a WhisperX-shaped JSON converter into `originals/` with golden fixtures — the admit path that gates Theme **H5**. Optional faster-whisper / whisper.cpp / sherpa-onnx commands stay documentation-grade unless they share that converter. FunASR/SenseVoice and CocktailASR stay BYO/watchlist, not first-class K presets.
+**Shipped K→H5:** NeMo **Parakeet** copyable `docker run`, WhisperX-shaped JSON converter into `originals/` with golden fixtures, and registered `parakeet_docker`. **Canary** stays Copy command only. Optional faster-whisper / whisper.cpp / sherpa-onnx commands stay documentation-grade unless they share that converter. FunASR/SenseVoice and CocktailASR stay BYO/watchlist, not first-class K presets.
 
 ---
 
@@ -422,7 +421,7 @@ Only if capacity remains after core themes:
 
 ### N. Multi-provider LLM (opt-in)
 
-**1.0 stance unchanged:** optional local AI defaults to **Ollama** (`provider=ollama`). Analysis modules use a pluggable `LLMClient`. **Narrow 1.x:** `provider=openai_compatible` is an opt-in Chat Completions client (explicit `llm.base_url`; API key from `TRANSCRIPTX_LLM_API_KEY` / `OPENAI_API_KEY`). LiteLLM sidecar is a later slice. The Settings/Run Analysis tag picker is still Ollama-oriented until the UX slice.
+**1.0 stance unchanged:** optional local AI defaults to **Ollama** (`provider=ollama`). Analysis modules use a pluggable `LLMClient`. **Narrow 1.x shipped:** `provider=openai_compatible` is an opt-in Chat Completions client (explicit `llm.base_url`; API key from `TRANSCRIPTX_LLM_API_KEY` / `OPENAI_API_KEY`). Settings / Run Analysis use a free-form model id when not on Ollama; remote endpoints are labelled **Remote AI**. Optional LiteLLM compose sidecar is a docs recipe, not an analysis-image SDK.
 
 **1.x intent:** let operators optionally call **other LLM providers** (OpenAI, Anthropic, Azure, Bedrock, vLLM, …) without rewriting each LLM analysis module — while staying **local-first** and never making cloud the silent default.
 
@@ -436,7 +435,7 @@ Only if capacity remains after core themes:
 | **Model selection honesty** | **[x]** Free-form model ids when not on Ollama tags; remote endpoints labelled Remote AI |
 | **Privacy / trust** | **[x]** Explicit opt-in only; document remote data flow; align with [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md) |
 
-**Hard parts:** structured JSON parity with Ollama `format=json`; seed/reproducibility across vendors; long timeouts and large prompts vs cloud limits; Corrections Studio + Run Analysis pickers that today assume `/api/tags`; dependency/image weight if the SDK is in-process.
+**Hard parts:** structured JSON parity with Ollama `format=json`; seed/reproducibility across vendors; long timeouts and large prompts vs cloud limits; `openai_compatible` does not use the Ollama JSON fallback / circuit-breaker wrapper; dependency/image weight if an SDK were in-process (LiteLLM stays a sidecar).
 
 **Decision fork:** **Invest** (OpenAI-compatible client + optional LiteLLM compose service) · **Narrow** (single remote OpenAI-compatible endpoint, no multi-vendor catalog) · **Defer**. Do not ship cloud LLM as a silent default (that remains deferred below).
 
