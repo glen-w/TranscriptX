@@ -7,6 +7,7 @@ whispermlx / whispermlx-missing / WhisperX Docker / Whisper-WebUI workflows.
 
 from __future__ import annotations
 
+import json
 import shlex
 from dataclasses import dataclass
 from enum import Enum
@@ -21,6 +22,7 @@ class TranscriptionTool(str, Enum):
     WHISPER_WEBUI_DOCKER = "whisper_webui_docker"
     NEMO_PARAKEET_DOCKER = "nemo_parakeet_docker"
     NEMO_CANARY_DOCKER = "nemo_canary_docker"
+    GRANITE_MLX = "granite_mlx"
 
 
 # Common Whisper / whispermlx / WhisperX model ids for the command generator.
@@ -137,6 +139,9 @@ class CommandGenParams:
     webui_clone_dir: str = "$HOME/Whisper-WebUI"
     # Import format hint for operator notes / preview
     expected_output_format: str = "whisperx_json"
+    keyword_bias_enabled: bool = False
+    keyword_list_name: str | None = None
+    keywords: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -446,6 +451,78 @@ echo "Stop: docker stop whisper-webui"
     )
 
 
+_GRANITE_ASR_DEFAULT = "ibm-granite/granite-speech-5.0-2b"
+_GRANITE_SAA_DEFAULT = "ibm-granite/granite-speech-4.1-2b-plus"
+
+
+def _granite_copy_model(params: CommandGenParams) -> str:
+    raw = (params.model or "").strip()
+    lowered = raw.lower()
+    if raw in {_GRANITE_ASR_DEFAULT, _GRANITE_SAA_DEFAULT}:
+        return _GRANITE_SAA_DEFAULT if params.diarize else _GRANITE_ASR_DEFAULT
+    if "granite-speech" in lowered or lowered.startswith("ibm-granite/"):
+        return raw
+    if params.diarize:
+        return _GRANITE_SAA_DEFAULT
+    return _GRANITE_ASR_DEFAULT
+
+
+def _granite_gen_kwargs(params: CommandGenParams) -> dict:
+    model = _granite_copy_model(params)
+    kwargs: dict = {"language": None}
+    if params.diarize or model == _GRANITE_SAA_DEFAULT:
+        kwargs["task"] = "saa"
+    else:
+        kwargs["punctuate"] = True
+        language = (params.language or "").strip()
+        if language and language.lower() not in {"auto", "null"}:
+            kwargs["source_language"] = language
+    if params.keyword_bias_enabled and params.keywords:
+        kwargs["hotwords"] = list(params.keywords)
+    return kwargs
+
+
+def build_granite_mlx(params: CommandGenParams) -> GeneratedCommand:
+    """Copyable mlx-audio Granite Speech command (Apple Silicon host)."""
+    model = _granite_copy_model(params)
+    gen_kwargs = json.dumps(_granite_gen_kwargs(params), ensure_ascii=False)
+    audio = _strip_trailing_separators(params.input_path)
+    out_mount = _strip_trailing_separators(params.output_dir)
+    shell = f"""# Granite Speech via mlx-audio (Apple Silicon host — not the analysis venv).
+# pip install -U mlx-audio jinja2
+# Point MLX_AUDIO_PYTHON at that interpreter. First run downloads Hub weights.
+
+MLX_AUDIO_PYTHON="${{MLX_AUDIO_PYTHON:-python3}}"
+OUTDIR={_q(out_mount)}
+mkdir -p "$OUTDIR"
+
+"$MLX_AUDIO_PYTHON" -m mlx_audio.stt.generate \\
+  --model {_q(model)} \\
+  --audio {_q(audio)} \\
+  --output-path "$OUTDIR/granite_raw" \\
+  --format json \\
+  --gen-kwargs {_q(gen_kwargs)}
+
+python3 -m transcriptx.services.transcription.granite_json_to_whisperx \\
+  --input "$OUTDIR/granite_raw.json" \\
+  --output "$OUTDIR/$(basename {_q(audio)} | sed 's/\\.[^.]*$//').json"
+"""
+    notes = (
+        "Run on the macOS host (Apple MLX). Do not install mlx-audio in the analysis venv.",
+        "Set MLX_AUDIO_PYTHON to the interpreter that has mlx-audio>=0.5.9 and jinja2.",
+        "Diarize uses granite-speech-4.1-2b-plus (task=saa). No HF_TOKEN / pyannote.",
+        "Keyword biasing is off unless you enabled it; cap is 2000 terms.",
+        "Long files: IBM recommends ~2 min chunks for 5.0-2b; Run in app chunks automatically.",
+        "Speaker-attributed mode does not emit WhisperX-grade word timestamps.",
+        "Expected output: WhisperX-shaped JSON for Import Transcript.",
+    )
+    return GeneratedCommand(
+        title="Granite Speech (mlx-audio)",
+        shell=shell.strip() + "\n",
+        notes=notes,
+    )
+
+
 def generate_transcription_command(params: CommandGenParams) -> GeneratedCommand:
     """Build a copyable command for the selected tool."""
     if params.tool is TranscriptionTool.WHISPERMLX_SINGLE:
@@ -463,6 +540,8 @@ def generate_transcription_command(params: CommandGenParams) -> GeneratedCommand
         generated = build_nemo_parakeet_docker(params)
     elif params.tool is TranscriptionTool.NEMO_CANARY_DOCKER:
         generated = build_nemo_canary_docker(params)
+    elif params.tool is TranscriptionTool.GRANITE_MLX:
+        generated = build_granite_mlx(params)
     else:
         raise ValueError(f"Unknown transcription tool: {params.tool!r}")
     extra_notes = (_POSIX_PASTE_NOTE,)
@@ -521,6 +600,8 @@ def generate_transcription_command_powershell(
         generated = build_nemo_parakeet_docker(params)
     elif params.tool is TranscriptionTool.NEMO_CANARY_DOCKER:
         generated = build_nemo_canary_docker(params)
+    elif params.tool is TranscriptionTool.GRANITE_MLX:
+        generated = _build_granite_mlx_powershell(params)
     else:
         raise ValueError(f"Unknown transcription tool: {params.tool!r}")
     notes = generated.notes + (_POWERSHELL_PASTE_NOTE,)
@@ -535,6 +616,29 @@ def generate_transcription_command_powershell(
         shell=generated.shell,
         notes=notes,
         next_step=generated.next_step,
+    )
+
+
+def _build_granite_mlx_powershell(params: CommandGenParams) -> GeneratedCommand:
+    model = _granite_copy_model(params)
+    gen_kwargs = json.dumps(_granite_gen_kwargs(params), ensure_ascii=False)
+    audio = _strip_trailing_separators(params.input_path)
+    out_mount = _strip_trailing_separators(params.output_dir)
+    shell = f"""# mlx-audio is Apple Silicon. This snippet is for completeness only.
+$Py = if ($env:MLX_AUDIO_PYTHON) {{ $env:MLX_AUDIO_PYTHON }} else {{ "python3" }}
+$OutDir = {_ps_q(out_mount)}
+New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+& $Py -m mlx_audio.stt.generate --model {_ps_q(model)} --audio {_ps_q(audio)} --output-path (Join-Path $OutDir 'granite_raw') --format json --gen-kwargs {_ps_q(gen_kwargs)}
+& python -m transcriptx.services.transcription.granite_json_to_whisperx --input (Join-Path $OutDir 'granite_raw.json') --output (Join-Path $OutDir 'meeting.json')
+"""
+    notes = (
+        "mlx-audio is Apple Silicon; prefer POSIX on the Mac host.",
+        "Expected output: WhisperX-shaped JSON for Import Transcript.",
+    )
+    return GeneratedCommand(
+        title="Granite Speech (mlx-audio)",
+        shell=shell.strip() + "\n",
+        notes=notes,
     )
 
 

@@ -70,6 +70,7 @@ Sourced from [runtime/models.md](../runtime/models.md) defaults and pinned HF pr
 | Ollama LLM modules (optional) | Model-dependent (user-chosen Ollama models) | User pulls models into Ollama | Local when Ollama is local; label AI outputs | Optional — document |
 | Voice / speaker-match embeddings (ECAPA / `[voice]`) | See SpeechBrain / model cards | Optional extras; may download | **Speaker-identity sensitive** — privacy notice v2 | Optional (`[voice]`) |
 | NeMo Parakeet TDT / Canary ASR (Theme K / `parakeet_docker`) | **CC-BY-4.0** (typical Hub / NGC cards) | User-triggered on CUDA host; not in analysis image | Local STT when user runs recipe; stub mode for dev only | Optional — [recipes/parakeet](../recipes/parakeet/README.md) |
+| IBM Granite Speech (`granite-speech-5.0-2b`, `granite-speech-4.1-2b-plus`) via host mlx-audio (`granite_mlx`) | **Apache-2.0** (Hub cards) | User-triggered Hub download on first run; not in analysis image | Local STT on Apple Silicon; stub mode for dev only | Optional — [recipes/granite-speech](../recipes/granite-speech/README.md) |
 
 ### NOTICE
 

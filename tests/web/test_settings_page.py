@@ -8,7 +8,6 @@ import pytest
 
 from tests.web.streamlit_doubles import DummyHomeStreamlit
 
-
 _SETTINGS_TABS = (
     "Configuration",
     "Analysis",
@@ -18,13 +17,14 @@ _SETTINGS_TABS = (
     "Interface",
     "Models",
     "Questions",
+    "Keywords",
     "Corrections",
 )
 
 
 @pytest.mark.unit
 def test_settings_page_renders_only_active_panel(monkeypatch) -> None:
-    """Hub must not execute all nine panels on every visit (st.tabs tax)."""
+    """Hub must not execute all panels on every visit (st.tabs tax)."""
     import transcriptx.web.page_modules.settings as mod
 
     DummyHomeStreamlit.session_state = {}
@@ -76,6 +76,9 @@ def test_settings_page_renders_only_active_panel(monkeypatch) -> None:
     )
     monkeypatch.setattr(
         mod, "render_questions_panel", lambda: panel_calls.append(("questions", {}))
+    )
+    monkeypatch.setattr(
+        mod, "render_keywords_panel", lambda: panel_calls.append(("keywords", {}))
     )
     monkeypatch.setattr(
         mod, "render_corrections_panel", lambda: panel_calls.append(("corrections", {}))
@@ -205,7 +208,9 @@ def test_settings_page_switches_active_panel(monkeypatch) -> None:
     monkeypatch.setattr(mod, "st", _St)
     monkeypatch.setattr(mod.SubjectService, "resolve_current_subject", lambda _ss: None)
     monkeypatch.setattr(
-        mod, "render_configuration_panel", lambda **_k: panel_calls.append("configuration")
+        mod,
+        "render_configuration_panel",
+        lambda **_k: panel_calls.append("configuration"),
     )
     monkeypatch.setattr(
         mod, "render_analysis_presets_panel", lambda: panel_calls.append("analysis")
@@ -227,6 +232,9 @@ def test_settings_page_switches_active_panel(monkeypatch) -> None:
     )
     monkeypatch.setattr(
         mod, "render_questions_panel", lambda: panel_calls.append("questions")
+    )
+    monkeypatch.setattr(
+        mod, "render_keywords_panel", lambda: panel_calls.append("keywords")
     )
     monkeypatch.setattr(
         mod, "render_corrections_panel", lambda: panel_calls.append("corrections")

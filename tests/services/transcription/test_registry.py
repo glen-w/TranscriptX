@@ -37,9 +37,7 @@ def patch_providers_is_available(
         raise ValueError("pass by_id and/or default")
     from contextlib import ExitStack
 
-    _unlisted = ProviderAvailability(
-        available=False, reason="test stub", checks=()
-    )
+    _unlisted = ProviderAvailability(available=False, reason="test stub", checks=())
     with ExitStack() as stack:
         for provider in get_transcription_providers():
             pid = provider.provider_id
@@ -70,6 +68,10 @@ class TestRegistry:
     def test_parakeet_docker_registered(self):
         ids = {p.provider_id for p in get_transcription_providers()}
         assert "parakeet_docker" in ids
+
+    def test_granite_mlx_registered(self):
+        ids = {p.provider_id for p in get_transcription_providers()}
+        assert "granite_mlx" in ids
 
     def test_unknown_provider_error(self):
         with pytest.raises(UnknownTranscriptionProviderError):

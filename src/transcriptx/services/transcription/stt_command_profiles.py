@@ -36,6 +36,16 @@ class SttCommandProfileError(ValueError):
     """Invalid STT command profile payload."""
 
 
+def _keywords_from_payload(raw: Any) -> tuple[str, ...]:
+    if raw is None or raw == "":
+        return ()
+    if isinstance(raw, str):
+        return (raw,)
+    if isinstance(raw, (list, tuple)):
+        return tuple(str(item) for item in raw)
+    raise SttCommandProfileError("keywords must be a list of strings")
+
+
 def _manager(profiles_dir=None) -> ProfileManager:
     return ProfileManager(profiles_dir=profiles_dir)
 
@@ -74,6 +84,9 @@ def command_gen_params_to_dict(params: CommandGenParams) -> dict[str, Any]:
         "webui_port": int(params.webui_port),
         "webui_clone_dir": params.webui_clone_dir,
         "expected_output_format": params.expected_output_format,
+        "keyword_bias_enabled": bool(params.keyword_bias_enabled),
+        "keyword_list_name": params.keyword_list_name,
+        "keywords": list(params.keywords),
     }
 
 
@@ -131,6 +144,11 @@ def command_gen_params_from_dict(data: dict[str, Any]) -> CommandGenParams:
         expected_output_format=str(
             data.get("expected_output_format") or "whisperx_json"
         ),
+        keyword_bias_enabled=bool(data.get("keyword_bias_enabled", False)),
+        keyword_list_name=(
+            str(data["keyword_list_name"]) if data.get("keyword_list_name") else None
+        ),
+        keywords=_keywords_from_payload(data.get("keywords")),
     )
 
 
@@ -198,3 +216,6 @@ def apply_params_to_session_state(
     session_state["tx_cmdgen_webui_port"] = params.webui_port
     session_state["tx_cmdgen_webui_clone"] = params.webui_clone_dir
     session_state["tx_cmdgen_webui_device"] = params.device
+    session_state["tx_cmdgen_keyword_bias"] = bool(params.keyword_bias_enabled)
+    session_state["tx_cmdgen_keyword_list"] = params.keyword_list_name or "—"
+    session_state["tx_cmdgen_keywords_extra"] = "\n".join(params.keywords)

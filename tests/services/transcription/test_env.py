@@ -77,3 +77,18 @@ class TestEnvParsing:
         )
         assert opts.model == "large-v3"
         assert "secret" not in repr(opts)
+
+
+@pytest.mark.unit
+def test_build_options_preserves_keyword_fields() -> None:
+    opts = tx_env.build_transcription_options(
+        overrides={
+            "keyword_bias_enabled": True,
+            "keyword_list_name": "acronyms",
+            "keywords": ["NATO", "FY26"],
+        },
+        env={},
+    )
+    assert opts.keyword_bias_enabled is True
+    assert opts.keyword_list_name == "acronyms"
+    assert opts.keywords == ("NATO", "FY26")

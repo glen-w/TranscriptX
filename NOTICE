@@ -21,6 +21,10 @@ components when the corresponding install profile or feature is enabled:
 9. Optional NVIDIA NeMo ASR weights (e.g. Parakeet TDT, Canary) when Theme K / `parakeet_docker`
    Run-in-app or Copy-command recipes are used — typically **CC-BY-4.0** on Hugging Face / NGC;
    user-triggered download on first run. See docs/recipes/parakeet/README.md.
+10. Optional IBM Granite Speech weights (`ibm-granite/granite-speech-5.0-2b`,
+    `ibm-granite/granite-speech-4.1-2b-plus`) when the `granite_mlx` provider or mlx-audio
+    Copy command is used — **Apache-2.0**; user-triggered Hub download on first run.
+    See docs/recipes/granite-speech/README.md.
 
 TranscriptX itself does not claim ownership of these weights or lexicons.
 Local-first operation: analysis runs on the user’s machine; model downloads

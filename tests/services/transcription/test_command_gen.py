@@ -283,3 +283,35 @@ def test_powershell_whispermlx_missing_uses_python() -> None:
     assert "whispermlx-missing.py" in cmd.shell
     assert "--dry-run" in cmd.shell
     assert "'C:\\src'" in cmd.shell or "C:\\src" in cmd.shell
+
+
+@pytest.mark.unit
+def test_granite_mlx_copy_command_hotwords() -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.GRANITE_MLX,
+        input_path="/Users/me/meeting.wav",
+        output_dir="/Users/me/out",
+        diarize=True,
+        keyword_bias_enabled=True,
+        keywords=("NATO", "FY26"),
+        language="en",
+    )
+    cmd = generate_transcription_command(params)
+    assert "mlx_audio.stt.generate" in cmd.shell
+    assert "granite-speech-4.1-2b-plus" in cmd.shell
+    assert "hotwords" in cmd.shell
+    assert "NATO" in cmd.shell
+    assert "granite_json_to_whisperx" in cmd.shell
+    assert any("Apple Silicon" in n or "macOS" in n for n in cmd.notes)
+    off = generate_transcription_command(
+        CommandGenParams(
+            tool=TranscriptionTool.GRANITE_MLX,
+            input_path="/a.wav",
+            output_dir="/b",
+            diarize=False,
+            keyword_bias_enabled=False,
+        )
+    )
+    assert "hotwords" not in off.shell
+    assert "granite-speech-5.0-2b" in off.shell
+    assert "punctuate" in off.shell

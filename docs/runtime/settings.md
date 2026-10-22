@@ -12,7 +12,7 @@ How to change TranscriptX behaviour from the GUI, env, and config files — with
 | Common model and similarity knobs | **Settings → Configuration** → Common Settings |
 | Full registry of knobs | **Settings → Configuration** → enable **Show advanced/raw settings editor** |
 | Named module/workflow presets (disk JSON) | **Profiles** page (sidebar) — activate from Configuration for Project / Run |
-| Paths, watcher, speakers, LLM models, questions | Other **Settings** tabs (Storage, Watcher, Speakers, Interface, Models, Questions, Corrections) |
+| Paths, watcher, speakers, LLM models, questions, STT keyword lists | Other **Settings** tabs (Storage, Watcher, Speakers, Interface, Models, Questions, Keywords, Corrections) |
 | Auto-name / auto-link after ingest | **Settings → Speakers** — [auto-identify.md](auto-identify.md) (`config_dir/identify.json`) |
 | Duplicate recordings / transcripts | **Settings → Storage** → Duplicate library files (preview, then typed `DELETE DUPLICATES`) |
 | Show/hide instructional ⓘ tips (widget help + Speakers methodology notes) | **Settings → Interface** → Help / info tips (`show_info_tooltips` in `interface_menus.json`; run-id ⓘ stays on) |
@@ -157,6 +157,12 @@ Settings → Speakers controls the Speakers directory filters and optional local
 Order: name and **link** a seed cast → Enrol all → Pre-load → confirm suggestions in Speaker Identification. Empty corpus → analyse succeeds with no match. Scores never auto-name. Full walkthrough: [Assist naming with voice](../workflows/speaker-voice-matching.md).
 
 **Assistive LLM suggestions** (name dropdowns, rename prefills) can be warmed library-wide from Settings or cron — see [llm-suggestion-batch.md](llm-suggestion-batch.md). Distinct from voice pre-load above.
+
+## Keyword lists (STT)
+
+**Settings → Keywords** stores named term lists (acronyms, product names) under `{PROFILES_DIR}/keyword_lists/`. They are **not** project-config registry knobs and are **not** Corrections `known_acronyms`.
+
+On **Transcribe Audio**, **Keyword biasing** is **off by default**. When enabled, the selected list plus extra terms are passed to **Granite Speech** at decode time (cap 2,000). Whisper providers ignore the lists in this version.
 
 ## Related docs
 

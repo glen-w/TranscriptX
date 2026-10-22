@@ -20,7 +20,7 @@ Walkthrough with screenshots: [First analysis](../workflows/first-analysis.md).
 
 | Host OS | Analysis | Preferred STT |
 |---------|----------|---------------|
-| **macOS** | Compose or native | Host **whispermlx** (Run in app when native; Copy command / `inbox-watch` when Compose) |
+| **macOS** | Compose or native | Host **whispermlx** or **Granite Speech mlx-audio** (Run in app when native; Copy command / `inbox-watch` when Compose) |
 | **Linux** | Compose | Host **WhisperX Docker** (Copy command or `inbox-watch --transcribe command`) |
 | **Windows** | Docker Desktop / WSL2 Compose | Same WhisperX / WebUI path; Transcribe Audio **PowerShell** Copy command. No whispermlx. Host convert/admit: `py -3 scripts\inbox-watch.py --transcribe none` |
 
@@ -28,7 +28,7 @@ Walkthrough with screenshots: [First analysis](../workflows/first-analysis.md).
 
 Transcribe Audio captions a recommendation from the shared hardware probe ([hardware.md](hardware.md)). Engines stay on the host or in a separate Docker recipe — not in the analysis image.
 
-1. **macOS + whispermlx available** → prefer **whispermlx** (MLX). WhisperX Docker on Apple Silicon is usually CPU-only.
+1. **macOS + whispermlx available** → prefer **whispermlx** (MLX). Optional **Granite Speech (MLX)** for Apache-2.0 keyword biasing and native speaker attribution without `HF_TOKEN`. WhisperX Docker on Apple Silicon is usually CPU-only.
 2. **CUDA visible to this process** and not `TRANSCRIPTX_FORCE_CPU` → WhisperX Docker **cuda** (`--gpus all`). Confirm the host GPU is passed into the *STT* container.
 3. **Analysis container without CUDA** → WhisperX Docker **cpu** for orchestration from this process; the host may still run a CUDA recipe via Copy command.
 4. **Parakeet Docker** → intended for CUDA Linux hosts; default device follows the same cuda/cpu honesty.
@@ -39,12 +39,15 @@ No STT wall-clock ETA in v1. Stacks and shared folders: [STT stacks](../recipes/
 2. Open **Transcribe Audio**.
 3. Prefer **Run in app** when a provider is available (native GUI on the Mac for whispermlx; see [STT stacks](../recipes/stt-stacks/README.md)):
    - **whispermlx** — macOS host with `whispermlx` on PATH (or `WHISPERMLX` in `whisperx.env`).
+   - **Granite Speech (MLX)** — macOS host with `mlx-audio` in a **separate** Python (`MLX_AUDIO_PYTHON`). Apache-2.0. Keyword lists (default off) and Plus speaker attribution when **Diarize** is on. Recipe: [granite-speech](../recipes/granite-speech/README.md).
    - **WhisperX Docker** — `docker` on PATH and a reachable daemon; CUDA uses `--gpus all`.
 4. If no provider is available from this process (typical when Streamlit runs inside `transcriptx-web`), switch to **Copy command**, pick a tool, and run the snippet **on the host**.
 5. POSIX snippets paste into macOS, Linux, Git Bash, or WSL. **PowerShell** snippets are a second builder for Windows hosts. Streamlit does not execute copied snippets.
 6. With **Import result into library** on, a successful Run admits JSON automatically. Otherwise open **Import Transcript**.
 
 **Saved presets:** on Copy command, save/load/delete command-gen fields under `.transcriptx/profiles/stt_commands/`. Presets store host paths and flags only — never `HF_TOKEN` (tokens stay in `whisperx.env`).
+
+**Keyword lists:** Settings → **Keywords** (named lists under `.transcriptx/profiles/keyword_lists/`). Transcribe Audio **Keyword biasing** is **off by default**. Granite applies the selected list at decode time (max 2,000 terms). Whisper providers ignore the lists in this version.
 
 | Step | Typical corpus path (whispermlx-missing) |
 |------|------------------------------------------|
@@ -60,7 +63,7 @@ Keep analysis in Docker if you like; still run whispermlx on the Mac host, or mo
 
 Compatible JSON from WhisperX, [Scriberr](https://scriberr.app/), AssemblyAI, Deepgram, Otter, Google, Colab, or a manual edit. Subtitle exports (**SRT** / **WebVTT**) from Whisper-WebUI, [RiverScript](https://riverscript.com/), or [noScribe](https://noscribe.de/en/) are importable, as are [aTrain](https://github.com/aTrainTranscription/aTrain) **TXT** (and JSON if it matches the segment shape).
 
-The analysis image does not embed a transcription engine. The GUI can orchestrate **whispermlx** or **WhisperX Docker** when those tools are visible to the Streamlit process; otherwise it consumes files you provide (BYO import or Copy command). Where it sits next to STT, meeting, and qualitative-research products: [comparison.md](../comparison.md).
+The analysis image does not embed a transcription engine. The GUI can orchestrate **whispermlx**, **Granite Speech mlx-audio**, or **WhisperX Docker** when those tools are visible to the Streamlit process; otherwise it consumes files you provide (BYO import or Copy command). Where it sits next to STT, meeting, and qualitative-research products: [comparison.md](../comparison.md).
 
 Naming such as `*_transcriptx.json` matches project conventions, but **naming alone is not enough**. Add files through **Import Transcript** so the library copy, sidecar, and archived original are created. Schema and layout: [STORAGE.md](STORAGE.md). Programmatic import: [Host STT automation](host-stt.md#python-api).
 
@@ -69,7 +72,8 @@ Naming such as `*_transcriptx.json` matches project conventions, but **naming al
 These stay outside the analysis image. **Run in app** orchestrates `docker run` / `whispermlx` from the Streamlit process when those binaries are visible. **Copy command** still never executes the snippet.
 
 - **WhisperX** — Transcribe Audio → **Run in app** (WhisperX Docker) or **Copy command** → **WhisperX Docker**. Full recipe: [docs/recipes/whisperx/](../recipes/whisperx/README.md).
-- **NeMo Parakeet / Canary** — Transcribe Audio → **Copy command** → NeMo presets (Theme K), or **Run in app** → NeMo Parakeet Docker when configured (`parakeet_docker`). Convert JSONL with `nemo_json_to_whisperx`, then Import. Recipe: [docs/recipes/parakeet/](../recipes/parakeet/README.md). CUDA Linux host only; on macOS prefer whispermlx.
+- **NeMo Parakeet / Canary** — Transcribe Audio → **Copy command** → NeMo presets (Theme K), or **Run in app** → NeMo Parakeet Docker when configured (`parakeet_docker`). Convert JSONL with `nemo_json_to_whisperx`, then Import. Recipe: [docs/recipes/parakeet/](../recipes/parakeet/README.md). CUDA Linux host only; on macOS prefer whispermlx or Granite mlx-audio.
+- **Granite Speech** — Transcribe Audio → **Run in app** (`granite_mlx`) or **Copy command** → mlx-audio. Convert with `granite_json_to_whisperx` if you ran the CLI yourself. Recipe: [docs/recipes/granite-speech/](../recipes/granite-speech/README.md). Dev stub: `TRANSCRIPTX_GRANITE_STUB=1`.
 - **Whisper-WebUI** — Gradio UI; hand-off is **SRT/VTT → Import Transcript**. Full recipe (including Apple Silicon notes): [docs/recipes/whisper-webui/README.md](../recipes/whisper-webui/README.md). On Apple Silicon the container is expected to use **CPU** inference; prefer host **whispermlx** when Metal/MLX speed matters.
 
 ## When Whisper is noisy or speech overlaps
@@ -100,12 +104,12 @@ Transcription runs on the **host** (whispermlx binary, WhisperX Docker, or Whisp
 
 | Where | What runs |
 |-------|-----------|
-| Host (terminal or in-app provider) | `whispermlx` / `whispermlx-missing` (macOS), WhisperX `docker run`, optional Whisper-WebUI Docker, `inbox-watch` |
+| Host (terminal or in-app provider) | `whispermlx` / `whispermlx-missing` (macOS), Granite `mlx-audio` (macOS), WhisperX `docker run`, optional Whisper-WebUI Docker, `inbox-watch` |
 | `transcriptx-web` (Docker or native) | Import, library, analysis, artifacts; optional STT **orchestration** only when the provider binary/daemon is visible to that process |
 
 The recommended install runs analysis in a **Linux** container. **whispermlx** must run on the **macOS host** (Metal/MLX); it cannot run inside that container. Keeping engines out of the analysis image avoids bloating it. Stacks, shared folders, and when **Run in app** works: [STT stacks](../recipes/stt-stacks/README.md).
 
-**Theme H:** optional in-app / host-orchestrated transcription is shipped for Whisper-class providers (`whispermlx`, `whisperx_docker`) and optional **`parakeet_docker`** (CUDA NeMo Parakeet — configure per [recipes/parakeet](../recipes/parakeet/README.md); dev stub via `TRANSCRIPTX_PARAKEET_STUB=1`) — [ROADMAP.md](../ROADMAP.md) theme **H**. **Theme K** Copy commands for NeMo Parakeet/Canary share the same JSONL → WhisperX converter. YouTube ingest is later. In-app directory watch for audio auto-transcribe is theme **G2** + **H3** — [directory_watcher.md](directory_watcher.md).
+**Theme H:** optional in-app / host-orchestrated transcription is shipped for Whisper-class providers (`whispermlx`, `whisperx_docker`), optional **`parakeet_docker`** (CUDA NeMo Parakeet — configure per [recipes/parakeet](../recipes/parakeet/README.md); dev stub via `TRANSCRIPTX_PARAKEET_STUB=1`), and optional **`granite_mlx`** (Apple Silicon mlx-audio — [recipes/granite-speech](../recipes/granite-speech/README.md); stub `TRANSCRIPTX_GRANITE_STUB=1`) — [ROADMAP.md](../ROADMAP.md) theme **H**. **Theme K** Copy commands for NeMo Parakeet/Canary share the same JSONL → WhisperX converter. YouTube ingest is later. In-app directory watch for audio auto-transcribe is theme **G2** + **H3** — [directory_watcher.md](directory_watcher.md).
 
 ## Advanced
 
