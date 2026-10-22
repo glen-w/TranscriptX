@@ -236,7 +236,7 @@ Beyond 1.0 resource envelopes: help users plan and choose runs on *their* machin
 
 ### F. Library & organisation
 
-- **Transcript tagging** — library visibility / kind labels (e.g. `meeting`, `voice note`, `lone speaker`). Tags are organisation metadata, not an analysis module.
+- **Transcript tagging** — library visibility / kind labels (`meeting`, `voice note`, `lone speaker`). Tags are organisation metadata, not an analysis module. Design: [theme_f_library_organisation.md](dev/theme_f_library_organisation.md). Kind chips + auto-seed (manual wins) shipped; Groups picker filter and YouTube Data API remain later slices.
 
 - **YouTube Data API for rename assist (deferred)** — optional backend for content rename suggestions (`rename_suggest_web`) when the operator supplies a Google Cloud API key: YouTube Data API v3 search + `videos` metadata (`publishedAt`, canonical title) for public YouTube-hosted events, instead of or ahead of today’s DuckDuckGo HTML + `site:youtube.com` bias. Privacy: short title/search queries only; never the transcript body; opt-in key (settings or env); quota and key hygiene documented. Mid–late 1.x; not required for warm-suggestions or import rename to work today.
 

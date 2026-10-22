@@ -13,7 +13,10 @@ from transcriptx.app.corpus_inventory.models import (
     LibrarySort,
     LibraryWorkflowPreset,
 )
-from transcriptx.app.corpus_inventory.query import apply_library_filter, row_matches_tags
+from transcriptx.app.corpus_inventory.query import (
+    apply_library_filter,
+    row_matches_tags,
+)
 from transcriptx.core.analysis.voice.audio_io import resolve_audio_path
 from transcriptx.core.utils.processing_state import set_tags_for_path
 from transcriptx.core.utils.rename.audio_association import find_original_audio_file
@@ -22,7 +25,11 @@ from transcriptx.export.library_by_tag import (
     build_library_export_manifest,
     resolve_library_export_items,
 )
-from transcriptx.io.tag_validation import sanitize_tag, sanitize_tag_list
+from transcriptx.io.tag_validation import (
+    KNOWN_KIND_TAGS,
+    sanitize_tag,
+    sanitize_tag_list,
+)
 from transcriptx.utils.text_utils import format_duration_display_from_config
 from transcriptx.web import icons as ic
 from transcriptx.web.action_menus.context import (
@@ -429,9 +436,22 @@ def _render_inspector_tags(selected: InventoryRow) -> None:
     st.markdown("**Tags**")
     st.caption(
         "Library organisation tags for finding and exporting transcripts. "
-        "These are not Groups and not chart tags."
+        "These are not Groups and not chart tags. Kind chips: meeting, "
+        "voice note, lone speaker."
     )
     current = list(selected.tags)
+    missing_kinds = [tag for tag in sorted(KNOWN_KIND_TAGS) if tag not in current]
+    if missing_kinds:
+        chip_cols = st.columns(len(missing_kinds))
+        for col, tag in zip(chip_cols, missing_kinds):
+            with col:
+                if st.button(
+                    tag,
+                    key=f"library_kind_chip_{path_key}_{tag}",
+                    icon=ic.ADD,
+                ):
+                    _persist_row_tags(selected.transcript_path, [*current, tag])
+                    st.rerun()
     if current:
         st.write(", ".join(current))
     else:
