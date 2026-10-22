@@ -15,7 +15,7 @@ Vendor-by-vendor research lives in the [comparison reference](comparison-referen
 | Local interview STT for sensitive qualitative research | **[noScribe](https://noscribe.de/en/)**, **[aTrain](https://github.com/aTrainTranscription/aTrain)** |
 | Local dictation / push-to-talk into any app | **[Amical](https://amical.ai/)** |
 | Org-grade self-hosted live + batch STT (GPU, on-prem) | **[nanosamur.ai](https://nanosamur.ai)** |
-| Capture any app’s audio / huge files without a meeting bot | **[RiverScript](https://riverscript.com/)** |
+| Capture any app’s audio / huge files without a meeting bot | **[RiverScript](https://riverscript.com/)** today; TranscriptX roadmap **G5** (Mac BlackHole host MVP → batch STT → import), then **H6** local-first live STT with remote opt-in — never meeting bots ([ROADMAP.md](ROADMAP.md)) |
 | Jeffersonian / CA / GAT transcription conventions and tools | **[EMCA wiki: Transcription Resources](https://emcawiki.net/Transcription_Resources)** (then ELAN, CLAN, EXMARaLDA, …) |
 | Auto-join Zoom/Meet notes + team sharing | Otter, Fireflies, Avoma |
 | Sales deal coaching + CRM outcomes | Gong, Chorus by ZoomInfo |
