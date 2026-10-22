@@ -417,7 +417,10 @@ def _transcript_picker_with_preferred(
     if any(paths_match(opt, preferred_path) for opt in options):
         return options, labels
     merged = sorted(
-        [*zip(options, labels, strict=True), (str(preferred_path), _label_for_picker_path(preferred_path))],
+        [
+            *zip(options, labels, strict=True),
+            (str(preferred_path), _label_for_picker_path(preferred_path)),
+        ],
         key=lambda row: str(Path(row[0]).resolve()),
     )
     return tuple(row[0] for row in merged), tuple(row[1] for row in merged)
@@ -429,7 +432,9 @@ def _bind_transcript_picker_index(*, option_count: int, default_idx: int) -> Non
     if key in st.session_state:
         current = st.session_state.get(key)
         if not isinstance(current, int) or current < 0 or current > option_count:
-            st.session_state[key] = default_idx if 0 <= default_idx <= option_count else 0
+            st.session_state[key] = (
+                default_idx if 0 <= default_idx <= option_count else 0
+            )
             return
         if current == 0 and default_idx > 0:
             st.session_state[key] = default_idx
@@ -596,6 +601,19 @@ def _run_analysis_config_and_launch_fragment(
         qa_key_prefix="run_analysis_qa",
     )
     selected_modules = list(plan.module_ids)
+    from transcriptx.core.analysis.insights_narrative import (
+        insights_narrative_operator_hint,
+    )
+    from transcriptx.core.utils.config import get_config as _get_run_config
+
+    narrative_hint = insights_narrative_operator_hint(
+        selected_modules,
+        narrative_enabled=bool(
+            getattr(_get_run_config().analysis.insights, "narrative_enabled", False)
+        ),
+    )
+    if narrative_hint:
+        st.caption(narrative_hint)
 
     from transcriptx.core.analysis.llm_custom_qa.questions_binding import (
         bind_custom_qa_questions,

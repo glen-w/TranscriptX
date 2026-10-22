@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 
 from transcriptx.core.analysis.base import AnalysisModule
 from transcriptx.core.analysis.common import (
@@ -22,7 +22,9 @@ from transcriptx.core.analysis.llm_support.insights_narrative_source import (
     resolve_insights_narrative_inputs,
     serialise_narrative_input,
 )
-from transcriptx.core.analysis.llm_support.narrative_contract import parse_narrative_json
+from transcriptx.core.analysis.llm_support.narrative_contract import (
+    parse_narrative_json,
+)
 from transcriptx.core.analysis.llm_support.provenance import build_llm_provenance
 from transcriptx.core.errors.coded import CodedError
 from transcriptx.core.llm import get_llm_client
@@ -32,6 +34,27 @@ from transcriptx.core.utils.module_result import build_module_result, now_iso
 
 INSIGHTS_NARRATIVE_PROMPT_VERSION = "1"
 _SCHEMA_ID = "transcriptx.insights_narrative.v1"
+
+NARRATIVE_HINT_DISABLED = (
+    "Theme narrative is selected but analysis.insights.narrative_enabled is off "
+    "— the module will skip. Enable it under Settings → Configuration. "
+    "This module is optional Local AI and is not default-recommended."
+)
+NARRATIVE_HINT_ENABLED = (
+    "Theme narrative is optional Local AI over deterministic themes; it does not "
+    "replace the theme list."
+)
+
+
+def insights_narrative_operator_hint(
+    selected_modules: Sequence[str], *, narrative_enabled: bool
+) -> str | None:
+    """Run Analysis copy when `insights_narrative` is in the plan."""
+    if "insights_narrative" not in selected_modules:
+        return None
+    if not narrative_enabled:
+        return NARRATIVE_HINT_DISABLED
+    return NARRATIVE_HINT_ENABLED
 
 
 def _build_system_prompt() -> str:

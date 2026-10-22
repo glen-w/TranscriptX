@@ -88,7 +88,7 @@
     "category": "analysis",
     "choices": null,
     "default": false,
-    "description": "When true, insights_narrative may run (requires LLM + module selection).",
+    "description": "Allow the optional insights_narrative Local-AI gloss (B18). Also select the `insights_narrative` module on Run Analysis. Off by default — does not replace deterministic themes.",
     "key": "analysis.insights.narrative_enabled",
     "max": null,
     "min": null,
