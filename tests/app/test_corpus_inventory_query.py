@@ -23,6 +23,7 @@ from transcriptx.app.corpus_inventory.models import (
 from transcriptx.app.corpus_inventory.query import (
     apply_library_filter,
     continue_working_action,
+    filter_paths_by_tags,
     needs_attention_counts,
     select_continue_working,
 )
@@ -109,13 +110,27 @@ def test_tags_filter_and_match() -> None:
         _row("c", tags=("idea",)),
         _row("d", tags=()),
     ]
-    filtered = apply_library_filter(
-        rows, LibraryFilter(tags=("meeting", "todo"))
-    )
+    filtered = apply_library_filter(rows, LibraryFilter(tags=("meeting", "todo")))
     assert [row.title for row in filtered] == ["a"]
 
     meeting_only = apply_library_filter(rows, LibraryFilter(tags=("meeting",)))
     assert {row.title for row in meeting_only} == {"a", "b"}
+
+
+def test_filter_paths_by_tags_does_not_imply_membership() -> None:
+    paths = ["/tmp/a.json", "/tmp/b.json", "/tmp/c.json"]
+    tags_by_path = {
+        "/tmp/a.json": ("meeting",),
+        "/tmp/b.json": ("voice note",),
+        "/tmp/c.json": ("meeting", "lone speaker"),
+    }
+    assert filter_paths_by_tags(
+        paths, tags_by_path=tags_by_path, required_tags=("meeting",)
+    ) == ["/tmp/a.json", "/tmp/c.json"]
+    assert (
+        filter_paths_by_tags(paths, tags_by_path=tags_by_path, required_tags=())
+        == paths
+    )
 
 
 def test_continue_working_prefers_resumable_over_recency() -> None:

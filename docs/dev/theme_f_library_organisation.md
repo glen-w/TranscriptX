@@ -7,7 +7,7 @@ Roadmap: [ROADMAP.md](../ROADMAP.md) §F
 
 1. **Tags find and filter transcripts.** They are organisation metadata on `processing_state.json` (`tags` / `tag_details`), not an analysis module.
 2. **Groups are analysis cohorts.** Tagging must not create, update, or imply `.group.json` membership.
-3. **Groups picker may AND-filter by tags.** Filtering is not membership.
+3. **Groups picker may AND-filter by tags.** Filtering is not membership. Shipped on Create group and Edit membership.
 4. **Kind vocabulary (first-class chips):** `meeting`, `voice note`, `lone speaker`. Existing semantic tags (`idea`, `reflection`, `todo`, `question`) remain valid free-form tags.
 5. **Auto-seed is optional and manual-wins.** Suggested kind tags use `source=auto` only when the tag is not already present. Manual tags are never overwritten.
 6. **Visibility this wave is facets only.** Pin/favourite is deferred.
