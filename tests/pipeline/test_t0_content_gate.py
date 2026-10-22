@@ -9,10 +9,22 @@ import pytest
 from transcriptx.core.pipeline.dag_pipeline_run import speaker_gate_skip_reason
 from transcriptx.core.pipeline.module_registry import get_module_info
 
+_T0_CONTENT_MODULES = (
+    "wordclouds",
+    "transcript_quality",
+    "insight_eligibility",
+    "understandability",
+    "lexical_diversity",
+    "epistemic_markers",
+    "simplified_transcript",
+    "topic_shift",
+    "moments",
+)
+
 
 @pytest.mark.unit
 def test_t0_wordclouds_and_quality_not_gated_on_named_count() -> None:
-    for mod_id in ("wordclouds", "transcript_quality", "insight_eligibility"):
+    for mod_id in _T0_CONTENT_MODULES:
         info = get_module_info(mod_id)
         assert info is not None, mod_id
         assert (

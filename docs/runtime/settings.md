@@ -40,7 +40,7 @@ By default, modules require **human-named** speakers. Diarized placeholders (`SP
 
 | Tier | When to use | Knobs |
 |------|-------------|-------|
-| **T0** | No speaker labels or only `SPEAKER_00` with no names | Default content modules (`min_named_speakers: 0`); Overview shows “No speaker labels” when applicable |
+| **T0** | No speaker labels or only `SPEAKER_00` with no names | Default content modules (`min_named_speakers: 0`); Overview and Charts show “No named speakers” when applicable |
 | **T1** | Single-speaker monologue with one diarized label (`SPEAKER_00`) | **Treat as single speaker** (per run or `analysis.treat_as_single_speaker` / `TRANSCRIPTX_ANALYSIS_TREAT_AS_SINGLE_SPEAKER`) — ungates modules that need ≥1 speaker only when turn-taking count is exactly **1**; does **not** satisfy multi-speaker modules |
 | **T2** | Diarized multi-speaker, names optional | **Allow analysis without named speakers** (global or per run) — uses turn-taking counts for gates |
 | **T3** | Named speakers (default policy) | Name speakers in Speaker Identification; Balanced/Thorough presets expect human names |

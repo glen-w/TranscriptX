@@ -246,6 +246,7 @@
       "description": "Hedging / certainty / epistemic markers",
       "determinism_tier": "T0",
       "enhancements": [],
+      "min_named_speakers": 0,
       "requirements": [
         "segments",
         "speaker_labels"
@@ -328,6 +329,7 @@
       "description": "Simplified transcript (tics, agreements, repetitions removed)",
       "determinism_tier": "T0",
       "enhancements": [],
+      "min_named_speakers": 0,
       "requirements": [
         "segments",
         "speaker_labels"
@@ -339,6 +341,7 @@
       "description": "Understandability Analysis",
       "determinism_tier": "T0",
       "enhancements": [],
+      "min_named_speakers": 0,
       "requirements": [
         "segments",
         "speaker_labels"
@@ -350,6 +353,7 @@
       "description": "Lexical diversity metrics (TTR, MTLD, hapax rate)",
       "determinism_tier": "T0",
       "enhancements": [],
+      "min_named_speakers": 0,
       "requirements": [
         "segments",
         "speaker_labels"
@@ -491,6 +495,7 @@
       "description": "Topic-shift chapter segmentation",
       "determinism_tier": "T0",
       "enhancements": [],
+      "min_named_speakers": 0,
       "requirements": [
         "segments",
         "segment_timestamps"
@@ -504,6 +509,7 @@
       "description": "Ranked Moments Worth Revisiting",
       "determinism_tier": "T0",
       "enhancements": [],
+      "min_named_speakers": 0,
       "requirements": [
         "segments",
         "segment_timestamps"
