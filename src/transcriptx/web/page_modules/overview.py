@@ -17,6 +17,10 @@ from transcriptx.web.blocks.session_context import (
 )
 from transcriptx.web.components.empty_state import render_empty_state
 from transcriptx.web.components.page_shell import render_page_shell
+from transcriptx.web.services.chart_view_model_service import (
+    named_speaker_count_from_content_loader,
+)
+from transcriptx.web.speaker_honesty import render_t0_named_speaker_banner
 from transcriptx.web.components.run_scoped_page import (
     RunScopedPageConfig,
     RunScopedPageContext,
@@ -98,6 +102,9 @@ def _render_overview_body(ctx: RunScopedPageContext) -> None:
     session_ctx = build_context_from_session(st.session_state)
     if session_ctx is None:
         return
+
+    loader = getattr(getattr(session_ctx, "services", None), "content_loader", None)
+    render_t0_named_speaker_banner(st, named_speaker_count_from_content_loader(loader))
 
     layout = load_active_layout(st.session_state)
     _overview_blocks_fragment(session_ctx, layout)

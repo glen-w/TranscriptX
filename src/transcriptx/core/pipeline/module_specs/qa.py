@@ -18,6 +18,7 @@ def build_qa_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
+            "min_named_speakers": 0,
         },
         "lexical_diversity": {
             "description": "Lexical diversity metrics (TTR, MTLD, hapax rate)",
@@ -26,6 +27,7 @@ def build_qa_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
+            "min_named_speakers": 0,
         },
         "qa_analysis": {
             "description": "Question-Answer Pairing and Response Quality",

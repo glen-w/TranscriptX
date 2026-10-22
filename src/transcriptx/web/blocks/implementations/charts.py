@@ -142,8 +142,11 @@ def render_chart_overview_slots(ctx: BlockContext, _placement: BlockPlacement) -
     from transcriptx.web.services.chart_view_model_service import (
         named_speaker_count_from_content_loader,
     )
+    from transcriptx.web.speaker_honesty import render_t0_named_speaker_banner
 
     loader = ctx.services.content_loader
+    named_count = named_speaker_count_from_content_loader(loader)
+    render_t0_named_speaker_banner(st, named_count)
     view = build_charts_gallery_view(
         all_charts,
         module=st.session_state.get(CHARTS_KEY_FILTER_MODULE),
@@ -160,7 +163,7 @@ def render_chart_overview_slots(ctx: BlockContext, _placement: BlockPlacement) -
         missing_behavior=missing_behavior,
         max_items=max_items,
         overview_enabled=overview_enabled,
-        named_speaker_count=named_speaker_count_from_content_loader(loader),
+        named_speaker_count=named_count,
     )
     if not view.overview_slots:
         st.caption("No overview slots for the current filters.")

@@ -70,6 +70,7 @@ from transcriptx.web.services.chart_view_model_service import (
 )
 from transcriptx.web.services.export_service import ExportService
 from transcriptx.web.speaker_accent import load_accent_resolve_context, speaker_expander
+from transcriptx.web.speaker_honesty import render_t0_named_speaker_banner
 from transcriptx.web.state import (
     CHARTS_CHART_TEXT_BOTH,
     CHARTS_CHART_TEXT_DESCRIPTION,
@@ -483,9 +484,7 @@ def _render_view_options_popover(visible_module_ids: list[str]) -> None:
                 set_charts_open_modules(st.session_state, ids)
                 _fragment_rerun()
         with collapse_col:
-            if st.button(
-                "Collapse all", key="charts_collapse_all", icon=ic.SHOW_LESS
-            ):
+            if st.button("Collapse all", key="charts_collapse_all", icon=ic.SHOW_LESS):
                 set_charts_open_modules(st.session_state, [])
                 _fragment_rerun()
 
@@ -628,7 +627,9 @@ def _build_view_from_session(
     sync_kind_toggles_from_pills(st.session_state)
     ensure_charts_scope_filter(st.session_state)
     loader = (
-        ArtifactContentLoader(run_root, tuple(all_charts)) if run_root is not None else None
+        ArtifactContentLoader(run_root, tuple(all_charts))
+        if run_root is not None
+        else None
     )
     return build_charts_gallery_view(
         all_charts,
@@ -705,13 +706,7 @@ def _charts_filters_and_gallery_fragment(
     named_count = named_speaker_count_from_content_loader(
         ArtifactContentLoader(run_root, tuple(all_charts))
     )
-    if named_count == 0:
-        st.info(
-            "No named speakers — content-oriented charts only. Name speakers in "
-            "Speaker Identification, enable **Allow analysis without named speakers** "
-            "on Run Analysis, or re-transcribe with diarization to unlock "
-            "interaction charts."
-        )
+    render_t0_named_speaker_banner(st, named_count)
 
     st.text_input(
         "Search charts…",

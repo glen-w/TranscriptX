@@ -46,6 +46,7 @@ from transcriptx.web.action_menus.ids import NavStyle, SectionId
 from transcriptx.web.action_menus.render import render_configured_actions
 from transcriptx.web.components.rename_form import render_transcript_rename_form
 from transcriptx.web.services.recordings_service import RecordingsService
+from transcriptx.web.speaker_honesty import render_t1_import_caption
 
 logger = get_logger()
 
@@ -109,6 +110,7 @@ def _import_uploaded_transcript(uploaded: Any) -> AdmitOutcomeKind:
 
 def _render_post_import_actions(transcript_path: Path) -> None:
     """Icon-link strip for next steps after a successful import."""
+    render_t1_import_caption(st, transcript_path)
     identity = build_canonical_identity(
         subject_type="transcript",
         subject_id=transcript_path.stem,

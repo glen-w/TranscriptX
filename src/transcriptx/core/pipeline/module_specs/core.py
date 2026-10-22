@@ -92,6 +92,7 @@ def build_core_module_definitions(
                 Requirement.SEGMENT_TIMESTAMPS,
             ],
             "enhancements": [],
+            "min_named_speakers": 0,
         },
         "moments": {
             "description": "Ranked Moments Worth Revisiting",
@@ -100,5 +101,6 @@ def build_core_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS, Requirement.SEGMENT_TIMESTAMPS],
             "enhancements": [],
+            "min_named_speakers": 0,
         },
     }

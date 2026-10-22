@@ -27,5 +27,6 @@ def build_exports_module_definitions(
             "determinism_tier": "T0",
             "requirements": [Requirement.SEGMENTS, Requirement.SPEAKER_LABELS],
             "enhancements": [],
+            "min_named_speakers": 0,
         },
     }

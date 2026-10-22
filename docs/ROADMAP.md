@@ -40,8 +40,8 @@ Research basis: [Open source ASR for TranscriptX](../reports/Open%20source%20ASR
 
 | Tier | Signal | Runs | Skips / honesty | Status |
 |------|--------|------|-----------------|--------|
-| **T0 Undiarized** | No speaker field / all `None` | Global content: topics, wordclouds, readability, global sentiment, `llm_summary`, transcript_quality, exports | Interaction + per-speaker; Overview banner “No speaker labels” | **Next** — loosen `SPEAKER_LABELS` on content modules; never crash |
-| **T1 Synthetic monologue** | User opts “Treat as single speaker” | Modules needing ≥1 speaker; per-speaker = whole-file | `requires_multiple_speakers` | **Next** — opt-in only; never invent without consent |
+| **T0 Undiarized** | No speaker field / all `None` | Global content: topics, wordclouds, readability, global sentiment, `llm_summary`, transcript_quality, exports | Interaction + per-speaker; Overview banner “No named speakers” | **Shipped** |
+| **T1 Synthetic monologue** | User opts “Treat as single speaker” | Modules needing ≥1 speaker; per-speaker = whole-file | `requires_multiple_speakers` | **Shipped** — opt-in only; never invent without consent |
 | **T2 Diarized unnamed** | `SPEAKER_00`… + `allow_unnamed_speakers` | Interaction + per-speaker under anonymous IDs | Named-only UX may stay limited | **Shipped** |
 | **T3 Named speakers** | Human names via Speaker ID | Full Balanced/Thorough; profiles | None for speaker reasons | **Default policy** (keep) |
 
@@ -110,7 +110,7 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Overview / results presentation | Retire Insights Analysis tab; redistribute into Summary / Speakers / Actions / Highlights — [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | **0.9.9** (Charts/Overview hierarchy residuals deferred) |
 | Post-0.9.9 wave (interim) | Early 1.x A–D + operator UX — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md) | **0.9.9.5** |
 | **Owner local folder cleanup** | Unambiguous library / `originals/` / inbox / recordings mounts — see **Now** above | **now (top priority)** |
-| **Undiarized resilience + ASR ladder** | T0/T1 speaker tiers; Parakeet Theme K→H5; CocktailASR watchlist — see **Next** above | **next (post-Now)** |
+| **Undiarized resilience + ASR ladder** | T0/T1 speaker tiers; Parakeet Theme K→H5; CocktailASR watchlist — see **Next** above | **[~] T0/T1 honesty shipped; converter/H5 recipe still hardening** |
 | Informal stranger test | Tried by someone who had not used the app | **done** (2026-10); not a release gate |
 
 **Module freeze:** no new analysis modules in 0.9.x unless required to complete or repair the 1.0 journey. Backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
