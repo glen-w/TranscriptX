@@ -35,9 +35,14 @@ class LLMSettingsModel(BaseModel):
         default=False,
         description="Enable LLM-backed analysis modules when provider is available.",
     )
-    provider: Literal["null", "ollama"] = Field(
+    provider: Literal["null", "ollama", "openai_compatible"] = Field(
         default="null",
-        description="LLM provider id (`null` disables remote calls; `ollama` uses a local server).",
+        description=(
+            "LLM provider id (`null` disables remote calls; `ollama` uses a local "
+            "server; `openai_compatible` is an opt-in Chat Completions endpoint). "
+            "Never a silent cloud default — set llm.base_url explicitly. API keys "
+            "come from TRANSCRIPTX_LLM_API_KEY / OPENAI_API_KEY, not this field."
+        ),
     )
     model: str | None = Field(
         default=None,
@@ -67,7 +72,11 @@ class LLMSettingsModel(BaseModel):
     )
     base_url: str | None = Field(
         default=None,
-        description="Provider base URL (e.g. http://localhost:11434/).",
+        description=(
+            "Provider base URL (Ollama e.g. http://localhost:11434/; "
+            "openai_compatible e.g. http://127.0.0.1:4000/v1). Required for "
+            "openai_compatible — there is no cloud default."
+        ),
     )
     request_timeout: float = Field(
         default=1350.0,

@@ -26,7 +26,7 @@ Optional **auto-name / auto-link** on ingest writes display names and may create
 
 ## Stochastic Local AI output
 
-Optional Ollama / Local AI modules are stochastic. Re-runs can differ. Artifacts carry model identity fields where available; treat Local AI text as assistive, not ground truth. Principal surfaces label Local AI vs deterministic summaries.
+Optional Ollama / Local AI modules are stochastic. Re-runs can differ. Artifacts carry model identity fields where available; treat Local AI text as assistive, not ground truth. Principal surfaces label Local AI vs deterministic summaries. `provider=openai_compatible` is opt-in and sends transcript prompts to `llm.base_url` (required; no cloud default). Settings still assume Ollama tags until the UX slice.
 
 ## Content rename suggestions
 

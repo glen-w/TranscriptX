@@ -422,7 +422,7 @@ Only if capacity remains after core themes:
 
 ### N. Multi-provider LLM (opt-in)
 
-**1.0 stance unchanged:** optional local AI is **Ollama-only** (`provider=ollama`). Analysis modules already use a pluggable `LLMClient`; the factory and UI (model tags, presets, thinking-model gates) are Ollama-specific.
+**1.0 stance unchanged:** optional local AI defaults to **Ollama** (`provider=ollama`). Analysis modules use a pluggable `LLMClient`. **Narrow 1.x:** `provider=openai_compatible` is an opt-in Chat Completions client (explicit `llm.base_url`; API key from `TRANSCRIPTX_LLM_API_KEY` / `OPENAI_API_KEY`). LiteLLM sidecar is a later slice. The Settings/Run Analysis tag picker is still Ollama-oriented until the UX slice.
 
 **1.x intent:** let operators optionally call **other LLM providers** (OpenAI, Anthropic, Azure, Bedrock, vLLM, …) without rewriting each LLM analysis module — while staying **local-first** and never making cloud the silent default.
 

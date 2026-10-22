@@ -223,6 +223,22 @@ def test_build_ollama_analysis_client_uses_runtime_limits() -> None:
 
 
 @pytest.mark.unit
+def test_build_analysis_client_openai_compatible() -> None:
+    from transcriptx.core.llm import OpenAICompatibleClient
+
+    llm_cfg = _llm_cfg(
+        provider="openai_compatible",
+        base_url="http://127.0.0.1:4000",
+        model="remote-model",
+    )
+    runtime = resolve_llm_runtime(llm_cfg=llm_cfg, effort="low")
+    client = build_ollama_analysis_client(llm_cfg=llm_cfg, runtime=runtime)
+    assert isinstance(client, OpenAICompatibleClient)
+    assert client.model == "remote-model"
+    assert client._request_timeout == 270.0
+
+
+@pytest.mark.unit
 def test_require_ollama_analysis_disabled_raises() -> None:
     with pytest.raises(LLMConfigurationError) as exc:
         require_ollama_analysis(_llm_cfg(enabled=False))
@@ -234,6 +250,11 @@ def test_require_ollama_analysis_unsupported_provider_raises() -> None:
     with pytest.raises(LLMConfigurationError) as exc:
         require_ollama_analysis(_llm_cfg(provider="openai"))
     assert exc.value.error_code == LLM_CONFIGURATION_ERROR
+
+
+@pytest.mark.unit
+def test_require_ollama_analysis_allows_openai_compatible() -> None:
+    require_ollama_analysis(_llm_cfg(provider="openai_compatible", enabled=True))
 
 
 @pytest.mark.unit

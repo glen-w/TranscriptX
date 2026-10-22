@@ -13,14 +13,6 @@
           "title": "Mode",
           "type": "string"
         },
-        "module_models": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "Optional per-consumer Ollama model tags when mode is per_module.",
-          "title": "Module Models",
-          "type": "object"
-        },
         "shared_model": {
           "anyOf": [
             {
@@ -33,6 +25,14 @@
           "default": null,
           "description": "Model tag used in shared mode (and as per-module fallback).",
           "title": "Shared Model"
+        },
+        "module_models": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional per-consumer Ollama model tags when mode is per_module.",
+          "title": "Module Models",
+          "type": "object"
         }
       },
       "title": "LLMModelSelectionSettingsModel",
@@ -41,20 +41,24 @@
   },
   "description": "Canonical field definitions for LLM provider configuration.",
   "properties": {
-    "active_model_profile": {
-      "default": "default",
-      "description": "Active llm_models profile name (virtual default when unset).",
-      "title": "Active Model Profile",
+    "enabled": {
+      "default": false,
+      "description": "Enable LLM-backed analysis modules when provider is available.",
+      "title": "Enabled",
+      "type": "boolean"
+    },
+    "provider": {
+      "default": "null",
+      "description": "LLM provider id (`null` disables remote calls; `ollama` uses a local server; `openai_compatible` is an opt-in Chat Completions endpoint). Never a silent cloud default \u2014 set llm.base_url explicitly. API keys come from TRANSCRIPTX_LLM_API_KEY / OPENAI_API_KEY, not this field.",
+      "enum": [
+        "null",
+        "ollama",
+        "openai_compatible"
+      ],
+      "title": "Provider",
       "type": "string"
     },
-    "availability_timeout": {
-      "default": 7.5,
-      "description": "Timeout in seconds when probing provider availability.",
-      "exclusiveMinimum": 0.0,
-      "title": "Availability Timeout",
-      "type": "number"
-    },
-    "base_url": {
+    "model": {
       "anyOf": [
         {
           "type": "string"
@@ -64,21 +68,8 @@
         }
       ],
       "default": null,
-      "description": "Provider base URL (e.g. http://localhost:11434/).",
-      "title": "Base Url"
-    },
-    "default_temperature": {
-      "default": 0.3,
-      "description": "Default sampling temperature for modules that do not override per call.",
-      "minimum": 0.0,
-      "title": "Default Temperature",
-      "type": "number"
-    },
-    "enabled": {
-      "default": false,
-      "description": "Enable LLM-backed analysis modules when provider is available.",
-      "title": "Enabled",
-      "type": "boolean"
+      "description": "Provider model name (e.g. Ollama tag).",
+      "title": "Model"
     },
     "fallback_model": {
       "anyOf": [
@@ -93,11 +84,51 @@
       "description": "Secondary Ollama tag used when the preferred model returns unusable JSON (empty response / parse failure). Leave empty to disable fallback.",
       "title": "Fallback Model"
     },
+    "preferred_failure_threshold": {
+      "default": 2,
+      "description": "After this many preferred-model JSON failures in one warm/analysis run, remaining JSON calls use only the secondary model.",
+      "minimum": 1,
+      "title": "Preferred Failure Threshold",
+      "type": "integer"
+    },
     "json_prefer_think_off": {
       "default": true,
       "description": "When True, JSON-format Ollama requests send think=false if the model advertises that thinking can be disabled (/api/show).",
       "title": "Json Prefer Think Off",
       "type": "boolean"
+    },
+    "base_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Provider base URL (Ollama e.g. http://localhost:11434/; openai_compatible e.g. http://127.0.0.1:4000/v1). Required for openai_compatible \u2014 there is no cloud default.",
+      "title": "Base Url"
+    },
+    "request_timeout": {
+      "default": 1350.0,
+      "description": "Per-request timeout in seconds for LLM calls.",
+      "exclusiveMinimum": 0.0,
+      "title": "Request Timeout",
+      "type": "number"
+    },
+    "availability_timeout": {
+      "default": 7.5,
+      "description": "Timeout in seconds when probing provider availability.",
+      "exclusiveMinimum": 0.0,
+      "title": "Availability Timeout",
+      "type": "number"
+    },
+    "seed": {
+      "default": 42,
+      "description": "Default seed for reproducible generation where supported.",
+      "title": "Seed",
+      "type": "integer"
     },
     "max_input_chars": {
       "default": 48000,
@@ -118,52 +149,22 @@
       "description": "Optional cap on generated tokens.",
       "title": "Max Output Tokens"
     },
-    "model": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "description": "Provider model name (e.g. Ollama tag).",
-      "title": "Model"
+    "default_temperature": {
+      "default": 0.3,
+      "description": "Default sampling temperature for modules that do not override per call.",
+      "minimum": 0.0,
+      "title": "Default Temperature",
+      "type": "number"
+    },
+    "active_model_profile": {
+      "default": "default",
+      "description": "Active llm_models profile name (virtual default when unset).",
+      "title": "Active Model Profile",
+      "type": "string"
     },
     "model_selection": {
       "$ref": "#/$defs/LLMModelSelectionSettingsModel",
       "description": "Resolved model pack from the active llm_models profile."
-    },
-    "preferred_failure_threshold": {
-      "default": 2,
-      "description": "After this many preferred-model JSON failures in one warm/analysis run, remaining JSON calls use only the secondary model.",
-      "minimum": 1,
-      "title": "Preferred Failure Threshold",
-      "type": "integer"
-    },
-    "provider": {
-      "default": "null",
-      "description": "LLM provider id (`null` disables remote calls; `ollama` uses a local server).",
-      "enum": [
-        "null",
-        "ollama"
-      ],
-      "title": "Provider",
-      "type": "string"
-    },
-    "request_timeout": {
-      "default": 1350.0,
-      "description": "Per-request timeout in seconds for LLM calls.",
-      "exclusiveMinimum": 0.0,
-      "title": "Request Timeout",
-      "type": "number"
-    },
-    "seed": {
-      "default": 42,
-      "description": "Default seed for reproducible generation where supported.",
-      "title": "Seed",
-      "type": "integer"
     }
   },
   "title": "LLMSettingsModel",

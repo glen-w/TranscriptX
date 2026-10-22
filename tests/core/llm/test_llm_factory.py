@@ -8,6 +8,7 @@ from transcriptx.core.llm import (
     LLMConfigurationError,
     NullLLMClient,
     OllamaClient,
+    OpenAICompatibleClient,
     get_llm_client,
     normalize_base_url,
 )
@@ -52,6 +53,18 @@ def test_factory_default_model_and_base_url() -> None:
     assert isinstance(client, OllamaClient)
     assert client.model == "qwen3:8b"
     assert client.base_url == normalize_base_url("http://localhost:11434/")
+
+
+@pytest.mark.unit
+def test_factory_openai_compatible_returns_client() -> None:
+    cfg = TranscriptXConfig()
+    cfg.llm.enabled = True
+    cfg.llm.provider = "openai_compatible"
+    cfg.llm.model = "qwen2.5:7b"
+    cfg.llm.base_url = "http://127.0.0.1:4000/v1"
+    client = get_llm_client(cfg)
+    assert isinstance(client, OpenAICompatibleClient)
+    assert client.model == "qwen2.5:7b"
 
 
 @pytest.mark.unit

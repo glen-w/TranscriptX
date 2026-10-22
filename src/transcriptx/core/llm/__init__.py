@@ -27,6 +27,13 @@ from transcriptx.core.llm.ollama_client import (
     parse_ollama_tags_payload,
     show_ollama_model,
 )
+from transcriptx.core.llm.openai_compatible_client import (
+    OpenAICompatibleClient,
+    base_url_is_loopback,
+    build_openai_compatible_client,
+    normalize_openai_base_url,
+    resolve_openai_api_key,
+)
 from transcriptx.core.llm.thinking_models import (
     LLM_JSON_FORMAT_CONSUMER_IDS,
     THINKING_MODEL_NAME_MARKERS,
@@ -63,6 +70,7 @@ def get_llm_client(
 
     - disabled or provider ``null`` -> ``NullLLMClient``
     - provider ``ollama`` -> ``OllamaClient``
+    - provider ``openai_compatible`` -> ``OpenAICompatibleClient``
     - enabled unsupported provider -> ``LLMConfigurationError``
 
     Pass ``model`` to override ``llm.model`` for this client only (run-scoped
@@ -85,7 +93,9 @@ def get_llm_client(
         else:
             resolved_model = llm.model or _DEFAULT_OLLAMA_MODEL
         base_url = resolve_ollama_base_url(llm.base_url or _DEFAULT_OLLAMA_BASE_URL)
-        from transcriptx.core.llm.json_with_fallback import wrap_client_with_json_fallback
+        from transcriptx.core.llm.json_with_fallback import (
+            wrap_client_with_json_fallback,
+        )
         from transcriptx.core.llm.ollama_client import build_ollama_client
 
         primary = build_ollama_client(
@@ -104,6 +114,20 @@ def get_llm_client(
             max_output_tokens=llm.max_output_tokens,
         )
 
+    if provider == "openai_compatible":
+        if model and str(model).strip():
+            resolved_model = str(model).strip()
+        else:
+            resolved_model = llm.model or ""
+        return build_openai_compatible_client(
+            base_url=llm.base_url or "",
+            model=resolved_model,
+            seed=int(llm.seed),
+            request_timeout=float(llm.request_timeout),
+            availability_timeout=float(llm.availability_timeout),
+            max_output_tokens=llm.max_output_tokens,
+        )
+
     raise LLMConfigurationError(f"Unsupported LLM provider: {llm.provider!r}")
 
 
@@ -113,10 +137,15 @@ __all__ = [
     "JsonResponseFormat",
     "generate_json",
     "OllamaClient",
+    "OpenAICompatibleClient",
     "LLMConfigurationError",
     "LLM_CONFIGURATION_ERROR",
     "DEFAULT_OLLAMA_MODEL",
     "get_llm_client",
+    "build_openai_compatible_client",
+    "normalize_openai_base_url",
+    "resolve_openai_api_key",
+    "base_url_is_loopback",
     "normalize_base_url",
     "resolve_ollama_base_url",
     "list_installed_ollama_models",
