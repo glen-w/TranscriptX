@@ -13,6 +13,7 @@ from transcriptx.web.insights_presentation import (
     SUMMARY_TYPE_LABELS,
     compact_metadata_chips,
     dedupe_overlapping_highlights,
+    evidence_quote_previews,
     highlight_quote_eligible,
     order_analysis_placements,
     resolve_insights_display_cap,
@@ -24,9 +25,7 @@ from transcriptx.web.insights_presentation import (
 @pytest.mark.unit
 def test_resolve_insights_display_cap_from_params() -> None:
     assert resolve_insights_display_cap(None) is None
-    assert (
-        resolve_insights_display_cap(SimpleNamespace(params={"display_cap": 3})) == 3
-    )
+    assert resolve_insights_display_cap(SimpleNamespace(params={"display_cap": 3})) == 3
     assert resolve_insights_display_cap(SimpleNamespace(params={})) is None
 
 
@@ -206,3 +205,21 @@ def test_dedupe_overlapping_highlights_keeps_stronger() -> None:
     assert "c" in keys
     assert GUIDED_HIGHLIGHT_CARD_CAP == 5
     assert GUIDED_RANKED_ROW_CAP == 5
+
+
+@pytest.mark.unit
+def test_evidence_quote_previews_caps_and_remaining() -> None:
+    quotes = {
+        "q1": "first quote",
+        "q2": "second quote",
+        "q3": "third quote",
+        "q4": "fourth quote",
+        "empty": "   ",
+    }
+    previews, remaining = evidence_quote_previews(
+        ["q1", "missing", "empty", "q2", "q3", "q4"], quotes
+    )
+    assert previews == ["first quote", "second quote", "third quote"]
+    assert remaining == 1
+    assert evidence_quote_previews([], quotes) == ([], 0)
+    assert evidence_quote_previews(["q1"], None) == ([], 0)

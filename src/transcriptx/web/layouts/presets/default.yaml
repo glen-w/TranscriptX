@@ -12,14 +12,14 @@ pages:
       - placement_id: overview_at_a_glance
         block_id: at_a_glance
         visible: true
-      - placement_id: overview_speaker_cards
-        block_id: speaker_summary_cards
+      - placement_id: overview_highlights
+        block_id: highlights_compact
         visible: true
       - placement_id: overview_action_items
         block_id: action_items_compact
         visible: true
-      - placement_id: overview_highlights
-        block_id: highlights_compact
+      - placement_id: overview_speaker_cards
+        block_id: speaker_summary_cards
         visible: true
       - placement_id: overview_run_status
         block_id: run_status_compact

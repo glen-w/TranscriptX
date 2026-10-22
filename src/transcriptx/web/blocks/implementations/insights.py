@@ -241,17 +241,18 @@ def _render_theme_and_idea_lists(
             else:
                 st.write(f"- {phrase} ({total:.3f})")
             if quote_text_by_id:
-                evidence_ids = row.get("evidence_quote_ids") or []
-                snippets: list[str] = []
-                for qid in evidence_ids:
-                    snippet = quote_text_by_id.get(str(qid), "").strip()
-                    if snippet:
-                        snippets.append(snippet)
-                if snippets:
-                    preview = snippets[0]
-                    if len(preview) > 160:
-                        preview = preview[:157].rstrip() + "…"
+                from transcriptx.web.insights_presentation import (
+                    evidence_quote_previews,
+                )
+
+                previews, remaining = evidence_quote_previews(
+                    row.get("evidence_quote_ids") or [],
+                    quote_text_by_id,
+                )
+                for preview in previews:
                     st.caption(f"Evidence: “{preview}”")
+                if remaining:
+                    st.caption(f"+{remaining} more in Insights → Highlights")
         shown += 1
         if shown >= theme_cap:
             break
@@ -459,9 +460,7 @@ def _render_insights_payload(
         _render_style_indicator_list(style_rows, guided=guided)
 
     if show_content and not content_abstained and quote_text_by_id:
-        st.caption(
-            "More notable passages are listed under **Insights → Highlights**."
-        )
+        st.caption("More notable passages are listed under **Insights → Highlights**.")
     if show_content and not content_abstained:
         _render_insights_narrative(narrative_payload)
 

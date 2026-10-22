@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **T0/T1 honesty:** Overview, Charts page, and Charts overview block share a zero-named-speakers banner. Import captions placeholder `SPEAKER_00` labels and points at **Treat as single speaker**. Content modules `understandability`, `lexical_diversity`, `epistemic_markers`, `simplified_transcript`, `topic_shift`, and `moments` now use `min_named_speakers: 0`.
 - **NeMo converter goldens:** `pred_text` / `transcript` JSONL (blank lines skipped), list JSON with optional speaker, and wrapped `{segments}` shapes.
+- **Theme A Overview/evidence:** Standard Overview places Highlights before Actions; Insights theme rows show up to three evidence quotes plus a Highlights remainder caption.
 
 ## [1.0.1] - 2026-10-20
 
