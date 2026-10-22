@@ -264,9 +264,7 @@ def navigate_to_tools_tab(
             str(p) for p in preprocess_paths
         ]
     if merge_ordered_paths is not None:
-        session_state[MERGE_ORDERED_PATHS_KEY] = [
-            str(p) for p in merge_ordered_paths
-        ]
+        session_state[MERGE_ORDERED_PATHS_KEY] = [str(p) for p in merge_ordered_paths]
 
 
 def build_prerequisites() -> dict[str, PagePrerequisite]:
@@ -389,6 +387,7 @@ def consume_library_nav(session_state: dict[str, Any]) -> None:
     """Apply one-shot Library filter + pending transcript path (identity, not row)."""
     from transcriptx.app.corpus_inventory.models import LibraryFilter
     from transcriptx.web.state import (
+        LIBRARY_FILTER_INCLUDE_ARCHIVED_KEY,
         LIBRARY_FILTER_PRESET_KEY,
         LIBRARY_FILTER_QUERY_KEY,
         LIBRARY_FILTER_SORT_KEY,
@@ -402,6 +401,7 @@ def consume_library_nav(session_state: dict[str, Any]) -> None:
         session_state[LIBRARY_FILTER_PRESET_KEY] = nav_filter.preset.value
         session_state[LIBRARY_FILTER_QUERY_KEY] = nav_filter.query
         session_state[LIBRARY_FILTER_SORT_KEY] = nav_filter.sort.value
+        session_state[LIBRARY_FILTER_INCLUDE_ARCHIVED_KEY] = nav_filter.include_archived
     nav_path = session_state.pop(LIBRARY_NAV_TRANSCRIPT_PATH, None)
     if nav_path:
         session_state[LIBRARY_SELECTED_TRANSCRIPT_PATH] = str(

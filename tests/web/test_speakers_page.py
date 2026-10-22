@@ -296,7 +296,9 @@ def test_speakers_browser_missing_profile_errors(monkeypatch) -> None:
 
 
 @pytest.mark.unit
-def test_speakers_aggregation_snapshot_reused_within_session(monkeypatch, tmp_path) -> None:
+def test_speakers_aggregation_snapshot_reused_within_session(
+    monkeypatch, tmp_path
+) -> None:
     """Fingerprint-stable visits must not rebuild the aggregation snapshot."""
     import transcriptx.web.page_modules.speakers as mod
 
@@ -352,3 +354,50 @@ def test_item_matches_search_name_alias_and_notes() -> None:
     assert not mod._item_matches_search(item, "jordan")
     assert mod._item_matches_search(item, "studio", extra="records from studio 12")
     assert not mod._item_matches_search(item, "studio")
+
+
+@pytest.mark.unit
+def test_speakers_link_another_omits_archived_transcripts(monkeypatch) -> None:
+    import transcriptx.web.page_modules.speakers as mod
+
+    _SpeakersStreamlit.reset()
+    captured: dict[str, object] = {}
+    live = SimpleNamespace(
+        managed_transcript_id="live-id",
+        transcript_path=Path("/tmp/live.json"),
+        current_relpath="live.json",
+    )
+    archived = SimpleNamespace(
+        managed_transcript_id="old-id",
+        transcript_path=Path("/tmp/old.json"),
+        current_relpath="old.json",
+    )
+
+    class _Resolver:
+        def list_admitted(self):
+            return [live, archived]
+
+    monkeypatch.setattr(mod, "st", _SpeakersStreamlit)
+    monkeypatch.setattr(mod, "ManagedTranscriptResolver", _Resolver)
+    monkeypatch.setattr(
+        "transcriptx.io.import_metadata.persist.is_library_archived",
+        lambda path: Path(path).name == "old.json",
+    )
+
+    def _selectbox(_label, options, **_kwargs):
+        captured["options"] = list(options)
+        return ""
+
+    monkeypatch.setattr(
+        _SpeakersStreamlit,
+        "selectbox",
+        staticmethod(_selectbox),
+    )
+
+    frag = mod._render_link_another.__wrapped__
+    frag(
+        snap=SimpleNamespace(blocked_profile_ids=set()),
+        profile=SimpleNamespace(profile_id="p1"),
+    )
+
+    assert captured["options"] == ["", "live-id"]

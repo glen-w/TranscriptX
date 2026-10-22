@@ -56,7 +56,7 @@ Implications:
   - `readable/` is a derived child within this library (not a peer root).
   - `imports/` is ephemeral staging owned by the managed import workflow.
   - `originals/` stores archived source files for managed imports (never overwritten; disambiguated names). Audio paths under `originals/` (and any archival audio roots) are stable archival references and are intentionally decoupled from transcript filenames.
-  - `metadata/` stores managed transcript sidecars under metadata-kind subtrees that mirror the transcript-relative path (for example, `transcripts/foo/bar.json` → `metadata/imports/foo/bar.import_meta.json`).
+  - `metadata/` stores managed transcript sidecars under metadata-kind subtrees that mirror the transcript-relative path (for example, `transcripts/foo/bar.json` → `metadata/imports/foo/bar.import_meta.json`). Import sidecars may include optional `library_archived` (see [Library archive](#library-archive)). This is independent of `archived_original_relpath` (path of the imported source file under `originals/`).
   - Language variants (e.g. `meeting_fr.json` beside `meeting.json`) are separate canonical transcripts with separate mirrored speaker-map sidecars. Import may copy the base speaker map into the variant sidecar; see `docs/runtime/host-stt.md` (Multi-language variants).
   - A file at `transcripts_dir/*.json` alone is not library-valid; library admission requires a managed artifact set (canonical JSON + valid import sidecar, with archived original path linkage).
   - Host transcription helpers (`whispermlx-missing`, `inbox-watch`) must write raw engine output under `transcripts/originals/` only. They refuse the managed library root (the directory that already contains `metadata/` / `imports/`). They skip a stem when matching JSON already exists in `originals/` or in the library root; they still never write into the library root. Admit via Import Transcript, Settings → Watcher, or optional `inbox-watch --admit` (subprocesses `python -m transcriptx.admit_originals` → `admit_and_register`; default off).
@@ -73,6 +73,19 @@ Implications:
 - **outputs_dir**: App-managed analysis outputs, reconstructable by re-running.
 - **state_dir**: App state (processing state, run/analysis locks, rename journal), persistent, reconstructable in part. Lives under `data_dir/state/`.
 - **wav_backup_dir**: Archive, persistent, not auto-clean unless explicit user action.
+
+### Library archive
+
+A managed transcript may be tagged **archived** so it stays in the library (canonical JSON, import sidecar, originals, analysis runs) but is hidden from default discovery.
+
+- **Persistence:** optional boolean `library_archived` on the import sidecar (`metadata/imports/<rel>.import_meta.json`). Omitted, `false`, a missing sidecar, or an unreadable sidecar means **not archived**. A present non-boolean value is a sidecar schema error.
+- **`SIDECAR_SCHEMA_VERSION` stays `1`.** The field is optional so existing sidecars keep loading. This is not a schema-epoch bump and is not stored on `processing_state.json`.
+- **Not** `archived_original_relpath` (path of the imported source file under `originals/`).
+- **Not** Library organisation tags (those remain on `processing_state` for filter / export-by-tag).
+- **Not** a delete or soft-delete. Files stay on disk and remain findable.
+- **Default surfaces omit archived items:** transcript pickers (Run Analysis, Batch, Groups membership, Corrections, Speakers “link another”, speaker-view paths, and other `list_transcript_picker_options` callers), the sidebar subject dropdown, and Home Continue / Needs attention (default `LibraryFilter`). The sidebar may keep the **current** selection even if that slug is archived so the session does not blank.
+- **Opt-in only on Library and Search:** checkbox **Include archived transcripts** (default off). The Library inspector **Archive transcript** / **Unarchive transcript** writes the sidecar and invalidates listing caches. There is no Settings toggle and no bulk-archive action.
+- **Export by tag** still matches organisation tags on the full inventory, including archived rows.
 
 ---
 

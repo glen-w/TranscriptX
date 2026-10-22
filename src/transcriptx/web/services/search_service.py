@@ -22,6 +22,7 @@ from transcriptx.web.models.search import (
     SegmentRef,
     TranscriptRef,
 )
+from transcriptx.io.import_metadata.persist import is_library_archived
 from transcriptx.web.cache_helpers import cached_list_available_sessions
 from transcriptx.web.services.file_service import FileService
 from transcriptx.web.utils import resolve_speaker_names_from_sidecars
@@ -78,6 +79,25 @@ def _session_matches_filters(
         return True
     slug = _session_slug_from_name(session_name)
     return slug in set(filters.session_slugs)
+
+
+def _session_is_library_archived(session_name: str) -> bool:
+    path = _resolve_session_path_for_search(session_name)
+    try:
+        return is_library_archived(path)
+    except Exception:
+        return False
+
+
+def _session_included_for_search(
+    session_name: str, filters: Optional[SearchFilters]
+) -> bool:
+    if not _session_matches_filters(session_name, filters):
+        return False
+    include_archived = bool(filters and filters.include_archived)
+    if include_archived:
+        return True
+    return not _session_is_library_archived(session_name)
 
 
 def _segment_matches_speaker_filters(
@@ -248,6 +268,8 @@ def _resolve_transcript_mtime(session_name: str) -> Optional[float]:
 @st.cache_data(ttl=60, show_spinner=False)
 def get_speakers_from_transcripts(
     session_slugs: Optional[Tuple[str, ...]] = None,
+    *,
+    include_archived: bool = False,
 ) -> List[str]:
     sessions = cached_list_available_sessions()
     if session_slugs is not None:
@@ -258,9 +280,12 @@ def get_speakers_from_transcripts(
             if _session_slug_from_name(str(s.get("name") or "")) in slug_set
         ]
     names: set = set()
+    speaker_filters = SearchFilters(include_archived=include_archived)
     for session_info in sessions:
         session_name = session_info.get("name", "")
         if not session_name:
+            continue
+        if not _session_included_for_search(session_name, speaker_filters):
             continue
         transcript_path = _resolve_session_path_for_search(session_name)
         transcript_mtime = _resolve_transcript_mtime(session_name)
@@ -291,7 +316,7 @@ class FileSearchBackend:
             session_name = session_info.get("name", "")
             if not session_name:
                 continue
-            if not _session_matches_filters(session_name, filters):
+            if not _session_included_for_search(session_name, filters):
                 continue
             transcript_path = _resolve_session_path_for_search(session_name)
             transcript_mtime = _resolve_transcript_mtime(session_name)
@@ -391,7 +416,7 @@ class SearchService:
             session_name = session_info.get("name", "")
             if not session_name:
                 continue
-            if not _session_matches_filters(session_name, filters):
+            if not _session_included_for_search(session_name, filters):
                 continue
             transcript_path = _resolve_session_path_for_search(session_name)
             transcript_mtime = _resolve_transcript_mtime(session_name)
@@ -419,7 +444,7 @@ class SearchService:
             return []
         results: List[SearchResult] = []
         for index in candidates:
-            if not _session_matches_filters(index.session_name, filters):
+            if not _session_included_for_search(index.session_name, filters):
                 continue
             transcript_path = _resolve_session_path_for_search(index.session_name)
             segments = resolve_speaker_names_from_sidecars(

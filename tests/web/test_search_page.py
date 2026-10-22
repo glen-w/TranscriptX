@@ -52,6 +52,7 @@ class _SearchStreamlit(DummyHomeStreamlit):
     scope: str = "All transcripts"
     fuzzy: bool = True
     first_match: bool = True
+    include_archived: bool = False
     speaker: str = "All speakers"
     captions: list[str] = []
     rerun_calls: int = 0
@@ -63,6 +64,7 @@ class _SearchStreamlit(DummyHomeStreamlit):
         cls.scope = "All transcripts"
         cls.fuzzy = True
         cls.first_match = True
+        cls.include_archived = False
         cls.speaker = "All speakers"
         cls.captions = []
         cls.rerun_calls = 0
@@ -93,6 +95,8 @@ class _SearchStreamlit(DummyHomeStreamlit):
             return cls.fuzzy
         if key == "global_search_first_match_only":
             return cls.first_match
+        if key == "global_search_include_archived":
+            return cls.include_archived
         return value
 
     @classmethod
@@ -248,6 +252,36 @@ def test_search_current_transcript_scope_passes_session_slug(monkeypatch) -> Non
     assert search_mock.search_all_transcripts.called
     filters: SearchFilters = search_mock.search_all_transcripts.call_args[0][1]
     assert filters.session_slugs == ["slug-a"]
+    assert filters.include_archived is False
+
+
+@pytest.mark.unit
+def test_search_include_archived_passed_to_filters(monkeypatch) -> None:
+    import transcriptx.web.page_modules.search as mod
+
+    _patch_search(monkeypatch, mod)
+    response = SearchResponse(
+        substring_results=[],
+        fuzzy_results=[],
+        total_found=0,
+        total_shown=0,
+        fuzzy_ran=False,
+    )
+    search_mock = MagicMock()
+    search_mock.search_all_transcripts.return_value = response
+    monkeypatch.setattr(mod, "SearchService", lambda: search_mock)
+    _SearchStreamlit.query = "hello"
+    _SearchStreamlit.include_archived = True
+    _SearchStreamlit.session_state = {
+        "global_search_last_change": 0.0,
+        "global_search_last_query": "hello",
+    }
+
+    frag = mod._search_interaction_fragment.__wrapped__
+    frag()
+
+    filters: SearchFilters = search_mock.search_all_transcripts.call_args[0][1]
+    assert filters.include_archived is True
 
 
 @pytest.mark.unit

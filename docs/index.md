@@ -37,6 +37,7 @@ workflows/corrections
 workflows/rename-transcript
 workflows/speakers
 workflows/speaker-voice-matching
+workflows/archive-transcript
 ```
 
 ```{toctree}

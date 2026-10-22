@@ -12,6 +12,7 @@ from transcriptx.app.corpus_inventory.models import (
     LibraryWorkflowPreset,
 )
 from transcriptx.app.corpus_inventory.query import (
+    apply_library_filter,
     continue_working_action,
     corpus_summary,
     needs_attention_counts,
@@ -60,9 +61,7 @@ def _inventory_rows() -> list[InventoryRow]:
 
 def _render_corpus_summary(rows: list[InventoryRow]) -> None:
     summary = corpus_summary(rows)
-    duration = format_duration_display_from_config(
-        summary["total_duration_seconds"]
-    )
+    duration = format_duration_display_from_config(summary["total_duration_seconds"])
     st.caption(
         f"{summary['transcript_count']} transcripts · "
         f"{summary['analysed_count']} analysed · {duration}"
@@ -177,8 +176,8 @@ def render_home() -> None:
     render_page_shell("Home", _HOME_DESCRIPTION)
 
     try:
-        rows = _inventory_rows()
-        if not rows:
+        all_rows = _inventory_rows()
+        if not all_rows:
             render_empty_state(
                 "no_results_yet",
                 "No transcripts found",
@@ -190,6 +189,7 @@ def render_home() -> None:
             )
             return
 
+        rows = apply_library_filter(all_rows, LibraryFilter())
         _render_corpus_summary(rows)
         _render_recent_activity()
         _render_needs_attention(rows)

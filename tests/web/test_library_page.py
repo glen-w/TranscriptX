@@ -247,6 +247,33 @@ def test_library_table_windows_to_page_size(monkeypatch) -> None:
     assert any("60 of 60" in c or "60 of" in c for c in _DummyStreamlit.captions)
 
 
+def test_library_hides_archived_unless_included(monkeypatch) -> None:
+    import transcriptx.web.page_modules.library as mod
+    from transcriptx.web.state import LIBRARY_FILTER_INCLUDE_ARCHIVED_KEY
+
+    active = _row("live")
+    archived = replace(_row("old"), library_archived=True)
+
+    _DummyStreamlit.session_state = {"library_filter_sort": "name"}
+    _DummyStreamlit.selected_rows = []
+    _patch_library(monkeypatch, [active, archived])
+    mod.render_library()
+    assert set(_DummyStreamlit.captured_df["Transcript"]) == {"live"}
+    assert any("archived hidden" in cap for cap in _DummyStreamlit.captions)
+
+    _DummyStreamlit.session_state = {
+        "library_filter_sort": "name",
+        LIBRARY_FILTER_INCLUDE_ARCHIVED_KEY: True,
+    }
+    _DummyStreamlit.selected_rows = []
+    _DummyStreamlit.captions = []
+    mod.render_library()
+    assert set(_DummyStreamlit.captured_df["Transcript"]) == {
+        "live",
+        "old (archived)",
+    }
+
+
 def test_library_delete_on_primary_strip_by_default() -> None:
     from transcriptx.web.action_menus.catalog import (
         SECTION_ALLOWLISTS,

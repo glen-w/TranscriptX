@@ -243,9 +243,7 @@ def _appearance_samples(
     return lines
 
 
-def _item_matches_search(
-    item: ProfileListItem, query: str, *, extra: str = ""
-) -> bool:
+def _item_matches_search(item: ProfileListItem, query: str, *, extra: str = "") -> bool:
     needle = " ".join((query or "").split()).casefold()
     if not needle:
         return True
@@ -938,7 +936,7 @@ def _render_voice_controls(
             promo_action = f"voice_promote_{sample.sample_id}"
             if cols[1].button(
                 "Promote",
-            icon=ic.CHECK_CIRCLE,
+                icon=ic.CHECK_CIRCLE,
                 key=f"spk_voice_promote_{sample.sample_id}",
             ):
                 try:
@@ -1940,7 +1938,13 @@ def _render_link_another(
 
         resolver = ManagedTranscriptResolver()
         try:
-            admitted = resolver.list_admitted()
+            from transcriptx.io.import_metadata.persist import is_library_archived
+
+            admitted = [
+                row
+                for row in resolver.list_admitted()
+                if not is_library_archived(row.transcript_path)
+            ]
         except Exception as exc:
             st.error(f"Could not list managed transcripts: {exc}")
             return
@@ -1994,7 +1998,9 @@ def _render_link_another(
         for o in occurrences:
             mapped = ""
             if map_state is not None:
-                mapped = str((map_state.speaker_map or {}).get(o.local_speaker_key) or "")
+                mapped = str(
+                    (map_state.speaker_map or {}).get(o.local_speaker_key) or ""
+                )
             label = mapped or o.local_speaker_key
             extra = f"{o.segment_count} lines"
             if o.collision:

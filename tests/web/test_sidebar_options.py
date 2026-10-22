@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from transcriptx.core.utils.analysis_picker_status import (
@@ -42,12 +43,34 @@ def test_cached_dropdown_options_includes_library_only_slug(monkeypatch) -> None
         "_library_only_slugs_from_index",
         lambda _session_slugs: ["R20241025-162403"],
     )
+    monkeypatch.setattr(mod, "_archived_library_slugs", lambda: set())
 
     options, _labels = mod._cached_dropdown_options.__wrapped__(
         (),
         None,
     )
     assert "R20241025-162403" in options
+
+
+def test_cached_dropdown_options_omits_archived_slugs(monkeypatch) -> None:
+    monkeypatch.setattr(
+        mod,
+        "_slug_display_labels_from_index",
+        lambda: {"live": "Live", "old": "Old"},
+    )
+    monkeypatch.setattr(
+        mod,
+        "_library_only_slugs_from_index",
+        lambda _session_slugs: ["old"],
+    )
+    monkeypatch.setattr(mod, "_archived_library_slugs", lambda: {"old"})
+
+    options, _labels = mod._cached_dropdown_options.__wrapped__(
+        ("live/run1",),
+        None,
+    )
+    assert "live" in options
+    assert "old" not in options
 
 
 def test_library_only_slugs_skips_missing_source_path(
@@ -110,6 +133,34 @@ def test_get_transcript_dropdown_options_uses_light_listing(monkeypatch) -> None
     assert formatter("slug-a") == "A (no analysis)"
     rich.assert_not_called()
     library.assert_not_called()
+
+
+def test_dropdown_keeps_current_archived_selection(monkeypatch) -> None:
+    monkeypatch.setattr(
+        mod,
+        "cached_list_viewable_session_names",
+        lambda: ["slug-a/run1"],
+    )
+    monkeypatch.setattr(mod, "_slug_index_mtime", lambda: 1.0)
+    monkeypatch.setattr(
+        mod,
+        "_cached_dropdown_options",
+        lambda _names, _mtime: (["slug-a"], {"slug-a": "A"}),
+    )
+    monkeypatch.setattr(mod, "_slug_is_library_archived", lambda slug: slug == "old")
+    monkeypatch.setattr(
+        "transcriptx.web.cache_helpers.get_cached_analysis_picker_status",
+        lambda: AnalysisPickerStatusIndex(by_slug={}, path_to_slug={}),
+    )
+    monkeypatch.setattr(
+        mod,
+        "st",
+        SimpleNamespace(session_state={"subject_id": "old"}),
+    )
+
+    options, _formatter = mod.get_transcript_dropdown_options()
+    assert options[0] == "old"
+    assert "slug-a" in options
 
 
 def test_option_formatter_appends_analysis_status() -> None:

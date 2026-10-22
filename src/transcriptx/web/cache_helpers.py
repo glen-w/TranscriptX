@@ -287,7 +287,9 @@ def cached_list_transcript_picker_options(
 
 def get_cached_list_transcript_picker_options() -> list[TranscriptPickerOption]:
     """Run Analysis / Batch transcript picker without full library metadata."""
-    from transcriptx.core.utils.analysis_picker_status import format_with_analysis_status
+    from transcriptx.core.utils.analysis_picker_status import (
+        format_with_analysis_status,
+    )
     from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
     from transcriptx.core.utils.slug_manager import INDEX_FILE
 
@@ -650,13 +652,18 @@ def transcript_paths_for_speaker_views_impl() -> list:
     seen: set[str] = set()
 
     def add(p: Path) -> None:
+        from transcriptx.io.import_metadata.persist import is_library_archived
+
         try:
             key = str(p.resolve())
         except OSError:
             key = str(p)
-        if key not in seen and p.exists():
-            seen.add(key)
-            paths.append(p)
+        if key in seen or not p.exists():
+            return
+        if is_library_archived(p):
+            return
+        seen.add(key)
+        paths.append(p)
 
     for opt in _transcript_picker_options_impl():
         add(Path(opt.path))

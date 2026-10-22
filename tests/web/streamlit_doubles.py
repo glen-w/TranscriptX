@@ -223,6 +223,12 @@ class DummyStreamlitWithDataframe:
         return value
 
     @classmethod
+    def checkbox(cls, _label, *, value=False, key=None, **_kwargs):
+        if key is not None and key in cls.session_state:
+            return bool(cls.session_state[key])
+        return value
+
+    @classmethod
     def multiselect(cls, _label, options=None, default=None, key=None, **_kwargs):
         options = list(options or [])
         if key is not None and key in cls.session_state:

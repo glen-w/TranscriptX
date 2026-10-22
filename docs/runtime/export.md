@@ -30,7 +30,7 @@ Generated presentation files (`index.html`, `index.epub`, other `*.epub`) are **
 
 ## Export by tag (Library)
 
-From **Library**, open **Export by tag** to package artifacts across many transcripts that share organisation tags (stored on `processing_state`, not chart tags or Groups).
+From **Library**, open **Export by tag** to package artifacts across many transcripts that share organisation tags (stored on `processing_state`, not chart tags, Groups, or library archive). Matching uses the full inventory, including archived transcripts that still carry those tags. Library archive (`library_archived` on the import sidecar) is a visibility flag, not a tag — see [STORAGE.md](STORAGE.md#library-archive).
 
 1. Choose one or more **library tags** (AND match).
 2. Choose **artifact kinds** — defaults are readable TXT / CSV / SRT / VTT from each match’s **latest analysis run**. Optional kinds: managed transcript JSON, summaries, static charts, data outputs.

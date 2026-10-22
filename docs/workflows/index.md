@@ -32,6 +32,7 @@ Jump in when you need these tasks.
 | 9 | [Rename a transcript](rename-transcript.md) | Give a library transcript a clearer file name |
 | 10 | [Browse speaker profiles](speakers.md) | Open speaker profiles linked across transcripts |
 | 11 | [Assist naming with voice](speaker-voice-matching.md) | Enrol all + Pre-load so later transcripts propose people to confirm |
+| 12 | [Archive a transcript](archive-transcript.md) | Hide it from pickers without deleting; find it again from Library or Search |
 
 ## Prerequisites
 

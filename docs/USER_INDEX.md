@@ -15,7 +15,7 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 | [Comparison](comparison.md) | Is TranscriptX the right tool? |
 | [Comparison reference](comparison-reference.md) | Vendor-by-vendor notes |
 | [Known limitations](known_limitations.md) | Optional stacks, AI, privacy |
-| [Terminology](TERMS.md) | Term index (includes auto-name / auto_identified) |
+| [Terminology](TERMS.md) | Term index (includes auto-name / auto_identified / library archive) |
 
 ## Workflows
 
@@ -33,6 +33,7 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 | [Rename a transcript](workflows/rename-transcript.md) | Clearer library name |
 | [Browse speaker profiles](workflows/speakers.md) | Longitudinal speaker pages |
 | [Assist naming with voice](workflows/speaker-voice-matching.md) | Enrol-all / Pre-load assisted naming |
+| [Archive a transcript](workflows/archive-transcript.md) | Hide from pickers; find again on Library / Search |
 
 ## Install and run
 

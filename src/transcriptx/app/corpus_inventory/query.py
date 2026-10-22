@@ -60,11 +60,9 @@ def apply_library_filter(
         for row in rows
         if row_matches_preset(row, library_filter.preset)
         and row_matches_query(row, library_filter.query)
-        and (
-            not library_filter.source_id
-            or row.source_id == library_filter.source_id
-        )
+        and (not library_filter.source_id or row.source_id == library_filter.source_id)
         and row_matches_tags(row, library_filter.tags)
+        and (library_filter.include_archived or not row.library_archived)
     ]
     return sort_inventory_rows(matched, library_filter.sort)
 
@@ -81,7 +79,9 @@ def sort_inventory_rows(
     rows: list[InventoryRow], sort: LibrarySort
 ) -> list[InventoryRow]:
     if sort is LibrarySort.NAME:
-        return sorted(rows, key=lambda row: (row.title.casefold(), str(row.transcript_path)))
+        return sorted(
+            rows, key=lambda row: (row.title.casefold(), str(row.transcript_path))
+        )
     if sort is LibrarySort.DURATION:
         return sorted(
             rows,
@@ -147,9 +147,7 @@ def select_continue_working(
     rows: list[InventoryRow], *, limit: int = 5
 ) -> list[InventoryRow]:
     ranked = sorted(rows, key=continue_working_priority)
-    resumable = [
-        row for row in ranked if continue_working_priority(row)[0] < 4
-    ]
+    resumable = [row for row in ranked if continue_working_priority(row)[0] < 4]
     chosen: list[InventoryRow] = []
     seen: set[str] = set()
     for row in resumable:
@@ -192,9 +190,7 @@ def needs_attention_counts(rows: list[InventoryRow]) -> dict[str, int]:
 def corpus_summary(rows: list[InventoryRow]) -> dict[str, int | float]:
     analysed = sum(1 for row in rows if row.analysis.status is AnalysisStatus.COMPLETED)
     duration = sum(
-        row.duration_seconds or 0.0
-        for row in rows
-        if row.duration_seconds is not None
+        row.duration_seconds or 0.0 for row in rows if row.duration_seconds is not None
     )
     return {
         "transcript_count": len(rows),

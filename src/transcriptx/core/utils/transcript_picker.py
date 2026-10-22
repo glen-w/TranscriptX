@@ -34,9 +34,12 @@ def _is_picker_eligible(path: Path) -> bool:
     """
     if not _under_managed_library(path):
         return True
+    from transcriptx.io.import_metadata.persist import is_library_archived
     from transcriptx.io.import_metadata_sidecar import find_existing_import_sidecar
 
-    return find_existing_import_sidecar(path) is not None
+    if find_existing_import_sidecar(path) is None:
+        return False
+    return not is_library_archived(path)
 
 
 def list_transcript_picker_options() -> list[TranscriptPickerOption]:

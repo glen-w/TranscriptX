@@ -145,7 +145,7 @@ Legacy `TRANSCRIPTX_AUDIO_*_ENABLED` variables are **rejected** — use the corr
 
 Settings → Speakers controls the Speakers directory filters and optional local voice matching. Canonical files live under `speaker_profiles/` ([STORAGE.md](STORAGE.md), [speaker_profiles_v1](../contracts/speaker_profiles_v1.md)).
 
-**Directory toggles** (session): include ignored appearances in headline totals; show archived; show merged.
+**Directory toggles** (session): include ignored appearances in headline totals; show archived; show merged. Speakers “show archived” is for **profiles**. Transcript library archive is on **Library** (inspector Archive / Unarchive, plus **Include archived transcripts** on Library and Search) — not a Settings toggle. See [STORAGE.md](STORAGE.md#library-archive).
 
 **Local voice matching** (optional extra `speaker_match`):
 

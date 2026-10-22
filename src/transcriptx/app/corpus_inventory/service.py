@@ -33,7 +33,10 @@ from transcriptx.app.corpus_inventory.models import (
     SpeakerIdStatus,
     TranscriptRef,
 )
-from transcriptx.core.utils._path_core import get_canonical_base_name, get_transcript_dir
+from transcriptx.core.utils._path_core import (
+    get_canonical_base_name,
+    get_transcript_dir,
+)
 from transcriptx.core.utils.transcript_picker import list_transcript_picker_options
 from transcriptx.io.import_metadata.paths import (
     find_existing_import_sidecar,
@@ -180,9 +183,7 @@ def fingerprint_contributors(
         paths.append(run_dir / "run_results.json")
         paths.append(run_dir / "manifest.json")
         paths.append(run_dir / ".transcriptx" / "manifest.json")
-    paths.extend(
-        corrections_session_candidates(ref.path, extra=corrections_extra)
-    )
+    paths.extend(corrections_session_candidates(ref.path, extra=corrections_extra))
     unique: list[Path] = []
     for path in paths:
         if path not in unique:
@@ -219,9 +220,7 @@ def corpus_fingerprint_digest(refs: Iterable[TranscriptRef]) -> tuple[Any, ...]:
     """Cheap hash inputs for a Streamlit wrapper: index + state + every row fingerprint."""
     corr_map = corrections_paths_by_transcript()
     row_digests = tuple(
-        fingerprint_for(
-            ref, corrections_extra=corr_map.get(str(ref.path), [])
-        ).digest()
+        fingerprint_for(ref, corrections_extra=corr_map.get(str(ref.path), [])).digest()
         for ref in refs
     )
     index_stamp = _corpus_index_stamp()
@@ -310,9 +309,7 @@ class CorpusInventory:
         self.rows_rebuilt = 0
         self.cache_hits = 0
 
-    def list_rows(
-        self, refs: list[TranscriptRef] | None = None
-    ) -> list[InventoryRow]:
+    def list_rows(self, refs: list[TranscriptRef] | None = None) -> list[InventoryRow]:
         from dataclasses import replace
 
         from transcriptx.core.utils.processing_state import (
@@ -328,9 +325,7 @@ class CorpusInventory:
         for ref in refs:
             key = str(ref.path)
             live_keys.add(key)
-            fp = fingerprint_for(
-                ref, corrections_extra=corr_map.get(key, [])
-            )
+            fp = fingerprint_for(ref, corrections_extra=corr_map.get(key, []))
             tags = tuple(get_tags_for_path(ref.path, state=processing_state))
             cached = self._cache.get(key)
             if cached is not None and cached[0].digest() == fp.digest():
@@ -385,7 +380,7 @@ class CorpusInventory:
         duration, speaker_count, word_count, listing_integrity = (
             self._read_listing_stats(ref.path)
         )
-        imported_at, source_id = self._read_import_sidecar(ref.path)
+        imported_at, source_id, library_archived = self._read_import_sidecar(ref.path)
         speaker = self._read_speaker(ref.path, speaker_count=speaker_count)
         analysis = self._read_analysis(ref)
         corrections = self._read_corrections(ref.path)
@@ -416,6 +411,7 @@ class CorpusInventory:
             analysis=analysis,
             last_activity_at=last_activity,
             tags=tags,
+            library_archived=library_archived,
             fingerprint=fingerprint,
         )
 
@@ -431,7 +427,9 @@ class CorpusInventory:
             payload.pop("segments", None)
         return listing_from_document(payload)
 
-    def _read_import_sidecar(self, path: Path) -> tuple[datetime | None, str | None]:
+    def _read_import_sidecar(
+        self, path: Path
+    ) -> tuple[datetime | None, str | None, bool]:
         for candidate in import_sidecar_candidates(path):
             payload, unreadable = self._read_json(candidate)
             if unreadable or not isinstance(payload, dict):
@@ -439,13 +437,11 @@ class CorpusInventory:
             imported_at = parse_iso_datetime(payload.get("imported_at"))
             source_id = payload.get("adapter_source_id")
             source = str(source_id) if source_id else None
-            if imported_at is not None or source:
-                return imported_at, source
-        return None, None
+            library_archived = payload.get("library_archived") is True
+            return imported_at, source, library_archived
+        return None, None, False
 
-    def _read_speaker(
-        self, path: Path, *, speaker_count: int | None
-    ) -> SpeakerIdState:
+    def _read_speaker(self, path: Path, *, speaker_count: int | None) -> SpeakerIdState:
         try:
             state = SpeakerMapResolver().load_mapping(path)
         except ValueError:

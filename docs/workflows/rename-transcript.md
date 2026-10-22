@@ -40,7 +40,7 @@ Settings → Configuration → Rename controls smart prefill (`smart_rename_mode
 
 - Rename updates managed library naming; it is not an export/share step.
 - Prefer descriptive stems early — Speaker ID, groups, and exports are easier to recognise later.
-- If the picker is empty, import or transcribe first; rename only operates on managed paths.
+- If the picker is empty, import or transcribe first; rename only operates on managed paths. Archived transcripts are omitted from pickers unless they are the current sidebar selection — [Archive a transcript](archive-transcript.md).
 
 ## You should now have…
 

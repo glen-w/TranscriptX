@@ -56,7 +56,7 @@ Paths abbreviated under `src/transcriptx/`.
 | `speaker_profiles/voice/versioning.py` `VOICE_SCHEMA_VERSION` | `1` | public_persisted | keep `1` | voice tests | |
 | `services/corrections_studio/normalize.py` `STUDIO_SCHEMA_VERSION` | `2` | public_persisted | **→ 1** | corrections tests | |
 | `core/utils/state_schema.py` `STATE_SCHEMA_VERSION` | `"2.0"` | public_persisted | **→ `1`** (integer; no dotted form) | state tests | |
-| `io/import_metadata/schema.py` `SIDECAR_SCHEMA_VERSION` | `1` | public_persisted | keep | import tests | |
+| `io/import_metadata/schema.py` `SIDECAR_SCHEMA_VERSION` | `1` | public_persisted | keep | import tests | Optional `library_archived` bool (omit/`false` = active); no version bump |
 | `io/import_admission.py` `SCAN_HANDLE_SCHEMA_VERSION` | `1` | public_persisted | keep | admission tests | |
 | `web/action_menus/prefs.py` `INTERFACE_SCHEMA_VERSION` | `1` | public_persisted | keep | | |
 | `observability/run_performance/schema.py` `RUN_PERFORMANCE_SCHEMA_VERSION` | `1` | public_persisted | keep | | |

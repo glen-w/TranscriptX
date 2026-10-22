@@ -95,7 +95,10 @@ def test_speaker_map_changes_row_not_last_analysed(
 
     _write_json(
         sidecar,
-        {"speaker_map": {"SPEAKER_00": "Ada", "SPEAKER_01": "Bob"}, "ignored_speakers": []},
+        {
+            "speaker_map": {"SPEAKER_00": "Ada", "SPEAKER_01": "Bob"},
+            "ignored_speakers": [],
+        },
     )
     inventory.reset_counters()
     second = inventory.list_rows(refs)[0]
@@ -110,9 +113,7 @@ def test_new_run_updates_analysis_and_last_analysed(
 ) -> None:
     path = _transcript(tmp_path, "runme")
     outputs = tmp_path / "outputs"
-    monkeypatch.setattr(
-        "transcriptx.core.utils.paths.OUTPUTS_DIR", outputs
-    )
+    monkeypatch.setattr("transcriptx.core.utils.paths.OUTPUTS_DIR", outputs)
     monkeypatch.setattr(
         "transcriptx.app.corpus_inventory.service.output_root_for",
         lambda ref: outputs / (ref.slug or ref.path.stem),
@@ -213,3 +214,19 @@ def test_malformed_speaker_sidecar_still_lists(tmp_path: Path) -> None:
     assert row.speaker.status is SpeakerIdStatus.UNKNOWN
     assert row.speaker.integrity is FieldIntegrity.MALFORMED
     assert row.title == "weird"
+
+
+def test_list_rows_reads_library_archived_from_sidecar(tmp_path: Path) -> None:
+    path = _transcript(tmp_path, "old")
+    _write_json(
+        path.with_name("old.import_meta.json"),
+        {
+            "imported_at": "2026-01-01T00:00:00+00:00",
+            "adapter_source_id": "srt",
+            "library_archived": True,
+        },
+    )
+    inventory = CorpusInventory(load_corrections=lambda _p: None)
+    row = inventory.list_rows([_ref(path)])[0]
+    assert row.library_archived is True
+    assert row.source_id == "srt"

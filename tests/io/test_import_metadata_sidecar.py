@@ -318,3 +318,34 @@ def test_write_initial_sidecar_uses_supplied_import_id(
     )
     payload = json.loads(sidecar.read_text(encoding="utf-8"))
     assert payload["import_id"] == "import-123"
+    assert payload["library_archived"] is False
+
+
+def test_sidecar_library_archived_optional_and_typed(tmp_path: Path) -> None:
+    from transcriptx.io.import_metadata.schema import _validate_sidecar_schema
+
+    transcript = tmp_path / "foo.json"
+    base = {
+        "schema_version": 1,
+        "import_id": "id",
+        "imported_at": "2026-01-01T00:00:00+00:00",
+        "adapter_source_id": "srt",
+        "source_upload_basename": "foo.srt",
+        "archived_original_relpath": "originals/foo.srt",
+        "current_json_filename": "foo.json",
+        "rename_history": [],
+    }
+    missing = _validate_sidecar_schema(base, transcript)
+    assert missing.ok is True
+
+    for flag in (True, False):
+        payload = dict(base)
+        payload["library_archived"] = flag
+        result = _validate_sidecar_schema(payload, transcript)
+        assert result.ok is True
+
+    invalid = dict(base)
+    invalid["library_archived"] = "yes"
+    result = _validate_sidecar_schema(invalid, transcript)
+    assert result.ok is False
+    assert result.category == ManagedTranscriptCategory.schema_error

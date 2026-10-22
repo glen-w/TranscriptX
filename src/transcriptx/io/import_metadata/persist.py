@@ -9,7 +9,10 @@ from typing import Any
 
 from transcriptx.core.observability.perf import record_file_read
 from transcriptx.io.atomic_json import write_json_atomic as _write_json_atomic
-from transcriptx.io.import_metadata.paths import sidecar_path_for_transcript
+from transcriptx.io.import_metadata.paths import (
+    find_existing_import_sidecar,
+    sidecar_path_for_transcript,
+)
 from transcriptx.io.import_metadata.schema import build_initial_sidecar
 
 
@@ -91,3 +94,32 @@ def append_rename_history(
         at_iso=at_iso,
     )
     write_json_atomic(Path(sidecar_path), payload)
+
+
+def is_library_archived(transcript_path: str | Path) -> bool:
+    """True when the import sidecar marks the library item archived.
+
+    Missing sidecar, unreadable JSON, or absent ``library_archived`` is False.
+    Non-library paths therefore stay visible in pickers.
+    """
+    sidecar = find_existing_import_sidecar(transcript_path)
+    if sidecar is None:
+        return False
+    try:
+        data = load_sidecar(sidecar)
+    except Exception:
+        return False
+    return data.get("library_archived") is True
+
+
+def set_library_archived(transcript_path: str | Path, archived: bool) -> Path:
+    """Persist ``library_archived`` on the existing import sidecar."""
+    if not isinstance(archived, bool):
+        raise TypeError("archived must be a bool")
+    sidecar = find_existing_import_sidecar(transcript_path)
+    if sidecar is None:
+        raise FileNotFoundError(f"No import sidecar for transcript: {transcript_path}")
+    payload = dict(load_sidecar(sidecar))
+    payload["library_archived"] = archived
+    write_json_atomic(sidecar, payload)
+    return sidecar

@@ -402,6 +402,61 @@ def test_file_search_backend_respects_session_and_speaker_filters(monkeypatch) -
 
 
 @pytest.mark.unit
+def test_file_search_backend_skips_archived_unless_included(monkeypatch) -> None:
+    import transcriptx.web.services.search_service as mod
+
+    keep = _TranscriptIndex(
+        session_name="keep/run1",
+        transcript_slug="keep",
+        segments=[
+            {
+                "text": "hello searchable",
+                "speaker": "Alice",
+                "start": 0.0,
+                "end": 1.0,
+            },
+        ],
+        text_blob="hello searchable",
+        vocab={"hello", "searchable"},
+    )
+    archived = _TranscriptIndex(
+        session_name="old/run1",
+        transcript_slug="old",
+        segments=[
+            {
+                "text": "hello searchable",
+                "speaker": "Alice",
+                "start": 0.0,
+                "end": 1.0,
+            },
+        ],
+        text_blob="hello searchable",
+        vocab={"hello", "searchable"},
+    )
+    _patch_backend_index(
+        monkeypatch,
+        mod,
+        sessions=["keep/run1", "old/run1"],
+        indexes_by_name={"keep/run1": keep, "old/run1": archived},
+    )
+    monkeypatch.setattr(
+        mod,
+        "is_library_archived",
+        lambda path: str(path).endswith("old/run1"),
+    )
+
+    hidden, hidden_total = FileSearchBackend().search_substring("searchable")
+    assert hidden_total == 1
+    assert hidden[0].session_slug == "keep"
+
+    shown, shown_total = FileSearchBackend().search_substring(
+        "searchable", SearchFilters(include_archived=True)
+    )
+    assert shown_total == 2
+    assert {row.session_slug for row in shown} == {"keep", "old"}
+
+
+@pytest.mark.unit
 def test_file_search_backend_token_and_match(monkeypatch) -> None:
     import transcriptx.web.services.search_service as mod
 
