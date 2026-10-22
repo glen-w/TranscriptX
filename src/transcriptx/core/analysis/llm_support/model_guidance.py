@@ -828,3 +828,112 @@ def list_llm_model_guidance(
             )
         )
     return rows
+
+
+@dataclass(frozen=True)
+class LlmHardwareRecommendation:
+    """Preferred LLM size class / tags for the detected hardware band."""
+
+    preferred_size_class: SizeClass
+    preferred_tags: tuple[str, ...]
+    demoted_tags: tuple[str, ...]
+    reason: str
+    caption: str
+
+
+_SIZE_RANK: dict[SizeClass, int] = {
+    "tiny": 0,
+    "small": 1,
+    "mid": 2,
+    "large": 3,
+    "unknown": 1,
+}
+
+# Preferred size class by memory band (analysis LLM on local Ollama).
+_PREFERRED_SIZE_BY_BAND: dict[str, SizeClass] = {
+    "low": "small",
+    "mid": "mid",
+    "high": "mid",
+    "very_high": "large",
+    "unknown": "small",
+}
+
+
+def preferred_size_class_for_memory(memory_band: str | None) -> SizeClass:
+    band = (memory_band or "unknown").strip().lower()
+    return _PREFERRED_SIZE_BY_BAND.get(band, "small")
+
+
+def recommend_llm_for_hardware(
+    *,
+    memory_band: str | None,
+    installed_models: Sequence[str],
+    infos: Sequence[OllamaModelInfo] | Mapping[str, OllamaModelInfo] | None = None,
+    exclude_not_recommended: bool = True,
+) -> LlmHardwareRecommendation:
+    """Rank installed Ollama tags for this memory band.
+
+    Does not change the operator's selection — returns a caption + preferred
+    tags. Large tags are demoted on low/mid RAM; vision/code specialists stay
+    out of preferred when ``exclude_not_recommended`` is True.
+    """
+    preferred_class = preferred_size_class_for_memory(memory_band)
+    rows = list_llm_model_guidance(installed_models, infos=infos)
+
+    demoted: list[str] = []
+    candidates: list[tuple[int, int, str]] = []
+    # score: lower is better — distance from preferred class, then size rank.
+    for row in rows:
+        if exclude_not_recommended and "not recommended" in (row.best_for or "").lower():
+            demoted.append(row.model)
+            continue
+        size = row.size_class
+        if memory_band in {"low", "mid"} and size == "large":
+            demoted.append(row.model)
+            continue
+        dist = abs(_SIZE_RANK.get(size, 1) - _SIZE_RANK.get(preferred_class, 1))
+        # Prefer known families slightly when distance ties.
+        family_bonus = 0 if _match_family(row.model) is not None else 1
+        candidates.append((dist, family_bonus, row.model))
+
+    candidates.sort()
+    preferred_tags = tuple(tag for _, _, tag in candidates[:5])
+
+    band = (memory_band or "unknown").strip().lower()
+    if band == "low":
+        reason = "low_ram"
+        caption = (
+            f"Hardware band low RAM — prefer small/mid tags "
+            f"(~3–8B, e.g. gemma3:4b / qwen2.5:7b); avoid 27B-class models."
+        )
+    elif band == "mid":
+        reason = "mid_ram"
+        caption = (
+            "Hardware band mid RAM — prefer mid tags (~7–14B). "
+            "Large 27B+ models may swap or stall."
+        )
+    elif band == "very_high":
+        reason = "very_high_ram"
+        caption = (
+            "Hardware band high RAM — mid or large tags are fine when you "
+            "want quality; keep one chat model loaded to avoid Ollama contention."
+        )
+    else:
+        reason = "default"
+        caption = (
+            f"Prefer {preferred_class}-class Ollama tags for this machine; "
+            "keep estimates labelled as guidance."
+        )
+
+    if preferred_tags:
+        caption += f" Suggested from installed: {', '.join(preferred_tags[:3])}."
+    elif not rows:
+        caption += " No installed Ollama models detected yet."
+
+    return LlmHardwareRecommendation(
+        preferred_size_class=preferred_class,
+        preferred_tags=preferred_tags,
+        demoted_tags=tuple(demoted),
+        reason=reason,
+        caption=caption,
+    )

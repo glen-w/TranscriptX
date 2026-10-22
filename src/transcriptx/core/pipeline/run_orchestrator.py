@@ -631,10 +631,14 @@ class RunOrchestrator:
             PENDING_RUN_ID,
         )
         from transcriptx.core.observability.run_performance.schema import (
-            AnalysisContextSnapshot,
             CacheProvenance,
             ExecutionStatus,
             FinalStatus,
+        )
+        from transcriptx.core.observability.run_performance_context import (
+            build_analysis_context,
+            build_runtime_fingerprint,
+            build_workload_from_canonical,
         )
         from transcriptx.core.pipeline.manifest_loader import load_run_results
         from transcriptx.core.utils.run_manifest import get_transcriptx_version
@@ -667,15 +671,32 @@ class RunOrchestrator:
                 if state.execution_status in final_values
                 else FinalStatus.failed
             )
+            config_hash = None
+            try:
+                if state.prepared_workspace.config_snapshot is not None:
+                    config_hash = state.prepared_workspace.config_snapshot.config_hash
+            except Exception:
+                config_hash = None
+            workload = build_workload_from_canonical(
+                state.prepared_transcript.canonical
+            )
+            try:
+                fingerprint = build_runtime_fingerprint()
+            except Exception:
+                fingerprint = None
             snap = recorder.freeze(
                 execution_status=exec_status,
                 final_status=final_status,
                 termination_reason_code=state.termination_reason,
                 cache_provenance=CacheProvenance.unwired,
-                analysis=AnalysisContextSnapshot(
+                analysis=build_analysis_context(
                     app_version=get_transcriptx_version(),
                     requested_module_count=len(request.selected_modules),
+                    run_results=rr,
+                    config_hash=config_hash,
                 ),
+                workload=workload,
+                runtime_fingerprint=fingerprint,
             )
             write_run_performance(run_dir, snap)
             recorder.mark_persisted(success=True)

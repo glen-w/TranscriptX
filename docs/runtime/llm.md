@@ -75,13 +75,13 @@ Settings → Models exposes the secondary model picker. The compact Run Analysis
 
 ### Complementary Ollama picks for transcript analysis
 
-Useful additions when the local library is already Qwen-heavy (or JSON modules need non-thinking tags):
+Useful additions when the local library is already Qwen-heavy (or JSON modules need non-thinking tags). Match tag size to your **memory band** ([hardware.md](hardware.md)) — Run Analysis and Settings → Models show a one-line hint for installed tags.
 
-| Tag | Size class | Why pull it | Best TranscriptX fit |
-|-----|------------|-------------|----------------------|
-| `gemma3:4b` (~3.3 GB) | small | Fast non-thinking captions with 128K context; better than toy 1B tags | `chart_descriptions`; short drafts |
-| `mistral-nemo` (~7.1 GB) | mid | 12B instruct with extreme context headroom; stable JSON | Long-session `llm_summary` / `llm_speaker_summary`; solid shared mid |
-| `gemma3:27b` (~17 GB) | large | Multilingual / high-quality non-thinking alternative to large Qwen/GPT-OSS | Shared high-quality JSON + prose (`narrative_summary`, action items, digests) |
+| Tag | Size class | When this fits | Best TranscriptX fit |
+|-----|------------|----------------|----------------------|
+| `gemma3:4b` (~3.3 GB) | small | **low / mid** RAM; fast captions | `chart_descriptions`; short drafts |
+| `mistral-nemo` (~7.1 GB) | mid | **mid / high** RAM; stable JSON | Long-session `llm_summary` / `llm_speaker_summary`; solid shared mid |
+| `gemma3:27b` (~17 GB) | large | **very_high** RAM only; not an 8 GiB machine | Shared high-quality JSON + prose (`narrative_summary`, action items, digests) |
 
 ```bash
 ollama pull gemma3:4b

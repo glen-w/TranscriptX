@@ -4,6 +4,18 @@ Operational guide for choosing NLP/ML models used during analysis. This does not
 
 For Docker-specific wiring, see [docker.md](docker.md). For local LLM modules (`llm_summary`, `llm_speaker_summary`, `llm_action_items`, `narrative_summary`), see [llm.md](llm.md). For lexical diversity metrics (`lexical_diversity`), see [lexical_diversity.md](lexical_diversity.md). For keyphrase ranking (`keyphrases`), see [keyphrases.md](keyphrases.md). For emotion-family chart viz IDs and gallery captions (`emotion`, `contextual_emotion`, `fine_grained_emotion`), see [emotion_family_contracts_2026-07-18.md](../dev/emotion_family_contracts_2026-07-18.md#charts-gallery). For transcription (upstream of analysis), see [transcription.md](transcription.md).
 
+## Hardware bands (when to stay light)
+
+TranscriptX detects a coarse **memory band** for this process (see [hardware.md](hardware.md)). Use it when choosing upgrades:
+
+| Memory band | Prefer | Optional upgrades |
+|-------------|--------|-------------------|
+| low / mid / unknown | Defaults below (`md` + MiniLM + VADER) | Avoid `en_core_web_trf`, `all-mpnet-base-v2`, transformer sentiment unless you have headroom |
+| high | Defaults fine | `en_core_web_lg`, mpnet embeddings |
+| very_high | Defaults or higher-accuracy | lg/mpnet/trf as needed |
+
+Run Analysis shows a short hint on constrained bands. Settings are never changed automatically.
+
 ## Quick presets
 
 ### Default (balanced speed / quality)
@@ -182,7 +194,7 @@ Never silently swap embedding models; a change creates a new `model_generation_i
 
 - **First run slow after upgrade** — models download into `HF_HOME` / spaCy data dirs; cache under `./data` when using Compose.
 - **spaCy `OSError` model not found** — run `python -m spacy download <model>` in the container or allow auto-download.
-- **Out of memory** — `en_core_web_trf`, large sentence-transformers, and transformer sentiment/emotion need more RAM; stay on `md` + MiniLM if constrained.
+- **Out of memory** — `en_core_web_trf`, large sentence-transformers, and transformer sentiment/emotion need more RAM; stay on `md` + MiniLM if constrained (low/mid hardware band). See [hardware.md](hardware.md).
 - **Strict env** — `TRANSCRIPTX_CONFIG_STRICT=1` rejects unknown `TRANSCRIPTX_*` keys; use only documented names.
 - **Voice match runs but finds no match** — confirm eligible embeddings exist under `speaker_profiles/voice/`; if only `active_generation.json` / `generations/` are present, run **Enrol trusted voice for all profiles** (Settings → Speakers) or per-profile enrol first, then Pre-load. Streamlit's file watcher may probe SpeechBrain optional integrations (`k2`, `flair`); the web app collapses that into one WARNING and keeps full traces at DEBUG — unrelated to match quality.
 - **Docker / Streamlit logs: SpeechBrain `UserWarning` "Module 'speechbrain.…' was deprecated, redirecting to …"** — ignore. SpeechBrain 1.0 keeps shim modules (`speechbrain.pretrained`, `speechbrain.wordemb`, `speechbrain.lobes.models.huggingface_transformers`, `speechbrain.nnet.loss.transducer_loss`, …). Streamlit's `LocalSourcesWatcher` reads `__file__` on every imported module and those shims emit deprecation warnings. TranscriptX already loads the current path (`speechbrain.inference.speaker.EncoderClassifier`). This is not a failed import, missing extra, or voice-match bug. The optional-integration skip line (`Streamlit file watcher skipped SpeechBrain optional integrations`) is the same watcher, already summarised.

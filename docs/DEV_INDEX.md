@@ -54,7 +54,9 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [theme_a_insights_quality.md](dev/theme_a_insights_quality.md) | Theme A insights quality (deterministic/hybrid, less noise) |
 | [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md) | Theme C CCv2 workspaces (Speaker ID Phase 9, Studio review, viewer click-drag); points to Theme D reader |
 | [theme_c_invest_narrow_defer.md](dev/theme_c_invest_narrow_defer.md) | Theme C invest/narrow/defer decision |
+| [theme_e_performance_hardware.md](dev/theme_e_performance_hardware.md) | Theme E performance & hardware guidance |
 | [karaoke-playback.md](runtime/karaoke-playback.md) | Theme D full-file reader + clip karaoke rollback |
+| [hardware.md](runtime/hardware.md) | User-facing hardware bands, estimates, STT/LLM hints |
 | [release_governance.md](dev/release_governance.md) | Release evidence checklist |
 | [stocktake_2026-07-17.md](dev/stocktake_2026-07-17.md) | Living decision foundation (0.9→1.0) |
 | [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md) | Module backlog (0.9.x freeze) |

@@ -146,7 +146,7 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | B. Corrections & transcript editing | Word-level propose/apply in the reader; studio as batch/review | Early 1.x — **done** ([corrections-viewer.md](runtime/corrections-viewer.md)) |
 | C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections / viewer click-drag | **done for 1.0** (Phase 9 Speaker ID; Studio CCv2 + viewer edit; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md)) |
 | D. Playback & reading UX | Karaoke-style word highlight; CCv2 full-file reader | **done for 1.0** (reader workspace + clip rollback; see [karaoke-playback.md](runtime/karaoke-playback.md)) |
-| E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x |
+| E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x — **[~]** probe + estimates + docs shipped ([theme_e_performance_hardware.md](dev/theme_e_performance_hardware.md)) |
 | F. Library & organisation | Transcript tagging; Groups interaction rules; optional YouTube API rename metadata | Mid 1.x |
 | G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** narrow Windows convert/admit + pluggable STT shipped; service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
 | H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Parakeet/Canary/YouTube later; streaming STT (H6) deferred | **[~] H1–H4 shipped**; H5+ gated by **Next** (Theme K converter first) |
@@ -227,10 +227,12 @@ Builds on theme C (and existing playback surfaces). Inspired by polished self-ho
 
 Beyond 1.0 resource envelopes: help users plan and choose runs on *their* machine.
 
-- Realistic **time estimates** for analysis runs given detected hardware (CPU/GPU/memory, install profile)
-- **Smarter model recommendations** (which backend/size/settings fit this hardware and workload without over-promising)
+Design: [theme_e_performance_hardware.md](dev/theme_e_performance_hardware.md). User guide: [hardware.md](runtime/hardware.md).
+
+- Realistic **time estimates** for analysis runs given detected hardware (CPU/GPU/memory, install profile) — **guidance captions on Run Analysis / Batch** (heuristic + local calibration)
+- **Smarter model recommendations** (which backend/size/settings fit this hardware and workload without over-promising) — LLM size ranking + STT provider/device preselect; never auto-mutate selection
 - Keep estimates labelled as guidance; do not block runs on uncertain forecasts
-- Reuse the same hardware-detection honesty when theme **H** lands (STT backend / CUDA vs CPU recommendations)
+- Reuse the same hardware-detection honesty for theme **H** STT (CUDA vs CPU / whispermlx) — H1–H4 already shipped; probe feeds Transcribe Audio captions
 
 ---
 

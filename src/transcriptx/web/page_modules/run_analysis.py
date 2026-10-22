@@ -681,6 +681,23 @@ def _run_analysis_config_and_launch_fragment(
             f'<div class="tx-run-analysis-footer-summary">{summary_html}</div>',
             unsafe_allow_html=True,
         )
+        from transcriptx.web.components.run_time_guidance import render_run_time_guidance
+
+        group_member_count = max(1, len(transcript_targets)) if transcript_targets else 1
+        first_target = Path(transcript_targets[0]) if transcript_targets else None
+        render_run_time_guidance(
+            preset=resolved.preset,
+            module_ids=selected_modules,
+            transcript_path=(
+                transcript_path
+                if target_type == "Transcript"
+                else first_target
+            ),
+            target_type="group" if target_type == "Group" else "transcript",
+            member_count=group_member_count,
+            llm_selection=llm_selection,
+            model_label=model_label,
+        )
         cols = st.columns([4, 1.4])
         with cols[0]:
             if disable_reason and not can_launch:

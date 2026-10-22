@@ -35,7 +35,7 @@ For a **native** install from git (not Docker), install chart dependencies befor
 
 3. Open [**Speaker Identification**](speaker-identification.md) for the same transcript. Assign a display name to each diarized speaker (or ignore junk labels). Most speaker-aware modules **skip** until names exist — running **Balanced** before this step usually yields an empty or sparse **Overview**.
 
-4. Open **Run Analysis**. Keep the target as **Transcript** and the analysis preset as **Balanced** (the default). Balanced runs a practical core set without requiring local AI for the non-LLM modules.
+4. Open **Run Analysis**. Keep the target as **Transcript** and the analysis preset as **Balanced** (the default). Balanced runs a practical core set without requiring local AI for the non-LLM modules. The footer shows a **guidance-only** wall-time range for this machine (see [hardware.md](../runtime/hardware.md)) — it never blocks **Run analysis**.
 
 ![Run Analysis with Balanced selected for the BBNJ rapid-response webinar](../_static/workflows/first-analysis-run-analysis.png)
 

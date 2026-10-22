@@ -865,6 +865,9 @@ def render_compact_llm_setup(
             "No installed Ollama models found. Pull a model, then open "
             "Settings → Models."
         )
+    from transcriptx.web.components.run_time_guidance import render_llm_hardware_hint
+
+    render_llm_hardware_hint(installed)
 
     # Seed widgets from the selected Model preset (defaults to project-active).
     active = ProfileController().get_active_profile(_LLM_MODELS_TARGET)
@@ -962,6 +965,9 @@ def render_llm_models_settings_panel() -> None:
         st.warning(list_error)
     if not installed:
         st.info("No installed Ollama models found. Pull a model with `ollama pull …`.")
+    from transcriptx.web.components.run_time_guidance import render_llm_hardware_hint
+
+    render_llm_hardware_hint(installed)
 
     st.markdown("##### JSON secondary model")
     st.caption(
