@@ -12,9 +12,10 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 
 # Semantic tags produced by tag_extraction (also valid manual tags).
-KNOWN_SEMANTIC_TAGS = frozenset(
-    {"idea", "reflection", "meeting", "todo", "question"}
-)
+KNOWN_SEMANTIC_TAGS = frozenset({"idea", "reflection", "meeting", "todo", "question"})
+# First-class organisation kinds (Theme F). Overlaps `meeting` with semantic tags.
+KNOWN_KIND_TAGS = frozenset({"meeting", "voice note", "lone speaker"})
+KNOWN_LIBRARY_TAGS = KNOWN_SEMANTIC_TAGS | KNOWN_KIND_TAGS
 
 MAX_TAG_LENGTH = 64
 _TAG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9 _-]*[a-z0-9]$|^[a-z0-9]$")
@@ -135,9 +136,7 @@ def validate_tag_details(
         confidence = details.get("confidence")
         if confidence is not None:
             if not isinstance(confidence, (int, float)):
-                errors.append(
-                    f"tag_details[{tag_name!r}].confidence must be numeric"
-                )
+                errors.append(f"tag_details[{tag_name!r}].confidence must be numeric")
             elif not 0.0 <= float(confidence) <= 1.0:
                 errors.append(
                     f"tag_details[{tag_name!r}].confidence must be between 0 and 1"
@@ -193,3 +192,38 @@ def build_tag_details(
             }
 
     return details
+
+
+def suggest_kind_tags(
+    *,
+    named_speaker_count: int | None = None,
+    turn_taking_speaker_count: int | None = None,
+    conversation_type: str | None = None,
+) -> List[str]:
+    """Heuristic kind tags. Never writes Groups. Caller applies with manual-wins."""
+    suggested: List[str] = []
+    kind = str(conversation_type or "").strip().lower().replace("-", "_")
+    if kind in {"meeting", "conversation"}:
+        suggested.append("meeting")
+    if kind in {"voice_note", "voice note"}:
+        suggested.append("voice note")
+    named = 0 if named_speaker_count is None else int(named_speaker_count)
+    turns = 0 if turn_taking_speaker_count is None else int(turn_taking_speaker_count)
+    if named <= 1 and turns <= 1:
+        suggested.append("lone speaker")
+    return sanitize_tag_list(suggested)
+
+
+def merge_auto_tags_manual_wins(
+    existing_tags: Optional[List[str]],
+    suggested: Optional[List[str]],
+) -> Tuple[List[str], List[str]]:
+    """Return (merged_tags, new_auto_tags). Existing tags are never replaced."""
+    current = sanitize_tag_list(list(existing_tags or []))
+    current_set = set(current)
+    new_auto = [
+        tag
+        for tag in sanitize_tag_list(list(suggested or []))
+        if tag not in current_set
+    ]
+    return [*current, *new_auto], new_auto

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **NeMo converter goldens:** `pred_text` / `transcript` JSONL (blank lines skipped), list JSON with optional speaker, and wrapped `{segments}` shapes.
 - **Theme A Overview/evidence:** Standard Overview places Highlights before Actions; Insights theme rows show up to three evidence quotes plus a Highlights remainder caption.
 - **B18 operator polish:** clearer `narrative_enabled` Settings copy and a Run Analysis hint when `insights_narrative` is selected.
+- **Theme F kind tags:** `voice note` / `lone speaker` kinds, Library inspector chips, and manual-wins auto-seed helpers. Tags still never create Groups.
 
 ## [1.0.1] - 2026-10-20
 

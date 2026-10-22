@@ -7,11 +7,14 @@ from __future__ import annotations
 import pytest
 
 from transcriptx.io.tag_validation import (
+    KNOWN_KIND_TAGS,
     KNOWN_SEMANTIC_TAGS,
     build_tag_details,
+    merge_auto_tags_manual_wins,
     normalize_tag,
     sanitize_tag,
     sanitize_tag_list,
+    suggest_kind_tags,
     validate_tag,
     validate_tag_details,
 )
@@ -135,3 +138,28 @@ class TestKnownSemanticTags:
             "todo",
             "question",
         }
+        assert KNOWN_KIND_TAGS == {"meeting", "voice note", "lone speaker"}
+
+
+class TestSuggestKindTags:
+    def test_meeting_and_lone_speaker(self) -> None:
+        tags = suggest_kind_tags(
+            named_speaker_count=0,
+            turn_taking_speaker_count=1,
+            conversation_type="meeting",
+        )
+        assert "meeting" in tags
+        assert "lone speaker" in tags
+
+    def test_voice_note(self) -> None:
+        tags = suggest_kind_tags(conversation_type="voice_note", named_speaker_count=2)
+        assert tags == ["voice note"]
+
+
+class TestMergeAutoTagsManualWins:
+    def test_does_not_replace_existing(self) -> None:
+        merged, new_auto = merge_auto_tags_manual_wins(
+            ["meeting"], ["meeting", "lone speaker"]
+        )
+        assert merged == ["meeting", "lone speaker"]
+        assert new_auto == ["lone speaker"]
