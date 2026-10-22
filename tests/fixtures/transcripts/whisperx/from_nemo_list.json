@@ -1,0 +1,15 @@
+{
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 1.0,
+      "text": "List JSON first.",
+      "speaker": "SPEAKER_00"
+    },
+    {
+      "start": 1.0,
+      "end": 2.0,
+      "text": "List JSON second."
+    }
+  ]
+}
