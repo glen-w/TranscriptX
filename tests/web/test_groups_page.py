@@ -184,6 +184,8 @@ def test_create_group_calls_service_and_clears_caches(monkeypatch) -> None:
     assert create_calls
     assert create_calls[0]["transcript_refs"] == ["/tmp/a.json"]
     assert create_calls[0]["name"] == "Alpha"
+    assert "tags" not in create_calls[0]
+    assert not hasattr(group, "tags")
     assert clear_calls
     assert _GroupsStreamlit.rerun_calls == 1
 
@@ -337,3 +339,47 @@ def test_groups_with_list_invokes_detail_fragment(monkeypatch) -> None:
 
     assert detail_calls
     assert group.group_id in detail_calls[0][0]
+
+
+@pytest.mark.unit
+def test_inventory_tags_empty_on_error(monkeypatch) -> None:
+    import transcriptx.web.page_modules.groups as mod
+
+    monkeypatch.setattr(
+        mod,
+        "get_cached_corpus_inventory",
+        lambda: (_ for _ in ()).throw(RuntimeError("inventory down")),
+    )
+    assert mod._inventory_tags_by_path() == {}
+
+
+@pytest.mark.unit
+def test_filter_picker_and_filter_is_not_membership(monkeypatch) -> None:
+    import transcriptx.web.page_modules.groups as mod
+
+    _GroupsStreamlit.reset()
+    monkeypatch.setattr(mod, "st", _GroupsStreamlit)
+    monkeypatch.setattr(
+        mod,
+        "_inventory_tags_by_path",
+        lambda: {
+            "/tmp/a.json": ("meeting",),
+            "/tmp/b.json": ("voice note",),
+            "/tmp/c.json": ("meeting", "lone speaker"),
+        },
+    )
+    _GroupsStreamlit.multiselect_returns = {
+        "create_group_tag_filter": ["meeting"],
+    }
+    filtered = mod._filter_options_by_library_tags(
+        ["/tmp/a.json", "/tmp/b.json", "/tmp/c.json"],
+        widget_key="create_group_tag_filter",
+    )
+    assert filtered == ["/tmp/a.json", "/tmp/c.json"]
+
+    _GroupsStreamlit.multiselect_returns = {"create_group_tag_filter": []}
+    identity = mod._filter_options_by_library_tags(
+        ["/tmp/a.json", "/tmp/b.json"],
+        widget_key="create_group_tag_filter",
+    )
+    assert identity == ["/tmp/a.json", "/tmp/b.json"]

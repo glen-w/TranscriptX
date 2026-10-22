@@ -48,7 +48,7 @@ def test_client_against_mocked_proxy(monkeypatch) -> None:
 
     import transcriptx.core.llm.openai_compatible_client as occ
 
-    monkeypatch.setattr(occ.urllib.request, "urlopen", _urlopen)
+    monkeypatch.setattr(occ, "http_urlopen", _urlopen)
     client = OpenAICompatibleClient(
         base_url="http://127.0.0.1:4000/v1",
         model="default",
