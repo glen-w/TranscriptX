@@ -16,7 +16,7 @@ Enforced by `tests/core/config/test_registry_ownership.py` against
 
 Baseline leaves include profile activation selectors (`active_*_profile`), `core_mode`, `use_emojis`, and intentional `analysis.chart_descriptions.*` keys.
 
-When these numbers change, update **all** of the following in the same PR (CI `make test-fast` will fail if any are left behind):
+When these numbers change, update **all** of the following in the same PR (Nightly `make test-fast` / local Gate B will fail if any are left behind; PR CI is smoke-only):
 
 - `tests/core/config/fixtures/registry_ownership_snapshot.json` (regenerate from `_build_ownership_snapshot()` in `test_registry_ownership.py`)
 - Hard-coded totals in `tests/core/config/test_registry_ownership.py::test_ownership_invariant_counts`

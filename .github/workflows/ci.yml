@@ -1,12 +1,15 @@
 name: CI
 
 # PR merge signal (workflow red only when these fail):
-#   compose-config, lint, tests (smoke + contracts + fast on 3.10–3.12)
+#   compose-config, lint, smoke (Python 3.10)
 # Advisory lanes (continue-on-error; log signal, do not block green CI):
 #   docs (Sphinx + docs-gen drift), tests-nlp, tests-rag, workspaces-theme-c,
-#   release-checks (Docker build, hygiene bundle). Pages deploy is separate
-#   (.github/workflows/pages.yml on main). Tag/release still expects a manual
-#   green release-checks run per docs/dev/release_governance.md.
+#   release-checks (Docker build, hygiene bundle).
+# Contracts / fast / coverage run on Nightly (.github/workflows/nightly.yml),
+# not on every PR — those lanes were noisy (golden drift, race flakes) and
+# rarely blocked real merge-blocking defects. Pages deploy is separate
+# (.github/workflows/pages.yml on main). Tag/release still expects a manual
+# green release-checks run per docs/dev/release_governance.md.
 
 on:
   push:
@@ -56,25 +59,23 @@ jobs:
           # F401/F841: unused imports and locals in packaged source
           ruff check src/transcriptx --select E9,F63,F7,F82,F401,F841
 
-  tests:
+  # Minimal PR gate: import/help + module registry smoke only.
+  # Single Python version (3.10 = project canonical) keeps the signal stable
+  # and avoids matrix flakes that do not improve merge confidence.
+  smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.10"
           cache: pip
-      - name: Install package + test deps + web
+      - name: Install package + test deps
         run: |
           python -m pip install -U pip
-          # [web] required: contracts + fast collect many Streamlit web modules.
-          pip install -e ".[dev,web]"
-          # Confirm pytest entrypoint is on PATH for Makefile targets
+          # Smoke does not need [web]; Core+dev is enough for tests/smoke.
+          pip install -e ".[dev]"
           command -v pytest
           python -m pytest --version
       - name: Bootstrap NLTK data for offline smoke
@@ -92,22 +93,9 @@ jobs:
           echo "TRANSCRIPTX_OUTPUT_DIR=$RUNNER_TEMP/tx-out" >> "$GITHUB_ENV"
       - name: Smoke
         run: make test-smoke
-      - name: Contracts
-        run: make test-contracts
-      - name: Fast
-        run: make test-fast
-      - name: Coverage JSON
-        if: matrix.python-version == '3.10'
-        run: make test-coverage
-      - name: Upload coverage report
-        if: matrix.python-version == '3.10'
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-json
-          path: coverage.json
 
   # Thin NLP lane: un-skips spaCy-gated smoke (insight stack, NER, group topics).
-  # Single Python version keeps PR cost low while still gating [nlp] regressions.
+  # Advisory only — does not block merge.
   tests-nlp:
     continue-on-error: true
     runs-on: ubuntu-latest
@@ -141,8 +129,6 @@ jobs:
           echo "TRANSCRIPTX_SPACY_MODEL=en_core_web_md" >> "$GITHUB_ENV"
       - name: Smoke (nlp)
         run: make test-smoke-nlp
-      - name: Contracts (nlp)
-        run: make test-contracts
       - name: NLP unit tests
         run: make test-nlp-unit
 
@@ -207,7 +193,7 @@ jobs:
     continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    needs: [compose-config, lint, tests]
+    needs: [compose-config, lint, smoke]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
