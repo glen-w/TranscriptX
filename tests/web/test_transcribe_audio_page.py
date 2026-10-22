@@ -54,6 +54,8 @@ def test_transcribe_audio_page_has_run_and_copy_paths():
     assert "RUN_IN_APP_CAPTION" in source
     assert "TRANSCRIBE_PAGE_INFO" in source
     assert "transcriptx.services.transcription.honesty" in source
+    assert "CUDA Linux" in source
+    assert "canary_docker" in source
     from transcriptx.services.transcription.honesty import (
         RUN_IN_APP_CAPTION,
         TRANSCRIBE_PAGE_INFO,

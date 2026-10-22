@@ -60,7 +60,7 @@ Naming such as `*_transcriptx.json` matches project conventions, but **naming al
 These stay outside the analysis image. **Run in app** orchestrates `docker run` / `whispermlx` from the Streamlit process when those binaries are visible. **Copy command** still never executes the snippet.
 
 - **WhisperX** — Transcribe Audio → **Run in app** (WhisperX Docker) or **Copy command** → **WhisperX Docker**. Full recipe: [docs/recipes/whisperx/](../recipes/whisperx/README.md).
-- **NeMo Parakeet / Canary** — Transcribe Audio → **Copy command** → NeMo presets (Theme K), or **Run in app** → NeMo Parakeet Docker when configured (`parakeet_docker`). Convert JSONL with `nemo_json_to_whisperx`, then Import. Recipe: [docs/recipes/parakeet/](../recipes/parakeet/README.md). CUDA Linux host only; on macOS prefer whispermlx.
+- **NeMo Parakeet / Canary** — Transcribe Audio → **Copy command** → NeMo presets (Theme K), or **Run in app** → NeMo Parakeet Docker (`parakeet_docker`, pinned `nvcr.io/nvidia/nemo:24.07.1` + timestamp JSONL). Canary is Copy command only (no `canary_docker` provider). Convert JSONL with `nemo_json_to_whisperx`, then Import. Recipe: [docs/recipes/parakeet/](../recipes/parakeet/README.md). CUDA Linux host only; on macOS prefer whispermlx. `TRANSCRIPTX_PARAKEET_STUB=1` is CI/dev only.
 - **Whisper-WebUI** — Gradio UI; hand-off is **SRT/VTT → Import Transcript**. Full recipe (including Apple Silicon notes): [docs/recipes/whisper-webui/README.md](../recipes/whisper-webui/README.md). On Apple Silicon the container is expected to use **CPU** inference; prefer host **whispermlx** when Metal/MLX speed matters.
 
 ## When Whisper is noisy or speech overlaps

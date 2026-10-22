@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Theme F Groups picker:** optional library-tag AND-filter on create/edit membership. Filtering is not membership.
 - **Theme F YouTube rename:** optional YouTube Data API v3 lookup via `TRANSCRIPTX_YOUTUBE_API_KEY` (title queries only; DuckDuckGo remains the no-key path).
 - **Theme H Whisper honesty:** Transcribe Audio and watcher `auto_transcribe` copy state that Streamlit in `transcriptx-web` cannot see host `whispermlx`, and name WhisperX / Parakeet Docker as in-app alternatives.
+- **Theme H Parakeet recipe:** `parakeet_docker` Run-in-app uses pinned NeMo `docker run` + timestamp JSONL → `nemo_json_to_whisperx` (stub remains for CI). Canary stays Copy command only.
 
 ## [1.0.1] - 2026-10-20
 

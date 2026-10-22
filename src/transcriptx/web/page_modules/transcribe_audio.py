@@ -4,6 +4,7 @@ Transcribe Audio — in-app host-orchestrated STT plus copyable command generati
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import streamlit as st
@@ -225,6 +226,15 @@ def _render_run_in_app(default_input: str) -> None:
             value="nvidia/parakeet-tdt-0.6b-v3",
             key="tx_run_parakeet_model",
         )
+        st.caption(
+            "Parakeet TDT is undiarized ASR (no speaker split; import may mint "
+            "SPEAKER_00). CUDA Linux only — NeMo stays out of the analysis image."
+        )
+        if sys.platform == "darwin":
+            st.warning(
+                "On macOS prefer whispermlx Run-in-app. Parakeet needs a CUDA Linux "
+                "host (or Copy command on that machine). There is no canary_docker provider."
+            )
 
     options = TranscriptionOptions(
         provider_id=provider_id,

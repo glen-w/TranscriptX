@@ -335,8 +335,9 @@ _CANARY_MODEL_DEFAULT = "nvidia/canary-1b"
 def build_nemo_parakeet_docker(params: CommandGenParams) -> GeneratedCommand:
     return _build_nemo_asr_docker(
         params,
-        title="NeMo Parakeet Docker (Theme K)",
+        title="NeMo Parakeet Docker (Theme K / H5)",
         model_hint=_PARAKEET_MODEL_DEFAULT,
+        run_in_app=True,
     )
 
 
@@ -345,38 +346,64 @@ def build_nemo_canary_docker(params: CommandGenParams) -> GeneratedCommand:
         params,
         title="NeMo Canary Docker (Theme K)",
         model_hint=_CANARY_MODEL_DEFAULT,
+        run_in_app=False,
     )
 
 
 def _build_nemo_asr_docker(
-    params: CommandGenParams, *, title: str, model_hint: str
+    params: CommandGenParams,
+    *,
+    title: str,
+    model_hint: str,
+    run_in_app: bool,
 ) -> GeneratedCommand:
+    from transcriptx.services.transcription.parakeet_recipe import (
+        INNER_SCRIPT_NAME,
+        PARAKEET_TRANSCRIBE_PY,
+    )
+
     audio_mount = _strip_trailing_separators(params.input_path)
     out_mount = _strip_trailing_separators(params.output_dir)
     image = params.docker_image.strip() or _DEFAULT_NEMO_IMAGE
     model = params.model.strip() or model_hint
+    if looks_like_audio_file(audio_mount):
+        host_audio_dir = str(Path(audio_mount).parent)
+        audio_name = Path(audio_mount).name
+        stem = Path(audio_mount).stem
+    else:
+        host_audio_dir = audio_mount
+        audio_name = Path(audio_mount).name or "audio.wav"
+        stem = Path(audio_name).stem or "transcript"
+    run_note = (
+        "Or Transcribe Audio → Run in app → NeMo Parakeet (Docker) on CUDA Linux."
+        if run_in_app
+        else "Canary is Copy command only — there is no canary_docker Run-in-app provider."
+    )
     shell = f"""# {title} — Linux CUDA host (not macOS Run-in-app).
 # On macOS prefer whispermlx; use this Copy command on a CUDA machine only.
-# 1) Run NeMo transcription into JSONL (customize inner command per recipe).
-# 2) Convert to WhisperX-shaped JSON for Import Transcript.
+# Writes JSONL then converts to WhisperX-shaped JSON for Import Transcript.
+# Optional HF cache: -v "$HOME/.cache/huggingface:/root/.cache/huggingface"
+# If Input is a folder, set /audio/<filename> below.
 
 mkdir -p {_q(out_mount)}
+cat > {_q(out_mount)}/{INNER_SCRIPT_NAME} << 'TX_PARAKEET_PY'
+{PARAKEET_TRANSCRIBE_PY}TX_PARAKEET_PY
 
 docker run --rm --gpus all \\
-  -v {_q(audio_mount)}:/audio:ro \\
+  -v {_q(host_audio_dir)}:/audio:ro \\
   -v {_q(out_mount)}:/output \\
   {_q(image)} \\
-  bash -lc 'echo "Replace with NeMo transcribe for model {model}; see docs/recipes/parakeet/" && exit 1'
+  python /output/{INNER_SCRIPT_NAME} /audio/{audio_name} /output/{stem}.jsonl {_q(model)}
 
-# After NeMo writes hypotheses.jsonl under the output mount:
 python3 -m transcriptx.services.transcription.nemo_json_to_whisperx \\
-  --input {_q(out_mount)}/hypotheses.jsonl \\
-  --output {_q(out_mount)}/$(basename "{audio_mount}").json
+  --input {_q(out_mount)}/{stem}.jsonl \\
+  --output {_q(out_mount)}/{stem}.json
 """
     notes = (
-        "Theme K only — not Run-in-app until Wave 4 provider is configured on host.",
+        run_note,
         "Full recipe: docs/recipes/parakeet/README.md",
         "CC-BY-4.0 NeMo weights; user-triggered download on first run.",
+        "Parakeet/Canary are undiarized; import may mint SPEAKER_00 (T0/T1).",
         "Expected output: WhisperX-shaped JSON for Import Transcript.",
     )
     return GeneratedCommand(
