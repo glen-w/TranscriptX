@@ -226,6 +226,46 @@ def test_evidence_quote_previews_caps_and_remaining() -> None:
 
 
 @pytest.mark.unit
+def test_theme_list_renders_evidence_captions(monkeypatch) -> None:
+    from transcriptx.web.blocks.implementations import insights as ins
+
+    captions: list[str] = []
+    writes: list[str] = []
+    monkeypatch.setattr(
+        ins,
+        "st",
+        SimpleNamespace(
+            markdown=lambda *_a, **_k: None,
+            write=lambda text: writes.append(str(text)),
+            caption=lambda text: captions.append(str(text)),
+        ),
+    )
+    ins._render_theme_and_idea_lists(
+        key_themes=[
+            {
+                "phrase": "hiring plan",
+                "score": {"total": 0.9},
+                "evidence_quote_ids": ["q1", "q2", "q3", "q4"],
+            }
+        ],
+        recurring_ideas=[],
+        theme_cap=5,
+        idea_cap=5,
+        guided=False,
+        quote_text_by_id={
+            "q1": "first quote",
+            "q2": "second quote",
+            "q3": "third quote",
+            "q4": "fourth quote",
+        },
+    )
+    assert any(w.startswith("- hiring plan") for w in writes)
+    evidence = [c for c in captions if c.startswith("Evidence:")]
+    assert len(evidence) == 3
+    assert any("+1 more in Insights → Highlights" in c for c in captions)
+
+
+@pytest.mark.unit
 def test_insights_narrative_uses_remote_ai_badge(monkeypatch) -> None:
     from transcriptx.web.blocks.implementations import insights as ins
 

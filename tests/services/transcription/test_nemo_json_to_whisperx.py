@@ -89,3 +89,35 @@ def test_wrapped_segments_json(tmp_path: Path) -> None:
     convert_file(inp, out)
     data = json.loads(out.read_text(encoding="utf-8"))
     assert data["segments"] == [{"start": 0.0, "end": 1.0, "text": "wrap"}]
+
+
+@pytest.mark.unit
+def test_unsupported_json_shape_raises(tmp_path: Path) -> None:
+    inp = tmp_path / "bad.json"
+    inp.write_text(json.dumps({"hypotheses": []}), encoding="utf-8")
+    with pytest.raises(ValueError, match="Unsupported"):
+        load_segments_from_path(inp)
+
+
+@pytest.mark.unit
+def test_blank_speaker_omitted_and_missing_times_default(tmp_path: Path) -> None:
+    inp = tmp_path / "hyp.jsonl"
+    inp.write_text(
+        '{"transcript": "hello", "speaker": "  "}\n'
+        '{"text": "skip me", "start": 1.0}\n',
+        encoding="utf-8",
+    )
+    segments = load_segments_from_path(inp)
+    assert segments == [{"start": 0.0, "end": 0.0, "text": "hello"}]
+
+
+@pytest.mark.unit
+def test_converter_cli_main(tmp_path: Path) -> None:
+    from transcriptx.services.transcription.nemo_json_to_whisperx import main
+
+    inp = tmp_path / "in.jsonl"
+    inp.write_text('{"start": 0, "end": 1, "text": "hi"}\n', encoding="utf-8")
+    out = tmp_path / "out.json"
+    assert main(["--input", str(inp), "--output", str(out)]) == 0
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    assert payload["segments"][0]["text"] == "hi"

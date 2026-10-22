@@ -106,3 +106,175 @@ def test_overview_body_renders_t0_banner(monkeypatch, tmp_path: Path) -> None:
     )
     mod._render_overview_body(ctx)
     assert info_calls == [T0_NO_NAMED_SPEAKERS_BANNER]
+
+
+@pytest.mark.unit
+def test_t1_import_caption_hidden_on_extraction_error(
+    monkeypatch, tmp_path: Path
+) -> None:
+    def _boom(_path):
+        raise OSError("unreadable")
+
+    monkeypatch.setattr(
+        "transcriptx.core.utils.speaker_extraction.named_speaker_count_for_path",
+        _boom,
+    )
+    assert should_show_t1_import_caption(tmp_path / "broken.json") is False
+
+
+def _chart_artifact() -> Artifact:
+    from transcriptx.web.models.artifact import Artifact
+
+    return Artifact(
+        id="c1",
+        kind="chart_static",
+        module="stats",
+        scope="session",
+        speaker=None,
+        subview=None,
+        slice_id=None,
+        rel_path="c1.png",
+        bytes=10,
+        mtime="0",
+        mime="image/png",
+        tags=[],
+        title="c1",
+    )
+
+
+@pytest.mark.unit
+def test_charts_page_renders_t0_banner(monkeypatch, tmp_path: Path) -> None:
+    import transcriptx.web.page_modules.charts as charts_mod
+    from tests.web.streamlit_doubles import DummyHomeStreamlit
+
+    info_calls: list[str] = []
+
+    class _St(DummyHomeStreamlit):
+        session_state: dict = {}
+
+        @staticmethod
+        def info(message: str, **_kwargs) -> None:
+            info_calls.append(message)
+
+        @staticmethod
+        def text_input(*_a, **_k):
+            return ""
+
+        @staticmethod
+        def columns(spec, **_k):
+            from tests.web.streamlit_doubles import DummyColumn
+
+            n = len(spec) if isinstance(spec, (list, tuple)) else int(spec)
+            return tuple(DummyColumn() for _ in range(n))
+
+        @staticmethod
+        def segmented_control(*_a, **_k):
+            return "All"
+
+        @staticmethod
+        def pills(*_a, **_k):
+            return []
+
+        @staticmethod
+        def popover(*_a, **_k):
+            from tests.web.streamlit_doubles import DummyForm
+
+            return DummyForm()
+
+        @staticmethod
+        def multiselect(*_a, **_k):
+            return []
+
+        @staticmethod
+        def checkbox(*_a, **_k):
+            return False
+
+    monkeypatch.setattr(charts_mod, "st", _St)
+    monkeypatch.setattr(charts_mod, "render_page_shell", lambda *_a, **_k: None)
+    monkeypatch.setattr(charts_mod, "_sync_derived_filter_keys", lambda: None)
+    monkeypatch.setattr(
+        charts_mod,
+        "_build_view_from_session",
+        lambda *_a, **_k: SimpleNamespace(
+            module_groups=[],
+            filtered_charts=[],
+            overview_slots=[],
+            matching_count=0,
+        ),
+    )
+    monkeypatch.setattr(
+        charts_mod, "named_speaker_count_from_content_loader", lambda *_a, **_k: 0
+    )
+    monkeypatch.setattr(
+        charts_mod, "intersect_charts_open_modules", lambda *_a, **_k: []
+    )
+    monkeypatch.setattr(
+        charts_mod, "ensure_charts_chart_text", lambda *_a, **_k: "none"
+    )
+    monkeypatch.setattr(
+        charts_mod, "chart_text_flags", lambda *_a, **_k: (False, False)
+    )
+    monkeypatch.setattr(charts_mod, "compute_chart_badges", lambda *_a, **_k: [])
+    monkeypatch.setattr(
+        charts_mod, "_render_export_under_badges", lambda *_a, **_k: None
+    )
+    monkeypatch.setattr(charts_mod, "_render_filter_toolbar", lambda *_a, **_k: None)
+    monkeypatch.setattr(charts_mod, "_render_section_nav", lambda **_k: "all")
+    monkeypatch.setattr(charts_mod, "_render_module_row", lambda *_a, **_k: None)
+
+    fragment = charts_mod._charts_filters_and_gallery_fragment
+    inner = getattr(fragment, "__wrapped__", fragment)
+    inner(
+        tmp_path,
+        [_chart_artifact()],
+        [],
+        [],
+        [],
+        [],
+        [],
+        None,
+        "skip",
+        False,
+    )
+    assert info_calls == [T0_NO_NAMED_SPEAKERS_BANNER]
+
+
+@pytest.mark.unit
+def test_charts_overview_block_renders_t0_banner(monkeypatch, tmp_path: Path) -> None:
+    import transcriptx.web.blocks.implementations.charts as charts_block
+
+    info_calls: list[str] = []
+    monkeypatch.setattr(
+        charts_block,
+        "st",
+        SimpleNamespace(
+            info=lambda message, **_k: info_calls.append(message),
+            caption=lambda *_a, **_k: None,
+            session_state={},
+        ),
+    )
+    monkeypatch.setattr(
+        charts_block, "_chart_artifacts", lambda *_a, **_k: [_chart_artifact()]
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.services.chart_view_model_service.named_speaker_count_from_content_loader",
+        lambda *_a, **_k: 0,
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.services.chart_view_model_service.build_charts_gallery_view",
+        lambda *_a, **_k: SimpleNamespace(overview_slots=[]),
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.config.resolve_effective_config",
+        lambda **_k: SimpleNamespace(effective_config=SimpleNamespace(dashboard=None)),
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.page_modules.charts._render_chart_family_section",
+        lambda *_a, **_k: None,
+    )
+    ctx = SimpleNamespace(
+        run_root=tmp_path,
+        services=SimpleNamespace(content_loader=SimpleNamespace()),
+    )
+    charts_block.render_chart_overview_slots(ctx, SimpleNamespace())
+    assert info_calls == [T0_NO_NAMED_SPEAKERS_BANNER]

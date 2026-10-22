@@ -140,6 +140,14 @@ python -m pytest tests/core/config/test_registry_ownership.py \
 | `test_buttons_with_literal_labels_declare_an_icon` | `st.button("Fixed label", ...)` must pass `icon=` using a constant from `transcriptx.web.icons` (no inline `:material/...:` tokens outside `icons.py`) |
 | `test_no_inline_material_tokens_outside_the_registry` | Add glyphs to `icons.py`, reference `ic.*` at call sites |
 
+### Theme N / T0 honesty (Unreleased)
+
+| Symptom | What to update |
+|---------|----------------|
+| `LLMSettingsModel.provider` Literal / `openai_compatible` schema | `llm_registry_golden.json`, `llm_model_schema_golden.json`, ownership snapshot |
+| Remote AI labelled Local AI | `tests/web/blocks/test_llm_presentation.py` plus Overview/Charts/Insights badge tests |
+| T0 `min_named_speakers: 0` module set | `module_definitions_snapshot.json` and `tests/pipeline/test_t0_content_gate.py` (parametrized from the snapshot) |
+
 ### Other known drift (not always CI-red)
 
 Some characterization goldens still embed **machine-specific** values (absolute paths under the original author’s home directory, pinned `torch_version`, etc.). Those can fail on other hosts or newer PyTorch even when smoke/CI gates are green. Treat them as cleanup debt unless your PR touches the same surface.
