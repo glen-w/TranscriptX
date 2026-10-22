@@ -24,7 +24,7 @@ from transcriptx.core.utils.config.env_key_registry import (
     INFRA_ENV_ALLOWLIST,
 )
 
-from .delegation_test_utils import without_transcriptx_env
+from .delegation_test_utils import with_isolated_config_defaults, without_transcriptx_env
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
@@ -186,7 +186,7 @@ def test_pydantic_pilot_registry_goldens_are_complete() -> None:
 
 
 def test_pydantic_pilot_registry_matches_golden_fixtures() -> None:
-    with without_transcriptx_env():
+    with with_isolated_config_defaults():
         reg = build_registry()
         for spec in PYDANTIC_REGISTRY_PILOTS:
             fixture = FIXTURES / f"{spec.pilot_id}_registry_golden.json"
@@ -203,7 +203,7 @@ def test_non_pydantic_registry_matches_baseline() -> None:
     baseline = json.loads(
         (FIXTURES / "non_pydantic_registry_baseline.json").read_text()
     )
-    with without_transcriptx_env():
+    with with_isolated_config_defaults():
         reg = build_registry()
         actual = serialize_non_pydantic_registry_baseline(reg)
     for key, expected in baseline.items():
@@ -258,7 +258,7 @@ def test_pydantic_pilot_defaults_goldens_are_complete() -> None:
 
 
 def test_pydantic_pilot_defaults_match_golden_fixtures() -> None:
-    with without_transcriptx_env():
+    with with_isolated_config_defaults():
         for spec in PYDANTIC_REGISTRY_PILOTS:
             fixture = FIXTURES / f"{spec.pilot_id}_defaults_golden.json"
             golden = _normalize_for_json(json.loads(fixture.read_text()))

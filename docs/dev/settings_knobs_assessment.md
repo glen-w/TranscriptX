@@ -7,7 +7,7 @@
 
 ## Verdict
 
-TranscriptX has a working dual-stack config system (**53 / 718 / 16 / 734** ownership) and a capable Settings hub, but taxonomy and docs lagged the code: overloaded “profile”, orphaned `data/profiles` fixtures, dual validation paths, and no dedicated settings guide. This programme restores clarity, then cleans and hardens without restarting a full Pydantic migration.
+TranscriptX has a working dual-stack config system (live ownership: **55 / 738 / 16 / 754** pilots / Pydantic leaves / baseline / total — see [config_architecture.md](config_architecture.md)) and a capable Settings hub, but taxonomy and docs lagged the code: overloaded “profile”, orphaned `data/profiles` fixtures, dual validation paths, and no dedicated settings guide. This programme restores clarity, then cleans and hardens without restarting a full Pydantic migration.
 
 ## Assessment findings
 

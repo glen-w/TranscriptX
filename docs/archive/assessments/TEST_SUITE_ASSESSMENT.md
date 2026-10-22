@@ -2493,3 +2493,25 @@ Light-test and deep-test of PRs #72–#77 (in-app transcription, speaker-name su
 
 ### Classified pre-existing (`pytest -q` on this machine)
 Four failures match the 2026-10-03 local `.env` path contamination (not these merges): manifest `config_source` `project` vs `default`, pydantic output-path goldens, and `test_finds_audio_by_stripped_copy_suffix_when_transcript_renamed` resolving a host recording. Quarantine remains empty. Not re-enabled.
+
+## 84. Expansion (2026-10-22) – local path isolation and speaker/optional-extra units
+
+### Review
+- **Full collection:** 9239 tests (`pytest --co -q -m ""`).
+- **Default lane:** 8858 passed, 21 skipped, 378 deselected (baseline was 5 failed on this host before isolation fixes).
+- **integration_core:** 60 passed.
+- **Quarantine:** no `@pytest.mark.quarantined` tests in tree; enforcement lives in `tests/utils/test_quarantine_*.py`.
+- **collect_ignore:** legacy semantic_similarity v1 modules in `tests/conftest.py` (unchanged).
+
+### Isolation fixes (tests only)
+- `with_canonical_path_aliases` / `with_isolated_config_defaults` in `delegation_test_utils.py` patch frozen `paths` and Pydantic model path imports so registry goldens match CI when repo `.env` points at external config/output roots.
+- `test_finds_audio_by_stripped_copy_suffix_when_transcript_renamed` stubs `resolve_file_path` so host `Documents/recordings` cannot satisfy the assertion.
+
+### New unit tests
+| File | Tests | Covers |
+|------|-------|--------|
+| `tests/unit/test_speaker_ungate.py` | 10 | `effective_speaker_ungate_for_pipeline`, `use_turn_taking_speaker_gate`, `resolve_allow_unnamed_speakers`, `resolve_treat_as_single_speaker` |
+| `tests/unit/test_optional_extras.py` | 8 | `distribution_name_for_extra`, `is_extra_distribution_present`, `resolve_extra_dependency_reason` (metadata-only probes) |
+
+### Production code
+None.
