@@ -19,18 +19,18 @@
 
 ## CI lane order and time budgets
 
-**PR required gate** (workflow fails only if these fail): `compose-config`, `lint`, `tests` (Smoke → Contracts → Fast on Python 3.10–3.12).
+**PR required gate** (workflow fails only if these fail): `compose-config`, `lint`, `smoke` (`make test-smoke` on Python 3.10 only).
 
 **PR advisory lanes** (`continue-on-error` in `.github/workflows/ci.yml`; still run and report failures): `tests-nlp`, `tests-rag`, `docs` (Sphinx + `docs-gen` drift), `workspaces-theme-c`, `release-checks`. Hosted docs deploy is `pages.yml` on `main`, not the PR gate.
 
-**Install note:** PR `tests` / `tests-nlp` install `.[dev,web]` / `.[dev,nlp,web]` so Streamlit web modules collect under contracts/fast. Smoke still skips spaCy-gated modules unless `[nlp]` is present.
+**Install note:** PR `smoke` installs `.[dev]` only. Advisory `tests-nlp` installs `.[dev,nlp,web]`. Smoke still skips spaCy-gated modules unless `[nlp]` is present.
 
-**Nightly:** `.github/workflows/nightly.yml` runs `make test-integration-core` on a schedule (`cron` 06:00 UTC) and via `workflow_dispatch`. That target is `integration_core` excluding `requires_docker` (no image pre-build on the nightly runner).
+**Nightly:** `.github/workflows/nightly.yml` (schedule `cron` 06:00 UTC + `workflow_dispatch`) runs the broader Gate B lane (`make test-contracts` → `make test-fast` → `make test-coverage`) plus `make test-integration-core` (excluding `requires_docker`; no image pre-build on the nightly runner). Coverage badge refresh follows Nightly, not PR CI.
 
 Time budgets (target ceilings):
-- `test-smoke` ≤ 5 min
-- `test-contracts` ≤ 5–8 min
-- `test-fast` ≤ 8–12 min
+- PR `test-smoke` ≤ 5 min
+- nightly `test-contracts` ≤ 5–8 min
+- nightly `test-fast` ≤ 8–12 min
 - nightly `integration_core` ≤ 15–25 min
 
 ## What “fast core” includes/excludes
@@ -112,7 +112,7 @@ Default `pytest` behavior remains the source of truth for the fast local profile
 
 ## CI watchlist (common `make test-fast` failures)
 
-PR CI runs **lint → smoke → contracts → fast** on three Python versions (see `.github/workflows/ci.yml`). Failures below are usually **fixture or contract drift**, not a broken venv.
+PR CI is **smoke-only** (plus compose + ruff). Contracts / fast run on **Nightly** (see `.github/workflows/nightly.yml`). Failures below are usually **fixture or contract drift**, not a broken venv — fix them before release or when you touch the same surface.
 
 ### Config registry / Pydantic pilots
 

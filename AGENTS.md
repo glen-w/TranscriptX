@@ -46,19 +46,19 @@ managed-import workflow. There is no long-running backend beyond the Streamlit p
 ### Tests, lint, build
 
 - Standard commands live in the `Makefile` and CI (`.github/workflows/ci.yml`). Common ones:
-  `make test-smoke` (fast CI gate, ~1.5 min), `make test-fast` (full fast lane), `make test-contracts`,
-  `make docs` (needs `.[docs]`). Run from repo root with the venv active.
+  `make test-smoke` (**PR merge gate**, ~1.5 min on Python 3.10), `make test-fast` / `make test-contracts`
+  (Nightly Gate B, not PR-blocking), `make docs` (needs `.[docs]`). Run from repo root with the venv active.
 - Lint: `flake8`, `black`, and `mypy` come from `.[dev]`. Note there is no `.flake8`/`setup.cfg`, so
   bare `flake8` uses its 79-char default while the code targets black's 88. The **authoritative lint
   gate is pre-commit**, whose config is at the non-default path `config/.pre-commit-config.yaml`
   (pinned `black 23.12.1`, `ruff 0.1.6`, `mypy 1.8.0`); run it with
   `pre-commit run -a -c config/.pre-commit-config.yaml`. `ruff` is only provided via pre-commit, not `.[dev]`.
-- **CI `make test-fast` watchlist:** config/registry PRs must update ownership snapshot + pilot
-  goldens + `delegation_test_utils` counts when adding Pydantic fields; path defaults in goldens must
-  use portable `<REPO>/data/...` forms (see `docs/dev/config_architecture.md`, `tests/README.md` § CI
-  watchlist). Streamlit pages: literal `st.button("…")` labels require `icon=` from `web/icons.py`
-  (`tests/web/test_icons.py`). CI sets isolated `TRANSCRIPTX_DATA_DIR`/`TRANSCRIPTX_OUTPUT_DIR`; a local
-  repo `.env` can make config drift tests fail on a laptop while CI is green.
+  PR CI also runs a thin ruff select (`E9,F63,F7,F82,F401,F841`) on `src/transcriptx`.
+- **Nightly `make test-fast` watchlist** (does not turn PR CI red): config/registry changes should still
+  update ownership snapshot + pilot goldens + `delegation_test_utils` counts when adding Pydantic
+  fields; path defaults in goldens must use portable `<REPO>/data/...` forms (see
+  `docs/dev/config_architecture.md`, `tests/README.md` § CI watchlist). Streamlit pages: literal
+  `st.button("…")` labels require `icon=` from `web/icons.py` (`tests/web/test_icons.py`).
 - **Other local-only golden drift:** some characterization snapshots still pin machine-specific paths
   or `torch_version`; they may fail off the author's machine / on newer torch and are unrelated to
   venv setup. Smoke gate is the fast signal for environment health.

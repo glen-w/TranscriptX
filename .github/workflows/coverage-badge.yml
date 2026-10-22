@@ -1,11 +1,12 @@
-# Refresh badges/coverage.json after a green CI run on main.
+# Refresh badges/coverage.json after a green Nightly gate-b run.
+# Coverage moved off PR CI (smoke-only) onto Nightly; this workflow follows it.
 # Pushes to the unprotected `badges` branch (main requires PRs).
 # The commit message skips CI so this cannot loop.
 name: Coverage badge
 
 on:
   workflow_run:
-    workflows: ["CI"]
+    workflows: ["Nightly"]
     types: [completed]
 
 permissions:
@@ -16,8 +17,6 @@ jobs:
   badge:
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'main' &&
-      github.event.workflow_run.event == 'push' &&
       github.repository == 'glen-w/TranscriptX'
     runs-on: ubuntu-latest
     steps:

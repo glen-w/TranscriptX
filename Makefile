@@ -22,7 +22,7 @@ help:
 	@echo "  run            Streamlit web app in Docker (full TTY)"
 	@echo ""
 	@echo "Testing targets:"
-	@echo "  test-smoke       Run CI smoke gate (Core+dev; spaCy-gated modules skip without [nlp])"
+	@echo "  test-smoke       Run PR CI smoke gate (Core+dev; spaCy-gated modules skip without [nlp])"
 	@echo "  test-smoke-nlp   Run smoke with [nlp] + en_core_web_md available"
 	@echo "  test-nlp-unit    Run spaCy-gated unit tests (requires [nlp])"
 	@echo "  test-fast        Run fast core (Gate B)"
