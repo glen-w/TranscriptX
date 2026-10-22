@@ -430,11 +430,11 @@ Only if capacity remains after core themes:
 
 | Piece | Notes |
 |-------|--------|
-| **OpenAI-compatible `LLMClient`** | New provider (e.g. `openai_compatible`) behind the existing `generate` / `is_available` interface; map JSON consumers to `response_format` (or equivalent) |
+| **OpenAI-compatible `LLMClient`** | **[x]** `openai_compatible` behind `generate` / `is_available`; JSON → `response_format` |
 | **LiteLLM (or equivalent) gateway** | Prefer a **sidecar / proxy** ([LiteLLM](https://github.com/BerriAI/litellm)) over embedding the full SDK in the analysis image; one `base_url` reaches many backends |
-| **Keep Ollama as default path** | Do not force local traffic through the gateway; Settings / Run Analysis Ollama UX stays for `provider=ollama` |
-| **Model selection honesty** | Free-form model ids (and/or gateway catalog) when not on Ollama tags; clear labelling that remote endpoints receive transcript content |
-| **Privacy / trust** | Explicit opt-in only; document remote data flow; align with [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md) |
+| **Keep Ollama as default path** | **[x]** Do not force local traffic through the gateway; Settings / Run Analysis Ollama UX stays for `provider=ollama` |
+| **Model selection honesty** | **[x]** Free-form model ids when not on Ollama tags; remote endpoints labelled Remote AI |
+| **Privacy / trust** | **[x]** Explicit opt-in only; document remote data flow; align with [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md) |
 
 **Hard parts:** structured JSON parity with Ollama `format=json`; seed/reproducibility across vendors; long timeouts and large prompts vs cloud limits; Corrections Studio + Run Analysis pickers that today assume `/api/tags`; dependency/image weight if the SDK is in-process.
 

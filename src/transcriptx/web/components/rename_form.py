@@ -111,7 +111,9 @@ def _configured_rename_default_case() -> BubbleTokenCase:
         from transcriptx.core.utils.config_provider import get_config
 
         raw = str(
-            getattr(getattr(get_config(), "input", None), "rename_default_case", "lower")
+            getattr(
+                getattr(get_config(), "input", None), "rename_default_case", "lower"
+            )
             or "lower"
         )
         if raw in _CASE_LABEL_BY_VALUE:
@@ -134,7 +136,9 @@ def _rename_case_from_session(form_key: str, session_state) -> BubbleTokenCase:
 
 
 def _stem_with_session_case(form_key: str, stem: str, session_state) -> str:
-    return format_rename_stem_case(stem, _rename_case_from_session(form_key, session_state))
+    return format_rename_stem_case(
+        stem, _rename_case_from_session(form_key, session_state)
+    )
 
 
 def _reset_rename_case_from_config(form_key: str, session_state=None) -> None:
@@ -274,7 +278,9 @@ def _rename_suggest_button_label() -> str:
         from transcriptx.core.utils.config import get_config
 
         cfg = get_config().llm
-        llm_on = bool(cfg.enabled and (cfg.provider or "").strip().lower() == "ollama")
+        from transcriptx.core.llm.openai_compatible_client import is_live_llm_provider
+
+        llm_on = is_live_llm_provider(cfg.provider, enabled=bool(cfg.enabled))
     except Exception:
         llm_on = False
     return (

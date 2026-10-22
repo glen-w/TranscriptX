@@ -357,8 +357,10 @@ def _render_link_target_panel(
     default_token = _target_token(default) if default is not None else "none"
     mode_key = link_mode_key(transcript_path, active_id)
     if st.session_state.get(mode_key) not in tokens:
-        st.session_state[mode_key] = default_token if default_token in tokens else (
-            tokens[0] if tokens else "none"
+        st.session_state[mode_key] = (
+            default_token
+            if default_token in tokens
+            else (tokens[0] if tokens else "none")
         )
     if targets.recipe_hint:
         st.caption(targets.recipe_hint)
@@ -394,7 +396,6 @@ def _render_link_target_panel(
             ):
                 st.session_state["speakers_selected_profile"] = selected.profile_id
                 navigate_to_speaker_profile(selected.profile_id)
-
 
 
 # ── flash ─────────────────────────────────────────────────────────────────────
@@ -562,7 +563,10 @@ def _maybe_poll_pending_clips(transcript_path: str | Path, data: dict) -> None:
     calls are not a reliable heartbeat, so we poll here until hit/unavailable or
     the cap is reached. Skipped under pytest unless ``TX_SID_CLIP_POLL=1``.
     """
-    if os.environ.get("PYTEST_CURRENT_TEST") and os.environ.get("TX_SID_CLIP_POLL") != "1":
+    if (
+        os.environ.get("PYTEST_CURRENT_TEST")
+        and os.environ.get("TX_SID_CLIP_POLL") != "1"
+    ):
         return
     poll_key = widget_key(transcript_path, "ccv2_clip_poll")
     if not _samples_awaiting_clip(data):
@@ -906,11 +910,14 @@ def _load_name_suggestions_for_workspace(
         pick = result.cache_model_tag or selected_model_tag
         if pick:
             st.session_state[_name_suggestion_model_pick_key(transcript_path)] = pick
-        return build_name_suggestions_workspace_payload(
-            profile_ctx.managed_transcript_id,
-            transcript_fingerprint=fp,
-            selected_model_tag=pick,
-        ) or result.workspace_payload()
+        return (
+            build_name_suggestions_workspace_payload(
+                profile_ctx.managed_transcript_id,
+                transcript_fingerprint=fp,
+                selected_model_tag=pick,
+            )
+            or result.workspace_payload()
+        )
 
     try:
         segments = load_transcript_segments(transcript_path)
@@ -1696,21 +1703,21 @@ def _render_voice_display_payload(
             pid = cand.get("profile_id")
             cols[0].button(
                 "Confirm this profile",
-            icon=ic.CONFIRM,
+                icon=ic.CONFIRM,
                 key=widget_key(path_str, f"voice_confirm_{active_id}_{pid}"),
                 on_click=_cb_voice_confirm_action,
                 args=(path_str, active_id, pid),
             )
             cols[1].button(
                 "Reject suggestion",
-            icon=ic.REJECT,
+                icon=ic.REJECT,
                 key=widget_key(path_str, f"voice_reject_{active_id}_{pid}"),
                 on_click=_cb_voice_reject_action,
                 args=(path_str, active_id, pid),
             )
             cols[2].button(
                 "Leave unlinked",
-            icon=ic.UNLINK,
+                icon=ic.UNLINK,
                 key=widget_key(path_str, f"voice_leave_{active_id}_{pid}"),
                 on_click=_cb_voice_leave,
                 args=(path_str, active_id, pid),
@@ -1997,7 +2004,9 @@ def _render_managed_identify_actions(
         from transcriptx.core.utils.config import get_config
 
         cfg = get_config().llm
-        llm_on = bool(cfg.enabled and (cfg.provider or "").strip().lower() == "ollama")
+        from transcriptx.core.llm.openai_compatible_client import is_live_llm_provider
+
+        llm_on = is_live_llm_provider(cfg.provider, enabled=bool(cfg.enabled))
     except Exception:
         llm_on = False
     suggest_label = (
@@ -2032,18 +2041,16 @@ def _render_managed_identify_actions(
             pick_key = _name_suggestion_model_pick_key(transcript_path)
             tags = list(labels.keys())
             if pick_key not in st.session_state:
-                st.session_state[pick_key] = (
-                    (name_suggestions or {}).get("selected_model_tag") or tags[0]
-                )
+                st.session_state[pick_key] = (name_suggestions or {}).get(
+                    "selected_model_tag"
+                ) or tags[0]
             current = str(st.session_state.get(pick_key) or tags[0])
             if current not in labels:
                 st.session_state[pick_key] = tags[0]
                 current = tags[0]
 
             def _on_model_pick_change() -> None:
-                st.session_state[pick_key] = st.session_state.get(
-                    f"{pick_key}__widget"
-                )
+                st.session_state[pick_key] = st.session_state.get(f"{pick_key}__widget")
 
             st.selectbox(
                 "Suggestion source (model)",
@@ -2328,9 +2335,7 @@ def _speaker_id_workspace_fragment(
         else (f"✅ **{current_name}**" if current_name.strip() else "❓ unnamed")
     )
     if not is_ignored:
-        status_badge = status_badge + _identify_badge_suffix(
-            transcript_path, active_id
-        )
+        status_badge = status_badge + _identify_badge_suffix(transcript_path, active_id)
 
     mounted = _render_ccv2_speaker_workspace(
         transcript_path=transcript_path,

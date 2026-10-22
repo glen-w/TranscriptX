@@ -29,9 +29,12 @@ from transcriptx.core.llm.ollama_client import (
 )
 from transcriptx.core.llm.openai_compatible_client import (
     OpenAICompatibleClient,
+    LIVE_LLM_PROVIDERS,
     base_url_is_loopback,
     build_openai_compatible_client,
+    is_live_llm_provider,
     normalize_openai_base_url,
+    remote_llm_privacy_caption,
     resolve_openai_api_key,
 )
 from transcriptx.core.llm.thinking_models import (
@@ -146,6 +149,9 @@ __all__ = [
     "normalize_openai_base_url",
     "resolve_openai_api_key",
     "base_url_is_loopback",
+    "is_live_llm_provider",
+    "remote_llm_privacy_caption",
+    "LIVE_LLM_PROVIDERS",
     "normalize_base_url",
     "resolve_ollama_base_url",
     "list_installed_ollama_models",

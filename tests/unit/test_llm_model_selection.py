@@ -471,6 +471,34 @@ def test_launch_gate_blocks_when_llm_modules_selected_without_ollama():
     assert "disabled" in reasons[0].lower() or "ollama" in reasons[0].lower()
 
 
+def test_launch_gate_openai_compatible_needs_model_id():
+    info = SimpleNamespace(requires_llm=True)
+    with patch(
+        "transcriptx.core.pipeline.module_registry.get_module_info",
+        return_value=info,
+    ):
+        missing = launch_gate_reasons(
+            selection=LlmModelSelection(mode="shared", shared_model=None),
+            selected_modules=["llm_summary"],
+            installed=(),
+            list_error=None,
+            include_group=False,
+            llm_enabled=True,
+            provider="openai_compatible",
+        )
+        assert any("model id" in r.lower() for r in missing)
+        ok = launch_gate_reasons(
+            selection=LlmModelSelection(mode="shared", shared_model="local-model"),
+            selected_modules=["llm_summary"],
+            installed=(),
+            list_error=None,
+            include_group=False,
+            llm_enabled=True,
+            provider="openai_compatible",
+        )
+        assert ok == []
+
+
 def test_launch_gate_blocks_empty_tags_and_bad_shared_pick():
     info = SimpleNamespace(requires_llm=True)
     with patch(
@@ -863,9 +891,7 @@ def test_corrections_discovery_passes_consumer_id(monkeypatch):
         def is_available(self):
             return False
 
-    monkeypatch.setattr(
-        disc, "build_ollama_analysis_client", lambda **_k: FakeClient()
-    )
+    monkeypatch.setattr(disc, "build_ollama_analysis_client", lambda **_k: FakeClient())
     result = disc.run_llm_discovery(
         segments=[{"speaker": "A", "text": "hello", "start": 0, "end": 1}],
         transcript_key="tk",
