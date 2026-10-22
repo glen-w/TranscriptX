@@ -58,7 +58,11 @@ managed-import workflow. There is no long-running backend beyond the Streamlit p
   update ownership snapshot + pilot goldens + `delegation_test_utils` counts when adding Pydantic
   fields; path defaults in goldens must use portable `<REPO>/data/...` forms (see
   `docs/dev/config_architecture.md`, `tests/README.md` § CI watchlist). Streamlit pages: literal
-  `st.button("…")` labels require `icon=` from `web/icons.py` (`tests/web/test_icons.py`).
+  `st.button("…")` labels require `icon=` from `web/icons.py` (`tests/web/test_icons.py`). CI sets
+  isolated `TRANSCRIPTX_DATA_DIR`/`TRANSCRIPTX_OUTPUT_DIR`; a local repo `.env` still freezes path
+  aliases at import—`test_pydantic_bridge_drift` uses `with_isolated_config_defaults()` in
+  `delegation_test_utils.py`, but other config/golden tests may still diverge from CI until env/path
+  helpers are applied (see `docs/dev/config_architecture.md`).
 - **Other local-only golden drift:** some characterization snapshots still pin machine-specific paths
   or `torch_version`; they may fail off the author's machine / on newer torch and are unrelated to
   venv setup. Smoke gate is the fast signal for environment health.

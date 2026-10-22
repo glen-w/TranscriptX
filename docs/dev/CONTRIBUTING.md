@@ -127,6 +127,6 @@ See [developer_quickstart.md](../developer_quickstart.md) for pipeline structure
 **Before opening a PR**, skim [tests/README.md](../../tests/README.md) § *CI watchlist* and, when touching settings or registry code, [config_architecture.md](config_architecture.md) (ownership snapshot + config golden fixtures). Typical misses:
 
 - New Pydantic config field without updating ownership totals, `registry_ownership_snapshot.json`, and the pilot’s `*_golden.json` files.
-- Path defaults in goldens that work on your laptop but not on CI (use `<REPO>/data/...` shapes documented in `test_pydantic_bridge_drift.py`).
+- Path defaults in goldens that work on your laptop but not on CI (use `<REPO>/data/...` shapes documented in `test_pydantic_bridge_drift.py`). Config drift tests use `with_isolated_config_defaults()` so a customized repo `.env` does not fail the default lane; new registry/default tests should use the same helpers in `delegation_test_utils.py` when comparing to goldens.
 - New Streamlit buttons with fixed English labels missing `icon=` from `transcriptx.web.icons`.
 - User-facing settings changes without `.env.example` / `ENV_KEY_REGISTRY` when a new env mapping is introduced.

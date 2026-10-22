@@ -21,6 +21,11 @@ from transcriptx.core.utils.config import (
 )
 from transcriptx.core.utils.config.config_errors import ConfigLoadError
 
+from tests.core.config.delegation_test_utils import (
+    with_canonical_path_aliases,
+    without_transcriptx_env,
+)
+
 
 class TestAnalysisConfig:
     """Tests for AnalysisConfig dataclass."""
@@ -192,7 +197,7 @@ class TestTranscriptXConfigClass:
     def test_install_profile_core_or_empty_keeps_core_mode_true(self, tmp_path):
         """When install_profile is 'core' or absent, core_mode stays True."""
         (tmp_path / "install_profile").write_text("core")
-        with patch(
+        with without_transcriptx_env(), with_canonical_path_aliases(), patch(
             "transcriptx.core.utils.paths.CONFIG_DIR",
             tmp_path,
         ):

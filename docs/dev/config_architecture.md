@@ -10,9 +10,9 @@ Enforced by `tests/core/config/test_registry_ownership.py` against
 | Metric | Live value |
 |--------|------------|
 | Pydantic pilots | **55** |
-| Pydantic-owned flattened registry leaves | **734** |
+| Pydantic-owned flattened registry leaves | **738** |
 | Permanent non-Pydantic baseline leaves | **16** |
-| Total registry leaves | **750** |
+| Total registry leaves | **754** |
 
 Baseline leaves include profile activation selectors (`active_*_profile`), `core_mode`, `use_emojis`, and intentional `analysis.chart_descriptions.*` keys.
 
@@ -33,7 +33,11 @@ Drift guards live under `tests/core/config/` (`test_pydantic_bridge_drift.py`, d
 - Alternatively use a repo-shaped absolute path that normalizes the same way as CI (see `_normalize_pathish` in `test_pydantic_bridge_drift.py` — it collapses `.../data/...` and `.../.test_outputs/...` to `<REPO>/...`).
 - Do **not** commit goldens with personal paths (`/Users/you/...`, external output dirs) unless they normalize identically on the GitHub runner.
 
-**Local `.env` vs CI:** `core/utils/paths.py` loads `.env` at import time and freezes `PATHS` before tests run. Many config tests call `without_transcriptx_env()` (clears `TRANSCRIPTX_*` for the assertion) but **do not** rebuild `PATHS`. A developer machine with a customized `.env` can therefore see `test_pydantic_bridge_drift` failures on the `output` / `input` pilots while CI is green. For parity with CI before pushing, run config drift tests in a clean environment (no repo `.env`, or temporarily unset path overrides) or compare against the normalized golden shapes above.
+**Local `.env` vs CI:** `core/utils/paths.py` loads `.env` at import time and freezes `PATHS` (and Pydantic model path imports) before tests run. Clearing `TRANSCRIPTX_*` alone does not refresh those aliases.
+
+- **Drift guards:** `test_pydantic_bridge_drift.py` runs inside `with_isolated_config_defaults()` (`tests/core/config/delegation_test_utils.py`), which clears `TRANSCRIPTX_*` and patches `paths` + model modules to repo-relative `data/` and `.test_outputs/` roots so goldens match CI on customized laptops.
+- **Other default-shape tests:** use `without_transcriptx_env()` and, when asserting path-derived defaults, `with_canonical_path_aliases()` (same module).
+- **Manual parity:** if drift tests still fail, compare against portable `<REPO>/...` shapes (`_normalize_pathish` in `test_pydantic_bridge_drift.py`) or run the focused pytest block below without a repo `.env` that overrides config/output roots.
 
 **New Pydantic fields:** adding a `Field` on a pilot model increases `pydantic_owned_keys` and usually requires updating that pilot’s `*_registry_golden.json` and `*_defaults_golden.json`, not only the ownership snapshot.
 

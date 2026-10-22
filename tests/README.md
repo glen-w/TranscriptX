@@ -1,10 +1,10 @@
 # TranscriptX tests: how to run locally
 
-**Streamlit GUI test assessment:** see [`docs/archive/assessments/../docs/archive/assessments/streamlit_ui_test_assessment_2026-07-18.md`](../docs/archive/assessments/../docs/archive/assessments/streamlit_ui_test_assessment_2026-07-18.md) for the surface coverage matrix, doubles-first L1–L3 strategy, heavy-gated AppTest acceptance for seven primary journeys (`make test-gui-acceptance`), residual manual checklist, and the optional `web/` coverage gap-finder (§11). **AppTest remains the structural GUI acceptance lane.** Playwright live-Streamlit E2E (`tests/e2e_gui/`, marker `gui_e2e`) covers the **ten documented key flows** under [docs/workflows/](../docs/workflows/index.md) and is run via `make test-gui-e2e` (skips cleanly when Playwright/Chromium is unavailable; excluded from default `pytest` / `make test-fast`).
+**Streamlit GUI test assessment:** see [`docs/archive/assessments/streamlit_ui_test_assessment_2026-07-18.md`](../docs/archive/assessments/streamlit_ui_test_assessment_2026-07-18.md) for the surface coverage matrix, doubles-first L1–L3 strategy, heavy-gated AppTest acceptance for seven primary journeys (`make test-gui-acceptance`), residual manual checklist, and the optional `web/` coverage gap-finder (§11). **AppTest remains the structural GUI acceptance lane.** Playwright live-Streamlit E2E (`tests/e2e_gui/`, marker `gui_e2e`) covers the **ten documented key flows** under [docs/workflows/](../docs/workflows/index.md) and is run via `make test-gui-e2e` (skips cleanly when Playwright/Chromium is unavailable; **excluded** from default `pytest` / `make test-fast`).
 
 ## Quick commands (single source of truth)
 
-- `pytest` (or `make test-fast`) — **default**: fast lane (excludes smoke, release_only, integration, integration_core, integration_extended, slow, `gui_acceptance`, and requires_* capability markers). **Includes** Playwright `gui_e2e` when Chromium is installed.
+- `pytest` (or `make test-fast`) — **default**: fast lane (excludes smoke, release_only, integration, integration_core, integration_extended, slow, `gui_acceptance`, `gui_e2e`, `browser`, and requires_* capability markers).
 - `make test-smoke` — CI gate (smoke tests only)
 - `make test-fast` — same as default `pytest` (fast core + Playwright GUI E2E)
 - `make test-gui-acceptance` — Streamlit AppTest GUI acceptance journeys (seven primary flows; heavy)
@@ -65,6 +65,7 @@ Default `pytest` behavior remains the source of truth for the fast local profile
 - `requires_docker` — requires Docker daemon/containers
 - `requires_ffmpeg` — requires ffmpeg/ffprobe
 - `requires_api` — requires external API access
+- `requires_nlp` — requires spaCy (`nlp` extra); excluded from default fast CI lane
 - `performance` — benchmarks/perf
 - `quarantined` — temporarily quarantined tests (must include reason + sunset)
 
@@ -80,7 +81,7 @@ Default `pytest` behavior remains the source of truth for the fast local profile
 
 ## Marker policy matrix
 
-- **Fast default (`pytest` / `make test-fast`)**: excludes `quarantined`, `smoke`, `release_only`, `integration`, `integration_core`, `integration_extended`, `requires_ffmpeg`, `requires_docker`, `requires_models`, `requires_api`, `slow`, `gui_acceptance`, `gui_e2e`, `browser`.
+- **Fast default (`pytest` / `make test-fast`)**: excludes `quarantined`, `smoke`, `release_only`, `integration`, `integration_core`, `integration_extended`, `requires_ffmpeg`, `requires_docker`, `requires_models`, `requires_api`, `requires_nlp`, `slow`, `gui_acceptance`, `gui_e2e`, `browser`.
 - **GUI acceptance (`make test-gui-acceptance`)**: `gui_acceptance` marker; residual manual items in [`docs/dev/gui_acceptance_residual_checklist.md`](../docs/dev/gui_acceptance_residual_checklist.md).
 - **GUI E2E (`make test-gui-e2e`)**: `gui_e2e` marker; live Streamlit + Playwright Chromium for the ten documented key flows under `tests/e2e_gui/` (see [docs/workflows/](../docs/workflows/index.md)). Requires `playwright` + `playwright install chromium` (Playwright ships with `[maps]` / `[full]` extras); tests skip when Chromium is unavailable.
 - **Smoke lane (`make test-smoke`)**: `tests/smoke` only, requires `smoke` marker, excludes `release_only` and external-capability markers.
@@ -124,7 +125,11 @@ Adding or changing knobs under `src/transcriptx/core/config/models/` triggers a 
 | `test_pydantic_pilot_*_golden*` / `test_ownership_invariant_unchanged` in `test_*_delegation.py` | Matching `tests/core/config/fixtures/*_golden.json` for the affected pilot |
 | `input.recordings_folders` or `output.*` path mismatch | Use portable `<REPO>/data/...` paths in goldens; see [config_architecture.md](../docs/dev/config_architecture.md) |
 
-CI sets isolated `TRANSCRIPTX_DATA_DIR` / `TRANSCRIPTX_OUTPUT_DIR` under `$RUNNER_TEMP`. Local runs may still read path defaults from a repo `.env` loaded at import time — config drift tests can fail locally while CI passes unless goldens and env match the portable rules above.
+CI sets isolated `TRANSCRIPTX_DATA_DIR` / `TRANSCRIPTX_OUTPUT_DIR` under `$RUNNER_TEMP`. On a laptop, a repo `.env` can still freeze custom path roots at import time; drift guards patch canonical repo aliases via `with_isolated_config_defaults()` in `delegation_test_utils.py` (see [config_architecture.md](../docs/dev/config_architecture.md)).
+
+**Audio lookup tests:** `find_original_audio_file` may resolve real files under your configured recordings folder unless the test stubs `resolve_file_path` (see `test_file_rename_unit.py`).
+
+**Suite scale (2026-10-22):** ~9239 collected with `-m ""`; default lane ~8860 tests (marker deselects ~378).
 
 Focused local check before pushing config work:
 

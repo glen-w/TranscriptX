@@ -38,6 +38,52 @@ def without_transcriptx_env() -> Iterator[None]:
         os.environ.update(saved)
 
 
+@contextmanager
+def with_canonical_path_aliases() -> Iterator[None]:
+    """Patch frozen path aliases to repo-relative CI/golden layout.
+
+    ``paths`` constants are computed once at import (after ``.env`` bootstrap).
+    Clearing ``TRANSCRIPTX_*`` env vars does not refresh them; drift guards and
+    default-shape tests must patch aliases on ``paths`` and ``output`` models.
+    """
+    from transcriptx.core.config.models import group_analysis as group_analysis_models
+    from transcriptx.core.config.models import input as input_models
+    from transcriptx.core.config.models import output as output_models
+    from transcriptx.core.utils import paths as paths_mod
+
+    repo = paths_mod.PROJECT_ROOT
+    data = repo / "data"
+    outputs = repo / ".test_outputs"
+    canonical: dict[str, Path] = {
+        "CONFIG_DIR": repo / ".transcriptx",
+        "RECORDINGS_DIR": data / "recordings",
+        "DIARISED_TRANSCRIPTS_DIR": data / "transcripts",
+        "READABLE_TRANSCRIPTS_DIR": data / "transcripts" / "readable",
+        "OUTPUTS_DIR": outputs,
+        "GROUP_OUTPUTS_DIR": outputs / "groups",
+    }
+    saved: list[tuple[object, str, object]] = []
+    for mod in (paths_mod, output_models, input_models, group_analysis_models):
+        for name, value in canonical.items():
+            if not hasattr(mod, name):
+                continue
+            saved.append((mod, name, getattr(mod, name)))
+            setattr(mod, name, value)
+    try:
+        yield
+    finally:
+        for mod, name, prior in saved:
+            setattr(mod, name, prior)
+
+
+@contextmanager
+def with_isolated_config_defaults() -> Iterator[None]:
+    """Env-clear + canonical path aliases for registry/default goldens."""
+    with without_transcriptx_env():
+        with with_canonical_path_aliases():
+            yield
+
+
 def assert_ownership_invariant_unchanged() -> None:
     reg = build_registry()
     pilot_keys = all_pydantic_field_dotpaths()

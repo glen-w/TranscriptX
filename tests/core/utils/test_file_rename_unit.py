@@ -243,5 +243,13 @@ class TestFindOriginalAudioFile:
             "transcriptx.core.utils.file_rename.OUTPUTS_DIR", tmp_path / "outputs"
         )
 
+        def _no_global_audio_resolve(*_args, **_kwargs):
+            raise FileNotFoundError("isolated test")
+
+        monkeypatch.setattr(
+            "transcriptx.core.utils.file_rename.resolve_file_path",
+            _no_global_audio_resolve,
+        )
+
         result = find_original_audio_file(str(transcript))
         assert result == audio
