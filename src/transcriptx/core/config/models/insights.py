@@ -20,7 +20,11 @@ class InsightsSettingsModel(BaseModel):
     topic_boost: float = Field(default=0.05, ge=0.0, le=0.5)
     narrative_enabled: bool = Field(
         default=False,
-        description="When true, insights_narrative may run (requires LLM + module selection).",
+        description=(
+            "Allow the optional insights_narrative Local-AI gloss (B18). Also select "
+            "the `insights_narrative` module on Run Analysis. Off by default — does "
+            "not replace deterministic themes."
+        ),
     )
     narrative_min_evidence_quotes: int = Field(default=1, ge=1, le=8)
     narrative_max_chars: int = Field(default=1200, ge=200, le=4000)
