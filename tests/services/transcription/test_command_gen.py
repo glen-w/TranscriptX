@@ -111,11 +111,28 @@ def test_nemo_parakeet_docker_recipe() -> None:
     cmd = generate_transcription_command(params)
     assert "docker run" in cmd.shell
     assert "--gpus all" in cmd.shell
-    assert "/data/audio/meeting.mp3" in cmd.shell or "/audio" in cmd.shell
+    assert "/data/audio/meeting.mp3" in cmd.shell or "/audio/meeting.mp3" in cmd.shell
     assert "/data/out" in cmd.shell or "/output" in cmd.shell
     assert "nemo_json_to_whisperx" in cmd.shell
     assert "parakeet-tdt" in cmd.shell
+    assert "ASRModel.from_pretrained" in cmd.shell
+    assert "exit 1" not in cmd.shell
     assert any("macOS" in n or "whispermlx" in n for n in cmd.notes)
+    assert any("Run in app" in n for n in cmd.notes)
+
+
+@pytest.mark.unit
+def test_nemo_canary_docker_recipe_is_copy_only() -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.NEMO_CANARY_DOCKER,
+        input_path="/data/audio/meeting.mp3",
+        output_dir="/data/out",
+        model="nvidia/canary-1b",
+    )
+    cmd = generate_transcription_command(params)
+    assert "canary-1b" in cmd.shell
+    assert "ASRModel.from_pretrained" in cmd.shell
+    assert any("canary_docker" in n for n in cmd.notes)
 
 
 @pytest.mark.unit

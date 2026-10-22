@@ -13,6 +13,12 @@ from transcriptx.app.models.results import TranscriptionProviderResult
 from transcriptx.core.utils.paths import PATHS
 from transcriptx.services.transcription.env import load_merged_env
 from transcriptx.services.transcription.nemo_json_to_whisperx import convert_file
+from transcriptx.services.transcription.parakeet_recipe import (
+    DEFAULT_NEMO_IMAGE,
+    PARAKEET_MODEL_DEFAULT,
+    build_parakeet_docker_argv,
+    write_parakeet_inner_script,
+)
 from transcriptx.services.transcription.provider import (
     ProviderAvailability,
     ProviderCheck,
@@ -27,7 +33,7 @@ from transcriptx.services.transcription.whisperx_docker_provider import (
 
 _PROVIDER_ID = "parakeet_docker"
 _RECIPE_PATH = PATHS.project_root / "docs" / "recipes" / "parakeet" / "README.md"
-_DEFAULT_IMAGE = "nvcr.io/nvidia/nemo:24.07.1"
+_DEFAULT_IMAGE = DEFAULT_NEMO_IMAGE
 _TAIL_LINES = 20
 
 
@@ -35,7 +41,11 @@ def _write_stub_jsonl(output_dir: Path, audio_stem: str) -> Path:
     """Development/CI stub when TRANSCRIPTX_PARAKEET_STUB=1."""
     jsonl_path = output_dir / f"{audio_stem}.jsonl"
     line = json.dumps(
-        {"start": 0.0, "end": 1.0, "text": "(Parakeet stub transcript — configure NeMo)"}
+        {
+            "start": 0.0,
+            "end": 1.0,
+            "text": "(Parakeet stub transcript — configure NeMo)",
+        }
     )
     jsonl_path.write_text(line + "\n", encoding="utf-8")
     return jsonl_path
@@ -114,19 +124,6 @@ class ParakeetDockerProvider:
         started = time.time()
         output_dir.mkdir(parents=True, exist_ok=True)
         load_merged_env()
-        binary = resolve_docker_binary()
-        if binary is None:
-            return TranscriptionProviderResult(
-                success=False,
-                json_path=None,
-                output_dir=output_dir,
-                returncode=None,
-                stdout_tail=(),
-                stderr_tail=(),
-                duration_seconds=0.0,
-                error="docker binary not found",
-            )
-
         audio_path = audio_path.resolve()
         output_dir = output_dir.resolve()
         stem = audio_path.stem
@@ -157,24 +154,41 @@ class ParakeetDockerProvider:
                     error=str(exc),
                 )
 
+        binary = resolve_docker_binary()
+        if binary is None:
+            return TranscriptionProviderResult(
+                success=False,
+                json_path=None,
+                output_dir=output_dir,
+                returncode=None,
+                stdout_tail=(),
+                stderr_tail=(),
+                duration_seconds=time.time() - started,
+                error="docker binary not found",
+            )
+
         image = (options.docker_image or "").strip() or _DEFAULT_IMAGE
-        cmd = [str(binary), "run", "--rm"]
-        if options.device == "cuda":
-            cmd.extend(["--gpus", "all"])
-        cmd.extend(
-            [
-                "-v",
-                f"{audio_path.parent}:/audio:ro",
-                "-v",
-                f"{output_dir}:/output",
-                image,
-                "bash",
-                "-lc",
-                (
-                    f'echo "Configure NeMo transcribe for {options.model}; '
-                    f'see docs/recipes/parakeet/README.md" && exit 2'
-                ),
-            ]
+        model = (options.model or "").strip() or PARAKEET_MODEL_DEFAULT
+        try:
+            write_parakeet_inner_script(output_dir)
+        except OSError as exc:
+            return TranscriptionProviderResult(
+                success=False,
+                json_path=None,
+                output_dir=output_dir,
+                returncode=None,
+                stdout_tail=(),
+                stderr_tail=(),
+                duration_seconds=time.time() - started,
+                error=str(exc),
+            )
+        cmd = build_parakeet_docker_argv(
+            docker_binary=str(binary),
+            image=image,
+            audio_path=audio_path,
+            output_dir=output_dir,
+            model=model,
+            device=options.device,
         )
         try:
             proc = subprocess.run(
@@ -217,8 +231,8 @@ class ParakeetDockerProvider:
                 stderr_tail=tail_lines(proc.stderr or "", max_lines=_TAIL_LINES),
                 duration_seconds=duration,
                 error=(
-                    "Parakeet Docker not configured — customize NeMo command per "
-                    "docs/recipes/parakeet/ (or set TRANSCRIPTX_PARAKEET_STUB=1 for stub)"
+                    "Parakeet Docker run failed. See logs and "
+                    "docs/recipes/parakeet/ (or set TRANSCRIPTX_PARAKEET_STUB=1)."
                 ),
             )
 
