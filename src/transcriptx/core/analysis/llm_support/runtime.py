@@ -91,11 +91,11 @@ def get_llm_effort_profiles() -> dict[LLMSummaryEffort, LLMEffortProfile]:
 
 
 def require_ollama_analysis(llm_cfg: Any) -> None:
-    """Mirror ``get_llm_client()`` eligibility for Ollama effort-path modules."""
+    """Mirror ``get_llm_client()`` eligibility for effort-path LLM modules."""
     provider = (llm_cfg.provider or "null").strip().lower()
     if not llm_cfg.enabled or provider in ("null", ""):
         raise LLMConfigurationError(_NULL_LLM_CLIENT_MESSAGE)
-    if provider != "ollama":
+    if provider not in ("ollama", "openai_compatible"):
         raise LLMConfigurationError(f"Unsupported LLM provider: {llm_cfg.provider!r}")
 
 
@@ -165,6 +165,20 @@ def build_ollama_analysis_client(
     """
     from transcriptx.core.llm.json_with_fallback import wrap_client_with_json_fallback
     from transcriptx.core.llm.metrics import RecorderBackedLlmMetricsSink
+    from transcriptx.core.llm.openai_compatible_client import (
+        build_openai_compatible_client,
+    )
+
+    provider = (getattr(llm_cfg, "provider", None) or "ollama").strip().lower()
+    if provider == "openai_compatible":
+        return build_openai_compatible_client(
+            base_url=llm_cfg.base_url or "",
+            model=runtime.model,
+            seed=int(llm_cfg.seed),
+            request_timeout=float(runtime.request_timeout),
+            availability_timeout=float(llm_cfg.availability_timeout),
+            max_output_tokens=runtime.max_output_tokens,
+        )
 
     primary = build_ollama_client(
         base_url=llm_cfg.base_url,

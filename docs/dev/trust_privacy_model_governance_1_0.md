@@ -27,6 +27,7 @@ Remote network activity occurs only when the user (or install profile) explicitl
 
 - Hugging Face / spaCy **model downloads** on first use
 - Optional **Ollama** (typically local; user-configured host)
+- Optional **openai_compatible** LLM (`llm.provider`; explicit `llm.base_url` required — no silent cloud default). Transcript content is sent to that endpoint. API key from `TRANSCRIPTX_LLM_API_KEY` / `OPENAI_API_KEY` only.
 - Optional **rename web lookup** (`input.rename_suggest_web`) — short title-only queries when rename suggestions run (Settings `rename_content_suggestions=auto` or **Suggest names** on the rename form); transcript body is not sent. With `TRANSCRIPTX_YOUTUBE_API_KEY` this uses YouTube Data API v3 (`search` + `videos`); otherwise DuckDuckGo HTML (`site:youtube.com` first, then a general event query)
 - Optional dependency / image pulls during install
 
@@ -68,6 +69,7 @@ Sourced from [runtime/models.md](../runtime/models.md) defaults and pinned HF pr
 | Topic modeling LDA/NMF (sklearn) | sklearn / SciPy stack | None beyond install | Local | Ship |
 | BERTopic stack | See BERTopic / UMAP / HDBSCAN deps | Embedding model as above | Local; heavy | Optional (`[bertopic]` / `[full]`) |
 | Ollama LLM modules (optional) | Model-dependent (user-chosen Ollama models) | User pulls models into Ollama | Local when Ollama is local; label AI outputs | Optional — document |
+| OpenAI-compatible LLM (`openai_compatible`) | Operator-chosen remote or local server | User sets `llm.base_url` + env API key | Transcript text leaves the machine when the URL is not loopback | Optional — never the silent default |
 | Voice / speaker-match embeddings (ECAPA / `[voice]`) | See SpeechBrain / model cards | Optional extras; may download | **Speaker-identity sensitive** — privacy notice v2 | Optional (`[voice]`) |
 | NeMo Parakeet TDT / Canary ASR (Theme K / `parakeet_docker`) | **CC-BY-4.0** (typical Hub / NGC cards) | User-triggered on CUDA host; not in analysis image | Local STT when user runs recipe; stub mode for dev only | Optional — [recipes/parakeet](../recipes/parakeet/README.md) |
 

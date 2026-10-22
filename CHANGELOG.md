@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Theme F YouTube rename:** optional YouTube Data API v3 lookup via `TRANSCRIPTX_YOUTUBE_API_KEY` (title queries only; DuckDuckGo remains the no-key path).
 - **Theme H Whisper honesty:** Transcribe Audio and watcher `auto_transcribe` copy state that Streamlit in `transcriptx-web` cannot see host `whispermlx`, and name WhisperX / Parakeet Docker as in-app alternatives.
 - **Theme H Parakeet recipe:** `parakeet_docker` Run-in-app uses pinned NeMo `docker run` + timestamp JSONL → `nemo_json_to_whisperx` (stub remains for CI). Canary stays Copy command only.
+- **Theme N openai_compatible:** opt-in Chat Completions `LLMClient` (`llm.provider=openai_compatible`, required `llm.base_url`, env-only API key). Ollama remains the default path; no silent cloud default.
 
 ## [1.0.1] - 2026-10-20
 
