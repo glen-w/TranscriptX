@@ -1,0 +1,14 @@
+{
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 1.2,
+      "text": "Hello from Parakeet."
+    },
+    {
+      "start": 1.2,
+      "end": 2.4,
+      "text": "Second line via transcript key."
+    }
+  ]
+}
