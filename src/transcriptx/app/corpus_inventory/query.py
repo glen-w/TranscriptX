@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
+
 from transcriptx.app.corpus_inventory.models import (
     AnalysisStatus,
     ContinueAction,
@@ -43,6 +45,24 @@ def row_matches_query(row: InventoryRow, query: str) -> bool:
     return any(needle in item.casefold() for item in haystacks if item)
 
 
+def filter_paths_by_tags(
+    paths: Sequence[str],
+    *,
+    tags_by_path: Mapping[str, Sequence[str]],
+    required_tags: Sequence[str],
+) -> list[str]:
+    """AND-filter picker paths by library tags. Does not mutate Groups."""
+    needed = tuple(tag for tag in required_tags if tag)
+    if not needed:
+        return list(paths)
+    matched: list[str] = []
+    for path in paths:
+        have = {str(tag) for tag in tags_by_path.get(path, ())}
+        if all(tag in have for tag in needed):
+            matched.append(path)
+    return matched
+
+
 def row_matches_tags(row: InventoryRow, required: tuple[str, ...] | list[str]) -> bool:
     """AND-match required tags against ``row.tags`` (already normalized lowercase)."""
     needed = tuple(t for t in required if t)
@@ -60,10 +80,7 @@ def apply_library_filter(
         for row in rows
         if row_matches_preset(row, library_filter.preset)
         and row_matches_query(row, library_filter.query)
-        and (
-            not library_filter.source_id
-            or row.source_id == library_filter.source_id
-        )
+        and (not library_filter.source_id or row.source_id == library_filter.source_id)
         and row_matches_tags(row, library_filter.tags)
     ]
     return sort_inventory_rows(matched, library_filter.sort)
@@ -81,7 +98,9 @@ def sort_inventory_rows(
     rows: list[InventoryRow], sort: LibrarySort
 ) -> list[InventoryRow]:
     if sort is LibrarySort.NAME:
-        return sorted(rows, key=lambda row: (row.title.casefold(), str(row.transcript_path)))
+        return sorted(
+            rows, key=lambda row: (row.title.casefold(), str(row.transcript_path))
+        )
     if sort is LibrarySort.DURATION:
         return sorted(
             rows,
@@ -147,9 +166,7 @@ def select_continue_working(
     rows: list[InventoryRow], *, limit: int = 5
 ) -> list[InventoryRow]:
     ranked = sorted(rows, key=continue_working_priority)
-    resumable = [
-        row for row in ranked if continue_working_priority(row)[0] < 4
-    ]
+    resumable = [row for row in ranked if continue_working_priority(row)[0] < 4]
     chosen: list[InventoryRow] = []
     seen: set[str] = set()
     for row in resumable:
@@ -192,9 +209,7 @@ def needs_attention_counts(rows: list[InventoryRow]) -> dict[str, int]:
 def corpus_summary(rows: list[InventoryRow]) -> dict[str, int | float]:
     analysed = sum(1 for row in rows if row.analysis.status is AnalysisStatus.COMPLETED)
     duration = sum(
-        row.duration_seconds or 0.0
-        for row in rows
-        if row.duration_seconds is not None
+        row.duration_seconds or 0.0 for row in rows if row.duration_seconds is not None
     )
     return {
         "transcript_count": len(rows),

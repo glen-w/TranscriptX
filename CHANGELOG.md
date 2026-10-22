@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Theme A Overview/evidence:** Standard Overview places Highlights before Actions; Insights theme rows show up to three evidence quotes plus a Highlights remainder caption.
 - **B18 operator polish:** clearer `narrative_enabled` Settings copy and a Run Analysis hint when `insights_narrative` is selected.
 - **Theme F kind tags:** `voice note` / `lone speaker` kinds, Library inspector chips, and manual-wins auto-seed helpers. Tags still never create Groups.
+- **Theme F Groups picker:** optional library-tag AND-filter on create/edit membership. Filtering is not membership.
 
 ## [1.0.1] - 2026-10-20
 

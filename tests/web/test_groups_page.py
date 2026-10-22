@@ -127,6 +127,7 @@ def _patch_groups_common(monkeypatch, mod) -> list:
         "_cached_get_members",
         MagicMock(return_value=[], clear=MagicMock()),
     )
+    monkeypatch.setattr(mod, "get_cached_corpus_inventory", lambda: [])
     return empty_calls
 
 

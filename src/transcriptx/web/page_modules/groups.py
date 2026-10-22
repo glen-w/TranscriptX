@@ -19,9 +19,12 @@ from transcriptx.core.store.group_manifest_store import (
     canonical_group_member_path,
     canonicalize_group_member_paths,
 )
+from transcriptx.app.corpus_inventory.query import filter_paths_by_tags
+from transcriptx.io.tag_validation import sanitize_tag_list
 from transcriptx.web.cache_helpers import (
     cached_list_groups,
     clear_group_workspace_cache,
+    get_cached_corpus_inventory,
     get_cached_list_transcript_picker_options,
 )
 from transcriptx.web.components.info_tooltip import widget_help
@@ -46,6 +49,47 @@ def _cached_get_members(group_id: str) -> list:
     return GroupService.get_members(group_id)
 
 
+def _inventory_tags_by_path() -> dict[str, tuple[str, ...]]:
+    """Map transcript path strings to library tags. Empty when inventory is unavailable."""
+    mapping: dict[str, tuple[str, ...]] = {}
+    try:
+        rows = get_cached_corpus_inventory()
+    except Exception:
+        return mapping
+    for row in rows or []:
+        tags = tuple(getattr(row, "tags", ()) or ())
+        path = str(getattr(row, "transcript_path", "") or "")
+        if not path:
+            continue
+        mapping[path] = tags
+        mapping[canonical_group_member_path(path)] = tags
+    return mapping
+
+
+def _filter_options_by_library_tags(
+    transcript_options: list[str],
+    *,
+    widget_key: str,
+) -> list[str]:
+    tags_by_path = _inventory_tags_by_path()
+    known_tags = sorted({tag for tags in tags_by_path.values() for tag in tags})
+    selected = st.multiselect(
+        "Filter picker by library tags (optional)",
+        options=known_tags,
+        key=widget_key,
+        help=widget_help(
+            "AND-filter the transcript picker. This is not group membership and "
+            "does not create a Group from tags."
+        ),
+    )
+    required = tuple(sanitize_tag_list([str(t) for t in selected]))
+    if not required:
+        return transcript_options
+    return filter_paths_by_tags(
+        transcript_options, tags_by_path=tags_by_path, required_tags=required
+    )
+
+
 def _clear_group_caches() -> None:
     clear_group_workspace_cache()
     _cached_get_members.clear()
@@ -57,9 +101,12 @@ def _render_create_group_transcripts_fragment(
     transcript_labels: Mapping[str, str],
 ) -> None:
     """Transcript multiselect chips without full-app rerun; commit still full-reruns."""
+    filtered_options = _filter_options_by_library_tags(
+        transcript_options, widget_key="create_group_tag_filter"
+    )
     selected_paths = st.multiselect(
         "Transcripts",
-        options=transcript_options,
+        options=filtered_options,
         format_func=lambda p: transcript_labels.get(p, Path(p).name),
         key="create_group_transcripts",
         help=widget_help(
@@ -120,9 +167,13 @@ def _render_edit_membership_fragment(
     available_for_add = [
         p for p in transcript_options if transcript_canonical[p] not in working_canon
     ]
+    available_for_add = _filter_options_by_library_tags(
+        available_for_add, widget_key=f"membership_tag_filter_{group.group_id}"
+    )
     st.caption(
         "**Add selected** writes new transcripts to the group file immediately. "
-        "**Save membership** re-syncs the manifest from the list above if needed."
+        "**Save membership** re-syncs the manifest from the list above if needed. "
+        "Tag filters change the picker only — they do not add members."
     )
     if available_for_add:
         to_add = st.multiselect(
@@ -186,9 +237,7 @@ def _render_edit_membership_fragment(
                 st.rerun()
             except Exception as e:
                 st.error(str(e))
-    if st.button(
-        "Cancel", key=f"membership_cancel_{group.group_id}", icon=ic.CANCEL
-    ):
+    if st.button("Cancel", key=f"membership_cancel_{group.group_id}", icon=ic.CANCEL):
         st.session_state.pop(membership_key, None)
         st.rerun()
 
@@ -242,9 +291,7 @@ def _groups_detail_fragment(
     rename_key = f"group_rename_input_{group.group_id}"
     with st.expander("Rename group"):
         new_name = st.text_input("Name", value=group.name or "", key=rename_key)
-        if st.button(
-            "Update name", key=f"rename_btn_{group.group_id}", icon=ic.RENAME
-        ):
+        if st.button("Update name", key=f"rename_btn_{group.group_id}", icon=ic.RENAME):
             new_name = (new_name or "").strip()
             if not new_name:
                 st.error("Name cannot be empty.")
@@ -295,9 +342,7 @@ def _groups_detail_fragment(
                 try_page_toast("Group deleted.")
                 st.rerun()
         with col2:
-            if st.button(
-                "Cancel", key=f"cancel_del_{group.group_id}", icon=ic.CANCEL
-            ):
+            if st.button("Cancel", key=f"cancel_del_{group.group_id}", icon=ic.CANCEL):
                 st.session_state.pop(confirm_key, None)
                 st.rerun()
 
