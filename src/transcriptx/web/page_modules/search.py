@@ -186,6 +186,15 @@ def _search_interaction_fragment() -> None:
             "Collapse multiple hits inside one segment into a single result row."
         ),
     )
+    include_archived = st.checkbox(
+        "Include archived transcripts",
+        value=False,
+        key="global_search_include_archived",
+        help=widget_help(
+            "Search transcripts tagged archived. Off by default — they stay in "
+            "the library but are hidden from dropdowns and default lists."
+        ),
+    )
 
     speaker_keys: List[str] = []
     try:
@@ -195,7 +204,9 @@ def _search_interaction_fragment() -> None:
             subject = SubjectService.resolve_current_subject(st.session_state)
             if subject and subject.subject_type == "transcript" and subject.subject_id:
                 session_slugs_for_speakers = (subject.subject_id,)
-        speakers = get_speakers_from_transcripts(session_slugs_for_speakers)
+        speakers = get_speakers_from_transcripts(
+            session_slugs_for_speakers, include_archived=include_archived
+        )
         speaker_options = ["All speakers"] + (speakers or [])
         selected = st.selectbox(
             "Speakers",
@@ -217,7 +228,11 @@ def _search_interaction_fragment() -> None:
         subject = SubjectService.resolve_current_subject(st.session_state)
         if subject and subject.subject_type == "transcript":
             session_slugs = [subject.subject_id]
-    filters = SearchFilters(speaker_keys=speaker_keys, session_slugs=session_slugs)
+    filters = SearchFilters(
+        speaker_keys=speaker_keys,
+        session_slugs=session_slugs,
+        include_archived=include_archived,
+    )
 
     # Check if filters changed (by comparing relevant fields)
     cached_filters = st.session_state.get("global_search_cached_filters")
@@ -225,6 +240,7 @@ def _search_interaction_fragment() -> None:
         cached_filters is None
         or cached_filters.speaker_keys != filters.speaker_keys
         or cached_filters.session_slugs != filters.session_slugs
+        or cached_filters.include_archived != filters.include_archived
     )
     if filters_changed:
         st.session_state["global_search_cached_filters"] = filters

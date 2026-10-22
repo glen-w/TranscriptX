@@ -7,7 +7,14 @@ from typing import List, Optional, Tuple
 
 from transcriptx.core.models.navigation import SegmentRef, TranscriptRef
 
-__all__ = ["SegmentRef", "TranscriptRef", "SearchResult", "SearchResponse", "NavRequest", "SearchFilters"]
+__all__ = [
+    "SegmentRef",
+    "TranscriptRef",
+    "SearchResult",
+    "SearchResponse",
+    "NavRequest",
+    "SearchFilters",
+]
 
 
 @dataclass
@@ -60,3 +67,4 @@ class SearchFilters:
     speaker_names: Optional[List[str]] = None
     session_slugs: Optional[List[str]] = None
     date_range: Optional[Tuple[object, object]] = None
+    include_archived: bool = False

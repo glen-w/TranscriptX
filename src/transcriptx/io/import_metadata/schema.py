@@ -38,6 +38,7 @@ class ImportMetadata:
     archived_original_relpath: str
     current_json_filename: str
     rename_history: list[dict[str, str]]
+    library_archived: bool = False
     schema_version: int = SIDECAR_SCHEMA_VERSION
 
 
@@ -90,6 +91,14 @@ def _validate_sidecar_schema(
             message="rename_history must be a list",
             warnings=[],
         )
+    archived = data.get("library_archived")
+    if archived is not None and not isinstance(archived, bool):
+        return ValidationResult(
+            ok=False,
+            category=ManagedTranscriptCategory.schema_error,
+            message="library_archived must be a boolean",
+            warnings=[],
+        )
     return ValidationResult(
         ok=True,
         category=ManagedTranscriptCategory.ok,
@@ -116,4 +125,5 @@ def build_initial_sidecar(
         "archived_original_relpath": archived_original_relpath,
         "current_json_filename": current_json_filename,
         "rename_history": [],
+        "library_archived": False,
     }

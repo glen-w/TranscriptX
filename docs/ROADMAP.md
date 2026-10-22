@@ -147,7 +147,7 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections / viewer click-drag | **done for 1.0** (Phase 9 Speaker ID; Studio CCv2 + viewer edit; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md)) |
 | D. Playback & reading UX | Karaoke-style word highlight; CCv2 full-file reader | **done for 1.0** (reader workspace + clip rollback; see [karaoke-playback.md](runtime/karaoke-playback.md)) |
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x — **[~]** probe + estimates + docs shipped ([theme_e_performance_hardware.md](dev/theme_e_performance_hardware.md)) |
-| F. Library & organisation | Transcript tagging; Groups interaction rules; optional YouTube API rename metadata | Mid 1.x |
+| F. Library & organisation | Library archive (shipped); transcript tagging; Groups interaction rules; optional YouTube API rename metadata | Mid 1.x |
 | G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** narrow Windows convert/admit + pluggable STT shipped; service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
 | H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Parakeet/Canary/YouTube later; streaming STT (H6) deferred | **[~] H1–H4 shipped**; H5+ gated by **Next** (Theme K converter first) |
 | I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Deferred except H1 job channel |
@@ -237,6 +237,8 @@ Design: [theme_e_performance_hardware.md](dev/theme_e_performance_hardware.md). 
 ---
 
 ### F. Library & organisation
+
+- **Library archive (shipped)** — hide a transcript from pickers and default lists without deleting it (`library_archived` on the import sidecar). Distinct from kind tags below. Contract: [STORAGE.md](runtime/STORAGE.md#library-archive).
 
 - **Transcript tagging** — library visibility / kind labels (e.g. `meeting`, `voice note`, `lone speaker`). Tags are organisation metadata, not an analysis module.
 

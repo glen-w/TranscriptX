@@ -121,3 +121,57 @@ def test_resolve_import_sidecar_layout_oserror_compare(
     resolved = resolve_import_sidecar_layout(t)
     assert resolved.layout == ImportSidecarLayout.ambiguous
     assert "Could not compare" in resolved.block_message
+
+
+@pytest.mark.unit
+def test_library_archived_round_trip(tmp_path: Path, monkeypatch) -> None:
+    from transcriptx.io.import_metadata.persist import (
+        is_library_archived,
+        set_library_archived,
+    )
+
+    transcripts = tmp_path / "transcripts"
+    metadata = tmp_path / "metadata"
+    transcripts.mkdir()
+    metadata.mkdir()
+    monkeypatch.setattr(
+        "transcriptx.io.import_metadata.paths.DIARISED_TRANSCRIPTS_DIR", transcripts
+    )
+    monkeypatch.setattr(
+        "transcriptx.io.import_metadata.paths.TRANSCRIPTS_METADATA_DIR", metadata
+    )
+    t = transcripts / "meet.json"
+    t.write_text("{}", encoding="utf-8")
+    sidecar = write_initial_sidecar(
+        t,
+        import_id="imp-1",
+        imported_at="2026-01-01T00:00:00Z",
+        adapter_source_id="manual",
+        source_upload_basename="meet.json",
+        archived_original_relpath="originals/meet.json",
+    )
+    stored = load_sidecar(sidecar)
+    assert stored["library_archived"] is False
+    assert is_library_archived(t) is False
+
+    set_library_archived(t, True)
+    assert load_sidecar(sidecar)["library_archived"] is True
+    assert is_library_archived(t) is True
+
+    set_library_archived(t, False)
+    assert is_library_archived(t) is False
+
+
+@pytest.mark.unit
+def test_is_library_archived_false_when_sidecar_missing(tmp_path: Path) -> None:
+    from transcriptx.io.import_metadata.persist import is_library_archived
+
+    assert is_library_archived(tmp_path / "nope.json") is False
+
+
+@pytest.mark.unit
+def test_set_library_archived_requires_sidecar(tmp_path: Path) -> None:
+    from transcriptx.io.import_metadata.persist import set_library_archived
+
+    with pytest.raises(FileNotFoundError, match="No import sidecar"):
+        set_library_archived(tmp_path / "nope.json", True)

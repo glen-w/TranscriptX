@@ -109,13 +109,23 @@ def test_tags_filter_and_match() -> None:
         _row("c", tags=("idea",)),
         _row("d", tags=()),
     ]
-    filtered = apply_library_filter(
-        rows, LibraryFilter(tags=("meeting", "todo"))
-    )
+    filtered = apply_library_filter(rows, LibraryFilter(tags=("meeting", "todo")))
     assert [row.title for row in filtered] == ["a"]
 
     meeting_only = apply_library_filter(rows, LibraryFilter(tags=("meeting",)))
     assert {row.title for row in meeting_only} == {"a", "b"}
+
+
+def test_archived_rows_hidden_unless_included() -> None:
+    from dataclasses import replace
+
+    active = _row("active")
+    archived = replace(_row("old"), library_archived=True)
+    rows = [active, archived]
+    hidden = apply_library_filter(rows, LibraryFilter())
+    assert [row.title for row in hidden] == ["active"]
+    shown = apply_library_filter(rows, LibraryFilter(include_archived=True))
+    assert {row.title for row in shown} == {"active", "old"}
 
 
 def test_continue_working_prefers_resumable_over_recency() -> None:

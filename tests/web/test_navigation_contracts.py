@@ -77,7 +77,9 @@ def test_library_rename_navigation_sets_canonical_context_and_one_shot_nav(
     assert ss["library_transcript_select"] == 2
 
 
-def test_navigate_to_library_sets_filter_and_pending_path(monkeypatch, tmp_path) -> None:
+def test_navigate_to_library_sets_filter_and_pending_path(
+    monkeypatch, tmp_path
+) -> None:
     from transcriptx.app.corpus_inventory.models import (
         LibraryFilter,
         LibraryWorkflowPreset,
@@ -101,6 +103,22 @@ def test_navigate_to_library_sets_filter_and_pending_path(monkeypatch, tmp_path)
     assert ss[PAGE_KEY] == "Library"
     assert ss[LIBRARY_NAV_FILTER].preset is LibraryWorkflowPreset.NEEDS_SPEAKER_ID
     assert ss[LIBRARY_NAV_TRANSCRIPT_PATH] == str(transcript.resolve())
+
+
+def test_consume_library_nav_applies_include_archived() -> None:
+    from transcriptx.app.corpus_inventory.models import LibraryFilter
+    from transcriptx.web.navigation import consume_library_nav
+    from transcriptx.web.state import (
+        LIBRARY_FILTER_INCLUDE_ARCHIVED_KEY,
+        LIBRARY_NAV_FILTER,
+    )
+
+    ss: dict[str, object] = {
+        LIBRARY_NAV_FILTER: LibraryFilter(include_archived=True),
+    }
+    consume_library_nav(ss)
+    assert ss[LIBRARY_FILTER_INCLUDE_ARCHIVED_KEY] is True
+    assert LIBRARY_NAV_FILTER not in ss
 
 
 def test_library_nav_path_is_one_shot_and_does_not_write_legacy_path(

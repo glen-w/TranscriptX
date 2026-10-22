@@ -13,7 +13,10 @@ from transcriptx.app.corpus_inventory.models import (
     LibrarySort,
     LibraryWorkflowPreset,
 )
-from transcriptx.app.corpus_inventory.query import apply_library_filter, row_matches_tags
+from transcriptx.app.corpus_inventory.query import (
+    apply_library_filter,
+    row_matches_tags,
+)
 from transcriptx.core.analysis.voice.audio_io import resolve_audio_path
 from transcriptx.core.utils.processing_state import set_tags_for_path
 from transcriptx.core.utils.rename.audio_association import find_original_audio_file
@@ -22,6 +25,7 @@ from transcriptx.export.library_by_tag import (
     build_library_export_manifest,
     resolve_library_export_items,
 )
+from transcriptx.io.import_metadata.persist import set_library_archived
 from transcriptx.io.tag_validation import sanitize_tag, sanitize_tag_list
 from transcriptx.utils.text_utils import format_duration_display_from_config
 from transcriptx.web import icons as ic
@@ -38,6 +42,7 @@ from transcriptx.web.action_menus.render import (
 from transcriptx.web.action_menus.resolve import overflow_actions_for_section
 from transcriptx.web.cache_helpers import (
     clear_corpus_inventory_cache,
+    clear_transcript_listing_caches,
     get_cached_corpus_inventory,
 )
 from transcriptx.web.components.empty_state import render_empty_state
@@ -62,6 +67,7 @@ from transcriptx.web.services.transcript_context_resolver import (
 from transcriptx.web.state import (
     LIBRARY_EXPORT_KINDS_KEY,
     LIBRARY_EXPORT_TAGS_KEY,
+    LIBRARY_FILTER_INCLUDE_ARCHIVED_KEY,
     LIBRARY_FILTER_PRESET_KEY,
     LIBRARY_FILTER_QUERY_KEY,
     LIBRARY_FILTER_SIG_KEY,
@@ -203,6 +209,9 @@ def _current_library_filter() -> LibraryFilter:
         sort=sort,
         source_id=source,
         tags=tags,
+        include_archived=bool(
+            st.session_state.get(LIBRARY_FILTER_INCLUDE_ARCHIVED_KEY, False)
+        ),
     )
 
 
@@ -219,6 +228,12 @@ def _bump_library_table_epoch() -> None:
 def _persist_row_tags(transcript_path: Path, tags: list[str]) -> None:
     set_tags_for_path(transcript_path, tags)
     clear_corpus_inventory_cache()
+    _bump_library_table_epoch()
+
+
+def _persist_library_archived(transcript_path: Path, archived: bool) -> None:
+    set_library_archived(transcript_path, archived)
+    clear_transcript_listing_caches()
     _bump_library_table_epoch()
 
 
@@ -297,9 +312,27 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
             ),
         )
 
+    st.checkbox(
+        "Include archived transcripts",
+        value=False,
+        key=LIBRARY_FILTER_INCLUDE_ARCHIVED_KEY,
+        help=widget_help(
+            "Show transcripts tagged archived. They stay in the library but are "
+            "hidden from dropdowns and default lists."
+        ),
+    )
+
     library_filter = _current_library_filter()
     visible = apply_library_filter(rows, library_filter)
-    st.caption(f"{len(visible)} of {len(rows)} transcripts")
+    hidden_archived = sum(1 for row in rows if row.library_archived)
+    if library_filter.include_archived or hidden_archived == 0:
+        st.caption(f"{len(visible)} of {len(rows)} transcripts")
+    else:
+        active = len(rows) - hidden_archived
+        st.caption(
+            f"{len(visible)} of {active} transcripts "
+            f"({hidden_archived} archived hidden)"
+        )
 
     filter_sig = (
         library_filter.preset,
@@ -307,6 +340,7 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
         library_filter.sort,
         library_filter.source_id,
         tuple(library_filter.tags or ()),
+        library_filter.include_archived,
     )
     if st.session_state.get(LIBRARY_FILTER_SIG_KEY) != filter_sig:
         st.session_state[LIBRARY_FILTER_SIG_KEY] = filter_sig
@@ -379,6 +413,8 @@ def _render_inspector(selected: InventoryRow) -> None:
         else "— words"
     )
     st.caption(f"{duration} · {speakers} · {words}")
+    if selected.library_archived:
+        st.caption("Archived — hidden from dropdowns and default lists.")
     _render_inspector_audio(selected.transcript_path)
     st.caption(f"Speaker identification: {format_speaker_id_label(selected.speaker)}")
     st.caption(f"Corrections: {format_corrections_label(selected.corrections)}")
@@ -387,6 +423,7 @@ def _render_inspector(selected: InventoryRow) -> None:
     st.caption(f"Last analysed: {last_analysed}")
 
     _render_inspector_tags(selected)
+    _render_inspector_archive(selected)
 
     subject_id = selected.slug or selected.transcript_path.stem
     identity = build_transcript_identity_with_run(
@@ -468,6 +505,26 @@ def _render_inspector_tags(selected: InventoryRow) -> None:
         if set(keep) != set(current):
             _persist_row_tags(selected.transcript_path, list(keep))
             st.rerun()
+
+
+def _render_inspector_archive(selected: InventoryRow) -> None:
+    path_key = str(selected.transcript_path)
+    if selected.library_archived:
+        if st.button(
+            "Unarchive transcript",
+            key=f"library_unarchive_{path_key}",
+            icon=ic.UNARCHIVE,
+        ):
+            _persist_library_archived(selected.transcript_path, False)
+            st.rerun()
+        return
+    if st.button(
+        "Archive transcript",
+        key=f"library_archive_{path_key}",
+        icon=ic.ARCHIVE,
+    ):
+        _persist_library_archived(selected.transcript_path, True)
+        st.rerun()
 
 
 def _render_export_by_tag(

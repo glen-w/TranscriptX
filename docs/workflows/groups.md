@@ -37,6 +37,7 @@ At least one managed transcript is in the library (see [First analysis](first-an
 - Groups are membership containers, not a second library. Transcripts stay first-class; the group references them.
 - Creating a group does not run analysis by itself — use **Run Analysis** with target **Group**.
 - Empty-state copy on Groups points you back to Library when no groups exist yet.
+- Archived transcripts are omitted from the member picker. Unarchive from Library, or tick **Include archived transcripts** there first — [Archive a transcript](archive-transcript.md).
 
 ## You should now have…
 

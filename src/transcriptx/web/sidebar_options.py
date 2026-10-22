@@ -50,6 +50,43 @@ def _slug_display_labels_from_index() -> dict[str, str]:
     return labels
 
 
+def _archived_library_slugs() -> set[str]:
+    """Index slugs whose managed source path is library-archived."""
+    from transcriptx.core.utils.slug_manager import list_all_transcripts
+    from transcriptx.io.import_metadata.persist import is_library_archived
+
+    archived: set[str] = set()
+    for entry in list_all_transcripts():
+        slug = entry.get("slug")
+        source_path = entry.get("source_path")
+        if not slug or not source_path:
+            continue
+        try:
+            path = Path(str(source_path)).expanduser()
+            if is_library_archived(path):
+                archived.add(str(slug))
+        except OSError:
+            continue
+    return archived
+
+
+def _slug_is_library_archived(slug: str) -> bool:
+    from transcriptx.core.utils.slug_manager import list_all_transcripts
+    from transcriptx.io.import_metadata.persist import is_library_archived
+
+    for entry in list_all_transcripts():
+        if entry.get("slug") != slug:
+            continue
+        source_path = entry.get("source_path")
+        if not source_path:
+            return False
+        try:
+            return is_library_archived(Path(str(source_path)).expanduser())
+        except OSError:
+            return False
+    return False
+
+
 def _library_only_slugs_from_index(session_slugs: set[str]) -> list[str]:
     """Registered index slugs not already covered by a viewable run.
 
@@ -125,6 +162,8 @@ def _cached_dropdown_options(
     options: list[str] = list(session_slugs)
     options.extend(_library_only_slugs_from_index(session_slugs))
     options = list(dict.fromkeys(options))
+    archived = _archived_library_slugs()
+    options = [opt for opt in options if opt not in archived]
     formatter = _make_option_formatter(slug_labels)
     options.sort(key=lambda value: (formatter(value).lower(), str(value)))
     return options, slug_labels
@@ -138,9 +177,23 @@ def clear_transcript_dropdown_caches() -> None:
 def get_transcript_dropdown_options() -> tuple[list[str], Callable[[str], str]]:
     """Return merged transcript options and formatter for selectbox."""
     from transcriptx.web.cache_helpers import get_cached_analysis_picker_status
+    from transcriptx.web.state import SELECTBOX_PLACEHOLDER_TRANSCRIPT, SUBJECT_ID_KEY
 
     session_names = tuple(cached_list_viewable_session_names())
     options, slug_labels = _cached_dropdown_options(session_names, _slug_index_mtime())
+    current = None
+    try:
+        current = st.session_state.get(SUBJECT_ID_KEY)
+    except Exception:
+        current = None
+    if (
+        isinstance(current, str)
+        and current
+        and current not in options
+        and current != SELECTBOX_PLACEHOLDER_TRANSCRIPT
+        and _slug_is_library_archived(current)
+    ):
+        options = [current, *options]
     return options, _make_option_formatter(
         slug_labels, get_cached_analysis_picker_status()
     )

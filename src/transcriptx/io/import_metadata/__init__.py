@@ -14,7 +14,9 @@ from transcriptx.io.import_metadata.paths import (  # noqa: F401
 from transcriptx.io.import_metadata.persist import (  # noqa: F401
     append_rename_history,
     compute_rename_history_payload,
+    is_library_archived,
     load_sidecar,
+    set_library_archived,
     write_initial_sidecar,
     write_json_atomic,
 )
@@ -43,9 +45,11 @@ __all__ = [
     "build_initial_sidecar",
     "compute_rename_history_payload",
     "find_existing_import_sidecar",
+    "is_library_archived",
     "legacy_flat_sidecar_path_for_transcript",
     "load_sidecar",
     "mirrored_import_sidecar_path_for_transcript",
+    "set_library_archived",
     "sidecar_path_for_transcript",
     "validate_managed_transcript",
     "write_initial_sidecar",

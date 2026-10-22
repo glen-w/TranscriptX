@@ -67,6 +67,9 @@ Where you need the actual definition or invariant, always read the linked CONTRA
 - **Library**  
   - Managed transcript library (`transcripts_dir` / `HOST_TRANSCRIPTS_DIR`). See `docs/runtime/STORAGE.md`.
 
+- **Library archive**  
+  - Optional `library_archived` flag on the import sidecar: item stays on disk and remains findable, but pickers and default lists omit it. See `docs/runtime/STORAGE.md` (Library archive). Distinct from `archived_original_relpath` and from Speakers profile archive.
+
 - **originals/**  
   - Staging subtree **inside** the managed library where host STT lands. Gate: **admit**. See `docs/runtime/STORAGE.md`, `docs/runtime/transcription.md`.
 

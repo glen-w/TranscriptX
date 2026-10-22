@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Library archive:** Inspector **Archive transcript** / **Unarchive transcript** on Library. Optional `library_archived` on the import sidecar (`SIDECAR_SCHEMA_VERSION` stays 1). Pickers and Home hide archived items; Library and Search have **Include archived transcripts**. Contract: [STORAGE.md](docs/runtime/STORAGE.md#library-archive). Walkthrough: [archive a transcript](docs/workflows/archive-transcript.md).
+
 ### Changed
 
 - **T0/T1 honesty:** Overview, Charts page, and Charts overview block share a zero-named-speakers banner. Import captions placeholder `SPEAKER_00` labels and points at **Treat as single speaker**. Content modules `understandability`, `lexical_diversity`, `epistemic_markers`, `simplified_transcript`, `topic_shift`, and `moments` now use `min_named_speakers: 0`.

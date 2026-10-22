@@ -22,7 +22,11 @@ _MARK_EMPTY = "—"
 def format_short_date(value: datetime | None) -> str:
     if value is None:
         return _MARK_EMPTY
-    return value.strftime("%-d %b") if _platform_supports_minus_d() else value.strftime("%d %b").lstrip("0")
+    return (
+        value.strftime("%-d %b")
+        if _platform_supports_minus_d()
+        else value.strftime("%d %b").lstrip("0")
+    )
 
 
 def _platform_supports_minus_d() -> bool:
@@ -33,9 +37,7 @@ def _platform_supports_minus_d() -> bool:
         return False
 
 
-def format_relative_age(
-    value: datetime | None, *, now: datetime | None = None
-) -> str:
+def format_relative_age(value: datetime | None, *, now: datetime | None = None) -> str:
     if value is None:
         return _MARK_EMPTY
     current = now or datetime.now(timezone.utc)
@@ -125,7 +127,9 @@ def format_analysis_label(state: AnalysisState) -> str:
         return "Unknown"
     if state.status is AnalysisStatus.FAILED:
         if state.modules_succeeded is not None and state.modules_eligible is not None:
-            return f"Failed ({state.modules_succeeded}/{state.modules_eligible} modules)"
+            return (
+                f"Failed ({state.modules_succeeded}/{state.modules_eligible} modules)"
+            )
         return "Failed"
     if state.modules_succeeded is not None and state.modules_eligible is not None:
         return f"{state.modules_succeeded}/{state.modules_eligible} modules complete"
@@ -134,9 +138,13 @@ def format_analysis_label(state: AnalysisState) -> str:
     return "Incomplete"
 
 
-def inventory_table_row(row: InventoryRow, *, include_path: bool = False) -> dict[str, str]:
+def inventory_table_row(
+    row: InventoryRow, *, include_path: bool = False
+) -> dict[str, str]:
     data = {
-        "Transcript": row.title,
+        "Transcript": (
+            f"{row.title} (archived)" if row.library_archived else row.title
+        ),
         "Date": format_short_date(row.imported_at),
         "Duration": format_duration_display_from_config(row.duration_seconds),
         "Speakers": "—" if row.speaker_count is None else str(row.speaker_count),

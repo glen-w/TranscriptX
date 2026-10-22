@@ -573,3 +573,52 @@ def test_transcript_picker_excludes_library_paths_without_import_sidecar(
     assert str(admitted.resolve()) in paths
     assert str(outside.resolve()) in paths
     assert str(raw.resolve()) not in paths
+
+
+def test_transcript_picker_excludes_library_archived_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from transcriptx.core.utils import transcript_picker as picker_mod
+    from transcriptx.io import import_metadata as import_meta
+
+    library = tmp_path / "transcripts"
+    library.mkdir()
+    metadata = library / "metadata" / "imports"
+    metadata.mkdir(parents=True)
+
+    active = library / "active.json"
+    active.write_text("{}", encoding="utf-8")
+    (metadata / "active.import_meta.json").write_text(
+        json.dumps({"library_archived": False}), encoding="utf-8"
+    )
+
+    archived = library / "old.json"
+    archived.write_text("{}", encoding="utf-8")
+    (metadata / "old.import_meta.json").write_text(
+        json.dumps({"library_archived": True}), encoding="utf-8"
+    )
+
+    outside = tmp_path / "outside.json"
+    outside.write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "transcriptx.core.utils.paths.DIARISED_TRANSCRIPTS_DIR", library
+    )
+    monkeypatch.setattr(import_meta.paths, "DIARISED_TRANSCRIPTS_DIR", library)
+    monkeypatch.setattr(
+        import_meta.paths, "TRANSCRIPTS_METADATA_DIR", library / "metadata"
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.slug_manager.list_all_transcripts",
+        lambda: [],
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.file_discovery.discover_all_transcript_paths",
+        lambda _root: [active, archived, outside],
+    )
+
+    options = picker_mod.list_transcript_picker_options()
+    paths = {opt.path for opt in options}
+    assert str(active.resolve()) in paths
+    assert str(outside.resolve()) in paths
+    assert str(archived.resolve()) not in paths
