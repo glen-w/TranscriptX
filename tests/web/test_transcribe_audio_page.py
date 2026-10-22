@@ -51,8 +51,18 @@ def test_transcribe_audio_page_has_run_and_copy_paths():
     assert "Run in app" in source
     assert "Copy command" in source
     assert "PowerShell" in source
-    assert "stt-stacks" in source
-    assert "Mac host" in source
+    assert "RUN_IN_APP_CAPTION" in source
+    assert "TRANSCRIBE_PAGE_INFO" in source
+    assert "transcriptx.services.transcription.honesty" in source
+    from transcriptx.services.transcription.honesty import (
+        RUN_IN_APP_CAPTION,
+        TRANSCRIBE_PAGE_INFO,
+    )
+
+    assert "stt-stacks" in RUN_IN_APP_CAPTION
+    assert "Mac host" in RUN_IN_APP_CAPTION
+    assert "transcriptx-web cannot see it" in RUN_IN_APP_CAPTION
+    assert "Parakeet" in TRANSCRIBE_PAGE_INFO
 
 
 @pytest.mark.unit

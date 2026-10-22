@@ -13,6 +13,11 @@ from transcriptx.app.models.requests import TranscriptionOptions
 from transcriptx.app.models.results import TranscriptionProviderResult
 from transcriptx.core.audio.tools import check_ffmpeg_available
 from transcriptx.services.transcription.env import get_secret, load_merged_env
+from transcriptx.services.transcription.honesty import (
+    WHISPERMLX_COMPOSE_UNAVAILABLE,
+    WHISPERMLX_REQUIRES_MACOS,
+    running_in_transcriptx_web_container,
+)
 from transcriptx.services.transcription.provider import (
     ProviderAvailability,
     ProviderCheck,
@@ -63,13 +68,23 @@ class WhisperMLXProvider:
         checks: list[ProviderCheck] = []
         merged = load_merged_env()
 
+        in_container = running_in_transcriptx_web_container()
+        checks.append(
+            ProviderCheck(
+                key="host_process",
+                label="host process (not Compose)",
+                passed=not in_container,
+                message=(None if not in_container else WHISPERMLX_COMPOSE_UNAVAILABLE),
+            )
+        )
+
         on_mac = sys.platform == "darwin"
         checks.append(
             ProviderCheck(
                 key="platform",
                 label="macOS",
                 passed=on_mac,
-                message=None if on_mac else "whispermlx requires macOS",
+                message=None if on_mac else WHISPERMLX_REQUIRES_MACOS,
             )
         )
 

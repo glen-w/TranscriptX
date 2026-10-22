@@ -19,6 +19,10 @@ from transcriptx.services.transcription.whispermlx_provider import (
 class TestWhisperMLXAvailability:
     @patch.dict("os.environ", {}, clear=True)
     @patch(
+        "transcriptx.services.transcription.whispermlx_provider.running_in_transcriptx_web_container",
+        return_value=False,
+    )
+    @patch(
         "transcriptx.services.transcription.whispermlx_provider.sys.platform", "linux"
     )
     @patch(
@@ -39,6 +43,40 @@ class TestWhisperMLXAvailability:
         )
         availability = provider.is_available(options)
         assert not availability.available
+        assert availability.reason is not None
+        assert "macOS" in availability.reason or "MLX" in availability.reason
+
+    @patch.dict("os.environ", {}, clear=True)
+    @patch(
+        "transcriptx.services.transcription.whispermlx_provider.running_in_transcriptx_web_container",
+        return_value=True,
+    )
+    @patch(
+        "transcriptx.services.transcription.whispermlx_provider.sys.platform", "linux"
+    )
+    @patch(
+        "transcriptx.services.transcription.whispermlx_provider.check_ffmpeg_available",
+        return_value=(True, None),
+    )
+    @patch(
+        "transcriptx.services.transcription.whispermlx_provider.resolve_whispermlx_binary",
+        return_value=Path("/usr/bin/whispermlx"),
+    )
+    def test_unavailable_inside_compose(self, *_mocks):
+        from transcriptx.services.transcription.honesty import (
+            WHISPERMLX_COMPOSE_UNAVAILABLE,
+        )
+
+        provider = WhisperMLXProvider()
+        options = TranscriptionOptions(
+            provider_id="whispermlx",
+            model="large-v3",
+            language="en",
+            diarize=False,
+        )
+        availability = provider.is_available(options)
+        assert not availability.available
+        assert availability.reason == WHISPERMLX_COMPOSE_UNAVAILABLE
 
     @patch.dict("os.environ", {}, clear=True)
     @patch(
@@ -319,6 +357,7 @@ def test_json_discovery_newest_since_started_at(tmp_path: Path):
     os.utime(new, (1_700_000_200.0, 1_700_000_200.0))
     found = _discover_json(out, "missing", started_at=started)
     assert found == new
+
 
 @pytest.mark.unit
 @patch("transcriptx.services.transcription.whispermlx_provider.subprocess.Popen")
