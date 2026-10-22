@@ -34,7 +34,7 @@ The sample is [imported](../runtime/transcription.md) (see [First analysis](firs
 
 5. Open **Library** and confirm the transcript list / picker shows the new stem. Downstream outputs stay associated via managed identity; if a run was open, re-select the transcript if the sidebar label looks stale.
 
-Settings → Configuration → Rename controls smart prefill (`smart_rename_mode`), content suggestions (`rename_content_suggestions`), and which cues run (transcript / LLM / web). Nothing is renamed until you submit **Rename**. Web lookup sends a short event query, not the transcript body. Library-wide cache warm: [llm-suggestion-batch.md](../runtime/llm-suggestion-batch.md). Knob reference: [settings.md](../runtime/settings.md#smart-rename-and-rename-forms).
+Settings → Configuration → Rename controls smart prefill (`smart_rename_mode`), content suggestions (`rename_content_suggestions`), and which cues run (transcript / LLM / web). Nothing is renamed until you submit **Rename**. Web lookup sends a short event query, not the transcript body. With `TRANSCRIPTX_YOUTUBE_API_KEY` the web cue uses YouTube Data API v3 first; otherwise DuckDuckGo HTML. Library-wide cache warm: [llm-suggestion-batch.md](../runtime/llm-suggestion-batch.md). Knob reference: [settings.md](../runtime/settings.md#smart-rename-and-rename-forms).
 
 ## What to notice
 

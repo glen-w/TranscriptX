@@ -26,7 +26,7 @@ Optional **auto-name / auto-link** on ingest writes display names and may create
 
 ## Stochastic Local AI output
 
-Optional Ollama / Local AI modules are stochastic. Re-runs can differ. Artifacts carry model identity fields where available; treat Local AI text as assistive, not ground truth. Principal surfaces label Local AI vs deterministic summaries. `provider=openai_compatible` is opt-in and sends transcript prompts to `llm.base_url` (required; no cloud default). Settings still assume Ollama tags until the UX slice.
+Optional live LLM modules are stochastic. Re-runs can differ. Artifacts carry model identity fields where available; treat AI text as assistive, not ground truth. Surfaces label **Local AI** (Ollama), **Remote AI** (non-loopback `openai_compatible`), or **AI** (loopback-compatible endpoint). `provider=openai_compatible` is opt-in and sends transcript prompts to `llm.base_url` (required; no cloud default). Settings / Run Analysis use a free-form model id when not on Ollama. A loopback LiteLLM sidecar can still forward prompts to a remote upstream.
 
 ## Content rename suggestions
 
@@ -65,10 +65,6 @@ Speaker ID has **no classic widget fallback**; a missing package shows an
 install error. Corrections Studio review can roll back with
 ``TX_CORRECTIONS_WORKSPACE_COMPONENT=0``. See
 [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
-
-## Content rename suggestions
-
-Assistive full-stem suggestions (`input.rename_content_suggestions=auto`, default `off`) are **drafts**: transcript heuristics, optional local LLM, and optional web lookup can mis-rank dates or titles (especially webinars with no clear event date in the file). Web lookup sends short DuckDuckGo queries only when eligibility rules match and `rename_suggest_web` is enabled. Suggestions do not rename until you submit **Rename**; `auto_import` does not use content stems.
 
 ## Theme D reader (full-file playback)
 

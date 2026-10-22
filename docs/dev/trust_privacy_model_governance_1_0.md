@@ -14,7 +14,7 @@ Mandatory gate before 1.0. Missing licence/privacy truth for shipped models is a
 - [x] Confirmation that **no telemetry or remote processing** occurs unless explicitly configured (see § Telemetry)
 - [x] Secrets and **absolute-path** audit (secrets_check + hygiene; live paths cleaned **0.9.5**)
 - [x] Dependency **vulnerability** checks (release CI pip-audit / clean-env / image pip-check — ongoing); **licence** NOTICE published (**0.9.7**)
-- [x] **AI output labelling** (Local AI badges on Insights/Overview LLM surfaces — **0.9.7**)
+- [x] **AI output labelling** (Local AI / Remote AI / AI badges on Insights/Overview LLM surfaces — **0.9.7**, Theme N remote labelling Unreleased)
 - [x] Model, prompt, and analytical-semantics identity in artifacts where needed (provenance badges + existing artifact provenance fields)
 - [x] Explicit definition of what **“reproducible”** means for stochastic LLM output (see § Reproducibility)
 - [x] Hub-card / `owner-verify` residual **dropped** 2026-08-07 — ship on documented Hub/profile `licence=` fields + [NOTICE](../../NOTICE); no further owner Hub-card pass tracked
@@ -44,7 +44,7 @@ For stochastic LLM modules (`determinism_tier` T2):
 
 ## AI output labelling
 
-User-facing LLM surfaces show a **Local AI** badge (and action-items keep the human-review caption). Deterministic summaries are badged **Deterministic** on Overview when they win precedence.
+User-facing LLM surfaces show **Local AI** (Ollama), **Remote AI** (non-loopback `openai_compatible`), or **AI** (loopback-compatible endpoint). Action-items keep the human-review caption. Deterministic summaries are badged **Deterministic** on Overview when they win precedence. A loopback LiteLLM sidecar is labelled **AI**; its upstream may still be remote.
 
 ## Voice / speaker-identity privacy
 

@@ -85,7 +85,7 @@ Eligibility: `analysis.insight_eligibility.min_score` default `0.18`; `require_s
 
 1. Run **`insights`** (needs `insight_eligibility` + `highlights`) so schema-v3 rows include `evidence_quote_ids`.
 2. Set **`analysis.insights.narrative_enabled`** to `true` (Settings → Configuration or profile).
-3. Include module **`insights_narrative`** in the run (not in the default recommended list; finalize-phase, requires Ollama).
+3. Include module **`insights_narrative`** in the run (not in the default recommended list; finalize-phase, requires a live LLM provider — Ollama or `openai_compatible`).
 4. In **Insights → Themes and ideas**, deterministic lists stay canonical; optional **Theme narrative** appears below with a Local AI badge when the artifact exists. Theme rows may show a one-line **Evidence** caption when quote text resolves.
 
 Does not replace `llm_summary` or Overview summary hero prose.

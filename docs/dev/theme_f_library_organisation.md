@@ -9,7 +9,7 @@ Roadmap: [ROADMAP.md](../ROADMAP.md) §F
 2. **Groups are analysis cohorts.** Tagging must not create, update, or imply `.group.json` membership.
 3. **Groups picker may AND-filter by tags.** Filtering is not membership. Shipped on Create group and Edit membership.
 4. **Kind vocabulary (first-class chips):** `meeting`, `voice note`, `lone speaker`. Existing semantic tags (`idea`, `reflection`, `todo`, `question`) remain valid free-form tags.
-5. **Auto-seed is optional and manual-wins.** Suggested kind tags use `source=auto` only when the tag is not already present. Manual tags are never overwritten.
+5. **Auto-seed is optional and manual-wins.** Suggested kind tags use `source=auto` only when the tag is not already present. Manual tags are never overwritten. Helpers live in `io/tag_validation.py`; they are **not** wired on admit in this wave.
 6. **Visibility this wave is facets only.** Pin/favourite is deferred.
 7. **YouTube Data API rename** is opt-in via `TRANSCRIPTX_YOUTUBE_API_KEY` (title queries only). DuckDuckGo remains the no-key path. It is not required for tagging.
 

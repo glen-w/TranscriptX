@@ -1,6 +1,6 @@
 # Use local AI for synthesis
 
-After core analysis, optional local-LLM modules can summarise and extract commitments. This walkthrough assumes Ollama is already configured.
+After core analysis, optional live-LLM modules can summarise and extract commitments. This walkthrough assumes a live provider (Ollama by default, or opt-in `openai_compatible`) is already configured.
 
 ## Outcome
 
@@ -9,8 +9,8 @@ You will have confirmed Local AI readiness, run (or re-run) summary / [**Meeting
 ## Starting point
 
 - The planning-review transcript is [imported](../runtime/transcription.md) and a run context is available. The Overview figure is the BBNJ webinar run, which included local summary (`gemma3:12b`).
-- Local AI is enabled and reachable. Follow [Local LLM (Ollama)](../runtime/llm.md) if you still need setup — this page is not an installer guide.
-- You understand that LLM modules send transcript text to your configured Ollama endpoint.
+- Live LLM is enabled and reachable. Follow [Local LLM](../runtime/llm.md) if you still need setup — this page is not an installer guide.
+- You understand that LLM modules send transcript text to the configured provider. Non-loopback `openai_compatible` endpoints are labelled **Remote AI**. A loopback LiteLLM sidecar can still forward prompts off this machine.
 
 Local AI is **optional**. Workflows 1–3 and 5 work without it.
 
@@ -26,7 +26,7 @@ Local AI is **optional**. Workflows 1–3 and 5 work without it.
 
 1. Open **Run Analysis** for the planning-review transcript. If you only need AI modules on top of an existing core run, choose [**Custom**](../runtime/settings.md#analysis-presets) (or a preset that already includes live-LLM consumers) and select the transcript summary and meeting-extracts modules.
 
-2. Expand **LLM setup**. When Ollama is healthy you should see the active model and optional per-run overrides. If LLM is disabled or unreachable, the panel says so clearly — enable Ollama under [**Settings**](../runtime/settings.md) → Configuration and manage models under **Settings → Models** ([LLM](../runtime/llm.md)), then return here.
+2. Expand **LLM setup**. When a live provider is healthy you should see the active model and optional per-run overrides (Ollama tag picker, or a free-form model id for `openai_compatible`). If LLM is disabled or unreachable, the panel says so clearly — enable a provider under [**Settings**](../runtime/settings.md) → Configuration and manage models under **Settings → Models** ([LLM](../runtime/llm.md)), then return here.
 
 ![Run Analysis LLM setup section showing that local AI is disabled or not set to Ollama](../_static/workflows/local-ai-llm-setup.png)
 
@@ -58,5 +58,5 @@ A clear view of Local AI readiness, plus synthesis (Local AI or deterministic ba
 ## Next
 
 - [Export a finished analysis](export-results.md)
-- [Local LLM (Ollama)](../runtime/llm.md)
+- [Local LLM](../runtime/llm.md)
 - [Known limitations](../known_limitations.md) for AI behaviour and privacy notes

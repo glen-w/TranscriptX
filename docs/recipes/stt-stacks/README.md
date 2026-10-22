@@ -138,7 +138,7 @@ Use when analysis is Compose and the host is **not** macOS.
 
 - Put whispermlx inside `transcriptx-web`.
 - Mount the Docker socket into the analysis container (forbidden by analysis-only invariants).
-- Start Parakeet / Canary / YouTube (theme **H5+**, deferred).
+- Start YouTube *URL ingest* or Canary as a Run-in-app provider (theme **H5+** remainder; Parakeet Docker is a registered in-app provider — see [parakeet recipe](../parakeet/README.md)).
 - Auto-join meeting bots.
 - Ship whispermlx or a Mac-parity login agent on Windows.
 

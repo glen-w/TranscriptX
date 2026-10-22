@@ -70,7 +70,7 @@ Rename suggestion LLM (`rename_suggestions`) uses `input.rename_suggestions_effo
 
 On the run form, **Project default** reflects the already-applied project `llm.model_selection` pack. **Custom (this run)** (under Change for this run) keeps free-edited widgets for this launch only. Unavailable saved tags are cleared with an explanation (no silent substitute); launch stays gated until an installed model is chosen when LLM modules are selected.
 
-If LLM is disabled or the provider is not Ollama while selected modules (or enabled group synthesis) need LLM, the launch button stays disabled. Non-LLM analysis remains runnable when no live-LLM modules are in the effective module list.
+If LLM is disabled, or the provider is not a live provider (`ollama` or `openai_compatible`) while selected modules (or enabled group synthesis) need LLM, the launch button stays disabled. `openai_compatible` also needs a non-empty model id and `llm.base_url`. Non-LLM analysis remains runnable when no live-LLM modules are in the effective module list.
 
 **Thinking models (JSON risk):** tags that advertise Ollama `thinking` (or name-match `qwen3*` / `deepseek-r1*` / `gpt-oss*` when `/api/show` is unavailable) may put tokens in `thinking` and leave `response` empty under `format=json`. TranscriptX:
 
@@ -134,7 +134,7 @@ All LLM modules except finalize-phase `chart_descriptions` and `insights_narrati
 - Resolvers require ACTIVE.attempt_epoch to match LATEST_ATTEMPT (suppresses stale text after crash).
 - Ordering: chart-description publish → group LLM synthesis → single manifest write under one run-finalization lock.
 
-**Privacy:** transcript text for LLM modules (`llm_summary`, `llm_speaker_summary`, `llm_action_items`, and structured input to `narrative_summary`) is sent only through the configured Ollama path (`llm.provider=ollama`). TranscriptX does not block non-local `base_url` values, but you are responsible for where your data is sent; the default is loopback (`http://localhost:11434`). Group LLM synthesis sends **member summary texts only** (not raw transcripts) over the same Ollama path.
+**Privacy:** transcript text for LLM modules (`llm_summary`, `llm_speaker_summary`, `llm_action_items`, and structured input to `narrative_summary`) is sent to the configured live provider (`ollama` or `openai_compatible`). Ollama defaults to loopback (`http://localhost:11434`). `openai_compatible` requires an explicit `llm.base_url` (no cloud default); non-loopback endpoints are labelled **Remote AI**. A loopback LiteLLM sidecar can still forward prompts to a remote upstream — see [LiteLLM recipe](../recipes/litellm/README.md). Group LLM synthesis sends **member summary texts only** (not raw transcripts) over the same live-provider path.
 
 `llm_speaker_summary` is skipped when the transcript has no eligible named speakers (for example, before Speaker ID mapping). Ignored speakers are excluded.
 
@@ -157,7 +157,7 @@ After group finalize collects per-member `llm_summary` / `llm_speaker_summary` a
 
 - **`enabled`** (default `true`): when false, finalize commits a skipped generation and flips ACTIVE so prior success is no longer shown.
 - **`effort`**: same tiers as `llm_summary`. Resolves **effective** `max_input_chars` / `request_timeout` / `max_output_tokens` for synthesis calls only; it does **not** mutate process-global `llm.*` values used by other modules.
-- **Ollama-only:** non-Ollama or disabled LLM → skipped generation (not a hard group failure).
+- **Live-provider gate:** disabled LLM, or a provider other than `ollama` / `openai_compatible`, skips generation (not a hard group failure). Shared helper: `require_ollama_analysis`.
 - **UI:** group Overview/Insights use the central resolver; no member-summary primary fallback on group runs.
 
 ## `llm_summary` effort (not `llm.effort`)
@@ -176,7 +176,7 @@ Valid values: `low`, `medium`, `high`, `max` (default: `high`).
 }
 ```
 
-When `llm.enabled` is true and `llm.provider` is `ollama`, `llm_summary` resolves builtin effort profiles that set `max_input_chars`, `request_timeout`, and `max_output_tokens` for that module run. Those effort limits **replace** the corresponding `llm.*` values for `llm_summary` only; they are not merged with user-tuned `llm.max_input_chars` / `llm.request_timeout` / `llm.max_output_tokens`. The model still defaults to `llm.model` unless a future profile sets an override.
+When `llm.enabled` is true and `llm.provider` is a live provider (`ollama` or `openai_compatible`), `llm_summary` resolves builtin effort profiles that set `max_input_chars`, `request_timeout`, and `max_output_tokens` for that module run. Those effort limits **replace** the corresponding `llm.*` values for `llm_summary` only; they are not merged with user-tuned `llm.max_input_chars` / `llm.request_timeout` / `llm.max_output_tokens`. The model still defaults to `llm.model` unless a future profile sets an override.
 
 **Tier intent:**
 - `low` — useful preview mode
@@ -184,7 +184,7 @@ When `llm.enabled` is true and `llm.provider` is `ollama`, `llm_summary` resolve
 - `high` — patient mode for long meetings, workshops, lectures, and dense transcripts
 - `max` — push-the-laptop mode; prefers waiting over truncating or timing out
 
-This pass supports `provider="ollama"` only for `llm_summary`, `llm_speaker_summary`, and `llm_action_items`; other non-null providers raise configuration errors. Shared eligibility is enforced via `require_ollama_analysis` in `core/analysis/llm_support/runtime.py`, which also owns the shared effort-profile map (`resolve_llm_runtime`), the analysis Ollama client factory (`build_ollama_analysis_client`), and input-coverage provenance (`build_input_coverage`). These helpers are shared by all three transcript-direct modules; there are no summary-specific aliases.
+This pass supports live providers `ollama` and `openai_compatible` for `llm_summary`, `llm_speaker_summary`, and `llm_action_items`; other non-null providers raise configuration errors. Shared eligibility is enforced via `require_ollama_analysis` in `core/analysis/llm_support/runtime.py`, which also owns the shared effort-profile map (`resolve_llm_runtime`), the analysis client factory (`build_ollama_analysis_client`), and input-coverage provenance (`build_input_coverage`). These helpers are shared by all three transcript-direct modules; there are no summary-specific aliases. `openai_compatible` does not use the Ollama JSON fallback / circuit-breaker wrapper.
 
 Artifact provenance records `effort`, `effort_profile`, resolved limits, and input coverage (`input_truncated`, `input_chars_total`, `input_chars_used`, `input_coverage_ratio`). The legacy `input_chars` field remains the full prompt size including wrapper text.
 

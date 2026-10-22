@@ -36,6 +36,6 @@ Jump in when you need these tasks.
 ## Prerequisites
 
 - TranscriptX web UI installed and running ([Installation](../runtime/installation.md) or [Docker](../runtime/docker.md)).
-- For workflow 4 only: local Ollama configured ([LLM](../runtime/llm.md)).
+- For workflow 4 only: a live LLM provider configured ([LLM](../runtime/llm.md) — Ollama or `openai_compatible`).
 - For workflow 10: at least one longitudinal profile (create via Speaker Identification), or follow the empty-state path in that guide.
 - For workflow 11: `speaker_match` extra, voice privacy enabled, seed named+linked profiles, and audio on managed transcripts.
