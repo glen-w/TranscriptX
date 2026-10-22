@@ -51,6 +51,7 @@ runtime/export
 backup_and_restore
 known_limitations
 runtime/models
+runtime/hardware
 runtime/llm
 runtime/corrections-viewer
 runtime/karaoke-playback

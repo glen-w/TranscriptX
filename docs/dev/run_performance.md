@@ -29,6 +29,7 @@ Group wall time is an **independent** end-to-end measurement. Do **not** calcula
 
 - Module status + `duration_ms`: `run_results.json` only (for members: each member’s file; group rollup does not invent group module timings). Member module timings remain authoritative in member `run_results.json` files.
 - Sidecar: non-authoritative run-level telemetry + stable interpretative context (mode/profile/runtime/workload snapshots allowed). Group sidecars include wall time, status, analysis context, workload when available, and `GroupPerformanceMeta` — not member durations or LLM aggregates.
+- Theme **E** populates `runtime_fingerprint` from `probe_hardware()` and transcript `workload` from canonical segments at `freeze()`. `analysis.profile` may carry `analysis_preset` (schema has no dedicated preset field). Pre-run estimates are separate (guidance captions) — see [theme_e_performance_hardware.md](theme_e_performance_hardware.md).
 - Group LLM metrics are **not** collected in schema v1 (omit `llm`; do not report zeros). This is an intentional instrumentation gap, not “zero calls”.
 - `run_report.json`: labelled legacy display fallback only.
 - Optional group sidecar write failure must not invalidate an otherwise committed group run; coded warnings may appear under `group_phase_metadata.performance_sidecar_warning`.

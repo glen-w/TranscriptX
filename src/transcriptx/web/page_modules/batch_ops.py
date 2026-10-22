@@ -370,6 +370,17 @@ def render_batch_analysis_panel() -> None:
             reset_custom_qa_questions(_qa_ui_token)
 
     can_launch = bool(selected_paths) and bool(selected_modules) and not llm_gates
+    from transcriptx.web.components.run_time_guidance import render_run_time_guidance
+
+    render_run_time_guidance(
+        preset=resolved.preset,
+        module_ids=selected_modules,
+        transcript_paths=[Path(p) for p in selected_paths] if selected_paths else None,
+        target_type="batch",
+        member_count=max(1, len(selected_paths or [])),
+        llm_selection=llm_selection,
+        model_label=_model_label,
+    )
     if st.button(
         "Run Batch Analysis",
         type="primary",

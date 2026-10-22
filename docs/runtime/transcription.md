@@ -24,7 +24,16 @@ Walkthrough with screenshots: [First analysis](../workflows/first-analysis.md).
 | **Linux** | Compose | Host **WhisperX Docker** (Copy command or `inbox-watch --transcribe command`) |
 | **Windows** | Docker Desktop / WSL2 Compose | Same WhisperX / WebUI path; Transcribe Audio **PowerShell** Copy command. No whispermlx. Host convert/admit: `py -3 scripts\inbox-watch.py --transcribe none` |
 
-Stacks and shared folders: [STT stacks](../recipes/stt-stacks/README.md).
+### Backend decision tree (same terms as the hardware probe)
+
+Transcribe Audio captions a recommendation from the shared hardware probe ([hardware.md](hardware.md)). Engines stay on the host or in a separate Docker recipe — not in the analysis image.
+
+1. **macOS + whispermlx available** → prefer **whispermlx** (MLX). WhisperX Docker on Apple Silicon is usually CPU-only.
+2. **CUDA visible to this process** and not `TRANSCRIPTX_FORCE_CPU` → WhisperX Docker **cuda** (`--gpus all`). Confirm the host GPU is passed into the *STT* container.
+3. **Analysis container without CUDA** → WhisperX Docker **cpu** for orchestration from this process; the host may still run a CUDA recipe via Copy command.
+4. **Parakeet Docker** → intended for CUDA Linux hosts; default device follows the same cuda/cpu honesty.
+
+No STT wall-clock ETA in v1. Stacks and shared folders: [STT stacks](../recipes/stt-stacks/README.md).
 
 1. Put the audio files in one folder on your computer (absolute path the Streamlit process can read).
 2. Open **Transcribe Audio**.

@@ -122,9 +122,10 @@ def _write_group_performance_sidecar_under_lease(
         return None
 
     from transcriptx.core.observability.run_performance.io import write_run_performance
-    from transcriptx.core.observability.run_performance.schema import (
-        AnalysisContextSnapshot,
-        CacheProvenance,
+    from transcriptx.core.observability.run_performance.schema import CacheProvenance
+    from transcriptx.core.observability.run_performance_context import (
+        build_analysis_context,
+        build_runtime_fingerprint,
     )
     from transcriptx.core.pipeline.manifest_loader import load_run_results
     from transcriptx.core.utils.run_manifest import get_transcriptx_version
@@ -182,15 +183,21 @@ def _write_group_performance_sidecar_under_lease(
             aggregation_disabled=aggregation_disabled,
             group_phase_terminal_failure=group_phase_terminal_failure,
         )
+        try:
+            fingerprint = build_runtime_fingerprint()
+        except Exception:
+            fingerprint = None
         snap = performance_recorder.freeze(
             execution_status=exec_status,
             final_status=final_status,
             termination_reason_code=term,
             cache_provenance=CacheProvenance.unwired,
-            analysis=AnalysisContextSnapshot(
+            analysis=build_analysis_context(
                 app_version=get_transcriptx_version(),
                 requested_module_count=len(selected_modules),
+                run_results=rr,
             ),
+            runtime_fingerprint=fingerprint,
             group=group_meta,
         )
         # Intentionally omit llm= (group LLM metrics not instrumented in v1).

@@ -44,6 +44,7 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 | [Settings](runtime/settings.md) | GUI scopes, presets, knobs |
 | [LLM (Ollama)](runtime/llm.md) | Optional local AI |
 | [Models](runtime/models.md) | Analysis model defaults |
+| [Hardware & run-time](runtime/hardware.md) | Estimates, RAM bands, STT/LLM hints |
 | [Workspace backup / restore](backup_and_restore.md) | Full-workspace ZIP |
 
 ## Bring files

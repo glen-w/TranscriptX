@@ -124,6 +124,14 @@ def _render_run_in_app(default_input: str) -> None:
     providers = get_transcription_providers()
     labels = [p.info().label for p in providers]
     ids = [p.provider_id for p in providers]
+    from transcriptx.core.observability.backend_recommend import recommend_stt_backend
+    from transcriptx.core.observability.hardware_probe import probe_hardware
+
+    stt_rec = recommend_stt_backend(probe_hardware(), available_provider_ids=ids)
+    st.caption(stt_rec.caption)
+    # Preselect recommended provider only when the widget has no prior choice.
+    if "tx_run_provider" not in st.session_state and stt_rec.provider_id in ids:
+        st.session_state["tx_run_provider"] = labels[ids.index(stt_rec.provider_id)]
     selected_label = st.selectbox(
         "Provider",
         options=labels,
@@ -178,10 +186,14 @@ def _render_run_in_app(default_input: str) -> None:
     min_speakers = None
     max_speakers = None
     if provider_id == "whisperx_docker":
+        device_options = ["cpu", "cuda"]
+        if "tx_run_device" not in st.session_state:
+            st.session_state["tx_run_device"] = (
+                stt_rec.device if stt_rec.device in device_options else "cpu"
+            )
         device = st.selectbox(
             "Device",
-            options=["cpu", "cuda"],
-            index=0,
+            options=device_options,
             key="tx_run_device",
             help=widget_help("cuda adds --gpus all to docker run."),
         )
@@ -206,10 +218,14 @@ def _render_run_in_app(default_input: str) -> None:
             key="tx_run_image",
         )
     if provider_id == "parakeet_docker":
+        device_options = ["cpu", "cuda"]
+        if "tx_run_parakeet_device" not in st.session_state:
+            st.session_state["tx_run_parakeet_device"] = (
+                stt_rec.device if stt_rec.device in device_options else "cuda"
+            )
         device = st.selectbox(
             "Device",
-            options=["cpu", "cuda"],
-            index=1,
+            options=device_options,
             key="tx_run_parakeet_device",
             help=widget_help(
                 "cuda adds --gpus all. Parakeet is intended for CUDA Linux hosts."
