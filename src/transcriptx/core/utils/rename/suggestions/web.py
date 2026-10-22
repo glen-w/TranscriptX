@@ -2,16 +2,22 @@
 
 from __future__ import annotations
 
+import os
 import re
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Sequence
 import httpx
 
 from transcriptx.core.utils.rename.suggestions.models import RawRenameCue
-from transcriptx.core.utils.rename.suggestions.transcript_cues import parse_date_from_text
+from transcriptx.core.utils.rename.suggestions.transcript_cues import (
+    parse_date_from_text,
+)
 
 _DDG_URL = "https://html.duckduckgo.com/html/"
+_YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
+_YOUTUBE_VIDEOS_URL = "https://www.googleapis.com/youtube/v3/videos"
+_YOUTUBE_API_KEY_ENV = "TRANSCRIPTX_YOUTUBE_API_KEY"
 _RESULT_SNIPPET = re.compile(
     r'class="result__snippet"[^>]*>([^<]+)',
     re.IGNORECASE,
@@ -73,6 +79,113 @@ def parse_dates_from_html(html: str) -> tuple[date | None, str, str]:
     return None, "", ""
 
 
+def resolve_youtube_api_key() -> str:
+    """Operator-supplied YouTube Data API key. Never read from transcript text."""
+    return os.environ.get(_YOUTUBE_API_KEY_ENV, "").strip()
+
+
+def parse_youtube_published_at(value: str) -> date | None:
+    raw = (value or "").strip()
+    if not raw:
+        return None
+    try:
+        if raw.endswith("Z"):
+            raw = raw[:-1] + "+00:00"
+        return datetime.fromisoformat(raw).date()
+    except ValueError:
+        parsed, _ = parse_date_from_text(value)
+        return parsed
+
+
+def fetch_youtube_api_cue(
+    query: str,
+    *,
+    api_key: str,
+    timeout: float = 8.0,
+    http_get=httpx.get,
+) -> RawRenameCue | None:
+    """YouTube Data API v3 search + videos. Short title query only."""
+    q = (query or "").strip()[:80]
+    key = (api_key or "").strip()
+    if not q or not key:
+        return None
+    try:
+        search = http_get(
+            _YOUTUBE_SEARCH_URL,
+            params={
+                "part": "snippet",
+                "type": "video",
+                "maxResults": "3",
+                "q": q,
+                "key": key,
+            },
+            timeout=timeout,
+        )
+    except httpx.HTTPError:
+        return None
+    if getattr(search, "status_code", 0) != 200:
+        return None
+    try:
+        payload = search.json()
+    except ValueError:
+        return None
+    items = payload.get("items") if isinstance(payload, dict) else None
+    if not isinstance(items, list) or not items:
+        return None
+    video_ids: list[str] = []
+    titles: dict[str, str] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        vid = ((item.get("id") or {}) if isinstance(item.get("id"), dict) else {}).get(
+            "videoId"
+        )
+        snippet = item.get("snippet") if isinstance(item.get("snippet"), dict) else {}
+        if vid:
+            video_ids.append(str(vid))
+            titles[str(vid)] = str(snippet.get("title") or "")
+    if not video_ids:
+        return None
+    try:
+        videos = http_get(
+            _YOUTUBE_VIDEOS_URL,
+            params={
+                "part": "snippet",
+                "id": ",".join(video_ids),
+                "key": key,
+            },
+            timeout=timeout,
+        )
+    except httpx.HTTPError:
+        return None
+    if getattr(videos, "status_code", 0) != 200:
+        return None
+    try:
+        video_payload = videos.json()
+    except ValueError:
+        return None
+    vitems = video_payload.get("items") if isinstance(video_payload, dict) else None
+    if not isinstance(vitems, list):
+        return None
+    for item in vitems:
+        if not isinstance(item, dict):
+            continue
+        snippet = item.get("snippet") if isinstance(item.get("snippet"), dict) else {}
+        published = parse_youtube_published_at(str(snippet.get("publishedAt") or ""))
+        if published is None:
+            continue
+        title = str(snippet.get("title") or titles.get(str(item.get("id") or ""), ""))
+        return RawRenameCue(
+            basis="web",
+            confidence="likely",
+            detail=f"YouTube Data API: {title[:80] or 'video'}",
+            event_date=published,
+            title=title,
+            _priority=2,
+        )
+    return None
+
+
 def fetch_web_cue(query: str, *, timeout: float = 8.0) -> RawRenameCue | None:
     q = (query or "").strip()
     if not q:
@@ -109,13 +222,19 @@ def fetch_web_cue_from_title(
     host_names: Sequence[str] = (),
     timeout: float = 8.0,
 ) -> RawRenameCue | None:
-    """Try YouTube-biased search first, then general event query."""
+    """Try YouTube Data API (opt-in key), then YouTube-biased DDG, then general."""
+    api_key = resolve_youtube_api_key()
+    if api_key:
+        api_query = (title.strip() or Path(filename).stem.replace("_", " ")).strip()[
+            :80
+        ]
+        cue = fetch_youtube_api_cue(api_query, api_key=api_key, timeout=timeout)
+        if cue is not None:
+            return cue
     yt_query = build_youtube_web_query(title=title, filename=filename)
     if yt_query:
         cue = fetch_web_cue(yt_query, timeout=timeout)
         if cue is not None:
             return cue
-    general = build_web_query(
-        title=title, host_names=host_names, filename=filename
-    )
+    general = build_web_query(title=title, host_names=host_names, filename=filename)
     return fetch_web_cue(general, timeout=timeout)
