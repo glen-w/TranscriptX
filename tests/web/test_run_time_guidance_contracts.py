@@ -39,6 +39,11 @@ def test_transcribe_audio_wires_stt_recommendation() -> None:
     )
     assert "recommend_stt_backend" in src
     assert "probe_hardware" in src
+    assert (
+        "from transcriptx.services.transcription.stt_backend_recommend import"
+        in src
+    )
+    assert "backend_recommend import recommend_stt_backend" not in src
 
 
 @pytest.mark.unit

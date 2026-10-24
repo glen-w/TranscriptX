@@ -57,3 +57,29 @@ def test_analysis_model_hint_core_thorough() -> None:
         preset="thorough",
     )
     assert "core" in hint.message.lower()
+
+
+@pytest.mark.unit
+def test_analysis_model_hint_bands_are_deterministic() -> None:
+    unknown = analysis_model_hint(_hw(memory_band="unknown"))
+    high = analysis_model_hint(_hw(memory_band="high"))
+    very_high = analysis_model_hint(_hw(memory_band="very_high"))
+    assert unknown.prefer_light is True
+    assert high.prefer_light is False
+    assert "optional" in high.message.lower()
+    assert very_high.prefer_light is False
+    assert "lg/mpnet" in very_high.message.lower()
+
+
+@pytest.mark.unit
+def test_core_recommend_does_not_name_stt_engines() -> None:
+    from pathlib import Path
+
+    src = Path("src/transcriptx/core/observability/backend_recommend.py").read_text(
+        encoding="utf-8"
+    )
+    lowered = src.lower()
+    for token in ("whisperx", "whispermlx", "parakeet", "granite"):
+        assert token not in lowered
+    assert "def recommend_stt_backend" not in src
+    assert "def analysis_model_hint" in src

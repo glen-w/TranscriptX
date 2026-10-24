@@ -57,3 +57,50 @@ def test_stt_cpu_in_container_without_cuda() -> None:
     )
     assert rec.device == "cpu"
     assert "container" in rec.caption.lower()
+
+
+@pytest.mark.unit
+def test_stt_force_cpu_overrides_visible_cuda() -> None:
+    rec = recommend_stt_backend(
+        _hw(acceleration="cuda", force_cpu=True),
+        available_provider_ids=["whisperx_docker"],
+    )
+    assert rec.provider_id == "whisperx_docker"
+    assert rec.device == "cpu"
+    assert rec.reason == "cpu_fallback"
+
+
+@pytest.mark.unit
+def test_stt_darwin_without_whispermlx_points_at_mlx() -> None:
+    rec = recommend_stt_backend(
+        _hw(os_family="darwin"),
+        available_provider_ids=["whisperx_docker"],
+    )
+    assert rec.provider_id == "whisperx_docker"
+    assert rec.device == "cpu"
+    assert "whispermlx" in rec.caption.lower()
+
+
+@pytest.mark.unit
+def test_stt_parakeet_when_whisper_family_absent() -> None:
+    cpu = recommend_stt_backend(
+        _hw(),
+        available_provider_ids=["parakeet_docker"],
+    )
+    assert cpu.provider_id == "parakeet_docker"
+    assert cpu.device == "cpu"
+    assert cpu.reason == "parakeet_available"
+
+    cuda = recommend_stt_backend(
+        _hw(acceleration="cuda"),
+        available_provider_ids=["parakeet_docker"],
+    )
+    assert cuda.device == "cuda"
+
+
+@pytest.mark.unit
+def test_stt_empty_providers_default_cpu() -> None:
+    rec = recommend_stt_backend(_hw(), available_provider_ids=[])
+    assert rec.provider_id == "whisperx_docker"
+    assert rec.device == "cpu"
+    assert rec.reason == "default"
