@@ -180,8 +180,10 @@ def _render_run_in_app(default_input: str) -> None:
     providers = get_transcription_providers()
     labels = [p.info().label for p in providers]
     ids = [p.provider_id for p in providers]
-    from transcriptx.core.observability.backend_recommend import recommend_stt_backend
     from transcriptx.core.observability.hardware_probe import probe_hardware
+    from transcriptx.services.transcription.stt_backend_recommend import (
+        recommend_stt_backend,
+    )
 
     stt_rec = recommend_stt_backend(probe_hardware(), available_provider_ids=ids)
     st.caption(stt_rec.caption)

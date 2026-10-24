@@ -1,4 +1,4 @@
-"""Unit tests for Theme E backend recommendations."""
+"""Unit tests for Theme E analysis model hints."""
 
 from __future__ import annotations
 
@@ -8,10 +8,7 @@ from transcriptx.core.analysis.llm_support.model_guidance import (
     preferred_size_class_for_memory,
     recommend_llm_for_hardware,
 )
-from transcriptx.core.observability.backend_recommend import (
-    analysis_model_hint,
-    recommend_stt_backend,
-)
+from transcriptx.core.observability.backend_recommend import analysis_model_hint
 from transcriptx.core.observability.hardware_probe import HardwareSnapshot
 
 
@@ -32,36 +29,6 @@ def _hw(**overrides) -> HardwareSnapshot:
     )
     base.update(overrides)
     return HardwareSnapshot(**base)
-
-
-@pytest.mark.unit
-def test_stt_prefers_whispermlx_on_darwin() -> None:
-    rec = recommend_stt_backend(
-        _hw(os_family="darwin"),
-        available_provider_ids=["whisperx_docker", "whispermlx"],
-    )
-    assert rec.provider_id == "whispermlx"
-    assert "whispermlx" in rec.caption.lower()
-
-
-@pytest.mark.unit
-def test_stt_cuda_when_visible() -> None:
-    rec = recommend_stt_backend(
-        _hw(acceleration="cuda"),
-        available_provider_ids=["whisperx_docker"],
-    )
-    assert rec.provider_id == "whisperx_docker"
-    assert rec.device == "cuda"
-
-
-@pytest.mark.unit
-def test_stt_cpu_in_container_without_cuda() -> None:
-    rec = recommend_stt_backend(
-        _hw(acceleration="cpu", in_container=True),
-        available_provider_ids=["whisperx_docker", "parakeet_docker"],
-    )
-    assert rec.device == "cpu"
-    assert "container" in rec.caption.lower()
 
 
 @pytest.mark.unit
