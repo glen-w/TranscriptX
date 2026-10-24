@@ -71,10 +71,7 @@ class TestDAGPipelineIntegration:
         )
 
         # Finalize to validate dependencies
-        try:
-            pipeline.finalize()
-        except ValueError:
-            pytest.skip("Pipeline finalization failed")
+        pipeline.finalize()
 
         with (
             patch(_PIPELINE_CONTEXT_PATCH) as mock_context_class,
@@ -116,11 +113,7 @@ class TestDAGPipelineIntegration:
         pipeline.add_module("level3", "Level 3", "heavy", ["level2"], mock_function)
 
         # Finalize to validate dependencies (should not have cycles)
-        try:
-            pipeline.finalize()
-        except ValueError:
-            # If finalize fails, skip this test or handle gracefully
-            pytest.skip("Pipeline finalization failed - may indicate setup issue")
+        pipeline.finalize()
 
         with (
             patch(_PIPELINE_CONTEXT_PATCH) as mock_context_class,
@@ -168,10 +161,7 @@ class TestDAGPipelineIntegration:
         )
 
         # Finalize to validate dependencies
-        try:
-            pipeline.finalize()
-        except ValueError:
-            pytest.skip("Pipeline finalization failed")
+        pipeline.finalize()
 
         with (
             patch(_PIPELINE_CONTEXT_PATCH) as mock_context_class,
@@ -212,10 +202,7 @@ class TestDAGPipelineIntegration:
         pipeline.add_module("success2", "Success 2", "heavy", [], another_success)
 
         # Finalize to validate dependencies
-        try:
-            pipeline.finalize()
-        except ValueError:
-            pytest.skip("Pipeline finalization failed")
+        pipeline.finalize()
 
         with (
             patch(_PIPELINE_CONTEXT_PATCH) as mock_context_class,
@@ -256,10 +243,7 @@ class TestDAGPipelineIntegration:
             )
 
         # Finalize to validate dependencies
-        try:
-            pipeline.finalize()
-        except ValueError:
-            pytest.skip("Pipeline finalization failed")
+        pipeline.finalize()
 
         with (
             patch(_PIPELINE_CONTEXT_PATCH) as mock_context_class,
@@ -298,10 +282,7 @@ class TestDAGPipelineIntegration:
         pipeline.add_module("test", "Test Module", "light", [], mock_function)
 
         # Finalize to validate dependencies
-        try:
-            pipeline.finalize()
-        except ValueError:
-            pytest.skip("Pipeline finalization failed")
+        pipeline.finalize()
 
         with (
             patch(_PIPELINE_CONTEXT_PATCH) as mock_context_class,

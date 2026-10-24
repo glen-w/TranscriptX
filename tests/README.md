@@ -13,6 +13,7 @@
 - `make test-heavy-all` — heavy profile including quarantined
 - `make test-contracts` — offline contract tests (output shape only)
 - `make test-integration` — integration lane (`integration` / `integration_core` / `integration_extended`) excluding external-capability markers
+- `make test-integration-extended` — `tests/integration` minus `integration_core` (runs nightly after `test-integration-core`)
 - `make test-release-only` — release-only packaging/install smoke
 - `make test-optional` — run only heavy/optional tests (ffmpeg, docker, models, slow, integration)
 - `make test-all` — full suite including optional and quarantined (may be slow)
@@ -25,7 +26,7 @@
 
 **Install note:** PR `smoke` installs `.[dev]` only. Advisory `tests-nlp` installs `.[dev,nlp,web]`. Smoke still skips spaCy-gated modules unless `[nlp]` is present.
 
-**Nightly:** `.github/workflows/nightly.yml` (schedule `cron` 06:00 UTC + `workflow_dispatch`) runs the broader Gate B lane (`make test-contracts` → `make test-fast` → `make test-coverage`) plus `make test-integration-core` (excluding `requires_docker`; no image pre-build on the nightly runner). Coverage badge refresh follows Nightly, not PR CI.
+**Nightly:** `.github/workflows/nightly.yml` (schedule `cron` 06:00 UTC + `workflow_dispatch`) runs the broader Gate B lane (`make test-contracts` → `make test-fast` → `make test-coverage`) plus `make test-integration-core` then `make test-integration-extended` (excluding `requires_docker`; no image pre-build on the nightly runner). Coverage badge refresh follows Nightly, not PR CI.
 
 Time budgets (target ceilings):
 - PR `test-smoke` ≤ 5 min
