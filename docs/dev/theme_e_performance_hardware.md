@@ -71,7 +71,8 @@ At `freeze()` (transcript + group):
 |------|------|
 | Probe | `src/transcriptx/core/observability/hardware_probe.py` |
 | Estimator | `src/transcriptx/core/observability/run_estimate.py` |
-| STT / analysis hints | `src/transcriptx/core/observability/backend_recommend.py` |
+| Analysis model hints | `src/transcriptx/core/observability/backend_recommend.py` |
+| STT backend hints | `src/transcriptx/services/transcription/stt_backend_recommend.py` |
 | Sidecar helpers | `src/transcriptx/core/observability/run_performance_context.py` |
 | LLM ranking | `recommend_llm_for_hardware` in `llm_support/model_guidance.py` |
 | GUI captions | `web/components/run_time_guidance.py` |
