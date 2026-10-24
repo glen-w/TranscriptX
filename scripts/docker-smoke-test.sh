@@ -13,7 +13,17 @@ if [ -z "${HOST_RECORDINGS_DIR:-}" ]; then
 fi
 mkdir -p "$HOST_RECORDINGS_DIR/imports"
 cleanup_smoke_recordings() {
-  if [ -n "${_smoke_recordings_created:-}" ]; then
+  if [ -z "${_smoke_recordings_created:-}" ]; then
+    return 0
+  fi
+  # The web image runs as root and can leave root-owned files in the mount.
+  if ! rm -rf "$HOST_RECORDINGS_DIR" 2>/dev/null; then
+    docker run --rm --user 0 \
+      -v "$HOST_RECORDINGS_DIR:/cleanup" \
+      --entrypoint sh \
+      transcriptx:latest \
+      -c 'rm -rf /cleanup/* /cleanup/.[!.]* /cleanup/..?*' \
+      >/dev/null 2>&1 || true
     rm -rf "$HOST_RECORDINGS_DIR"
   fi
 }

@@ -60,6 +60,7 @@ def isolate_workspace(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> GuiWor
     from dataclasses import replace as dc_replace
 
     import transcriptx.core.services.group_service as group_service_module
+    import transcriptx.core.speaker_profiles.layout as speaker_layout_mod
     import transcriptx.core.store.group_manifest_store as group_store_module
     import transcriptx.core.utils.paths as paths_mod
     from transcriptx.core.store.group_manifest_store import GroupManifestStore
@@ -112,6 +113,12 @@ def isolate_workspace(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> GuiWor
         recordings_imports_dir=data_dir / "recordings" / "imports",
     )
     monkeypatch.setattr(paths_mod, "PATHS", built)
+    monkeypatch.setattr(speaker_layout_mod, "PATHS", built, raising=False)
+    monkeypatch.setattr(
+        "transcriptx.web.page_modules.speakers.PATHS",
+        built,
+        raising=False,
+    )
     for name, value in (
         ("PROJECT_ROOT", built.project_root),
         ("DATA_DIR", built.data_dir),
@@ -175,11 +182,55 @@ def isolate_workspace(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> GuiWor
         lambda root=None: Path(root) if root is not None else transcripts_dir,
     )
 
+    # Slug index is bound at import from the host outputs dir. Point it at the
+    # isolated tree so Groups does not canonicalize the operator's real library.
+    monkeypatch.setattr(
+        "transcriptx.core.utils.slug_manager.OUTPUTS_DIR",
+        outputs_dir,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "transcriptx.core.utils.slug_manager.INDEX_FILE",
+        outputs_dir / ".transcriptx_index.json",
+        raising=False,
+    )
+    monkeypatch.setattr(group_store_module, "PATHS", built, raising=False)
     monkeypatch.setattr(group_store_module, "PROJECT_ROOT", root, raising=False)
     monkeypatch.setattr(group_store_module, "_GROUPS_DIR", groups_dir, raising=False)
+    monkeypatch.setattr(
+        group_store_module, "_TRANSCRIPTS_DIR", transcripts_dir, raising=False
+    )
+    monkeypatch.setattr(group_service_module, "PATHS", built, raising=False)
     monkeypatch.setattr(group_service_module, "PROJECT_ROOT", root, raising=False)
     monkeypatch.setattr(
         group_service_module, "_STORE", GroupManifestStore(), raising=False
+    )
+    # Web services bind path aliases at import. AppTest pages read those names,
+    # not the replaced paths module attribute.
+    monkeypatch.setattr(
+        "transcriptx.web.services.file_service.DIARISED_TRANSCRIPTS_DIR",
+        transcripts_dir,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.services.file_service.OUTPUTS_DIR",
+        outputs_dir,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.services.file_service.GROUP_OUTPUTS_DIR",
+        outputs_dir / "groups",
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.services.run_index.OUTPUTS_DIR",
+        outputs_dir,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.services.run_index.GROUP_OUTPUTS_DIR",
+        outputs_dir / "groups",
+        raising=False,
     )
 
     try:
