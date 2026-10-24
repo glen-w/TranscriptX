@@ -94,6 +94,8 @@ transformers>=4.53.0,<4.53.3
 # ============================================================================
 spacy==3.7.5
 thinc==8.2.5
+# preshed 3.0.14 breaks spaCy 3.7.5 at load (OverflowError in Tokenizer._reset_cache).
+preshed>=3.0.2,<3.0.14
 wordcloud==1.9.2
 sentence-transformers==5.6.0
 spacy-transformers>=1.4.0
