@@ -12,7 +12,8 @@ import pytest
 
 from transcriptx.core.analysis.topic_modeling import TopicModelingAnalysis
 
-pytest.importorskip("spacy")
+# Preprocessing calls get_nlp_model(); spaCy alone is not enough.
+pytestmark = pytest.mark.requires_nlp
 
 
 class TestTopicModelingContracts:

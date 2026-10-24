@@ -68,7 +68,7 @@ try:
 except Exception:
     pass
 
-from tests.capabilities import has_docker, has_ffmpeg, has_models
+from tests.capabilities import has_docker, has_ffmpeg, has_models, has_nlp_runtime
 
 # Put `src/` first so `import transcriptx` uses workspace code.
 sys.path.insert(0, str(_REPO_ROOT / "src"))
@@ -632,6 +632,7 @@ def pytest_collection_modifyitems(config, items):
     """Modify test collection to add markers based on test paths and names."""
     has_models_enabled = has_models()
     has_docker_enabled = has_docker()
+    has_nlp_enabled = has_nlp_runtime()
     has_ffmpeg_enabled = has_ffmpeg()
     for item in items:
         path_str = str(item.fspath).lower()
@@ -753,6 +754,13 @@ def pytest_collection_modifyitems(config, items):
         if item.get_closest_marker("requires_ffmpeg") and not has_ffmpeg_enabled:
             item.add_marker(
                 pytest.mark.skip(reason="requires_ffmpeg: ffmpeg/ffprobe not available")
+            )
+
+        if item.get_closest_marker("requires_nlp") and not has_nlp_enabled:
+            item.add_marker(
+                pytest.mark.skip(
+                    reason="requires_nlp: spaCy or en_core_web_md/sm model not installed"
+                )
             )
 
 

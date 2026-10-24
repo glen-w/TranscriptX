@@ -252,7 +252,7 @@ Not all are bugs (fixtures often use `/tmp`). Prefer `tmp_path` / `pytest.approx
 
 ### P0 — correctness / silent failure / CI truth
 
-1. **Gate NLP on model presence, not only `import spacy`.** Smoke `_nlp_extra_available()`, contract setups, and any module that calls `get_nlp_model()` should skip (or mock) when `en_core_web_md` is missing. Prevents red local/cloud envs and clarifies Core+dev vs `[nlp]` lanes.
+1. ~~**Gate NLP on model presence, not only `import spacy`.**~~ **Done** — `tests/capabilities.py::has_nlp_runtime()` (spaCy importable *and* an `en_core_web_md`/`sm` or configured model installed) gates smoke `_nlp_extra_available()` and the pipeline/group smokes; `requires_nlp` items now skip at collection when it is false. Topic-modeling and entity-sentiment contracts that reach `get_nlp_model()` carry `requires_nlp` (they still run in `make test-contracts` and `make test-nlp-unit` when the model is present).
 2. **Convert DAG “Pipeline finalization failed” soft-skips to failures** (or narrow to a single explicitly documented skip with ticket + sunset). Soft-skip of setup failure masks integration regressions.
 3. **Fix or quarantine GUI `test_group_create_and_run_analysis_group_target`** (path under project/transcripts). Until green, do not treat AppTest as release evidence for Groups.
 
