@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-24
+
+Library archive, Granite Speech, and a Groups picker that survives stale paths (git tag `v1.0.2`).
+
 ### Added
 
 - **Library archive:** Inspector **Archive transcript** / **Unarchive transcript** on Library. Optional `library_archived` on the import sidecar (`SIDECAR_SCHEMA_VERSION` stays 1). Pickers and Home hide archived items; Library and Search have **Include archived transcripts**. Contract: [STORAGE.md](docs/runtime/STORAGE.md#library-archive). Walkthrough: [archive a transcript](docs/workflows/archive-transcript.md).
@@ -16,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **T0/T1 honesty:** Overview, Charts page, and Charts overview block share a zero-named-speakers banner. Import captions placeholder `SPEAKER_00` labels and points at **Treat as single speaker**. Content modules `understandability`, `lexical_diversity`, `epistemic_markers`, `simplified_transcript`, `topic_shift`, and `moments` now use `min_named_speakers: 0`.
+- **STT recommendations** live under `services/transcription` so core stays free of host STT engine names. Nightly Gate B no longer collects them with analysis-only invariants.
+- **Groups:** picker rows that cannot be canonicalized are skipped instead of crashing the page. The transcript picker cache key includes the library root.
+
+### Fixed
+
+- GUI acceptance isolation follows import-bound path aliases (slug index, file service, speaker profiles) so journeys do not read the operator's real library.
 
 ## [1.0.1] - 2026-10-20
 

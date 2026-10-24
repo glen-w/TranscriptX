@@ -4,7 +4,7 @@ Modest public landing (plain HTML/CSS, minimal JS for mobile nav). Product front
 
 - Open `index.html` locally, or deploy via GitHub Pages (`.github/workflows/pages.yml`).
 - Screenshots in [images/](images/): same eight stills as the README **Screenshots** section — copies of `docs/_static/workflows/` (`home`, `speaker-id`, `corrections-studio`, `run-analysis`, `overview`, `transcript`, `insights`, `charts-gallery`). Recapture together ([workflow_media_capture.md](../docs/dev/workflow_media_capture.md)).
-- Footer version should match [pyproject.toml](../pyproject.toml) `version` (currently **1.0.1**).
+- Footer version should match [pyproject.toml](../pyproject.toml) `version` (currently **1.0.2**).
 - Install snippet matches README: copy `.env.example` → `.env`, set `HOST_RECORDINGS_DIR`, then `docker compose up transcriptx-web`.
 - First-run steps match the README and [first analysis](../docs/workflows/first-analysis.md): import, name speakers, **Balanced**, then Overview.
 - Docs / Workflows / Compare CTAs point at the **Sphinx HTML guide** published beside this landing (`./guide/`), rebuilt from `docs/` on every qualifying `main` push.

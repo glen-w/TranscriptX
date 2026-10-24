@@ -129,3 +129,9 @@ assessments/
 
 # Cursor commands that name machine-specific folders (tracked playbooks stay committed)
 .cursor/commands/ingest.md
+
+# Local RAG indexes (nothing under data/rag/ is tracked)
+data/rag/
+
+# Local plan draft (other .cursor/plans files stay tracked)
+.cursor/plans/2026-10-11-llm-capability-primary-secondary.md

@@ -290,3 +290,19 @@ Not all are bugs (fixtures often use `/tmp`). Prefer `tmp_path` / `pytest.approx
 - Executed smoke, contracts, and fast+coverage in this environment; compared to `artifacts/deep_test_20260807_*` and `deep_test_gui_heavy.txt`.
 - Skip/marker/flake greps; stratified assertion sample; src↔test map; coverage JSON package rollup.
 - Did **not** treat archived `TEST_SUITE_ASSESSMENT.md` counts as authoritative.
+
+---
+
+## 10. 2026-10-24 pass (v1.0.2)
+
+`docs/archive/assessments/TEST_SUITE_ASSESSMENT.md` is not in the tree. Quarantine `COUNT` is still **0**. Default `pytest -q` on this machine (Python 3.10.13): **8933 passed, 21 skipped, 378 deselected** before the additions below. Collection with default `addopts`: **8954 selected / 9332 collected**.
+
+High-leverage tests added:
+
+- STT recommendation branches (force-cpu, Darwin without whispermlx, Parakeet, empty provider list) and a core boundary check that `backend_recommend` does not name host STT engines.
+- Transcribe Audio contract: recommendation import stays under `services.transcription`.
+- Analysis model hint bands (`unknown` / `high` / `very_high`).
+
+GUI acceptance (8 journeys) is green after the harness points import-bound path aliases, the slug index, and speaker-profile roots at the isolated workspace. Groups no longer raises when a picker path cannot be canonicalized. The transcript picker cache key includes the library root (Streamlit ignores underscore-prefixed arguments).
+
+Cleanup stayed disabled. Quarantined tests were not re-enabled. Playwright `gui_e2e` was skipped (playwright not installed). `integration_core`: **59 passed**. A parallel `test-fast` run hit `AnalysisBusyError` on three manifest contracts; those three pass when run alone.

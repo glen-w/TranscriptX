@@ -278,9 +278,14 @@ def _transcript_picker_options_impl() -> list[TranscriptPickerOption]:
 @st.cache_data(ttl=120, show_spinner=False)
 def cached_list_transcript_picker_options(
     index_mtime: float | None,
-    _transcripts_dir: str = "",
+    transcripts_dir: str = "",
 ) -> tuple[tuple[str, str], ...]:
-    """Cached light picker rows as ``(path, label)`` tuples for Streamlit hashing."""
+    """Cached light picker rows as ``(path, label)`` tuples.
+
+    ``transcripts_dir`` is a cache key (do not underscore-prefix it: Streamlit
+    skips hashing those arguments, so a library-root change would reuse rows).
+    """
+    del transcripts_dir
     mark_cache_miss("cached_list_transcript_picker_options")
     return tuple((opt.path, opt.label) for opt in _transcript_picker_options_impl())
 

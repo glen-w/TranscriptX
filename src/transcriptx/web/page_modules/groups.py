@@ -186,9 +186,7 @@ def _render_edit_membership_fragment(
                 st.rerun()
             except Exception as e:
                 st.error(str(e))
-    if st.button(
-        "Cancel", key=f"membership_cancel_{group.group_id}", icon=ic.CANCEL
-    ):
+    if st.button("Cancel", key=f"membership_cancel_{group.group_id}", icon=ic.CANCEL):
         st.session_state.pop(membership_key, None)
         st.rerun()
 
@@ -242,9 +240,7 @@ def _groups_detail_fragment(
     rename_key = f"group_rename_input_{group.group_id}"
     with st.expander("Rename group"):
         new_name = st.text_input("Name", value=group.name or "", key=rename_key)
-        if st.button(
-            "Update name", key=f"rename_btn_{group.group_id}", icon=ic.RENAME
-        ):
+        if st.button("Update name", key=f"rename_btn_{group.group_id}", icon=ic.RENAME):
             new_name = (new_name or "").strip()
             if not new_name:
                 st.error("Name cannot be empty.")
@@ -295,9 +291,7 @@ def _groups_detail_fragment(
                 try_page_toast("Group deleted.")
                 st.rerun()
         with col2:
-            if st.button(
-                "Cancel", key=f"cancel_del_{group.group_id}", icon=ic.CANCEL
-            ):
+            if st.button("Cancel", key=f"cancel_del_{group.group_id}", icon=ic.CANCEL):
                 st.session_state.pop(confirm_key, None)
                 st.rerun()
 
@@ -322,11 +316,16 @@ def render_groups() -> None:
     )
 
     picker_options = get_cached_list_transcript_picker_options()
-    transcript_options = [opt.path for opt in picker_options]
     transcript_labels = {opt.path: opt.label for opt in picker_options}
-    transcript_canonical = {
-        p: canonical_group_member_path(p) for p in transcript_options
-    }
+    # Stale index rows (deleted temp files, paths outside this library) must not
+    # take down the page. Offer only paths that can be group members.
+    transcript_canonical: dict[str, str] = {}
+    for opt in picker_options:
+        try:
+            transcript_canonical[opt.path] = canonical_group_member_path(opt.path)
+        except ValueError:
+            continue
+    transcript_options = [p for p in transcript_canonical]
 
     with st.expander("Create new group", expanded=False):
         st.text_input("Name", key="create_group_name")
