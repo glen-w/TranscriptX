@@ -271,7 +271,7 @@ Not all are bugs (fixtures often use `/tmp`). Prefer `tmp_path` / `pytest.approx
 11. ~~Drop unused `tox` from `requirements-dev.txt` or add a real `tox.ini`.~~ **Done** — dropped.
 12. ~~Extend `norecursedirs` instead of replacing pytest defaults (Hypothesis warning).~~ **Done** — pytest defaults repeated in `pytest.ini`.
 13. Expand Vitest only as Theme C frontend surface grows; keep Streamlit Playwright deferred per policy unless residual checklist stays release-blocking.
-14. Spot-check `contextual_emotion` for missing dedicated tests.
+14. ~~Spot-check `contextual_emotion` for missing dedicated tests.~~ **Done** — it was already 86% covered via affect/emotion-family tests (naming gap, not a coverage gap). `tests/unit/test_contextual_emotion_analyze_paths.py` adds preflight failure, duplicate ids, empty text, invalid scores, abstention, neutral and cache-unavailable paths: module 86% → 96%.
 15. Prefer `pytest.approx` over bare float equality when editing the ~109 files with exact float asserts.
 
 ---
