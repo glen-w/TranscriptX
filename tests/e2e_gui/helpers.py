@@ -50,7 +50,9 @@ def main_area(page: Page):
     return page.locator('[data-testid="stMain"], section.main').first
 
 
-def nav(page: Page, label: str, *, settle_ms: int = 3500) -> None:
+def nav(
+    page: Page, label: str, *, settle_ms: int = 3500, require_enabled: bool = True
+) -> None:
     """Click a sidebar navigation button by exact label.
 
     Prefer the last matching sidebar button so subject-type controls named
@@ -62,6 +64,12 @@ def nav(page: Page, label: str, *, settle_ms: int = 3500) -> None:
     if btn.count() == 0 and label == "Speaker Identification":
         btn = sb.get_by_role("button", name="Speaker ID", exact=True)
     expect(btn.last).to_be_visible(timeout=30000)
+    # force=True silently does nothing on a disabled button; fail clearly
+    # instead (e.g. VIEW pages disabled because no transcript/run resolved).
+    if require_enabled:
+        expect(btn.last, f"sidebar nav {label!r} is disabled").to_be_enabled(
+            timeout=15000
+        )
     btn.last.click(force=True, timeout=20000)
     wait(page, settle_ms)
 
@@ -111,9 +119,11 @@ def assert_library_lists_transcript(page: Page, needle: str = "planning") -> Non
     opts = library_option_labels(page)
     joined = "\n".join(opts)
     body = page_text(page)
-    assert any(
-        needle.lower() in o.lower() for o in opts
-    ) or needle.lower() in body.lower() or f"of 1 transcript" in body.lower(), (
+    assert (
+        any(needle.lower() in o.lower() for o in opts)
+        or needle.lower() in body.lower()
+        or "of 1 transcript" in body.lower()
+    ), (
         f"Expected Library option containing {needle!r}; options={opts!r}; "
         f"body_head={body[:500]!r}"
     )
@@ -124,11 +134,12 @@ def select_transcript(page: Page, needle: str = "planning_review") -> None:
     """Select a transcript via the sidebar workspace picker.
 
     Library dataframe cells are often non-interactive in headless Playwright
-    (glide-data-grid virtualisation), so VIEW pages use the sidebar pickers
-    after navigating to Overview. When pickers are not yet hydrated (fresh
+    (glide-data-grid virtualisation), so VIEW pages use the sidebar pickers. When pickers are not yet hydrated (fresh
     import), fall back to confirming the transcript appears in Library.
     """
-    nav(page, "Overview")
+    # Overview is disabled until a transcript and run are selected; this click
+    # only settles the page before using the pickers, so allow a no-op.
+    nav(page, "Overview", require_enabled=False)
     wait(page, 2500)
     sb = sidebar(page)
     boxes = sb.locator('[data-testid="stSelectbox"]')
@@ -342,9 +353,7 @@ def _main_button_matching(page: Page, label: str):
 
 def speaker_id_workspace(page: Page):
     """Locate the CCv2 Speaker ID workspace root (pierces open shadow DOM)."""
-    return page.locator(
-        '[data-testid="speaker-id-workspace"], .tx-sid-root'
-    ).first
+    return page.locator('[data-testid="speaker-id-workspace"], .tx-sid-root').first
 
 
 def wait_for_ccv2_workspace(page: Page, *, timeout_ms: int = 25000) -> bool:
@@ -500,7 +509,9 @@ def jump_to_speaker_index(page: Page, index: int) -> None:
     jump = root.locator('[data-testid="stSelectbox"]').filter(
         has_text=re.compile(r"Jump to speaker", re.I)
     )
-    target = jump.first if jump.count() else root.locator('[data-testid="stSelectbox"]').last
+    target = (
+        jump.first if jump.count() else root.locator('[data-testid="stSelectbox"]').last
+    )
     if target.count() == 0:
         raise RuntimeError("no selectbox found for Jump to speaker")
     target.scroll_into_view_if_needed()
@@ -583,7 +594,6 @@ def assert_clip_player_mounted(page: Page) -> None:
     expect(audio.first.or_(media.first)).to_be_attached(timeout=20000)
 
 
-
 def assert_clip_src_ready(page: Page, *, timeout_ms: int = 20000) -> None:
     """Wait until CCv2 <audio> has a blob: or data: src (clip bytes actually loaded)."""
     page.wait_for_function(
@@ -636,17 +646,18 @@ def click_load_more_samples(page: Page) -> None:
         if after_plays > before_plays:
             break
     after = len((speaker_workspace_text(page) or "").splitlines())
-    assert after >= before, (
-        f"load-more did not grow workspace text lines ({before} -> {after})"
-    )
-    assert after_plays > before_plays, (
-        f"load-more did not add sample play buttons ({before_plays} -> {after_plays})"
-    )
+    assert (
+        after >= before
+    ), f"load-more did not grow workspace text lines ({before} -> {after})"
+    assert (
+        after_plays > before_plays
+    ), f"load-more did not add sample play buttons ({before_plays} -> {after_plays})"
 
 
 def sample_play_count(page: Page) -> int:
     ws = speaker_id_workspace(page)
     return ws.locator(".tx-sid-sample-play").count()
+
 
 def click_section_tab(page: Page, label: str) -> None:
     """Click Insights/Artifacts section tabs (Summary, Highlights, …)."""
@@ -672,13 +683,28 @@ def jump_to_transcript_if_present(page: Page) -> bool:
         return False
 
 
+# Theme C CCv2 workspace roots. Their content lives in shadow DOM, which
+# ``stMain.inner_text`` does not include (Playwright locators do pierce it).
+_CCV2_ROOTS = ".tx-reader-root, .tx-sid-root, .tx-corr-root, .tx-vedit-root"
+
+
 def page_text(page: Page) -> str:
+    """Main-area text plus any CCv2 workspace (reader, Speaker ID, ...) text."""
     try:
-        return page.locator('[data-testid="stMain"], section.main').first.inner_text(
+        text = page.locator('[data-testid="stMain"], section.main').first.inner_text(
             timeout=10000
         )
     except Exception:
-        return page.inner_text("body")
+        text = page.inner_text("body")
+    roots = page.locator(_CCV2_ROOTS)
+    for i in range(roots.count()):
+        try:
+            extra = (roots.nth(i).inner_text(timeout=5000) or "").strip()
+        except Exception:
+            continue
+        if extra and extra not in text:
+            text = f"{text}\n{extra}"
+    return text
 
 
 def fixture_planning_review() -> Path:
