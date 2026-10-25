@@ -1033,3 +1033,25 @@ def test_parent_fsync_ebadf_is_tolerated(tmp_path, monkeypatch):
 
     monkeypatch.setattr(pd.os, "fsync", boom)
     _fsync_parent(path)  # does not raise
+
+
+def test_renameat_probe_ignores_monkeypatched_os_rename(monkeypatch):
+    """A wrapped os.rename must not cache 'unsupported' for the process.
+
+    test_stale_plan_never_renames wraps os.rename with a plain
+    (src, dst, *args, **kwargs) function; if the capability probe ran first
+    inside it, every later cleanup test reported BLOCKED.
+    """
+    import os
+
+    from transcriptx.web.services.run_cleanup import fd_ops
+
+    expected = fd_ops.inspect_renameat_support()
+
+    def wrapped(src, dst, *args, **kwargs):
+        raise AssertionError("probe must not call rename")
+
+    monkeypatch.setattr(os, "rename", wrapped)
+    monkeypatch.setattr(fd_ops, "_RENAMEAT_SUPPORTED", None)
+    assert fd_ops.inspect_renameat_support() is expected
+    assert fd_ops._renameat_supported_cached() is expected
