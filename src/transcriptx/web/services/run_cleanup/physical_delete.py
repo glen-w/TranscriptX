@@ -18,6 +18,7 @@ from transcriptx.web.services.run_cleanup.fingerprint import (
     TreeFingerprintError,
     compute_tree_fingerprint,
 )
+from transcriptx.web.services.run_cleanup.fs_topology import DevicePolicy
 from transcriptx.web.services.run_cleanup.models import STAGING_DIR_NAME
 
 
@@ -181,8 +182,11 @@ def _rmtree_nofollow_fd(
     expected_dev: int,
     *,
     mutation_started: list[bool],
+    policy: DevicePolicy | None = None,
 ) -> None:
     """Descriptor-relative recursive delete: scan then delete; refuse symlinks."""
+    if policy is None:
+        policy = DevicePolicy(path_for_errors, expected_dev)
     try:
         with os.scandir(topfd) as it:
             entries = list(it)
@@ -204,7 +208,7 @@ def _rmtree_nofollow_fd(
                 raise PhysicalDeletePartialError(str(err))
             raise err
         st = entry.stat(follow_symlinks=False)
-        if int(st.st_dev) != int(expected_dev):
+        if not policy.entry_ok(path_for_errors / entry.name, st):
             err = PhysicalDeleteUnsafeError(f"device change during scan: {entry.name}")
             if mutation_started[0]:
                 raise PhysicalDeletePartialError(str(err))
@@ -221,6 +225,7 @@ def _rmtree_nofollow_fd(
                         path_for_errors / name,
                         expected_dev,
                         mutation_started=mutation_started,
+                        policy=policy,
                     )
                 finally:
                     fd_ops.close_quiet(dirfd)
@@ -232,7 +237,7 @@ def _rmtree_nofollow_fd(
                     raise PhysicalDeletePartialError(
                         f"symlink appeared during delete: {path_for_errors / name}"
                     )
-                if int(st.st_dev) != int(expected_dev):
+                if not policy.entry_ok(path_for_errors / name, st):
                     raise PhysicalDeletePartialError(
                         f"device change during delete: {name}"
                     )
