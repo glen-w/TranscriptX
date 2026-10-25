@@ -230,3 +230,77 @@ def test_selected_transcript_with_no_runs_shows_hint(monkeypatch) -> None:
         for caption in _DummySidebarStreamlit.captions
     )
     assert _DummySidebarStreamlit.session_state.get("run_id") is None
+
+
+def test_picking_transcript_enables_context_pages_in_same_rerun(
+    monkeypatch,
+) -> None:
+    """Picking a transcript enables Overview etc. in the same rerun.
+
+    Readiness used to be computed before the pickers wrote the selection to
+    session state, so after choosing a transcript (and its default run) every
+    run-scoped VIEW page stayed disabled until some unrelated rerun.
+    """
+    import transcriptx.web.sidebar as mod
+
+    class _RecordingSidebar(_DummySidebarStreamlit):
+        disabled_by_key: dict[str, bool] = {}
+
+        @classmethod
+        def button(cls, _label, key=None, **kwargs):
+            if key:
+                cls.disabled_by_key[key] = bool(kwargs.get("disabled"))
+            return False
+
+    # Widget value after the user picks slug-1; apply_sidebar_selection has
+    # not copied it to subject_id yet when the sidebar starts painting.
+    _RecordingSidebar.session_state = {
+        **_seed_sidebar_state("Home"),
+        "subject_type": "transcript",
+        "subject_type_selector": "Transcript",
+        "subject_id_selector": "slug-1",
+    }
+    _RecordingSidebar.button_presses = set()
+    _RecordingSidebar.disabled_by_key = {}
+    monkeypatch.setattr(mod, "st", _RecordingSidebar)
+    import transcriptx.web.sidebar_workspace as workspace_mod
+
+    monkeypatch.setattr(workspace_mod, "st", _RecordingSidebar)
+
+    fake_subject = type(
+        "ResolvedSubject",
+        (),
+        {
+            "scope": type("Scope", (), {"scope_type": "transcript"})(),
+            "subject_id": "slug-1",
+            "subject_type": "transcript",
+        },
+    )()
+    monkeypatch.setattr(
+        "transcriptx.web.sidebar_options.get_transcript_dropdown_options",
+        lambda: (["slug-1"], lambda value: value),
+    )
+    monkeypatch.setattr(
+        mod.SubjectService,
+        "resolve_current_subject",
+        lambda ss: fake_subject if ss.get("subject_id") == "slug-1" else None,
+    )
+    monkeypatch.setattr(
+        "transcriptx.web.cache_helpers.cached_list_runs",
+        lambda *_args, **_kwargs: [type("Run", (), {"run_id": "run-1"})()],
+    )
+    monkeypatch.setattr("transcriptx.web.cache_helpers.cached_list_groups", lambda: [])
+
+    mod.render_sidebar(
+        current_page="Home",
+        corrections_studio_available=False,
+        prerequisites=_PREREQUISITES,
+    )
+
+    state = _RecordingSidebar.session_state
+    assert state.get("subject_id") == "slug-1"
+    assert state.get("run_id") == "run-1"
+    for page in ("Overview", "Transcript", "Insights", "Charts"):
+        key = f"nav_{page}_subject"
+        assert key in _RecordingSidebar.disabled_by_key, key
+        assert _RecordingSidebar.disabled_by_key[key] is False, page

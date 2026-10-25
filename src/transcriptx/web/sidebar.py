@@ -313,6 +313,11 @@ def render_sidebar(
         _render_nav_spec(spec, key_suffix="_view")
 
     _render_workspace_pickers(session_state)
+    # The pickers can hydrate a default transcript/run during this paint.
+    # Re-resolve so the context pages below are not disabled by the
+    # pre-picker readiness (fresh session: picker shows a selection while
+    # Overview/Transcript/... stay greyed out until some other rerun).
+    readiness = context_readiness(session_state)
 
     for spec in context_page_specs:
         _render_nav_spec(spec, key_suffix="_subject")
