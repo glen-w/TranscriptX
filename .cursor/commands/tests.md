@@ -107,7 +107,7 @@ Do not re-enable quarantined tests unless updated to current APIs and passing.
 
 If coverage is available and reasonable, run:
 
-pytest --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow"
+make test-coverage   # fast lane + contracts with coverage; expression is FAST_MARKERS in the Makefile
 
 If full coverage is too slow/noisy, run targeted coverage:
 
@@ -270,7 +270,7 @@ Provide:
 ## Canonical gate commands
 
 - Default fast coverage gate:
-  - `pytest -q --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow"`
+  - `make test-coverage` (fast lane + contracts; marker expression is `FAST_MARKERS` in the Makefile)
 - Integration gate:
   - `pytest -q tests/integration -m "not quarantined and (integration or integration_core or integration_extended) and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not release_only"`
 - Smoke gate:

@@ -102,6 +102,8 @@ From [`artifacts/deep_test_gui_heavy.txt`](../../artifacts/deep_test_gui_heavy.t
 
 Source: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
 
+> **Update (Oct 2026):** PR CI is now smoke-only as the merge gate (plus compose + lint); contracts / fast / coverage moved to Nightly (`.github/workflows/nightly.yml`). The diagram below is the August layout.
+
 ```text
 PR CI
 ├── compose-config
@@ -141,6 +143,8 @@ Declared in [`pytest.ini`](../../pytest.ini). Runtime extras:
 Default `addopts` and `make test-fast` marker expressions **match exactly** (verified).
 
 ### 4.2 Contracts vs fast
+
+> **Resolved (Oct 2026):** see backlog item 7 — `contract` is now excluded from fast.
 
 - `contract` is **not** excluded from default/fast.
 - CI runs `test-contracts` then `test-fast`, so contract tests run **twice** (~20s redundant cost; ~465 tests).
@@ -261,7 +265,7 @@ Not all are bugs (fixtures often use `/tmp`). Prefer `tmp_path` / `pytest.approx
 4. ~~**Schedule `make test-integration-core`**~~ **Done** — `.github/workflows/nightly.yml` (schedule + `workflow_dispatch`).
 5. **Run-cleanup fingerprint tests vs multi-device / overlay FS** — failures (`dev=40 != 39`, `mount` vs `symlink`) indicate env assumptions; make tests tolerate cloud/Linux layouts or document required FS topology.
 6. **Decide web coverage policy explicitly in tests README:** either (a) keep omit + require periodic `test-gui-acceptance` evidence, or (b) introduce a thin web coverage/allowlist gate for critical services (e.g. run_cleanup, group_service).
-7. **Deduplicate CI contract work** — either exclude `contract` from fast once contracts job is required, or drop the separate job and keep contracts only in fast (prefer keeping the explicit contracts job and excluding from fast to save ~20s and simplify mental model).
+7. ~~**Deduplicate CI contract work**~~ **Done** — `contract` is excluded from fast (`pytest.ini` addopts + Makefile `FAST_MARKERS`); `make test-contracts` selects by marker (picks up the 3 contract tests outside `tests/contracts/`); Nightly gate-b runs contracts then `make test-coverage` (fast + contracts), dropping the separate `make test-fast` step that reran the whole fast lane. `tests/utils/test_marker_expression_parity.py` keeps Makefile and `pytest.ini` in sync.
 8. **Emotion-family characterization + config path goldens** — investigate drift (env vs real); make goldens env-stable.
 
 ### P2 — hygiene / maintainability
