@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import os
 import shutil
 from typing import Any, Dict
@@ -35,6 +36,27 @@ def has_package(module_name: str) -> bool:
         return False
 
 
+@functools.lru_cache(maxsize=1)
+def has_nlp_runtime() -> bool:
+    """True when spaCy imports *and* an English model is installed.
+
+    ``import spacy`` alone is not enough: with the package but no model,
+    ``get_nlp_model()`` raises in core mode. Checks the configured model and
+    the md/sm fallbacks the session pin in ``tests/conftest.py`` would choose.
+    Never downloads.
+    """
+    try:
+        import spacy.util
+    except ImportError:
+        return False
+    candidates = [
+        os.environ.get("TRANSCRIPTX_SPACY_MODEL"),
+        "en_core_web_md",
+        "en_core_web_sm",
+    ]
+    return any(name and spacy.util.is_package(name) for name in candidates)
+
+
 def get_optional_packages() -> Dict[str, bool]:
     """Return availability for common optional packages."""
     return {
@@ -63,6 +85,7 @@ def get_capabilities_snapshot() -> Dict[str, Any]:
             "has_models": has_models(),
             "has_docker": has_docker(),
             "has_ffmpeg": has_ffmpeg(),
+            "has_nlp_runtime": has_nlp_runtime(),
         },
         "packages": get_optional_packages(),
         "environment": {

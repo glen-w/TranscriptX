@@ -79,12 +79,14 @@ def test_analysis_runs_without_docker(tmp_path, monkeypatch) -> None:
 def test_insight_stack_contract_smoke(tmp_path, monkeypatch) -> None:
     """Run insight stack end-to-end and assert core output contracts."""
     from transcriptx.core.pipeline.module_registry import is_extra_available
+
+    from tests.capabilities import has_nlp_runtime
     from transcriptx.core.utils import output_standards as output_standards_module
     from transcriptx.core.utils import paths as paths_module
     from transcriptx.core.utils import transcript_output as transcript_output_module
     from transcriptx.core.pipeline import pipeline as pipeline_module
 
-    if not is_extra_available("nlp"):
+    if not (is_extra_available("nlp") and has_nlp_runtime()):
         pytest.skip("requires transcriptx[nlp] (spaCy runtime)")
 
     outputs_root = tmp_path / "outputs"
@@ -190,12 +192,14 @@ def test_key_themes_llm_off_zero_client_calls(tmp_path, monkeypatch) -> None:
     from unittest.mock import MagicMock
 
     from transcriptx.core.pipeline.module_registry import is_extra_available
+
+    from tests.capabilities import has_nlp_runtime
     from transcriptx.core.utils import output_standards as output_standards_module
     from transcriptx.core.utils import paths as paths_module
     from transcriptx.core.utils import transcript_output as transcript_output_module
     from transcriptx.core.pipeline import pipeline as pipeline_module
 
-    if not is_extra_available("nlp"):
+    if not (is_extra_available("nlp") and has_nlp_runtime()):
         pytest.skip("requires transcriptx[nlp] (spaCy runtime)")
 
     outputs_root = tmp_path / "outputs"

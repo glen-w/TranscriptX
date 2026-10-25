@@ -88,8 +88,9 @@ def test_contagion_not_applicable_envelope_contract() -> None:
     assert result["results"]["usable_output"] is False
 
 
+@pytest.mark.requires_nlp
 def test_entity_sentiment_success_schema_and_summary_invariants() -> None:
-    pytest.importorskip("spacy")
+    # analyze() loads the spaCy model even with extractors mocked.
 
     module = EntitySentimentAnalysis()
     segments = [

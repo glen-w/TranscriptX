@@ -55,9 +55,12 @@ _SPACY_RUNTIME_MODULES: frozenset[str] = frozenset(
 
 
 def _nlp_extra_available() -> bool:
+    """[nlp] usable at runtime: spaCy importable *and* a model installed."""
     from transcriptx.core.pipeline.module_registry import is_extra_available
 
-    return is_extra_available("nlp")
+    from tests.capabilities import has_nlp_runtime
+
+    return is_extra_available("nlp") and has_nlp_runtime()
 
 
 def _core_modules_no_audio() -> list[str]:
@@ -201,6 +204,7 @@ def test_optional_module_smoke_when_extra_available(
     # pipeline thread pins and break fit_transform (NUMBA_NUM_THREADS sticky).
     if not all(is_extra_distribution_present(e) for e in info.required_extras):
         pytest.skip(f"optional extras not installed: {sorted(info.required_extras)}")
-    if module_name in _SPACY_RUNTIME_MODULES and not _nlp_extra_available():
-        pytest.skip("requires transcriptx[nlp] (spaCy runtime)")
+    needs_spacy = "nlp" in info.required_extras or module_name in _SPACY_RUNTIME_MODULES
+    if needs_spacy and not _nlp_extra_available():
+        pytest.skip("requires transcriptx[nlp] + spaCy model (en_core_web_md/sm)")
     _run_pipeline_smoke(tmp_path, monkeypatch, _fixture_path, module_name)
