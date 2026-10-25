@@ -102,8 +102,6 @@ From [`artifacts/deep_test_gui_heavy.txt`](../../artifacts/deep_test_gui_heavy.t
 
 Source: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
 
-> **Update (Oct 2026):** PR CI is now smoke-only as the merge gate (plus compose + lint); contracts / fast / coverage moved to Nightly (`.github/workflows/nightly.yml`). The diagram below is the August layout.
-
 ```text
 PR CI
 ├── compose-config
@@ -143,8 +141,6 @@ Declared in [`pytest.ini`](../../pytest.ini). Runtime extras:
 Default `addopts` and `make test-fast` marker expressions **match exactly** (verified).
 
 ### 4.2 Contracts vs fast
-
-> **Resolved (Oct 2026):** see backlog item 7 — `contract` is now excluded from fast.
 
 - `contract` is **not** excluded from default/fast.
 - CI runs `test-contracts` then `test-fast`, so contract tests run **twice** (~20s redundant cost; ~465 tests).
@@ -257,7 +253,7 @@ Not all are bugs (fixtures often use `/tmp`). Prefer `tmp_path` / `pytest.approx
 ### P0 — correctness / silent failure / CI truth
 
 1. **Gate NLP on model presence, not only `import spacy`.** Smoke `_nlp_extra_available()`, contract setups, and any module that calls `get_nlp_model()` should skip (or mock) when `en_core_web_md` is missing. Prevents red local/cloud envs and clarifies Core+dev vs `[nlp]` lanes.
-2. ~~**Convert DAG “Pipeline finalization failed” soft-skips to failures**~~ **Done** — the six `except ValueError: pytest.skip(...)` guards around `finalize()` are gone, and `make test-integration-extended` (tests/integration minus `integration_core`) now runs in the Nightly `integration-core` job; previously no scheduled lane ran this file.
+2. **Convert DAG “Pipeline finalization failed” soft-skips to failures** (or narrow to a single explicitly documented skip with ticket + sunset). Soft-skip of setup failure masks integration regressions.
 3. **Fix or quarantine GUI `test_group_create_and_run_analysis_group_target`** (path under project/transcripts). Until green, do not treat AppTest as release evidence for Groups.
 
 ### P1 — protection gaps / portability
@@ -265,8 +261,8 @@ Not all are bugs (fixtures often use `/tmp`). Prefer `tmp_path` / `pytest.approx
 4. ~~**Schedule `make test-integration-core`**~~ **Done** — `.github/workflows/nightly.yml` (schedule + `workflow_dispatch`).
 5. **Run-cleanup fingerprint tests vs multi-device / overlay FS** — failures (`dev=40 != 39`, `mount` vs `symlink`) indicate env assumptions; make tests tolerate cloud/Linux layouts or document required FS topology.
 6. **Decide web coverage policy explicitly in tests README:** either (a) keep omit + require periodic `test-gui-acceptance` evidence, or (b) introduce a thin web coverage/allowlist gate for critical services (e.g. run_cleanup, group_service).
-7. ~~**Deduplicate CI contract work**~~ **Done** — `contract` is excluded from fast (`pytest.ini` addopts + Makefile `FAST_MARKERS`); `make test-contracts` selects by marker (picks up the 3 contract tests outside `tests/contracts/`); Nightly gate-b runs contracts then `make test-coverage` (fast + contracts), dropping the separate `make test-fast` step that reran the whole fast lane. `tests/utils/test_marker_expression_parity.py` keeps Makefile and `pytest.ini` in sync.
-8. **Emotion-family characterization + config path goldens** — investigate drift (env vs real); make goldens env-stable.
+7. **Deduplicate CI contract work** — either exclude `contract` from fast once contracts job is required, or drop the separate job and keep contracts only in fast (prefer keeping the explicit contracts job and excluding from fast to save ~20s and simplify mental model).
+8. ~~**Emotion-family characterization + config path goldens**~~ **Done** — the four output/group-analysis config goldens and `tests/fixtures/simple.json` no longer carry `/Users/...` paths (now `<REPO>/...` / repo-relative), and `tests/utils/test_fixture_host_paths.py` blocks new ones. Emotion characterization: 25/25 pass on torch 2.14 / transformers 5.17 (Oct 2026); the harness already strips `torch_version`, so the Aug drift was environmental.
 
 ### P2 — hygiene / maintainability
 
