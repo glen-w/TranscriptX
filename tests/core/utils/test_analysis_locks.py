@@ -63,3 +63,23 @@ def test_group_lock_excludes_other_thread(tmp_path: Path) -> None:
     assert "group" in str(exc.value).lower()
     release.set()
     worker.join(timeout=5)
+
+
+def test_default_root_follows_analysis_locks_state_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Default lock path and the under-state_dir check use the same root.
+
+    Previously the path came from analysis_locks.STATE_DIR while the safety
+    check used run_writer_locks.STATE_DIR, so redirecting one raised
+    LockDirectoryUnsafeError.
+    """
+    from transcriptx.core.utils import analysis_locks
+
+    state_dir = tmp_path / "isolated_state"
+    monkeypatch.setattr(analysis_locks, "STATE_DIR", state_dir)
+    transcript = tmp_path / "meeting.json"
+    transcript.write_text("{}", encoding="utf-8")
+
+    with transcript_analysis_lock(transcript):
+        assert list((state_dir / "analysis_locks").glob("*.lock"))

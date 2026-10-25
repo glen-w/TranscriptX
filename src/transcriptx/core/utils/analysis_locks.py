@@ -77,8 +77,11 @@ def _acquire(
     state_dir: Path | None,
     blocking: bool,
 ) -> RunWriterLock | None:
-    path = analysis_lock_path(kind=kind, identity=identity, state_dir=state_dir)
-    _ensure_lock_dir(path, state_dir=state_dir)
+    # Resolve the root once so the lock path and the under-state_dir safety
+    # check agree (run_writer_locks has its own STATE_DIR binding).
+    root = Path(state_dir) if state_dir is not None else Path(STATE_DIR)
+    path = analysis_lock_path(kind=kind, identity=identity, state_dir=root)
+    _ensure_lock_dir(path, state_dir=root)
     lock = RunWriterLock(path, blocking=blocking, timeout=1)
     if blocking:
         if not lock.acquire():
@@ -130,9 +133,7 @@ def analysis_lock_held(
         identity = canonical_group_lock_identity(identity)
         if not identity:
             return False
-    lock = _acquire(
-        kind=kind, identity=identity, state_dir=state_dir, blocking=False
-    )
+    lock = _acquire(kind=kind, identity=identity, state_dir=state_dir, blocking=False)
     if lock is None:
         return True
     lock.release()
