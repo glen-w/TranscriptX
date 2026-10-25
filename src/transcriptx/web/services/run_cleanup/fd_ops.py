@@ -21,11 +21,14 @@ class FdOpsError(OSError):
     """Descriptor-relative filesystem operation failed."""
 
 
+# Captured at import so a later monkeypatch of os.rename (tests wrap it to
+# count calls) cannot flip the cached platform capability for the process.
+_ORIGINAL_OS_RENAME = os.rename
+
+
 def inspect_renameat_support() -> bool:
     """Return False if os.rename cannot accept src_dir_fd/dst_dir_fd."""
-    # Prefer the original CPython builtin so test monkeypatches of os.rename
-    # do not flip the platform capability gate.
-    target = getattr(os, "rename")
+    target = _ORIGINAL_OS_RENAME
     try:
         import builtins  # noqa: F401
 
