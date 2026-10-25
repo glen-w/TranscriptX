@@ -580,6 +580,27 @@ def _session_spacy_model():
                 pass
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _isolated_analysis_lock_dir(tmp_path_factory):
+    """Give each pytest process its own analysis-lock root.
+
+    Analysis locks are non-blocking flocks keyed by transcript path under the
+    shared ``STATE_DIR``. Two pytest processes on one checkout (for example
+    ``make test-contracts`` beside ``make test-integration-core``) that analyze
+    the same fixture transcript otherwise fail with ``AnalysisBusyError``.
+    Locks still exclude within a session; tests that pass ``state_dir=``
+    explicitly are unaffected.
+    """
+    from transcriptx.core.utils import analysis_locks
+
+    patcher = pytest.MonkeyPatch()
+    patcher.setattr(
+        analysis_locks, "STATE_DIR", tmp_path_factory.mktemp("analysis_state")
+    )
+    yield
+    patcher.undo()
+
+
 def pytest_configure(config):
     """Configure pytest with custom markers."""
     # Pin before collection/imports can load Numba (pool size is process-sticky).
