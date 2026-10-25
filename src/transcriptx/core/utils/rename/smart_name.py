@@ -725,14 +725,10 @@ def suggest_smart_rename_base_name(
     tokens = build_rename_tokens(dt, stem=path.stem)
     stems = list(existing_stems) if existing_stems is not None else None
     if stems is None:
-        root = transcripts_dir
-        if root is None:
-            try:
-                from transcriptx.core.utils._path_core import get_transcript_dir
-
-                root = get_transcript_dir()
-            except Exception:
-                root = path.parent
+        # Renames happen in place (rename_managed_transcript writes
+        # ``old.parent / new_stem.json``), so collisions only matter in the
+        # transcript's own folder unless the caller names another one.
+        root = transcripts_dir if transcripts_dir is not None else path.parent
         stems = list_transcript_stems(root)
 
     full = render_smart_rename(
