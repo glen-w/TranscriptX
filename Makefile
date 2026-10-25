@@ -1,7 +1,7 @@
 # TranscriptX Makefile
 # Main targets for documentation and development
 
-.PHONY: docs-gen docs docs-clean pages-site help test-smoke test-smoke-nlp test-nlp-unit test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance test-gui-e2e test-workspaces test-theme-c-browser workspaces-build docker-smoke run clean-test-artifacts perf-envelopes
+.PHONY: docs-gen docs docs-clean pages-site help test-smoke test-smoke-nlp test-nlp-unit test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration-extended test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance test-gui-e2e test-workspaces test-theme-c-browser workspaces-build docker-smoke run clean-test-artifacts perf-envelopes
 
 help:
 	@echo "TranscriptX Makefile"
@@ -30,6 +30,7 @@ help:
 	@echo "  test-heavy-all   Run explicit heavy profile (includes quarantined)"
 	@echo "  test-contracts   Run offline contract tests"
 	@echo "  test-integration Run integration + integration_core + integration_extended lane"
+	@echo "  test-integration-extended Run tests/integration minus integration_core (nightly)"
 	@echo "  test-all         Run all tests except quarantined"
 	@echo "  test-coverage    Default fast suite + coverage (fail_under from .coveragerc)"
 	@echo "  test-config-coverage  Config package coverage gate (≥85% on core.config + utils.config)"
@@ -111,6 +112,10 @@ test-contracts:
 test-integration-core:
 	@echo "Running integration core tests..."
 	@pytest -m "integration_core and not quarantined and not requires_docker"
+
+test-integration-extended:
+	@echo "Running integration tests outside integration_core (integration/integration_extended)..."
+	@pytest -q tests/integration -m "not quarantined and (integration or integration_extended) and not integration_core and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not release_only"
 
 test-integration:
 	@echo "Running integration gate (integration/integration_core/integration_extended)..."

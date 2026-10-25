@@ -102,3 +102,7 @@ jobs:
           echo "HOST_RECORDINGS_DIR=$RUNNER_TEMP/tx-recordings" >> "$GITHUB_ENV"
       - name: Integration core
         run: make test-integration-core
+      # Rest of tests/integration (DAG pipeline etc.); no other scheduled lane runs it.
+      - name: Integration extended
+        if: always()
+        run: make test-integration-extended
