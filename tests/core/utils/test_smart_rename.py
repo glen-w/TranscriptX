@@ -138,6 +138,25 @@ def test_suggest_smart_rename_base_name(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
+def test_suggest_defaults_collision_check_to_transcript_folder(tmp_path: Path) -> None:
+    """Without transcripts_dir, {n} skips stems taken in the transcript's folder."""
+    folder = tmp_path / "library"
+    folder.mkdir()
+    (folder / "260810_evening_1.json").write_text("{}", encoding="utf-8")
+    path = folder / "R20260810-173237.json"
+    path.write_text("{}", encoding="utf-8")
+    elsewhere = tmp_path / "other"
+    elsewhere.mkdir()
+    (elsewhere / "260810_evening_2.json").write_text("{}", encoding="utf-8")
+
+    suggestion = suggest_smart_rename_base_name(
+        path, mode="suggest_import", pattern="{yymmdd}_{period}_{n}"
+    )
+    assert suggestion is not None
+    assert suggestion.full == "260810_evening_2"
+
+
+@pytest.mark.unit
 def test_suggest_off_returns_none(tmp_path: Path) -> None:
     path = tmp_path / "R20260810-173237.json"
     path.write_text("{}", encoding="utf-8")
