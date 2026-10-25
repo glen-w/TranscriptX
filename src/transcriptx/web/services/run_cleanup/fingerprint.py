@@ -7,6 +7,8 @@ import os
 import stat
 from pathlib import Path
 
+from transcriptx.web.services.run_cleanup.fs_topology import DevicePolicy
+
 
 class TreeFingerprintError(Exception):
     """Raised when a run tree cannot be safely fingerprinted."""
@@ -46,7 +48,9 @@ def compute_tree_fingerprint(run_root: Path, root_dev: int) -> tuple[str, int, i
 
     Raises ``TreeFingerprintError`` if any symlink, mount/device mismatch,
     or unreadable entry is encountered. ``root_dev`` must be the *planned*
-    device identity — never substitute a newly observed device.
+    device identity — never substitute a newly observed device. Device rules
+    for descendants (including the overlayfs file exception) live in
+    ``fs_topology.DevicePolicy``.
     """
     root = Path(run_root)
     if not root.exists():
@@ -69,6 +73,7 @@ def compute_tree_fingerprint(run_root: Path, root_dev: int) -> tuple[str, int, i
             f"run root device {root_st.st_dev} != expected root_dev {root_dev}",
         )
 
+    policy = DevicePolicy(root, root_dev)
     lines: list[str] = []
     size_estimate = 0
     file_count = 0
@@ -94,7 +99,7 @@ def compute_tree_fingerprint(run_root: Path, root_dev: int) -> tuple[str, int, i
                         raise TreeFingerprintError(
                             "symlink", f"symlink under run tree: {rel}"
                         )
-                    if int(st.st_dev) != int(root_dev):
+                    if not policy.entry_ok(entry.path, st):
                         raise TreeFingerprintError(
                             "mount",
                             f"device change under run tree: {rel} "

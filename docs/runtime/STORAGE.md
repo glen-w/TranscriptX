@@ -70,7 +70,7 @@ Implications:
   - `config.json` holds project settings including the Custom Questions library (`analysis.llm_custom_qa.saved_questions`).
   - `identify.json` holds Settings → Speakers ingest defaults (`auto_name` / `auto_link` / `style_only_apply`, all default false; `name_token_policy` default `hybrid`; optional `twenty_enabled` / `twenty_role` / `twenty_base_url`). Secrets stay in env (`TWENTY_API_KEY`). Not voice consent.
   - With Docker Compose, set `HOST_CONFIG_DIR` to a host directory **outside the git clone** (same pattern as `HOST_TRANSCRIPTS_DIR` / `HOST_OUTPUT_DIR`) so Settings survive wiping `./data`. Default remains `./data/.transcriptx`.
-- **outputs_dir**: App-managed analysis outputs, reconstructable by re-running.
+- **outputs_dir**: App-managed analysis outputs, reconstructable by re-running. Run cleanup never crosses a device boundary: a run folder (or any folder inside it) on a different device than the output root is treated as a mount and left alone. One exception: on an overlayfs mount whose layers are on different filesystems (common in containers and cloud sandboxes), regular files may report their layer's device, and that is accepted as long as the file is not itself a mount point.
 - **state_dir**: App state (processing state, run/analysis locks, rename journal), persistent, reconstructable in part. Lives under `data_dir/state/`.
 - **wav_backup_dir**: Archive, persistent, not auto-clean unless explicit user action.
 

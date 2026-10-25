@@ -146,6 +146,10 @@ python -m pytest tests/core/config/test_registry_ownership.py \
 | `test_buttons_with_literal_labels_declare_an_icon` | `st.button("Fixed label", ...)` must pass `icon=` using a constant from `transcriptx.web.icons` (no inline `:material/...:` tokens outside `icons.py`) |
 | `test_no_inline_material_tokens_outside_the_registry` | Add glyphs to `icons.py`, reference `ic.*` at call sites |
 
+### Run-cleanup filesystem layouts
+
+Run-cleanup tests build run trees under pytest's `tmp_path` and compare `st_dev` values. Supported layouts: a single filesystem, or overlayfs, including overlays whose layers sit on different filesystems. There, directories report the overlay device and files report their layer's device. `fs_topology.DevicePolicy` (in `src/transcriptx/web/services/run_cleanup/`) accepts that case, and directory device changes and bind-mounted files are still rejected. To reproduce the overlay case locally (Linux, root), mount an overlay with the lower dir on a tmpfs and pass `--basetemp=<merged>/pt` to `pytest tests/web/services -k "run_cleanup or fingerprint"`. Simulated coverage lives in `tests/web/services/run_cleanup_adversarial/test_overlay_device_policy.py`.
+
 ### Other known drift (not always CI-red)
 
 JSON fixtures must not embed home-directory paths (`/Users/<name>/`, `/home/<name>/`, `C:\\Users\\`); `tests/utils/test_fixture_host_paths.py` enforces this. Use `<REPO>/...` in config goldens or repo-relative paths elsewhere. Emotion-family characterization goldens still record `torch_version`/`transformers_version`, but the harness strips them before comparing (`tests/unit/emotion_family_char/harness.py`), so a newer PyTorch alone does not fail them.
