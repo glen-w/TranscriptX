@@ -259,19 +259,19 @@ Not all are bugs (fixtures often use `/tmp`). Prefer `tmp_path` / `pytest.approx
 ### P1 — protection gaps / portability
 
 4. ~~**Schedule `make test-integration-core`**~~ **Done** — `.github/workflows/nightly.yml` (schedule + `workflow_dispatch`).
-5. ~~**Run-cleanup fingerprint tests vs multi-device / overlay FS**~~ **Done** — root cause was product, not tests: on overlayfs with layers on different filesystems, files report their layer's `st_dev`, so every run tree was rejected as `mount` (and `artifact.txt` sorting before `link.txt` turned expected `symlink` into `mount`). `run_cleanup/fs_topology.DevicePolicy` now tolerates non-directory device changes only on an overlay root and never for mount points; fingerprint and the delete walk use it. Reproduced on a real cross-fs overlay: 73 failed → 0 (251 passed).
+5. **Run-cleanup fingerprint tests vs multi-device / overlay FS** — failures (`dev=40 != 39`, `mount` vs `symlink`) indicate env assumptions; make tests tolerate cloud/Linux layouts or document required FS topology.
 6. **Decide web coverage policy explicitly in tests README:** either (a) keep omit + require periodic `test-gui-acceptance` evidence, or (b) introduce a thin web coverage/allowlist gate for critical services (e.g. run_cleanup, group_service).
 7. **Deduplicate CI contract work** — either exclude `contract` from fast once contracts job is required, or drop the separate job and keep contracts only in fast (prefer keeping the explicit contracts job and excluding from fast to save ~20s and simplify mental model).
-8. ~~**Emotion-family characterization + config path goldens**~~ **Done** — the four output/group-analysis config goldens and `tests/fixtures/simple.json` no longer carry `/Users/...` paths (now `<REPO>/...` / repo-relative), and `tests/utils/test_fixture_host_paths.py` blocks new ones. Emotion characterization: 25/25 pass on torch 2.14 / transformers 5.17 (Oct 2026); the harness already strips `torch_version`, so the Aug drift was environmental.
+8. **Emotion-family characterization + config path goldens** — investigate drift (env vs real); make goldens env-stable.
 
 ### P2 — hygiene / maintainability
 
-9. ~~Register `browser` in `pytest.ini`; remove or start using `optional` mark; fix stale `conftest` comment about `integration_core` in default suite.~~ **Done** — `browser` was already in `pytest.ini` (duplicate `addinivalue_line` in `tests/browser/conftest.py` removed); unused `optional` marker removed; comment fixed.
-10. ~~Delete or rewrite the seven `collect_ignore` semantic_similarity v1 files.~~ **Done** — deleted (five fail to import; the other two import but all 8 of their tests fail on removed v1 APIs); `collect_ignore` removed.
-11. ~~Drop unused `tox` from `requirements-dev.txt` or add a real `tox.ini`.~~ **Done** — dropped.
-12. ~~Extend `norecursedirs` instead of replacing pytest defaults (Hypothesis warning).~~ **Done** — pytest defaults repeated in `pytest.ini`.
-13. Expand Vitest only as Theme C frontend surface grows; keep Streamlit Playwright deferred per policy unless residual checklist stays release-blocking.
-14. ~~Spot-check `contextual_emotion` for missing dedicated tests.~~ **Done** — it was already 86% covered via affect/emotion-family tests (naming gap, not a coverage gap). `tests/unit/test_contextual_emotion_analyze_paths.py` adds preflight failure, duplicate ids, empty text, invalid scores, abstention, neutral and cache-unavailable paths: module 86% → 96%.
+9. Register `browser` in `pytest.ini`; remove or start using `optional` mark; fix stale `conftest` comment about `integration_core` in default suite.
+10. Delete or rewrite the seven `collect_ignore` semantic_similarity v1 files.
+11. Drop unused `tox` from `requirements-dev.txt` or add a real `tox.ini`.
+12. Extend `norecursedirs` instead of replacing pytest defaults (Hypothesis warning).
+13. Expand Vitest only as Theme C frontend surface grows; keep Streamlit Playwright deferred per policy unless residual checklist stays release-blocking. **Progress (Oct 2026):** `viewer_edit.ts` (Correct-mode span selection) had no tests and Corrections Studio only protocol-id checks; added `viewer_edit.test.ts` (6) and `corrections_render.test.ts` (9: envelope fields, one-mutation-in-flight guard, protocol mismatch, shortcuts). Vitest 17 → 32. Speaker ID was already covered via `index.test.ts`.
+14. Spot-check `contextual_emotion` for missing dedicated tests.
 15. Prefer `pytest.approx` over bare float equality when editing the ~109 files with exact float asserts.
 
 ---
