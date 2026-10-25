@@ -72,6 +72,11 @@ clean-test-artifacts:
 	@echo "Clearing test artifact slugs (test__*) from outputs and index..."
 	@python scripts/clean_test_artifacts.py --prefix test__ --apply --yes
 
+# Fast lane (Gate B) marker expression. Must equal pytest.ini addopts -m
+# (tests/utils/test_marker_expression_parity.py). Contracts run in
+# test-contracts, not here.
+FAST_MARKERS := not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not requires_nlp and not slow and not legacy and not semantic_v2_slow and not gui_acceptance and not gui_e2e and not browser and not contract
+
 test-smoke:
 	@echo "Running CI smoke gate..."
 	@pytest -q tests/smoke -m "smoke and not quarantined and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not release_only"
@@ -87,7 +92,7 @@ test-nlp-unit:
 
 test-fast:
 	@echo "Running fast core tests (Gate B)..."
-	@pytest -q -m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not requires_nlp and not slow and not legacy and not semantic_v2_slow and not gui_acceptance and not gui_e2e and not browser"
+	@pytest -q -m "$(FAST_MARKERS)"
 
 test-gui-acceptance:
 	@echo "Running Streamlit AppTest GUI acceptance journeys..."
@@ -107,7 +112,7 @@ test-heavy-all:
 
 test-contracts:
 	@echo "Running contract tests..."
-	@pytest tests/contracts -m "not quarantined"
+	@pytest -m "contract and not quarantined"
 
 test-integration-core:
 	@echo "Running integration core tests..."
@@ -130,9 +135,9 @@ test-all:
 	@pytest --override-ini addopts="-ra --strict-markers --strict-config --import-mode=importlib --verbose --tb=short --timeout=300 --timeout-method=thread" -m "not quarantined"
 
 test-coverage:
-	@echo "Running default-marker suite with coverage (see .coveragerc fail_under)..."
+	@echo "Running fast lane + contracts with coverage (see .coveragerc fail_under)..."
 	@pytest --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -q \
-		-m "not quarantined and not smoke and not release_only and not integration and not integration_core and not integration_extended and not requires_ffmpeg and not requires_docker and not requires_models and not requires_api and not slow and not legacy and not semantic_v2_slow and not gui_acceptance"
+		-m "($(FAST_MARKERS)) or (contract and not quarantined)"
 
 test-config-coverage:
 	@echo "Running config-scoped coverage gate (≥85% on transcriptx.core.config + utils.config)..."

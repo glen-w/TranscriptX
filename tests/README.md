@@ -4,14 +4,14 @@
 
 ## Quick commands (single source of truth)
 
-- `pytest` (or `make test-fast`) — **default**: fast lane (excludes smoke, release_only, integration, integration_core, integration_extended, slow, `gui_acceptance`, `gui_e2e`, `browser`, and requires_* capability markers).
+- `pytest` (or `make test-fast`) — **default**: fast lane (excludes smoke, release_only, integration, integration_core, integration_extended, slow, `gui_acceptance`, `gui_e2e`, `browser`, `contract`, and requires_* capability markers).
 - `make test-smoke` — CI gate (smoke tests only)
-- `make test-fast` — same as default `pytest` (fast core + Playwright GUI E2E)
+- `make test-fast` — same as default `pytest` (fast core; contracts and Playwright GUI E2E run in their own targets)
 - `make test-gui-acceptance` — Streamlit AppTest GUI acceptance journeys (seven primary flows; heavy)
 - `make test-gui-e2e` — Playwright live Streamlit GUI E2E only (`tests/e2e_gui`; ten key flows; requires Chromium: `playwright install chromium`)
 - `make test-heavy` — heavy profile, excludes quarantined by default
 - `make test-heavy-all` — heavy profile including quarantined
-- `make test-contracts` — offline contract tests (output shape only)
+- `make test-contracts` — offline contract tests (`contract` marker; output shape only). Not part of fast.
 - `make test-integration` — integration lane (`integration` / `integration_core` / `integration_extended`) excluding external-capability markers
 - `make test-integration-extended` — `tests/integration` minus `integration_core` (runs nightly after `test-integration-core`)
 - `make test-release-only` — release-only packaging/install smoke
@@ -26,7 +26,7 @@
 
 **Install note:** PR `smoke` installs `.[dev]` only. Advisory `tests-nlp` installs `.[dev,nlp,web]`. Smoke still skips spaCy-gated modules unless `[nlp]` is present.
 
-**Nightly:** `.github/workflows/nightly.yml` (schedule `cron` 06:00 UTC + `workflow_dispatch`) runs the broader Gate B lane (`make test-contracts` → `make test-fast` → `make test-coverage`) plus `make test-integration-core` then `make test-integration-extended` (excluding `requires_docker`; no image pre-build on the nightly runner). Coverage badge refresh follows Nightly, not PR CI.
+**Nightly:** `.github/workflows/nightly.yml` (schedule `cron` 06:00 UTC + `workflow_dispatch`) runs the broader Gate B lane (`make test-contracts` → `make test-coverage`, which runs fast + contracts with coverage and is the fast gate) plus `make test-integration-core` then `make test-integration-extended` (excluding `requires_docker`; no image pre-build on the nightly runner). Coverage badge refresh follows Nightly, not PR CI.
 
 Time budgets (target ceilings):
 - PR `test-smoke` ≤ 5 min
@@ -38,10 +38,10 @@ Time budgets (target ceilings):
 
 **Includes**
 - Unit tests under `tests/unit/` or `tests/core/` (no heavy markers)
-- Contract tests under `tests/contracts/`
 - Web entry point (import + `--help`) tests (no WhisperX, no HF/OpenAI, no docker exec, no ffmpeg)
 
 **Excludes**
+- Contract tests (`contract` marker; run with `make test-contracts`)
 - Integration workflows
 - Slow tests
 - Model-heavy tests
@@ -82,7 +82,7 @@ Default `pytest` behavior remains the source of truth for the fast local profile
 
 ## Marker policy matrix
 
-- **Fast default (`pytest` / `make test-fast`)**: excludes `quarantined`, `smoke`, `release_only`, `integration`, `integration_core`, `integration_extended`, `requires_ffmpeg`, `requires_docker`, `requires_models`, `requires_api`, `requires_nlp`, `slow`, `gui_acceptance`, `gui_e2e`, `browser`.
+- **Fast default (`pytest` / `make test-fast`)**: excludes `quarantined`, `smoke`, `release_only`, `integration`, `integration_core`, `integration_extended`, `requires_ffmpeg`, `requires_docker`, `requires_models`, `requires_api`, `requires_nlp`, `slow`, `gui_acceptance`, `gui_e2e`, `browser`, `contract`. The expression lives once in the Makefile (`FAST_MARKERS`) and must match `pytest.ini` `addopts` (`tests/utils/test_marker_expression_parity.py`).
 - **GUI acceptance (`make test-gui-acceptance`)**: `gui_acceptance` marker; residual manual items in [`docs/dev/gui_acceptance_residual_checklist.md`](../docs/dev/gui_acceptance_residual_checklist.md).
 - **GUI E2E (`make test-gui-e2e`)**: `gui_e2e` marker; live Streamlit + Playwright Chromium for the ten documented key flows under `tests/e2e_gui/` (see [docs/workflows/](../docs/workflows/index.md)). Requires `playwright` + `playwright install chromium` (Playwright ships with `[maps]` / `[full]` extras); tests skip when Chromium is unavailable.
 - **Smoke lane (`make test-smoke`)**: `tests/smoke` only, requires `smoke` marker, excludes `release_only` and external-capability markers.

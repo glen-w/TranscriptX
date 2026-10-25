@@ -26,7 +26,7 @@ env:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
 
 jobs:
-  # Former PR Gate B: contracts + fast + coverage artifact for the badge workflow.
+  # Former PR Gate B: contracts, then fast + coverage artifact for the badge workflow.
   gate-b:
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -57,9 +57,9 @@ jobs:
           echo "TRANSCRIPTX_OUTPUT_DIR=$RUNNER_TEMP/tx-out" >> "$GITHUB_ENV"
       - name: Contracts
         run: make test-contracts
-      - name: Fast
-        run: make test-fast
-      - name: Coverage JSON
+      # test-coverage runs the fast lane plus contracts, so it is also the
+      # fast gate; a separate make test-fast step would rerun ~8.4k tests.
+      - name: Fast + coverage JSON
         run: make test-coverage
       - name: Upload coverage report
         if: always()
