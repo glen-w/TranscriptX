@@ -148,6 +148,6 @@ python -m pytest tests/core/config/test_registry_ownership.py \
 
 ### Other known drift (not always CI-red)
 
-Some characterization goldens still embed **machine-specific** values (absolute paths under the original author’s home directory, pinned `torch_version`, etc.). Those can fail on other hosts or newer PyTorch even when smoke/CI gates are green. Treat them as cleanup debt unless your PR touches the same surface.
+JSON fixtures must not embed home-directory paths (`/Users/<name>/`, `/home/<name>/`, `C:\\Users\\`); `tests/utils/test_fixture_host_paths.py` enforces this. Use `<REPO>/...` in config goldens or repo-relative paths elsewhere. Emotion-family characterization goldens still record `torch_version`/`transformers_version`, but the harness strips them before comparing (`tests/unit/emotion_family_char/harness.py`), so a newer PyTorch alone does not fail them.
 
 Generated docs: the advisory CI `docs` job still runs `make docs-gen` + Sphinx and logs drift or build errors, but it does **not** turn PR CI red. Fix before release or before merging doc/registry changes; Pages (`pages.yml`) rebuilds on `main` when `docs/**` changes.

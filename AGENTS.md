@@ -63,6 +63,6 @@ managed-import workflow. There is no long-running backend beyond the Streamlit p
   aliases at import—`test_pydantic_bridge_drift` uses `with_isolated_config_defaults()` in
   `delegation_test_utils.py`, but other config/golden tests may still diverge from CI until env/path
   helpers are applied (see `docs/dev/config_architecture.md`).
-- **Other local-only golden drift:** some characterization snapshots still pin machine-specific paths
-  or `torch_version`; they may fail off the author's machine / on newer torch and are unrelated to
-  venv setup. Smoke gate is the fast signal for environment health.
+- **Golden portability:** JSON fixtures may not contain home-directory paths
+  (`tests/utils/test_fixture_host_paths.py`); emotion characterization ignores recorded
+  `torch_version`. Smoke gate is the fast signal for environment health.

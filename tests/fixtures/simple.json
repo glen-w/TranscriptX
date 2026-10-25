@@ -2,7 +2,7 @@
   "schema_version": 1,
   "source": {
     "type": "vtt",
-    "original_path": "/Users/89298/Documents/transcriptx/tests/fixtures/vtt/simple.vtt",
+    "original_path": "tests/fixtures/vtt/simple.vtt",
     "imported_at": "2026-07-24T20:08:42.769228+00:00",
     "file_hash": "sha256:61c0887f916baa61b610e162f50285ff0ed595892aa8112617a19f8c0196452b",
     "file_mtime": 1769584952.0
