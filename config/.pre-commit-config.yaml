@@ -25,5 +25,10 @@ repos:
     rev: v1.8.0
     hooks:
       - id: mypy
-        additional_dependencies: [types-all]
-        args: [--ignore-missing-imports] 
+        # types-all can no longer be installed (it pins the removed
+        # types-pkg-resources). src only imports yaml among stubbed packages.
+        additional_dependencies: [types-PyYAML]
+        args: [--ignore-missing-imports]
+        # Library code only (pyproject [tool.mypy] mypy_path = "src"); tests
+        # use intentional idioms mypy flags (tuple lambdas, invalid kwargs).
+        files: ^src/
