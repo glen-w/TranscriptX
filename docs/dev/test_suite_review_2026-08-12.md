@@ -266,10 +266,10 @@ Not all are bugs (fixtures often use `/tmp`). Prefer `tmp_path` / `pytest.approx
 
 ### P2 — hygiene / maintainability
 
-9. Register `browser` in `pytest.ini`; remove or start using `optional` mark; fix stale `conftest` comment about `integration_core` in default suite.
-10. Delete or rewrite the seven `collect_ignore` semantic_similarity v1 files.
-11. Drop unused `tox` from `requirements-dev.txt` or add a real `tox.ini`.
-12. Extend `norecursedirs` instead of replacing pytest defaults (Hypothesis warning).
+9. ~~Register `browser` in `pytest.ini`; remove or start using `optional` mark; fix stale `conftest` comment about `integration_core` in default suite.~~ **Done** — `browser` was already in `pytest.ini` (duplicate `addinivalue_line` in `tests/browser/conftest.py` removed); unused `optional` marker removed; comment fixed.
+10. ~~Delete or rewrite the seven `collect_ignore` semantic_similarity v1 files.~~ **Done** — deleted (five fail to import; the other two import but all 8 of their tests fail on removed v1 APIs); `collect_ignore` removed.
+11. ~~Drop unused `tox` from `requirements-dev.txt` or add a real `tox.ini`.~~ **Done** — dropped.
+12. ~~Extend `norecursedirs` instead of replacing pytest defaults (Hypothesis warning).~~ **Done** — pytest defaults repeated in `pytest.ini`.
 13. Expand Vitest only as Theme C frontend surface grows; keep Streamlit Playwright deferred per policy unless residual checklist stays release-blocking.
 14. Spot-check `contextual_emotion` for missing dedicated tests.
 15. Prefer `pytest.approx` over bare float equality when editing the ~109 files with exact float asserts.

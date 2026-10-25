@@ -22,8 +22,8 @@ managed-import workflow. There is no long-running backend beyond the Streamlit p
   `. .venv/bin/activate` or call binaries directly, e.g. `.venv/bin/python`, `.venv/bin/pytest`.
 - The update script refreshes deps only: `requirements.txt` (full functional stack, incl. torch,
   spaCy, streamlit, bertopic) + `pip install -e ".[dev]"` (test/lint tools) + `hypothesis`.
-- **`hypothesis` is an undeclared test dependency** required for `make test-fast` collection
-  (imported by `tests/core/analysis/llm_custom_qa/test_plan_coverage.py`); the update script installs it.
+- `hypothesis` is required for `make test-fast` collection (imported by
+  `tests/core/analysis/llm_custom_qa/test_plan_coverage.py`); it is declared in the `[dev]` extra.
 - NLP model data is **pre-downloaded into the snapshot**, not the update script: spaCy
   `en_core_web_md` + `en_core_web_sm`, NLTK `vader_lexicon`/`punkt`/`punkt_tab`/`cmudict`, and
   TextBlob corpora. If any are missing, re-fetch using the commands in the `Dockerfile`.

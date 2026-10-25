@@ -5,12 +5,6 @@ from __future__ import annotations
 import pytest
 
 
-def pytest_configure(config):
-    config.addinivalue_line(
-        "markers", "browser: Playwright browser integration (Theme C)"
-    )
-
-
 @pytest.fixture
 def page(pytestconfig):
     pytest.importorskip("playwright")
