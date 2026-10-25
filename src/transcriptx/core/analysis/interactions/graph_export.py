@@ -290,9 +290,9 @@ def undirected_chart_edges(
 def node_chart_sizes(payload: Mapping[str, Any]) -> dict[str, float]:
     nodes = list(payload.get("nodes") or [])
     shares = [
-        _as_finite_float(n.get("floor_share"))
-        for n in nodes
-        if _as_finite_float(n.get("floor_share")) is not None
+        share
+        for share in (_as_finite_float(n.get("floor_share")) for n in nodes)
+        if share is not None
     ]
     use_share = len(shares) > 0 and len(set(shares)) > 1
     sizes: dict[str, float] = {}
