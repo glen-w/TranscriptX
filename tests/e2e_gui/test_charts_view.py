@@ -5,10 +5,12 @@ from __future__ import annotations
 import pytest
 
 from tests.e2e_gui.helpers import (
+    expect,
     goto_app,
     nav,
     page_text,
     select_transcript,
+    sidebar,
     wait,
 )
 
@@ -30,19 +32,13 @@ def test_charts_view(seeded_run_app, page) -> None:
 
 
 def test_charts_run_scoped_without_subject_shows_nudge(seeded_app, page) -> None:
-    """Charts without a selected run should redirect or nudge rather than show charts."""
+    """Charts without a selected run is not reachable from the sidebar."""
     goto_app(page, seeded_app.base_url)
-    nav(page, "Charts")
-    wait(page, 3500)
+    charts = sidebar(page).get_by_role("button", name="Charts", exact=True).last
+    expect(charts).to_be_visible(timeout=30000)
+    expect(charts).to_be_disabled(timeout=15000)
     body = page_text(page)
-    assert (
-        "Select a subject" in body
-        or "select" in body.lower()
-        or "Overview" in body
-        or "Charts" in body
-        or "Home" in body
-        or "Resume work" in body
-    )
+    assert "Home" in body or "Resume work" in body
 
 
 def test_charts_complements_insights_navigation(seeded_run_app, page) -> None:
