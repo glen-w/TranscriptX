@@ -55,6 +55,7 @@ def test_transcribe_audio_page_has_run_and_copy_paths():
     assert "Mac host" in source
     assert "Keyword biasing" in source
     assert "Granite Speech" in source
+    assert "render_system_audio_capture_panel" in source
 
 
 @pytest.mark.unit
