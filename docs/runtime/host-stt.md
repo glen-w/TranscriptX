@@ -347,6 +347,19 @@ voice-note-watch --once --dry-run \
 
 Library admission of a note, if you want it later, is a separate act (Import Transcript or `inbox-watch`). This script will not do it.
 
+## System audio capture (`system-audio-capture`)
+
+Optional **host-side** Mac companion for computer audio (roadmap **G5**). Not a
+meeting bot, not Settings → Watcher, and not a second `inbox-watch` config.
+BlackHole + Multi-Output Device → WAV → on Stop, batch whispermlx JSON under
+`originals/` → optional `--admit`. Live captions are theme **H6**.
+
+Ops guide: [system-audio-capture.md](system-audio-capture.md).
+
+Do **not** point capture WAV at the library inbox, the G2 watch folder, or the
+G4 voice-note inbox. Do **not** attach this to the login agent that runs
+`inbox-watch --watch`, and do not KeepAlive it.
+
 ## Import a whole folder (details)
 
 On **Import Transcript**, section **Import all from folder** scans an **absolute** local directory (Docker: mount the host folder — typically `HOST_TRANSCRIPT_INBOX_DIR` → `/mnt/transcript-inbox`; do not scan `/mnt/transcripts` or its subdirs) and imports only eligible files:

@@ -54,8 +54,9 @@ Research basis: [Open source ASR for TranscriptX](../reports/Open%20source%20ASR
 | **1 — Host providers (H)** | whispermlx (Mac), WhisperX Docker (CUDA/CPU) | Harden only until boring |
 | **2 — Theme K → H5** | NeMo Parakeet TDT, Canary (± Canary-Qwen); optional faster-whisper / whisper.cpp / sherpa-onnx | Copyable `docker run` + **WhisperX-shaped JSON converter** into `originals/`; Import remains the gate; promote to registered provider only after H5 entry criteria |
 | **3 — BYO / Copy recipes** | Whisper-WebUI, FunASR/SenseVoice, Distil-Whisper, Vosk, Scriberr / noScribe / aTrain | Document export → Import; adapters only if recurring shapes fail |
-| **Watchlist** | CocktailASR-1 (focus-speaker / enrollment), HTTP STT sidecar, YouTube URL ingest (H5+), H6 streaming, DiCoW | Research / later; not Whisper replacements |
-| **Reject** | In-process NeMo/Whisper in the analysis image; silent cloud STT; SeamlessM4T/MMS as commercial defaults (CC-BY-NC); DeepSpeech; Kaldi-as-product; meeting bots | Architecture / license / wrong job |
+| **Near-term (after this ladder)** | **G5** Mac system-audio capture (BlackHole MVP) → then **H6** live/streaming STT | Capture first; streaming only after G5 works. Local-first; remote STT opt-in only |
+| **Watchlist** | CocktailASR-1 (focus-speaker / enrollment), HTTP STT sidecar, YouTube URL ingest (H5+), DiCoW | Research / later; not Whisper replacements |
+| **Reject** | In-process NeMo/Whisper in the analysis image; silent cloud STT; SeamlessM4T/MMS as commercial defaults (CC-BY-NC); DeepSpeech; Kaldi-as-product; **meeting bots / auto-join** (never) | Architecture / license / wrong job |
 
 **CocktailASR-1 stance:** optional enrolled **focus-speaker** path only (reference clip → target-only text; empty output on negatives). Not multi-speaker diarized JSON. Needs enrollment UX, empty-output handling, and timing adapters before any provider work. ~35 GB CUDA SpeechLLM; pin hashes / local mirror if ever enabled.
 
@@ -75,9 +76,23 @@ Research basis: [Open source ASR for TranscriptX](../reports/Open%20source%20ASR
 - [x] **Theme K:** Parakeet (then Canary) command-gen + JSONL → `{segments:[{start,end,text,speaker?}]}` converter + golden fixtures
 - [x] **H5 entry:** converter + CUDA Docker recipe + trust/NOTICE row; optional registered `parakeet_docker` provider (stub mode for dev/CI)
 - [x] **Granite Speech mlx-audio** (`granite_mlx`) + keyword lists (default off; Settings → Keywords)
-- [ ] Defer CocktailASR / streaming / HTTP sidecar until the slices above land
+- [ ] Defer CocktailASR / HTTP sidecar until the slices above land
+- [~] **Then G5** (Mac BlackHole system-audio MVP) before fuller **H6** streaming — host companion shipped; owner Mac admit pass still gates H6 — see Theme **G** / **H** below
 
 Cross-links: Theme **H** (in-app providers), Theme **K** (command generation), [transcription.md](runtime/transcription.md), [settings.md](runtime/settings.md) (`allow_unnamed_speakers`), [comparison.md](comparison.md).
+
+---
+
+## Near-term after Next: Mac system audio → live STT
+
+**Sequence (locked):** **G5** BlackHole capture MVP (host, Mac-first) → reuse batch whispermlx → admit into the library → only then **H6** fuller live/streaming STT. **Never meeting bots.** Local-first; remote/cloud realtime is an **additional opt-in**, never the default path.
+
+| Slice | Intent | Status |
+|-------|--------|--------|
+| **G5** Mac system-audio capture (BlackHole MVP) | Host companion records system (± mic) audio via BlackHole / Multi-Output Device; start/stop session; on stop run existing host whispermlx (or equivalent batch provider) and admit WhisperX-shaped JSON + recording | **[~]** [`scripts/system-audio-capture.py`](../scripts/system-audio-capture.py) + native-host Transcribe Audio panel; owner Mac end-to-end admit is the **H6** entry criterion |
+| **H6** Live / streaming STT | Partials, turn detection, session UX on top of a working capture path; local streaming engine first; optional remote WebSocket STT with explicit API key + disclosure | **[ ] planned after G5** — not ahead of capture |
+
+Until an owner Mac session admits, operators who need system-audio capture can still use upstream tools (e.g. RiverScript) → Import — [comparison.md](comparison.md). Ops: [system-audio-capture.md](runtime/system-audio-capture.md).
 
 ---
 
@@ -111,7 +126,7 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Overview / results presentation | Retire Insights Analysis tab; redistribute into Summary / Speakers / Actions / Highlights — [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | **0.9.9** (Charts/Overview hierarchy residuals deferred) |
 | Post-0.9.9 wave (interim) | Early 1.x A–D + operator UX — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md) | **0.9.9.5** |
 | **Owner local folder cleanup** | Unambiguous library / `originals/` / inbox / recordings mounts — see **Now** above | **now (top priority)** |
-| **Undiarized resilience + ASR ladder** | T0/T1 speaker tiers; Parakeet Theme K→H5; CocktailASR watchlist — see **Next** above | **[~] T0/T1 honesty shipped; converter/H5 recipe still hardening** |
+| **Undiarized resilience + ASR ladder** | T0/T1 speaker tiers; Parakeet Theme K→H5; CocktailASR watchlist — see **Next** above | **[~] T0/T1 honesty + H5 Parakeet shipped; CocktailASR / YouTube ingest still deferred** |
 | Informal stranger test | Tried by someone who had not used the app | **done** (2026-10); not a release gate |
 
 **Module freeze:** no new analysis modules in 0.9.x unless required to complete or repair the 1.0 journey. Backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
@@ -149,8 +164,8 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | D. Playback & reading UX | Karaoke-style word highlight; CCv2 full-file reader | **done for 1.0** (reader workspace + clip rollback; see [karaoke-playback.md](runtime/karaoke-playback.md)) |
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x — **[~]** probe + estimates + docs shipped ([theme_e_performance_hardware.md](dev/theme_e_performance_hardware.md)) |
 | F. Library & organisation | Library archive (shipped); transcript tagging; Groups interaction rules; optional YouTube API rename metadata | Mid 1.x |
-| G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** narrow Windows convert/admit + pluggable STT shipped; service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
-| H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Granite Speech mlx-audio; Parakeet/Canary; YouTube/streaming later | **[~] H1–H4 + Granite mlx shipped**; YouTube ingest / H6 still deferred |
+| G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script; **G5** Mac BlackHole system-audio MVP | Mid 1.x (merge = former §1.2; **G3** narrow Windows convert/admit + pluggable STT shipped; service samples parked; **G4** called 20 Sep 2026; **G5** host companion shipped, owner Mac admit still open) |
+| H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Granite Speech mlx-audio; Parakeet/Canary; YouTube later; **H6** live STT after **G5** | **[~] H1–H4 + Granite mlx shipped**; YouTube ingest deferred; H6 after G5 (local-first, remote opt-in) |
 | I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Deferred except H1 job channel |
 | J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 — deferred vs STT |
 | K. External STT command generation | Broader copyable host CLIs until / beside theme H; Parakeet/Canary converter is the next K slice | **[~] PowerShell builder shipped**; Parakeet CLI in **Next** |
@@ -322,7 +337,31 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 
 **Decision fork:** **Invest** (called). A second config of `inbox-watch` will keep getting pointed at the library inbox. **Narrow** (docs only) and **Defer** (wait for theme H) are rejected for that reason.
 
-**Non-goals:** replacing `inbox-watch`; an in-app recorder (theme **H** / 2.0); meeting bots; cloud STT; filing the note into another app's task list; OS hotkeys (operator machine, not this repo). Theme **F** tags may later label a note that was deliberately admitted. Tags do not replace this script.
+**Non-goals:** replacing `inbox-watch`; an in-app recorder (theme **H** / 2.0); **meeting bots (never)**; silent cloud STT; filing the note into another app's task list; OS hotkeys (operator machine, not this repo). Theme **F** tags may later label a note that was deliberately admitted. Tags do not replace this script.
+
+#### G5. Mac system-audio capture — BlackHole MVP (near-term)
+
+**Called for near-term after Next.** Not a 1.0 gate. Host-native Mac companion (same family as `inbox-watch` / G4), **not** inside the Linux analysis Compose image and **not** a meeting bot.
+
+**Job:** capture **computer audio** (what Zoom/Meet/browser play) so a session can become a library transcript without a third-party capture app. Mic mix is optional for meetings when the user is on headphones.
+
+**Status:** host script [`scripts/system-audio-capture.py`](../scripts/system-audio-capture.py) plus a thin native-host panel on Transcribe Audio. Ops: [system-audio-capture.md](runtime/system-audio-capture.md). Owner Mac end-to-end (BlackHole → stop → admit) is still the **H6** entry criterion.
+
+**MVP shape:**
+
+1. Operator installs **[BlackHole](https://existential.audio/blackhole/)** (or equivalent virtual loopback) and a Multi-Output Device so system audio reaches the capture process while they still hear output.
+2. Host companion: Start / Stop session; record WAV under `recordings_dir/capture/`; optional mic+system mix.
+3. On Stop: call existing **host whispermlx** (batch path) — reuse H1–H4; do not invent a streaming engine in G5.
+4. Emit WhisperX-shaped JSON → `transcripts/originals/` → optional `--admit` (same gate as Transcribe Audio / inbox-watch).
+5. Thin Streamlit controls (start/stop/status) only when the process is native-host; Compose GUI stays honest that capture runs on the Mac host. No KeepAlive LaunchAgent.
+
+**Hard parts:** TCC / Microphone vs Screen Recording; BlackHole + Multi-Output Device support load; Docker Desktop cannot see Mac loopback; clock/pause/crash recovery; undiarized live sessions (T0/T1 honesty). Prefer ScreenCaptureKit only as a later alternative to BlackHole, not the MVP.
+
+**Decision fork:** **Invest** (called) — BlackHole MVP before H6. **Narrow** (docs-only “use RiverScript”) rejected as the long-term Mac story. **Defer** H6 streaming until G5 admits at least one end-to-end session on the owner Mac.
+
+**Non-goals:** auto-join Zoom/Meet/Teams (**never**); embedding capture in `transcriptx-web` Linux; silent cloud STT; true low-latency captions (that is **H6**); Windows/Linux system-audio parity in the MVP (Mac first); a `transcriptx capture` CLI allowlist entry; attaching G5 to the inbox-watch login agent.
+
+**Owner split:** G5 owns capture + session file + finalize-to-batch-STT. Theme **H** owns providers and later H6 streaming. Theme **K** stays command-gen only.
 
 ---
 
@@ -340,16 +379,16 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 | **H4** Docs / install honesty | **[x]** this page + [transcription.md](runtime/transcription.md) + [stt-stacks](recipes/stt-stacks/README.md) |
 | **H5+** NVIDIA Parakeet/Canary, YouTube URL ingest (download/transcribe), HTTP STT sidecar | **[~]** Parakeet/Canary Theme K + optional `parakeet_docker` shipped; YouTube ingest / HTTP sidecar still deferred (YouTube *rename* metadata is theme **F**, not H5) |
 | **Granite Speech (mlx-audio)** | **[x]** macOS `granite_mlx` provider + keyword lists; engines stay out of the analysis image |
-| **H6** Real-time / streaming STT (WebSocket sessions, turn detection, partials) | **[ ] deferred** — live captions, in-session notes, voice-agent upstream; not batch file jobs (H1–H4). Design reference: [AssemblyAI — Real-time transcription in Python (Universal-3.6 Pro Realtime)](https://www.assemblyai.com/blog/real-time-transcription-python). **Opt-in cloud only** (explicit API key; document audio leaving the machine); local batch STT remains the default path. Partial text UX may overlap theme **D** if we ever surface streaming in the reader. |
+| **H6** Live / streaming STT (partials, turn detection, session UX) | **[ ] planned after G5** — not batch file jobs (H1–H4). **Local-first:** stream or chunk against a local engine on the capture host once G5 works. **Remote optional:** opt-in cloud/WebSocket realtime (explicit API key; document audio leaving the machine) as an *additional* backend, never the default and never silent. Design reference for the remote shape: [AssemblyAI — Real-time transcription in Python](https://www.assemblyai.com/blog/real-time-transcription-python). Partial text UX may overlap theme **D** / **I** if Streamlit polling is insufficient. |
 | **Watchlist** CocktailASR-1 / DiCoW | **[ ]** enrolled focus-speaker or diarization-conditioned Whisper peers — see **Next**; not Balanced meeting defaults |
 
-**Architecture (locked):** host-orchestrated providers (fork #2, narrow). No silent cloud STT. Apple MLX stays host/binary; CUDA via WhisperX Docker (NeMo Docker only after H5 entry). Undiarized resilience (T0/T1) is owned by **Next**, not by shipping more engines.
+**Architecture (locked):** host-orchestrated providers (fork #2, narrow). No silent cloud STT. Apple MLX stays host/binary; CUDA via WhisperX Docker (NeMo Docker only after H5 entry). Undiarized resilience (T0/T1) is owned by **Next**, not by shipping more engines. Live capture is **G5** first; H6 does not precede a working BlackHole (or equivalent) path.
 
-**Job UX:** queue/progress/cancel/retry via the file-backed job store (not Streamlit `session_state` alone). This is the Theme **I** durable channel; loopback API / PWA / SPA stay deferred.
+**Job UX:** queue/progress/cancel/retry via the file-backed job store (not Streamlit `session_state` alone). This is the Theme **I** durable channel; loopback API / PWA / SPA stay deferred. Live sessions use a similar file-backed store under `data_dir/capture/sessions/` (G5).
 
-**Decision fork:** **Narrow** (Whisper-only host orchestration until H5). Climb Parakeet/Canary via Theme **K** converter first (see **Next**). Do not half-ship a silent cloud STT. Do not treat CocktailASR as a WhisperX replacement.
+**Decision fork:** **Narrow** (Whisper-only host orchestration until H5). Climb Parakeet/Canary via Theme **K** converter first (see **Next**). Do not half-ship a silent cloud STT. Do not treat CocktailASR as a WhisperX replacement. **H6 local-first, remote additional** — rewrite of the earlier “cloud-only H6” sketch.
 
-**Non-goals for this theme:** meeting bots that auto-join Zoom/Meet; becoming a chat-over-audio product; replacing the analysis module DAG; in-process NeMo in the analysis image.
+**Non-goals for this theme:** **meeting bots** that auto-join Zoom/Meet/Teams (**never**); becoming a chat-over-audio product; replacing the analysis module DAG; in-process NeMo in the analysis image; shipping H6 before G5 proves capture → batch admit.
 
 ---
 
@@ -452,7 +491,7 @@ Only if capacity remains after core themes:
 
 ## 2.0 vision
 
-**Personal audio intelligence companion:** personal recordings, voice-note workflows, optional local STT, deeper conversational analytics, stronger local AI — still local-first and modular. Themes **G–I** (recording workflows, in-app transcription, installable shell) are the main 1.x bridges toward that vision; **G4** is the voice-note bridge (host side-script, admit off, not a second library watcher). Themes **A–F** and **J** keep the analysis workbench excellent on the way; theme **N** optionally widens LLM backends without abandoning local-first. A **custom local frontend** (theme **I** escalate) belongs here if the companion needs installable-desktop feel that Streamlit + CCv2 cannot provide — it is not a 1.x default.
+**Personal audio intelligence companion:** personal recordings, voice-note workflows, optional local STT, deeper conversational analytics, stronger local AI — still local-first and modular. Themes **G–I** (recording workflows, in-app transcription, installable shell) are the main 1.x bridges toward that vision; **G4** is the voice-note bridge (host side-script, admit off, not a second library watcher); **G5 → H6** is the system-audio / live-transcription bridge (BlackHole MVP first, then local streaming with remote as opt-in). Themes **A–F** and **J** keep the analysis workbench excellent on the way; theme **N** optionally widens LLM backends without abandoning local-first. A **custom local frontend** (theme **I** escalate) belongs here if the companion needs installable-desktop feel that Streamlit + CCv2 cannot provide — it is not a 1.x default.
 
 ---
 
@@ -460,10 +499,10 @@ Only if capacity remains after core themes:
 
 Still **not** near-term product goals (unless a later roadmap rewrite says otherwise):
 
-- Meeting bots / auto-join Zoom–Meet–Teams capture
+- **Meeting bots / auto-join Zoom–Meet–Teams** — standing reject (**never**); system-audio loopback (G5) is the allowed adjacent shape, not a bot
 - Hosted multi-user SaaS analysis; CRM / revenue-pipeline platforms
 - Chat-over-corpus / RAG meeting assistant as the primary product
-- Cloud STT or cloud LLM as **silent defaults** (explicit opt-in multi-provider LLM is theme **N**)
+- Cloud STT or cloud LLM as **silent defaults** (explicit opt-in remote STT is H6 additional only; multi-provider LLM is theme **N**)
 - Mode systems that duplicate page logic
 - Elaborate interactive marketing-website effects
 - Broader “everything in the DB” library migration (beyond theme **J**)

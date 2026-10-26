@@ -35,11 +35,11 @@ The in-app watcher **can** run STT when **Settings → Watcher → Audio mode** 
 
 It does not import `transcriptx` in-process. Default STT (`whispermlx-missing`) is macOS/MLX. `--transcribe none` or `--transcribe command` can convert (and optionally admit) without that binary. G2 stays the in-app auto-import path. Both can run; do not point them at the same inbox unless you intend double handling of transcripts (G2 admits, host copies — and `--admit` would admit the copies).
 
-Short voice notes are roadmap **G4** ([`scripts/voice-note-watch.py`](../../scripts/voice-note-watch.py)), not a second G2 on the library folder and not a second `inbox-watch` config. See [Voice notes](host-stt.md#voice-notes-voice-note-watch).
+Short voice notes are roadmap **G4** ([`scripts/voice-note-watch.py`](../../scripts/voice-note-watch.py)), not a second G2 on the library folder and not a second `inbox-watch` config. See [Voice notes](host-stt.md#voice-notes-voice-note-watch). Mac system-audio capture is roadmap **G5** ([`scripts/system-audio-capture.py`](../../scripts/system-audio-capture.py)); do not point it at this watcher inbox. See [System audio capture](system-audio-capture.md).
 
 ## Related
 
 - Folder scan (manual): Import Transcript → Import all from folder
 - Transcription: optional host-orchestrated STT plus BYO import — [transcription.md](transcription.md)
 - Auto-identify after admit: [auto-identify.md](auto-identify.md)
-- Product roadmap: [ROADMAP.md](../ROADMAP.md) theme G2 / H
+- Product roadmap: [ROADMAP.md](../ROADMAP.md) theme G2 / G5 / H
