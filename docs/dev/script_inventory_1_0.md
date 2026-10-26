@@ -8,7 +8,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 
 | Status | Count |
 |--------|------:|
-| supported | 5 |
+| supported | 6 |
 | maintainer | 21 |
 | internal | 9 |
 | archived | 3 |
@@ -23,6 +23,7 @@ Canonical script archive location: [`archive/scripts/`](../../archive/README.md)
 | `scripts/whispermlx-missing.py` | Batch whispermlx for MP3s missing JSON | end user | host-stt.md; tests/scripts | yes | yes | writes transcripts | Apple Silicon typical | whispermlx (external) | valid | supported | retain supported |
 | `scripts/inbox-watch.py` | Host inbox watch: convert audio + copy transcripts; `--transcribe whispermlx-missing\|none\|command`; optional `--admit` / `--auto-name` / `--auto-link` via `python -m transcriptx.admit_originals` | end user | host-stt.md; directory_watcher.md; tests/scripts | yes | yes | writes recordings + copies transcripts; optional host STT, managed admit + identify | macOS typical STT; convert/`none`/`command` not MLX-bound | ffmpeg; whispermlx-missing unless `--transcribe none`/`command`; native transcriptx for `--admit` | valid | supported | retain supported |
 | `scripts/voice-note-watch.py` | Host voice-note watch: own inbox, stage + ffmpeg, whispermlx plain text; length cap; optional local draft. No library admit | end user | host-stt.md; directory_watcher.md; tests/scripts | yes | yes | writes private audio + plain text; optional overflow copy into the library inbox | macOS typical (ffmpeg + whispermlx) | ffmpeg; whispermlx; inbox-watch helpers (no admit) | valid | supported | retain supported |
+| `scripts/system-audio-capture.py` | Mac BlackHole system-audio capture (G5): start/stop session, ffmpeg avfoundation, whispermlx JSON under originals/, optional admit | end user | system-audio-capture.md; host-stt.md; Transcribe Audio panel | yes | yes | writes recordings/capture WAV+MP3 and originals JSON; optional managed admit | macOS only (BlackHole / avfoundation) | ffmpeg; whispermlx; inbox-watch helpers; native transcriptx for `--admit` | valid | supported | retain supported |
 | `scripts/audio_preprocess.py` | Assess/preprocess audio before external transcription | power user | System → Tools; audio-prep.md; ROADMAP theme G1 | yes | yes | writes audio | any | pydub/ffmpeg | valid | maintainer | retain CLI; GUI under System → Tools |
 | `scripts/audio_merge.py` | Merge split recordings into one MP3 | power user | System → Tools; audio-prep.md; ROADMAP theme G1 | yes | yes | writes audio | any | ffmpeg | valid | maintainer | retain CLI; GUI under System → Tools; **G1** transcript stitch still open |
 | `scripts/release/assert_compose_bind.sh` | Canonical compose bind/port asserts | maintainer | CI | yes (release_governance) | CI | read-only | Docker | compose | valid | maintainer | retain internal |

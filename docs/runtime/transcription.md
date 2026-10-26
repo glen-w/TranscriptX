@@ -109,11 +109,12 @@ Transcription runs on the **host** (whispermlx binary, WhisperX Docker, or Whisp
 
 The recommended install runs analysis in a **Linux** container. **whispermlx** must run on the **macOS host** (Metal/MLX); it cannot run inside that container. Keeping engines out of the analysis image avoids bloating it. Stacks, shared folders, and when **Run in app** works: [STT stacks](../recipes/stt-stacks/README.md).
 
-**Theme H:** optional in-app / host-orchestrated transcription is shipped for Whisper-class providers (`whispermlx`, `whisperx_docker`), optional **`parakeet_docker`** (CUDA NeMo Parakeet — configure per [recipes/parakeet](../recipes/parakeet/README.md); dev stub via `TRANSCRIPTX_PARAKEET_STUB=1`), and optional **`granite_mlx`** (Apple Silicon mlx-audio — [recipes/granite-speech](../recipes/granite-speech/README.md); stub `TRANSCRIPTX_GRANITE_STUB=1`) — [ROADMAP.md](../ROADMAP.md) theme **H**. **Theme K** Copy commands for NeMo Parakeet/Canary share the same JSONL → WhisperX converter. YouTube ingest is later. In-app directory watch for audio auto-transcribe is theme **G2** + **H3** — [directory_watcher.md](directory_watcher.md).
+**Theme H:** optional in-app / host-orchestrated transcription is shipped for Whisper-class providers (`whispermlx`, `whisperx_docker`), optional **`parakeet_docker`** (CUDA NeMo Parakeet — configure per [recipes/parakeet](../recipes/parakeet/README.md); dev stub via `TRANSCRIPTX_PARAKEET_STUB=1`), and optional **`granite_mlx`** (Apple Silicon mlx-audio — [recipes/granite-speech](../recipes/granite-speech/README.md); stub `TRANSCRIPTX_GRANITE_STUB=1`) — [ROADMAP.md](../ROADMAP.md) theme **H**. **Theme K** Copy commands for NeMo Parakeet/Canary share the same JSONL → WhisperX converter. YouTube ingest is later. In-app directory watch for audio auto-transcribe is theme **G2** + **H3** — [directory_watcher.md](directory_watcher.md). Theme **G5** Mac BlackHole system-audio capture (host companion → batch whispermlx → import) is the system-audio MVP; **H6** local-first live/streaming STT (remote opt-in only) waits on an owner Mac admit pass — never meeting bots. Ops: [system-audio-capture.md](system-audio-capture.md).
 
 ## Advanced
 
 - [STT stacks](../recipes/stt-stacks/README.md) — Compose + host whispermlx + optional WhisperX / WebUI
 - [Host STT automation](host-stt.md) — whispermlx-missing, inbox-watch `--transcribe`, config, Python import API
+- [System audio capture](system-audio-capture.md) — Mac BlackHole G5 host companion
 - [Audio prep](audio-prep.md) — Tools → Preprocessing / Auto-merge before you transcribe
 - [Directory watcher](directory_watcher.md) — in-app inbox; audio `auto_transcribe` when an STT provider is available

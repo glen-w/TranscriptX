@@ -69,6 +69,7 @@ recipes/whisper-webui/README
 
 runtime/installation-advanced
 runtime/host-stt
+runtime/system-audio-capture
 runtime/audio-prep
 comparison-reference
 USER_INDEX

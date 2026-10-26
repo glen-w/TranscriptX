@@ -55,6 +55,7 @@ from transcriptx.services.transcription.stt_command_profiles import (
 )
 from transcriptx.web.navigation import consume_transcription_nav_paths
 from transcriptx.web.components.info_tooltip import widget_help
+from transcriptx.web.ui.capture_panel import render_system_audio_capture_panel
 
 _ENV_FILE_DEFAULT = default_host_env_file(PATHS.project_root)
 _SCRIPT_REF = default_host_script_ref(PATHS.project_root)
@@ -541,6 +542,8 @@ def render_transcribe_audio_page() -> None:
         "and run it on the host. Results are admitted with **Import Transcript** "
         "unless you enabled in-app import."
     )
+
+    render_system_audio_capture_panel()
 
     _apply_pending_preset_load()
 

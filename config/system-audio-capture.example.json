@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "recordings": "/path/to/recordings/capture",
+  "transcripts": "/path/to/transcripts/originals",
+  "sessions_dir": "/path/to/data/capture/sessions",
+  "env_file": "whisperx.env",
+  "whispermlx": "",
+  "ffmpeg": "",
+  "model": "",
+  "language": "",
+  "device": "",
+  "mix_mic_device": "",
+  "admit_python": "",
+  "library_inbox": "",
+  "watcher_inbox": "",
+  "voice_note_inbox": "",
+  "max_duration_seconds": 7200,
+  "min_free_bytes": 524288000,
+  "silent_input_seconds": 5,
+  "silent_rms_threshold": 80
+}
