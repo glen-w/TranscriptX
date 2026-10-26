@@ -14,6 +14,13 @@ from enum import Enum
 from pathlib import Path
 from typing import Sequence
 
+from transcriptx.app.models.requests import TranscriptionOptions
+from transcriptx.services.transcription.granite_mlx_provider import (
+    build_gen_kwargs,
+    is_turbo_ctc,
+    resolve_granite_model,
+)
+
 
 class TranscriptionTool(str, Enum):
     WHISPERMLX_SINGLE = "whispermlx_single"
@@ -451,43 +458,42 @@ echo "Stop: docker stop whisper-webui"
     )
 
 
-_GRANITE_ASR_DEFAULT = "ibm-granite/granite-speech-5.0-2b"
-_GRANITE_SAA_DEFAULT = "ibm-granite/granite-speech-4.1-2b-plus"
+def _granite_options(params: CommandGenParams) -> TranscriptionOptions:
+    return TranscriptionOptions(
+        provider_id="granite_mlx",
+        model=params.model or "",
+        language=params.language or "en",
+        diarize=params.diarize,
+        keyword_bias_enabled=params.keyword_bias_enabled,
+        keywords=tuple(params.keywords or ()),
+    )
 
 
 def _granite_copy_model(params: CommandGenParams) -> str:
-    raw = (params.model or "").strip()
-    lowered = raw.lower()
-    if raw in {_GRANITE_ASR_DEFAULT, _GRANITE_SAA_DEFAULT}:
-        return _GRANITE_SAA_DEFAULT if params.diarize else _GRANITE_ASR_DEFAULT
-    if "granite-speech" in lowered or lowered.startswith("ibm-granite/"):
-        return raw
-    if params.diarize:
-        return _GRANITE_SAA_DEFAULT
-    return _GRANITE_ASR_DEFAULT
+    return resolve_granite_model(_granite_options(params))
 
 
 def _granite_gen_kwargs(params: CommandGenParams) -> dict:
+    options = _granite_options(params)
+    return build_gen_kwargs(options, model_id=resolve_granite_model(options))
+
+
+def _granite_generate_cli_lines(params: CommandGenParams) -> tuple[str, str]:
+    """Return (model_id, extra generate flags after --format json)."""
     model = _granite_copy_model(params)
-    kwargs: dict = {"language": None}
-    if params.diarize or model == _GRANITE_SAA_DEFAULT:
-        kwargs["task"] = "saa"
-    else:
-        kwargs["punctuate"] = True
-        language = (params.language or "").strip()
-        if language and language.lower() not in {"auto", "null"}:
-            kwargs["source_language"] = language
-    if params.keyword_bias_enabled and params.keywords:
-        kwargs["hotwords"] = list(params.keywords)
-    return kwargs
+    kwargs = _granite_gen_kwargs(params)
+    extra = ""
+    if kwargs:
+        extra = f" \\\n  --gen-kwargs {_q(json.dumps(kwargs, ensure_ascii=False))}"
+    return model, extra
 
 
 def build_granite_mlx(params: CommandGenParams) -> GeneratedCommand:
     """Copyable mlx-audio Granite Speech command (Apple Silicon host)."""
-    model = _granite_copy_model(params)
-    gen_kwargs = json.dumps(_granite_gen_kwargs(params), ensure_ascii=False)
+    model, extra_flags = _granite_generate_cli_lines(params)
     audio = _strip_trailing_separators(params.input_path)
     out_mount = _strip_trailing_separators(params.output_dir)
+    turbo = is_turbo_ctc(model)
     shell = f"""# Granite Speech via mlx-audio (Apple Silicon host — not the analysis venv).
 # pip install -U mlx-audio jinja2
 # Point MLX_AUDIO_PYTHON at that interpreter. First run downloads Hub weights.
@@ -500,8 +506,7 @@ mkdir -p "$OUTDIR"
   --model {_q(model)} \\
   --audio {_q(audio)} \\
   --output-path "$OUTDIR/granite_raw" \\
-  --format json \\
-  --gen-kwargs {_q(gen_kwargs)}
+  --format json{extra_flags}
 
 python3 -m transcriptx.services.transcription.granite_json_to_whisperx \\
   --input "$OUTDIR/granite_raw.json" \\
@@ -510,8 +515,13 @@ python3 -m transcriptx.services.transcription.granite_json_to_whisperx \\
     notes = (
         "Run on the macOS host (Apple MLX). Do not install mlx-audio in the analysis venv.",
         "Set MLX_AUDIO_PYTHON to the interpreter that has mlx-audio>=0.5.9 and jinja2.",
-        "Diarize uses granite-speech-4.1-2b-plus (task=saa). No HF_TOKEN / pyannote.",
-        "Keyword biasing is off unless you enabled it; cap is 2000 terms.",
+        (
+            "TurboCTC is undiarized speed ASR; no keyword biasing or speaker attribution. "
+            "Use 4.1-2b-plus for meetings."
+            if turbo
+            else "Diarize uses granite-speech-4.1-2b-plus (task=saa). No HF_TOKEN / pyannote."
+        ),
+        "Keyword biasing is off unless you enabled it on 5.0-2b; cap is 2000 terms.",
         "Long files: IBM recommends ~2 min chunks for 5.0-2b; Run in app chunks automatically.",
         "Speaker-attributed mode does not emit WhisperX-grade word timestamps.",
         "Expected output: WhisperX-shaped JSON for Import Transcript.",
@@ -621,14 +631,17 @@ def generate_transcription_command_powershell(
 
 def _build_granite_mlx_powershell(params: CommandGenParams) -> GeneratedCommand:
     model = _granite_copy_model(params)
-    gen_kwargs = json.dumps(_granite_gen_kwargs(params), ensure_ascii=False)
+    kwargs = _granite_gen_kwargs(params)
+    extra = ""
+    if kwargs:
+        extra = f" --gen-kwargs {_ps_q(json.dumps(kwargs, ensure_ascii=False))}"
     audio = _strip_trailing_separators(params.input_path)
     out_mount = _strip_trailing_separators(params.output_dir)
     shell = f"""# mlx-audio is Apple Silicon. This snippet is for completeness only.
 $Py = if ($env:MLX_AUDIO_PYTHON) {{ $env:MLX_AUDIO_PYTHON }} else {{ "python3" }}
 $OutDir = {_ps_q(out_mount)}
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
-& $Py -m mlx_audio.stt.generate --model {_ps_q(model)} --audio {_ps_q(audio)} --output-path (Join-Path $OutDir 'granite_raw') --format json --gen-kwargs {_ps_q(gen_kwargs)}
+& $Py -m mlx_audio.stt.generate --model {_ps_q(model)} --audio {_ps_q(audio)} --output-path (Join-Path $OutDir 'granite_raw') --format json{extra}
 & python -m transcriptx.services.transcription.granite_json_to_whisperx --input (Join-Path $OutDir 'granite_raw.json') --output (Join-Path $OutDir 'meeting.json')
 """
     notes = (

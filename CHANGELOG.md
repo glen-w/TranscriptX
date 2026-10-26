@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Granite Speech 5.0 TurboCTC** (`ibm-granite/granite-speech-5.0-470m-turboctc`) on the existing `granite_mlx` path: fast undiarized multilingual CTC. Apache-2.0. The CC-BY-NC-SA `-nc` checkpoint is not shipped. Mistral Voxtral 3 is not integrated (no open weights).
+
 ## [1.0.2] - 2026-10-24
 
 Library archive, Granite Speech, and a Groups picker that survives stale paths (git tag `v1.0.2`).
