@@ -315,3 +315,53 @@ def test_granite_mlx_copy_command_hotwords() -> None:
     assert "hotwords" not in off.shell
     assert "granite-speech-5.0-2b" in off.shell
     assert "punctuate" in off.shell
+
+
+@pytest.mark.unit
+def test_granite_mlx_copy_command_turboctc() -> None:
+    from transcriptx.services.transcription.granite_mlx_provider import MODEL_TURBO
+
+    cmd = generate_transcription_command(
+        CommandGenParams(
+            tool=TranscriptionTool.GRANITE_MLX,
+            input_path="/Users/me/meeting.wav",
+            output_dir="/Users/me/out",
+            model=MODEL_TURBO,
+            diarize=True,
+            keyword_bias_enabled=True,
+            keywords=("NATO", "FY26"),
+            language="en",
+        )
+    )
+    assert "mlx_audio.stt.generate" in cmd.shell
+    assert "granite-speech-5.0-470m-turboctc" in cmd.shell
+    assert "turboctc-nc" not in cmd.shell
+    assert "--gen-kwargs" not in cmd.shell
+    assert "hotwords" not in cmd.shell
+    assert "task" not in cmd.shell
+    assert any("undiarized" in n.lower() or "TurboCTC" in n for n in cmd.notes)
+
+
+@pytest.mark.unit
+def test_granite_mlx_powershell_turboctc_omits_gen_kwargs() -> None:
+    from transcriptx.services.transcription.command_gen import (
+        generate_transcription_command_powershell,
+    )
+    from transcriptx.services.transcription.granite_mlx_provider import MODEL_TURBO
+
+    cmd = generate_transcription_command_powershell(
+        CommandGenParams(
+            tool=TranscriptionTool.GRANITE_MLX,
+            input_path=r"C:\audio\meeting.wav",
+            output_dir=r"C:\out",
+            model=MODEL_TURBO,
+            diarize=True,
+            keyword_bias_enabled=True,
+            keywords=("NATO",),
+        )
+    )
+    assert "mlx_audio.stt.generate" in cmd.shell
+    assert "granite-speech-5.0-470m-turboctc" in cmd.shell
+    assert "turboctc-nc" not in cmd.shell
+    assert "--gen-kwargs" not in cmd.shell
+    assert "hotwords" not in cmd.shell

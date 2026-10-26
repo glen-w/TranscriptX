@@ -65,15 +65,27 @@ def test_is_managed_library_transcript_rejects_sidecars_and_outside(
     json_path.write_text("{}", encoding="utf-8")
     sidecar = transcripts / "keep.speaker_map.json"
     sidecar.write_text("{}", encoding="utf-8")
+    summary = transcripts / "keep_summary.json"
+    summary.write_text("{}", encoding="utf-8")
     nested = transcripts / "metadata" / "keep.json"
     nested.write_text("{}", encoding="utf-8")
+    imports_copy = transcripts / "imports" / "keep.json"
+    imports_copy.parent.mkdir(parents=True, exist_ok=True)
+    imports_copy.write_text("{}", encoding="utf-8")
     outside = tmp_path / "outside.json"
     outside.write_text("{}", encoding="utf-8")
+    txt = transcripts / "keep.txt"
+    txt.write_text("not json", encoding="utf-8")
+    missing = transcripts / "gone.json"
 
     assert is_managed_library_transcript(json_path)
     assert not is_managed_library_transcript(sidecar)
+    assert not is_managed_library_transcript(summary)
     assert not is_managed_library_transcript(nested)
+    assert not is_managed_library_transcript(imports_copy)
     assert not is_managed_library_transcript(outside)
+    assert not is_managed_library_transcript(txt)
+    assert not is_managed_library_transcript(missing)
 
 
 def test_delete_removes_transcript_companions_and_index(

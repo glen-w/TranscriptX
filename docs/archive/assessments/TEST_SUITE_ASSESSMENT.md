@@ -2515,3 +2515,79 @@ Four failures match the 2026-10-03 local `.env` path contamination (not these me
 
 ### Production code
 None.
+
+---
+
+## 85. Expansion (2026-10-26) – run estimate edges + incomplete runs + presenter
+
+### Trigger
+`/tests` (full suite review + targeted expansion)
+
+### Backup
+- `/Users/89298/Documents/transcriptx backup/261026.zip` (16M); `custom-commands/` mirrored.
+
+### Review
+- **Collection (default filter):** `8416/9373` selected (`957` deselected); no collection/import errors.
+- **Full collection (`-m ""`):** `9373` tests (historical assessment once expected ~1558).
+- **Baseline before expansion:** `8396 passed`, `20 skipped`, `957 deselected` (green).
+- **Cleanup:** disabled (per command).
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0; no `@pytest.mark.quarantined` in tree). Not re-enabled.
+- **Markers / addopts:** unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow/gui_acceptance/gui_e2e/browser/requires_nlp/contract).
+- **Structure:** `tests/{analysis,app,browser,contracts,core,e2e_gui,export,fixtures,integration,io,optional,packaging,pipeline,presentation,quarantine,regression,release,scripts,services,smoke,unit,utils,web}` (+ transcript_viewer / gui_acceptance).
+- **Skipped (runtime):** optional extras (nrclex/ebooklib/umap/plotly/sphinx) + one regression needing full pipeline setup.
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Run-time estimator | `fingerprint_compatible`, format unit edges, invalid priors, empty/words workload, container/core drivers | Extend `tests/core/observability/test_run_estimate.py` |
+| Incomplete runs inventory | Corrupt/non-object `run_results.json`; terminal `completed` not listed | Extend `tests/pipeline/test_incomplete_runs.py` |
+| Pipeline presenter | Thin adapter had no direct unit tests | New `tests/unit/test_pipeline_run_presenter.py` |
+| Speaker run options | Defaults/frozen contract unpinned | New `tests/unit/test_speaker_run_options.py` |
+| Library delete guards | `_summary` / `imports` / non-json / missing | Extend `tests/app/test_library_delete.py` |
+
+### Tests added / extended
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/core/observability/test_run_estimate.py` | **+5** | fingerprint compat; prior rejection; empty/words workload; duration units; container/core |
+| `tests/pipeline/test_incomplete_runs.py` | **+2** | corrupt/array payload → missing; completed terminal ignored |
+| `tests/unit/test_pipeline_run_presenter.py` | **new (+2)** | build_summary + pre/post-run delegation |
+| `tests/unit/test_speaker_run_options.py` | **new (+3)** | conservative defaults; frozen; explicit flags |
+| `tests/app/test_library_delete.py` | **extended** | more managed-path rejection cases |
+
+### Validation
+- Focused slice: **30 passed**.
+- Default suite after expansion: **8408 passed**, `20 skipped`, `957 deselected`.
+- Optional `integration_core` gate: **60 passed**, `9325 deselected`.
+- **Production code:** none (tests-only).
+- **Quarantined tests:** not re-enabled.
+
+---
+
+## 86. Expansion (2026-10-26) – Granite Speech 5.0 TurboCTC
+
+### Trigger
+`/deep-test` after Granite TurboCTC STT plan (STT/UI lane; analysis probes skipped).
+
+### Backup
+- `/Users/89298/Documents/transcriptx backup/261026-1733.zip` (16M); `custom-commands/` mirrored. Nested `# tests` backup skipped.
+
+### Review
+- **Collection (default filter):** `8432/9389` selected (`957` deselected); no collection/import errors.
+- **Baseline after TurboCTC tests:** `8412 passed`, `20 skipped`, `957 deselected` (green).
+- **Cleanup:** disabled (per command).
+- **Quarantined:** `0` active. Not re-enabled.
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Granite checkpoint set | UI list must be three Apache ids, never `-nc` | Extend `test_resolve_model_follows_diarize` |
+| Custom Turbo CTC ids | Operator HF id with `turboctc` must not swap to Plus | Same test |
+| Copy command (PowerShell) | Turbo must omit `--gen-kwargs` / hotwords | New `test_granite_mlx_powershell_turboctc_omits_gen_kwargs` |
+| Transcribe Audio page | Turbo caption + no `-nc` string | Extend `test_transcribe_audio_page_has_run_and_copy_paths` |
+
+### Tests added / extended
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/services/transcription/test_granite_mlx_provider.py` | **extended** | options tuple; custom turbo id; no `-nc` |
+| `tests/services/transcription/test_command_gen.py` | **+1** | PowerShell TurboCTC omits gen-kwargs |
+| `tests/web/test_transcribe_audio_page.py` | **extended** | TurboCTC strings in page source |

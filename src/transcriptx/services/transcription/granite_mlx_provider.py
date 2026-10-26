@@ -40,17 +40,29 @@ _TAIL_LINES = 20
 _RECIPE_PATH = PATHS.project_root / "docs" / "recipes" / "granite-speech" / "README.md"
 
 MODEL_ASR = "ibm-granite/granite-speech-5.0-2b"
+MODEL_TURBO = "ibm-granite/granite-speech-5.0-470m-turboctc"
 MODEL_SAA = "ibm-granite/granite-speech-4.1-2b-plus"
-GRANITE_MODEL_OPTIONS: tuple[str, ...] = (MODEL_ASR, MODEL_SAA)
+GRANITE_MODEL_OPTIONS: tuple[str, ...] = (MODEL_ASR, MODEL_TURBO, MODEL_SAA)
 
 CHUNK_ASR_SECONDS = 110
 CHUNK_SAA_SECONDS = 300
+CHUNK_TURBO_SECONDS = 600
 _STUB_ENV = "TRANSCRIPTX_GRANITE_STUB"
 
 
+def is_turbo_ctc(model_id: str) -> bool:
+    """True for encoder-only TurboCTC checkpoints (Apache id or custom turboctc)."""
+    return "turboctc" in (model_id or "").lower()
+
+
 def resolve_granite_model(options: TranscriptionOptions) -> str:
-    """Pick 5.0-2b vs Plus unless the operator set a custom Granite HF id."""
+    """Pick 5.0-2b vs Plus unless the operator set Turbo or a custom Granite HF id.
+
+    TurboCTC stays Turbo even when Diarize is on (no speaker attribution).
+    """
     raw = (options.model or "").strip()
+    if is_turbo_ctc(raw):
+        return raw
     lowered = raw.lower()
     if raw in {MODEL_ASR, MODEL_SAA}:
         return MODEL_SAA if options.diarize else MODEL_ASR
@@ -60,13 +72,18 @@ def resolve_granite_model(options: TranscriptionOptions) -> str:
 
 
 def chunk_seconds_for_model(model_id: str, *, diarize: bool) -> int:
+    if is_turbo_ctc(model_id):
+        return CHUNK_TURBO_SECONDS
     if diarize or model_id == MODEL_SAA:
         return CHUNK_SAA_SECONDS
     return CHUNK_ASR_SECONDS
 
 
-def effective_keywords(options: TranscriptionOptions) -> tuple[str, ...]:
-    if not options.keyword_bias_enabled:
+def effective_keywords(
+    options: TranscriptionOptions, *, model_id: str | None = None
+) -> tuple[str, ...]:
+    resolved = model_id or resolve_granite_model(options)
+    if is_turbo_ctc(resolved) or not options.keyword_bias_enabled:
         return ()
     keywords, _warning = normalize_keywords(options.keywords)
     return keywords
@@ -78,8 +95,10 @@ def build_gen_kwargs(
     model_id: str | None = None,
     prefix_text: str | None = None,
 ) -> dict[str, object]:
-    """mlx-audio ``--gen-kwargs`` payload (no secrets)."""
+    """mlx-audio ``--gen-kwargs`` payload (no secrets). Empty for TurboCTC."""
     resolved = model_id or resolve_granite_model(options)
+    if is_turbo_ctc(resolved):
+        return {}
     kwargs: dict[str, object] = {"language": None}
     if resolved == MODEL_SAA or options.diarize:
         kwargs["task"] = "saa"
@@ -88,7 +107,7 @@ def build_gen_kwargs(
         language = (options.language or "").strip()
         if language and language.lower() not in {"auto", "null"}:
             kwargs["source_language"] = language
-    keywords = effective_keywords(options)
+    keywords = effective_keywords(options, model_id=resolved)
     if keywords:
         kwargs["hotwords"] = list(keywords[:MAX_KEYWORDS])
     if prefix_text:
@@ -439,7 +458,9 @@ class GraniteMLXProvider:
                 gen_kwargs = build_gen_kwargs(
                     options,
                     model_id=model_id,
-                    prefix_text=prefix_text or None,
+                    prefix_text=(
+                        None if is_turbo_ctc(model_id) else (prefix_text or None)
+                    ),
                 )
                 cmd = [
                     python,
@@ -453,9 +474,9 @@ class GraniteMLXProvider:
                     str(chunk_out / "transcript"),
                     "--format",
                     "json",
-                    "--gen-kwargs",
-                    json.dumps(gen_kwargs),
                 ]
+                if gen_kwargs:
+                    cmd.extend(["--gen-kwargs", json.dumps(gen_kwargs)])
                 chunk_started = time.time()
                 chunk_timeout = None
                 if timeout is not None:
@@ -506,13 +527,14 @@ class GraniteMLXProvider:
                     )
                 payload = _load_json_payload(raw_path)
                 collected.append((payload, offset, length))
-                next_prefix = _prefix_from_payload(payload)
-                if next_prefix:
-                    prefix_text = (
-                        f"{prefix_text} {next_prefix}".strip()
-                        if prefix_text
-                        else next_prefix
-                    )
+                if not is_turbo_ctc(model_id):
+                    next_prefix = _prefix_from_payload(payload)
+                    if next_prefix:
+                        prefix_text = (
+                            f"{prefix_text} {next_prefix}".strip()
+                            if prefix_text
+                            else next_prefix
+                        )
         except subprocess.TimeoutExpired:
             return TranscriptionProviderResult(
                 success=False,

@@ -8,12 +8,16 @@ from transcriptx.core.observability.hardware_probe import HardwareSnapshot
 from transcriptx.core.observability.run_estimate import (
     PriorRunTiming,
     estimate_run_wall,
+    fingerprint_compatible,
     format_duration_range,
     format_run_time_estimate,
     prior_from_sidecar,
     workload_from_segments,
 )
-from transcriptx.core.observability.run_performance.schema import WorkloadSnapshot
+from transcriptx.core.observability.run_performance.schema import (
+    RuntimeFingerprint,
+    WorkloadSnapshot,
+)
 
 
 def _hw(**overrides) -> HardwareSnapshot:
@@ -200,3 +204,90 @@ def test_prior_from_sidecar() -> None:
     assert prior is not None
     assert prior.preset == "balanced"
     assert prior.memory_band == "mid"
+
+
+@pytest.mark.unit
+def test_prior_from_sidecar_rejects_invalid_wall() -> None:
+    assert prior_from_sidecar({}) is None
+    assert prior_from_sidecar({"wall_clock_duration_ms": 0}) is None
+    assert prior_from_sidecar({"wall_clock_duration_ms": "nope"}) is None
+
+
+@pytest.mark.unit
+def test_workload_from_segments_empty_and_word_lists() -> None:
+    empty = workload_from_segments([])
+    assert empty.segment_count == 0
+    assert empty.transcript_duration_s == 0.0
+    assert empty.word_count == 0
+    assert empty.speaker_count == 0
+
+    with_words = workload_from_segments(
+        [
+            {
+                "start": 0.0,
+                "end": 1.5,
+                "speaker": "A",
+                "text": "ignored when words present",
+                "words": [{"w": "a"}, {"w": "b"}, {"w": "c"}],
+            }
+        ]
+    )
+    assert with_words.word_count == 3
+    assert with_words.transcript_duration_s == 1.5
+
+
+@pytest.mark.unit
+def test_format_duration_range_units() -> None:
+    assert format_duration_range(30, 45) == "about 30–45s"
+    assert format_duration_range(60, 60) == "about 60s"
+    assert "h" in format_duration_range(7200, 10800)
+    # Mixed units keep both sides explicit.
+    mixed = format_duration_range(45, 120)
+    assert "s" in mixed and "min" in mixed
+
+
+@pytest.mark.unit
+def test_fingerprint_compatible_matches_memory_and_accel() -> None:
+    hw = _hw(memory_band="high", acceleration="cpu")
+    assert fingerprint_compatible(None, hw) is False
+    assert (
+        fingerprint_compatible(
+            RuntimeFingerprint(memory_band="mid", acceleration="cpu"), hw
+        )
+        is False
+    )
+    assert (
+        fingerprint_compatible(
+            RuntimeFingerprint(memory_band="high", acceleration="cuda"), hw
+        )
+        is False
+    )
+    assert (
+        fingerprint_compatible(
+            RuntimeFingerprint(memory_band="high", acceleration="cpu"), hw
+        )
+        is True
+    )
+    # Empty fingerprint fields are treated as compatible.
+    assert fingerprint_compatible(RuntimeFingerprint(), hw) is True
+
+
+@pytest.mark.unit
+def test_container_and_core_install_shape_estimate() -> None:
+    wl = WorkloadSnapshot(transcript_duration_s=600.0)
+    container = estimate_run_wall(
+        hardware=_hw(in_container=True, install_profile="core"),
+        preset="balanced",
+        module_ids=["stats"],
+        workload=wl,
+    )
+    host_full = estimate_run_wall(
+        hardware=_hw(in_container=False, install_profile="full"),
+        preset="balanced",
+        module_ids=["stats"],
+        workload=wl,
+    )
+    assert any("container" in c.lower() for c in container.caveats)
+    assert "install:core" in container.drivers
+    assert "install:full" in host_full.drivers
+    assert container.midpoint_s < host_full.midpoint_s

@@ -39,7 +39,7 @@ No STT wall-clock ETA in v1. Stacks and shared folders: [STT stacks](../recipes/
 2. Open **Transcribe Audio**.
 3. Prefer **Run in app** when a provider is available (native GUI on the Mac for whispermlx; see [STT stacks](../recipes/stt-stacks/README.md)):
    - **whispermlx** — macOS host with `whispermlx` on PATH (or `WHISPERMLX` in `whisperx.env`).
-   - **Granite Speech (MLX)** — macOS host with `mlx-audio` in a **separate** Python (`MLX_AUDIO_PYTHON`). Apache-2.0. Keyword lists (default off) and Plus speaker attribution when **Diarize** is on. Recipe: [granite-speech](../recipes/granite-speech/README.md).
+   - **Granite Speech (MLX)** — macOS host with `mlx-audio` in a **separate** Python (`MLX_AUDIO_PYTHON`). Apache-2.0. 5.0-2b for accuracy and keyword lists (default off); 5.0-470m-turboctc for speed (undiarized); Plus speaker attribution when **Diarize** is on. Recipe: [granite-speech](../recipes/granite-speech/README.md).
    - **WhisperX Docker** — `docker` on PATH and a reachable daemon; CUDA uses `--gpus all`.
 4. If no provider is available from this process (typical when Streamlit runs inside `transcriptx-web`), switch to **Copy command**, pick a tool, and run the snippet **on the host**.
 5. POSIX snippets paste into macOS, Linux, Git Bash, or WSL. **PowerShell** snippets are a second builder for Windows hosts. Streamlit does not execute copied snippets.
@@ -73,7 +73,7 @@ These stay outside the analysis image. **Run in app** orchestrates `docker run` 
 
 - **WhisperX** — Transcribe Audio → **Run in app** (WhisperX Docker) or **Copy command** → **WhisperX Docker**. Full recipe: [docs/recipes/whisperx/](../recipes/whisperx/README.md).
 - **NeMo Parakeet / Canary** — Transcribe Audio → **Copy command** → NeMo presets (Theme K), or **Run in app** → NeMo Parakeet Docker when configured (`parakeet_docker`). Convert JSONL with `nemo_json_to_whisperx`, then Import. Recipe: [docs/recipes/parakeet/](../recipes/parakeet/README.md). CUDA Linux host only; on macOS prefer whispermlx or Granite mlx-audio.
-- **Granite Speech** — Transcribe Audio → **Run in app** (`granite_mlx`) or **Copy command** → mlx-audio. Convert with `granite_json_to_whisperx` if you ran the CLI yourself. Recipe: [docs/recipes/granite-speech/](../recipes/granite-speech/README.md). Dev stub: `TRANSCRIPTX_GRANITE_STUB=1`.
+- **Granite Speech** — Transcribe Audio → **Run in app** (`granite_mlx`) or **Copy command** → mlx-audio. Convert with `granite_json_to_whisperx` if you ran the CLI yourself. Recipe: [docs/recipes/granite-speech/](../recipes/granite-speech/README.md). Dev stub: `TRANSCRIPTX_GRANITE_STUB=1`. Mistral **Voxtral 3** is not integrated (no open weights).
 - **Whisper-WebUI** — Gradio UI; hand-off is **SRT/VTT → Import Transcript**. Full recipe (including Apple Silicon notes): [docs/recipes/whisper-webui/README.md](../recipes/whisper-webui/README.md). On Apple Silicon the container is expected to use **CPU** inference; prefer host **whispermlx** when Metal/MLX speed matters.
 
 ## When Whisper is noisy or speech overlaps

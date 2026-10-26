@@ -55,6 +55,10 @@ def test_transcribe_audio_page_has_run_and_copy_paths():
     assert "Mac host" in source
     assert "Keyword biasing" in source
     assert "Granite Speech" in source
+    assert "GRANITE_MODEL_OPTIONS" in source
+    assert "5.0-470m-turboctc" in source
+    assert "turboctc-nc" not in source
+    assert "undiarized speed ASR" in source
 
 
 @pytest.mark.unit

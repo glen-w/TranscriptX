@@ -27,6 +27,7 @@ from transcriptx.services.transcription.granite_mlx_provider import (
     GRANITE_MODEL_OPTIONS,
     MODEL_ASR,
     MODEL_SAA,
+    is_turbo_ctc,
 )
 from transcriptx.services.transcription.keyword_lists import (
     list_lists as list_keyword_lists,
@@ -85,7 +86,7 @@ _KEYWORD_BLANK = "—"
 
 
 def _render_keyword_bias_fields(
-    *, key_prefix: str, granite_active: bool
+    *, key_prefix: str, granite_active: bool, supported: bool = True
 ) -> tuple[bool, str | None, tuple[str, ...]]:
     names = list_keyword_lists()
     options = [_KEYWORD_BLANK] + names
@@ -93,13 +94,21 @@ def _render_keyword_bias_fields(
         enabled = st.checkbox(
             "Enable keyword biasing",
             value=False,
+            disabled=not supported,
             key=f"{key_prefix}_keyword_bias",
             help=widget_help(
                 "Bias Granite decode toward acronyms and names. Default off. "
-                "Cap 2000 terms. Whisper providers ignore this in v1."
+                "Cap 2000 terms. Whisper providers ignore this in v1. "
+                "TurboCTC does not support keyword lists."
             ),
         )
-        if not granite_active:
+        if not supported:
+            st.caption(
+                "TurboCTC is encoder-only CTC — keyword biasing does not apply. "
+                "Use 5.0-2b."
+            )
+            enabled = False
+        elif not granite_active:
             st.caption("Lists are saved; Granite Speech applies them at decode time.")
         selected = st.selectbox(
             "Saved list",
@@ -222,14 +231,23 @@ def _render_run_in_app(default_input: str) -> None:
             help=widget_help("ISO language code (e.g. en)."),
         )
     with col_b:
-        diarize_help = (
-            "Uses granite-speech-4.1-2b-plus speaker attribution. No HF_TOKEN."
-            if provider_id == "granite_mlx"
-            else "Split speakers. Needs HF_TOKEN in whisperx.env for Whisper."
+        turbo_pending = provider_id == "granite_mlx" and is_turbo_ctc(
+            str(st.session_state.get("tx_run_granite_model") or "")
         )
+        if turbo_pending:
+            diarize_help = (
+                "TurboCTC does not support speaker attribution. Use 4.1-2b-plus."
+            )
+        elif provider_id == "granite_mlx":
+            diarize_help = (
+                "Uses granite-speech-4.1-2b-plus speaker attribution. No HF_TOKEN."
+            )
+        else:
+            diarize_help = "Split speakers. Needs HF_TOKEN in whisperx.env for Whisper."
         diarize = st.checkbox(
             "Diarize",
             value=True,
+            disabled=turbo_pending,
             key="tx_run_diarize",
             help=widget_help(diarize_help),
         )
@@ -315,19 +333,30 @@ def _render_run_in_app(default_input: str) -> None:
             key="tx_run_granite_model",
             accept_new_options=True,
             help=widget_help(
-                "5.0-2b for accuracy and punctuation; 4.1-2b-plus when diarizing. "
+                "5.0-2b for accuracy and punctuation; 5.0-470m-turboctc for speed "
+                "(no diarize/keywords); 4.1-2b-plus when diarizing. "
                 "Custom HF ids are allowed."
             ),
         )
-        st.caption(
-            "Diarize uses Plus speaker attribution (no HF_TOKEN). "
-            "Segment times are chunk-based; not WhisperX word timestamps. "
-            "Recipe: docs/recipes/granite-speech/."
-        )
+        if is_turbo_ctc(str(model or "")):
+            diarize = False
+            st.caption(
+                "TurboCTC is undiarized speed ASR (native punctuation). "
+                "Diarize and keyword biasing do not apply — use 4.1-2b-plus for "
+                "meetings, 5.0-2b for keyword lists. "
+                "Recipe: docs/recipes/granite-speech/."
+            )
+        else:
+            st.caption(
+                "Diarize uses Plus speaker attribution (no HF_TOKEN). "
+                "Segment times are chunk-based; not WhisperX word timestamps. "
+                "Recipe: docs/recipes/granite-speech/."
+            )
 
     keyword_bias_enabled, keyword_list_name, keywords = _render_keyword_bias_fields(
         key_prefix="tx_run",
         granite_active=provider_id == "granite_mlx",
+        supported=provider_id != "granite_mlx" or not is_turbo_ctc(str(model or "")),
     )
 
     options = TranscriptionOptions(
@@ -694,13 +723,23 @@ def render_transcribe_audio_page() -> None:
                 "ISO language code passed to the STT tool (e.g. en, es). Empty may mean auto-detect."
             ),
         )
+        cmd_turbo_pending = tool is TranscriptionTool.GRANITE_MLX and is_turbo_ctc(
+            str(st.session_state.get("tx_cmdgen_granite_model") or "")
+        )
+        cmd_diarize_help = (
+            "TurboCTC does not support speaker attribution. Use 4.1-2b-plus."
+            if cmd_turbo_pending
+            else (
+                "Split speakers (SPEAKER_00, …). Needed for Speaker ID and most "
+                "speaker analytics."
+            )
+        )
         diarize = st.checkbox(
             "Diarize",
             value=True,
+            disabled=cmd_turbo_pending,
             key="tx_cmdgen_diarize",
-            help=widget_help(
-                "Split speakers (SPEAKER_00, …). Needed for Speaker ID and most speaker analytics."
-            ),
+            help=widget_help(cmd_diarize_help),
         )
         dry_run = st.checkbox(
             "Dry-run / preview flags",
@@ -789,9 +828,16 @@ def render_transcribe_audio_page() -> None:
             key="tx_cmdgen_granite_model",
             accept_new_options=True,
             help=widget_help(
-                "5.0-2b for accuracy; 4.1-2b-plus when diarizing. Custom HF ids allowed."
+                "5.0-2b for accuracy; 5.0-470m-turboctc for speed "
+                "(no diarize/keywords); 4.1-2b-plus when diarizing. "
+                "Custom HF ids allowed."
             ),
         )
+        if is_turbo_ctc(str(model or "")):
+            diarize = False
+            st.caption(
+                "TurboCTC is undiarized speed ASR. Use 4.1-2b-plus for meetings."
+            )
     if tool is TranscriptionTool.WHISPERX_DOCKER:
         device = st.selectbox(
             "Device",
@@ -904,6 +950,8 @@ def render_transcribe_audio_page() -> None:
     keyword_bias_enabled, keyword_list_name, keywords = _render_keyword_bias_fields(
         key_prefix="tx_cmdgen",
         granite_active=tool is TranscriptionTool.GRANITE_MLX,
+        supported=tool is not TranscriptionTool.GRANITE_MLX
+        or not is_turbo_ctc(str(model or "")),
     )
 
     params = CommandGenParams(

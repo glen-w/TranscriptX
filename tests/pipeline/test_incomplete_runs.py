@@ -47,6 +47,48 @@ def test_list_incomplete_run_dirs_skips_hidden(tmp_path: Path) -> None:
     assert rows == ()
 
 
+def test_corrupt_or_non_object_run_results_count_as_missing(tmp_path: Path) -> None:
+    outputs = tmp_path / "outputs"
+    corrupt = outputs / "slug-a" / "run-bad"
+    corrupt.mkdir(parents=True)
+    (corrupt / "run_results.json").write_text("{not-json", encoding="utf-8")
+    array_payload = outputs / "slug-a" / "run-array"
+    array_payload.mkdir(parents=True)
+    (array_payload / "run_results.json").write_text("[]", encoding="utf-8")
+    rows = list_incomplete_run_dirs(
+        outputs_dir=outputs, group_outputs_dir=outputs / "groups"
+    )
+    assert {(r.run_id, r.state) for r in rows} == {
+        ("run-bad", "missing"),
+        ("run-array", "missing"),
+    }
+
+
+def test_terminal_completed_run_results_are_not_incomplete(tmp_path: Path) -> None:
+    outputs = tmp_path / "outputs"
+    done = outputs / "slug-a" / "run-done"
+    done.mkdir(parents=True)
+    (done / "run_results.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "run_id": "run-done",
+                "run_status": "completed",
+                "modules_enabled": ["stats"],
+                "modules_run": ["stats"],
+                "modules_failed": [],
+                "modules_skipped": [],
+                "errors": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    rows = list_incomplete_run_dirs(
+        outputs_dir=outputs, group_outputs_dir=outputs / "groups"
+    )
+    assert rows == ()
+
+
 def test_running_without_lock_is_interrupted(tmp_path: Path) -> None:
     outputs = tmp_path / "outputs"
     run_dir = outputs / "slug-a" / "run-live"
