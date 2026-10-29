@@ -10,6 +10,9 @@ from transcriptx.services.transcription.granite_mlx_provider import (
     GraniteMLXProvider,
 )
 from transcriptx.services.transcription.whispermlx_provider import WhisperMLXProvider
+from transcriptx.services.transcription.nemotron_vllm_provider import (
+    NemotronVllmProvider,
+)
 from transcriptx.services.transcription.parakeet_docker_provider import (
     ParakeetDockerProvider,
 )
@@ -22,6 +25,7 @@ _PROVIDERS: dict[str, TranscriptionProvider] = {
     WhisperXDockerProvider.provider_id: WhisperXDockerProvider(),
     ParakeetDockerProvider.provider_id: ParakeetDockerProvider(),
     GraniteMLXProvider.provider_id: GraniteMLXProvider(),
+    NemotronVllmProvider.provider_id: NemotronVllmProvider(),
 }
 
 _DEFAULT_FALLBACK_ID = WhisperMLXProvider.provider_id

@@ -202,6 +202,7 @@ class TranscriptionOptions:
     keyword_bias_enabled: bool = False
     keyword_list_name: str | None = None
     keywords: tuple[str, ...] = ()
+    base_url: str = ""
 
 
 @dataclass

@@ -52,7 +52,7 @@ Research basis: [Open source ASR for TranscriptX](../reports/Open%20source%20ASR
 | Tier | Engines | Action |
 |------|---------|--------|
 | **1 — Host providers (H)** | whispermlx (Mac), WhisperX Docker (CUDA/CPU) | Harden only until boring |
-| **2 — Theme K → H5** | NeMo Parakeet TDT, Canary (± Canary-Qwen); optional faster-whisper / whisper.cpp / sherpa-onnx | Copyable `docker run` + **WhisperX-shaped JSON converter** into `originals/`; Import remains the gate; promote to registered provider only after H5 entry criteria |
+| **2 — Theme K → H5** | NeMo Parakeet TDT, Canary (± Canary-Qwen); Nemotron 3.5 Transcribe (local vLLM); optional faster-whisper / whisper.cpp / sherpa-onnx | Copyable host CLI + **WhisperX-shaped JSON converter** into `originals/`; Import remains the gate; promote to registered provider only after H5 entry criteria |
 | **3 — BYO / Copy recipes** | Whisper-WebUI, FunASR/SenseVoice, Distil-Whisper, Vosk, Scriberr / noScribe / aTrain | Document export → Import; adapters only if recurring shapes fail |
 | **Watchlist** | CocktailASR-1 (focus-speaker / enrollment), HTTP STT sidecar, YouTube URL ingest (H5+), H6 streaming, DiCoW | Research / later; not Whisper replacements |
 | **Reject** | In-process NeMo/Whisper in the analysis image; silent cloud STT; SeamlessM4T/MMS as commercial defaults (CC-BY-NC); DeepSpeech; Kaldi-as-product; meeting bots | Architecture / license / wrong job |
@@ -75,7 +75,8 @@ Research basis: [Open source ASR for TranscriptX](../reports/Open%20source%20ASR
 - [x] **Theme K:** Parakeet (then Canary) command-gen + JSONL → `{segments:[{start,end,text,speaker?}]}` converter + golden fixtures
 - [x] **H5 entry:** converter + CUDA Docker recipe + trust/NOTICE row; optional registered `parakeet_docker` provider (stub mode for dev/CI)
 - [x] **Granite Speech mlx-audio** (`granite_mlx`) + keyword lists (default off; Settings → Keywords)
-- [ ] Defer CocktailASR / streaming / HTTP sidecar until the slices above land
+- [x] **Theme K / H5 Nemotron 3.5 Transcribe:** local vLLM client + `nemotron_json_to_whisperx` goldens + optional `nemotron_vllm` stub provider (CUDA; loopback only; Granary dataset out of scope)
+- [ ] Defer CocktailASR / streaming / generic HTTP sidecar until the slices above land
 
 Cross-links: Theme **H** (in-app providers), Theme **K** (command generation), [transcription.md](runtime/transcription.md), [settings.md](runtime/settings.md) (`allow_unnamed_speakers`), [comparison.md](comparison.md).
 
@@ -111,7 +112,7 @@ Prefer thematic workstreams over fixed patch IDs. Cut releases around coherent, 
 | Overview / results presentation | Retire Insights Analysis tab; redistribute into Summary / Speakers / Actions / Highlights — [overview_presentation_0_9_9.md](dev/overview_presentation_0_9_9.md) | **0.9.9** (Charts/Overview hierarchy residuals deferred) |
 | Post-0.9.9 wave (interim) | Early 1.x A–D + operator UX — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md) | **0.9.9.5** |
 | **Owner local folder cleanup** | Unambiguous library / `originals/` / inbox / recordings mounts — see **Now** above | **now (top priority)** |
-| **Undiarized resilience + ASR ladder** | T0/T1 speaker tiers; Parakeet Theme K→H5; CocktailASR watchlist — see **Next** above | **[~] T0/T1 honesty shipped; converter/H5 recipe still hardening** |
+| **Undiarized resilience + ASR ladder** | T0/T1 speaker tiers; Parakeet Theme K→H5; Nemotron local vLLM; CocktailASR watchlist — see **Next** above | **[~] T0/T1 honesty shipped; Parakeet/Nemotron converters + stub providers shipped** |
 | Informal stranger test | Tried by someone who had not used the app | **done** (2026-10); not a release gate |
 
 **Module freeze:** no new analysis modules in 0.9.x unless required to complete or repair the 1.0 journey. Backlog: [analysis_module_backlog_2026-07-17.md](dev/analysis_module_backlog_2026-07-17.md).
@@ -150,10 +151,10 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x — **[~]** probe + estimates + docs shipped ([theme_e_performance_hardware.md](dev/theme_e_performance_hardware.md)) |
 | F. Library & organisation | Library archive (shipped); transcript tagging; Groups interaction rules; optional YouTube API rename metadata | Mid 1.x |
 | G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** narrow Windows convert/admit + pluggable STT shipped; service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
-| H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Granite Speech mlx-audio; Parakeet/Canary; YouTube/streaming later | **[~] H1–H4 + Granite mlx shipped**; YouTube ingest / H6 still deferred |
+| H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Granite Speech mlx-audio; Parakeet/Canary; Nemotron 3.5 Transcribe; YouTube/streaming later | **[~] H1–H4 + Granite mlx + Nemotron vLLM client shipped**; YouTube ingest / H6 still deferred |
 | I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Deferred except H1 job channel |
 | J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 — deferred vs STT |
-| K. External STT command generation | Broader copyable host CLIs until / beside theme H; Parakeet/Canary converter is the next K slice | **[~] PowerShell builder shipped**; Parakeet CLI in **Next** |
+| K. External STT command generation | Broader copyable host CLIs until / beside theme H; Parakeet/Canary + Nemotron converters | **[~] PowerShell builder + Parakeet/Nemotron Copy commands shipped** |
 | L. Polish & onboarding extras | Coach-marks, bundled demos, aesthetics — only if capacity | Anytime light |
 | M. Research / citeable methods | Optional B4-style methods; multilingual beyond small subset | Later 1.x+ |
 | N. Multi-provider LLM (opt-in) | OpenAI-compatible / LiteLLM gateway beyond Ollama; never silent cloud default | Mid–late 1.x |
@@ -338,7 +339,7 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 | **H2** WhisperX Docker provider | **[x]** registered; CUDA `--gpus all` or CPU |
 | **H3** Watcher `auto_transcribe` + queued drain | **[x]** when a provider is available |
 | **H4** Docs / install honesty | **[x]** this page + [transcription.md](runtime/transcription.md) + [stt-stacks](recipes/stt-stacks/README.md) |
-| **H5+** NVIDIA Parakeet/Canary, YouTube URL ingest (download/transcribe), HTTP STT sidecar | **[~]** Parakeet/Canary Theme K + optional `parakeet_docker` shipped; YouTube ingest / HTTP sidecar still deferred (YouTube *rename* metadata is theme **F**, not H5) |
+| **H5+** NVIDIA Parakeet/Canary, Nemotron 3.5 Transcribe, YouTube URL ingest (download/transcribe), HTTP STT sidecar | **[~]** Parakeet/Canary Theme K + optional `parakeet_docker` shipped; Nemotron local vLLM client + `nemotron_vllm` stub shipped; YouTube ingest / generic HTTP sidecar still deferred (YouTube *rename* metadata is theme **F**, not H5) |
 | **Granite Speech (mlx-audio)** | **[x]** macOS `granite_mlx` provider + keyword lists; engines stay out of the analysis image |
 | **H6** Real-time / streaming STT (WebSocket sessions, turn detection, partials) | **[ ] deferred** — live captions, in-session notes, voice-agent upstream; not batch file jobs (H1–H4). Design reference: [AssemblyAI — Real-time transcription in Python (Universal-3.6 Pro Realtime)](https://www.assemblyai.com/blog/real-time-transcription-python). **Opt-in cloud only** (explicit API key; document audio leaving the machine); local batch STT remains the default path. Partial text UX may overlap theme **D** if we ever surface streaming in the reader. |
 | **Watchlist** CocktailASR-1 / DiCoW | **[ ]** enrolled focus-speaker or diarization-conditioned Whisper peers — see **Next**; not Balanced meeting defaults |
@@ -403,7 +404,7 @@ Until/beside theme **H**, keep improving **copyable host commands** on Transcrib
 
 **Saved presets:** Transcribe Audio can save/load/delete command-gen form presets under `.transcriptx/profiles/stt_commands/` (host paths and flags only — never `HF_TOKEN`; tokens stay in `whisperx.env`).
 
-**Next K slice (see Next above):** NeMo **Parakeet** (then **Canary**) copyable `docker run` plus a WhisperX-shaped JSON converter into `originals/` with golden fixtures — the admit path that gates Theme **H5**. Optional faster-whisper / whisper.cpp / sherpa-onnx commands stay documentation-grade unless they share that converter. FunASR/SenseVoice and CocktailASR stay BYO/watchlist, not first-class K presets.
+**Next K slice (see Next above):** NeMo **Parakeet** / **Canary** copyable `docker run` plus WhisperX-shaped converters remain the CUDA ASR ladder; **Nemotron 3.5 Transcribe** is a sibling K preset (local vLLM client + `nemotron_json_to_whisperx`, not a generic HTTP sidecar). Optional faster-whisper / whisper.cpp / sherpa-onnx commands stay documentation-grade unless they share that converter. FunASR/SenseVoice and CocktailASR stay BYO/watchlist, not first-class K presets. Granary v2 is training data, not a product surface.
 
 ---
 

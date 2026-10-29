@@ -71,6 +71,7 @@ Sourced from [runtime/models.md](../runtime/models.md) defaults and pinned HF pr
 | Voice / speaker-match embeddings (ECAPA / `[voice]`) | See SpeechBrain / model cards | Optional extras; may download | **Speaker-identity sensitive** — privacy notice v2 | Optional (`[voice]`) |
 | NeMo Parakeet TDT / Canary ASR (Theme K / `parakeet_docker`) | **CC-BY-4.0** (typical Hub / NGC cards) | User-triggered on CUDA host; not in analysis image | Local STT when user runs recipe; stub mode for dev only | Optional — [recipes/parakeet](../recipes/parakeet/README.md) |
 | IBM Granite Speech (`granite-speech-5.0-2b`, `granite-speech-5.0-470m-turboctc`, `granite-speech-4.1-2b-plus`) via host mlx-audio (`granite_mlx`) | **Apache-2.0** (Hub cards) | User-triggered Hub download on first run; not in analysis image | Local STT on Apple Silicon; stub mode for dev only. TurboCTC-NC (CC-BY-NC-SA-4.0) is not shipped. Voxtral 3 is not integrated (no open weights). | Optional — [recipes/granite-speech](../recipes/granite-speech/README.md) |
+| NVIDIA Nemotron 3.5 Transcribe (`NVIDIA-Nemotron-3.5-Transcribe-30B-A4B` ± FP8/NVFP4) via host vLLM (`nemotron_vllm`) | **OpenMDW-1.1** | User-triggered on CUDA host; not in analysis image | Local STT when operator serves vLLM/NIM on loopback; stub mode for dev only. Granary v2 dataset is not shipped. | Optional — [recipes/nemotron-transcribe](../recipes/nemotron-transcribe/README.md) |
 
 ### NOTICE
 

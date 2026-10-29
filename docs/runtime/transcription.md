@@ -32,6 +32,7 @@ Transcribe Audio captions a recommendation from the shared hardware probe ([hard
 2. **CUDA visible to this process** and not `TRANSCRIPTX_FORCE_CPU` → WhisperX Docker **cuda** (`--gpus all`). Confirm the host GPU is passed into the *STT* container.
 3. **Analysis container without CUDA** → WhisperX Docker **cpu** for orchestration from this process; the host may still run a CUDA recipe via Copy command.
 4. **Parakeet Docker** → intended for CUDA Linux hosts; default device follows the same cuda/cpu honesty.
+5. **Nemotron 3.5 Transcribe** → last-resort CUDA path after Whisper/Parakeet; needs a local vLLM at `127.0.0.1`. Not a Mac Run-in-app engine.
 
 No STT wall-clock ETA in v1. Stacks and shared folders: [STT stacks](../recipes/stt-stacks/README.md).
 
@@ -41,13 +42,14 @@ No STT wall-clock ETA in v1. Stacks and shared folders: [STT stacks](../recipes/
    - **whispermlx** — macOS host with `whispermlx` on PATH (or `WHISPERMLX` in `whisperx.env`).
    - **Granite Speech (MLX)** — macOS host with `mlx-audio` in a **separate** Python (`MLX_AUDIO_PYTHON`). Apache-2.0. 5.0-2b for accuracy and keyword lists (default off); 5.0-470m-turboctc for speed (undiarized); Plus speaker attribution when **Diarize** is on. Recipe: [granite-speech](../recipes/granite-speech/README.md).
    - **WhisperX Docker** — `docker` on PATH and a reachable daemon; CUDA uses `--gpus all`.
+   - **Nemotron 3.5 Transcribe** — CUDA host with a local vLLM/NIM at `127.0.0.1:8000`. Recipe: [nemotron-transcribe](../recipes/nemotron-transcribe/README.md).
 4. If no provider is available from this process (typical when Streamlit runs inside `transcriptx-web`), switch to **Copy command**, pick a tool, and run the snippet **on the host**.
 5. POSIX snippets paste into macOS, Linux, Git Bash, or WSL. **PowerShell** snippets are a second builder for Windows hosts. Streamlit does not execute copied snippets.
 6. With **Import result into library** on, a successful Run admits JSON automatically. Otherwise open **Import Transcript**.
 
 **Saved presets:** on Copy command, save/load/delete command-gen fields under `.transcriptx/profiles/stt_commands/`. Presets store host paths and flags only — never `HF_TOKEN` (tokens stay in `whisperx.env`).
 
-**Keyword lists:** Settings → **Keywords** (named lists under `.transcriptx/profiles/keyword_lists/`). Transcribe Audio **Keyword biasing** is **off by default**. Granite applies the selected list at decode time (max 2,000 terms). Whisper providers ignore the lists in this version.
+**Keyword lists:** Settings → **Keywords** (named lists under `.transcriptx/profiles/keyword_lists/`). Transcribe Audio **Keyword biasing** is **off by default**. Granite applies the selected list at decode time (max 2,000 terms); Nemotron appends them as `Context terms:`. Whisper providers ignore the lists in this version.
 
 | Step | Typical corpus path (whispermlx-missing) |
 |------|------------------------------------------|
@@ -73,6 +75,7 @@ These stay outside the analysis image. **Run in app** orchestrates `docker run` 
 
 - **WhisperX** — Transcribe Audio → **Run in app** (WhisperX Docker) or **Copy command** → **WhisperX Docker**. Full recipe: [docs/recipes/whisperx/](../recipes/whisperx/README.md).
 - **NeMo Parakeet / Canary** — Transcribe Audio → **Copy command** → NeMo presets (Theme K), or **Run in app** → NeMo Parakeet Docker when configured (`parakeet_docker`). Convert JSONL with `nemo_json_to_whisperx`, then Import. Recipe: [docs/recipes/parakeet/](../recipes/parakeet/README.md). CUDA Linux host only; on macOS prefer whispermlx or Granite mlx-audio.
+- **Nemotron 3.5 Transcribe** — Transcribe Audio → **Copy command** → Nemotron local vLLM (Theme K), or **Run in app** → `nemotron_vllm` when a loopback server is up. Convert with `nemotron_json_to_whisperx`. Recipe: [docs/recipes/nemotron-transcribe/](../recipes/nemotron-transcribe/README.md). CUDA host only (BF16 ≈ H100 80 GB); stub `TRANSCRIPTX_NEMOTRON_STUB=1`. On macOS prefer whispermlx or Granite.
 - **Granite Speech** — Transcribe Audio → **Run in app** (`granite_mlx`) or **Copy command** → mlx-audio. Convert with `granite_json_to_whisperx` if you ran the CLI yourself. Recipe: [docs/recipes/granite-speech/](../recipes/granite-speech/README.md). Dev stub: `TRANSCRIPTX_GRANITE_STUB=1`. Mistral **Voxtral 3** is not integrated (no open weights).
 - **Whisper-WebUI** — Gradio UI; hand-off is **SRT/VTT → Import Transcript**. Full recipe (including Apple Silicon notes): [docs/recipes/whisper-webui/README.md](../recipes/whisper-webui/README.md). On Apple Silicon the container is expected to use **CPU** inference; prefer host **whispermlx** when Metal/MLX speed matters.
 
@@ -104,12 +107,12 @@ Transcription runs on the **host** (whispermlx binary, WhisperX Docker, or Whisp
 
 | Where | What runs |
 |-------|-----------|
-| Host (terminal or in-app provider) | `whispermlx` / `whispermlx-missing` (macOS), Granite `mlx-audio` (macOS), WhisperX `docker run`, optional Whisper-WebUI Docker, `inbox-watch` |
+| Host (terminal or in-app provider) | `whispermlx` / `whispermlx-missing` (macOS), Granite `mlx-audio` (macOS), WhisperX `docker run`, optional Nemotron local vLLM client, optional Whisper-WebUI Docker, `inbox-watch` |
 | `transcriptx-web` (Docker or native) | Import, library, analysis, artifacts; optional STT **orchestration** only when the provider binary/daemon is visible to that process |
 
 The recommended install runs analysis in a **Linux** container. **whispermlx** must run on the **macOS host** (Metal/MLX); it cannot run inside that container. Keeping engines out of the analysis image avoids bloating it. Stacks, shared folders, and when **Run in app** works: [STT stacks](../recipes/stt-stacks/README.md).
 
-**Theme H:** optional in-app / host-orchestrated transcription is shipped for Whisper-class providers (`whispermlx`, `whisperx_docker`), optional **`parakeet_docker`** (CUDA NeMo Parakeet — configure per [recipes/parakeet](../recipes/parakeet/README.md); dev stub via `TRANSCRIPTX_PARAKEET_STUB=1`), and optional **`granite_mlx`** (Apple Silicon mlx-audio — [recipes/granite-speech](../recipes/granite-speech/README.md); stub `TRANSCRIPTX_GRANITE_STUB=1`) — [ROADMAP.md](../ROADMAP.md) theme **H**. **Theme K** Copy commands for NeMo Parakeet/Canary share the same JSONL → WhisperX converter. YouTube ingest is later. In-app directory watch for audio auto-transcribe is theme **G2** + **H3** — [directory_watcher.md](directory_watcher.md).
+**Theme H:** optional in-app / host-orchestrated transcription is shipped for Whisper-class providers (`whispermlx`, `whisperx_docker`), optional **`parakeet_docker`** (CUDA NeMo Parakeet — configure per [recipes/parakeet](../recipes/parakeet/README.md); dev stub via `TRANSCRIPTX_PARAKEET_STUB=1`), optional **`nemotron_vllm`** (local Nemotron 3.5 Transcribe — [recipes/nemotron-transcribe](../recipes/nemotron-transcribe/README.md); stub `TRANSCRIPTX_NEMOTRON_STUB=1`), and optional **`granite_mlx`** (Apple Silicon mlx-audio — [recipes/granite-speech](../recipes/granite-speech/README.md); stub `TRANSCRIPTX_GRANITE_STUB=1`) — [ROADMAP.md](../ROADMAP.md) theme **H**. **Theme K** Copy commands for NeMo Parakeet/Canary share `nemo_json_to_whisperx`; Nemotron uses `nemotron_json_to_whisperx`. YouTube ingest is later. In-app directory watch for audio auto-transcribe is theme **G2** + **H3** — [directory_watcher.md](directory_watcher.md).
 
 ## Advanced
 

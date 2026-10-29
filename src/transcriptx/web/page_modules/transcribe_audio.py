@@ -29,6 +29,10 @@ from transcriptx.services.transcription.granite_mlx_provider import (
     MODEL_SAA,
     is_turbo_ctc,
 )
+from transcriptx.services.transcription.nemotron_vllm_client import (
+    DEFAULT_BASE_URL as _NEMOTRON_BASE_URL,
+    DEFAULT_MODEL as _NEMOTRON_MODEL,
+)
 from transcriptx.services.transcription.keyword_lists import (
     list_lists as list_keyword_lists,
     resolve_run_keywords,
@@ -67,6 +71,7 @@ _TOOL_LABELS = {
     TranscriptionTool.WHISPER_WEBUI_DOCKER: "Whisper-WebUI Docker (Gradio)",
     TranscriptionTool.NEMO_PARAKEET_DOCKER: "NeMo Parakeet Docker (Theme K, CUDA Linux)",
     TranscriptionTool.NEMO_CANARY_DOCKER: "NeMo Canary Docker (Theme K, CUDA Linux)",
+    TranscriptionTool.NEMO_NEMOTRON_VLLM: "Nemotron 3.5 Transcribe (local vLLM, CUDA)",
     TranscriptionTool.GRANITE_MLX: "Granite Speech mlx-audio (macOS host)",
 }
 
@@ -97,9 +102,9 @@ def _render_keyword_bias_fields(
             disabled=not supported,
             key=f"{key_prefix}_keyword_bias",
             help=widget_help(
-                "Bias Granite decode toward acronyms and names. Default off. "
-                "Cap 2000 terms. Whisper providers ignore this in v1. "
-                "TurboCTC does not support keyword lists."
+                "Bias Granite or Nemotron decode toward acronyms and names. "
+                "Default off. Cap 2000 terms. Whisper providers ignore this "
+                "in v1. TurboCTC does not support keyword lists."
             ),
         )
         if not supported:
@@ -109,7 +114,9 @@ def _render_keyword_bias_fields(
             )
             enabled = False
         elif not granite_active:
-            st.caption("Lists are saved; Granite Speech applies them at decode time.")
+            st.caption(
+                "Lists are saved; Granite Speech and Nemotron apply them at decode time."
+            )
         selected = st.selectbox(
             "Saved list",
             options=options,
@@ -180,7 +187,8 @@ def _render_run_in_app(default_input: str) -> None:
     st.subheader("Run in app")
     st.caption(
         "Host-orchestrated STT: Streamlit calls a local provider (whispermlx or "
-        "Granite Speech mlx-audio on macOS, WhisperX Docker, or Parakeet Docker). "
+        "Granite Speech mlx-audio on macOS, WhisperX Docker, Parakeet Docker, "
+        "or Nemotron local vLLM on CUDA). "
         "Engines stay out of the analysis image. "
         "whispermlx and Granite run on the Mac host, not inside Compose. If no "
         "provider is available here, use Copy command on the host. "
@@ -241,6 +249,10 @@ def _render_run_in_app(default_input: str) -> None:
         elif provider_id == "granite_mlx":
             diarize_help = (
                 "Uses granite-speech-4.1-2b-plus speaker attribution. No HF_TOKEN."
+            )
+        elif provider_id == "nemotron_vllm":
+            diarize_help = (
+                "Speaker-tagged Nemotron prompt plus word timestamps. No HF_TOKEN."
             )
         else:
             diarize_help = "Split speakers. Needs HF_TOKEN in whisperx.env for Whisper."
@@ -323,6 +335,31 @@ def _render_run_in_app(default_input: str) -> None:
             value="nvidia/parakeet-tdt-0.6b-v3",
             key="tx_run_parakeet_model",
         )
+    base_url = ""
+    if provider_id == "nemotron_vllm":
+        device = "cuda"
+        st.caption(
+            "Requires a local OpenAI-compatible server at 127.0.0.1 "
+            "(operator-started vLLM / NIM). Not available on macOS Run-in-app. "
+            "Recipe: docs/recipes/nemotron-transcribe/."
+        )
+        model = st.text_input(
+            "Nemotron model id",
+            value=_NEMOTRON_MODEL,
+            key="tx_run_nemotron_model",
+            help=widget_help(
+                "Hub id. Use the FP8/NVFP4 variants on smaller Blackwell GPUs."
+            ),
+        )
+        base_url = st.text_input(
+            "vLLM base URL",
+            value=_NEMOTRON_BASE_URL,
+            key="tx_run_nemotron_base_url",
+            help=widget_help(
+                "Loopback only by default. Set TRANSCRIPTX_NEMOTRON_ALLOW_REMOTE=1 "
+                "only for an explicit remote GPU."
+            ),
+        )
     if provider_id == "granite_mlx":
         granite_default = MODEL_SAA if bool(diarize) else MODEL_ASR
         if "tx_run_granite_model" not in st.session_state:
@@ -355,7 +392,7 @@ def _render_run_in_app(default_input: str) -> None:
 
     keyword_bias_enabled, keyword_list_name, keywords = _render_keyword_bias_fields(
         key_prefix="tx_run",
-        granite_active=provider_id == "granite_mlx",
+        granite_active=provider_id in {"granite_mlx", "nemotron_vllm"},
         supported=provider_id != "granite_mlx" or not is_turbo_ctc(str(model or "")),
     )
 
@@ -378,6 +415,7 @@ def _render_run_in_app(default_input: str) -> None:
         keyword_bias_enabled=keyword_bias_enabled,
         keyword_list_name=keyword_list_name,
         keywords=keywords,
+        base_url=base_url.strip(),
     )
     availability = get_provider(provider_id).is_available(options)
     if availability.available:
@@ -634,6 +672,11 @@ def render_transcribe_audio_page() -> None:
             "`MLX_AUDIO_PYTHON`. Not inside Compose analysis. "
             "See `docs/recipes/granite-speech/README.md`."
         )
+    if tool is TranscriptionTool.NEMO_NEMOTRON_VLLM:
+        st.caption(
+            "CUDA Linux / WSL2: start local vLLM once, then paste this client. "
+            "Not macOS Run-in-app. See `docs/recipes/nemotron-transcribe/README.md`."
+        )
 
     col_a, col_b = st.columns(2)
     with col_a:
@@ -818,6 +861,27 @@ def render_transcribe_audio_page() -> None:
                 value="nvidia/parakeet-tdt-0.6b-v3",
                 key="tx_cmdgen_parakeet_model",
             )
+    cmd_base_url = ""
+    if tool is TranscriptionTool.NEMO_NEMOTRON_VLLM:
+        model = st.text_input(
+            "Nemotron model id",
+            value=_NEMOTRON_MODEL,
+            key="tx_cmdgen_nemotron_model",
+            help=widget_help(
+                "Hub id. FP8/NVFP4 variants exist for smaller Blackwell GPUs."
+            ),
+        )
+        cmd_base_url = st.text_input(
+            "vLLM base URL",
+            value=_NEMOTRON_BASE_URL,
+            key="tx_cmdgen_nemotron_base_url",
+            help=widget_help("Loopback OpenAI-compatible endpoint. Default 127.0.0.1."),
+        )
+        st.caption(
+            "Start vLLM once on a CUDA host; this snippet only calls the local "
+            "client then converts. On macOS prefer whispermlx. "
+            "Recipe: docs/recipes/nemotron-transcribe/."
+        )
     if tool is TranscriptionTool.GRANITE_MLX:
         granite_default = MODEL_SAA if bool(diarize) else MODEL_ASR
         if "tx_cmdgen_granite_model" not in st.session_state:
@@ -949,7 +1013,8 @@ def render_transcribe_audio_page() -> None:
 
     keyword_bias_enabled, keyword_list_name, keywords = _render_keyword_bias_fields(
         key_prefix="tx_cmdgen",
-        granite_active=tool is TranscriptionTool.GRANITE_MLX,
+        granite_active=tool
+        in (TranscriptionTool.GRANITE_MLX, TranscriptionTool.NEMO_NEMOTRON_VLLM),
         supported=tool is not TranscriptionTool.GRANITE_MLX
         or not is_turbo_ctc(str(model or "")),
     )
@@ -985,6 +1050,7 @@ def render_transcribe_audio_page() -> None:
         keyword_bias_enabled=keyword_bias_enabled,
         keyword_list_name=keyword_list_name,
         keywords=keywords,
+        base_url=cmd_base_url.strip(),
     )
 
     _render_preset_controls(params)

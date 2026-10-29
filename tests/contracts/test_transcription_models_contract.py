@@ -49,9 +49,12 @@ class TestTranscriptionModelsContract:
         assert opts.keyword_bias_enabled is False
         assert opts.keyword_list_name is None
         assert opts.keywords == ()
+        assert opts.base_url == ""
         names = {f.name for f in fields(TranscriptionOptions)}
         assert "keyword_bias_enabled" in names
         assert "keywords" in names
+        assert "base_url" in names
+        assert "hf_token" not in names
 
     def test_provider_result_has_required_debug_fields(self):
         names = {f.name for f in fields(TranscriptionProviderResult)}
