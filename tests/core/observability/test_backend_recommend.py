@@ -79,7 +79,7 @@ def test_core_recommend_does_not_name_stt_engines() -> None:
         encoding="utf-8"
     )
     lowered = src.lower()
-    for token in ("whisperx", "whispermlx", "parakeet", "granite"):
+    for token in ("whisperx", "whispermlx", "parakeet", "granite", "nemotron"):
         assert token not in lowered
     assert "def recommend_stt_backend" not in src
     assert "def analysis_model_hint" in src

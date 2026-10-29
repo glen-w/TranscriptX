@@ -25,6 +25,11 @@ components when the corresponding install profile or feature is enabled:
     `ibm-granite/granite-speech-4.1-2b-plus`) when the `granite_mlx` provider or mlx-audio
     Copy command is used — **Apache-2.0**; user-triggered Hub download on first run.
     See docs/recipes/granite-speech/README.md.
+11. Optional NVIDIA Nemotron 3.5 Transcribe weights
+    (`nvidia/NVIDIA-Nemotron-3.5-Transcribe-30B-A4B` and FP8/NVFP4 variants) when
+    Theme K / `nemotron_vllm` Run-in-app or Copy-command recipes are used —
+    **OpenMDW-1.1**; user-triggered download on first local vLLM/NIM serve.
+    Default endpoint is loopback only. See docs/recipes/nemotron-transcribe/README.md.
 
 TranscriptX itself does not claim ownership of these weights or lexicons.
 Local-first operation: analysis runs on the user’s machine; model downloads

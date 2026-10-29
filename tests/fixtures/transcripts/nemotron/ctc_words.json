@@ -1,0 +1,17 @@
+{
+  "choices": [
+    {
+      "message": {
+        "content": "<spk:0> Hello there. <spk:1> Hi."
+      }
+    }
+  ],
+  "ctc_timestamps": {
+    "error": null,
+    "words": [
+      {"word": "Hello", "start": 0.0, "end": 0.4, "speaker": 0},
+      {"word": "there.", "start": 0.4, "end": 0.8, "speaker": 0},
+      {"word": "Hi.", "start": 1.0, "end": 1.3, "speaker": 1}
+    ]
+  }
+}

@@ -93,6 +93,23 @@ def recommend_stt_backend(
             ),
         )
 
+    if "nemotron_vllm" in ids and os_f != "darwin":
+        device = (
+            "cuda"
+            if hardware.acceleration == "cuda" and not hardware.force_cpu
+            else "cpu"
+        )
+        return SttBackendRecommendation(
+            provider_id="nemotron_vllm",
+            device=device,
+            reason="nemotron_available",
+            caption=(
+                "Nemotron 3.5 Transcribe available as a last-resort CUDA path "
+                f"(device={device}). Start local vLLM first; on Mac prefer "
+                "whispermlx."
+            ),
+        )
+
     # Fallback: first available id or whisperx_docker label.
     fallback = next(iter(available_provider_ids), "whisperx_docker")
     return SttBackendRecommendation(

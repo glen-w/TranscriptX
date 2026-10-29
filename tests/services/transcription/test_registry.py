@@ -73,6 +73,10 @@ class TestRegistry:
         ids = {p.provider_id for p in get_transcription_providers()}
         assert "granite_mlx" in ids
 
+    def test_nemotron_vllm_registered(self):
+        ids = {p.provider_id for p in get_transcription_providers()}
+        assert "nemotron_vllm" in ids
+
     def test_unknown_provider_error(self):
         with pytest.raises(UnknownTranscriptionProviderError):
             get_provider("nonexistent")

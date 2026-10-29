@@ -99,6 +99,24 @@ def test_stt_parakeet_when_whisper_family_absent() -> None:
 
 
 @pytest.mark.unit
+def test_stt_nemotron_after_parakeet_not_on_darwin() -> None:
+    linux = recommend_stt_backend(
+        _hw(acceleration="cuda"),
+        available_provider_ids=["nemotron_vllm"],
+    )
+    assert linux.provider_id == "nemotron_vllm"
+    assert linux.reason == "nemotron_available"
+    assert linux.device == "cuda"
+
+    darwin = recommend_stt_backend(
+        _hw(os_family="darwin"),
+        available_provider_ids=["nemotron_vllm"],
+    )
+    assert darwin.provider_id == "nemotron_vllm"
+    assert darwin.reason == "default"
+
+
+@pytest.mark.unit
 def test_stt_empty_providers_default_cpu() -> None:
     rec = recommend_stt_backend(_hw(), available_provider_ids=[])
     assert rec.provider_id == "whisperx_docker"

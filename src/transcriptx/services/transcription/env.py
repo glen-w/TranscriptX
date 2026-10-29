@@ -97,6 +97,11 @@ def default_transcription_options(
         default_model = merged.get(
             "GRANITE_SPEECH_MODEL", "ibm-granite/granite-speech-5.0-2b"
         )
+    elif provider_id == "nemotron_vllm":
+        default_model = merged.get(
+            "NEMOTRON_TRANSCRIBE_MODEL",
+            "nvidia/NVIDIA-Nemotron-3.5-Transcribe-30B-A4B",
+        )
     else:
         default_model = merged.get("WHISPERMLX_MODEL", "large-v3")
     return TranscriptionOptions(
@@ -114,6 +119,7 @@ def default_transcription_options(
         keyword_bias_enabled=False,
         keyword_list_name=None,
         keywords=(),
+        base_url=merged.get("TRANSCRIPTX_NEMOTRON_BASE_URL", ""),
     )
 
 
@@ -173,4 +179,5 @@ def build_transcription_options(
         ),
         keyword_list_name=overrides.get("keyword_list_name", base.keyword_list_name),
         keywords=keywords,
+        base_url=str(overrides.get("base_url", base.base_url)),
     )

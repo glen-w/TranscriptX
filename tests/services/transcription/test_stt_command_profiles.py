@@ -151,3 +151,17 @@ def test_keyword_fields_roundtrip() -> None:
     )
     restored = command_gen_params_from_dict(command_gen_params_to_dict(params))
     assert restored == params
+
+
+@pytest.mark.unit
+def test_nemotron_base_url_roundtrip() -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.NEMO_NEMOTRON_VLLM,
+        input_path="/a.wav",
+        output_dir="/b",
+        model="nvidia/NVIDIA-Nemotron-3.5-Transcribe-30B-A4B",
+        base_url="http://127.0.0.1:8000/v1",
+    )
+    restored = command_gen_params_from_dict(command_gen_params_to_dict(params))
+    assert restored == params
+    assert restored.base_url == "http://127.0.0.1:8000/v1"

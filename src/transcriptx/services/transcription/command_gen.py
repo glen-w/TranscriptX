@@ -20,6 +20,10 @@ from transcriptx.services.transcription.granite_mlx_provider import (
     is_turbo_ctc,
     resolve_granite_model,
 )
+from transcriptx.services.transcription.nemotron_vllm_client import (
+    DEFAULT_BASE_URL as _NEMOTRON_BASE_URL,
+    DEFAULT_MODEL as _NEMOTRON_MODEL_DEFAULT,
+)
 
 
 class TranscriptionTool(str, Enum):
@@ -29,6 +33,7 @@ class TranscriptionTool(str, Enum):
     WHISPER_WEBUI_DOCKER = "whisper_webui_docker"
     NEMO_PARAKEET_DOCKER = "nemo_parakeet_docker"
     NEMO_CANARY_DOCKER = "nemo_canary_docker"
+    NEMO_NEMOTRON_VLLM = "nemo_nemotron_vllm"
     GRANITE_MLX = "granite_mlx"
 
 
@@ -149,6 +154,7 @@ class CommandGenParams:
     keyword_bias_enabled: bool = False
     keyword_list_name: str | None = None
     keywords: tuple[str, ...] = ()
+    base_url: str = ""
 
 
 @dataclass(frozen=True)
@@ -360,6 +366,82 @@ def build_nemo_canary_docker(params: CommandGenParams) -> GeneratedCommand:
     )
 
 
+def _nemotron_keyword_flags(params: CommandGenParams) -> str:
+    if not params.keyword_bias_enabled:
+        return ""
+    flags = []
+    for term in params.keywords:
+        stripped = str(term).strip()
+        if stripped:
+            flags.append(f"--keyword {_q(stripped)}")
+    if not flags:
+        return ""
+    return " \\\n  " + " \\\n  ".join(flags)
+
+
+def build_nemo_nemotron_vllm(params: CommandGenParams) -> GeneratedCommand:
+    audio_mount = _strip_trailing_separators(params.input_path)
+    out_mount = _strip_trailing_separators(params.output_dir)
+    model = params.model.strip() or _NEMOTRON_MODEL_DEFAULT
+    base_url = params.base_url.strip() or _NEMOTRON_BASE_URL
+    diarize_flag = "" if params.diarize else " \\\n  --no-diarize"
+    keyword_flags = _nemotron_keyword_flags(params)
+    stem_expr = '$(basename "' + audio_mount.replace('"', "") + '")'
+    if looks_like_audio_file(audio_mount):
+        client_block = f"""python3 -m transcriptx.services.transcription.nemotron_vllm_client \\
+  --audio {_q(audio_mount)} \\
+  --output-raw {_q(out_mount)}/{stem_expr}.nemotron.json \\
+  --base-url {_q(base_url)} \\
+  --model {_q(model)}{diarize_flag}{keyword_flags}
+
+python3 -m transcriptx.services.transcription.nemotron_json_to_whisperx \\
+  --input {_q(out_mount)}/{stem_expr}.nemotron.json \\
+  --output {_q(out_mount)}/{stem_expr}.json
+"""
+    else:
+        client_block = f"""for f in {_q(audio_mount)}/*.{'{mp3,wav,m4a,flac,ogg}'}; do
+  [ -e "$f" ] || continue
+  stem=$(basename "$f")
+  python3 -m transcriptx.services.transcription.nemotron_vllm_client \\
+    --audio "$f" \\
+    --output-raw {_q(out_mount)}/"$stem".nemotron.json \\
+    --base-url {_q(base_url)} \\
+    --model {_q(model)}{diarize_flag}{keyword_flags}
+  python3 -m transcriptx.services.transcription.nemotron_json_to_whisperx \\
+    --input {_q(out_mount)}/"$stem".nemotron.json \\
+    --output {_q(out_mount)}/"${{stem%.*}}".json
+done
+"""
+    shell = f"""# Nemotron 3.5 Transcribe — CUDA Linux / WSL2 (not macOS Run-in-app).
+# On macOS prefer whispermlx or Granite Speech. BF16 wants ~1× H100 80 GB;
+# use the FP8/NVFP4 Hub ids on Blackwell. Serve stays operator-owned.
+# Full flags: docs/recipes/nemotron-transcribe/README.md
+
+mkdir -p {_q(out_mount)}
+
+# Optional — start the local server ONCE (TranscriptX does not daemonize it):
+# export VLLM_PLUGINS=nemo_speechlm
+# export VLLM_MAX_AUDIO_DECODE_DURATION_S=3600
+# vllm serve {_q(model)} \\
+#   --host 127.0.0.1 --port 8000 --trust-remote-code --dtype bfloat16 \\
+#   --gpu-memory-utilization 0.94 --max-model-len 65536 \\
+#   --middleware nemo.collections.speechlm2.vllm.salm.ctc_serving.ctc_timestamp_middleware
+
+{client_block}"""
+    notes = (
+        "Theme K — paste on a CUDA host with a local vLLM/NIM at 127.0.0.1.",
+        "Full recipe: docs/recipes/nemotron-transcribe/README.md",
+        "OpenMDW-1.1 weights; user-triggered download on first serve.",
+        "Default endpoint is loopback only (no silent cloud NIM).",
+        "Expected output: WhisperX-shaped JSON for Import Transcript.",
+    )
+    return GeneratedCommand(
+        title="Nemotron 3.5 Transcribe (local vLLM)",
+        shell=shell.strip() + "\n",
+        notes=notes,
+    )
+
+
 def _build_nemo_asr_docker(
     params: CommandGenParams, *, title: str, model_hint: str
 ) -> GeneratedCommand:
@@ -550,6 +632,8 @@ def generate_transcription_command(params: CommandGenParams) -> GeneratedCommand
         generated = build_nemo_parakeet_docker(params)
     elif params.tool is TranscriptionTool.NEMO_CANARY_DOCKER:
         generated = build_nemo_canary_docker(params)
+    elif params.tool is TranscriptionTool.NEMO_NEMOTRON_VLLM:
+        generated = build_nemo_nemotron_vllm(params)
     elif params.tool is TranscriptionTool.GRANITE_MLX:
         generated = build_granite_mlx(params)
     else:
@@ -559,6 +643,7 @@ def generate_transcription_command(params: CommandGenParams) -> GeneratedCommand
         TranscriptionTool.WHISPERX_DOCKER,
         TranscriptionTool.NEMO_PARAKEET_DOCKER,
         TranscriptionTool.NEMO_CANARY_DOCKER,
+        TranscriptionTool.NEMO_NEMOTRON_VLLM,
     ):
         extra_notes = extra_notes + (_WINDOWS_MOUNT_NOTE,)
     return GeneratedCommand(
@@ -610,6 +695,8 @@ def generate_transcription_command_powershell(
         generated = build_nemo_parakeet_docker(params)
     elif params.tool is TranscriptionTool.NEMO_CANARY_DOCKER:
         generated = build_nemo_canary_docker(params)
+    elif params.tool is TranscriptionTool.NEMO_NEMOTRON_VLLM:
+        generated = _build_nemo_nemotron_vllm_powershell(params)
     elif params.tool is TranscriptionTool.GRANITE_MLX:
         generated = _build_granite_mlx_powershell(params)
     else:
@@ -619,6 +706,7 @@ def generate_transcription_command_powershell(
         TranscriptionTool.WHISPERX_DOCKER,
         TranscriptionTool.NEMO_PARAKEET_DOCKER,
         TranscriptionTool.NEMO_CANARY_DOCKER,
+        TranscriptionTool.NEMO_NEMOTRON_VLLM,
     ):
         notes = notes + (_WINDOWS_MOUNT_NOTE,)
     return GeneratedCommand(
@@ -626,6 +714,42 @@ def generate_transcription_command_powershell(
         shell=generated.shell,
         notes=notes,
         next_step=generated.next_step,
+    )
+
+
+def _build_nemo_nemotron_vllm_powershell(params: CommandGenParams) -> GeneratedCommand:
+    audio = _strip_trailing_separators(params.input_path)
+    out_mount = _strip_trailing_separators(params.output_dir)
+    model = params.model.strip() or _NEMOTRON_MODEL_DEFAULT
+    base_url = params.base_url.strip() or _NEMOTRON_BASE_URL
+    diarize_flag = "" if params.diarize else " --no-diarize"
+    keyword_flags = ""
+    if params.keyword_bias_enabled:
+        parts = [
+            f"--keyword {_ps_q(str(term).strip())}"
+            for term in params.keywords
+            if str(term).strip()
+        ]
+        if parts:
+            keyword_flags = " " + " ".join(parts)
+    shell = f"""# Nemotron 3.5 Transcribe — CUDA host / WSL2. Serve stays operator-owned.
+# On macOS prefer whispermlx. See docs/recipes/nemotron-transcribe/README.md
+$OutDir = {_ps_q(out_mount)}
+New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+$Stem = [System.IO.Path]::GetFileName({_ps_q(audio)})
+python -m transcriptx.services.transcription.nemotron_vllm_client --audio {_ps_q(audio)} --output-raw (Join-Path $OutDir ($Stem + '.nemotron.json')) --base-url {_ps_q(base_url)} --model {_ps_q(model)}{diarize_flag}{keyword_flags}
+python -m transcriptx.services.transcription.nemotron_json_to_whisperx --input (Join-Path $OutDir ($Stem + '.nemotron.json')) --output (Join-Path $OutDir ([System.IO.Path]::GetFileNameWithoutExtension($Stem) + '.json'))
+"""
+    notes = (
+        "Theme K — paste on a CUDA host with local vLLM at 127.0.0.1.",
+        "Full recipe: docs/recipes/nemotron-transcribe/README.md",
+        "OpenMDW-1.1 weights; user-triggered download on first serve.",
+        "Expected output: WhisperX-shaped JSON for Import Transcript.",
+    )
+    return GeneratedCommand(
+        title="Nemotron 3.5 Transcribe (local vLLM)",
+        shell=shell.strip() + "\n",
+        notes=notes,
     )
 
 

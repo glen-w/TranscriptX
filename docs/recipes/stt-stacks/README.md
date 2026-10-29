@@ -17,6 +17,7 @@ Mainstream Transcribe Audio steps: [transcription.md](../../runtime/transcriptio
 | Granite Speech | **macOS host** (`MLX_AUDIO_PYTHON` + mlx-audio) | Transcribe Audio → Granite Speech (MLX) | Apache-2.0; 5.0-2b keywords; TurboCTC speed; Plus speaker attribution. Not in analysis venv. [granite-speech](../granite-speech/README.md). |
 | WhisperX | Host `docker run` (Copy command; POSIX or PowerShell) | Transcribe Audio → Copy command | Diarized JSON when Docker is on the host. Primary STT on Linux/Windows. |
 | NeMo Parakeet / Canary | CUDA host `docker run` + JSONL converter (Theme K; optional Run in app `parakeet_docker`) | Transcribe Audio → Copy command → NeMo presets | WhisperX-shaped JSON via `nemo_json_to_whisperx` — [parakeet/README.md](../parakeet/README.md). Not on macOS Run-in-app. |
+| Nemotron 3.5 Transcribe | CUDA host local vLLM/NIM + client (Theme K; optional Run in app `nemotron_vllm`) | Transcribe Audio → Copy command → Nemotron | WhisperX-shaped JSON via `nemotron_json_to_whisperx` — [nemotron-transcribe/README.md](../nemotron-transcribe/README.md). Loopback only; not on macOS Run-in-app. |
 | Whisper-WebUI | Optional extra Compose service | http://127.0.0.1:7860 | Gradio UI → SRT/VTT → Import Transcript. |
 | inbox-watch (non-Mac) | Host Python | `--transcribe none` or `command` | Convert/copy/admit; STT via WhisperX argv or BYO. |
 
@@ -139,7 +140,7 @@ Use when analysis is Compose and the host is **not** macOS.
 
 - Put whispermlx inside `transcriptx-web`.
 - Mount the Docker socket into the analysis container (forbidden by analysis-only invariants).
-- Start Parakeet / Canary / YouTube (theme **H5+**, deferred).
+- Start Parakeet, Canary, Nemotron vLLM, or YouTube ingest from Compose (engines stay host-side; Nemotron serve is operator-owned).
 - Auto-join meeting bots.
 - Ship whispermlx or a Mac-parity login agent on Windows.
 

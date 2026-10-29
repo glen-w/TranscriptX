@@ -59,6 +59,9 @@ def test_transcribe_audio_page_has_run_and_copy_paths():
     assert "5.0-470m-turboctc" in source
     assert "turboctc-nc" not in source
     assert "undiarized speed ASR" in source
+    assert "nemotron_vllm" in source
+    assert "Nemotron 3.5 Transcribe" in source
+    assert "nemotron_json_to_whisperx" in source or "nemotron_vllm_client" in source
 
 
 @pytest.mark.unit
@@ -100,6 +103,7 @@ def test_providers_include_whispermlx_and_whisperx_docker():
     assert "whispermlx" in ids
     assert "whisperx_docker" in ids
     assert "granite_mlx" in ids
+    assert "nemotron_vllm" in ids
 
 
 @pytest.mark.unit

@@ -119,6 +119,75 @@ def test_nemo_parakeet_docker_recipe() -> None:
 
 
 @pytest.mark.unit
+def test_nemotron_vllm_copy_command() -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.NEMO_NEMOTRON_VLLM,
+        input_path="/data/audio/meeting.mp3",
+        output_dir="/data/out",
+        model="nvidia/NVIDIA-Nemotron-3.5-Transcribe-30B-A4B",
+        diarize=True,
+        keyword_bias_enabled=True,
+        keywords=("NATO",),
+    )
+    cmd = generate_transcription_command(params)
+    assert "127.0.0.1" in cmd.shell
+    assert "nemotron_vllm_client" in cmd.shell
+    assert "nemotron_json_to_whisperx" in cmd.shell
+    assert "exit 1" not in cmd.shell
+    assert "--keyword" in cmd.shell
+    assert "NATO" in cmd.shell
+    assert any("loopback" in n.lower() or "127.0.0.1" in n for n in cmd.notes)
+
+
+@pytest.mark.unit
+def test_nemotron_vllm_copy_command_no_diarize() -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.NEMO_NEMOTRON_VLLM,
+        input_path="/data/audio/meeting.mp3",
+        output_dir="/data/out",
+        diarize=False,
+    )
+    cmd = generate_transcription_command(params)
+    assert "--no-diarize" in cmd.shell
+    assert "exit 1" not in cmd.shell
+
+
+@pytest.mark.unit
+def test_nemotron_vllm_copy_command_folder_loop() -> None:
+    params = CommandGenParams(
+        tool=TranscriptionTool.NEMO_NEMOTRON_VLLM,
+        input_path="/data/audio",
+        output_dir="/data/out",
+    )
+    cmd = generate_transcription_command(params)
+    assert "for f in" in cmd.shell
+    assert "nemotron_vllm_client" in cmd.shell
+
+
+@pytest.mark.unit
+def test_nemotron_vllm_powershell_copy_command() -> None:
+    from transcriptx.services.transcription.command_gen import (
+        generate_transcription_command_powershell,
+    )
+
+    params = CommandGenParams(
+        tool=TranscriptionTool.NEMO_NEMOTRON_VLLM,
+        input_path=r"C:\audio\meeting.wav",
+        output_dir=r"C:\out",
+        diarize=True,
+        keyword_bias_enabled=True,
+        keywords=("NATO",),
+    )
+    cmd = generate_transcription_command_powershell(params)
+    assert "nemotron_vllm_client" in cmd.shell
+    assert "nemotron_json_to_whisperx" in cmd.shell
+    assert "127.0.0.1" in cmd.shell
+    assert "exit 1" not in cmd.shell
+    assert "--keyword" in cmd.shell
+    assert any("PowerShell" in n for n in cmd.notes)
+
+
+@pytest.mark.unit
 def test_whisperx_docker_recipe() -> None:
     params = CommandGenParams(
         tool=TranscriptionTool.WHISPERX_DOCKER,

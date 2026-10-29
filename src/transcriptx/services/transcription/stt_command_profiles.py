@@ -87,6 +87,7 @@ def command_gen_params_to_dict(params: CommandGenParams) -> dict[str, Any]:
         "keyword_bias_enabled": bool(params.keyword_bias_enabled),
         "keyword_list_name": params.keyword_list_name,
         "keywords": list(params.keywords),
+        "base_url": params.base_url,
     }
 
 
@@ -149,6 +150,7 @@ def command_gen_params_from_dict(data: dict[str, Any]) -> CommandGenParams:
             str(data["keyword_list_name"]) if data.get("keyword_list_name") else None
         ),
         keywords=_keywords_from_payload(data.get("keywords")),
+        base_url=str(data.get("base_url") or ""),
     )
 
 
@@ -219,3 +221,6 @@ def apply_params_to_session_state(
     session_state["tx_cmdgen_keyword_bias"] = bool(params.keyword_bias_enabled)
     session_state["tx_cmdgen_keyword_list"] = params.keyword_list_name or "—"
     session_state["tx_cmdgen_keywords_extra"] = "\n".join(params.keywords)
+    session_state["tx_cmdgen_nemotron_base_url"] = params.base_url
+    if params.tool is TranscriptionTool.NEMO_NEMOTRON_VLLM:
+        session_state["tx_cmdgen_nemotron_model"] = params.model

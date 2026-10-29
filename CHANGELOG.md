@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Nemotron 3.5 Transcribe** (`nemotron_vllm`): Theme K Copy command + `nemotron_json_to_whisperx` converter + optional Run-in-app client against a **local** vLLM/NIM (`127.0.0.1`). OpenMDW-1.1. Stub: `TRANSCRIPTX_NEMOTRON_STUB=1`. Not in the analysis image; not a Mac Run-in-app engine. Recipe: [nemotron-transcribe](docs/recipes/nemotron-transcribe/README.md).
 - **Granite Speech 5.0 TurboCTC** (`ibm-granite/granite-speech-5.0-470m-turboctc`) on the existing `granite_mlx` path: fast undiarized multilingual CTC. Apache-2.0. The CC-BY-NC-SA `-nc` checkpoint is not shipped. Mistral Voxtral 3 is not integrated (no open weights).
 
 ## [1.0.2] - 2026-10-24
