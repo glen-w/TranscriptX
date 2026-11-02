@@ -524,15 +524,9 @@ def test_mutation_changes_freshness(
 
 @pytest.mark.unit
 def test_speakers_page_has_trends_not_gallery() -> None:
-    path = (
-        Path(__file__).resolve().parents[2]
-        / "src"
-        / "transcriptx"
-        / "web"
-        / "page_modules"
-        / "speakers.py"
-    )
-    src = path.read_text(encoding="utf-8")
+    from tests.web.speakers_page_patches import speakers_ui_source
+
+    src = speakers_ui_source()
     assert 'st.expander("Trends"' in src
     assert 'st.expander("Conversation partners"' in src
     assert 'st.expander("Interactions & equity"' in src
@@ -548,8 +542,11 @@ def test_speakers_page_has_trends_not_gallery() -> None:
     assert "build_profile_sentiment_pack" in src
     assert "chart_definitions" not in src
     assert "_evidence_caption" in src
-    tree = ast.parse(src)
-    assert tree is not None
+    from tests.web.speakers_page_patches import speakers_ui_paths
+
+    for path in speakers_ui_paths():
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        assert tree is not None
 
 
 @pytest.mark.unit

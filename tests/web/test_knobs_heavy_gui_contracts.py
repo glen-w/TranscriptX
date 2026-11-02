@@ -435,7 +435,9 @@ def test_speaker_id_page_wires_voice_match_knobs() -> None:
 
 @pytest.mark.unit
 def test_speakers_page_wires_voice_and_locations_knobs() -> None:
-    src = Path("src/transcriptx/web/page_modules/speakers.py").read_text()
+    from tests.web.speakers_page_patches import speakers_ui_source
+
+    src = speakers_ui_source()
     for needle in (
         "_render_voice_controls",
         "spk_voice_bootstrap_",
