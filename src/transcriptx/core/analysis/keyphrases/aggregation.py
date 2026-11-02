@@ -23,9 +23,9 @@ def aggregate_keyphrases(
     canonical_speaker_map: CanonicalSpeakerMap,
     transcript_set: TranscriptSet,
 ) -> Dict[str, Any] | None:
-    from transcriptx.core.analysis.aggregation.registry import (
-        _extract_payload,
-        _warning_payload_shape,
+    from transcriptx.core.analysis.aggregation.common import (
+        extract_payload as _extract_payload,
+        warning_payload_shape as _warning_payload_shape,
     )
     from transcriptx.core.analysis.aggregation.rows import session_row_from_result
     from transcriptx.core.analysis.aggregation.schema import get_transcript_id

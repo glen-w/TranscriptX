@@ -14,10 +14,10 @@ def aggregate_politeness(
     canonical_speaker_map: CanonicalSpeakerMap,
     transcript_set: TranscriptSet,
 ) -> Dict[str, Any] | None:
-    from transcriptx.core.analysis.aggregation.registry import (
-        _build_rows_from_stats,
-        _extract_payload,
-        _warning_payload_shape,
+    from transcriptx.core.analysis.aggregation.common import (
+        build_rows_from_stats as _build_rows_from_stats,
+        extract_payload as _extract_payload,
+        warning_payload_shape as _warning_payload_shape,
     )
 
     session_rows: List[Dict[str, Any]] = []

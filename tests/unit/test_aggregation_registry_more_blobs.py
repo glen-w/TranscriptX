@@ -175,7 +175,7 @@ def test_warning_paths_for_blob_helpers(tmp_path: Path) -> None:
 
     # temporal_dynamics non-dict payload is filtered by extract_payload; force via patch
     with patch(
-        "transcriptx.core.analysis.aggregation.registry._extract_payload",
+        "transcriptx.core.analysis.aggregation.aggregators._extract_payload",
         return_value=["not-a-dict"],
     ):
         assert (
@@ -245,7 +245,7 @@ def test_aggregate_contagion_with_aggregation_warnings(
         },
     )
     monkeypatch.setattr(
-        "transcriptx.core.analysis.aggregation.registry.build_contagion_pooled_for_group",
+        "transcriptx.core.analysis.aggregation.aggregators.build_contagion_pooled_for_group",
         lambda *a, **k: ({"pooled": True}, [{"code": "W"}]),
     )
     out = _aggregate_contagion([result], _sm(), _ts(tmp_path))
