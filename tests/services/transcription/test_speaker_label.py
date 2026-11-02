@@ -23,3 +23,17 @@ def test_shared_speaker_label_one_based_matches_granite() -> None:
 def test_shared_speaker_label_zero_based_matches_nemotron() -> None:
     assert speaker_label(0, one_based=False) == nemotron_label(0) == "SPEAKER_00"
     assert speaker_label("<spk:1>") == nemotron_label("<spk:1>") == "SPEAKER_01"
+
+
+@pytest.mark.unit
+def test_vendor_offset_is_preserved() -> None:
+    assert granite_label(1) == "SPEAKER_00"
+    assert nemotron_label(1) == "SPEAKER_01"
+
+
+@pytest.mark.unit
+def test_speaker_label_passthrough_and_empty() -> None:
+    assert speaker_label(None) is None
+    assert speaker_label("  ") is None
+    assert speaker_label("SPEAKER_03") == "SPEAKER_03"
+    assert speaker_label("host") == "host"

@@ -407,8 +407,9 @@ def test_payload_hash_idempotency_helper_stable_and_changes(
 
 
 def test_speakers_merged_readonly_and_fingerprint_gate_ast() -> None:
-    path = Path(speakers_mod.__file__)
-    src = path.read_text(encoding="utf-8")
+    from tests.web.speakers_page_patches import speakers_ui_paths, speakers_ui_source
+
+    src = speakers_ui_source()
     assert "_render_merged_readonly" in src
     assert "Open target profile" in src
     assert 'row.flag != "needs_review"' in src
@@ -419,27 +420,28 @@ def test_speakers_merged_readonly_and_fingerprint_gate_ast() -> None:
     assert "_render_merged_readonly(profile, profiles_by_id=profiles_by_id)" in src
     assert "_speakers_browser_fragment" in src
     assert "_rerun_ui" in src
-    tree = ast.parse(src)
     found_early_return = False
-    for node in ast.walk(tree):
-        if (
-            not isinstance(node, ast.FunctionDef)
-            or node.name != "_speakers_browser_fragment"
-        ):
-            continue
-        for stmt in node.body:
-            if not isinstance(stmt, ast.If):
+    for path in speakers_ui_paths():
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if (
+                not isinstance(node, ast.FunctionDef)
+                or node.name != "_speakers_browser_fragment"
+            ):
                 continue
-            body = stmt.body
-            for j, inner in enumerate(body):
-                if (
-                    isinstance(inner, ast.Expr)
-                    and isinstance(inner.value, ast.Call)
-                    and isinstance(inner.value.func, ast.Name)
-                    and inner.value.func.id == "_render_merged_readonly"
-                ):
-                    if j + 1 < len(body) and isinstance(body[j + 1], ast.Return):
-                        found_early_return = True
+            for stmt in node.body:
+                if not isinstance(stmt, ast.If):
+                    continue
+                body = stmt.body
+                for j, inner in enumerate(body):
+                    if (
+                        isinstance(inner, ast.Expr)
+                        and isinstance(inner.value, ast.Call)
+                        and isinstance(inner.value.func, ast.Name)
+                        and inner.value.func.id == "_render_merged_readonly"
+                    ):
+                        if j + 1 < len(body) and isinstance(body[j + 1], ast.Return):
+                            found_early_return = True
     assert found_early_return, "merged selection must return before detail/lifecycle"
 
 

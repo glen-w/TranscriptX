@@ -2591,3 +2591,21 @@ None.
 | `tests/services/transcription/test_granite_mlx_provider.py` | **extended** | options tuple; custom turbo id; no `-nc` |
 | `tests/services/transcription/test_command_gen.py` | **+1** | PowerShell TurboCTC omits gen-kwargs |
 | `tests/web/test_transcribe_audio_page.py` | **extended** | TurboCTC strings in page source |
+
+## 87. Expansion (2026-11-02) – Maintainability waves
+
+### Trigger
+`/tests` close-out after PR-sized file splits (aggregation, Insights, analysis config facade, Speakers UI, Speaker ID extract, path-cache / STT label / emotion peel).
+
+### Backup
+- `/Users/89298/Documents/transcriptx backup/261102.zip`. Nested `# tests` backup skipped (already taken for `# deep-test`).
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Aggregation registry | Inline `_aggregate_*` bodies | Identity tests still import re-exports from `registry.py` |
+| Insights / Speakers Streamlit patches | Facade-only `st` patches miss slice modules | `insights_block_patches.py`, `speakers_page_patches.py` |
+| Analysis config facade | Split dataclasses vs Pydantic pilots | `test_analysis_facade_split.py` |
+| FileService ↔ cache_helpers cycle | Path cache lived in `cache_helpers` | `test_transcript_path_cache_cycle.py` |
+| Granite vs Nemotron speaker ids | Duplicated mappers, different offsets | `test_speaker_label.py` |
+| Emotion analyze envelope | Preflight mixed with lexical scoring | `test_emotion_analyze_peel.py` |

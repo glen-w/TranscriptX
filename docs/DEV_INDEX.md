@@ -73,6 +73,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [run_outcome_model.md](dev/run_outcome_model.md) | Run outcome developer notes |
 | [run_performance.md](dev/run_performance.md) | Analysis-run performance telemetry |
 | [COMPLEXITY_GATES.md](dev/COMPLEXITY_GATES.md) | Complexity / performance gates |
+| [maintainability_layout.md](dev/maintainability_layout.md) | File-split homes from the 2026-11-02 maintainability waves |
 | [composition_platform.md](dev/composition_platform.md) | Composition platform |
 | [dashboard_builder.md](dev/dashboard_builder.md) | Dashboard Builder workflows |
 | [web_blocks.md](dev/web_blocks.md) | Web block architecture |

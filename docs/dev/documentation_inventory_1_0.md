@@ -56,6 +56,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/contracts/speaker_profiles_v1.md | Speaker profiles v1 (Phase 1) | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/contracts/speaker_profiles_v1.md | yes |
 | docs/contracts/speaker_profiles_voice_v1.md | Speaker profiles — voice phase v1 (R2) | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/contracts/speaker_profiles_voice_v1.md | yes |
 | docs/dev/COMPLEXITY_GATES.md | Complexity and performance gates (pipeline / reporting) | live | developer | current | — | retain | — | DEV_INDEX | self | no |
+| docs/dev/maintainability_layout.md | Maintainability layout (2026-11-02 file splits) | live | developer | current | — | retain | — | DEV_INDEX | docs/dev/COMPLEXITY_GATES.md | no |
 | docs/dev/config_architecture.md | Config / settings dual-stack architecture | live | developer | current | Settings/knobs clarity programme | retain | — | DEV_INDEX | docs/runtime/STORAGE.md | no |
 | docs/dev/settings_knobs_assessment.md | Settings/knobs assessment and hardening backlog | live | developer | current | Settings/knobs clarity programme | retain | — | DEV_INDEX | docs/dev/config_architecture.md | no |
 | docs/dev/CONTRIBUTING.md | Contributing to TranscriptX | live | developer | current | — | retain | — | DEV_INDEX | ARCHITECTURE.md | no |

@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-11-02
+
+Maintainability file splits plus STT converters that landed after 1.0.2 (git tag `v1.0.3`).
+
 ### Added
 
 - **Nemotron 3.5 Transcribe** (`nemotron_vllm`): Theme K Copy command + `nemotron_json_to_whisperx` converter + optional Run-in-app client against a **local** vLLM/NIM (`127.0.0.1`). OpenMDW-1.1. Stub: `TRANSCRIPTX_NEMOTRON_STUB=1`. Not in the analysis image; not a Mac Run-in-app engine. Recipe: [nemotron-transcribe](docs/recipes/nemotron-transcribe/README.md).
 - **Granite Speech 5.0 TurboCTC** (`ibm-granite/granite-speech-5.0-470m-turboctc`) on the existing `granite_mlx` path: fast undiarized multilingual CTC. Apache-2.0. The CC-BY-NC-SA `-nc` checkpoint is not shipped. Mistral Voxtral 3 is not integrated (no open weights).
+
+### Changed
+
+- **Maintainability waves:** group aggregators live in `aggregation/aggregators.py`; Insights, Speakers directory, Speaker ID, and analysis-config dataclasses are facade + slice modules. Session→transcript path caching moved to `web/transcript_path_cache.py` so FileService does not import `cache_helpers`. Granite/Nemotron `SPEAKER_XX` mapping shares `services/transcription/speaker_label.py` (1-based vs 0-based offset preserved). `EmotionAnalysis.analyze` is the preflight envelope; scoring is `_analyze_lexical`. Layout: [maintainability_layout.md](docs/dev/maintainability_layout.md).
 
 ## [1.0.2] - 2026-10-24
 

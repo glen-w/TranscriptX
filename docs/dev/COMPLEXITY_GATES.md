@@ -11,4 +11,6 @@
 - **STT speaker labels:** Granite (1-based) and Nemotron (0-based) converters wrap `services.transcription.speaker_label.speaker_label`. Do not collapse the vendor offset.
 - **Lexical emotion:** `EmotionAnalysis.analyze` is the preflight/save envelope; scoring lives in `_analyze_lexical`. Do not change artifact shape when peeling helpers.
 
+Module homes for the 2026-11-02 file splits: [maintainability_layout.md](maintainability_layout.md).
+
 These are lightweight regression signals; CI can run them as non-blocking or nightly jobs.
