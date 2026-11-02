@@ -407,7 +407,14 @@ def test_removing_custom_qa_clears_picker_session_keys() -> None:
 
 @pytest.mark.unit
 def test_speaker_id_page_wires_voice_match_knobs() -> None:
-    src = Path("src/transcriptx/web/page_modules/speaker_id.py").read_text()
+    src = "\n".join(
+        Path(p).read_text(encoding="utf-8")
+        for p in (
+            "src/transcriptx/web/page_modules/speaker_id.py",
+            "src/transcriptx/web/workspaces/speaker_id_session_keys.py",
+            "src/transcriptx/web/workspaces/speaker_id_voice.py",
+        )
+    )
     for needle in (
         "ActivationBarrier",
         "voice_session_key",

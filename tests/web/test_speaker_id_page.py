@@ -15,6 +15,20 @@ import pytest
 from transcriptx.services.speaker_studio.controller import SpeakerStudioController
 from transcriptx.io.speaker_map_resolver import sidecar_path_for
 
+
+def _speaker_id_sources() -> str:
+    """Page + extracted session-key/voice helpers (source-contract scans)."""
+    root = Path("src/transcriptx/web")
+    return "\n".join(
+        (root / rel).read_text(encoding="utf-8")
+        for rel in (
+            "page_modules/speaker_id.py",
+            "workspaces/speaker_id_session_keys.py",
+            "workspaces/speaker_id_voice.py",
+        )
+    )
+
+
 # ── contract ──────────────────────────────────────────────────────────────────
 
 
@@ -22,7 +36,7 @@ def test_speaker_id_page_invalidates_path_summary_after_mutations() -> None:
     """Save/ignore must invalidate the selected transcript summary, not all listings."""
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     assert "invalidate_transcript_summary_for_path" in source
     assert "clear_transcript_listing_caches" not in source
     assert "_speaker_id_workspace_fragment" in source
@@ -44,7 +58,7 @@ def test_speaker_id_plain_rerun_whitelist() -> None:
 
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     plain = re.findall(r"st\.rerun\(\s*\)", source)
     assert len(plain) == 1, f"expected one plain st.rerun(), found {len(plain)}"
     assert "_rerun_app" in source
@@ -312,7 +326,7 @@ def test_completion_action_strip_lives_inside_workspace_fragment() -> None:
     """Completion strip is painted inside the fragment; outer page only consumes the flag."""
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     frag = source.split("def _speaker_id_workspace_fragment", 1)[1]
     frag = frag.split("def render_speaker_id_page", 1)[0]
     outer = source.split("def render_speaker_id_page", 1)[1]
@@ -435,7 +449,7 @@ def test_workspace_fragment_reloads_mapping_every_run() -> None:
 
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     frag_body = source.split("def _speaker_id_workspace_fragment", 1)[1]
     frag_body = frag_body.split("def render_speaker_id_page", 1)[0]
     assert "controller.get_mapping_status(transcript_path)" in frag_body
@@ -447,7 +461,7 @@ def test_workspace_fragment_reloads_mapping_every_run() -> None:
 def test_voice_pending_stale_path_is_rejected_without_analyse() -> None:
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     assert "paths_match(pending_path, transcript_path)" in source
     assert "voice_pending_key" in source
     pending_block = source.split("pending = st.session_state.pop(pending_key", 1)[1]
@@ -542,7 +556,7 @@ def test_completion_triggers_one_app_rerun_and_flag_is_consumed(
 def test_voice_pending_popped_before_analyse_so_exceptions_do_not_requeue() -> None:
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     pop_idx = source.index("pending = st.session_state.pop(pending_key")
     analyse_idx = source.index("facade.analyse(")
     assert pop_idx < analyse_idx
@@ -553,7 +567,7 @@ def test_speaker_id_page_exposes_workspace_fragment() -> None:
 
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     assert source.count("@st.fragment") == 1
     assert "_render_ccv2_speaker_workspace" in source
     assert "from transcriptx.web.components.playback_panel import" in source
@@ -681,7 +695,7 @@ def test_preferred_transcript_path_uses_page_selection(
 def test_speaker_id_page_defers_voice_analyse() -> None:
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     assert "voice_pending_key" in source
     assert "_SPEAKER_ID_SELECTED_PATH" in source
     assert "_cb_voice_analyse_one" in source
@@ -708,7 +722,7 @@ def test_speaker_id_page_renders_post_completion_action_links() -> None:
     """When all speakers are identified, show homepage-style next-step links."""
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     assert "_render_post_speaker_id_actions" in source
     assert "All speakers identified!" in source
     assert "render_recent_run_actions" in source
@@ -983,7 +997,7 @@ def test_voice_analyse_segment_dicts_prefer_diarized_id_after_naming(
 def test_speaker_id_page_exposes_analyse_all_speakers_button() -> None:
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     assert "Analyse all speakers" in source
     assert "_voice_analyse_segment_dicts" in source
 
@@ -1466,7 +1480,7 @@ def test_ordinary_action_callbacks_do_not_call_rerun_ui() -> None:
     """Exactly one fragment paint: callbacks must not invoke _rerun_ui."""
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     for name in (
         "_cb_save_name",
         "_cb_ignore_toggle",
@@ -1512,7 +1526,7 @@ def test_play_hot_path_does_not_construct_voice_services() -> None:
     """Playback/workspace body must not instantiate voice facades unless voice loaded."""
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     frag = source.split("def _speaker_id_workspace_fragment", 1)[1]
     frag = frag.split("def render_speaker_id_page", 1)[0]
     # Workspace resolves profile context but must not construct the facade.
@@ -1598,7 +1612,7 @@ def test_profile_context_cache_keyed_by_resolved_path(
 def test_voice_unmounted_until_loaded_contract() -> None:
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     voice = source.split("def _render_voice_suggestions", 1)[1]
     early = voice.split("if not st.session_state.get(loaded_key)", 1)[1]
     early = early.split("return", 1)[0]
@@ -1611,7 +1625,7 @@ def test_ccv2_is_default_mount_path_contract() -> None:
     """Fragment always mounts CCv2; classic naming widgets are gone (Phase 9)."""
     import transcriptx.web.page_modules.speaker_id as mod
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = _speaker_id_sources()
     frag = source.split("def _speaker_id_workspace_fragment", 1)[1]
     frag = frag.split("def render_speaker_id_page", 1)[0]
     assert "speaker_id_workspace_component_enabled" not in frag
