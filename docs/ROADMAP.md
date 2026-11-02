@@ -1,6 +1,6 @@
 # TranscriptX Roadmap
 
-**Current version:** **1.1.0** (see [pyproject.toml](../pyproject.toml)). Public **1.0.0** shipped 2026-10-19; **1.1.0** is the Trustworthy Depth workbench increment.
+**Current version:** **1.1.1** (see [pyproject.toml](../pyproject.toml)). Public **1.0.0** shipped 2026-10-19; **1.1.0** is the Trustworthy Depth workbench increment; **1.1.1** restores the GUI shell.
 
 **Product definition:** [PRODUCT.md](PRODUCT.md)  
 **Historical 0.9.x → 1.0 programme:** [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) (retired; not the living plan)  
@@ -87,7 +87,7 @@ Cross-links: Theme **H** (in-app providers), Theme **K** (command generation), [
 - Streamlit GUI + typed Python API; managed import; file-backed storage/sidecars
 - Broad analysis module set (language, speakers, interactions, emotion, voice, groups, optional Ollama)
 - Contracts for storage, run outcomes, outputs, and public surfaces
-- Public **1.0.x / 1.1.x** workbench (1.0.0 2026-10-19; **1.1.0** current). Living work is 1.x themes below, not a 0.9.x track.
+- Public **1.0.x / 1.1.x** workbench (1.0.0 2026-10-19; **1.1.1** current). Living work is 1.x themes below, not a 0.9.x track.
 
 Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription is BYO plus in-app **command-generation** (0.9.4) and optional **host-orchestrated STT** (theme **H**: whispermlx / WhisperX Docker, durable jobs). Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Post-0.9.9 wave cut as interim **`0.9.9.5`**: early 1.x Themes **A–D**, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, backup/restore — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md). Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **done for 1.0** (Speaker ID Phase 9, Studio review, viewer click-drag); Theme **D** CCv2 full-file reader **done for 1.0** (clip karaoke remains Correct-mode / `TX_READER_WORKSPACE_COMPONENT=0` rollback). Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
 

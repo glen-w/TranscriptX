@@ -53,10 +53,14 @@ def test_diagnostics_renders_doctor_and_rename_sections(monkeypatch) -> None:
     )
     monkeypatch.setattr(mod, "_render_incomplete_runs_section", lambda: None)
     monkeypatch.setattr(mod, "_render_speaker_profile_ops", lambda: None)
+    shell_titles: list[str] = []
+    monkeypatch.setattr(
+        mod, "render_page_shell", lambda title, *a, **k: shell_titles.append(title)
+    )
 
     mod.render_diagnostics_page()
 
-    assert any("Diagnostics" in m for m in markdowns)
+    assert shell_titles == ["Diagnostics"]
     assert rename_calls
 
 
@@ -202,10 +206,11 @@ def test_incomplete_runs_section_lists_missing_run_results(
         def markdown(text, **_k):
             markdowns.append(str(text))
 
-        @classmethod
-        def container(cls, **_k):
-            return super().container(**_k)
+        @staticmethod
+        def dataframe(rows, **_k):
+            tables.append(list(rows))
 
+    tables: list[list[dict]] = []
     run_dir = tmp_path / "slug-a" / "run-2"
     monkeypatch.setattr(mod, "st", _St)
     monkeypatch.setattr(
@@ -223,5 +228,8 @@ def test_incomplete_runs_section_lists_missing_run_results(
     mod._render_incomplete_runs_section()
 
     assert warnings
-    assert any("run-2" in m for m in markdowns)
-    assert any(str(run_dir) in c for c in captions)
+    # Broken runs render as one table (not one container per run).
+    assert len(tables) == 1 and len(tables[0]) == 1
+    row = tables[0][0]
+    assert row["Run"] == "run-2" and row["Folder"] == str(run_dir)
+    assert row["State"] == "never finalized"

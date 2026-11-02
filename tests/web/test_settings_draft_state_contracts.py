@@ -8,7 +8,8 @@ from transcriptx.web.ui.settings.configuration_panel import (
     _DRAFT_STATE_KEY,
     _RUN_CACHE_KEY,
     _SCOPE_CACHE_KEY,
-    _render_effective_value,
+    _effective_rows,
+    _humanize_category,
     _sanitize_scope_config,
     _strip_activation_keys,
     _scope_labels,
@@ -123,27 +124,34 @@ def test_sanitize_scope_config_keeps_activation_keys_outside_draft_scope() -> No
     assert unchanged == nested
 
 
-def test_render_effective_value_uses_code_for_scalars_not_st_json() -> None:
-    """Scalars must not go through st.json (strings misparsed; primitives rejected)."""
-    with (
-        patch("transcriptx.web.ui.settings.configuration_panel.st.json") as mock_json,
-        patch("transcriptx.web.ui.settings.configuration_panel.st.code") as mock_code,
-    ):
-        for value in ("/mnt/outputs", "ollama", True, False, None, 12):
-            mock_json.reset_mock()
-            mock_code.reset_mock()
-            _render_effective_value(value)
-            mock_json.assert_not_called()
-            mock_code.assert_called_once()
+def test_effective_rows_are_compact_strings_with_source() -> None:
+    """Readout is one table per category: strings verbatim, others JSON, long values clipped."""
+    keys = ["llm.model", "llm.enabled", "llm.timeout", "llm.extra", "llm.long"]
+    effective = {
+        "llm.model": "/mnt/outputs",
+        "llm.enabled": True,
+        "llm.timeout": None,
+        "llm.extra": {"a": 1},
+        "llm.long": "x" * 500,
+    }
+    sources = {"llm.model": "project"}
+    rows = _effective_rows(keys, effective, sources, prefix="llm.")
+    assert [r["Setting"] for r in rows] == [
+        "model",
+        "enabled",
+        "timeout",
+        "extra",
+        "long",
+    ]
+    assert rows[0] == {"Setting": "model", "Value": "/mnt/outputs", "Source": "project"}
+    assert rows[1]["Value"] == "true" and rows[1]["Source"] == "default"
+    assert rows[2]["Value"] == "null"
+    assert rows[3]["Value"] == '{"a": 1}'
+    assert len(rows[4]["Value"]) <= 200 and rows[4]["Value"].endswith("…")
 
-        mock_json.reset_mock()
-        mock_code.reset_mock()
-        _render_effective_value({"a": 1})
-        mock_json.assert_called_once_with({"a": 1})
-        mock_code.assert_not_called()
 
-        mock_json.reset_mock()
-        mock_code.reset_mock()
-        _render_effective_value([1, 2])
-        mock_json.assert_called_once_with([1, 2])
-        mock_code.assert_not_called()
+def test_humanize_category_titles() -> None:
+    assert _humanize_category("llm") == "LLM"
+    assert _humanize_category("audio_preprocessing") == "Audio preprocessing"
+    assert _humanize_category("group_analysis") == "Group analysis"
+    assert _humanize_category("output") == "Output"

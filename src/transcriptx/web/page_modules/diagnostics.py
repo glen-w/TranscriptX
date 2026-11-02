@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.web.components.page_shell import render_page_shell
+
 from transcriptx.web import icons as ic
 from transcriptx.web.cache_helpers import (
     cached_doctor_report,
@@ -75,7 +77,7 @@ def _render_speaker_profile_ops() -> None:
                 st.caption("Link keys: " + ", ".join(detail.link_file_keys))
             if st.button(
                 "Attempt safe recovery",
-            icon=ic.REPLAY,
+                icon=ic.REPLAY,
                 key=f"diag_recover_{detail.operation_id}",
                 type="primary",
             ):
@@ -138,7 +140,7 @@ def _render_rename_repair_section() -> None:
             st.caption(f"{old_p} → {new_p}")
             if st.button(
                 "Repair incomplete rename",
-            icon=ic.RENAME,
+                icon=ic.RENAME,
                 key=f"repair_rename_{op_id}",
                 type="primary",
             ):
@@ -182,7 +184,9 @@ def _render_incomplete_runs_section() -> None:
         )
         for row in in_progress:
             with st.container(border=True):
-                st.markdown(f"**{row.kind}** `{row.slug}` / `{row.run_id}` · in progress")
+                st.markdown(
+                    f"**{row.kind}** `{row.slug}` / `{row.run_id}` · in progress"
+                )
                 st.caption(str(row.run_dir))
 
     if broken:
@@ -194,18 +198,31 @@ def _render_incomplete_runs_section() -> None:
             "them. Re-run analysis to produce a complete run, or inspect the "
             "folder manually."
         )
-        for row in broken:
-            with st.container(border=True):
-                label = "never finalized" if row.state == "missing" else "interrupted"
-                st.markdown(f"**{row.kind}** `{row.slug}` / `{row.run_id}` · {label}")
-                st.caption(str(row.run_dir))
+        # One table, not one bordered container per run (184 rows painted
+        # ~9.7k DOM nodes / 450 buttons on the owner library).
+        st.dataframe(
+            [
+                {
+                    "Kind": row.kind,
+                    "Transcript": row.slug,
+                    "Run": row.run_id,
+                    "State": (
+                        "never finalized" if row.state == "missing" else "interrupted"
+                    ),
+                    "Folder": str(row.run_dir),
+                }
+                for row in broken
+            ],
+            hide_index=True,
+            width="stretch",
+            height=min(420, 38 + 35 * len(broken)),
+        )
 
 
 def render_diagnostics_page() -> None:
     """Render the diagnostics page."""
-    st.markdown(
-        '<div class="main-header">Diagnostics</div>',
-        unsafe_allow_html=True,
+    render_page_shell(
+        "Diagnostics", "Environment, dependency and library health checks."
     )
 
     report = cached_doctor_report()
@@ -241,8 +258,15 @@ def render_diagnostics_page() -> None:
     st.subheader("Dependency versions")
     deps = report.get("dependency_versions", {})
     if deps:
-        for pkg, ver in sorted(deps.items()):
-            st.text(f"  {pkg}: {ver}")
+        st.dataframe(
+            [
+                {"Package": pkg, "Version": str(ver)}
+                for pkg, ver in sorted(deps.items())
+            ],
+            hide_index=True,
+            width="stretch",
+            height=min(420, 38 + 35 * len(deps)),
+        )
     else:
         st.info("No dependency versions available.")
 

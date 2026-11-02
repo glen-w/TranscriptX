@@ -70,6 +70,9 @@ Where you need the actual definition or invariant, always read the linked CONTRA
 - **Library archive**  
   - Optional `library_archived` flag on the import sidecar: item stays on disk and remains findable, but pickers and default lists omit it. See `docs/runtime/STORAGE.md` (Library archive). Distinct from `archived_original_relpath` and from Speakers profile archive.
 
+- **Library kind**  
+  - Optional `library_kind` label on the import sidecar (`meeting` / `voice note` / `lone speaker`). Library filter + inspector only; never a Group and not an organisation tag. See `docs/runtime/STORAGE.md` (Library kind).
+
 - **originals/**  
   - Staging subtree **inside** the managed library where host STT lands. Gate: **admit**. See `docs/runtime/STORAGE.md`, `docs/runtime/transcription.md`.
 

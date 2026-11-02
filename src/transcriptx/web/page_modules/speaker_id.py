@@ -27,6 +27,8 @@ from typing import Any, Dict, List, Sequence
 
 import streamlit as st
 
+from transcriptx.web.components.page_shell import render_page_shell
+
 from transcriptx.web import icons as ic
 from transcriptx.app.models.results import RunSummary
 from transcriptx.app.speaker_id import (
@@ -1682,13 +1684,10 @@ def render_speaker_id_page() -> None:
     """Render the speaker-by-speaker identification page."""
     st.session_state.pop(_SPEAKER_ID_COMPLETION_APP_RERUN, None)
 
-    st.markdown(
-        '<div class="main-header">Speaker Identification</div>',
-        unsafe_allow_html=True,
-    )
-    st.caption(
+    render_page_shell(
+        "Speaker Identification",
         "Work through each speaker one at a time: review their lines, "
-        "play a clip, then assign a name or mark as ignored."
+        "play a clip, then assign a name or mark as ignored.",
     )
 
     controller = get_shared_speaker_studio_controller()

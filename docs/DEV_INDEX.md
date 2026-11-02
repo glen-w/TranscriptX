@@ -107,3 +107,13 @@ Non-production scripts: [archive/README.md](../archive/README.md).
 ## Documentation archive
 
 [archive/ARCHIVE_INDEX.md](archive/ARCHIVE_INDEX.md)
+
+```{toctree}
+:hidden:
+:maxdepth: 1
+:glob:
+
+dev/*
+runtime/install_verification_matrix
+runtime/docker-efficiency-baseline
+```

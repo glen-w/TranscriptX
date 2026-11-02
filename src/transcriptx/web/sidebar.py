@@ -53,6 +53,11 @@ def _ask_nav_enabled() -> bool:
     return rag_enabled_from_env()
 
 
+def set_page_callback(page_key: str) -> None:
+    """``on_click`` target for sidebar nav buttons: switch page before the run."""
+    st.session_state[PAGE_KEY] = page_key
+
+
 def _nav_section(title: str) -> None:
     """Non-interactive sidebar section label."""
     st.markdown(
@@ -250,10 +255,6 @@ def render_sidebar(
 
     render_brand_logo()
 
-    def _apply_navigation(page_key: str) -> None:
-        session_state[PAGE_KEY] = page_key
-        st.rerun()
-
     def _nav_button(
         spec: PageSpec,
         *,
@@ -276,10 +277,20 @@ def render_sidebar(
                 disabled=True,
                 help=widget_help(help),
             )
-        elif st.button(
-            text, key=btn_key, width="stretch", type=btn_type, help=widget_help(help)
-        ):
-            _apply_navigation(page_key)
+            return
+        # on_click runs before the script body, so the page key is already
+        # updated when this rerun paints — no st.rerun() inside the sidebar
+        # (a raised RerunException here used to be swallowed by perf.section
+        # and left a half-painted sidebar).
+        st.button(
+            text,
+            key=btn_key,
+            width="stretch",
+            type=btn_type,
+            help=widget_help(help),
+            on_click=set_page_callback,
+            args=(page_key,),
+        )
 
     # Resolve readiness once per sidebar paint — context_readiness calls
     # SubjectService.resolve_current_subject (path + analysis target).

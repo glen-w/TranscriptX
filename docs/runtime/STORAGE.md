@@ -87,6 +87,14 @@ A managed transcript may be tagged **archived** so it stays in the library (cano
 - **Opt-in only on Library and Search:** checkbox **Include archived transcripts** (default off). The Library inspector **Archive transcript** / **Unarchive transcript** writes the sidecar and invalidates listing caches. There is no Settings toggle and no bulk-archive action.
 - **Export by tag** still matches organisation tags on the full inventory, including archived rows.
 
+### Library kind
+
+A managed transcript may carry one optional **kind** label describing what sort of recording it is.
+
+- **Persistence:** optional string `library_kind` on the import sidecar, one of `meeting`, `voice note`, `lone speaker`. Omitted or `null` means **no kind**. Any other value is a sidecar schema error. `SIDECAR_SCHEMA_VERSION` stays `1`.
+- **Surfaces:** Library **Property filters → Kind** (filter-only) and the Library inspector **Kind** selector (set / clear). Nothing else reads it.
+- **Not** a Group and never creates or implies group membership; **not** an organisation tag (`processing_state` tags remain separate); **not** archive.
+
 ---
 
 ## Canonical transcript validation

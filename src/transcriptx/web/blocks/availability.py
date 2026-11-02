@@ -97,16 +97,34 @@ def _missing_artifact_reason(
     failed = _failed_module_reason(module_deps=module_deps, run_results=run_results)
     if failed:
         return failed
+    del detail  # file patterns are developer detail; keep them out of user copy
+    what = _describe_missing(module_deps, deps)
     if run_root is not None and is_group_run(run_root):
         return (
-            f"No matching artifacts for {deps}{detail}. "
+            f"This group run has no {what} yet. "
             "Group rollups or member session outputs may still appear under "
             "Artifacts, or re-run group analysis with those modules selected."
         )
     return (
-        f"No matching artifacts for {deps}{detail}. "
-        "Run the required analysis modules."
+        f"This run has no {what} yet. "
+        "Run Analysis with the module selected to populate this panel."
     )
+
+
+def _describe_missing(module_deps: tuple[str, ...], deps: str) -> str:
+    """Human phrase for what the block needs, e.g. ``LLM Action Items output``."""
+    if not module_deps:
+        return "matching outputs"
+    try:
+        from transcriptx.web.module_display_name import gallery_module_display_name
+
+        names = [gallery_module_display_name(m) for m in module_deps]
+    except Exception:
+        names = [m.replace("_", " ") for m in module_deps]
+    names = [n for n in names if n] or [deps]
+    if len(names) == 1:
+        return f"{names[0]} output"
+    return ", ".join(names[:-1]) + f" or {names[-1]} output"
 
 
 def check_block_availability(

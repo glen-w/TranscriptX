@@ -128,6 +128,8 @@ function applyAudioSrc(
     return;
   }
   if (!data.audio_ready || !data.audio_url) {
+    // No dead 0:00 / 0:00 player under "No audio file" — hide the control.
+    state.audio.hidden = true;
     cap.textContent =
       data.unavailable_reason === "no_audio"
         ? "No audio file for this transcript."
@@ -136,6 +138,7 @@ function applyAudioSrc(
           : "Playback unavailable.";
     return;
   }
+  state.audio.hidden = false;
   const key = `${data.audio_url}\0${data.audio_fingerprint ?? ""}`;
   if (state.lastSrcKey !== key) {
     state.audio.src = data.audio_url;

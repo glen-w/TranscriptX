@@ -93,6 +93,31 @@ jobs:
       - name: Smoke
         run: make test-smoke
 
+  # GUI shell smoke: live Streamlit in headless Chromium — every sidebar page
+  # paints styled with a complete sidebar (guards the 1.1.0 shell regressions).
+  gui-shell-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+      - name: Install package + web + workspaces + Playwright
+        run: |
+          python -m pip install -U pip
+          pip install -e ".[dev,web]"
+          pip install -e packages/transcriptx_workspaces
+          python -m playwright install --with-deps chromium
+      - name: Isolate temp roots
+        run: |
+          mkdir -p "$RUNNER_TEMP/tx-data" "$RUNNER_TEMP/tx-out"
+          echo "TRANSCRIPTX_DATA_DIR=$RUNNER_TEMP/tx-data" >> "$GITHUB_ENV"
+          echo "TRANSCRIPTX_OUTPUT_DIR=$RUNNER_TEMP/tx-out" >> "$GITHUB_ENV"
+      - name: Shell smoke
+        run: make test-gui-shell-smoke
+
   # Offline output-shape contracts. Required on PR (small, ~5–8 min). Fast
   # stays on Nightly. [web] is required so Streamlit web modules collect.
   contracts:

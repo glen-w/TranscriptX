@@ -8,7 +8,7 @@ How to change TranscriptX behaviour from the GUI, env, and config files — with
 |------|--------|
 | Everyday analysis depth (which modules run) | **Run Analysis** preset: Quick / Balanced / Thorough / Custom — edit policies under **Settings → Analysis** |
 | Charts page **Overview** strip (enable, which charts, order) | **Settings → Configuration** → **Charts overview** (`dashboard.overview_enabled`, `dashboard.overview_charts`) — off by default; not Dashboard Builder |
-| Overview / Insights **page panels** (layout profiles) | **Settings → Dashboard Builder** — see [dashboard_builder.md](../dev/dashboard_builder.md) |
+| Overview / Insights **page panels** (layout profiles) | **System → Dashboard Builder** (sidebar) — see [dashboard_builder.md](../dev/dashboard_builder.md) |
 | Common model and similarity knobs | **Settings → Configuration** → Common Settings |
 | Full registry of knobs | **Settings → Configuration** → enable **Show advanced/raw settings editor** |
 | Named module/workflow presets (disk JSON) | **Profiles** page (sidebar) — activate from Configuration for Project / Run |
@@ -127,9 +127,9 @@ When `input.rename_content_suggestions` is `auto`, the same service also runs wh
 | **Analysis UI preset** | Quick / Balanced / Thorough module sets | Run Analysis + Settings → Analysis |
 | **Module / workflow profile** | Named JSON under `{config_dir}/profiles/<target>/` | Profiles page + Active Profiles in Configuration |
 | **In-config semantic profiles** | Mapping `analysis.semantic_similarity_profiles` (`fast` / `balanced` / `deep`) | Advanced config / code — shares activation key naming with disk profiles; different store |
-| **UI layout profiles** | Ordered blocks for Overview / Insights | Settings → Dashboard Builder (`profiles/ui_layouts/`) — not Charts overview |
+| **UI layout profiles** | Ordered blocks for Overview / Insights | System → Dashboard Builder (`profiles/ui_layouts/`) — not Charts overview |
 | **STT command profiles** | Named JSON under `profiles/` | Transcribe Audio |
-| **Merge source profile** | Match + day/gap rules for Tools → Merge suggestions / auto-merge | Merge tab expander; `{config_dir}/audio_merge_profiles.json` |
+| **Merge source profile** | Match + day/gap rules for Audio Preprocessing → Auto-merge suggestions | Merge tab expander; `{config_dir}/audio_merge_profiles.json` |
 | **Merge dismissed groups** | Auto-merge **Don't suggest again** keys (rule + stem) | Auto-merge tab; `{config_dir}/audio_merge_dismissed.json` |
 | **Speaker profile** | Longitudinal identity (+ optional voice) | Settings → Speakers — see [Speakers](#speakers) |
 
@@ -137,7 +137,7 @@ Tracked files under repo `data/profiles/*/default.json` are **fixtures / allowli
 
 ## Env overrides
 
-Copy [`.env.example`](../../.env.example) to `.env`. Infra path keys (`TRANSCRIPTX_*_DIR`, host/port, downloads, …) are separate from config-bag overrides. Set `TRANSCRIPTX_CONFIG_STRICT=1` to reject unknown `TRANSCRIPTX_*` keys.
+Copy [`.env.example`](../../.env.example) to `.env`. Infra path keys (`TRANSCRIPTX_*_DIR`, host/port, downloads, …) are separate from config-bag overrides. Set `TRANSCRIPTX_CONFIG_STRICT=1` to reject unknown `TRANSCRIPTX_*` keys. Keys already present in the process environment (shell `export`, Compose, CI) **win** over the repo-root `.env`; `.env` only fills in what is unset.
 
 Legacy `TRANSCRIPTX_AUDIO_*_ENABLED` variables are **rejected** — use the corresponding `*_MODE` keys.
 

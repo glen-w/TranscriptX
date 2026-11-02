@@ -42,3 +42,15 @@ All other docs (README, guides, architecture, runtime docs) may only summarize t
 ## Truth hierarchy (summary)
 
 When interpreting a run, precedence is defined in **`docs/run_outcome_contract.md`** (execution truth in `run_results.json` over `manifest.json` and raw file presence). This index does not restate those rules — see that contract for allowed statuses, projection rules, and invalid combinations.
+
+```{toctree}
+:hidden:
+:maxdepth: 1
+:glob:
+
+run_outcome_contract
+v0.1-canonical-contract
+ADR-IMPORT-ORCHESTRATION
+contracts/*
+groups/*
+```

@@ -2,9 +2,9 @@
 
 Host-side recording cleanup **before** transcription. After merge/preprocess, use [Transcribe Audio](transcription.md#if-you-still-need-to-transcribe-audio) then **Import Transcript**.
 
-Interactive GUI: **System → Tools** (tabs **Preprocessing**, **Auto-merge**, **Manual merge**). Requires host `ffmpeg` and `pydub`. Supported inputs include WAV, MP3, OGG, **Opus** (WhatsApp Desktop voice notes), M4A, FLAC, AAC, and WMA.
+Interactive GUI: sidebar **Workflow → Audio Preprocessing** (the Tools hub; sections **Preprocessing**, **Auto-merge**, **Manual merge**). Requires host `ffmpeg` and `pydub`. Supported inputs include WAV, MP3, OGG, **Opus** (WhatsApp Desktop voice notes), M4A, FLAC, AAC, and WMA.
 
-Theme **G1** still covers optional transcript-part stitching vs remove — see [ROADMAP.md](../ROADMAP.md).
+Already transcribed the parts separately? **Manual merge → Stitch transcripts** (Theme G1, 1.1.0) concatenates existing transcript JSONs into a **new** file; it never overwrites managed originals and aborts when the audio duration and timestamps do not reconcile. Diarized `SPEAKER_*` labels are not remapped — run Speaker Identification on the stitched file. Limits: [known limitations](../known_limitations.md#transcript-stitch-identity).
 
 ## Merge source profiles
 

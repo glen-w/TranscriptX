@@ -157,20 +157,41 @@ def _cached_corpus_inventory_rows(digest: tuple) -> list:
     return _corpus_inventory_singleton().list_rows()
 
 
-def get_cached_corpus_inventory() -> list:
-    """Home/Library corpus rows. Invalidates when any contributor fingerprint changes."""
+# Digest memo: discovery + per-row stat walk cost ~8 s on a 345-transcript
+# library and ran on *every* Home/Library rerun before the cache lookup.
+# A few seconds of staleness is fine for a listing; explicit writers call
+# clear_corpus_inventory_cache().
+CORPUS_DIGEST_MEMO_SECONDS = 5.0
+_CORPUS_DIGEST_MEMO: tuple[float, tuple] | None = None
+
+
+def _corpus_digest(now: float | None = None) -> tuple:
+    import time as _time
+
+    global _CORPUS_DIGEST_MEMO
+    now = _time.monotonic() if now is None else now
+    memo = _CORPUS_DIGEST_MEMO
+    if memo is not None and now - memo[0] < CORPUS_DIGEST_MEMO_SECONDS:
+        return memo[1]
     from transcriptx.app.corpus_inventory.service import (
         corpus_fingerprint_digest,
         discover_transcript_refs,
     )
 
-    refs = discover_transcript_refs()
-    digest = corpus_fingerprint_digest(refs)
-    return _cached_corpus_inventory_rows(digest)
+    digest = corpus_fingerprint_digest(discover_transcript_refs())
+    _CORPUS_DIGEST_MEMO = (now, digest)
+    return digest
+
+
+def get_cached_corpus_inventory() -> list:
+    """Home/Library corpus rows. Invalidates when any contributor fingerprint changes."""
+    return _cached_corpus_inventory_rows(_corpus_digest())
 
 
 def clear_corpus_inventory_cache() -> None:
     """Clear the Streamlit inventory wrapper (per-row cache stays fingerprint-keyed)."""
+    global _CORPUS_DIGEST_MEMO
+    _CORPUS_DIGEST_MEMO = None
     _cached_corpus_inventory_rows.clear()  # type: ignore[attr-defined]
 
 

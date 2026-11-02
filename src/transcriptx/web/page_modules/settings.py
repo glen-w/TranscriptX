@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.web.components.page_shell import render_page_shell
+
 from transcriptx.web.services import RunIndex, SubjectService
 from transcriptx.web.ui.settings import (
     render_analysis_presets_panel,
@@ -41,9 +43,9 @@ _SETTINGS_TABS: tuple[str, ...] = (
 
 def render_settings_page() -> None:
     """Render the settings page (hub)."""
-    st.markdown(
-        '<div class="main-header">Settings</div>',
-        unsafe_allow_html=True,
+    render_page_shell(
+        "Settings",
+        "Project configuration, analysis presets, storage, models and interface preferences.",
     )
 
     subject = SubjectService.resolve_current_subject(st.session_state)

@@ -245,14 +245,21 @@ _SHELL_RUNTIME_JS = """
 def inject_global_styles(*, force: bool = False) -> None:
     """Inject shared CSS and sidebar chrome-sync / scroll helpers.
 
-    Once per browser session by default — Streamlit keeps the DOM styles across
-    full-app reruns; re-pushing ~35KB CSS + MutationObserver JS on every nav
-    click is pure tax. Pass ``force=True`` after intentional style revisions.
+    Emitted on **every** script run. Streamlit removes any element that the
+    latest run did not re-emit, so a once-per-session gate (tried 2026-10-20)
+    left the app unstyled from the second rerun onward: double logo, default
+    red primary buttons, page titles collapsed to body text. The CSS is a
+    static module string (no per-run work); the runtime JS is idempotent.
+    ``force`` is kept for API compatibility and has no effect.
     """
-    if not force and st.session_state.get(_GLOBAL_STYLES_SESSION_KEY):
-        return
-    st.markdown(
-        """
+    del force
+    st.markdown(_GLOBAL_STYLES_CSS, unsafe_allow_html=True)
+    # st.markdown strips <script>; st.html is the Streamlit 1.55+ way to run JS.
+    st.html(_SHELL_RUNTIME_JS, unsafe_allow_javascript=True)
+    st.session_state[_GLOBAL_STYLES_SESSION_KEY] = True
+
+
+_GLOBAL_STYLES_CSS = """
 <style>
     /* Sidebar width — 256–264px; truncate long values */
     section[data-testid="stSidebar"] {
@@ -1239,9 +1246,4 @@ def inject_global_styles(*, force: bool = False) -> None:
         overflow-anchor: none;
     }
 </style>
-""",
-        unsafe_allow_html=True,
-    )
-    # st.markdown strips <script>; st.html is the Streamlit 1.55+ way to run JS.
-    st.html(_SHELL_RUNTIME_JS, unsafe_allow_javascript=True)
-    st.session_state[_GLOBAL_STYLES_SESSION_KEY] = True
+"""

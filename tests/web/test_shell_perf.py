@@ -1,4 +1,4 @@
-"""Shell tax contracts — logo cache + once-per-session CSS inject."""
+"""Shell tax contracts — logo cache + per-run CSS inject."""
 
 from __future__ import annotations
 
@@ -10,17 +10,19 @@ from tests.web.streamlit_doubles import DummyHomeStreamlit
 
 
 @pytest.mark.unit
-def test_inject_global_styles_once_per_session(monkeypatch) -> None:
+def test_inject_global_styles_emits_every_run(monkeypatch) -> None:
+    """Streamlit drops elements the latest run did not emit; CSS must be
+    re-sent on every script run (1.1.0 regression: unstyled after first nav)."""
     import transcriptx.web.shell as shell
 
     DummyHomeStreamlit.session_state = {}
-    markdown_calls: list[int] = []
+    markdown_calls: list[str] = []
     html_calls: list[int] = []
 
     class _St(DummyHomeStreamlit):
         @staticmethod
-        def markdown(*_a, **_k):
-            markdown_calls.append(1)
+        def markdown(body, *_a, **_k):
+            markdown_calls.append(body)
 
         @staticmethod
         def html(*_a, **_k):
@@ -30,12 +32,11 @@ def test_inject_global_styles_once_per_session(monkeypatch) -> None:
 
     shell.inject_global_styles()
     shell.inject_global_styles()
-    assert len(markdown_calls) == 1
-    assert len(html_calls) == 1
-
-    shell.inject_global_styles(force=True)
     assert len(markdown_calls) == 2
     assert len(html_calls) == 2
+    assert all("tx-sidebar-brand" in body for body in markdown_calls)
+    # Static module string: no per-run string building.
+    assert markdown_calls[0] is shell._GLOBAL_STYLES_CSS
 
 
 @pytest.mark.unit

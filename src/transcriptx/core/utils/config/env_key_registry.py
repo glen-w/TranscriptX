@@ -55,6 +55,9 @@ INFRA_ENV_ALLOWLIST = frozenset(
         "TRANSCRIPTX_TORCH_VARIANT",
         "TRANSCRIPTX_STREAMLIT_PERF",
         "TRANSCRIPTX_STREAMLIT_PERF_PATH",
+        # Launcher-only (python -m transcriptx.web): hot-reload / source watcher.
+        "TRANSCRIPTX_DEV",
+        "TRANSCRIPTX_FILE_WATCHER",
         "TRANSCRIPTX_RUN_PERF_EXPORT_PATH",
         "TRANSCRIPTX_RUN_PERF_EXPORT_MAX_RUNS",
         "TRANSCRIPTX_FOLDER_IMPORT_MAX_FILE_BYTES",

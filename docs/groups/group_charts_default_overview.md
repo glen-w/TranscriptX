@@ -4,7 +4,7 @@ Short reference for **what shows first** on a group run versus **what exists in 
 
 ## Default group overview strip
 
-These charts are listed in `DEFAULT_GROUP_OVERVIEW_VIZ_IDS` in [`chart_registry.py`](../src/transcriptx/core/utils/chart_registry.py). They are the **default strip** for a group run (not the single-transcript overview and not the global transcript list).
+These charts are listed in `DEFAULT_GROUP_OVERVIEW_VIZ_IDS` in [`chart_registry.py`](../../src/transcriptx/core/utils/chart_registry.py). They are the **default strip** for a group run (not the single-transcript overview and not the global transcript list).
 
 Typical contents today:
 
@@ -41,14 +41,14 @@ When enabled, a non-empty `dashboard.overview_charts` list (Settings → Configu
 | --- | --- |
 | Enable / disable Overview strip | **Settings → Configuration → Charts overview** (`dashboard.overview_enabled`) |
 | Operator UI for the strip | **Settings → Configuration → Charts overview** |
-| Default **group** overview strip | `DEFAULT_GROUP_OVERVIEW_VIZ_IDS` in [`chart_registry.py`](../src/transcriptx/core/utils/chart_registry.py) |
-| Which **temporal** overlays are in that strip (CI sync) | `in_default_group_overview` in [`test_chart_registry.py`](../tests/core/utils/test_chart_registry.py) — must match the temporal family policy you intend |
+| Default **group** overview strip | `DEFAULT_GROUP_OVERVIEW_VIZ_IDS` in [`chart_registry.py`](../../src/transcriptx/core/utils/chart_registry.py) |
+| Which **temporal** overlays are in that strip (CI sync) | `in_default_group_overview` in [`test_chart_registry.py`](../../tests/core/utils/test_chart_registry.py) — must match the temporal family policy you intend |
 | Allow a **cross-session speaker** chart onto the default strip | Add its exact `viz_id` to **`CROSS_SESSION_SPEAKER_OVERVIEW_ALLOWLIST`** in `chart_registry.py` **and** add that `viz_id` to `DEFAULT_GROUP_OVERVIEW_VIZ_IDS`; tests require both |
 | Allow a **pooled** chart onto the default strip | Add its exact `viz_id` to **`POOLED_GROUP_OVERVIEW_ALLOWLIST`** **and** to `DEFAULT_GROUP_OVERVIEW_VIZ_IDS`; pooled sync tests require both when the chart is on the strip |
 
 ## Ordering in the registry
 
-`rank_default` on `group.*` entries in [`chart_definitions.json`](../src/transcriptx/core/utils/chart_definitions.json) affects **gallery ordering** relative to other charts. The default strip order is **not** derived from `rank_default`; it follows `DEFAULT_GROUP_OVERVIEW_VIZ_IDS`.
+`rank_default` on `group.*` entries in [`chart_definitions.json`](../../src/transcriptx/core/utils/chart_definitions.json) affects **gallery ordering** relative to other charts. The default strip order is **not** derived from `rank_default`; it follows `DEFAULT_GROUP_OVERVIEW_VIZ_IDS`.
 
 ### `group.*` ordering is intentionally split (context-sensitive)
 

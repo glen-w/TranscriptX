@@ -8,10 +8,14 @@ from pathlib import Path
 
 import streamlit as st
 
+from transcriptx.web.components.page_shell import render_page_shell
+
 from transcriptx.core.rag import RagAPI, RagScopeMissing, RagUnavailable
 from transcriptx.core.segments import get_segments
 from transcriptx.web import icons as ic
-from transcriptx.web.components.ask_question_library import render_ask_global_library_picker
+from transcriptx.web.components.ask_question_library import (
+    render_ask_global_library_picker,
+)
 from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.web.state import RUN_ID_KEY, SUBJECT_ID_KEY
 from transcriptx.web.transcript_navigation import navigate_to_segment
@@ -19,8 +23,10 @@ from transcriptx.web.transcript_navigation import navigate_to_segment
 
 def render_ask_page() -> None:
     """Render the Ask page (full height Q&A + sources)."""
-    st.set_page_config(layout="wide")
-    st.title("Ask")
+    render_page_shell(
+        "Ask",
+        "Ask questions about the selected run; answers cite transcript segments.",
+    )
 
     api = RagAPI()
 
@@ -48,7 +54,9 @@ def render_ask_page() -> None:
         return
 
     if status.get("status") == "unavailable":
-        st.error("Ask is unavailable: install lancedb (pip install -e '.[rag]' from this checkout).")
+        st.error(
+            "Ask is unavailable: install lancedb (pip install -e '.[rag]' from this checkout)."
+        )
         return
 
     title = Path(transcript_path).stem
@@ -100,7 +108,9 @@ def _render_rag_answer(
             st.info("No relevant passages found.")
             return
 
-        answer_stream = api.answer(question, session_slug=session_slug, run_id=run_id, k=5)
+        answer_stream = api.answer(
+            question, session_slug=session_slug, run_id=run_id, k=5
+        )
 
         st.write_stream(answer_stream)
 

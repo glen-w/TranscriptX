@@ -4,7 +4,7 @@
 
 **Scope:** short-term only — current work through public **1.0**. When 1.0 ships, retire or archive this file; do not grow it into a permanent product roadmap.
 
-**Long-term home:** [docs/ROADMAP.md](docs/ROADMAP.md) owns 1.x themes, 2.0 vision, deferred platform tracks, and everything after the 1.0 gate.
+**Long-term home:** [docs/ROADMAP.md](../ROADMAP.md) owns 1.x themes, 2.0 vision, deferred platform tracks, and everything after the 1.0 gate.
 
 Documentation-first alignment of TranscriptX as a local-first personal transcript analysis workbench, then a stabilisation-focused 0.9.x programme that lands a clean public schema epoch, install profiles, quality audits, Transcribe Audio command generation, hosted docs, and a static website — culminating in a credible 1.0 governed by **release evidence and explicit severity rules**, not feature count or fixed patch assignments.
 
@@ -93,7 +93,7 @@ A perfect historical archive taxonomy is **not** required for 1.0. A simple, doc
 - Elaborate website effects; exhaustive RTD autodoc; a highly polished first public site — provided usable docs and a credible landing exist.
 
 **Safe to defer to 1.1+**
-- Elaborate coach-mark tours or reintroduction of Guided/Full / demo-project / Getting started checklist UX; sophisticated interactive website effects; large bundled completed analysis runs; any mode system that duplicates page logic; multilingual routing beyond a small reliable subset; B4 ConvoKit-family methods; **in-app / orchestrated transcription** (NVIDIA Parakeet/Canary + Whisper, CUDA/CPU, YouTube ingest) — tracked as 1.x theme **H** in [docs/ROADMAP.md](docs/ROADMAP.md) (not a 1.0 gate; 1.0 stays BYO + command gen); **watcher → host STT** and transcript-stitch merge remain G/G2 follow-ons (**G2 Phase 1** inbox watcher already landed — see [post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md)); **Windows / Linux host-script portability** (`inbox-watch`, `whispermlx-missing`, copyable PowerShell) — 1.x theme **G3** (not a 1.0 gate; 1.0 stays macOS-typical host STT + WSL2/Docker on Windows — see [host-side Windows/Linux compatibility review](../reviews/host-side-windows-linux-compat-2026-09-03.md)); **voice-notes side-script** — 1.x theme **G4** (not a 1.0 gate; own inbox, admit off; do not reuse the library `inbox-watch` config); **PWA / installable shell** — theme **I**; elaborate archive taxonomy refinements beyond a clear current-vs-historical split; aesthetic refactors; experimental analyses; specialist convenience and non-supported configurations; **transcript tagging** for library visibility/kind labels (meeting, voice note, lone speaker, …) — theme **F**; **SQLite / DB-backed speaker analytics** — theme **J** (~1.5). Themes **B** (viewer Correct), **C** (CCv2 Speaker ID default-on), and **D** (Transcript karaoke MVP) were pulled forward post-0.9.9 — treat ROADMAP theme status as current; remaining C/D depth is not a 1.0 gate unless severity says otherwise.
+- Elaborate coach-mark tours or reintroduction of Guided/Full / demo-project / Getting started checklist UX; sophisticated interactive website effects; large bundled completed analysis runs; any mode system that duplicates page logic; multilingual routing beyond a small reliable subset; B4 ConvoKit-family methods; **in-app / orchestrated transcription** (NVIDIA Parakeet/Canary + Whisper, CUDA/CPU, YouTube ingest) — tracked as 1.x theme **H** in [docs/ROADMAP.md](../ROADMAP.md) (not a 1.0 gate; 1.0 stays BYO + command gen); **watcher → host STT** and transcript-stitch merge remain G/G2 follow-ons (**G2 Phase 1** inbox watcher already landed — see [post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md)); **Windows / Linux host-script portability** (`inbox-watch`, `whispermlx-missing`, copyable PowerShell) — 1.x theme **G3** (not a 1.0 gate; 1.0 stays macOS-typical host STT + WSL2/Docker on Windows — see [host-side Windows/Linux compatibility review](../reviews/host-side-windows-linux-compat-2026-09-03.md)); **voice-notes side-script** — 1.x theme **G4** (not a 1.0 gate; own inbox, admit off; do not reuse the library `inbox-watch` config); **PWA / installable shell** — theme **I**; elaborate archive taxonomy refinements beyond a clear current-vs-historical split; aesthetic refactors; experimental analyses; specialist convenience and non-supported configurations; **transcript tagging** for library visibility/kind labels (meeting, voice note, lone speaker, …) — theme **F**; **SQLite / DB-backed speaker analytics** — theme **J** (~1.5). Themes **B** (viewer Correct), **C** (CCv2 Speaker ID default-on), and **D** (Transcript karaoke MVP) were pulled forward post-0.9.9 — treat ROADMAP theme status as current; remaining C/D depth is not a 1.0 gate unless severity says otherwise.
 
 ---
 
@@ -181,7 +181,7 @@ Do not retain every development conversation merely because it exists. Preserve 
 
 ### Documentation inventory deliverable
 
-Planning document: [docs/dev/documentation_inventory_1_0.md](docs/dev/documentation_inventory_1_0.md)
+Planning document: [docs/dev/documentation_inventory_1_0.md](../dev/documentation_inventory_1_0.md)
 
 One row per candidate file or coherent file family:
 
@@ -235,7 +235,7 @@ The archive index should make retained history discoverable without placing it i
 
 ### Script and tooling inventory
 
-Planning document: [docs/dev/script_inventory_1_0.md](docs/dev/script_inventory_1_0.md)
+Planning document: [docs/dev/script_inventory_1_0.md](../dev/script_inventory_1_0.md)
 
 Inventory at minimum:
 
@@ -447,7 +447,7 @@ flowchart TD
   v08 --> v090 --> v091 --> v092 --> themeSchema --> themeInstall --> themeDocsScaffolds --> themeModes --> themeHarden --> humanTest --> rc --> v10
 ```
 
-After **1.0**, planning continues in [docs/ROADMAP.md](docs/ROADMAP.md) (1.x themes → 2.0 vision → deferred tracks).
+After **1.0**, planning continues in [docs/ROADMAP.md](../ROADMAP.md) (1.x themes → 2.0 vision → deferred tracks).
 
 ### 0.9.x — Product and release baseline (hygiene + docs + inventories; feature freeze)
 
@@ -571,11 +571,11 @@ RC **only when gates pass** — not when a patch number is exhausted.
 - [ ] Release-governance **rehearsal** (not yet the final tag)
 - [ ] No unresolved **release blockers** or open **must-fix** items
 - [ ] Public contracts + epoch frozen; usable hosted docs + credible landing live
-- [ ] Exact release commit passes [docs/dev/release_governance.md](docs/dev/release_governance.md) + CI
+- [ ] Exact release commit passes [docs/dev/release_governance.md](../dev/release_governance.md) + CI
 
 ### After 1.0 (not owned here)
 
-1.x themes, 2.0 vision, and deferred platform tracks live in [docs/ROADMAP.md](docs/ROADMAP.md). This file stops at the public **1.0** gate.
+1.x themes, 2.0 vision, and deferred platform tracks live in [docs/ROADMAP.md](../ROADMAP.md). This file stops at the public **1.0** gate.
 
 ---
 
@@ -639,7 +639,7 @@ Cut intermediate tags around coherent tested increments; do not force install+sc
 
 ## 7. Release severity and triage rules
 
-Without explicit severity, hardening expands indefinitely because every imperfection looks equally important. Publish these rules in [docs/dev/release_severity_triage_1_0.md](docs/dev/release_severity_triage_1_0.md) (or fold into release governance) and apply them during **0.9.x hardening / RC** triage.
+Without explicit severity, hardening expands indefinitely because every imperfection looks equally important. Publish these rules in [docs/dev/release_severity_triage_1_0.md](../dev/release_severity_triage_1_0.md) (or fold into release governance) and apply them during **0.9.x hardening / RC** triage.
 
 | Severity | Definition | 1.0 action |
 |----------|------------|------------|
@@ -749,22 +749,22 @@ Do **not** invent `basic`/`llm` marketing names until the graph matches. Propose
 
 ## 10. Transcribe Audio and corpus onboarding
 
-**Shipped in 0.9.4** (`v0.9.4`): [src/transcriptx/web/page_modules/transcribe_audio.py](src/transcriptx/web/page_modules/transcribe_audio.py) is a **parameterised command generator** (copyable only; **never executes** from Streamlit). Builder: [src/transcriptx/services/transcription/command_gen.py](src/transcriptx/services/transcription/command_gen.py).
+**Shipped in 0.9.4** (`v0.9.4`): [src/transcriptx/web/page_modules/transcribe_audio.py](../../src/transcriptx/web/page_modules/transcribe_audio.py) is a **parameterised command generator** (copyable only; **never executes** from Streamlit). Builder: [src/transcriptx/services/transcription/command_gen.py](../../src/transcriptx/services/transcription/command_gen.py).
 
 Parameters covered: input file/folder, output folder, tool (whispermlx / whispermlx-missing / WhisperX Docker), model, language, diarisation, device/compute, audio glob, overwrite/resume (`--force`), dry-run, fuzzy JSON match, WhisperX batch size + optional min/max speakers, expected output format = WhisperX/whispermlx JSON.
 
 Must-cover checklist for the cut: shell quoting/spaces; macOS vs Linux vs Docker/host boundaries; dependency/model checks (documented + dry-run flags on scripts); resumability/duplicates; partial failures; dry-run/preview; logs/progress (host terminal); output compatible with managed import; clear next step → Import Transcript.
 
 - [x] Parameterised Transcribe Audio command generator (copyable only) (**0.9.4**)
-- [x] Harden [scripts/whispermlx-missing.py](scripts/whispermlx-missing.py) (docs + generator flags; script already had dry-run/resume/`shlex.join`) (**0.9.4**)
-- [x] Update [docs/runtime/transcription.md](docs/runtime/transcription.md) + WhisperX recipe docs for non-technical corpus building (**0.9.4**)
+- [x] Harden [scripts/whispermlx-missing.py](../../scripts/whispermlx-missing.py) (docs + generator flags; script already had dry-run/resume/`shlex.join`) (**0.9.4**)
+- [x] Update [docs/runtime/transcription.md](../runtime/transcription.md) + WhisperX recipe docs for non-technical corpus building (**0.9.4**)
 - [ ] Manual acceptance journey for Transcribe command gen (see §15 — RC / acceptance suite)
 
 ---
 
 ## 11. Analysis-quality audit structure
 
-New living sheet: [docs/dev/analysis_quality_audit.md](docs/dev/analysis_quality_audit.md) — one row per user-visible analysis:
+New living sheet: [docs/dev/analysis_quality_audit.md](../dev/analysis_quality_audit.md) — one row per user-visible analysis:
 
 intended question; output type; algorithm/model; meaningfulness on real transcripts; languages; min data; confidence/abstention; failure modes; overlap; GUI presentation; group semantics; test quality; performance; **recommendation:** retain / improve / relabel / document as experimental / deprecate / remove.
 
@@ -783,7 +783,7 @@ No new modules during 0.9.x unless audit proves a release-critical repair. Map a
 
 ## 12. Performance and resource envelopes
 
-Correctness and installation alone are not enough — the product must be **operationally tolerable**. Deliverable: [docs/dev/performance_envelopes_1_0.md](docs/dev/performance_envelopes_1_0.md).
+Correctness and installation alone are not enough — the product must be **operationally tolerable**. Deliverable: [docs/dev/performance_envelopes_1_0.md](../dev/performance_envelopes_1_0.md).
 
 Define representative corpus sizes (small / medium / large-for-1.0) and record expectations (not necessarily strict universal guarantees) for:
 
@@ -810,7 +810,7 @@ These become **documented expectations and regression indicators**. Non-critical
 
 ## 13. Trust, privacy and model-governance gate
 
-Dedicated gate (stocktake already flags the missing aggregated third-party model/licence notice as a release gap). Deliverable: [docs/dev/trust_privacy_model_governance_1_0.md](docs/dev/trust_privacy_model_governance_1_0.md).
+Dedicated gate (stocktake already flags the missing aggregated third-party model/licence notice as a release gap). Deliverable: [docs/dev/trust_privacy_model_governance_1_0.md](../dev/trust_privacy_model_governance_1_0.md).
 
 - [x] Third-party model and dataset **licence inventory** (matrix in trust stub — **0.9.5**; Hub-card residual **dropped** 2026-08-07)
 - [x] Model download origins and **gated-model** requirements (**0.9.7** rows)
@@ -834,7 +834,7 @@ Someone who had not used TranscriptX tried it in October 2026. That trial is not
 
 ## 15. Manual acceptance-test structure
 
-Authoritative suite: [docs/dev/manual_acceptance_1_0.md](docs/dev/manual_acceptance_1_0.md).
+Authoritative suite: [docs/dev/manual_acceptance_1_0.md](../dev/manual_acceptance_1_0.md).
 
 Journeys (each with prerequisites, test data, steps, expected UI, expected files, failure criteria, evidence):
 
@@ -875,7 +875,7 @@ Journeys (each with prerequisites, test data, steps, expected UI, expected files
 - [ ] Downloadable alternatives for visual outputs where practical
 - [ ] At least the browsers **Streamlit officially supports** at release time
 
-Automation split: keep expanding `make test-gui-acceptance` / AppTest for structural journeys; residual AppTest-blind items stay in [docs/dev/gui_acceptance_residual_checklist.md](docs/dev/gui_acceptance_residual_checklist.md); **Playwright live-Streamlit E2E** under `tests/e2e_gui/` (`gui_e2e`, also `make test-gui-e2e`) is a **first-class default-suite lane** covering documented workflows and complementary to AppTest. Browser checks for the **app** also remain manual/acceptance against Streamlit’s supported browsers for residual items; separate browser checks apply to **website** and **RTD**.
+Automation split: keep expanding `make test-gui-acceptance` / AppTest for structural journeys; residual AppTest-blind items stay in [docs/dev/gui_acceptance_residual_checklist.md](../dev/gui_acceptance_residual_checklist.md); **Playwright live-Streamlit E2E** under `tests/e2e_gui/` (`gui_e2e`, also `make test-gui-e2e`) is a **first-class default-suite lane** covering documented workflows and complementary to AppTest. Browser checks for the **app** also remain manual/acceptance against Streamlit’s supported browsers for residual items; separate browser checks apply to **website** and **RTD**.
 
 ---
 
@@ -904,7 +904,7 @@ Do **not** treat reintroduction as a 1.0 residual. Historical design notes from 
 
 ### Website (credible landing required; first version may be modest)
 
-[website/](website/): headline, product explanation, screenshots, workflows, local-first + AI, example outputs, install CTA, GitHub, docs link, platforms, release status, Ko-fi / Buy Me a Coffee support link. GitHub Pages workflow. Plain HTML/CSS; minimal JS only for clear value (e.g. mobile nav).
+[website/](../../website/): headline, product explanation, screenshots, workflows, local-first + AI, example outputs, install CTA, GitHub, docs link, platforms, release status, Ko-fi / Buy Me a Coffee support link. GitHub Pages workflow. Plain HTML/CSS; minimal JS only for clear value (e.g. mobile nav).
 
 - [x] Initial `website/` content (credible public landing) (**0.9.7**)
 - [x] GitHub Pages workflow (**0.9.7**)
@@ -926,7 +926,7 @@ Doc relationship:
 
 ## 17. Release operations and support policy
 
-Define the mechanics around the tag so the maintenance promise matches the strength of existing contracts and release governance. Deliverable: [docs/dev/release_ops_support_1_0.md](docs/dev/release_ops_support_1_0.md) (extend [docs/dev/release_governance.md](docs/dev/release_governance.md) where appropriate).
+Define the mechanics around the tag so the maintenance promise matches the strength of existing contracts and release governance. Deliverable: [docs/dev/release_ops_support_1_0.md](../dev/release_ops_support_1_0.md) (extend [docs/dev/release_governance.md](../dev/release_governance.md) where appropriate).
 
 - [x] CHANGELOG structure and migration notes (**0.9.7** — Keep a Changelog + ops policy)
 - [x] RC naming and duration (**0.9.7** draft default ≥7 days)
@@ -956,7 +956,7 @@ Mandatory before the public 1.0 tag. RC may start once product gates pass even i
 - [x] Machine-specific or misleading scripts identified in Phase 0A (**0.9.1** inventory; live absolute-path clean reinforced **0.9.5**)
 - [x] Epoch transition UX gaps (GUI preflight, typed/internal helper only, fresh dir, no auto-delete, preserve compatible transcripts) (**0.9.3**)
 
-**After 1.0** refactors and backlog items are tracked in [docs/ROADMAP.md](docs/ROADMAP.md) and the analysis-module backlog — not expanded in this short-term file.
+**After 1.0** refactors and backlog items are tracked in [docs/ROADMAP.md](../ROADMAP.md) and the analysis-module backlog — not expanded in this short-term file.
 
 For each pre-1.0 refactor PR: state risk addressed, behavioural invariants, characterisation tests, change surface, and severity classification.
 

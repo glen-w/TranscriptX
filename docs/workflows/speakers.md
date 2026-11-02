@@ -10,6 +10,8 @@ You will have opened **Speakers**, found a profile in the people gallery, opened
 
 Prefer completing [Identify and name speakers](speaker-identification.md) and choosing **Create new profile** or **Attach to** an existing person at least once. For a quick look, any existing profile in the Speakers directory is enough. Local AI is not required.
 
+The figures show the directory after the six BBNJ webinar speakers were linked to new profiles; with the planning-review sample you will see Maya / Jordan / Sam instead.
+
 ## What you’ll do
 
 1. Open **Speakers**.
@@ -24,6 +26,12 @@ Prefer completing [Identify and name speakers](speaker-identification.md) and ch
 2. If you see **No speaker profiles yet**, go back to **Speaker Identification**, name a speaker, and choose **Create new profile** (or attach to an existing person), then return here. Settings → Speakers controls inclusion / enrol caps and library-wide voice batch — see [Settings & knobs](../runtime/settings.md#speakers).
 
 3. When profiles exist, search by name or alias if needed, then open a card (for example a facilitator named during walkthrough 2). The header shows the display name and headline totals. Use **Identity** to edit name, aliases, notes, colour, or photo. Use **Appearances** to see linked transcripts and unlink if needed.
+
+![Speakers directory with six people cards from the BBNJ webinar, each showing an appearance count and an Open button](../_static/workflows/speakers-directory.png)
+
+![One speaker profile open: words / turns / duration / appearances totals and the Overview, Appearances, Trends, Identity, and Voice & lifecycle tabs](../_static/workflows/speakers-profile.png)
+
+![Identity tab with the Edit profile form: display name and aliases](../_static/workflows/speakers-profile-identity.png)
 
 4. Use Speakers for cross-transcript continuity; use **Speaker Identification** for naming on a single transcript before analysis. Library-wide **Enrol trusted voice for all profiles** and **Pre-load voice suggestions** live on Settings → Speakers, not only the **Voice & lifecycle** tab — see [Assist naming with voice](speaker-voice-matching.md).
 

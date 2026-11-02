@@ -61,6 +61,9 @@ TERMS
 recipes/stt-stacks/README
 recipes/whisperx/README
 recipes/whisper-webui/README
+recipes/granite-speech/README
+recipes/parakeet/README
+recipes/nemotron-transcribe/README
 ```
 
 ```{toctree}
@@ -69,7 +72,9 @@ recipes/whisper-webui/README
 
 runtime/installation-advanced
 runtime/host-stt
+runtime/overnight-host
 runtime/audio-prep
+runtime/llm-suggestion-batch
 comparison-reference
 USER_INDEX
 ```
@@ -95,6 +100,7 @@ runtime/epistemic_markers
 runtime/politeness
 runtime/topic_shift
 runtime/transcript_quality
+runtime/speaker_map_diagnostics
 ```
 
 ## Full lists

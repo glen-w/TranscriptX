@@ -87,12 +87,12 @@ TranscriptX runs in file-first mode by default, with groups, corrections, and ot
 
 **Models:** defaults, higher-accuracy presets, and per-module guidance — [models.md](models.md).
 
-**Configuration:** TranscriptX merges defaults, project/draft/run overrides, and env (`TRANSCRIPTX_*`; env wins). Unknown/unmapped speakers are excluded from analysis by default; excluded segment counts are reported in run summaries. See [STORAGE.md](STORAGE.md) for storage layout and [settings.md](settings.md) for Settings scopes, Common vs Advanced knobs, and how **install profiles** differ from **module/workflow profiles** on the Profiles page.
+**Configuration:** TranscriptX merges defaults, project/draft/run overrides, and env (`TRANSCRIPTX_*`; env wins). The repo-root `.env` only fills in keys that are **not already set** in the process environment, so an exported `TRANSCRIPTX_DATA_DIR` (or a value passed by Compose, CI, or a test harness) takes precedence over the same key in `.env`. Unknown/unmapped speakers are excluded from analysis by default; excluded segment counts are reported in run summaries. See [STORAGE.md](STORAGE.md) for storage layout and [settings.md](settings.md) for Settings scopes, Common vs Advanced knobs, and how **install profiles** differ from **module/workflow profiles** on the Profiles page.
 
 ## Web interface (Streamlit)
 
 **Console entry point:** After install, `transcriptx` with no command runs the same code as `python -m transcriptx.web`. Flags: `--host`, `--port` (defaults `127.0.0.1` and `8501`; also read from `TRANSCRIPTX_HOST` / `TRANSCRIPTX_PORT`). Host automation allowlist includes `import`, `admit-originals`, `analyze` (single managed transcript), `rename`, `backup`, `warm-suggestions`, and `identify-speakers` — see [generated/cli.md](../generated/cli.md) and [public_surfaces.md](../public_surfaces.md) §1.7.
 
-The Streamlit app reads options from `.streamlit/config.toml` when present.
+The Streamlit app reads options from `.streamlit/config.toml` when launched from the repo root. The committed file sets the brand theme (`primaryColor`) and disables usage stats; `python -m transcriptx.web` passes the same values as flags so they do not depend on the working directory.
 
-- **File upload limit** — Upload widgets accept files up to **500 MB per file**. This is set in `.streamlit/config.toml` as `[server] maxUploadSize = 500` (value in megabytes). To change it, edit that file or set the `STREAMLIT_SERVER_MAX_UPLOAD_SIZE` environment variable.
+- **File upload limit** — Docker Compose sets `STREAMLIT_SERVER_MAX_UPLOAD_SIZE=500`, so upload widgets in the container accept files up to **500 MB per file**. A native run uses Streamlit's default **200 MB** unless you export that variable (or add `[server] maxUploadSize = 500` to `.streamlit/config.toml`) before launching.

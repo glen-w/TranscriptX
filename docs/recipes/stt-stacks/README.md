@@ -29,7 +29,7 @@ Use the **same host paths** in `.env`, `whisperx.env`, and host JSON configs. Do
 
 | Host path (examples) | Who writes | Who reads |
 |----------------------|------------|-----------|
-| `HOST_RECORDINGS_DIR` | recorder, `inbox-watch` convert, Tools → Merge | STT, playback, Compose `/mnt/recordings` |
+| `HOST_RECORDINGS_DIR` | recorder, `inbox-watch` convert, Audio Preprocessing merge | STT, playback, Compose `/mnt/recordings` |
 | `HOST_TRANSCRIPTS_DIR/originals/` | whispermlx-missing, WhisperX JSON, host watchers | **Admit from originals/**, `inbox-watch --admit` |
 | Managed library root (`HOST_TRANSCRIPTS_DIR`) | Import / Admit | analysis |
 | `HOST_TRANSCRIPT_INBOX_DIR` | you drop BYO files | Import all from folder / in-app watcher — **not** `originals/` |

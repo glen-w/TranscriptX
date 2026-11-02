@@ -68,6 +68,11 @@ def test_tools_page_renders_only_active_panel(monkeypatch) -> None:
             return None
 
     monkeypatch.setattr(mod, "st", _St)
+    monkeypatch.setattr(
+        mod,
+        "render_page_shell",
+        lambda title, desc=None, *a, **k: captions.append(str(desc)),
+    )
     monkeypatch.setattr(mod, "render_dependency_banner", lambda: True)
     monkeypatch.setattr(
         mod,

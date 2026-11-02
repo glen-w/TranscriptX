@@ -1,12 +1,12 @@
 # Output conventions
 
-**Authority:** For the formal output contract (layout, manifests, speaker exclusion), see **[docs/contracts/output-contract-v1.md](contracts/output-contract-v1.md)**.
+**Authority:** For the formal output contract (layout, manifests, speaker exclusion), see **[docs/contracts/output-contract-v1.md](../contracts/output-contract-v1.md)**.
 
 This document remains a short reference. Implementation lives in `src/transcriptx/core/utils/output_standards.py` and `src/transcriptx/core/utils/_path_core.py` (path helpers and naming).
 
 ## Directory layout
 
-- **Run root:** Outputs live under `outputs/<slug>/<run_id>/` where `slug` is the human-friendly folder name (from the slug manager) and `run_id` is `YYYYMMDD_HHMMSS_<hash>`. The run root contains module subdirs, `manifest.json`, `run_results.json`, and report projections (`report.json` / `report.md` / `report.txt`) when enabled by the run profile. See [output-contract-v1.md](contracts/output-contract-v1.md) for the full contract.
+- **Run root:** Outputs live under `outputs/<slug>/<run_id>/` where `slug` is the human-friendly folder name (from the slug manager) and `run_id` is `YYYYMMDD_HHMMSS_<hash>`. The run root contains module subdirs, `manifest.json`, `run_results.json`, and report projections (`report.json` / `report.md` / `report.txt`) when enabled by the run profile. See [output-contract-v1.md](../contracts/output-contract-v1.md) for the full contract.
 - **Per-module:** Each analysis module writes under `<run_root>/<module_name>/` unless it uses a versioned namespace (see below).
 - **Standard subdirs (per module):** `data/`, `charts/`, `global/`, `speakers/` as created by `create_standard_output_structure()` in `output_standards.py`.
 

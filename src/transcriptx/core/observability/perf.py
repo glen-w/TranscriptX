@@ -277,14 +277,40 @@ def section(
     counts: dict[str, int] | None = None,
     extra: dict[str, Any] | None = None,
 ) -> Iterator[None]:
-    """Context manager for instrumented sections."""
+    """Context manager for instrumented sections.
+
+    Must stay exception-transparent: Streamlit control flow (``st.rerun()`` /
+    ``st.stop()``) and real errors raised inside the block propagate unchanged
+    whether or not telemetry is enabled. Never ``return`` from the ``finally``
+    branch — that discards the in-flight exception (1.1.0 sidebar regression).
+    """
     start = time.perf_counter()
     try:
         yield
     finally:
-        metrics = _current_run()
-        if metrics is None or not _enabled():
-            return
+        _record_section(
+            name,
+            start,
+            bucket=bucket,
+            cache_state=cache_state,
+            counts=counts,
+            extra=extra,
+        )
+
+
+def _record_section(
+    name: str,
+    start: float,
+    *,
+    bucket: str,
+    cache_state: str | None,
+    counts: dict[str, int] | None,
+    extra: dict[str, Any] | None,
+) -> None:
+    metrics = _current_run()
+    if metrics is None or not _enabled():
+        return
+    try:
         elapsed_ms = _safe_float_ms(start)
         metrics.section_totals_ms[bucket] += elapsed_ms
         event = {
@@ -302,6 +328,8 @@ def section(
             event.update(extra)
         metrics.section_events.append(event)
         _append_jsonl({"event": "section", **event})
+    except Exception:  # telemetry must never mask the instrumented block
+        get_logger().debug("perf section bookkeeping failed", exc_info=True)
 
 
 def instrument_cached_call(

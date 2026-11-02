@@ -86,7 +86,7 @@ Native **Apple MPS** is **supported-with-caveats**, not universally validated fo
 
 ## Transcript stitch identity
 
-**System → Tools → Merge → Stitch transcripts** writes a **new** JSON. It never overwrites managed originals. Duration vs timestamp mismatch aborts. Diarized `SPEAKER_*` labels are not remapped; re-run Speaker Identification on the stitched file.
+**Workflow → Audio Preprocessing → Manual merge → Stitch transcripts** writes a **new** JSON. It never overwrites managed originals. Duration vs timestamp mismatch aborts. Diarized `SPEAKER_*` labels are not remapped; re-run Speaker Identification on the stitched file.
 
 ## Derived Speakers SQLite
 

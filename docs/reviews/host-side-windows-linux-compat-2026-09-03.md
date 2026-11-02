@@ -2,7 +2,7 @@
 
 **Maintainer assessment** under [docs/reviews/](index.md). Dated snapshot, not a contract. Where this disagrees with contracts or `src/`, **code and contracts win**. Hosted at `/guide/reviews/host-side-windows-linux-compat-2026-09-03/` after `make docs`.
 
-**Parked (2026-09-03):** do **not** implement Windows/Linux host-script portability before **1.0**. Tracked as 1.x theme **G3** in [ROADMAP.md](../ROADMAP.md#g3-host-companion-scripts-on-windows--linux-parked-post-10). 1.0 stays macOS-typical `inbox-watch` / whispermlx + Docker (WSL2 on Windows).
+**Parked (2026-09-03):** do **not** implement Windows/Linux host-script portability before **1.0**. Tracked as 1.x theme **G3** in [ROADMAP.md](../ROADMAP.md#g3-host-companion-scripts-on-windows--linux-narrow-shipped-services-parked). 1.0 stays macOS-typical `inbox-watch` / whispermlx + Docker (WSL2 on Windows).
 
 **Code since this snapshot:** `inbox-watch --transcribe none|command` and Transcribe Audio path honesty landed under G3 (2026-10-06). PowerShell Copy command (Theme K) and Windows `Scripts\python.exe` admit discovery + docs honesty (G3 Narrow, 2026-10-07) shipped. Service samples and Windows USB auto-stage remain parked. Prefer [host-stt.md](../runtime/host-stt.md), [stt-stacks](../recipes/stt-stacks/README.md) topology E, and current `scripts/inbox-watch.py` over the “always whispermlx-missing” / “admit discovery broken” findings below.
 
@@ -114,7 +114,8 @@ Audio conversion without STT is also unused: converting always tries to invoke m
 
 `find_admit_python` looks at Unix venv layouts only:
 
-```1033:1037:scripts/inbox-watch.py
+```python
+# scripts/inbox-watch.py — find_admit_python
         for rel in (
             ".transcriptx/bin/python",
             ".transcriptx/bin/python3",

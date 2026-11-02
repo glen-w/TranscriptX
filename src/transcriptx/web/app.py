@@ -50,6 +50,7 @@ from transcriptx.web.perf import (
 from transcriptx.web.router import PAGE_PREREQUISITES, route_current_page
 from transcriptx.web.shell import configure_streamlit_page, inject_global_styles
 from transcriptx.web.sidebar import render_sidebar
+from transcriptx.web.url_state import hydrate_session_from_url, sync_url_from_session
 from transcriptx.web.cache_helpers import cached_list_viewable_session_names
 from transcriptx.web.state import PAGE_KEY
 
@@ -122,6 +123,9 @@ def _consume_speaker_profile_deep_link() -> None:
 def main() -> None:
     """Main application entry point."""
     _init_defaults()
+    # Fresh session: restore page / subject / run from the URL before anything
+    # evaluates prerequisites (refresh and bookmarks keep their context).
+    hydrate_session_from_url(st.session_state, st.query_params)
     _consume_speaker_profile_deep_link()
     current_page = st.session_state.get(PAGE_KEY, "Home")
     scenario = st.query_params.get("perf_scenario")
@@ -170,6 +174,13 @@ def main() -> None:
                     corrections_studio_available=corrections_available,
                     prerequisites=PAGE_PREREQUISITES,
                 )
+
+        # Pickers may have hydrated a default subject/run during the sidebar
+        # paint; mirror the resulting context into the URL (no rerun).
+        try:
+            sync_url_from_session(st.session_state, st.query_params)
+        except Exception as exc:  # URL is a convenience, never a blocker
+            logger.debug(f"URL state sync skipped: {exc}")
 
         if load_error:
             st.error(f"Could not load session list: {load_error}")

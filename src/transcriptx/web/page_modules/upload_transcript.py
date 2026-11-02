@@ -14,6 +14,8 @@ from typing import Any
 
 import streamlit as st
 
+from transcriptx.web.components.page_shell import render_page_shell
+
 from transcriptx.web import icons as ic
 from transcriptx.core.utils.paths import (
     TRANSCRIPTS_IMPORTS_DIR,
@@ -488,13 +490,10 @@ def _render_folder_import_section() -> None:
 
 def render_upload_transcript_page() -> None:
     """Render the Import Transcript page."""
-    st.markdown(
-        '<div class="main-header">Import Transcript</div>',
-        unsafe_allow_html=True,
-    )
-    st.caption(
+    render_page_shell(
+        "Import Transcript",
         "Import transcript files into TranscriptX canonical JSON format, and optionally "
-        "attach a recording for speaker/audio-feature workflows."
+        "attach a recording for speaker/audio-feature workflows.",
     )
 
     st.subheader("1. Import transcript")

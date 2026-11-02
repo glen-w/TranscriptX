@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-02
+
+GUI hardening wave W0–W1 ([plan](.cursor/plans/2026-11-02-gui-hardening-wave.md)).
+
+### Fixed
+
+- **Sidebar truncated / stale layout after every nav click (1.1.0 regression).** `perf.section()` used `return` inside `finally`, which swallowed Streamlit's `RerunException`/`StopException` and any page exception whenever telemetry was off — the 1.1.0 default. Instrumentation is now exception-transparent; nav buttons switch pages via `on_click` instead of `st.rerun()` inside the sidebar.
+- **App unstyled from the second rerun (1.0.3/1.1.0 regression).** Global CSS was emitted once per session; Streamlit drops elements the latest run did not re-emit (double logo, red default buttons, plain-text page titles). CSS is emitted on every run again.
+- Repo `.env` no longer overrides an explicitly set process environment (`load_dotenv(override=False)`), so CI, AppTest and Playwright children honour isolated `TRANSCRIPTX_*_DIR` values instead of writing fixtures into the owner library.
+- Settings → Configuration readout renders one table per category instead of ~2,200 widgets (31k DOM nodes → ~3k); category titles are humanised (`LLM`, `Audio preprocessing`).
+
+### Added
+
+- **URL state:** `page`, `subject_type`, `subject_id`, `run_id` are mirrored into the URL and restored on a fresh session — refresh and bookmarks keep the view.
+- **Shell smoke lane** (`make test-gui-shell-smoke`, PR CI job `gui-shell-smoke`): every sidebar page paints styled with a complete sidebar, no console errors, DOM budgets, deep-link + reload.
+- `python -m transcriptx.web` disables Streamlit's source watcher by default (`TRANSCRIPTX_DEV=1` keeps hot-reload; `TRANSCRIPTX_FILE_WATCHER` overrides), removing hundreds of `Examining the path …` tracebacks per launch.
+
+### Documentation
+
+- Workflow walkthroughs for **Groups**, **Rename**, **Speakers**, **Correct while reading**, and **Archive** now carry screenshots and GIFs (`docs/_static/workflows/`), captured on the BBNJ webinar corpus; capture notes updated ([workflow_media_capture.md](docs/dev/workflow_media_capture.md)).
+- Sidebar labels aligned with the app (**Workflow → Audio Preprocessing**, **System → Dashboard Builder**); transcript stitch described as shipped; `library_kind` added to [STORAGE.md](docs/runtime/STORAGE.md) and [TERMS.md](docs/TERMS.md); CLI allowlist table lists `analyze-backlog` / `analyze-modules` / `cleanup-runs` / `library-paths`.
+- Sphinx build is warning-free: ```` ```mermaid ```` fences map to the mermaid directive, recipes and runtime notes join the toctrees, and contract / dev pages hang off their index pages. Broken relative links across `docs/dev`, `docs/groups`, and the host-OS review fixed.
+
 ## [1.1.0] - 2026-11-02
 
 Workbench depth after 1.0.3: merge-signal truth, security residuals, provenance, speaker-map diagnostics, library kind tags, transcript stitch, derived Speakers SQLite, and NER language skip.
