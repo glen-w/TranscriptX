@@ -21,27 +21,16 @@ import re
 from pathlib import Path
 from typing import Any, Iterable, List
 
+from transcriptx.services.transcription.speaker_label import (
+    speaker_label as _shared_speaker_label,
+)
+
 _SPEAKER_TAG_RE = re.compile(r"\[Speaker\s+(\d+)\]\s*:", re.IGNORECASE)
-_SPEAKER_NUM_RE = re.compile(r"(\d+)")
 
 
 def speaker_label(raw: Any) -> str | None:
     """Map Granite / mlx-audio speaker ids onto WhisperX ``SPEAKER_XX``."""
-    if raw is None:
-        return None
-    text = str(raw).strip()
-    if not text:
-        return None
-    if text.upper().startswith("SPEAKER_"):
-        return text
-    match = _SPEAKER_NUM_RE.search(text)
-    if match is None:
-        return text
-    number = int(match.group(1))
-    index = number - 1 if number >= 1 else number
-    if index < 0:
-        index = 0
-    return f"SPEAKER_{index:02d}"
+    return _shared_speaker_label(raw, one_based=True)
 
 
 def _estimated_spans(

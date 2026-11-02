@@ -51,7 +51,9 @@ def _is_raw_transcript_path(subject_id: str) -> bool:
 def _resolve_transcript_path_fast(session_name: str) -> Path | None:
     """Session -> transcript path via short-lived cache, falling back to full resolve."""
     try:
-        from transcriptx.web.cache_helpers import cached_resolve_transcript_path
+        from transcriptx.web.transcript_path_cache import (
+            cached_resolve_transcript_path,
+        )
 
         path_str = cached_resolve_transcript_path(session_name)
         if path_str:

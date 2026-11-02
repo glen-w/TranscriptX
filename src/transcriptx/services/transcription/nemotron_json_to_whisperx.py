@@ -17,26 +17,16 @@ import re
 from pathlib import Path
 from typing import Any, Iterable, List
 
+from transcriptx.services.transcription.speaker_label import (
+    speaker_label as _shared_speaker_label,
+)
+
 _SPK_TAG_RE = re.compile(r"<spk:(\d+)>")
-_SPEAKER_NUM_RE = re.compile(r"(\d+)")
 
 
 def speaker_label(raw: Any) -> str | None:
     """Map Nemotron 0-based speaker ids onto WhisperX ``SPEAKER_XX``."""
-    if raw is None:
-        return None
-    text = str(raw).strip()
-    if not text:
-        return None
-    if text.upper().startswith("SPEAKER_"):
-        return text
-    match = _SPEAKER_NUM_RE.search(text)
-    if match is None:
-        return text
-    index = int(match.group(1))
-    if index < 0:
-        index = 0
-    return f"SPEAKER_{index:02d}"
+    return _shared_speaker_label(raw, one_based=False)
 
 
 def to_whisperx_payload(segments: Iterable[dict[str, Any]]) -> dict[str, Any]:
