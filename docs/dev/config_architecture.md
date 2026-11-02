@@ -73,6 +73,8 @@ flowchart TD
 | **A — runtime facade** | `src/transcriptx/core/utils/config/` | Attribute API modules read (`get_config().analysis.*`) |
 | **B — registry / pilots** | `src/transcriptx/core/config/` | Pydantic models, `build_registry()`, UI metadata, leaf validation, persistence |
 
+Nested analysis dataclasses live in `utils/config/analysis_*.py` **1:1 with Pydantic pilots** (`core/config/models/*.py`). `analysis.py` is the re-export facade plus `AnalysisConfig` (flat slices + mapping stores). Hydration helpers live in `analysis_hydrate.py`. Do not merge the two packages; Pydantic model imports stay function-local in `__post_init__`.
+
 Bridge: `core/config/pydantic_bridge.py` (`PYDANTIC_REGISTRY_PILOTS`).
 
 ### Facade load order
