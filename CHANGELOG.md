@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-02
+
+Workbench depth after 1.0.3: merge-signal truth, security residuals, provenance, speaker-map diagnostics, library kind tags, transcript stitch, derived Speakers SQLite, and NER language skip.
+
+### Added
+
+- **PR contracts job** and Nightly coverage floor (`.coveragerc` `fail_under=70`). Advisory Nightly GUI AppTest.
+- **SR-06 LLM host allowlist:** loopback / `host.docker.internal` by default; `llm.allow_remote_host` / `TRANSCRIPTX_LLM_ALLOW_REMOTE_HOST` opt-in.
+- **P2 evidence/provenance envelope** on Insights themes, Highlights themes, and `llm_action_items` records ([evidence_provenance_v1.md](docs/contracts/evidence_provenance_v1.md)).
+- **B19 `speaker_map_diagnostics`:** T0–T3 honesty, map↔segment mismatches, duplicate names ([speaker_map_diagnostics.md](docs/runtime/speaker_map_diagnostics.md)).
+- **Theme F kind tags:** `meeting` / `voice note` / `lone speaker` on the import sidecar; Library filter + inspector. Does not create Groups.
+- **G1 transcript stitch:** Tools → Merge concatenates already-transcribed parts into a **new** JSON; aborts on duration mismatch; never overwrites managed originals.
+- **Theme J Narrow:** rebuildable SQLite derived store for speaker-profile gallery keyed by `profile_id`.
+- **P1 NER language skip:** non-English `metadata.language` → `skip_reason: unsupported_language` (no silent English spaCy).
+
+### Changed
+
+- Required PR CI is compose + lint + smoke + **contracts** (Python 3.10). Fast stays on Nightly.
+- Streamlit perf telemetry (`TRANSCRIPTX_STREAMLIT_PERF`) defaults **off**; recorded paths are basenames (SR-10).
+- HTML export helpers and wordcloud explorer escape untrusted strings (SR-05).
+- Python classifiers drop 3.12 (no cp3.12 wordcloud wheel; not a CI cell).
+- Living docs: ROADMAP is 1.1.0 / 1.x; pre-release programme file is historical.
+
+### Security
+
+- Image freeze can be pip-audited via `scripts/release/image_pip_audit.sh` (SR-08). Dockerfile bases use `python:3.10-slim-bookworm` (SR-09). nltk CVE-2026-81726 waiver re-audited 2026-11-02.
+
 ## [1.0.3] - 2026-11-02
 
 Maintainability file splits plus STT converters that landed after 1.0.2 (git tag `v1.0.3`).

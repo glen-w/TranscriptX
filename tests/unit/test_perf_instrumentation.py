@@ -24,6 +24,8 @@ def perf_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 @pytest.mark.unit
 def test_enabled_respects_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("TRANSCRIPTX_STREAMLIT_PERF", raising=False)
+    assert perf._enabled() is False
     monkeypatch.setenv("TRANSCRIPTX_STREAMLIT_PERF", "0")
     assert perf._enabled() is False
     monkeypatch.setenv("TRANSCRIPTX_STREAMLIT_PERF", "1")

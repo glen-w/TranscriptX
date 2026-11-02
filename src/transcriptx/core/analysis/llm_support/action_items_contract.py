@@ -740,6 +740,8 @@ def order_action_items(
                 offset = text_offset
         return (type_rank, offset, model_index, str(item.get("text") or "").lower())
 
+    from transcriptx.core.analysis.provenance import evidence_provenance
+
     ordered = sorted(items, key=sort_key)
     cleaned: List[Dict[str, Any]] = []
     for item in ordered:
@@ -748,6 +750,21 @@ def order_action_items(
             for k, v in item.items()
             if k not in {"_model_index", "_grounded", "_record_type_defaulted"}
         }
+        conf = entry.get("confidence")
+        band = None
+        if isinstance(conf, (int, float)):
+            if conf >= 0.7:
+                band = "high"
+            elif conf >= 0.4:
+                band = "medium"
+            else:
+                band = "low"
+        quote = entry.get("quote")
+        entry["provenance"] = evidence_provenance(
+            source_module="llm_action_items",
+            quote_ids=[quote] if quote else [],
+            confidence=band,
+        )
         cleaned.append(entry)
     return cleaned
 

@@ -19,6 +19,7 @@ from transcriptx.core.analysis.phrase_quality.policies import (
     TIER_STRONG_SINGLE_NOUN,
 )
 from transcriptx.core.analysis.phrase_quality.scoring import select_diverse_themes
+from transcriptx.core.analysis.provenance import evidence_provenance
 from transcriptx.core.utils.config import get_config
 from transcriptx.core.utils.nlp_utils import build_tic_mask
 
@@ -213,6 +214,11 @@ def _select_themes(
             "preference_tier": row["preference_tier"],
             "evidence_quote_ids": row.get("evidence_quote_ids") or [],
             "topic_corroborated": bool(row.get("topic_corroborated")),
+            "provenance": evidence_provenance(
+                source_module="insights",
+                quote_ids=row.get("evidence_quote_ids") or [],
+                confidence=row.get("confidence"),
+            ),
         }
         for row in selected
     ]
@@ -271,6 +277,11 @@ def _select_recurring_ideas(
             "preference_tier": row["preference_tier"],
             "evidence_quote_ids": row.get("evidence_quote_ids") or [],
             "topic_corroborated": bool(row.get("topic_corroborated")),
+            "provenance": evidence_provenance(
+                source_module="insights",
+                quote_ids=row.get("evidence_quote_ids") or [],
+                confidence=row.get("confidence"),
+            ),
         }
         for row in selected
     ]

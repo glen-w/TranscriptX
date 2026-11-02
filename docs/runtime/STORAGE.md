@@ -2,7 +2,7 @@
 
 This document defines the storage contract for path roots and the serialization rule. It is the reference for the path/storage architecture.
 
-**Persistence today is file-backed JSON plus `FileLock`.** Live `src/` has no SQLite, SQLAlchemy, or Alembic. A leftover `data/state/transcriptx.db` on disk is unused. A derived SQLite analytics layer is roadmap Theme J only ([ROADMAP.md](../ROADMAP.md) §J), not current architecture.
+**Persistence today is file-backed JSON plus `FileLock`.** Canonical transcripts, sidecars, and run artifacts are files. Theme **J Narrow** adds an optional **derived** SQLite store (`state/analytics_derived.sqlite`) for Speakers / `profile_id` gallery (`transcriptx.core.analytics_store`). It is rebuildable from files and is not the library source of truth. Live `src/` has no SQLAlchemy or Alembic. A leftover `data/state/transcriptx.db` on disk is unused.
 
 ## Serialization rule
 

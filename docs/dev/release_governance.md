@@ -6,14 +6,14 @@ This document is the **authoritative release gate** for public version tags. It 
 
 ## Wave 0 eng criteria (closed)
 
-Release hygiene **A1–A10**, Config **1.7** atomic apply, Config **1.8** curated `to_dict`, and docs/inventory parity are **implemented in-tree** (stocktake refreshed for **0.9.7**). Remaining work before a public **1.0** tag is this checklist + evidence runbook, plus programme gates in [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) ([severity triage](release_severity_triage_1_0.md), performance/trust owner sign-off, RTD go-live) — not missing Wave 0 code. An informal stranger test in October 2026 is not one of those gates.
+Release hygiene **A1–A10**, Config **1.7** atomic apply, Config **1.8** curated `to_dict`, and docs/inventory parity are **implemented in-tree** (stocktake refreshed for **0.9.7**). Public **1.0.0** shipped 2026-10-19; this checklist still gates **each subsequent tag**. Historical programme notes live in [pre_release_roadmap_1_0.md](pre_release_roadmap_1_0.md) (retired). An informal stranger test in October 2026 is not one of those gates.
 
 **Hardening triage:** classify findings with [release_severity_triage_1_0.md](release_severity_triage_1_0.md) before scheduling RC work.
 
 ## Checklist
 
 1. All Wave 0 acceptance criteria green (release hygiene A1–A10 + Config 1.7 atomic apply + docs/inventory parity).
-2. **Green CI on the exact intended release commit** — PR workflow only **requires** `compose-config`, `lint`, and `tests` (smoke + contracts + fast on 3.10–3.12). Before tagging, also confirm advisory jobs were green on that SHA (especially `release-checks`, and `docs` / `pages.yml` if the release touches documentation). Failed or cancelled required matrix members block.
+2. **Green CI on the exact intended release commit** — PR workflow only **requires** `compose-config`, `lint`, `smoke` (`make test-smoke` on **Python 3.10**), and `contracts` (`make test-contracts` on **Python 3.10**). Fast/coverage stay on Nightly. Before tagging, also confirm advisory jobs were green on that SHA (especially `release-checks`, and `docs` / `pages.yml` if the release touches documentation). Failed or cancelled required jobs block.
 3. `pyproject.toml` version matches the intended tag (`v` prefix aside).
 4. Dated Keep-a-Changelog section for that version in `CHANGELOG.md`.
 5. Clean worktree (`git status --porcelain=v1 --untracked-files=all` empty of unexpected paths).
@@ -97,11 +97,11 @@ Expected: `pass`, or `skipped (Docker not available)`.
 
 ### E. Install-matrix cells
 
-Execute the cells claimed in `docs/runtime/install_verification_matrix.md` (core extras, Docker production-image proof, Python 3.10–3.12 as practical). Record pass/fail/skip per cell; do not claim a cell green without evidence.
+Execute the cells claimed in `docs/runtime/install_verification_matrix.md` (core extras, Docker production-image proof, Python 3.10–3.11 as practical). Record pass/fail/skip per cell; do not claim a cell green without evidence.
 
 ### F. CI on exact commit
 
-Confirm GitHub Actions on the intended SHA: jobs `tests` (3.10–3.12), `compose-config`, and `release-checks` are green. Failed or cancelled matrix members block tagging.
+Confirm GitHub Actions on the intended SHA: required jobs `compose-config`, `lint`, `smoke`, and `contracts` are green, plus advisory `release-checks`. Failed or cancelled required jobs block tagging.
 
 ### Bundle contents checklist
 

@@ -380,7 +380,9 @@ class CorpusInventory:
         duration, speaker_count, word_count, listing_integrity = (
             self._read_listing_stats(ref.path)
         )
-        imported_at, source_id, library_archived = self._read_import_sidecar(ref.path)
+        imported_at, source_id, library_archived, library_kind = (
+            self._read_import_sidecar(ref.path)
+        )
         speaker = self._read_speaker(ref.path, speaker_count=speaker_count)
         analysis = self._read_analysis(ref)
         corrections = self._read_corrections(ref.path)
@@ -412,6 +414,7 @@ class CorpusInventory:
             last_activity_at=last_activity,
             tags=tags,
             library_archived=library_archived,
+            library_kind=library_kind,
             fingerprint=fingerprint,
         )
 
@@ -429,7 +432,7 @@ class CorpusInventory:
 
     def _read_import_sidecar(
         self, path: Path
-    ) -> tuple[datetime | None, str | None, bool]:
+    ) -> tuple[datetime | None, str | None, bool, str | None]:
         for candidate in import_sidecar_candidates(path):
             payload, unreadable = self._read_json(candidate)
             if unreadable or not isinstance(payload, dict):
@@ -438,8 +441,10 @@ class CorpusInventory:
             source_id = payload.get("adapter_source_id")
             source = str(source_id) if source_id else None
             library_archived = payload.get("library_archived") is True
-            return imported_at, source, library_archived
-        return None, None, False
+            kind = payload.get("library_kind")
+            library_kind = kind if isinstance(kind, str) and kind else None
+            return imported_at, source, library_archived, library_kind
+        return None, None, False, None
 
     def _read_speaker(self, path: Path, *, speaker_count: int | None) -> SpeakerIdState:
         try:

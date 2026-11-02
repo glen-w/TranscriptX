@@ -63,6 +63,10 @@ def apply_library_filter(
         and (not library_filter.source_id or row.source_id == library_filter.source_id)
         and row_matches_tags(row, library_filter.tags)
         and (library_filter.include_archived or not row.library_archived)
+        and (
+            not library_filter.library_kind
+            or row.library_kind == library_filter.library_kind
+        )
     ]
     return sort_inventory_rows(matched, library_filter.sort)
 

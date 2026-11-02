@@ -157,7 +157,7 @@ Defaults are **English**. For other languages, language-matched models usually b
 - Embeddings: multilingual sentence-transformers (e.g. `paraphrase-multilingual-mpnet-base-v2`)
 - Whisper: set `language` at transcription time
 
-TranscriptX does not auto-select models from transcript `language` metadata today.
+**P1 first consumer (1.1.0):** `ner` skips with `skip_reason: unsupported_language` when transcript `metadata.language` is present and not English. Other modules still run English defaults. This is not a multilingual product claim — see `transcriptx.core.analysis.language_routing`.
 
 ## Longitudinal voice matching (`[speaker_match]`)
 

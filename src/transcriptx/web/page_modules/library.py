@@ -25,8 +25,15 @@ from transcriptx.export.library_by_tag import (
     build_library_export_manifest,
     resolve_library_export_items,
 )
-from transcriptx.io.import_metadata.persist import set_library_archived
-from transcriptx.io.tag_validation import sanitize_tag, sanitize_tag_list
+from transcriptx.io.import_metadata.persist import (
+    set_library_archived,
+    set_library_kind,
+)
+from transcriptx.io.tag_validation import (
+    LIBRARY_KIND_VALUES,
+    sanitize_tag,
+    sanitize_tag_list,
+)
 from transcriptx.utils.text_utils import format_duration_display_from_config
 from transcriptx.web import icons as ic
 from transcriptx.web.action_menus.context import (
@@ -73,6 +80,7 @@ from transcriptx.web.state import (
     LIBRARY_FILTER_SIG_KEY,
     LIBRARY_FILTER_SORT_KEY,
     LIBRARY_FILTER_SOURCE_KEY,
+    LIBRARY_FILTER_KIND_KEY,
     LIBRARY_FILTER_TAGS_KEY,
     LIBRARY_SELECTED_TRANSCRIPT_PATH,
     LIBRARY_SHOW_PATH_KEY,
@@ -212,6 +220,11 @@ def _current_library_filter() -> LibraryFilter:
         include_archived=bool(
             st.session_state.get(LIBRARY_FILTER_INCLUDE_ARCHIVED_KEY, False)
         ),
+        library_kind=(
+            None
+            if st.session_state.get(LIBRARY_FILTER_KIND_KEY) in (None, "", "All")
+            else str(st.session_state.get(LIBRARY_FILTER_KIND_KEY))
+        ),
     )
 
 
@@ -233,6 +246,12 @@ def _persist_row_tags(transcript_path: Path, tags: list[str]) -> None:
 
 def _persist_library_archived(transcript_path: Path, archived: bool) -> None:
     set_library_archived(transcript_path, archived)
+    clear_transcript_listing_caches()
+    _bump_library_table_epoch()
+
+
+def _persist_library_kind(transcript_path: Path, kind: str | None) -> None:
+    set_library_kind(transcript_path, kind)
     clear_transcript_listing_caches()
     _bump_library_table_epoch()
 
@@ -309,6 +328,15 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
             key=LIBRARY_FILTER_TAGS_KEY,
             help=widget_help(
                 "AND-filter by library organisation tags (not Groups, not chart tags)."
+            ),
+        )
+        st.selectbox(
+            "Kind",
+            options=["All", *sorted(LIBRARY_KIND_VALUES)],
+            key=LIBRARY_FILTER_KIND_KEY,
+            help=widget_help(
+                "Theme F kind labels: meeting, voice note, lone speaker. "
+                "Not Groups and not archive."
             ),
         )
 
@@ -423,6 +451,7 @@ def _render_inspector(selected: InventoryRow) -> None:
     st.caption(f"Last analysed: {last_analysed}")
 
     _render_inspector_tags(selected)
+    _render_inspector_kind(selected)
     _render_inspector_archive(selected)
 
     subject_id = selected.slug or selected.transcript_path.stem
@@ -505,6 +534,25 @@ def _render_inspector_tags(selected: InventoryRow) -> None:
         if set(keep) != set(current):
             _persist_row_tags(selected.transcript_path, list(keep))
             st.rerun()
+
+
+def _render_inspector_kind(selected: InventoryRow) -> None:
+    path_key = str(selected.transcript_path)
+    options = ["(none)", *sorted(LIBRARY_KIND_VALUES)]
+    current = selected.library_kind or "(none)"
+    choice = st.selectbox(
+        "Kind",
+        options=options,
+        index=options.index(current) if current in options else 0,
+        key=f"library_kind_{path_key}",
+        help=widget_help(
+            "Organisation kind for this transcript. Does not create a Group."
+        ),
+    )
+    next_kind = None if choice == "(none)" else choice
+    if next_kind != selected.library_kind:
+        _persist_library_kind(selected.transcript_path, next_kind)
+        st.rerun()
 
 
 def _render_inspector_archive(selected: InventoryRow) -> None:

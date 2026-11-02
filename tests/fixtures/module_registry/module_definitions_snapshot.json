@@ -25,6 +25,7 @@
     "wordclouds",
     "tics",
     "transcript_quality",
+    "speaker_map_diagnostics",
     "insight_eligibility",
     "temporal_dynamics",
     "qa_analysis",
@@ -395,6 +396,17 @@
       "enhancements": [
         "word_confidence"
       ],
+      "min_named_speakers": 0,
+      "requirements": [
+        "segments"
+      ]
+    },
+    "speaker_map_diagnostics": {
+      "category": "light",
+      "dependencies": [],
+      "description": "Speaker-map consistency",
+      "determinism_tier": "T0",
+      "enhancements": [],
       "min_named_speakers": 0,
       "requirements": [
         "segments"

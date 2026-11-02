@@ -10,9 +10,9 @@ Enforced by `tests/core/config/test_registry_ownership.py` against
 | Metric | Live value |
 |--------|------------|
 | Pydantic pilots | **55** |
-| Pydantic-owned flattened registry leaves | **738** |
+| Pydantic-owned flattened registry leaves | **739** |
 | Permanent non-Pydantic baseline leaves | **16** |
-| Total registry leaves | **754** |
+| Total registry leaves | **755** |
 
 Baseline leaves include profile activation selectors (`active_*_profile`), `core_mode`, `use_emojis`, and intentional `analysis.chart_descriptions.*` keys.
 

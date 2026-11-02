@@ -4,7 +4,7 @@
 # -----------------------------------------------------------------------------
 # Builder: install deps with constraints, build wheel, install into venv
 # -----------------------------------------------------------------------------
-FROM python:3.10-slim AS builder
+FROM python:3.10-slim-bookworm AS builder
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -120,7 +120,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # -----------------------------------------------------------------------------
 # Runtime: copy venv only; no pip, no build tools
 # -----------------------------------------------------------------------------
-FROM python:3.10-slim AS production
+FROM python:3.10-slim-bookworm AS production
 
 # Build-time args for OCI labels (set by CI or build script)
 ARG GIT_SHA=

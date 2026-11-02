@@ -163,8 +163,8 @@ Smaller public projects often illustrate a **single wedge** (RAG chat, MoM extra
 
 ```text
 Need STT from audio on my machine *today*?
-  → Scriberr / noScribe / aTrain / WhisperX / …  then optionally → TranscriptX
-  (TranscriptX may add optional local STT in 1.x — see ROADMAP)
+  → TranscriptX Transcribe Audio **Run in app** (whispermlx / WhisperX Docker / Granite mlx / optional Parakeet or Nemotron) or Copy command, **or** Scriberr / noScribe / aTrain / WhisperX then Import
+  (BYO import remains the default path; engines stay out of the analysis image)
 
 Need confidential interview STT with a correction editor (qual research)?
   → noScribe  then optionally → TranscriptX (import VTT) and/or CAQDAS
@@ -210,7 +210,7 @@ Need local modular analysis of transcripts I control?
 
 - [How TranscriptX compares](comparison.md) — short answer and positioning
 - [PRODUCT.md](PRODUCT.md) — product definition
-- [ROADMAP.md](ROADMAP.md) — 1.x themes (including optional in-app STT)
+- [ROADMAP.md](ROADMAP.md) — 1.x themes (in-app STT H1–H4 + Granite/Parakeet/Nemotron shipped; H6/YouTube still deferred)
 - [transcription.md](runtime/transcription.md) — external STT workflows
 - [known_limitations.md](known_limitations.md) — public limits
 

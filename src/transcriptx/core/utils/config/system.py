@@ -33,6 +33,7 @@ class LLMConfig:
     preferred_failure_threshold: int = field(init=False, repr=True)
     json_prefer_think_off: bool = field(init=False, repr=True)
     base_url: str | None = field(init=False, repr=True)
+    allow_remote_host: bool = field(init=False, repr=True)
     request_timeout: float = field(init=False, repr=True)
     availability_timeout: float = field(init=False, repr=True)
     seed: int = field(init=False, repr=True)

@@ -1,5 +1,6 @@
 {
   "active_model_profile": "default",
+  "allow_remote_host": false,
   "availability_timeout": 7.5,
   "base_url": null,
   "default_temperature": 0.3,

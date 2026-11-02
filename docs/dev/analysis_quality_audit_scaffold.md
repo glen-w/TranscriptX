@@ -31,6 +31,7 @@ Human judgements (meaningfulness, recommendation, severity) live in empty column
 | `wordclouds` | Word Cloud Generation | light | insight_eligibility | T1 | | | |
 | `tics` | Verbal Tics Analysis | light | None | T0 | | | |
 | `transcript_quality` | ASR Confidence | light | None | T0 | | | |
+| `speaker_map_diagnostics` | Speaker-map consistency | light | None | T0 | | | |
 | `insight_eligibility` | Shared content-vs-style insight eligibility pipeline | light | tics | T0 | | | |
 | `temporal_dynamics` | Temporal Dynamics Analysis | medium | None | T1 | | | |
 | `qa_analysis` | Question-Answer Pairing and Response Quality | medium | acts | T1 | | | |

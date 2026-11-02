@@ -14,20 +14,22 @@ through the environment.
 profile names and recording uploads now sanitize path segments and enforce
 containment under the expected roots.
 
-**Residual before 1.0** (accept as known limitation or fix): unescaped dynamic
-HTML (SR-05), unrestricted optional LLM destinations (SR-06), temporary-audio
-cleanup (SR-07 — fixed in launch readiness), profile import/export raw paths
-(SR-04), and supply-chain/deployment hardening (SR-08–SR-12). No evidence of
-embedded credentials, unsafe Python deserialization, or `shell=True` execution
-was found in production code.
+**1.1.0 residuals:** HTML export helpers and the wordcloud explorer now escape
+hostile strings (SR-05 remaining: Streamlit `unsafe_allow_html` surfaces);
+LLM hosts default to loopback / `host.docker.internal` (SR-06);
+perf telemetry defaults off with basename paths (SR-10). Still open:
+profile import/export raw paths (SR-04) and supply-chain/deployment hardening
+(SR-08–SR-09 digest pin, SR-11–SR-12). No evidence of embedded credentials,
+unsafe Python deserialization, or `shell=True` execution was found in
+production code.
 
 ### Priority summary (at discovery / current)
 
 | Priority | At discovery | Remaining open | Meaning |
 |---|---:|---:|---|
 | P0 | 2 | 0 | Fixed before recommending any shared or non-loopback deployment |
-| P1 | 5 (+ SR-13 merge path) | 4 (SR-04–06 open; SR-07 + SR-13 fixed) | Address before 1.0 or explicitly accept and document |
-| P2 | 5 | 5 (SR-09 partially: `no-new-privileges` landed) | Defense-in-depth, privacy, and release-process hardening |
+| P1 | 5 (+ SR-13 merge path) | 2 (SR-04 open; SR-05 Streamlit residual; SR-06/07/13 fixed) | Address before 1.0 or explicitly accept and document |
+| P2 | 5 | 4 (SR-10 fixed; SR-08 image pip-audit script landed; SR-09 bookworm tag, digest pin open) | Defense-in-depth, privacy, and release-process hardening |
 
 ## 2. Scope and method
 
@@ -126,6 +128,7 @@ confirm overwrite, and document that this surface is local-operator-only.
 
 ### SR-05 — Dynamic HTML is not consistently escaped
 
+**Status:** **Mitigated for export HTML + wordcloud explorer** (1.1.0) — `_esc` on report interpolations; wordcloud JSON `<` → `\u003c` and escaped titles. Streamlit `unsafe_allow_html` on Run Analysis / Charts remains residual.  
 **Priority:** P1  
 **Severity:** Medium for exported artifacts; Low-to-Medium for Streamlit
 surfaces pending browser verification.  
@@ -152,6 +155,7 @@ and add hostile-string tests plus a browser check.
 
 ### SR-06 — Optional LLM destination permits arbitrary HTTP(S) hosts
 
+**Status:** **Fixed** (1.1.0) — default allowlist is loopback + `host.docker.internal`; `llm.allow_remote_host` / `TRANSCRIPTX_LLM_ALLOW_REMOTE_HOST` opt-in.  
 **Priority:** P1  
 **Severity:** Medium.  
 **Evidence:** `src/transcriptx/core/llm/ollama_client.py:296-316`,
@@ -203,10 +207,10 @@ and `assert_path_under_root` under `output_dir`. Tests in
 `scripts/release/clean_env_audit.sh`, `scripts/release/image_pip_check.sh`,
 `.github/workflows/ci.yml`.
 
-Release CI runs `pip-audit` for the built wheel plus core dependencies, while
-the fuller production image receives `pip check` but not a vulnerability scan.
-The frontend lockfile also lacks a CI audit step. Therefore the release CVE
-policy does not cover the complete shipped dependency surface.
+Release CI runs `pip-audit` for the built wheel plus core dependencies. The
+production image freeze can be scanned with `scripts/release/image_pip_audit.sh`
+(1.1.0; host `pip-audit`, waivers in `dependency_audit.md`). The frontend
+lockfile still lacks a CI audit step, and Trivy/Scout image scans remain open.
 
 **Remediation:** Audit the exact production image dependency freeze, add an
 image scanner such as Trivy or Docker Scout, audit the frontend lockfile, retain
@@ -219,7 +223,7 @@ shipped components.
 **Severity:** Medium defense-in-depth gap.  
 **Evidence:** `Dockerfile:7`, `:97`, `docker-compose.yml:17-95`.
 
-The Python base image uses a floating tag rather than an immutable digest.
+The Python base image uses `python:3.10-slim-bookworm` (1.1.0) rather than an immutable digest.
 Compose runs as a non-root host UID. **`no-new-privileges` is now set** on
 `transcriptx-web` (v1 launch readiness). Capability drops and a read-only root
 filesystem remain open.
@@ -230,6 +234,7 @@ filesystem with explicit writable mounts or `tmpfs`.
 
 ### SR-10 — Performance telemetry records full local paths by default
 
+**Status:** **Fixed** (1.1.0) — `TRANSCRIPTX_STREAMLIT_PERF` defaults off; recorded paths are basenames.  
 **Priority:** P2  
 **Severity:** Low security / Medium privacy on shared storage.  
 **Evidence:** `src/transcriptx/core/observability/perf.py:26-54`,

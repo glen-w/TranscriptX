@@ -24,11 +24,11 @@ _CACHE_MISS_COUNTS: Counter[str] = Counter()
 
 
 def _enabled() -> bool:
-    return os.environ.get("TRANSCRIPTX_STREAMLIT_PERF", "1").lower() not in {
-        "0",
-        "false",
-        "off",
-        "no",
+    return os.environ.get("TRANSCRIPTX_STREAMLIT_PERF", "0").lower() in {
+        "1",
+        "true",
+        "on",
+        "yes",
     }
 
 
@@ -48,10 +48,15 @@ def _safe_float_ms(start: float, end: float | None = None) -> float:
 
 
 def _normalize_path(path: str | os.PathLike[str]) -> str:
+    """Record a basename (or last two parts) rather than an absolute path (SR-10)."""
     try:
-        return str(Path(path).expanduser().resolve())
+        resolved = Path(path).expanduser()
+        parts = resolved.parts
+        if len(parts) >= 2:
+            return str(Path(parts[-2]) / parts[-1])
+        return resolved.name or str(path)
     except (OSError, RuntimeError, ValueError):
-        return str(path)
+        return Path(str(path)).name or str(path)
 
 
 @dataclass

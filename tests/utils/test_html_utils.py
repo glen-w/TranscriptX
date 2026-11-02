@@ -108,3 +108,18 @@ def test_section_generators_handle_empty_and_unknown_values(tmp_path: Path) -> N
         "Atlantis", "Speaker 1", "one two three four", wrap_at=2
     )
     assert tooltip == "<b>Atlantis</b><br>Speaker 1<br><i>one two<br>three four</i>"
+
+
+@pytest.mark.unit
+def test_generate_html_content_escapes_hostile_title() -> None:
+    html = generate_html_content(
+        "meeting",
+        {
+            "title": "<script>alert(1)</script>",
+            "errors": ["<img src=x onerror=alert(1)>"],
+        },
+        ".",
+    )
+    assert "<script>alert(1)</script>" not in html
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+    assert "<img src=x" not in html

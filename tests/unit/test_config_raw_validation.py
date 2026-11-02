@@ -68,6 +68,7 @@ def test_validate_accepts_llm_json_fallback_keys() -> None:
                 "fallback_model": "gemma3:12b",
                 "preferred_failure_threshold": 2,
                 "json_prefer_think_off": True,
+                "allow_remote_host": False,
             }
         }
     )

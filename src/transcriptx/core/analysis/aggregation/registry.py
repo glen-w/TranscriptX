@@ -47,6 +47,9 @@ from transcriptx.core.analysis.keyphrases.aggregation import aggregate_keyphrase
 from transcriptx.core.analysis.names.aggregation import aggregate_names
 from transcriptx.core.analysis.politeness.aggregation import aggregate_politeness
 from transcriptx.core.analysis.topic_shift.aggregation import aggregate_topic_shift
+from transcriptx.core.analysis.speaker_map_diagnostics.aggregation import (
+    aggregate_speaker_map_diagnostics,
+)
 from transcriptx.core.analysis.transcript_quality.aggregation import (
     aggregate_transcript_quality,
 )
@@ -239,6 +242,12 @@ def build_registry() -> List[AggregationEntry]:
             selector=any_of(["transcript_quality"]),
             deps=[],
             aggregate_fn=aggregate_transcript_quality,
+        ),
+        AggregationEntry(
+            agg_id="speaker_map_diagnostics",
+            selector=any_of(["speaker_map_diagnostics"]),
+            deps=[],
+            aggregate_fn=aggregate_speaker_map_diagnostics,
         ),
         AggregationEntry(
             agg_id="epistemic_markers",

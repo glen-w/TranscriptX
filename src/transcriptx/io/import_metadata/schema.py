@@ -39,6 +39,7 @@ class ImportMetadata:
     current_json_filename: str
     rename_history: list[dict[str, str]]
     library_archived: bool = False
+    library_kind: str | None = None
     schema_version: int = SIDECAR_SCHEMA_VERSION
 
 
@@ -99,6 +100,17 @@ def _validate_sidecar_schema(
             message="library_archived must be a boolean",
             warnings=[],
         )
+    kind = data.get("library_kind")
+    if kind is not None:
+        from transcriptx.io.tag_validation import LIBRARY_KIND_VALUES
+
+        if not isinstance(kind, str) or kind not in LIBRARY_KIND_VALUES:
+            return ValidationResult(
+                ok=False,
+                category=ManagedTranscriptCategory.schema_error,
+                message="library_kind must be meeting, voice note, or lone speaker",
+                warnings=[],
+            )
     return ValidationResult(
         ok=True,
         category=ManagedTranscriptCategory.ok,

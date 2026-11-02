@@ -1,13 +1,12 @@
 name: CI
 
 # PR merge signal (workflow red only when these fail):
-#   compose-config, lint, smoke (Python 3.10)
+#   compose-config, lint, smoke (Python 3.10), contracts (Python 3.10)
 # Advisory lanes (continue-on-error; log signal, do not block green CI):
 #   docs (Sphinx + docs-gen drift), tests-nlp, tests-rag, workspaces-theme-c,
 #   release-checks (Docker build, hygiene bundle).
-# Contracts / fast / coverage run on Nightly (.github/workflows/nightly.yml),
-# not on every PR — those lanes were noisy (golden drift, race flakes) and
-# rarely blocked real merge-blocking defects. Pages deploy is separate
+# Fast / coverage stay on Nightly (.github/workflows/nightly.yml) — those
+# lanes were noisy (golden drift, race flakes). Pages deploy is separate
 # (.github/workflows/pages.yml on main). Tag/release still expects a manual
 # green release-checks run per docs/dev/release_governance.md.
 
@@ -93,6 +92,38 @@ jobs:
           echo "TRANSCRIPTX_OUTPUT_DIR=$RUNNER_TEMP/tx-out" >> "$GITHUB_ENV"
       - name: Smoke
         run: make test-smoke
+
+  # Offline output-shape contracts. Required on PR (small, ~5–8 min). Fast
+  # stays on Nightly. [web] is required so Streamlit web modules collect.
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+      - name: Install package + test deps + web
+        run: |
+          python -m pip install -U pip
+          pip install -e ".[dev,web]"
+          command -v pytest
+          python -m pytest --version
+      - name: Bootstrap NLTK data for offline contracts
+        run: |
+          TRANSCRIPTX_DISABLE_DOWNLOADS=0 python - <<'PY'
+          import nltk
+          nltk.download("vader_lexicon", quiet=True)
+          print("nltk vader_lexicon ready")
+          PY
+      - name: Isolate temp roots
+        run: |
+          mkdir -p "$RUNNER_TEMP/tx-data" "$RUNNER_TEMP/tx-out"
+          echo "TRANSCRIPTX_DATA_DIR=$RUNNER_TEMP/tx-data" >> "$GITHUB_ENV"
+          echo "TRANSCRIPTX_OUTPUT_DIR=$RUNNER_TEMP/tx-out" >> "$GITHUB_ENV"
+      - name: Contracts
+        run: make test-contracts
 
   # Thin NLP lane: un-skips spaCy-gated smoke (insight stack, NER, group topics).
   # Advisory only — does not block merge.
@@ -193,7 +224,7 @@ jobs:
     continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    needs: [compose-config, lint, smoke]
+    needs: [compose-config, lint, smoke, contracts]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -240,6 +271,9 @@ jobs:
         run: make docker-smoke
       - name: Image pip check
         run: bash scripts/release/image_pip_check.sh
+      - name: Image pip-audit
+        continue-on-error: true
+        run: bash scripts/release/image_pip_audit.sh
       - name: Worktree cleanliness
         run: |
           git diff --exit-code

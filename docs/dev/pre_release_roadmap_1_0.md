@@ -1,3 +1,5 @@
+> **Historical / retired.** Public **1.0.0** shipped 2026-10-19; current version is in [pyproject.toml](../../pyproject.toml). This file is the 0.9.x → 1.0 programme record, not the living product plan. Living themes: [ROADMAP.md](../ROADMAP.md).
+
 # TranscriptX pre-release roadmap (0.9.x → 1.0)
 
 **Scope:** short-term only — current work through public **1.0**. When 1.0 ships, retire or archive this file; do not grow it into a permanent product roadmap.
@@ -30,7 +32,7 @@ Before rewriting live product docs, an early **repository hygiene and knowledge-
 - [x] **Post-0.9.9 shipped wave → interim `0.9.9.5`** — Early 1.x themes B/C/D + A, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, workflows/assessments, backup/restore, unnamed-speaker ungate, Playwright GUI E2E, CI/docs hygiene — summary below; detail [post_0_9_9_shipped_overview.md](post_0_9_9_shipped_overview.md); **cut as 0.9.9.5** (2026-08-15)
 - [ ] **Owner local folder cleanup (top priority, now)** — Inventory and rename host corpus mounts so managed library, `originals/`, and the Docker import inbox cannot be confused; set an explicit originals→inbox copy rule until auto-admit exists. Not a product feature; blocks reliable local import on this machine. Detail: [ROADMAP.md](../ROADMAP.md) **Now**.
 - [x] **Informal stranger test** — someone who had not used the app tried it (2026-10). Not a release gate. [unfamiliar_user_validation_1_0.md](unfamiliar_user_validation_1_0.md)
-- [ ] **RC → 1.0** — Severity triage clear; gates pass; release ops/support policy published; governance evidence on exact commit
+- [x] **RC → 1.0** — Public **1.0.0** tagged 2026-10-19 (`CHANGELOG.md`). Residual programme notes (RTD slug, owner folder hygiene) are post-1.0 ops, not an unshipped first tag.
 
 ---
 

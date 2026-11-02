@@ -20,13 +20,13 @@
 
 ## CI lane order and time budgets
 
-**PR required gate** (workflow fails only if these fail): `compose-config`, `lint`, `smoke` (`make test-smoke` on Python 3.10 only).
+**PR required gate** (workflow fails only if these fail): `compose-config`, `lint`, `smoke` (`make test-smoke` on Python 3.10), `contracts` (`make test-contracts` on Python 3.10).
 
 **PR advisory lanes** (`continue-on-error` in `.github/workflows/ci.yml`; still run and report failures): `tests-nlp`, `tests-rag`, `docs` (Sphinx + `docs-gen` drift), `workspaces-theme-c`, `release-checks`. Hosted docs deploy is `pages.yml` on `main`, not the PR gate.
 
 **Install note:** PR `smoke` installs `.[dev]` only. Advisory `tests-nlp` installs `.[dev,nlp,web]`. Smoke still skips spaCy-gated modules unless `[nlp]` is present.
 
-**Nightly:** `.github/workflows/nightly.yml` (schedule `cron` 06:00 UTC + `workflow_dispatch`) runs the broader Gate B lane (`make test-contracts` → `make test-coverage`, which runs fast + contracts with coverage and is the fast gate) plus `make test-integration-core` then `make test-integration-extended` (excluding `requires_docker`; no image pre-build on the nightly runner). Coverage badge refresh follows Nightly, not PR CI.
+**Nightly:** `.github/workflows/nightly.yml` (schedule `cron` 06:00 UTC + `workflow_dispatch`) runs Gate B (`make test-coverage`: fast + contracts with `.coveragerc` `fail_under=70`) plus `make test-integration-core` then `make test-integration-extended` (excluding `requires_docker`; no image pre-build on the nightly runner) and advisory `make test-gui-acceptance`. Coverage badge refresh follows Nightly, not PR CI. Contracts also run as a required PR job (not duplicated as a standalone Nightly step).
 
 Time budgets (target ceilings):
 - PR `test-smoke` ≤ 5 min

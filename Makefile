@@ -135,8 +135,8 @@ test-all:
 	@pytest --override-ini addopts="-ra --strict-markers --strict-config --import-mode=importlib --verbose --tb=short --timeout=300 --timeout-method=thread" -m "not quarantined"
 
 test-coverage:
-	@echo "Running fast lane + contracts with coverage (see .coveragerc fail_under)..."
-	@pytest --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -q \
+	@echo "Running fast lane + contracts with coverage (fail_under from .coveragerc)..."
+	@pytest --cov=src --cov-config=.coveragerc --cov-report=term-missing --cov-report=json:coverage.json -q \
 		-m "($(FAST_MARKERS)) or (contract and not quarantined)"
 
 test-config-coverage:

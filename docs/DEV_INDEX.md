@@ -17,7 +17,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 |-----|---------|
 | [documentation_inventory_1_0.md](dev/documentation_inventory_1_0.md) | Docs classification matrix |
 | [script_inventory_1_0.md](dev/script_inventory_1_0.md) | Script support-status matrix |
-| [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) | 0.9.x → 1.0 programme plan |
+| [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) | Historical 0.9.x → 1.0 programme (retired; 1.0 shipped) |
 | [local_scratch.md](dev/local_scratch.md) | `.local/` ignored scratch convention |
 | [workflow_media_capture.md](dev/workflow_media_capture.md) | Regenerating workflow walkthrough screenshots/GIFs |
 | [schema_epoch_inventory.md](dev/schema_epoch_inventory.md) | Schema epoch inventory + transition UX (sign-off before wipe) |

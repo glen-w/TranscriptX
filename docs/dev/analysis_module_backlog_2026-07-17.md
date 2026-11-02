@@ -78,7 +78,7 @@ Order after the engineering gate. B2 (old ID for multilingual routing) is **P1**
 | 15 | B15 | **Emotion × prosody fusion** (“said vs sounded”) | deepen | Voice & Audio (+ Dynamics) | M | `emotion` + `voice_*` join keys |
 | 16 | B16 | **Keyphrase ranking** (KeyBERT / YAKE / noun-chunks) | new (**shipped** as `keyphrases`; optional `[keyphrases]` extra; group noun_chunk pool + `keyphrases.phrases.global`; wordclouds/Insights consumers; deep-test hardened 2026-07-24). Residuals: group YAKE/KeyBERT pool; group per-speaker rows/charts; P1 language routing | Language & Meaning (+ Visualisations) | S | optional dep; group pooled phrases; P1 for language residual |
 | 17 | B17 | **Toxicity / hostility** (optional, labeled) | new | Language & Meaning | S–M | Detoxify or similar; clear ethics/docs |
-| 18 | B19 | **Diarization / speaker-map consistency diagnostics** (per run + group) | new | Foundations / Speakers | M | voice fingerprint + speaker-map sidecars; richer when optional in-app STT (**ROADMAP H**) lands word/diarization provenance |
+| 18 | B19 | **Diarization / speaker-map consistency diagnostics** (per run + group) | new (**shipped** as `speaker_map_diagnostics`) | Foundations / Speakers | M | T0–T3 honesty + map↔segment mismatches; richer when STT provenance lands |
 | 18 | B19 | **Multilingual-aware NER / entity paths** | deepen | Language & Meaning | M | after P1 |
 | 19 | B20 | **Pooled wordcloud deferred variant matrix** | deepen | Visualisations | S | eng backlog already listed in ROADMAP |
 | — | B21 | **Custom questions at analysis time** (`llm_custom_qa`) — Settings library + Run/Batch picker → Insights citation cards (not viewer chat) | new (**shipped**) | Summary & Synthesis | M | Ollama; frozen envelope/row contract; empty-Q gate |
@@ -154,12 +154,12 @@ Keep below decision tracking and evidence-grounded insights until there are: tar
 Avoid: another free-form summarizer that overlaps `llm_summary` / `narrative_summary`.
 
 ### Foundations
-*Existing:* `stats`, `transcript_output`, `simplified_transcript`, `tics`, `transcript_quality`, `pauses`, `temporal_dynamics`, `insight_eligibility`
+*Existing:* `stats`, `transcript_output`, `simplified_transcript`, `tics`, `transcript_quality`, `speaker_map_diagnostics`, `pauses`, `temporal_dynamics`, `insight_eligibility`
 
 | Prefer | Items |
 |--------|-------|
 | **Deepen** | `tics` ← filler/disfluency metrics if needed later; further `transcript_quality` review surfaces |
-| **Add** | ~~B3 ASR/transcript quality~~ **shipped** as `transcript_quality` (ASR confidence); B19 speaker-map consistency |
+| **Add** | ~~B3 ASR/transcript quality~~ **shipped** as `transcript_quality` (ASR confidence); ~~B19 speaker-map consistency~~ **shipped** as `speaker_map_diagnostics` |
 
 ### Language & Meaning
 *Existing:* `sentiment`, `emotion`, `contextual_emotion`, `fine_grained_emotion`, `ner`, `entity_sentiment`, `topic_modeling`, `bertopic` (default install for now), semantic similarity family, `understandability`, `lexical_diversity`, `epistemic_markers`, **`keyphrases`**
@@ -220,10 +220,10 @@ flowchart LR
 | Wave | When | Items | Intent |
 |------|------|-------|--------|
 | **0** | **Closed** (2026-07-22) | Top-3 config through 1.8; release hygiene A1–A10 | Capacity, not features — eng criteria green; tagging still via governance |
-| **1** | **Shipped core** (2026-07-23) | ~~B1~~, ~~B3~~, ~~B9~~ shipped; **initial P1** routing infrastructure not started | Topic structure and trust; visible navigation/quality |
+| **1** | **Shipped core** (2026-07-23) | ~~B1~~, ~~B3~~, ~~B9~~ shipped; **P1** routing + NER skip shipped in 1.1.0 | Topic structure and trust; visible navigation/quality |
 | **2** | **Shipped** (2026-07-23) | ~~B12~~; ~~B6~~ `epistemic_markers`; ~~B7~~ `politeness`; ~~B13~~ interaction graphs (+ profile avatars) | Interaction depth from existing data + light linguistics |
 | **3** | Phase 3 product (in progress via 0.7.x–0.8.x) | B5 remainder (**DB views** / group `profile_id` charts; file-backed Speakers/voice/locations **closed**), ~~B14~~ **shipped**, ~~B16~~ **shipped** (`keyphrases` + wordclouds deepen), B18 (+ **P2** provenance) | Cross-session and structured synthesis — **not** B11 |
-| **4** | Opportunistic / experimental (pre-1.0) | B8, B11, B15, B17, B19, B20 | Dependency-heavy and research paths **excluding** B4 |
+| **4** | Opportunistic / experimental (pre-1.0) | B8, B11, B15, B17, ~~B19~~, B20 | Dependency-heavy and research paths **excluding** B4 |
 | **Post-1.0** | After TranscriptX 1.0 | **B4** citeable research methods (`fighting_words` first; see §3.2) | Optional sidecar methods; not 1.0 acceptance / deps / presets |
 
 **Post-1.0 ranked open (0.9.x freeze applies until 1.0):** Wave 3 remainder (B5 DB/group `profile_id` ↔ ROADMAP **J**, B18 / P2); P1 infrastructure when eng capacity allows; then re-rank against ROADMAP themes **A** (Insights), **B** (corrections), and remaining B-items. **Default 0.9.x capacity** is the stabilisation programme, not this backlog. **Also shipped adjacent to / in Wave 3 window:** configurable analysis presets; Speakers Locations pack; **B14** motifs/drift; **B16** keyphrases (see [`wave_b16_keyphrases_2026-07-24.md`](wave_b16_keyphrases_2026-07-24.md)).
@@ -232,7 +232,7 @@ flowchart LR
 
 **Wave constraints:** ≤2 new module IDs per wave (capacity rule; revisable). B8 may move earlier if the transformer path is a small rewire, but it should not outrank user-visible improvements (B9, remaining Wave 2 linguistics) while the freeze holds.
 
-P1 may begin alongside remaining Wave 3 work as infrastructure; do not call “multilingual routing” shipped until named consumers adopt it.
+P1 routing infrastructure shipped in 1.1.0 with **NER** as the first named consumer (`unsupported_language` skip). Other modules still run English defaults.
 
 ---
 

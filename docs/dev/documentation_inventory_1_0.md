@@ -33,7 +33,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | CHANGELOG.md | Changelog | live | entry | current | — | retain | — | README | CHANGELOG.md | no |
 | CONTRIBUTING.md | Contributing to TranscriptX | live | developer | current | — | retain | — | README | CONTRIBUTING.md | no |
 | SECURITY.md | Security Policy | live | entry | current | — | retain | — | README | SECURITY.md | no |
-| docs/dev/pre_release_roadmap_1_0.md | 0.9.x → 1.0 programme plan | live | developer | current | vs docs/ROADMAP.md (outcomes) | retain | moved from root `pre-release_roadmap.md` | README, ROADMAP, DEV_INDEX | self | no |
+| docs/dev/pre_release_roadmap_1_0.md | 0.9.x → 1.0 programme plan | historical | developer | retired 2026-11-02 (1.0 shipped) | vs docs/ROADMAP.md (outcomes) | retain with banner | moved from root `pre-release_roadmap.md` | README, ROADMAP, DEV_INDEX | self | no |
 | archive/README.md | Archive | live | developer | current | canonical script archive policy | retain | — | script inventory | self | no |
 | assets/README.md | TranscriptX Assets | live | developer | current | — | retain | — | — | self | no |
 | scripts/README_test_analysis_assess.md | Test Analysis Assessment Script | stale | disposable | superseded | See inventory destination | delete | — | Update inbound links | docs/dev/run_performance.md | no |
