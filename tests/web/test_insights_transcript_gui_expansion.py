@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from tests.web.insights_block_patches import patch_insights_attr
 from tests.web.streamlit_doubles import DummyHomeStreamlit
 from transcriptx.web.insights_presentation import (
     GUIDED_HIGHLIGHT_CARD_CAP,
@@ -132,7 +133,7 @@ def test_highlights_filters_apply_before_guided_cap(monkeypatch) -> None:
         "highlights_speaker_filter": [],
         "highlights_min_score": 0.0,
     }
-    monkeypatch.setattr(ib, "st", DummyHomeStreamlit)
+    patch_insights_attr(monkeypatch, "st", DummyHomeStreamlit)
     monkeypatch.setattr(DummyHomeStreamlit, "expander", lambda *a, **k: _Exp())
     monkeypatch.setattr(DummyHomeStreamlit, "container", lambda **k: _Exp())
     monkeypatch.setattr(
@@ -141,16 +142,18 @@ def test_highlights_filters_apply_before_guided_cap(monkeypatch) -> None:
     monkeypatch.setattr(
         "transcriptx.web.insights_presentation.is_insights_full", lambda: False
     )
-    monkeypatch.setattr(ib, "load_accent_resolve_context", lambda: None)
-    monkeypatch.setattr(ib, "speaker_inline_html", lambda *a, **k: "Alice")
-    monkeypatch.setattr(ib, "_render_open_in_transcript_button", lambda **k: None)
+    patch_insights_attr(monkeypatch, "load_accent_resolve_context", lambda: None)
+    patch_insights_attr(monkeypatch, "speaker_inline_html", lambda *a, **k: "Alice")
+    patch_insights_attr(
+        monkeypatch, "_render_open_in_transcript_button", lambda **k: None
+    )
 
     shown_sections: list[str] = []
 
     def capture_card(card, **k):
         shown_sections.append(card.section)
 
-    monkeypatch.setattr(ib, "_render_highlight_card", capture_card)
+    patch_insights_attr(monkeypatch, "_render_highlight_card", capture_card)
 
     cards = [
         HighlightCardModel(
@@ -178,7 +181,9 @@ def test_highlights_filters_apply_before_guided_cap(monkeypatch) -> None:
             segment_index=1,
         ),
     ]
-    monkeypatch.setattr(ib, "_collect_highlight_cards", lambda *_a, **_k: cards)
+    patch_insights_attr(
+        monkeypatch, "_collect_highlight_cards", lambda *_a, **_k: cards
+    )
     fn = getattr(
         ib._highlights_browser_fragment, "__wrapped__", ib._highlights_browser_fragment
     )
@@ -237,7 +242,7 @@ def test_keyphrases_guided_lists_five_not_dataframe(monkeypatch) -> None:
     DummyHomeStreamlit.session_state = {}
     writes: list[str] = []
     dfs: list = []
-    monkeypatch.setattr(ib, "st", DummyHomeStreamlit)
+    patch_insights_attr(monkeypatch, "st", DummyHomeStreamlit)
     monkeypatch.setattr(
         DummyHomeStreamlit, "write", lambda text, *a, **k: writes.append(str(text))
     )
@@ -269,7 +274,7 @@ def test_marker_guided_hides_category_table_until_details(monkeypatch) -> None:
 
     DummyHomeStreamlit.session_state = {}
     dfs: list = []
-    monkeypatch.setattr(ib, "st", DummyHomeStreamlit)
+    patch_insights_attr(monkeypatch, "st", DummyHomeStreamlit)
     monkeypatch.setattr(
         DummyHomeStreamlit, "dataframe", lambda *a, **k: dfs.append(True)
     )

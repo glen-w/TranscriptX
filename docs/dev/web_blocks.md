@@ -10,7 +10,7 @@ Layout YAML uses `placement_id` (unique instance) and `block_id` (reusable type)
 
 ## Adding a block
 
-1. Implement `render_*` in `web/blocks/implementations/` — adapt an existing page renderer; do not duplicate `ArtifactService` logic.
+1. Implement `render_*` in `web/blocks/implementations/` — adapt an existing page renderer; do not duplicate `ArtifactService` logic. Insights surfaces are split: `insights_support.py` (shared loaders), `insights_contract.py`, `insights_highlights.py`, `insights_llm.py`, `insights_markers.py`, re-exported from `insights.py`.
 2. Register in `web/blocks/builtin.py`.
 3. Add placement to a curated preset under `web/layouts/presets/` (the built-in `all` layout picks up new blocks automatically).
 4. Add a smoke test under `tests/web/blocks/`.

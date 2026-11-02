@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from tests.web.insights_block_patches import patch_insights_attr
 from tests.web.streamlit_doubles import DummyHomeStreamlit
 
 
@@ -238,7 +239,7 @@ def test_insights_focus_splits_content_and_style(monkeypatch) -> None:
 
     DummyHomeStreamlit.session_state = {}
     writes: list[str] = []
-    monkeypatch.setattr(ib, "st", DummyHomeStreamlit)
+    patch_insights_attr(monkeypatch, "st", DummyHomeStreamlit)
     monkeypatch.setattr(
         DummyHomeStreamlit, "write", lambda text, *a, **k: writes.append(str(text))
     )
@@ -269,7 +270,7 @@ def test_insights_insufficient_signal_hides_sparse_theme_lists(monkeypatch) -> N
     captions: list[str] = []
     writes: list[str] = []
     infos: list[str] = []
-    monkeypatch.setattr(ib, "st", DummyHomeStreamlit)
+    patch_insights_attr(monkeypatch, "st", DummyHomeStreamlit)
     monkeypatch.setattr(
         DummyHomeStreamlit, "caption", lambda text, *a, **k: captions.append(str(text))
     )
@@ -299,7 +300,7 @@ def test_malformed_insights_payload_fails_gracefully(monkeypatch) -> None:
     import transcriptx.web.blocks.implementations.insights as ib
 
     DummyHomeStreamlit.session_state = {}
-    monkeypatch.setattr(ib, "st", DummyHomeStreamlit)
+    patch_insights_attr(monkeypatch, "st", DummyHomeStreamlit)
     monkeypatch.setattr(
         "transcriptx.web.insights_presentation.is_insights_guided", lambda: True
     )
@@ -314,7 +315,7 @@ def test_content_vs_style_guided_no_raw_json(monkeypatch) -> None:
 
     DummyHomeStreamlit.session_state = {}
     json_calls: list = []
-    monkeypatch.setattr(ib, "st", DummyHomeStreamlit)
+    patch_insights_attr(monkeypatch, "st", DummyHomeStreamlit)
     monkeypatch.setattr(
         DummyHomeStreamlit, "json", lambda *a, **k: json_calls.append(a)
     )
@@ -338,7 +339,7 @@ def test_lexical_diversity_guided_hides_dataframe_until_details(monkeypatch) -> 
 
     DummyHomeStreamlit.session_state = {}
     df_calls: list = []
-    monkeypatch.setattr(ib, "st", DummyHomeStreamlit)
+    patch_insights_attr(monkeypatch, "st", DummyHomeStreamlit)
     monkeypatch.setattr(
         DummyHomeStreamlit, "dataframe", lambda *a, **k: df_calls.append(True)
     )
@@ -382,7 +383,7 @@ def test_highlights_guided_caps_and_dedupes(monkeypatch) -> None:
     import transcriptx.web.blocks.implementations.insights as ib
 
     DummyHomeStreamlit.session_state = {"insights_detail_mode": "guided"}
-    monkeypatch.setattr(ib, "st", DummyHomeStreamlit)
+    patch_insights_attr(monkeypatch, "st", DummyHomeStreamlit)
 
     class _Exp:
         def __enter__(self):
@@ -399,9 +400,11 @@ def test_highlights_guided_caps_and_dedupes(monkeypatch) -> None:
     monkeypatch.setattr(
         "transcriptx.web.insights_presentation.is_insights_full", lambda: False
     )
-    monkeypatch.setattr(ib, "load_accent_resolve_context", lambda: None)
-    monkeypatch.setattr(ib, "speaker_inline_html", lambda *a, **k: "Alice")
-    monkeypatch.setattr(ib, "_render_open_in_transcript_button", lambda **k: None)
+    patch_insights_attr(monkeypatch, "load_accent_resolve_context", lambda: None)
+    patch_insights_attr(monkeypatch, "speaker_inline_html", lambda *a, **k: "Alice")
+    patch_insights_attr(
+        monkeypatch, "_render_open_in_transcript_button", lambda **k: None
+    )
 
     card_count = {"n": 0}
     real_card = ib._render_highlight_card
@@ -410,7 +413,7 @@ def test_highlights_guided_caps_and_dedupes(monkeypatch) -> None:
         card_count["n"] += 1
         return real_card(*a, **k)
 
-    monkeypatch.setattr(ib, "_render_highlight_card", counting_card)
+    patch_insights_attr(monkeypatch, "_render_highlight_card", counting_card)
 
     items = []
     for i in range(8):
@@ -473,7 +476,9 @@ def test_highlights_guided_caps_and_dedupes(monkeypatch) -> None:
             segment_index=0,
         )
     )
-    monkeypatch.setattr(ib, "_collect_highlight_cards", lambda *_a, **_k: cards)
+    patch_insights_attr(
+        monkeypatch, "_collect_highlight_cards", lambda *_a, **_k: cards
+    )
 
     # Invoke the undecorated body via fragment's wrapped function when present.
     fn = getattr(ib._highlights_browser_fragment, "__wrapped__", None)
