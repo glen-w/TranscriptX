@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-03
+
+Patch release consolidating **1.0.3**–**1.2.0** onto `main` and tightening public-entry parity.
+
+### Fixed
+
+- Landing page “run Whisper from the app” links to `./guide/runtime/transcription.html` instead of the comparison page.
+
+### Added
+
+- Release tests guard README ↔ website outcome bullets, Docker install markers, footer version ↔ `pyproject.toml`, workflow screenshot hashes, and Sphinx workflow toctree coverage.
+
+### Changed
+
+- Documentation inventory lists twelve workflow guides (including archive) and the **1.2.1** website series marker.
+
 ## [1.2.0] - 2026-11-03
 
 GUI hardening W1.3–W4 ([plan](.cursor/plans/2026-11-02-gui-hardening-wave.md)), LLM think-off/fallback honesty, and a speaker-map diagnostics crash fix.
