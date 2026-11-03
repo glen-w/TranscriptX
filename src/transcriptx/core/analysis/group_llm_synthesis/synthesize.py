@@ -68,6 +68,9 @@ from transcriptx.core.analysis.group_llm_synthesis.validate import (
     validate_speaker_rows,
 )
 from transcriptx.core.analysis.llm_support.hashing import sha256_text
+from transcriptx.core.analysis.llm_support.provenance import (
+    json_generate_provenance_fields,
+)
 from transcriptx.core.analysis.llm_support.runtime import (
     build_ollama_analysis_client,
     require_ollama_analysis,
@@ -159,8 +162,13 @@ def _provenance(
         "request_hash": request_hash,
         "cache_key": f"group_llm_synthesis:{generation_id}:{request_hash[:16]}",
     }
-    if model_selection_source:
-        prov["model_selection_source"] = model_selection_source
+    producing, source = json_generate_provenance_fields(
+        model=model,
+        model_selection_source=model_selection_source,
+    )
+    prov["model"] = producing
+    if source:
+        prov["model_selection_source"] = source
     return prov
 
 

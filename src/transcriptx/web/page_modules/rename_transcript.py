@@ -183,7 +183,11 @@ def _load_segments(path: Path) -> tuple[list[SegmentInfo] | None, str | None]:
 
 @st.fragment
 def _render_preview(path: Path, segments: list[SegmentInfo]) -> None:
-    """Fragment-scoped preview so ▶ clicks rerun only the player, then autoplay."""
+    """Fragment-scoped preview so ▶ clicks rerun only the player.
+
+    Autoplay is gated to the explicit ▶ click (``set_active_clip``) so clip-warm
+    fragment reruns do not remount ``<audio autoplay>`` and steal sidebar clicks.
+    """
     preview = select_rename_preview_segments(segments, limit=_PREVIEW_LIMIT)
     mapped = mapped_speaker_summary_labels(preview)
     if mapped:
@@ -237,7 +241,9 @@ def render_rename_transcript_page() -> None:
         st.info("No transcripts found. Import or transcribe a recording first.")
         return
 
-    from transcriptx.web.transcript_option_format import decorate_transcript_picker_label
+    from transcriptx.web.transcript_option_format import (
+        decorate_transcript_picker_label,
+    )
 
     options = list(paths)
     labels = [
@@ -257,6 +263,15 @@ def render_rename_transcript_page() -> None:
             SELECTBOX_PLACEHOLDER_TRANSCRIPT if i == 0 else labels[i - 1]
         ),
         key=_PICKER_KEY,
+        help=(
+            SELECTBOX_PLACEHOLDER_TRANSCRIPT
+            if not options
+            else (
+                options[0].name
+                if len(options) == 1
+                else "Filename stem is in the tooltip of each option; labels use library title and date."
+            )
+        ),
     )
     if not isinstance(idx, int) or idx <= 0:
         st.session_state.pop(_SELECTED_PATH_KEY, None)

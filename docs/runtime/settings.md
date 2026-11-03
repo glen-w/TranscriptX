@@ -8,15 +8,18 @@ How to change TranscriptX behaviour from the GUI, env, and config files — with
 |------|--------|
 | Everyday analysis depth (which modules run) | **Run Analysis** preset: Quick / Balanced / Thorough / Custom — edit policies under **Settings → Analysis** |
 | Charts page **Overview** strip (enable, which charts, order) | **Settings → Configuration** → **Charts overview** (`dashboard.overview_enabled`, `dashboard.overview_charts`) — off by default; not Dashboard Builder |
-| Overview / Insights **page panels** (layout profiles) | **Settings → Dashboard Builder** — see [dashboard_builder.md](../dev/dashboard_builder.md) |
+| Overview / Insights **page panels** (layout profiles) | **System → Dashboard Builder** (sidebar) — see [dashboard_builder.md](../dev/dashboard_builder.md) |
 | Common model and similarity knobs | **Settings → Configuration** → Common Settings |
 | Full registry of knobs | **Settings → Configuration** → enable **Show advanced/raw settings editor** |
 | Named module/workflow presets (disk JSON) | **Profiles** page (sidebar) — activate from Configuration for Project / Run |
 | Paths, watcher, speakers, LLM models, questions, STT keyword lists | Other **Settings** tabs (Storage, Watcher, Speakers, Interface, Models, Questions, Keywords, Corrections) |
 | Auto-name / auto-link after ingest | **Settings → Speakers** — [auto-identify.md](auto-identify.md) (`config_dir/identify.json`) |
 | Duplicate recordings / transcripts | **Settings → Storage** → Duplicate library files (preview, then typed `DELETE DUPLICATES`) |
+| Never-finished analysis runs | **Diagnostics** lists them 50/page; **Clean never-finished runs…** opens **Settings → Storage** (analysis-run cleanup). Transcripts are never deleted. |
 | Show/hide instructional ⓘ tips (widget help + Speakers methodology notes) | **Settings → Interface** → Help / info tips (`show_info_tooltips` in `interface_menus.json`; run-id ⓘ stays on) |
 | Action-menu icon vs text | **Settings → Interface** → Action appearance (`action_display`: `icon` / `text` / `both`; per-section may `inherit`) |
+| Keyboard (shell) | ``/`` focuses Search; ``g`` then ``h``/``l``/``s``/``p``/``r``/``o``/``t``/``i``/``c``/``g`` jumps Home, Library, Search, Speakers, Run Analysis, Overview, Transcript, Insights, Charts, Settings. Ignored while typing in an input. CCv2 maps unchanged. Accessibility baseline: [a11y_baseline_2026-11-03.md](../dev/a11y_baseline_2026-11-03.md). |
+| Workflow page **Tools** | Sidebar label is **Tools**; the page heading remains **Audio Preprocessing**. |
 | Install capability (`core` vs `full`) | Env / install marker — see [installation details](installation-advanced.md); **not** the Profiles page |
 
 Speaker identity/voice stores are a separate subsystem (**Settings → Speakers**), including ingest **auto-name / auto-link** defaults (`config_dir/identify.json`, all off until you enable them), name-token policy, and optional Twenty CRM people lookup (env `TWENTY_API_KEY` / `TWENTY_BASE_URL`, read-only). Operator guide: [auto-identify.md](auto-identify.md). Contracts: [speaker_profiles_v1](../contracts/speaker_profiles_v1.md), [speaker_profiles_voice_v1](../contracts/speaker_profiles_voice_v1.md), [STORAGE.md](STORAGE.md).
@@ -127,9 +130,9 @@ When `input.rename_content_suggestions` is `auto`, the same service also runs wh
 | **Analysis UI preset** | Quick / Balanced / Thorough module sets | Run Analysis + Settings → Analysis |
 | **Module / workflow profile** | Named JSON under `{config_dir}/profiles/<target>/` | Profiles page + Active Profiles in Configuration |
 | **In-config semantic profiles** | Mapping `analysis.semantic_similarity_profiles` (`fast` / `balanced` / `deep`) | Advanced config / code — shares activation key naming with disk profiles; different store |
-| **UI layout profiles** | Ordered blocks for Overview / Insights | Settings → Dashboard Builder (`profiles/ui_layouts/`) — not Charts overview |
+| **UI layout profiles** | Ordered blocks for Overview / Insights | System → Dashboard Builder (`profiles/ui_layouts/`) — not Charts overview |
 | **STT command profiles** | Named JSON under `profiles/` | Transcribe Audio |
-| **Merge source profile** | Match + day/gap rules for Tools → Merge suggestions / auto-merge | Merge tab expander; `{config_dir}/audio_merge_profiles.json` |
+| **Merge source profile** | Match + day/gap rules for Audio Preprocessing → Auto-merge suggestions | Merge tab expander; `{config_dir}/audio_merge_profiles.json` |
 | **Merge dismissed groups** | Auto-merge **Don't suggest again** keys (rule + stem) | Auto-merge tab; `{config_dir}/audio_merge_dismissed.json` |
 | **Speaker profile** | Longitudinal identity (+ optional voice) | Settings → Speakers — see [Speakers](#speakers) |
 
@@ -137,7 +140,7 @@ Tracked files under repo `data/profiles/*/default.json` are **fixtures / allowli
 
 ## Env overrides
 
-Copy [`.env.example`](../../.env.example) to `.env`. Infra path keys (`TRANSCRIPTX_*_DIR`, host/port, downloads, …) are separate from config-bag overrides. Set `TRANSCRIPTX_CONFIG_STRICT=1` to reject unknown `TRANSCRIPTX_*` keys.
+Copy [`.env.example`](../../.env.example) to `.env`. Infra path keys (`TRANSCRIPTX_*_DIR`, host/port, downloads, …) are separate from config-bag overrides. Set `TRANSCRIPTX_CONFIG_STRICT=1` to reject unknown `TRANSCRIPTX_*` keys. Keys already present in the process environment (shell `export`, Compose, CI) **win** over the repo-root `.env`; `.env` only fills in what is unset.
 
 Legacy `TRANSCRIPTX_AUDIO_*_ENABLED` variables are **rejected** — use the corresponding `*_MODE` keys.
 

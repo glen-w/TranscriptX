@@ -170,6 +170,7 @@ class NarrativeSummaryAnalysis(AnalysisModule):
                 source_result_sha256=source_result_sha256,
                 generation_options=generation_options,
                 model_selection_source=resolved_model.source,
+                apply_json_outcome=True,
             )
 
             payload: Dict[str, Any] = {

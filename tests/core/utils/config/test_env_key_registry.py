@@ -116,6 +116,7 @@ def _sample_and_expected(env_name: str) -> tuple[str, object]:
         "TRANSCRIPTX_LLM_ENABLED": ("1", True),
         "TRANSCRIPTX_LLM_PROVIDER": ("ollama", "ollama"),
         "TRANSCRIPTX_LLM_MODEL": ("qwen3:8b", "qwen3:8b"),
+        "TRANSCRIPTX_LLM_ALLOW_REMOTE_HOST": ("1", True),
         "TRANSCRIPTX_LLM_BASE_URL": (
             "http://localhost:11434",
             "http://localhost:11434",

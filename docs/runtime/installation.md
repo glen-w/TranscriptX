@@ -14,7 +14,7 @@ Open http://localhost:8501. The first run builds the image. Container notes: [do
 
 ## Native (from this repository)
 
-**Python 3.10–3.12.** The package is **not on PyPI** — clone the repo and install from there.
+**Python 3.10–3.11** (canonical **3.10**). 3.12 is not a claimed CI cell (`wordcloud==1.9.2` has no cp3.12 wheel). The package is **not on PyPI** — clone the repo and install from there.
 
 The launcher creates a `.transcriptx` virtual environment, installs dependencies, and starts the web UI:
 

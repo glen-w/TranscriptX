@@ -10,9 +10,9 @@
 
 | Python | Status |
 |--------|--------|
-| 3.10 | Supported (CI matrix) |
-| 3.11 | Supported (CI matrix) |
-| 3.12 | Supported (CI matrix) |
+| 3.10 | Supported (PR smoke + contracts; Nightly Gate B; Docker `python:3.10-slim`) |
+| 3.11 | Supported (PR advisory lint/docs/nlp/theme-c) |
+| 3.12 | Not a CI cell — `wordcloud==1.9.2` has no cp3.12 wheel. `requires-python` still allows `<3.13` but do not claim 3.12. |
 | ≤3.9 or ≥3.13 | Unsupported (`requires-python = ">=3.10,<3.13"`) |
 
 ## Supported operating systems (claimed)

@@ -250,7 +250,9 @@ class FileService:
             return None
         path: Optional[Path] = None
         try:
-            from transcriptx.web.cache_helpers import cached_resolve_transcript_path
+            from transcriptx.web.transcript_path_cache import (
+                cached_resolve_transcript_path,
+            )
 
             path_str = cached_resolve_transcript_path(session_name)
             if path_str:

@@ -19,26 +19,18 @@ Voice is a lightweight conditional block, not a sibling/nested fragment.
 
 from __future__ import annotations
 
-import hashlib
 import os
 import time
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
 import streamlit as st
 
+from transcriptx.web.components.page_shell import render_page_shell
+
 from transcriptx.web import icons as ic
 from transcriptx.app.models.results import RunSummary
-from transcriptx.app.speaker_id import (
-    SpeakerIdActionService,
-    SpeakerIdCommand,
-    mapping_revision_from_state,
-    new_action_id,
-    transcript_revision_from_path,
-)
-from transcriptx.app.speaker_id.effects import apply_speaker_id_ack_effects
 from transcriptx.core.utils.paths import OUTPUTS_DIR
 from transcriptx.io.speaker_map_resolver import (
     is_effective_speaker_name,
@@ -63,7 +55,6 @@ from transcriptx.web.cache_helpers import (
     cached_transcript_summary_for_path,
     invalidate_transcript_summary_for_path,
     load_speaker_identification_index,
-    load_voice_segment_payload,
     transcript_segments_signature,
     transcript_summary_signature,
 )
@@ -72,6 +63,7 @@ from transcriptx.web.speaker_studio_runtime import get_shared_speaker_studio_con
 from transcriptx.web.state import (
     IMPORT_LAST_TRANSCRIPT_PATH,
     SELECTBOX_PLACEHOLDER_TRANSCRIPT,
+    SPEAKERS_SELECTED_PROFILE_KEY,
     WORKFLOW_NAV_TRANSCRIPT_PATH,
 )
 from transcriptx.web.transcript_option_format import (
@@ -85,6 +77,99 @@ from transcriptx.web.services.transcript_context_resolver import (
     paths_match,
     resolve_transcript_context,
 )
+from transcriptx.web.workspaces.speaker_id_session_keys import (
+    TranscriptProfileContext,
+    _consume_flash,
+    _set_flash,
+    _transcript_ns,
+    flash_key,
+    jump_key,
+    lines_key,
+    link_mode_key,
+    link_profile_key,
+    name_widget_key,
+    play_key,
+    speaker_idx_key,
+    voice_batch_summary_key,
+    voice_display_key,
+    voice_gate_key,
+    voice_loaded_key,
+    voice_pending_key,
+    widget_key,
+)
+from transcriptx.web.workspaces.speaker_id_voice import (
+    _cb_load_voice,
+    _cb_voice_analyse_all,
+    _cb_voice_analyse_one,
+    _cb_voice_confirm,
+    _cb_voice_confirm_action,
+    _cb_voice_leave,
+    _cb_voice_reject,
+    _cb_voice_reject_action,
+    _render_voice_suggestions,
+    _voice_candidates_for_active,
+    _voice_display_from_result,
+    _voice_recipe_hint,
+)
+from transcriptx.web.workspaces.speaker_id_actions import (
+    _after_mapping_mutation,
+    _apply_ack,
+    _apply_ccv2_workspace_command,
+    _apply_mapping_advance,
+    _cb_apply_auto_identify,
+    _cb_ccv2_command,
+    _cb_ignore_toggle,
+    _cb_jump_change,
+    _cb_next,
+    _cb_prev,
+    _cb_save_name,
+    _cb_suggest_speaker_names,
+    _ccv2_last_ack_key,
+    _ccv2_processed_action_key,
+    _current_speaker_idx,
+    _drain_pending_ccv2_command,
+    _get_action_service,
+    _next_unnamed_idx,
+    _set_active_speaker,
+    _validate_callback_identity,
+    navigate_to_speaker,
+    sync_jump_widget,
+)
+
+__all__ = [
+    "TranscriptProfileContext",
+    "consume_cache_invalidation_signal",
+    "invalidate_transcript_summary_for_path",
+    "_cb_load_voice",
+    "_cb_voice_analyse_all",
+    "_cb_voice_analyse_one",
+    "_cb_voice_confirm",
+    "_cb_voice_confirm_action",
+    "_cb_voice_leave",
+    "_cb_voice_reject",
+    "_cb_voice_reject_action",
+    "_consume_flash",
+    "_render_voice_suggestions",
+    "_set_flash",
+    "_transcript_ns",
+    "_voice_candidates_for_active",
+    "_voice_display_from_result",
+    "_voice_recipe_hint",
+    "flash_key",
+    "jump_key",
+    "lines_key",
+    "link_mode_key",
+    "link_profile_key",
+    "name_widget_key",
+    "play_key",
+    "speaker_idx_key",
+    "voice_batch_summary_key",
+    "voice_display_key",
+    "voice_gate_key",
+    "voice_loaded_key",
+    "voice_pending_key",
+    "widget_key",
+]
 
 # How many sample lines to show per speaker by default
 _LINES_PER_PAGE = 10
@@ -98,82 +183,6 @@ _SPEAKER_ID_COMPLETION_APP_RERUN = "sid_completion_app_rerun"
 _PLAY_KEY = "speaker_id_play_seg"
 _LINES_KEY = "speaker_id_lines_shown"
 _SPEAKER_ID_VOICE_PENDING = "sid_voice_pending"
-
-
-# ── transcript-scoped session keys ────────────────────────────────────────────
-
-
-def _transcript_ns(transcript_path: str | Path) -> str:
-    """Stable short namespace from resolved transcript path."""
-    try:
-        resolved = str(Path(transcript_path).resolve())
-    except OSError:
-        resolved = str(transcript_path)
-    return hashlib.sha1(resolved.encode("utf-8")).hexdigest()[:12]
-
-
-def speaker_idx_key(transcript_path: str | Path) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:speaker_idx"
-
-
-def jump_key(transcript_path: str | Path) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:jump"
-
-
-def play_key(transcript_path: str | Path) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:play_seg"
-
-
-def lines_key(transcript_path: str | Path) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:lines_shown"
-
-
-def name_widget_key(transcript_path: str | Path, speaker_id: str) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:name:{speaker_id}"
-
-
-def link_profile_key(transcript_path: str | Path, speaker_id: str) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:link:{speaker_id}"
-
-
-def link_mode_key(transcript_path: str | Path, speaker_id: str) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:link_mode:{speaker_id}"
-
-
-def voice_pending_key(transcript_path: str | Path) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:voice_pending"
-
-
-def voice_loaded_key(transcript_path: str | Path) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:voice_loaded"
-
-
-def voice_batch_summary_key(transcript_path: str | Path) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:voice_batch_summary"
-
-
-def flash_key(transcript_path: str | Path) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:flash"
-
-
-def widget_key(transcript_path: str | Path, suffix: str) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:{suffix}"
-
-
-@dataclass(frozen=True)
-class TranscriptProfileContext:
-    """Immutable managed-transcript gate for Speaker ID UI."""
-
-    is_managed: bool
-    managed_transcript_id: str | None = None
-
-
-def voice_display_key(transcript_path: str | Path, speaker_id: str) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:voice_display:{speaker_id}"
-
-
-def voice_gate_key(transcript_path: str | Path) -> str:
-    return f"sid:{_transcript_ns(transcript_path)}:voice_gate"
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -200,81 +209,6 @@ def _resolve_profile_context(transcript_path: str | Path) -> TranscriptProfileCo
     except OSError:
         path_str = str(transcript_path)
     return _cached_transcript_profile_context(path_str)
-
-
-def _voice_display_from_result(result, *, profile_name_lookup) -> dict:
-    """Build a lightweight session-safe display payload from an analyse result."""
-    candidates: list[dict] = []
-    for cand in getattr(result, "candidates_ui", None) or []:
-        pid = cand.get("profile_id")
-        live_name = profile_name_lookup(pid) if pid else None
-        candidates.append(
-            {
-                "profile_id": pid,
-                "display_name": live_name or cand.get("display_name") or pid,
-                "confidence": cand.get("confidence"),
-                "reference_count": cand.get("reference_count"),
-            }
-        )
-    return {
-        "outcome": getattr(result, "outcome", None),
-        "detail": getattr(result, "detail", None),
-        "candidates": candidates,
-    }
-
-
-def _voice_candidates_for_active(
-    transcript_path: str | Path, active_id: str
-) -> list[dict]:
-    display = st.session_state.get(voice_display_key(transcript_path, active_id))
-    if not isinstance(display, dict):
-        return []
-    if display.get("outcome") != "SuggestionAvailable":
-        return []
-    return list(display.get("candidates") or [])
-
-
-def _voice_recipe_hint(*, profile_ctx: TranscriptProfileContext) -> str | None:
-    if not profile_ctx.is_managed:
-        return (
-            "Longitudinal linking is available for managed library transcripts only. "
-            "Local naming still works here."
-        )
-    try:
-        from transcriptx.core.speaker_profiles.layout import speaker_profiles_dir
-        from transcriptx.core.speaker_profiles.voice.activation import ActivationBarrier
-        from transcriptx.core.speaker_profiles.voice.versioning import (
-            FEATURE_GATE_COMPLETE,
-        )
-
-        if not FEATURE_GATE_COMPLETE:
-            return None
-        status = ActivationBarrier(speaker_profiles_dir()).status()
-        if not status.allowed:
-            reason = status.block_reason or "unavailable"
-            if reason in {
-                "privacy_disabled",
-                "privacy_consent_required",
-                "privacy_settings_missing",
-            }:
-                return (
-                    "Voice suggestions need Settings → Speakers: enable voice matching, "
-                    "then Enrol trusted voice for all profiles, then Pre-load voice "
-                    "suggestions. Confirming a suggestion still names the speaker — "
-                    "nothing is applied automatically."
-                )
-            return (
-                "Local voice suggestions are not available yet "
-                f"({reason}). You can still attach this speaker to a profile by name."
-            )
-    except Exception:
-        pass
-    return (
-        "To get voice suggestions on the next transcript: name and link a seed cast, "
-        "then Settings → Speakers → Enrol trusted voice for all profiles, then "
-        "Pre-load voice suggestions. Confirm each suggestion in Speaker ID — "
-        "scores never auto-name."
-    )
 
 
 def _profile_listing_items():
@@ -357,8 +291,10 @@ def _render_link_target_panel(
     default_token = _target_token(default) if default is not None else "none"
     mode_key = link_mode_key(transcript_path, active_id)
     if st.session_state.get(mode_key) not in tokens:
-        st.session_state[mode_key] = default_token if default_token in tokens else (
-            tokens[0] if tokens else "none"
+        st.session_state[mode_key] = (
+            default_token
+            if default_token in tokens
+            else (tokens[0] if tokens else "none")
         )
     if targets.recipe_hint:
         st.caption(targets.recipe_hint)
@@ -392,45 +328,8 @@ def _render_link_target_panel(
                 key=widget_key(transcript_path, f"open_profile_{active_id}"),
                 icon=ic.OPEN_IN_NEW,
             ):
-                st.session_state["speakers_selected_profile"] = selected.profile_id
+                st.session_state[SPEAKERS_SELECTED_PROFILE_KEY] = selected.profile_id
                 navigate_to_speaker_profile(selected.profile_id)
-
-
-
-# ── flash ─────────────────────────────────────────────────────────────────────
-
-
-def _set_flash(
-    transcript_path: str | Path,
-    *,
-    level: str,
-    message: str,
-) -> None:
-    st.session_state[flash_key(transcript_path)] = {
-        "level": level,
-        "message": message,
-    }
-
-
-def _consume_flash(transcript_path: str | Path) -> None:
-    payload = st.session_state.pop(flash_key(transcript_path), None)
-    if not payload or not isinstance(payload, dict):
-        return
-    level = str(payload.get("level") or "info")
-    message = str(payload.get("message") or "").strip()
-    if not message:
-        return
-    if level == "error":
-        st.error(message)
-    elif level == "warning":
-        st.warning(message)
-    elif level == "success":
-        st.success(message)
-    else:
-        st.info(message)
-
-
-# ── discovery / picker helpers ────────────────────────────────────────────────
 
 
 def _transcript_paths_for_speaker_views() -> list:
@@ -543,6 +442,7 @@ def _rerun_ui() -> None:
 
 
 _CLIP_POLL_MAX = 16
+
 _CLIP_POLL_SLEEP_S = 0.2
 
 
@@ -562,7 +462,10 @@ def _maybe_poll_pending_clips(transcript_path: str | Path, data: dict) -> None:
     calls are not a reliable heartbeat, so we poll here until hit/unavailable or
     the cap is reached. Skipped under pytest unless ``TX_SID_CLIP_POLL=1``.
     """
-    if os.environ.get("PYTEST_CURRENT_TEST") and os.environ.get("TX_SID_CLIP_POLL") != "1":
+    if (
+        os.environ.get("PYTEST_CURRENT_TEST")
+        and os.environ.get("TX_SID_CLIP_POLL") != "1"
+    ):
         return
     poll_key = widget_key(transcript_path, "ccv2_clip_poll")
     if not _samples_awaiting_clip(data):
@@ -602,78 +505,6 @@ def _load_cached_segments(transcript_path: str | Path) -> List[SegmentInfo]:
         raise FileNotFoundError(f"Transcript unavailable: {transcript_path}") from exc
     signature = transcript_segments_signature(path_str)
     return list(cached_speaker_id_segments(path_str, signature))
-
-
-# ── navigation helpers ────────────────────────────────────────────────────────
-
-
-def navigate_to_speaker(
-    target_idx: int,
-    *,
-    transcript_path: str | Path,
-    speaker_count: int,
-    clear_playback_if_changed: bool = True,
-) -> int:
-    """Canonical speaker navigation: index, lines reset, optional playback clear.
-
-    Does **not** write the jump widget key (use ``sync_jump_widget`` from Prev/Next).
-    """
-    sanitized = sanitize_play_index(target_idx, speaker_count)
-    if sanitized is None:
-        sanitized = 0
-    idx_key = speaker_idx_key(transcript_path)
-    prev = sanitize_play_index(st.session_state.get(idx_key, 0), speaker_count)
-    changed = prev != sanitized
-    st.session_state[idx_key] = sanitized
-    st.session_state[lines_key(transcript_path)] = _LINES_PER_PAGE
-    if clear_playback_if_changed and changed:
-        clear_playback_session_keys(play_key(transcript_path))
-    return sanitized
-
-
-def sync_jump_widget(
-    speaker_idx: int,
-    *,
-    transcript_path: str | Path,
-) -> None:
-    """Update the jump selectbox session value to match canonical index (Prev/Next)."""
-    st.session_state[jump_key(transcript_path)] = speaker_idx
-
-
-def _set_active_speaker(
-    target_idx: int,
-    *,
-    speaker_count: int,
-    clear_playback_if_changed: bool = True,
-    transcript_path: str | Path | None = None,
-) -> int:
-    """Backward-compatible wrapper: navigate + sync jump when path is known."""
-    path = transcript_path or st.session_state.get(_SPEAKER_ID_SELECTED_PATH)
-    if not path:
-        # Legacy tests without transcript path use global keys.
-        sanitized = sanitize_play_index(target_idx, speaker_count)
-        if sanitized is None:
-            sanitized = 0
-        prev = sanitize_play_index(
-            st.session_state.get("speaker_id_speaker_idx", 0), speaker_count
-        )
-        changed = prev != sanitized
-        st.session_state["speaker_id_speaker_idx"] = sanitized
-        st.session_state["sid_jump"] = sanitized
-        st.session_state[_LINES_KEY] = _LINES_PER_PAGE
-        if clear_playback_if_changed and changed:
-            clear_playback_session_keys(_PLAY_KEY)
-        return sanitized
-    idx = navigate_to_speaker(
-        target_idx,
-        transcript_path=path,
-        speaker_count=speaker_count,
-        clear_playback_if_changed=clear_playback_if_changed,
-    )
-    sync_jump_widget(idx, transcript_path=path)
-    # Mirror legacy keys for tests that still read them when path is set via selected.
-    st.session_state["speaker_id_speaker_idx"] = idx
-    return idx
 
 
 def _speaker_id_transcript_label(t) -> str:
@@ -906,11 +737,14 @@ def _load_name_suggestions_for_workspace(
         pick = result.cache_model_tag or selected_model_tag
         if pick:
             st.session_state[_name_suggestion_model_pick_key(transcript_path)] = pick
-        return build_name_suggestions_workspace_payload(
-            profile_ctx.managed_transcript_id,
-            transcript_fingerprint=fp,
-            selected_model_tag=pick,
-        ) or result.workspace_payload()
+        return (
+            build_name_suggestions_workspace_payload(
+                profile_ctx.managed_transcript_id,
+                transcript_fingerprint=fp,
+                selected_model_tag=pick,
+            )
+            or result.workspace_payload()
+        )
 
     try:
         segments = load_transcript_segments(transcript_path)
@@ -926,1058 +760,6 @@ def _load_name_suggestions_for_workspace(
         selected_model_tag=str(pick) if pick else None,
     )
 
-
-def _cb_suggest_speaker_names(
-    transcript_path: str, profile_ctx: TranscriptProfileContext
-) -> None:
-    _load_name_suggestions_for_workspace(
-        transcript_path, profile_ctx, force_refresh=True
-    )
-
-
-def _cb_apply_auto_identify(transcript_path: str) -> None:
-    from transcriptx.core.speaker_profiles.identify.service import (
-        SpeakerIdentifyService,
-    )
-    from transcriptx.core.utils.logger import get_logger
-
-    try:
-        SpeakerIdentifyService().identify_transcript(
-            transcript_path,
-            auto_name=True,
-            auto_link=True,
-        )
-    except Exception as exc:
-        get_logger().warning("Auto-identify failed: %s", exc)
-
-
-def _next_unnamed_idx(
-    speaker_ids: List[str],
-    speaker_map: Dict[str, str],
-    ignored: List[str],
-    current: int,
-) -> int:
-    """Advance to the next unnamed, non-ignored speaker after a successful mutation."""
-    if 0 <= current < len(speaker_ids):
-        sid = speaker_ids[current]
-        if not _is_speaker_ignored(ignored, sid) and not _speaker_map_display_name(
-            speaker_map, sid
-        ):
-            return current
-    for i in range(current + 1, len(speaker_ids)):
-        sid = speaker_ids[i]
-        if not _is_speaker_ignored(ignored, sid) and not _speaker_map_display_name(
-            speaker_map, sid
-        ):
-            return i
-    for i in range(0, current):
-        sid = speaker_ids[i]
-        if not _is_speaker_ignored(ignored, sid) and not _speaker_map_display_name(
-            speaker_map, sid
-        ):
-            return i
-    return current
-
-
-def _get_action_service() -> SpeakerIdActionService:
-    """Process-scoped action service bound to the shared controller."""
-    controller = get_shared_speaker_studio_controller()
-    return SpeakerIdActionService(
-        controller,
-        # Use the module symbol so tests can monkeypatch the index loader.
-        index_loader=load_speaker_identification_index,
-        profile_context_resolver=_resolve_profile_context,
-        voice_confirm=lambda cmd, path, sid: _cb_voice_confirm(
-            path, sid, str((cmd.payload or {}).get("profile_id") or "")
-        ),
-        voice_reject=lambda cmd, path, sid: _cb_voice_reject(
-            path, sid, str((cmd.payload or {}).get("profile_id") or "")
-        ),
-    )
-
-
-def _current_speaker_idx(transcript_path: str | Path, speaker_count: int) -> int:
-    idx = sanitize_play_index(
-        st.session_state.get(speaker_idx_key(transcript_path), 0),
-        speaker_count,
-    )
-    return 0 if idx is None else idx
-
-
-def _apply_ack(ack, *, transcript_path: str | Path, speaker_count: int) -> None:
-    """Apply action-service acknowledgement effects to the legacy session."""
-    apply_speaker_id_ack_effects(
-        ack,
-        transcript_path=transcript_path,
-        speaker_count=speaker_count,
-        set_flash=_set_flash,
-        navigate_to_speaker=navigate_to_speaker,
-        sync_jump_widget=sync_jump_widget,
-        invalidate_transcript_summary_for_path=invalidate_transcript_summary_for_path,
-        consume_cache_invalidation_signal=consume_cache_invalidation_signal,
-        rerun_app_for_completion=_rerun_app_for_completion,
-        session_state=st.session_state,
-    )
-
-
-def _apply_mapping_advance(
-    *,
-    transcript_path: str | Path,
-    speaker_ids: Sequence[str],
-    new_state,
-    speaker_idx: int,
-    summary_sig_before: tuple[int, int, int],
-) -> None:
-    """Legacy helper: invalidate summary, advance speaker; completion may full-app rerun.
-
-    Kept for characterisation tests and direct callers. Ordinary Save/Ignore
-    callbacks go through ``SpeakerIdActionService`` instead.
-    Does **not** call ``_rerun_ui`` — the natural fragment rerun paints.
-    Completion only sets the flag; the fragment body commits the app rerun.
-    """
-    invalidate_transcript_summary_for_path(
-        transcript_path, signature=summary_sig_before
-    )
-    speaker_map = dict(new_state.speaker_map or {})
-    ignored = list(new_state.ignored_speakers or [])
-    next_idx = _next_unnamed_idx(list(speaker_ids), speaker_map, ignored, speaker_idx)
-    idx = navigate_to_speaker(
-        next_idx,
-        transcript_path=transcript_path,
-        speaker_count=len(speaker_ids),
-    )
-    sync_jump_widget(idx, transcript_path=transcript_path)
-    st.session_state["speaker_id_speaker_idx"] = idx
-    _, _, remaining = _remaining_count(speaker_ids, speaker_map, ignored)
-    if remaining == 0 and len(speaker_ids) > 0:
-        _rerun_app_for_completion()
-
-
-# Backward-compatible name used by tests.
-def _after_mapping_mutation(
-    *,
-    transcript_path: str | Path,
-    speaker_ids: Sequence[str],
-    new_state,
-    speaker_idx: int,
-    summary_sig_before: tuple[int, int, int],
-) -> None:
-    """Advance after mutation without a second fragment ``_rerun_ui``."""
-    _apply_mapping_advance(
-        transcript_path=transcript_path,
-        speaker_ids=speaker_ids,
-        new_state=new_state,
-        speaker_idx=speaker_idx,
-        summary_sig_before=summary_sig_before,
-    )
-
-
-def _validate_callback_identity(
-    transcript_path: str,
-    *,
-    expected_speaker_id: str | None = None,
-) -> tuple[list[str], int, str] | None:
-    """Recompute index + active speaker; return None if identity is stale.
-
-    Thin legacy helper used by tests and as a pre-check for synthesising
-    action-service commands. Domain rejection also lives in the action service.
-    """
-    try:
-        index = load_speaker_identification_index(transcript_path)
-    except FileNotFoundError:
-        _set_flash(
-            transcript_path, level="error", message="Transcript file is missing."
-        )
-        return None
-    speaker_ids = list(index.ordered_speaker_ids)
-    if not speaker_ids:
-        _set_flash(transcript_path, level="error", message="No speakers found.")
-        return None
-    idx = sanitize_play_index(
-        st.session_state.get(speaker_idx_key(transcript_path), 0),
-        len(speaker_ids),
-    )
-    if idx is None:
-        idx = 0
-    active_id = speaker_ids[idx]
-    if expected_speaker_id is not None and active_id != expected_speaker_id:
-        _set_flash(
-            transcript_path,
-            level="warning",
-            message="Active speaker changed; action was not applied. Try again.",
-        )
-        return None
-    # Soft-check transcript still readable (signature race handled in loaders).
-    try:
-        transcript_segments_signature(transcript_path)
-    except FileNotFoundError:
-        _set_flash(
-            transcript_path, level="error", message="Transcript file is missing."
-        )
-        return None
-    return speaker_ids, idx, active_id
-
-
-# ── module-level callbacks (thin adapters over SpeakerIdActionService) ────────
-
-
-def _cb_save_name(transcript_path: str, expected_speaker_id: str) -> None:
-    """Save name / optional profile-link via shared action service."""
-    identity = _validate_callback_identity(
-        transcript_path, expected_speaker_id=expected_speaker_id
-    )
-    if identity is None:
-        return
-    speaker_ids, speaker_idx, active_id = identity
-    name = str(
-        st.session_state.get(name_widget_key(transcript_path, active_id)) or ""
-    ).strip()
-    token = str(
-        st.session_state.get(link_mode_key(transcript_path, active_id)) or ""
-    ).strip()
-    link_mode = "none"
-    profile_id = None
-    if token.startswith("existing:"):
-        link_mode = "existing"
-        profile_id = token.split(":", 1)[1].strip() or None
-    elif token in {"create", "none"}:
-        link_mode = token
-    link_profile = link_mode in {"create", "existing"}
-    controller = get_shared_speaker_studio_controller()
-    map_state = controller.get_mapping_status(transcript_path)
-    service = _get_action_service()
-    ack = service.execute(
-        SpeakerIdCommand(
-            action="save_name",
-            transcript_id=str(transcript_path),
-            action_id=new_action_id(),
-            action_seq=int(st.session_state.get("sid_action_seq", 0)) + 1,
-            current_speaker_idx=speaker_idx,
-            expected_speaker_id=expected_speaker_id,
-            transcript_revision=transcript_revision_from_path(transcript_path),
-            expected_mapping_revision=mapping_revision_from_state(
-                map_state.speaker_map, map_state.ignored_speakers
-            ),
-            payload={
-                "display_name": name,
-                "link_profile": link_profile,
-                "link_mode": link_mode,
-                "profile_id": profile_id,
-            },
-        )
-    )
-    st.session_state["sid_action_seq"] = ack.action_seq
-    _apply_ack(ack, transcript_path=transcript_path, speaker_count=len(speaker_ids))
-
-
-def _cb_ignore_toggle(transcript_path: str, expected_speaker_id: str) -> None:
-    """Ignore / unignore via shared action service."""
-    identity = _validate_callback_identity(
-        transcript_path, expected_speaker_id=expected_speaker_id
-    )
-    if identity is None:
-        return
-    speaker_ids, speaker_idx, _active_id = identity
-    controller = get_shared_speaker_studio_controller()
-    map_state = controller.get_mapping_status(transcript_path)
-    service = _get_action_service()
-    ack = service.execute(
-        SpeakerIdCommand(
-            action="ignore_toggle",
-            transcript_id=str(transcript_path),
-            action_id=new_action_id(),
-            action_seq=int(st.session_state.get("sid_action_seq", 0)) + 1,
-            current_speaker_idx=speaker_idx,
-            expected_speaker_id=expected_speaker_id,
-            transcript_revision=transcript_revision_from_path(transcript_path),
-            expected_mapping_revision=mapping_revision_from_state(
-                map_state.speaker_map, map_state.ignored_speakers
-            ),
-        )
-    )
-    st.session_state["sid_action_seq"] = ack.action_seq
-    _apply_ack(ack, transcript_path=transcript_path, speaker_count=len(speaker_ids))
-
-
-def _cb_prev(transcript_path: str, expected_speaker_id: str) -> None:
-    identity = _validate_callback_identity(
-        transcript_path, expected_speaker_id=expected_speaker_id
-    )
-    if identity is None:
-        return
-    speaker_ids, speaker_idx, _ = identity
-    service = _get_action_service()
-    ack = service.execute(
-        SpeakerIdCommand(
-            action="navigate_prev",
-            transcript_id=str(transcript_path),
-            action_id=new_action_id(),
-            action_seq=int(st.session_state.get("sid_action_seq", 0)) + 1,
-            current_speaker_idx=speaker_idx,
-            expected_speaker_id=expected_speaker_id,
-            transcript_revision=transcript_revision_from_path(transcript_path),
-        )
-    )
-    st.session_state["sid_action_seq"] = ack.action_seq
-    _apply_ack(ack, transcript_path=transcript_path, speaker_count=len(speaker_ids))
-
-
-def _cb_next(transcript_path: str, expected_speaker_id: str) -> None:
-    identity = _validate_callback_identity(
-        transcript_path, expected_speaker_id=expected_speaker_id
-    )
-    if identity is None:
-        return
-    speaker_ids, speaker_idx, _ = identity
-    service = _get_action_service()
-    ack = service.execute(
-        SpeakerIdCommand(
-            action="navigate_next",
-            transcript_id=str(transcript_path),
-            action_id=new_action_id(),
-            action_seq=int(st.session_state.get("sid_action_seq", 0)) + 1,
-            current_speaker_idx=speaker_idx,
-            expected_speaker_id=expected_speaker_id,
-            transcript_revision=transcript_revision_from_path(transcript_path),
-        )
-    )
-    st.session_state["sid_action_seq"] = ack.action_seq
-    _apply_ack(ack, transcript_path=transcript_path, speaker_count=len(speaker_ids))
-
-
-def _ccv2_processed_action_key(transcript_path: str | Path) -> str:
-    return widget_key(transcript_path, "ccv2_processed_action_id")
-
-
-def _ccv2_last_ack_key(transcript_path: str | Path) -> str:
-    return widget_key(transcript_path, "ccv2_last_ack")
-
-
-def _apply_ccv2_workspace_command(
-    transcript_path: str,
-    speaker_ids: list[str],
-    speaker_idx: int,
-    command: dict,
-    *,
-    controller: SpeakerStudioController | None = None,
-    audio_path=None,
-    samples_total: int | None = None,
-) -> tuple[bool, dict | None]:
-    """Dispatch a CCv2 command once; skip duplicate ``action_id`` replays.
-
-    Returns ``(applied, ack_dict)``. ``applied`` is True only when this call
-    executed the command (not an idempotent skip).
-    """
-    from transcriptx.web.workspaces.speaker_id_bridge import dispatch_workspace_command
-
-    action_id = str(command.get("action_id") or "")
-    processed_key = _ccv2_processed_action_key(transcript_path)
-    ack_key = _ccv2_last_ack_key(transcript_path)
-    if action_id and st.session_state.get(processed_key) == action_id:
-        stored = st.session_state.get(ack_key)
-        return False, stored if isinstance(stored, dict) else None
-
-    ctrl = controller or get_shared_speaker_studio_controller()
-
-    def _on_load_more(n: int | None) -> None:
-        l_key = lines_key(transcript_path)
-        increment = int(n) if n is not None else _LINES_PER_PAGE
-        if increment < 1:
-            increment = _LINES_PER_PAGE
-        current = sanitize_lines_shown(
-            st.session_state.get(l_key, _LINES_PER_PAGE),
-            length=samples_total if samples_total is not None else 10**9,
-            default=_LINES_PER_PAGE,
-        )
-        limit = samples_total if samples_total is not None else current + increment
-        st.session_state[l_key] = min(current + increment, limit)
-
-    service = _get_action_service()
-    ack_dict = dispatch_workspace_command(
-        command,
-        service=service,
-        speaker_ids=speaker_ids,
-        current_speaker_idx=speaker_idx,
-        apply_ack=lambda ack: _apply_ack(
-            ack,
-            transcript_path=transcript_path,
-            speaker_count=len(speaker_ids),
-        ),
-        controller=ctrl,
-        transcript_path=str(transcript_path),
-        audio_path=audio_path,
-        on_load_more=_on_load_more,
-    )
-    if ack_dict is not None:
-        st.session_state[ack_key] = ack_dict
-        if action_id:
-            st.session_state[processed_key] = action_id
-        seq = ack_dict.get("action_seq")
-        if isinstance(seq, int):
-            st.session_state["sid_action_seq"] = seq
-    return True, ack_dict
-
-
-def _cb_ccv2_command(transcript_path: str) -> None:
-    """CCv2 ``on_command_change``: apply navigate/save before the fragment paints.
-
-    Speaker-list clicks use ``setTriggerValue("command", ...)``. Streamlit runs
-    this callback before the fragment body, so the next paint must already see
-    the jumped speaker — otherwise samples/title stay on the previous speaker
-    while clips of that previous speaker still play.
-    """
-    from transcriptx.web.workspaces.speaker_id_bridge import (
-        command_from_workspace_result,
-        stable_workspace_key,
-    )
-
-    try:
-        result_key = stable_workspace_key(str(Path(transcript_path).resolve()))
-    except OSError:
-        result_key = stable_workspace_key(str(transcript_path))
-    command = command_from_workspace_result(st.session_state.get(result_key))
-    if not command:
-        return
-    try:
-        index = load_speaker_identification_index(transcript_path)
-    except FileNotFoundError:
-        return
-    speaker_ids = list(index.ordered_speaker_ids)
-    if not speaker_ids:
-        return
-    speaker_idx = _current_speaker_idx(transcript_path, len(speaker_ids))
-    active_id = speaker_ids[speaker_idx] if speaker_ids else ""
-    samples_total = (
-        len(index.segments_by_speaker.get(active_id, [])) if active_id else None
-    )
-    playback_ctx = resolve_playback_context(
-        get_shared_speaker_studio_controller(), transcript_path
-    )
-    _apply_ccv2_workspace_command(
-        str(transcript_path),
-        speaker_ids,
-        speaker_idx,
-        command,
-        audio_path=getattr(playback_ctx, "audio_path", None),
-        samples_total=samples_total,
-    )
-
-
-def _drain_pending_ccv2_command(
-    transcript_path: str,
-    speaker_ids: list[str],
-    speaker_idx: int,
-) -> int:
-    """Apply a pending CCv2 command from session state before computing active samples."""
-    from transcriptx.web.workspaces.speaker_id_bridge import (
-        command_from_workspace_result,
-        stable_workspace_key,
-    )
-
-    try:
-        result_key = stable_workspace_key(str(Path(transcript_path).resolve()))
-    except OSError:
-        result_key = stable_workspace_key(str(transcript_path))
-    command = command_from_workspace_result(st.session_state.get(result_key))
-    if not command:
-        return speaker_idx
-    active_id = speaker_ids[speaker_idx] if speaker_ids else ""
-    samples_total = None
-    try:
-        index = load_speaker_identification_index(transcript_path)
-        if active_id:
-            samples_total = len(index.segments_by_speaker.get(active_id, []))
-    except FileNotFoundError:
-        pass
-    playback_ctx = resolve_playback_context(
-        get_shared_speaker_studio_controller(), transcript_path
-    )
-    _apply_ccv2_workspace_command(
-        str(transcript_path),
-        speaker_ids,
-        speaker_idx,
-        command,
-        audio_path=getattr(playback_ctx, "audio_path", None),
-        samples_total=samples_total,
-    )
-    return _current_speaker_idx(transcript_path, len(speaker_ids))
-
-
-def _cb_jump_change(transcript_path: str) -> None:
-    """Jump selectbox on_change: update canonical index only — do not rewrite jump key."""
-    try:
-        index = load_speaker_identification_index(transcript_path)
-    except FileNotFoundError:
-        return
-    speaker_ids = list(index.ordered_speaker_ids)
-    if not speaker_ids:
-        return
-    jump = sanitize_play_index(
-        st.session_state.get(jump_key(transcript_path)),
-        len(speaker_ids),
-    )
-    if jump is None:
-        return
-    speaker_idx = _current_speaker_idx(transcript_path, len(speaker_ids))
-    service = _get_action_service()
-    ack = service.execute(
-        SpeakerIdCommand(
-            action="navigate_jump",
-            transcript_id=str(transcript_path),
-            action_id=new_action_id(),
-            action_seq=int(st.session_state.get("sid_action_seq", 0)) + 1,
-            current_speaker_idx=speaker_idx,
-            transcript_revision=transcript_revision_from_path(transcript_path),
-            payload={"target_idx": jump},
-        )
-    )
-    st.session_state["sid_action_seq"] = ack.action_seq
-    # Jump must not rewrite the jump widget key (sync_jump=False on navigate_jump).
-    _apply_ack(ack, transcript_path=transcript_path, speaker_count=len(speaker_ids))
-
-
-def _cb_load_voice(transcript_path: str) -> None:
-    st.session_state[voice_loaded_key(transcript_path)] = True
-
-
-def _cb_voice_analyse_one(transcript_path: str, speaker_id: str) -> None:
-    st.session_state[voice_pending_key(transcript_path)] = {
-        "mode": "one",
-        "speaker": speaker_id,
-        "transcript": str(transcript_path),
-    }
-
-
-def _cb_voice_analyse_all(transcript_path: str) -> None:
-    st.session_state[voice_pending_key(transcript_path)] = {
-        "mode": "all",
-        "transcript": str(transcript_path),
-    }
-
-
-def _cb_voice_confirm(
-    transcript_path: str,
-    speaker_id: str,
-    profile_id: str,
-) -> None:
-    """Confirm suggestion; heavy work runs here before the natural fragment rerun."""
-    try:
-        from transcriptx.core.speaker_profiles.identity import link_file_key
-        from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
-        from transcriptx.core.speaker_profiles.service import SpeakerProfileService
-        from transcriptx.services.speaker_profiles.voice_facade import (
-            SpeakerIdVoiceFacade,
-            ensure_idempotency_key,
-            voice_session_key,
-        )
-
-        resolver = ManagedTranscriptResolver()
-        resolved = resolver.resolve_path(transcript_path)
-        lsk = normalize_diarized_id(speaker_id)
-        result_key = voice_session_key(resolved.managed_transcript_id, lsk, "result")
-        result = st.session_state.get(result_key)
-        if result is None or not getattr(result, "candidates_ui", None):
-            _set_flash(
-                transcript_path,
-                level="warning",
-                message="Voice suggestion is no longer available.",
-            )
-            return
-        cand = next(
-            (c for c in result.candidates_ui if c.get("profile_id") == profile_id),
-            None,
-        )
-        if cand is None:
-            _set_flash(
-                transcript_path,
-                level="warning",
-                message="Voice suggestion is no longer available.",
-            )
-            return
-        facade = SpeakerIdVoiceFacade()
-        svc = SpeakerProfileService()
-        live = svc.get_live_link(link_file_key(resolved.managed_transcript_id, lsk))
-        accept_key = voice_session_key(
-            resolved.managed_transcript_id,
-            lsk,
-            f"accept_{profile_id}",
-        )
-        op_key = ensure_idempotency_key(st.session_state, accept_key)
-        ar = facade.accept(
-            operation_idempotency_key=op_key,
-            managed_transcript_id=resolved.managed_transcript_id,
-            local_speaker_key=lsk,
-            candidate_profile_id=profile_id,
-            suggestion_id=result.suggestion_id or "",
-            suggestion_digest=result.suggestion_digest or "",
-            confidence_category=cand["confidence"],
-            model_generation_id=result.model_generation_id or "",
-            occurrence_fingerprint=result.occurrence_fingerprint or "",
-            expected_link_id=(
-                result.expected_link_id
-                if result.expected_link_id is not None
-                else (live.link_id if live else None)
-            ),
-            expected_owner_profile_id=(
-                result.expected_owner_profile_id
-                if result.expected_owner_profile_id is not None
-                else (live.profile_id if live else None)
-            ),
-            expected_fingerprint=(
-                result.expected_fingerprint
-                if result.expected_fingerprint is not None
-                else (live.occurrence_fingerprint if live else None)
-            ),
-            expected_audio_stat_fingerprint=result.audio_stat_fingerprint,
-            expected_audio_content_sha256=result.audio_content_sha256,
-            query_cache_key=result.query_cache_key,
-        )
-        consume_cache_invalidation_signal(ar.cache_signal)
-        st.session_state.pop(result_key, None)
-        st.session_state.pop(voice_display_key(transcript_path, speaker_id), None)
-        _set_flash(
-            transcript_path,
-            level="success",
-            message="Profile link confirmed from suggestion.",
-        )
-    except Exception as exc:
-        _set_flash(transcript_path, level="error", message=str(exc))
-
-
-def _cb_voice_reject(
-    transcript_path: str,
-    speaker_id: str,
-    profile_id: str,
-) -> None:
-    try:
-        from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
-        from transcriptx.services.speaker_profiles.voice_facade import (
-            SpeakerIdVoiceFacade,
-            ensure_idempotency_key,
-            voice_session_key,
-        )
-
-        resolver = ManagedTranscriptResolver()
-        resolved = resolver.resolve_path(transcript_path)
-        lsk = normalize_diarized_id(speaker_id)
-        result_key = voice_session_key(resolved.managed_transcript_id, lsk, "result")
-        result = st.session_state.get(result_key)
-        if result is None or not getattr(result, "candidates_ui", None):
-            st.session_state.pop(result_key, None)
-            st.session_state.pop(voice_display_key(transcript_path, speaker_id), None)
-            return
-        cand = next(
-            (c for c in result.candidates_ui if c.get("profile_id") == profile_id),
-            None,
-        )
-        if cand is None:
-            st.session_state.pop(result_key, None)
-            st.session_state.pop(voice_display_key(transcript_path, speaker_id), None)
-            return
-        facade = SpeakerIdVoiceFacade()
-        rej_key = voice_session_key(
-            resolved.managed_transcript_id,
-            lsk,
-            f"reject_{profile_id}",
-        )
-        facade.reject(
-            operation_idempotency_key=ensure_idempotency_key(st.session_state, rej_key),
-            managed_transcript_id=resolved.managed_transcript_id,
-            local_speaker_key=lsk,
-            occurrence_fingerprint=result.occurrence_fingerprint or "",
-            candidate_profile_id=profile_id,
-            suggestion_id=result.suggestion_id or "",
-            suggestion_digest=result.suggestion_digest or "",
-            model_generation_id=result.model_generation_id or "",
-            reference_corpus_digest=result.reference_corpus_digest or "",
-            reference_count=int(cand.get("reference_count") or 0),
-        )
-        st.session_state.pop(result_key, None)
-        st.session_state.pop(voice_display_key(transcript_path, speaker_id), None)
-        _set_flash(
-            transcript_path,
-            level="info",
-            message="Suggestion rejected for this evidence set.",
-        )
-    except Exception as exc:
-        _set_flash(transcript_path, level="error", message=str(exc))
-
-
-def _cb_voice_confirm_action(
-    transcript_path: str, speaker_id: str, profile_id: str
-) -> None:
-    """Route confirm through SpeakerIdActionService (revisioned command)."""
-    svc = _get_action_service()
-    idx = int(st.session_state.get(speaker_idx_key(transcript_path), 0) or 0)
-    ack = svc.execute(
-        SpeakerIdCommand(
-            action="voice_confirm",
-            transcript_id=str(Path(transcript_path).resolve()),
-            action_id=new_action_id(),
-            action_seq=idx + 1,
-            current_speaker_idx=idx,
-            expected_speaker_id=speaker_id,
-            payload={"profile_id": profile_id},
-            frontend_build_id="legacy",
-        )
-    )
-    _apply_ack(ack, transcript_path=transcript_path, speaker_count=max(idx + 1, 1))
-
-
-def _cb_voice_reject_action(
-    transcript_path: str, speaker_id: str, profile_id: str
-) -> None:
-    svc = _get_action_service()
-    idx = int(st.session_state.get(speaker_idx_key(transcript_path), 0) or 0)
-    ack = svc.execute(
-        SpeakerIdCommand(
-            action="voice_reject",
-            transcript_id=str(Path(transcript_path).resolve()),
-            action_id=new_action_id(),
-            action_seq=idx + 1,
-            current_speaker_idx=idx,
-            expected_speaker_id=speaker_id,
-            payload={"profile_id": profile_id},
-            frontend_build_id="legacy",
-        )
-    )
-    _apply_ack(ack, transcript_path=transcript_path, speaker_count=max(idx + 1, 1))
-
-
-def _cb_voice_leave(
-    transcript_path: str,
-    speaker_id: str,
-    profile_id: str,
-) -> None:
-    try:
-        from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
-        from transcriptx.services.speaker_profiles.voice_facade import (
-            SpeakerIdVoiceFacade,
-            voice_session_key,
-        )
-
-        resolver = ManagedTranscriptResolver()
-        resolved = resolver.resolve_path(transcript_path)
-        lsk = normalize_diarized_id(speaker_id)
-        result_key = voice_session_key(resolved.managed_transcript_id, lsk, "result")
-        facade = SpeakerIdVoiceFacade()
-        facade.acceptance.leave_unlinked()
-        st.session_state.pop(result_key, None)
-        st.session_state.pop(voice_display_key(transcript_path, speaker_id), None)
-        _set_flash(
-            transcript_path,
-            level="info",
-            message="Left unlinked for this session.",
-        )
-    except Exception as exc:
-        _set_flash(transcript_path, level="error", message=str(exc))
-
-
-# ── voice conditional block ───────────────────────────────────────────────────
-
-
-def _render_voice_display_payload(
-    *,
-    path_str: str,
-    active_id: str,
-    display: dict,
-) -> None:
-    """Render stored voice UI without constructing facades or profile services."""
-    outcome = display.get("outcome")
-    candidates = display.get("candidates") or []
-    if outcome == "SuggestionAvailable" and candidates:
-        for cand in candidates:
-            st.write(
-                f"**{cand.get('display_name') or cand.get('profile_id')}** — "
-                f"{cand.get('confidence')} "
-                f"({cand.get('reference_count')} refs)"
-            )
-            cols = st.columns(3)
-            pid = cand.get("profile_id")
-            cols[0].button(
-                "Confirm this profile",
-            icon=ic.CONFIRM,
-                key=widget_key(path_str, f"voice_confirm_{active_id}_{pid}"),
-                on_click=_cb_voice_confirm_action,
-                args=(path_str, active_id, pid),
-            )
-            cols[1].button(
-                "Reject suggestion",
-            icon=ic.REJECT,
-                key=widget_key(path_str, f"voice_reject_{active_id}_{pid}"),
-                on_click=_cb_voice_reject_action,
-                args=(path_str, active_id, pid),
-            )
-            cols[2].button(
-                "Leave unlinked",
-            icon=ic.UNLINK,
-                key=widget_key(path_str, f"voice_leave_{active_id}_{pid}"),
-                on_click=_cb_voice_leave,
-                args=(path_str, active_id, pid),
-            )
-        return
-    if outcome == "NoReliableMatch":
-        st.info("No reliable voice match.")
-        return
-    if outcome == "insufficient_speech":
-        st.warning(
-            "Voice analyse: insufficient speech — need at least "
-            "8 seconds of speech attributed to this speaker."
-        )
-        if display.get("detail"):
-            st.caption(str(display["detail"]))
-        return
-    if outcome:
-        st.warning(f"Voice analyse: {outcome}")
-        if display.get("detail"):
-            st.caption(str(display["detail"]))
-
-
-def _store_voice_display_for_result(
-    *,
-    path_str: str,
-    speaker_id: str,
-    result,
-) -> None:
-    from transcriptx.core.speaker_profiles.service import SpeakerProfileService
-
-    name_svc = SpeakerProfileService()
-
-    def _lookup(pid: str) -> str | None:
-        live = name_svc.get_profile(pid)
-        return live.display_name if live is not None else None
-
-    st.session_state[voice_display_key(path_str, speaker_id)] = (
-        _voice_display_from_result(result, profile_name_lookup=_lookup)
-    )
-
-
-def _render_voice_suggestions(
-    *,
-    transcript_path: str | Path,
-    speaker_ids: Sequence[str],
-    ignored: List[str],
-    active_id: str,
-    profile_ctx: TranscriptProfileContext,
-) -> None:
-    """Conditional voice UI — services only when loading gate, pending analyse, or first display build."""
-    path_str = str(transcript_path)
-    loaded_key = voice_loaded_key(path_str)
-    pending_key = voice_pending_key(path_str)
-    batch_key = voice_batch_summary_key(path_str)
-    display_key = voice_display_key(path_str, active_id)
-    gate_key = voice_gate_key(path_str)
-
-    if not st.session_state.get(loaded_key):
-        # Completely unmounted before Load (no barrier / facade / profile services).
-        st.button(
-            "Load voice suggestions",
-            key=widget_key(path_str, f"voice_load_{active_id}"),
-            icon=ic.VOICE,
-            on_click=_cb_load_voice,
-            args=(path_str,),
-            help=widget_help(
-                "Prepare local voice matching controls for this transcript."
-            ),
-        )
-        return
-
-    pending_peek = st.session_state.get(pending_key)
-    batch_peek = st.session_state.get(batch_key)
-    display = st.session_state.get(display_key)
-
-    # Cached activation gate (checked once after Load, not on every play click).
-    gate = st.session_state.get(gate_key)
-    if not isinstance(gate, dict):
-        from transcriptx.core.speaker_profiles.layout import speaker_profiles_dir
-        from transcriptx.core.speaker_profiles.voice.activation import ActivationBarrier
-
-        status = ActivationBarrier(speaker_profiles_dir()).status()
-        gate = {
-            "allowed": bool(status.allowed),
-            "reason": status.block_reason,
-        }
-        st.session_state[gate_key] = gate
-
-    if not gate.get("allowed"):
-        st.caption(
-            "Local voice suggestions are not available yet "
-            f"({gate.get('reason') or 'unavailable'})."
-        )
-        return
-
-    st.caption(
-        "Probabilistic local match — not identity verification. "
-        "Confirming uses the existing profile-link workflow."
-    )
-    btn_one, btn_all = st.columns(2)
-    btn_one.button(
-        "Analyse voice",
-        icon=ic.VOICE,
-        key=widget_key(path_str, f"voice_analyse_{active_id}"),
-        help=widget_help("Embed this speaker and rank local profile suggestions."),
-        on_click=_cb_voice_analyse_one,
-        args=(path_str, active_id),
-    )
-    btn_all.button(
-        "Analyse all speakers",
-        icon=ic.VOICE,
-        key=widget_key(path_str, "voice_analyse_all"),
-        help=widget_help(
-            (
-                "Run voice matching for every non-ignored speaker so "
-                "suggestions are ready as you step through the list."
-            )
-        ),
-        on_click=_cb_voice_analyse_all,
-        args=(path_str,),
-    )
-
-    if batch_peek and not pending_peek:
-        st.info(str(st.session_state.pop(batch_key, batch_peek)))
-
-    # Display-only path: no facade / profile service reconstruction.
-    if display is not None and not pending_peek:
-        _render_voice_display_payload(
-            path_str=path_str, active_id=active_id, display=display
-        )
-        return
-
-    if not pending_peek:
-        return
-
-    try:
-        from transcriptx.core.speaker_profiles.resolver import ManagedTranscriptResolver
-        from transcriptx.services.speaker_profiles.voice_facade import (
-            SpeakerIdVoiceFacade,
-            voice_session_key,
-        )
-
-        facade = SpeakerIdVoiceFacade()
-        resolver = ManagedTranscriptResolver()
-        resolved = resolver.resolve_path(transcript_path)
-        lsk = normalize_diarized_id(active_id)
-        result_key = voice_session_key(resolved.managed_transcript_id, lsk, "result")
-
-        pending = st.session_state.pop(pending_key, None)
-        pending_path = pending.get("transcript") if pending else None
-        if pending and pending_path and paths_match(pending_path, transcript_path):
-            voice_seg_dicts = load_voice_segment_payload(transcript_path)
-            if pending.get("mode") == "one":
-                raw_speaker = str(pending.get("speaker") or active_id)
-                with st.spinner("Analysing voice…"):
-                    try:
-                        one_key = voice_session_key(
-                            resolved.managed_transcript_id,
-                            normalize_diarized_id(raw_speaker),
-                            "result",
-                        )
-                        result = facade.analyse(
-                            transcript_path=Path(transcript_path),
-                            raw_speaker=raw_speaker,
-                            segments=voice_seg_dicts,
-                        )
-                        st.session_state[one_key] = result
-                        _store_voice_display_for_result(
-                            path_str=path_str,
-                            speaker_id=normalize_diarized_id(raw_speaker)
-                            or raw_speaker,
-                            result=result,
-                        )
-                        # Also map under active_id key when same speaker.
-                        st.session_state[voice_display_key(path_str, active_id)] = (
-                            st.session_state.get(
-                                voice_display_key(
-                                    path_str,
-                                    normalize_diarized_id(raw_speaker) or raw_speaker,
-                                )
-                            )
-                        )
-                    except Exception as exc:
-                        _set_flash(
-                            path_str,
-                            level="error",
-                            message=f"Voice analyse failed: {exc}",
-                        )
-                        _consume_flash(path_str)
-            elif pending.get("mode") == "all":
-                targets = [
-                    sid for sid in speaker_ids if not _is_speaker_ignored(ignored, sid)
-                ]
-                suggestions = 0
-                no_match = 0
-                other = 0
-                with st.spinner(f"Analysing voice for {len(targets)} speakers…"):
-                    from transcriptx.core.speaker_profiles.voice.match_service import (
-                        AnalyseResult as _AnalyseResult,
-                    )
-
-                    for sid in targets:
-                        sid_key = normalize_diarized_id(sid)
-                        sid_result_key = voice_session_key(
-                            resolved.managed_transcript_id, sid_key, "result"
-                        )
-                        try:
-                            ar = facade.analyse(
-                                transcript_path=Path(transcript_path),
-                                raw_speaker=sid,
-                                segments=voice_seg_dicts,
-                            )
-                        except Exception as exc:
-                            ar = _AnalyseResult(
-                                outcome="AnalyseFailed",
-                                match=None,
-                                suggestion_id=None,
-                                suggestion_digest=None,
-                                detail=str(exc),
-                            )
-                        st.session_state[sid_result_key] = ar
-                        _store_voice_display_for_result(
-                            path_str=path_str,
-                            speaker_id=sid_key or sid,
-                            result=ar,
-                        )
-                        if ar.outcome == "SuggestionAvailable":
-                            suggestions += 1
-                        elif ar.outcome == "NoReliableMatch":
-                            no_match += 1
-                        else:
-                            other += 1
-                st.session_state[batch_key] = (
-                    f"Analysed {len(targets)} speakers: "
-                    f"{suggestions} suggestion(s), "
-                    f"{no_match} no match, "
-                    f"{other} other."
-                )
-                st.info(st.session_state[batch_key])
-                st.session_state.pop(batch_key, None)
-
-        display = st.session_state.get(display_key)
-        if display is not None:
-            _render_voice_display_payload(
-                path_str=path_str, active_id=active_id, display=display
-            )
-            return
-
-        # Fallback: build display from stored AnalyseResult once.
-        result = st.session_state.get(result_key)
-        if result is None:
-            return
-        _store_voice_display_for_result(
-            path_str=path_str, speaker_id=active_id, result=result
-        )
-        display = st.session_state.get(display_key)
-        if display is not None:
-            _render_voice_display_payload(
-                path_str=path_str, active_id=active_id, display=display
-            )
-    except st.errors.StreamlitAPIException:
-        raise
-    except Exception as exc:
-        st.warning(f"Voice suggestions unavailable: {exc}")
-
-
-# ── CCv2 workspace mount (Theme C) ────────────────────────────────────────────
 
 
 def _render_managed_identify_actions(
@@ -2032,18 +814,16 @@ def _render_managed_identify_actions(
             pick_key = _name_suggestion_model_pick_key(transcript_path)
             tags = list(labels.keys())
             if pick_key not in st.session_state:
-                st.session_state[pick_key] = (
-                    (name_suggestions or {}).get("selected_model_tag") or tags[0]
-                )
+                st.session_state[pick_key] = (name_suggestions or {}).get(
+                    "selected_model_tag"
+                ) or tags[0]
             current = str(st.session_state.get(pick_key) or tags[0])
             if current not in labels:
                 st.session_state[pick_key] = tags[0]
                 current = tags[0]
 
             def _on_model_pick_change() -> None:
-                st.session_state[pick_key] = st.session_state.get(
-                    f"{pick_key}__widget"
-                )
+                st.session_state[pick_key] = st.session_state.get(f"{pick_key}__widget")
 
             st.selectbox(
                 "Suggestion source (model)",
@@ -2235,9 +1015,6 @@ def _render_ccv2_speaker_workspace(
     return True
 
 
-# ── workspace fragment ────────────────────────────────────────────────────────
-
-
 @st.fragment
 def _speaker_id_workspace_fragment(
     transcript_path: str,
@@ -2328,9 +1105,7 @@ def _speaker_id_workspace_fragment(
         else (f"✅ **{current_name}**" if current_name.strip() else "❓ unnamed")
     )
     if not is_ignored:
-        status_badge = status_badge + _identify_badge_suffix(
-            transcript_path, active_id
-        )
+        status_badge = status_badge + _identify_badge_suffix(transcript_path, active_id)
 
     mounted = _render_ccv2_speaker_workspace(
         transcript_path=transcript_path,
@@ -2351,20 +1126,14 @@ def _speaker_id_workspace_fragment(
         return
 
 
-# ── main render ──────────────────────────────────────────────────────────────
-
-
 def render_speaker_id_page() -> None:
     """Render the speaker-by-speaker identification page."""
     st.session_state.pop(_SPEAKER_ID_COMPLETION_APP_RERUN, None)
 
-    st.markdown(
-        '<div class="main-header">Speaker Identification</div>',
-        unsafe_allow_html=True,
-    )
-    st.caption(
+    render_page_shell(
+        "Speaker Identification",
         "Work through each speaker one at a time: review their lines, "
-        "play a clip, then assign a name or mark as ignored."
+        "play a clip, then assign a name or mark as ignored.",
     )
 
     controller = get_shared_speaker_studio_controller()

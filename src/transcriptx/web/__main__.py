@@ -37,6 +37,40 @@ def _find_streamlit_app() -> Path | None:
     return None
 
 
+_TRUTHY = {"1", "true", "on", "yes"}
+
+
+def file_watcher_args(environ: "os._Environ[str] | dict[str, str]") -> list[str]:
+    """Streamlit source-watcher flags for the launch command.
+
+    Default launches are a product, not a dev loop: Streamlit's local sources
+    watcher walks every imported module (transformers, torch, …) after each
+    run and logs hundreds of ``Examining the path … raised`` tracebacks. Set
+    ``TRANSCRIPTX_DEV=1`` to keep hot-reload, or ``TRANSCRIPTX_FILE_WATCHER``
+    to pass an explicit Streamlit ``fileWatcherType`` (auto|watchdog|poll|none).
+    """
+    explicit = (environ.get("TRANSCRIPTX_FILE_WATCHER") or "").strip().lower()
+    if explicit:
+        return ["--server.fileWatcherType", explicit]
+    if (environ.get("TRANSCRIPTX_DEV") or "").strip().lower() in _TRUTHY:
+        return []
+    return ["--server.fileWatcherType", "none"]
+
+
+BRAND_PRIMARY_COLOR = "#1f77b4"
+
+
+def theme_args(environ: "os._Environ[str] | dict[str, str]") -> list[str]:
+    """Brand primary colour unless the operator set a Streamlit theme env var.
+
+    Without this, Streamlit's default ``#FF4B4B`` paints active nav / primary
+    buttons red (reads as an error state against the blue/green wordmark).
+    """
+    if environ.get("STREAMLIT_THEME_PRIMARY_COLOR"):
+        return []
+    return ["--theme.primaryColor", BRAND_PRIMARY_COLOR]
+
+
 def main(host: str = "127.0.0.1", port: int = 8501) -> None:
     """
     Launch the Streamlit web interface.
@@ -102,6 +136,8 @@ def main(host: str = "127.0.0.1", port: int = 8501) -> None:
         "--server.headless",
         "true",
     ]
+    cmd.extend(file_watcher_args(os.environ))
+    cmd.extend(theme_args(os.environ))
 
     print(f"Starting TranscriptX web interface on http://{args.host}:{args.port}")
     sys.exit(subprocess.run(cmd).returncode)

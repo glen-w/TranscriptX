@@ -838,6 +838,10 @@ def _charts_filters_and_gallery_fragment(
                 elif html_payload.get("truncated") or not html_payload.get("content"):
                     st.warning("HTML chart is too large to render. Download instead.")
                 else:
+                    st.caption(
+                        f"{selected.module or 'chart'} · "
+                        f"{selected.title or selected.rel_path}"
+                    )
                     st.iframe(html_payload["content"], height=700)
             if show_llm_summary:
                 llm_text = resolve_chart_llm_description(run_root, selected)

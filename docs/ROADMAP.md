@@ -1,12 +1,12 @@
 # TranscriptX Roadmap
 
-**Current version:** see [pyproject.toml](../pyproject.toml) (package version).
+**Current version:** **1.2.1** (see [pyproject.toml](../pyproject.toml)). Public **1.0.0** shipped 2026-10-19; **1.1.0** is the Trustworthy Depth workbench increment; **1.1.1** restores the GUI shell; **1.2.0** finishes GUI hardening W1.3–W4; **1.2.1** aligns public surfaces with README and the Sphinx guide.
 
 **Product definition:** [PRODUCT.md](PRODUCT.md)  
-**Programme plan (0.9.x → 1.0):** [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md)  
+**Historical 0.9.x → 1.0 programme:** [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) (retired; not the living plan)  
 **Decision foundation:** [stocktake_2026-07-17.md](dev/stocktake_2026-07-17.md)
 
-**North star:** a credible **1.0** local-first transcript analysis workbench governed by release evidence and explicit severity rules — not feature count or fixed patch assignments.
+**North star:** keep the **1.0** local-first transcript analysis workbench excellent — contracts honest, analysis deepen-in-place, 1.x themes cut as coherent increments — not feature count or fixed patch assignments.
 
 > **Status legend:** [ ] planned · [x] done · [~] in progress
 
@@ -87,7 +87,7 @@ Cross-links: Theme **H** (in-app providers), Theme **K** (command generation), [
 - Streamlit GUI + typed Python API; managed import; file-backed storage/sidecars
 - Broad analysis module set (language, speakers, interactions, emotion, voice, groups, optional Ollama)
 - Contracts for storage, run outcomes, outputs, and public surfaces
-- Package on a **0.9.x** stabilisation track toward 1.0
+- Public **1.0.x / 1.1.x / 1.2.x** workbench (1.0.0 2026-10-19; **1.2.1** current). Living work is 1.x themes below, not a 0.9.x track.
 
 Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription is BYO plus in-app **command-generation** (0.9.4) and optional **host-orchestrated STT** (theme **H**: whispermlx / WhisperX Docker, durable jobs). Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Post-0.9.9 wave cut as interim **`0.9.9.5`**: early 1.x Themes **A–D**, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, backup/restore — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md). Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **done for 1.0** (Speaker ID Phase 9, Studio review, viewer click-drag); Theme **D** CCv2 full-file reader **done for 1.0** (clip karaoke remains Correct-mode / `TX_READER_WORKSPACE_COMPONENT=0` rollback). Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
 
@@ -149,13 +149,13 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | C. High-interaction workspaces | Streamlit Components v2 for Speaker ID / Corrections / viewer click-drag | **done for 1.0** (Phase 9 Speaker ID; Studio CCv2 + viewer edit; see [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md)) |
 | D. Playback & reading UX | Karaoke-style word highlight; CCv2 full-file reader | **done for 1.0** (reader workspace + clip rollback; see [karaoke-playback.md](runtime/karaoke-playback.md)) |
 | E. Performance & hardware guidance | Run-time estimates; smarter model/backend recommendations | Early 1.x — **[~]** probe + estimates + docs shipped ([theme_e_performance_hardware.md](dev/theme_e_performance_hardware.md)) |
-| F. Library & organisation | Library archive (shipped); transcript tagging; Groups interaction rules; optional YouTube API rename metadata | Mid 1.x |
-| G. Audio & recording workflows | Inline audio ± transcript merge; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G3** narrow Windows convert/admit + pluggable STT shipped; service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
+| F. Library & organisation | Library archive (shipped); kind tags (`meeting` / `voice note` / `lone speaker`, filter-only); Groups interaction rules; optional YouTube API rename metadata | Mid 1.x — **[~] archive + kind tags shipped** |
+| G. Audio & recording workflows | Inline audio ± transcript merge/stitch; directory watcher; Windows/Linux host scripts; voice-notes side-script | Mid 1.x (merge = former §1.2; **G1** audio merge + transcript stitch shipped; **G3** narrow Windows convert/admit + pluggable STT shipped; service samples parked; **G4** called 20 Sep 2026, not a 1.0 gate) |
 | H. In-app transcription | Local host-orchestrated Whisper (MLX + WhisperX Docker); Granite Speech mlx-audio; Parakeet/Canary; Nemotron 3.5 Transcribe; YouTube/streaming later | **[~] H1–H4 + Granite mlx + Nemotron vLLM client shipped**; YouTube ingest / H6 still deferred |
 | I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Deferred except H1 job channel |
-| J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | ~1.5 — deferred vs STT |
+| J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | **[~] Narrow Speakers/`profile_id` gallery shipped**; Groups expansion later |
 | K. External STT command generation | Broader copyable host CLIs until / beside theme H; Parakeet/Canary + Nemotron converters | **[~] PowerShell builder + Parakeet/Nemotron Copy commands shipped** |
-| L. Polish & onboarding extras | Coach-marks, bundled demos, aesthetics — only if capacity | Anytime light |
+| L. Polish & onboarding extras | Coach-marks, bundled demos, aesthetics — only if capacity. **GUI hardening W0–W4 shipped** (shell trust, budgets, theme, a11y baseline) | Anytime light; W0–W4 done |
 | M. Research / citeable methods | Optional B4-style methods; multilingual beyond small subset | Later 1.x+ |
 | N. Multi-provider LLM (opt-in) | OpenAI-compatible / LiteLLM gateway beyond Ollama; never silent cloud default | Mid–late 1.x |
 | → 2.0 | Personal audio intelligence companion | Vision |
@@ -170,7 +170,7 @@ Public positioning today: [comparison.md](comparison.md). Analysis backlog: [ana
 
 Insights and related analysis presentation work for 1.0; do not freeze quality here.
 
-Design: [theme_a_insights_quality.md](dev/theme_a_insights_quality.md). **Deterministic schema-v3 wave shipped 0.9.9.5 (#6); presentation closeout 2026-10** (Insights abstention UI, Overview compact empty chrome, P3 hierarchy partial). **Deferred wave 2026-10:** chart overview monologue honesty (`filter_overview_viz_ids_for_named_speakers`); theme **evidence_quote_ids** in Insights UI; opt-in **B18** `insights_narrative` (config `narrative_enabled` + module selection).
+Design: [theme_a_insights_quality.md](dev/theme_a_insights_quality.md). **Deterministic schema-v3 wave shipped 0.9.9.5 (#6); presentation closeout 2026-10** (Insights abstention UI, Overview compact empty chrome, P3 hierarchy partial). **October 2026 closeout (shipped with 1.0.0):** chart overview monologue honesty (`filter_overview_viz_ids_for_named_speakers`); theme **evidence_quote_ids** in Insights UI; opt-in **B18** `insights_narrative` (config `narrative_enabled` + module selection).
 
 - Stronger **deterministic** outputs (clearer, more useful non-LLM / hybrid insights; less noise) — **core wave done**; deepen-in-place from backlog continues
 - Reassess **GUI layout** for Insights and analysis result surfaces (hierarchy, scannability, what to show first)
@@ -242,7 +242,7 @@ Design: [theme_e_performance_hardware.md](dev/theme_e_performance_hardware.md). 
 
 - **Library archive (shipped)** — hide a transcript from pickers and default lists without deleting it (`library_archived` on the import sidecar). Distinct from kind tags below. Contract: [STORAGE.md](runtime/STORAGE.md#library-archive).
 
-- **Transcript tagging** — library visibility / kind labels (e.g. `meeting`, `voice note`, `lone speaker`). Tags are organisation metadata, not an analysis module.
+- **Kind tags (shipped in 1.1.0)** — sidecar `library_kind`: `meeting` / `voice note` / `lone speaker`. Library filter + inspector only. Does **not** create Groups or auto-materialise membership. Organisation tags (`KNOWN_SEMANTIC_TAGS`) remain a separate surface.
 
 - **YouTube Data API for rename assist (deferred)** — optional backend for content rename suggestions (`rename_suggest_web`) when the operator supplies a Google Cloud API key: YouTube Data API v3 search + `videos` metadata (`publishedAt`, canonical title) for public YouTube-hosted events, instead of or ahead of today’s DuckDuckGo HTML + `site:youtube.com` bias. Privacy: short title/search queries only; never the transcript body; opt-in key (settings or env); quota and key hygiene documented. Mid–late 1.x; not required for warm-suggestions or import rename to work today.
 
@@ -260,11 +260,14 @@ Recorder devices often cut long sessions into chunks. Today:
 - Host helpers `scripts/audio_merge.py` / `scripts/audio_preprocess.py` remain for CLI/automation (documented in [audio-prep.md](runtime/audio-prep.md))
 - Serial-group prompts point operators at **System → Tools → Merge** before transcription
 
-**Desired direction (design before build):** inline merge that (1) merges **audio** parts in order into one managed recording, and (2) optionally **stitches transcripts** (timestamp rebase, segment continuity, canonical + sidecars) when parts were already transcribed separately.
+**Shipped (1.1.0, Invest):**
 
-**Hard parts:** ordered part selection UX; ffmpeg/path honesty under Docker vs host; backup/overwrite; partial failure; duration vs transcript times; speaker-id continuity; managed-library admission; pre- vs post-transcription merge. Do not ship a half-merge that corrupts library identity.
+- GUI **System → Tools → Merge** concatenates audio parts → one MP3 (ffmpeg)
+- **Stitch transcripts** concatenates already-transcribed parts into a **new** canonical JSON (timestamp rebase). Aborts when duration vs timestamps cannot be reconciled. Never overwrites managed originals. `SPEAKER_*` labels stay until Speaker Identification is re-run.
 
-**Decision fork:** **Invest** (first-class library/import workflow including transcript stitch) · **Defer / remove** (drop helpers). Audio-only GUI + CLI helpers are restored; transcript stitching remains undecided.
+**Still hard / later:** overwrite/backup of existing managed identity; speaker-id continuity across stitch; auto-admit of the stitched file as a replacement for the parts.
+
+**Decision fork:** **Invest** (chosen) · **Defer / remove**. Audio merge + transcript stitch are both in Tools → Merge.
 
 #### G2. Directory watcher
 
@@ -381,18 +384,15 @@ Called **20 Sep 2026**. A short personal note is not a webinar. `inbox-watch` is
 
 ### J. Local analytics layer — SQLite (~1.5)
 
-1.0 stays **file-backed**. First deliberate DB wave: a **local** query/analytics layer so longitudinal views stop paying full-scan / ad-hoc JSON costs — without hosted multi-tenant SaaS.
+Canonical persistence stays **file-backed**. Theme **J Narrow** (1.1.0): a rebuildable **derived** SQLite store (`analytics_derived.sqlite`) for Speakers / `profile_id` gallery — not a second source of truth.
 
-**Deferred vs in-app STT:** Theme **J** does not unlock record → text → analyse. Keep ~1.5 timing; no H dependency.
+- File/sidecar layout remains the durable library contract; wipe the DB and rebuild from files
+- First slice shipped: `speaker_profiles` + `profile_links` (`transcriptx.core.analytics_store`)
+- Sync/invalidation on import, profile edits, run finalize, and wipe still needs wiring before expanding beyond Speakers
 
-- Start with **SQLite** (or equivalent) as an **optional / derived** store, not a second source of truth for canonical transcripts
-- First slice: **speaker-profile analytics views** and related B5 remainder (group gallery keyed by `profile_id`) — see analysis-module backlog
-- File/sidecar layout remains the durable library contract; DB rebuildable from files
-- Define sync/invalidation on import, profile edits, run finalize, and wipe before expanding beyond Speakers
+**Out of scope unless redesign says otherwise:** remote Postgres/SaaS, multi-user auth, replacing the managed-file library with ORM rows, Alembic as the library.
 
-**Out of scope unless redesign says otherwise:** remote Postgres/SaaS, multi-user auth, replacing the managed-file library with ORM rows, mandatory SQLite on day one of 1.0.
-
-**Decision fork:** **Invest** · **Narrow** (Speakers indexes only) · **Defer again**.
+**Decision fork:** **Narrow** (chosen — Speakers indexes) · **Invest** · **Defer again**.
 
 ---
 
@@ -409,6 +409,8 @@ Until/beside theme **H**, keep improving **copyable host commands** on Transcrib
 ---
 
 ### L. Polish & onboarding extras
+
+**GUI hardening W0–W4** ([plan](../.cursor/plans/2026-11-02-gui-hardening-wave.md)): Streamlit stays the shell. **W0–W1.2** shipped in **1.1.1**. **W1.3–W4** shipped in **1.2.0**: Rename preview autoplay only after ▶; session keys in `web/state.py`; Speakers skeleton + corpus scandir stamp; Diagnostics pagination + Clean → Settings → Storage; theme / Tools label / Library wrap; action-link names; shell `/` and `g`+letter; [a11y baseline](dev/a11y_baseline_2026-11-03.md). Remainder (advisory): axe-core on shell smoke, `!important` cut, collapsed-label count.
 
 Only if capacity remains after core themes:
 

@@ -102,6 +102,14 @@ class EmotionAnalysis(AnalysisModule):
                 nrclex_version=preflight.nrclex_version,
             )
 
+        return self._analyze_lexical(segments, artifact_generation_id, preflight)
+
+    def _analyze_lexical(
+        self,
+        segments: List[Dict[str, Any]],
+        artifact_generation_id: str,
+        preflight,
+    ) -> Dict[str, Any]:
         from nrclex import NRCLex
 
         self._nrclex_cls = NRCLex

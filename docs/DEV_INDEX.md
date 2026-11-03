@@ -17,7 +17,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 |-----|---------|
 | [documentation_inventory_1_0.md](dev/documentation_inventory_1_0.md) | Docs classification matrix |
 | [script_inventory_1_0.md](dev/script_inventory_1_0.md) | Script support-status matrix |
-| [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) | 0.9.x → 1.0 programme plan |
+| [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) | Historical 0.9.x → 1.0 programme (retired; 1.0 shipped) |
 | [local_scratch.md](dev/local_scratch.md) | `.local/` ignored scratch convention |
 | [workflow_media_capture.md](dev/workflow_media_capture.md) | Regenerating workflow walkthrough screenshots/GIFs |
 | [schema_epoch_inventory.md](dev/schema_epoch_inventory.md) | Schema epoch inventory + transition UX (sign-off before wipe) |
@@ -28,7 +28,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [analysis_quality_audit.md](dev/analysis_quality_audit.md) | Analysis quality audit template |
 | [analysis_quality_audit_scaffold.md](dev/analysis_quality_audit_scaffold.md) | Generated registry rows (`make docs-gen`) |
 | [analysis_quality_audit_judgements.md](dev/analysis_quality_audit_judgements.md) | Provisional Recommendation / Severity overlay |
-| [performance_envelopes_1_0.md](dev/performance_envelopes_1_0.md) | Performance envelope planning |
+| [performance_envelopes_1_0.md](dev/performance_envelopes_1_0.md) | Performance envelopes; GUI cold-path budgets (W2, advisory) |
 | [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md) | Trust / privacy / model gate |
 | [release_ops_support_1_0.md](dev/release_ops_support_1_0.md) | Release ops / support policy |
 | [rtd_go_live_checklist.md](dev/rtd_go_live_checklist.md) | Read the Docs go-live flip steps |
@@ -73,6 +73,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [run_outcome_model.md](dev/run_outcome_model.md) | Run outcome developer notes |
 | [run_performance.md](dev/run_performance.md) | Analysis-run performance telemetry |
 | [COMPLEXITY_GATES.md](dev/COMPLEXITY_GATES.md) | Complexity / performance gates |
+| [maintainability_layout.md](dev/maintainability_layout.md) | File-split homes from the 2026-11-02 maintainability waves |
 | [composition_platform.md](dev/composition_platform.md) | Composition platform |
 | [dashboard_builder.md](dev/dashboard_builder.md) | Dashboard Builder workflows |
 | [web_blocks.md](dev/web_blocks.md) | Web block architecture |
@@ -87,6 +88,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [wave_b13_interaction_graphs_2026-07-23.md](dev/wave_b13_interaction_graphs_2026-07-23.md) | Wave B13 interaction graphs |
 | [wave_b16_keyphrases_2026-07-24.md](dev/wave_b16_keyphrases_2026-07-24.md) | Wave B16 keyphrases |
 | [gui_acceptance_residual_checklist.md](dev/gui_acceptance_residual_checklist.md) | GUI acceptance residual checklist |
+| [a11y_baseline_2026-11-03.md](dev/a11y_baseline_2026-11-03.md) | GUI hardening W4 accessibility baseline (advisory; not a PR gate) |
 | [install_verification_matrix.md](runtime/install_verification_matrix.md) | Install verification matrix |
 | [docker-efficiency-baseline.md](runtime/docker-efficiency-baseline.md) | Docker efficiency baseline |
 
@@ -106,3 +108,13 @@ Non-production scripts: [archive/README.md](../archive/README.md).
 ## Documentation archive
 
 [archive/ARCHIVE_INDEX.md](archive/ARCHIVE_INDEX.md)
+
+```{toctree}
+:hidden:
+:maxdepth: 1
+:glob:
+
+dev/*
+runtime/install_verification_matrix
+runtime/docker-efficiency-baseline
+```

@@ -26,6 +26,7 @@ LIBRARY_FILTER_QUERY_KEY = "library_filter_query"
 LIBRARY_FILTER_SORT_KEY = "library_filter_sort"
 LIBRARY_FILTER_SOURCE_KEY = "library_filter_source"
 LIBRARY_FILTER_TAGS_KEY = "library_filter_tags"
+LIBRARY_FILTER_KIND_KEY = "library_filter_kind"
 LIBRARY_FILTER_INCLUDE_ARCHIVED_KEY = "library_filter_include_archived"
 LIBRARY_SHOW_PATH_KEY = "library_show_path"
 LIBRARY_EXPORT_TAGS_KEY = "library_export_tags"
@@ -54,6 +55,11 @@ SELECTBOX_PLACEHOLDER_ARTIFACT = "— Select an artifact —"
 SELECTBOX_PLACEHOLDER_SPEAKER = "— Select a speaker —"
 SELECTED_RUN_DIR = "selected_run_dir"
 SELECTED_PROFILE_NAME = "selected_profile_name"
+
+# Cross-module navigation (written by navigation.py / action menus / deep links)
+RUN_ANALYSIS_TARGET_KEY = "run_analysis_target"
+SPEAKERS_SELECTED_PROFILE_KEY = "speakers_selected_profile"
+SETTINGS_HUB_TAB_KEY = "settings_hub_selected_tab"
 
 # Analysis form
 PENDING_ANALYSIS_REQUEST = "pending_analysis_request"
@@ -245,6 +251,22 @@ def reconcile_artifact_selection(
         session_state[ARTIFACTS_KEY_SELECTED_IDS] = []
         session_state[ARTIFACTS_KEY_PREVIEW_ID] = None
         session_state[ARTIFACTS_KEY_SHOW_MORE] = None
+
+
+def consume_run_analysis_target(session_state: Any) -> str | None:
+    """Read Run Analysis target without clearing the widget-bound value."""
+    raw = session_state.get(RUN_ANALYSIS_TARGET_KEY)
+    if raw in {"Transcript", "Group", "Batch"}:
+        return str(raw)
+    return None
+
+
+def consume_speakers_selected_profile(session_state: Any) -> str | None:
+    """Read Speakers gallery selection; empty string means none selected."""
+    raw = session_state.get(SPEAKERS_SELECTED_PROFILE_KEY)
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return None
 
 
 def consume_artifact_preset(session_state: Any) -> str | None:

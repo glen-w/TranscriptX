@@ -13,6 +13,8 @@ import os
 
 import streamlit as st
 
+from transcriptx.web.components.page_shell import render_page_shell
+
 from transcriptx.web import icons as ic
 from transcriptx.services.corrections_studio.controller import (
     CorrectionsStudioController,
@@ -703,12 +705,9 @@ def _corrections_studio_workspace_fragment(
 
 
 def render_corrections_studio() -> None:
-    st.markdown(
-        '<div class="main-header">Corrections Studio</div>',
-        unsafe_allow_html=True,
-    )
-    st.caption(
-        "Review and apply transcript corrections. Select a transcript, review candidates, and export."
+    render_page_shell(
+        "Corrections Studio",
+        "Review and apply transcript corrections. Select a transcript, review candidates, and export.",
     )
 
     controller = CorrectionsStudioController()
@@ -736,7 +735,9 @@ def render_corrections_studio() -> None:
         st.info("No transcripts found. Add transcript JSON files to get started.")
         return
 
-    from transcriptx.web.transcript_option_format import decorate_transcript_picker_label
+    from transcriptx.web.transcript_option_format import (
+        decorate_transcript_picker_label,
+    )
 
     paths = [t.path for t in transcripts]
     options = [

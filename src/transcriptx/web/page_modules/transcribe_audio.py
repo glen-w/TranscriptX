@@ -8,6 +8,8 @@ from pathlib import Path
 
 import streamlit as st
 
+from transcriptx.web.components.page_shell import render_page_shell
+
 from transcriptx.web import icons as ic
 from transcriptx.app.models.requests import TranscriptionOptions
 from transcriptx.core.utils.paths import PATHS
@@ -597,9 +599,9 @@ def _render_preset_controls(params: CommandGenParams) -> None:
 
 def render_transcribe_audio_page() -> None:
     """Render in-app transcription plus copyable host commands."""
-    st.markdown(
-        '<div class="main-header">Transcribe Audio</div>',
-        unsafe_allow_html=True,
+    render_page_shell(
+        "Transcribe Audio",
+        "Run transcription in the app when a host provider is available, or copy a host command and import the result.",
     )
     st.info(
         "Run transcription **in the app** when a host provider is available "

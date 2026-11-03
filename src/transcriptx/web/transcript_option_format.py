@@ -19,11 +19,30 @@ def decorate_transcript_picker_label(
     path: str | Path | None = None,
     slug: str | None = None,
 ) -> str:
-    """Append ``(no analysis|partial analysis|analysis complete)`` to a picker name."""
+    """Library title + date when known; stem stays the fallback. Status in brackets."""
     from transcriptx.web.cache_helpers import get_cached_analysis_picker_status
 
+    display = name
+    if path is not None:
+        try:
+            from transcriptx.web.cache_helpers import get_cached_corpus_inventory
+            from transcriptx.web.corpus_inventory_display import format_short_date
+            from transcriptx.web.services.transcript_context_resolver import (
+                paths_match,
+            )
+
+            for row in get_cached_corpus_inventory():
+                row_path = getattr(row, "transcript_path", None)
+                if row_path is None or not paths_match(row_path, path):
+                    continue
+                title = str(getattr(row, "title", None) or name)
+                date_s = format_short_date(getattr(row, "imported_at", None))
+                display = f"{title} · {date_s}" if date_s and date_s != "—" else title
+                break
+        except Exception:
+            display = name
     status = get_cached_analysis_picker_status().status_for(path=path, slug=slug)
-    return format_with_analysis_status(name, status)
+    return format_with_analysis_status(display, status)
 
 
 def format_transcript_option_with_analysis_status(name: str, status: str) -> str:

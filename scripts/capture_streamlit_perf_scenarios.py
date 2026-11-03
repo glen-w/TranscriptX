@@ -52,6 +52,10 @@ SCENARIOS: list[tuple[str, dict[str, object]]] = [
         "navigation_rerun_artifacts",
         {"page": "Artifacts"},
     ),
+    (
+        "navigation_rerun_diagnostics",
+        {"page": "Diagnostics"},
+    ),
 ]
 
 

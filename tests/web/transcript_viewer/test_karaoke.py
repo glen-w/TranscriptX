@@ -181,6 +181,7 @@ def test_set_active_clip_requests_follow_along_scroll(
     panel.set_active_clip("transcript_viewer_play_seg", 3)
     assert session["transcript_viewer_play_seg"] == 3
     assert session["transcript_viewer_play_seg_scroll_playing"] is True
+    assert session["transcript_viewer_play_seg_autoplay_once"] is True
     assert panel.consume_scroll_playing("transcript_viewer_play_seg", session) is True
     assert panel.consume_scroll_playing("transcript_viewer_play_seg", session) is False
 

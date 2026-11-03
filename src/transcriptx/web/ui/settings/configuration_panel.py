@@ -102,17 +102,49 @@ def _sanitize_scope_config(scope: str, config_map: dict[str, Any]) -> dict[str, 
     return config_map
 
 
-def _render_effective_value(value: Any) -> None:
-    """Render a resolved config value without Streamlit JSON-viewer pitfalls.
+_CATEGORY_TITLES = {
+    "llm": "LLM",
+    "audio_preprocessing": "Audio preprocessing",
+    "group_analysis": "Group analysis",
+}
 
-    ``st.json`` treats Python ``str`` as already-serialized JSON (so paths like
-    ``/mnt/outputs`` fail to parse) and some Streamlit versions reject JSON
-    primitives (bool/number/null) with "src property must be a valid json object".
-    """
-    if isinstance(value, (dict, list)):
-        st.json(value)
-    else:
-        st.code(json.dumps(value), language="json")
+
+def _humanize_category(category: str) -> str:
+    """``audio_preprocessing`` → ``Audio preprocessing`` (not ``Audio_Preprocessing``)."""
+    key = str(category or "").strip()
+    if key in _CATEGORY_TITLES:
+        return _CATEGORY_TITLES[key]
+    words = key.replace("_", " ").split()
+    if not words:
+        return key
+    acronyms = {"llm", "rag", "stt", "ui", "json"}
+    out = [w.upper() if w in acronyms else w for w in words]
+    if out[0] not in {w.upper() for w in acronyms}:
+        out[0] = out[0].capitalize()
+    return " ".join(out)
+
+
+def _effective_rows(
+    keys: list[str],
+    effective_dot: dict[str, Any],
+    sources: dict[str, str],
+    *,
+    prefix: str,
+) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for key in keys:
+        value = effective_dot.get(key)
+        text = value if isinstance(value, str) else json.dumps(value, default=str)
+        if len(text) > 200:
+            text = text[:197] + "…"
+        rows.append(
+            {
+                "Setting": key[len(prefix) :] if key.startswith(prefix) else key,
+                "Value": text,
+                "Source": str(sources.get(key, "default")),
+            }
+        )
+    return rows
 
 
 def _render_active_profile_selectors(
@@ -220,17 +252,21 @@ def render_configuration_panel(
     effective_dot = flatten(effective_config)
     categories = list(dict.fromkeys(meta.category for meta in registry.values()))
 
+    # One compact table per category. The previous per-leaf write/caption/code
+    # triplet painted ~2,200 elements (31k DOM nodes) for ~740 leaves even
+    # inside collapsed expanders.
     for category in categories:
         keys = [k for k in effective_dot.keys() if k.startswith(f"{category}.")]
         if not keys:
             continue
-        with st.expander(category.title(), expanded=False):
-            for key in keys:
-                value = effective_dot.get(key)
-                source = sources.get(key, "default")
-                st.write(f"`{key}`")
-                st.caption(f"source: {source}")
-                _render_effective_value(value)
+        with st.expander(
+            f"{_humanize_category(category)} · {len(keys)}", expanded=False
+        ):
+            st.dataframe(
+                _effective_rows(keys, effective_dot, sources, prefix=f"{category}."),
+                hide_index=True,
+                width="stretch",
+            )
 
     st.markdown("<div style='height: 1.25rem'></div>", unsafe_allow_html=True)
 

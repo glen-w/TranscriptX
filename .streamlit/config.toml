@@ -1,0 +1,19 @@
+# Streamlit theme for TranscriptX (applies when the app is launched from the
+# repo root, e.g. `streamlit run src/transcriptx/web/app.py` or the Playwright
+# E2E harness). `python -m transcriptx.web` passes the same values as flags so
+# the brand colour does not depend on the working directory.
+#
+# Keep `base` unset: the app follows the OS light/dark preference and the
+# shell's chrome-sync JS swaps the wordmark accordingly.
+[theme]
+primaryColor = "#1f77b4"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+
+[theme.sidebar]
+backgroundColor = "#f0f2f6"
+secondaryBackgroundColor = "#ffffff"
+
+[browser]
+gatherUsageStats = false

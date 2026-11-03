@@ -208,7 +208,7 @@ def test_backfill_skips_generic_excluded_names(
 
 @pytest.mark.unit
 def test_speakers_empty_state_uses_speaker_id_page_key() -> None:
-    import transcriptx.web.page_modules.speakers as mod
+    from tests.web.speakers_page_patches import speakers_ui_source
 
-    source = Path(mod.__file__).read_text(encoding="utf-8")
+    source = speakers_ui_source()
     assert 'primary_action=("Speaker Identification", "Speaker ID")' in source

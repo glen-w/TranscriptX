@@ -8,7 +8,7 @@
 {output_dir}/prosody_dashboard/data/global/{base_name}_prosody_overlay_segments.v1.json
 ```
 
-`base_name` = `get_canonical_base_name(transcript_path)` for the member run (matches [`OutputService.base_name`](src/transcriptx/core/output/output_service.py)).
+`base_name` = `get_canonical_base_name(transcript_path)` for the member run (matches [`OutputService.base_name`](../../src/transcriptx/core/output/output_service.py)).
 
 ## Versioning
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html as html_lib
 import json
 from typing import Any
 
@@ -70,14 +71,16 @@ def _save_terms_json(
 
 
 def _build_wordcloud_explorer_html(title: str, payload: dict[str, Any]) -> str:
-    terms_json = json.dumps(payload)
+    # Neutralize </script> breakouts in JSON (SR-05).
+    terms_json = json.dumps(payload).replace("<", "\\u003c")
+    safe_title = html_lib.escape(str(title or ""), quote=True)
     wc_cdn = "https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js"
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{title}</title>
+  <title>{safe_title}</title>
   <script src="{wc_cdn}"></script>
   <style>
     body {{ font-family: Arial, sans-serif; margin: 16px; }}
@@ -99,7 +102,7 @@ def _build_wordcloud_explorer_html(title: str, payload: dict[str, Any]) -> str:
   </style>
 </head>
 <body>
-  <h2>{title}</h2>
+  <h2>{safe_title}</h2>
   <div class="controls">
     <label>Search<br><input id="search" type="text" placeholder="filter terms"></label>
     <label>Top N<br><input id="topN" type="number" value="50" min="1" max="500"></label>
@@ -159,8 +162,17 @@ def _build_wordcloud_explorer_html(title: str, payload: dict[str, Any]) -> str:
       return items.slice(0, topN);
     }}
 
+    function escapeHtml(value) {{
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }}
+
     function renderTable(items) {{
-      const rows = items.map(t => `<tr><td>${{t.rank}}</td><td>${{t.term}}</td><td>${{t.value}}</td></tr>`).join('');
+      const rows = items.map(t => `<tr><td>${{escapeHtml(t.rank)}}</td><td>${{escapeHtml(t.term)}}</td><td>${{escapeHtml(t.value)}}</td></tr>`).join('');
       tableContainer.innerHTML = `
         <table>
           <thead><tr><th>Rank</th><th>Term</th><th>Value</th></tr></thead>

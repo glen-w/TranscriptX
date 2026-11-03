@@ -1,7 +1,7 @@
 # TranscriptX Makefile
 # Main targets for documentation and development
 
-.PHONY: docs-gen docs docs-clean pages-site help test-smoke test-smoke-nlp test-nlp-unit test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration-extended test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance test-gui-e2e test-workspaces test-theme-c-browser workspaces-build docker-smoke run clean-test-artifacts perf-envelopes
+.PHONY: docs-gen docs docs-clean pages-site help test-smoke test-smoke-nlp test-nlp-unit test-fast test-heavy test-heavy-all test-all test-contracts test-integration-core test-integration-extended test-integration test-optional test-coverage test-config-coverage test-release-only test-gui-acceptance test-gui-e2e test-gui-shell-smoke test-workspaces test-theme-c-browser workspaces-build docker-smoke run clean-test-artifacts perf-envelopes
 
 help:
 	@echo "TranscriptX Makefile"
@@ -37,6 +37,7 @@ help:
 	@echo "  test-release-only  Run release-only packaging/install smoke"
 	@echo "  test-gui-acceptance  Streamlit AppTest GUI acceptance journeys (heavy)"
 	@echo "  test-gui-e2e     Playwright live-Streamlit GUI E2E (10 key flows; not in default pytest)"
+	@echo "  test-gui-shell-smoke  Playwright shell smoke: every page styled, sidebar complete, DOM budgets (PR gate)"
 	@echo "  docker-smoke     Run Docker web launcher smoke test (build + --help)"
 	@echo ""
 	@echo "Maintenance:"
@@ -102,6 +103,10 @@ test-gui-e2e:
 	@echo "Running Playwright live-Streamlit GUI E2E (documented workflows)..."
 	@pytest --override-ini addopts="-ra --strict-markers --strict-config --import-mode=importlib --verbose --tb=short --timeout=600 --timeout-method=thread" tests/e2e_gui -m "gui_e2e and not quarantined"
 
+test-gui-shell-smoke:
+	@echo "Running Playwright shell smoke (sidebar / CSS / DOM budgets)..."
+	@pytest --override-ini addopts="-ra --strict-markers --strict-config --import-mode=importlib --verbose --tb=short --timeout=600 --timeout-method=thread" tests/e2e_gui/test_shell_smoke.py -m "gui_shell_smoke and not quarantined"
+
 test-heavy:
 	@echo "Running heavy profile (excluding quarantined)..."
 	@pytest --override-ini addopts="-ra --strict-markers --strict-config --import-mode=importlib --verbose --tb=short --timeout=300 --timeout-method=thread" -m "heavy and not quarantined"
@@ -135,8 +140,8 @@ test-all:
 	@pytest --override-ini addopts="-ra --strict-markers --strict-config --import-mode=importlib --verbose --tb=short --timeout=300 --timeout-method=thread" -m "not quarantined"
 
 test-coverage:
-	@echo "Running fast lane + contracts with coverage (see .coveragerc fail_under)..."
-	@pytest --cov=src --cov-config=.coveragerc --cov-fail-under=0 --cov-report=term-missing --cov-report=json:coverage.json -q \
+	@echo "Running fast lane + contracts with coverage (fail_under from .coveragerc)..."
+	@pytest --cov=src --cov-config=.coveragerc --cov-report=term-missing --cov-report=json:coverage.json -q \
 		-m "($(FAST_MARKERS)) or (contract and not quarantined)"
 
 test-config-coverage:

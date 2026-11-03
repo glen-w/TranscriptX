@@ -51,6 +51,7 @@ MODULE_UI_GROUPS: tuple[ModuleUIGroup, ...] = (
             "simplified_transcript",
             "tics",
             "transcript_quality",
+            "speaker_map_diagnostics",
             "pauses",
             "temporal_dynamics",
             "insight_eligibility",

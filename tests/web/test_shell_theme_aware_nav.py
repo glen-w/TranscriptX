@@ -30,15 +30,14 @@ def test_sidebar_nav_buttons_use_theme_text_color() -> None:
 
 
 @pytest.mark.unit
-def test_brand_logo_emits_both_chrome_variants() -> None:
+def test_brand_logo_uses_single_img_src_swap() -> None:
     source = _SHELL_PATH.read_text(encoding="utf-8")
-    assert "tx-logo-light-chrome" in source
-    assert "tx-logo-dark-chrome" in source
+    assert "data-tx-src-light" in source
+    assert "data-tx-src-dark" in source
     assert "__txBrandChromeSync" in source
     assert "data-tx-chrome" in source
     assert "unsafe_allow_javascript=True" in source
-    # OS-dark CSS must not swap in the white wordmark before chrome is known.
-    assert (
-        ".tx-sidebar-brand:not([data-tx-chrome]) .tx-logo-dark-chrome"
-        not in source
-    )
+    # Two stacked <img> tags were the double-logo bug; chrome swap is src-only.
+    assert "tx-logo-light-chrome" not in source
+    assert "tx-logo-dark-chrome" not in source
+    assert "img:nth-of-type(n+2)" in source

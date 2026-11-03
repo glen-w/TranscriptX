@@ -80,6 +80,18 @@ Keep notes in `.local/perf_envelopes_<date>.md` (gitignored). Curated numbers on
 | Docker image size | documented baseline | Historical ~3.7GB class — [docker-efficiency-baseline.md](../runtime/docker-efficiency-baseline.md); re-measure on release hardware |
 | Group-analysis scaling | measured-or-tagged | Group wall ≠ sum of members; includes aggregation |
 | UI responsiveness with large library | measured | **pass** 2026-08-07 — Home/library responsive with **200+** transcripts (exceeds Large-for-1.0 ~50); see [manual_acceptance_1_0.md](manual_acceptance_1_0.md) §3.12 |
+
+## GUI cold-path budgets (1.1.x, advisory)
+
+Targets from GUI hardening W2 on a ~300-transcript library. Capture with `scripts/capture_streamlit_perf_scenarios.py` (`make perf-envelopes` does not replace this). Nightly may assert later; do not PR-gate until two green weeks.
+
+| Scenario | Warm | Cold | Notes |
+|----------|------|------|--------|
+| Speakers | ≤ 5 s | ≤ 15 s | Skeleton (`Building speaker index…`) within 1 s |
+| `cached_corpus_inventory` hit | ≤ 1 s | — | Scandir stamp skips `discover_transcript_refs` |
+| Settings (active panel only) | — | ≤ 4k DOM / ≤ 120 buttons | Shell smoke budget is looser until soak |
+| Diagnostics | — | ≤ 3k DOM | Never-finished runs paginated 50/page; Clean opens Settings → Storage |
+| Search | fragment | — | Reuses corpus inventory; debounce without `time.sleep` |
 | Behaviour when disk/RAM/model insufficient | must document | Fail closed; no corrupt run commit; actionable GUI/docs errors |
 
 ## Thorough full-preset LLM timings (2026-08-07)

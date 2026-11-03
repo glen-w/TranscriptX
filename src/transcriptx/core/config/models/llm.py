@@ -69,6 +69,13 @@ class LLMSettingsModel(BaseModel):
         default=None,
         description="Provider base URL (e.g. http://localhost:11434/).",
     )
+    allow_remote_host: bool = Field(
+        default=False,
+        description=(
+            "Allow LLM base_url hosts other than loopback / host.docker.internal. "
+            "Remote endpoints receive transcript content; opt-in only."
+        ),
+    )
     request_timeout: float = Field(
         default=1350.0,
         gt=0,

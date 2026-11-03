@@ -9,6 +9,9 @@ from pathlib import Path
 from typing import Any, Callable
 
 from transcriptx.core.analysis.chart_descriptions.digests import sha256_text
+from transcriptx.core.analysis.llm_support.provenance import (
+    json_generate_provenance_fields,
+)
 from transcriptx.core.analysis.chart_descriptions.evidence_loader import (
     load_evidence_for_chart,
 )
@@ -502,6 +505,13 @@ def run_chart_descriptions(
                 continue
 
         assert description_text is not None
+        art_model = model
+        art_source = model_selection_source
+        if not reused:
+            art_model, art_source = json_generate_provenance_fields(
+                model=model,
+                model_selection_source=model_selection_source,
+            )
         artifact = ChartDescriptionArtifact(
             chart_key=chart.chart_key,
             logical_chart_id=chart.logical_chart_id,
@@ -519,8 +529,8 @@ def run_chart_descriptions(
             evidence_rel_path=chart.evidence_rel_path,
             request_hash=request_hash,
             prompt_version=CHART_DESCRIPTIONS_PROMPT_VERSION,
-            model=model,
-            model_selection_source=model_selection_source,
+            model=art_model,
+            model_selection_source=art_source,
             reused=reused,
         )
         write_json_under_generation(

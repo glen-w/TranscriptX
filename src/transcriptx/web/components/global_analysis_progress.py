@@ -15,11 +15,10 @@ import streamlit as st
 
 from transcriptx.web import icons as ic
 from transcriptx.web.components.progress_panel import SNAPSHOT_KEY
-from transcriptx.web.state import PAGE_KEY
+from transcriptx.web.state import PAGE_KEY, RUN_ANALYSIS_TARGET_KEY
 
 _PENDING_LAUNCH_KEY = "run_analysis_pending_launch"
 _PENDING_BATCH_KEY = "batch_ops_pending_launch"
-_RUN_ANALYSIS_TARGET_KEY = "run_analysis_target"
 
 AnalysisTarget = Literal["Transcript", "Group", "Batch"]
 
@@ -69,7 +68,7 @@ def sync_run_analysis_target_to_active_operation(
     state = session_state if session_state is not None else st.session_state
     target = resolve_active_analysis_target(state)
     if target is not None:
-        state[_RUN_ANALYSIS_TARGET_KEY] = target
+        state[RUN_ANALYSIS_TARGET_KEY] = target
     return target
 
 
@@ -168,7 +167,7 @@ def _global_analysis_progress_fragment() -> None:
             width="stretch",
         ):
             st.session_state[PAGE_KEY] = "Run Analysis"
-            st.session_state[_RUN_ANALYSIS_TARGET_KEY] = target
+            st.session_state[RUN_ANALYSIS_TARGET_KEY] = target
             st.rerun()
 
 

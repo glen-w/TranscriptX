@@ -74,6 +74,7 @@ class LibraryFilter:
     source_id: str | None = None
     tags: tuple[str, ...] = ()
     include_archived: bool = False
+    library_kind: str | None = None
 
 
 @dataclass(frozen=True)
@@ -154,6 +155,7 @@ class InventoryRow:
     last_activity_at: datetime | None
     tags: tuple[str, ...] = ()
     library_archived: bool = False
+    library_kind: str | None = None
     fingerprint: InventoryFingerprint = field(
         default_factory=lambda: InventoryFingerprint(stamps=()),
         repr=False,

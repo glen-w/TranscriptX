@@ -1,7 +1,7 @@
 name: Nightly
 
-# Broader lanes that used to block every PR (contracts / fast / coverage) plus
-# integration_core. Documented in tests/README.md.
+# Broader lanes that used to block every PR (fast / coverage) plus
+# integration_core and advisory GUI AppTest. Contracts also run on PR.
 # Docker image smokes stay on PR release-checks / make test-optional — nightly
 # does not pre-build transcriptx-web, so requires_docker is excluded.
 # Manual: Actions → Nightly → Run workflow.
@@ -26,7 +26,8 @@ env:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
 
 jobs:
-  # Former PR Gate B: contracts, then fast + coverage artifact for the badge workflow.
+  # Former PR Gate B: fast + contracts with coverage (fail_under from .coveragerc).
+  # Standalone make test-contracts is a required PR job; do not rerun it here.
   gate-b:
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -55,10 +56,6 @@ jobs:
           mkdir -p "$RUNNER_TEMP/tx-data" "$RUNNER_TEMP/tx-out"
           echo "TRANSCRIPTX_DATA_DIR=$RUNNER_TEMP/tx-data" >> "$GITHUB_ENV"
           echo "TRANSCRIPTX_OUTPUT_DIR=$RUNNER_TEMP/tx-out" >> "$GITHUB_ENV"
-      - name: Contracts
-        run: make test-contracts
-      # test-coverage runs the fast lane plus contracts, so it is also the
-      # fast gate; a separate make test-fast step would rerun ~8.4k tests.
       - name: Fast + coverage JSON
         run: make test-coverage
       - name: Upload coverage report
@@ -106,3 +103,35 @@ jobs:
       - name: Integration extended
         if: always()
         run: make test-integration-extended
+
+  # AppTest journeys. Advisory for the first cut (continue-on-error).
+  gui-acceptance:
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+      - name: Install package + test deps + web
+        run: |
+          python -m pip install -U pip
+          pip install -e ".[dev,web]"
+          command -v pytest
+          python -m pytest --version
+      - name: Bootstrap NLTK data for offline runs
+        run: |
+          TRANSCRIPTX_DISABLE_DOWNLOADS=0 python - <<'PY'
+          import nltk
+          nltk.download("vader_lexicon", quiet=True)
+          print("nltk vader_lexicon ready")
+          PY
+      - name: Isolate temp roots
+        run: |
+          mkdir -p "$RUNNER_TEMP/tx-data" "$RUNNER_TEMP/tx-out"
+          echo "TRANSCRIPTX_DATA_DIR=$RUNNER_TEMP/tx-data" >> "$GITHUB_ENV"
+          echo "TRANSCRIPTX_OUTPUT_DIR=$RUNNER_TEMP/tx-out" >> "$GITHUB_ENV"
+      - name: GUI acceptance
+        run: make test-gui-acceptance

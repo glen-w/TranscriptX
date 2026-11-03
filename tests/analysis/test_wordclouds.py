@@ -61,6 +61,17 @@ class TestWordcloudExplorerHtml:
         assert 'id="wordcloudEmptyState"' in html
         assert 'data-wordcloud-empty="1"' in html
 
+    def test_build_wordcloud_explorer_html_neutralizes_script_breakout(self) -> None:
+        payload = {
+            "source": "wordclouds",
+            "variant": "basic",
+            "terms": [{"term": "</script><img src=x>", "value": 1.0, "rank": 1}],
+        }
+        html = _build_wordcloud_explorer_html("<b>Cloud</b>", payload)
+        assert "</script><img" not in html
+        assert "\\u003c/script>" in html or "\\u003c" in html
+        assert "&lt;b&gt;Cloud&lt;/b&gt;" in html
+
 
 class TestWordcloudsAnalysis:
     """Tests for WordcloudsAnalysis."""

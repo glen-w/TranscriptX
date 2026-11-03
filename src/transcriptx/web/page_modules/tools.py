@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import streamlit as st
 
+from transcriptx.web.components.page_shell import render_page_shell
+
 from transcriptx.web.navigation import (
     TOOLS_HUB_FORCE_TAB_KEY,
     TOOLS_HUB_TAB_KEY,
@@ -24,13 +26,10 @@ from transcriptx.web.ui.tools import (
 
 def render_tools_page() -> None:
     """Render the Tools page (hub with per-tool sections)."""
-    st.markdown(
-        '<div class="main-header">Audio Preprocessing</div>',
-        unsafe_allow_html=True,
-    )
-    st.caption(
+    render_page_shell(
+        "Audio Preprocessing",
         "Prepare recordings before external transcription — assess, preprocess, "
-        "and merge split files."
+        "and merge split files.",
     )
 
     deps_ready = render_dependency_banner()
@@ -48,7 +47,6 @@ def render_tools_page() -> None:
         "Tool",
         options=tab_labels,
         key=TOOLS_HUB_TAB_KEY,
-        label_visibility="collapsed",
     )
     if label not in tab_labels:
         label = tab_labels[0]

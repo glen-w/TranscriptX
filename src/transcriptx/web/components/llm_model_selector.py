@@ -32,8 +32,8 @@ from transcriptx.core.llm import (
 )
 from transcriptx.core.llm.thinking_models import (
     LLM_JSON_FORMAT_CONSUMER_IDS,
-    filter_models_for_json_consumers,
     is_thinking_model,
+    json_thinking_needs_secondary,
     selection_uses_thinking_for_json,
 )
 from transcriptx.core.utils.config import get_config
@@ -178,7 +178,9 @@ def _options_for_consumer(
     """Build selectbox options; hide thinking tags when the pick feeds JSON.
 
     When ``llm.fallback_model`` is set, thinking tags stay selectable for JSON
-    consumers (primary tries think-off / secondary recovers).
+    consumers (primary tries think-off / secondary recovers). Without a
+    secondary, a thinking tag stays selectable when ``/api/show`` says
+    ``think: false`` is supported.
     """
     if consumer_id is None:
         needs_json_safe = bool(json_consumers_selected) and hide_thinking_for_shared
@@ -187,9 +189,16 @@ def _options_for_consumer(
         needs_json_safe = consumer_id in LLM_JSON_FORMAT_CONSUMER_IDS
 
     if needs_json_safe and not _json_fallback_configured():
-        return _model_select_options(
-            filter_models_for_json_consumers(installed, include_thinking=False)
-        )
+        safe = [
+            name
+            for name in installed
+            if isinstance(name, str)
+            and name.strip()
+            and not json_thinking_needs_secondary(
+                preferred_model=name, fallback_model=None
+            )
+        ]
+        return _model_select_options(safe)
     return _model_select_options(installed)
 
 
@@ -215,10 +224,11 @@ def _hidden_thinking_caption_text(
         return None
     listed = ", ".join(f"`{name}`" for name in hidden)
     return (
-        "The installed Ollama list is live; thinking-family tags are omitted "
-        f"from this JSON-safe picker: {listed}. Set a secondary model under "
-        "Settings → Models to allow them (think-off + JSON fallback), or use "
-        "plain-text modules (`llm_summary` / `llm_speaker_summary`)."
+        "The installed Ollama list is live; thinking-family tags that cannot "
+        f"disable thinking are omitted from this JSON-safe picker: {listed}. "
+        "Set a secondary model under Settings → Models, pick a tag that "
+        "advertises `think: false`, or use plain-text modules "
+        "(`llm_summary` / `llm_speaker_summary`)."
     )
 
 
@@ -541,14 +551,25 @@ def launch_gate_reasons(
         json_consumer_ids=json_consumers,
     )
     if thinking_hits and not _json_fallback_configured():
-        joined = ", ".join(f"`{c}`" for c in thinking_hits)
-        reasons.append(
-            "Thinking-family models often return an empty Ollama `response` for "
-            f"JSON modules ({joined}). Choose a non-thinking mid/large model such as "
-            "gemma3:12b, qwen2.5:7b, or mistral, or set a secondary model under "
-            "Settings → Models (`llm.fallback_model`) — avoid tiny/small tags for "
-            "llm_action_items."
-        )
+        blocked: list[str] = []
+        for consumer_id in thinking_hits:
+            if sel.mode == "shared":
+                model = sel.shared_model
+            else:
+                model = sel.module_models.get(consumer_id) or sel.shared_model
+            if json_thinking_needs_secondary(
+                preferred_model=model, fallback_model=None
+            ):
+                blocked.append(consumer_id)
+        if blocked:
+            joined = ", ".join(f"`{c}`" for c in blocked)
+            reasons.append(
+                "Thinking-family models often return an empty Ollama `response` for "
+                f"JSON modules ({joined}). Choose a non-thinking mid/large model such as "
+                "gemma3:12b, qwen2.5:7b, or mistral, a tag that advertises "
+                "`think: false`, or set a secondary model under Settings → Models "
+                "(`llm.fallback_model`) — avoid tiny/small tags for llm_action_items."
+            )
 
     if sel.mode == "shared":
         if not sel.shared_model or sel.shared_model not in installed:
@@ -597,9 +618,10 @@ def _footer_model_label(selection: LlmModelSelection | None) -> str:
 def _render_model_information(installed: Sequence[str]) -> None:
     """Guidance table for installed Ollama tags (Run Analysis + Settings)."""
     st.caption(
-        "Use this when assigning models per module. Avoid thinking-family "
-        "tags (qwen3*, deepseek-r1*, gpt-oss*) for JSON modules — they often "
-        "return an empty `response`. Prefer mid/large non-thinking tags "
+        "Use this when assigning models per module. Thinking-family tags "
+        "(qwen3*, deepseek-r1*, gpt-oss*) for JSON modules need `think: false` "
+        "and/or a non-thinking secondary — they often return an empty "
+        "`response` otherwise. Prefer mid/large non-thinking tags "
         "(gemma3:12b+, qwen2.5:7b+, mistral) for narrative_summary, "
         "llm_action_items, and chart_descriptions. Tiny/small tags "
         "(e.g. llama3.2:3b, gemma3:1b) usually cannot satisfy "
@@ -1013,7 +1035,9 @@ def render_llm_models_settings_panel() -> None:
         key=_key(key_prefix, "save_fallback"),
         icon=ic.SAVE,
     ):
-        fb_val = None if chosen_fallback in (_UNSET_MODEL, "", None) else chosen_fallback
+        fb_val = (
+            None if chosen_fallback in (_UNSET_MODEL, "", None) else chosen_fallback
+        )
         llm.fallback_model = fb_val
         llm.preferred_failure_threshold = int(new_thr)
         save_project_config(config.to_dict())

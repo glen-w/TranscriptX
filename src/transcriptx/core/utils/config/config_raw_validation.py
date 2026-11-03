@@ -34,6 +34,7 @@ _LLM_ALLOWED_KEYS = frozenset(
         "preferred_failure_threshold",
         "json_prefer_think_off",
         "base_url",
+        "allow_remote_host",
         "request_timeout",
         "availability_timeout",
         "seed",

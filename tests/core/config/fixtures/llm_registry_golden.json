@@ -13,6 +13,20 @@
     "sensitivity": "normal",
     "type": "str"
   },
+  "llm.allow_remote_host": {
+    "advanced": false,
+    "category": "llm",
+    "choices": null,
+    "default": false,
+    "description": "Allow LLM base_url hosts other than loopback / host.docker.internal. Remote endpoints receive transcript content; opt-in only.",
+    "key": "llm.allow_remote_host",
+    "max": null,
+    "min": null,
+    "path": "llm.allow_remote_host",
+    "scope": "project",
+    "sensitivity": "normal",
+    "type": "bool"
+  },
   "llm.availability_timeout": {
     "advanced": false,
     "category": "llm",

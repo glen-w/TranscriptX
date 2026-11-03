@@ -13,16 +13,14 @@ from transcriptx.web.components.info_tooltip import widget_help
 # scopes shared action-link styling in shell.py.
 ACTION_LINK_KEY_PREFIX = "tx_al_"
 
-# Streamlit rejects a truly empty button label; icon-only uses a nbsp.
-_ICON_ONLY_LABEL = "\u00a0"
-
 ActionLinkDisplay = Literal["icon", "text", "both"]
 
 
-def action_link_key(key: str) -> str:
+def action_link_key(key: str, *, icon_only: bool = False) -> str:
     if key.startswith(ACTION_LINK_KEY_PREFIX):
         return key
-    return f"{ACTION_LINK_KEY_PREFIX}{key}"
+    prefix = f"{ACTION_LINK_KEY_PREFIX}i_" if icon_only else ACTION_LINK_KEY_PREFIX
+    return f"{prefix}{key}"
 
 
 def action_link_chrome(
@@ -37,7 +35,7 @@ def action_link_chrome(
     """
     mode = str(display)
     if mode == "icon":
-        return _ICON_ONLY_LABEL, icon
+        return label, icon
     if mode == "text":
         return label, None
     return label, icon
@@ -62,12 +60,13 @@ def render_action_link(
     when Settings → Interface has turned instructional ⓘ tips off.
     """
     shown_label, shown_icon = action_link_chrome(label, icon, display)
-    if str(display) == "icon":
+    icon_only = str(display) == "icon"
+    if icon_only:
         help_value: str | None = label or None
     else:
         help_value = widget_help(help)
     button_kwargs: dict[str, Any] = {
-        "key": action_link_key(key),
+        "key": action_link_key(key, icon_only=icon_only),
         "type": "tertiary",
         "width": "content",
         "on_click": on_click,

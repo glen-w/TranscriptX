@@ -67,10 +67,40 @@ class NERAnalysis(AnalysisModule):
         Returns:
             Dictionary containing NER analysis results
         """
+        from transcriptx.core.analysis.emotion_family.language import (
+            extract_transcript_metadata,
+            is_english,
+            normalize_language_code,
+        )
         from transcriptx.core.utils.speaker_extraction import (
             extract_speaker_info,
             get_speaker_display_name,
         )
+
+        meta = extract_transcript_metadata(segments)
+        lang = normalize_language_code(meta.get("language"))
+        if lang and not is_english(lang):
+            return {
+                "status": "skipped",
+                "skip_reason": "unsupported_language",
+                "language": lang,
+                "entity_counts_per_speaker": {},
+                "label_counts_per_speaker": {},
+                "location_entities_per_speaker": {},
+                "entity_sentences_per_speaker": {},
+                "location_mentions_per_speaker": {},
+                "person_mentions": [],
+                "summary_json": {
+                    "status": "skipped",
+                    "skip_reason": "unsupported_language",
+                    "language": lang,
+                },
+                "speaker_csv_rows": [],
+                "all_rows": [],
+                "all_label_counter": {},
+                "entities": [],
+                "segments": segments,
+            }
 
         # Apply segment limits from config to prevent timeouts
         max_segments = getattr(self.config.analysis, "ner_max_segments", 5000)
@@ -226,6 +256,17 @@ class NERAnalysis(AnalysisModule):
             results: Analysis results dictionary
             output_service: OutputService instance
         """
+        if results.get("skip_reason") == "unsupported_language":
+            output_service.save_data(
+                {
+                    "status": "skipped",
+                    "skip_reason": "unsupported_language",
+                    "language": results.get("language"),
+                },
+                "ner-entities",
+                format_type="json",
+            )
+            return
         entity_counts_per_speaker = results["entity_counts_per_speaker"]
         label_counts_per_speaker = results["label_counts_per_speaker"]
         location_entities_per_speaker = results["location_entities_per_speaker"]

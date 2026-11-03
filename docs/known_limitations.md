@@ -66,10 +66,6 @@ install error. Corrections Studio review can roll back with
 ``TX_CORRECTIONS_WORKSPACE_COMPONENT=0``. See
 [theme_c_workspaces_ccv2.md](dev/theme_c_workspaces_ccv2.md).
 
-## Content rename suggestions
-
-Assistive full-stem suggestions (`input.rename_content_suggestions=auto`, default `off`) are **drafts**: transcript heuristics, optional local LLM, and optional web lookup can mis-rank dates or titles (especially webinars with no clear event date in the file). Web lookup sends short DuckDuckGo queries only when eligibility rules match and `rename_suggest_web` is enabled. Suggestions do not rename until you submit **Rename**; `auto_import` does not use content stems.
-
 ## Theme D reader (full-file playback)
 
 The Transcript **reader workspace** plays the resolved source audio via a
@@ -83,4 +79,20 @@ playback. Correct mode uses the clip player, not the reader.
 ## Install honesty (Mac MPS)
 
 Native **Apple MPS** is **supported-with-caveats**, not universally validated for every optional model. Prefer **Docker CPU** for predictable installs. If MPS initialisation or model execution fails, use `TRANSCRIPTX_FORCE_CPU=1` (documented in [installation.md](runtime/installation.md)). Do not assume every optional model runs reliably on MPS.
+
+## Non-English NER
+
+`ner` skips when transcript `language` metadata is present and not English (`skip_reason: unsupported_language`). Other modules still use English spaCy / embeddings. This is a routing skip, not multilingual NER.
+
+## Transcript stitch identity
+
+**Workflow → Audio Preprocessing → Manual merge → Stitch transcripts** writes a **new** JSON. It never overwrites managed originals. Duration vs timestamp mismatch aborts. Diarized `SPEAKER_*` labels are not remapped; re-run Speaker Identification on the stitched file.
+
+## Derived Speakers SQLite
+
+`state/analytics_derived.sqlite` is a rebuildable Theme J index for `profile_id` gallery queries. Files and sidecars remain canonical. Wipe and rebuild if the index drifts.
+
+## Python 3.12
+
+TranscriptX claims **3.10–3.11** (canonical 3.10). 3.12 is not a CI cell (`wordcloud==1.9.2` has no cp3.12 wheel).
 

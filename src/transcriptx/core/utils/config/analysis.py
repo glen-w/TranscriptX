@@ -1,345 +1,139 @@
-"""Analysis configuration classes."""
+"""Analysis configuration classes (facade).
+
+Nested dataclasses live in ``analysis_*.py`` modules 1:1 with Pydantic pilots.
+``AnalysisConfig`` remains here: it hydrates several flat slices and mapping stores.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
 
-from pydantic import BaseModel
-
-
-def _dataclass_from_nested_dump(cls: type, data: dict[str, Any]) -> object:
-    """Build a nested dataclass instance from a model_dump() dict (no __init__)."""
-    from dataclasses import is_dataclass
-    from typing import get_type_hints
-
-    instance = object.__new__(cls)
-    annotations = get_type_hints(cls)
-    for key, value in data.items():
-        field_type = annotations.get(key)
-        if (
-            isinstance(value, dict)
-            and field_type is not None
-            and is_dataclass(field_type)
-        ):
-            object.__setattr__(
-                instance, key, _dataclass_from_nested_dump(field_type, value)
-            )
-        else:
-            object.__setattr__(instance, key, value)
-    return instance
-
-
-def _hydrate_dataclass_from_pydantic(instance: object, model: BaseModel) -> None:
-    """Populate dataclass fields from a Pydantic model defaults dump (no revalidation).
-
-    Nested dict values are reconstructed as nested dataclass instances when the
-    corresponding field annotation is a dataclass type (needed for summary /
-    highlights attribute access and file-override merge).
-    """
-    from dataclasses import is_dataclass
-    from typing import get_type_hints
-
-    annotations = get_type_hints(type(instance))
-    for key, value in model.model_dump().items():
-        field_type = annotations.get(key)
-        if (
-            isinstance(value, dict)
-            and field_type is not None
-            and is_dataclass(field_type)
-        ):
-            object.__setattr__(
-                instance, key, _dataclass_from_nested_dump(field_type, value)
-            )
-        else:
-            object.__setattr__(instance, key, value)
-
-
-def _hydrate_analysis_slice(instance: object, model: BaseModel) -> None:
-    """Hydrate only the fields owned by a partial analysis_* pilot model."""
-    from dataclasses import is_dataclass
-    from typing import get_type_hints
-
-    annotations = get_type_hints(type(instance))
-    for key, value in model.model_dump().items():
-        field_type = annotations.get(key)
-        if (
-            isinstance(value, dict)
-            and field_type is not None
-            and is_dataclass(field_type)
-        ):
-            object.__setattr__(
-                instance, key, _dataclass_from_nested_dump(field_type, value)
-            )
-        else:
-            object.__setattr__(instance, key, value)
-
-
-def _hydrate_mapping_store(instance: object, attr_name: str, model: BaseModel) -> None:
-    """Set one AnalysisConfig mapping attribute from a fresh model_dump()."""
-    object.__setattr__(instance, attr_name, model.model_dump())
-
-
-@dataclass
-class CorrectionsLlmConfig:
-    """Nested LLM settings for Corrections Studio. Defaults from CorrectionsLlmSettingsModel."""
-
-    enabled: bool = field(init=False, repr=True)
-    effort: str = field(init=False, repr=True)
-    request_timeout_seconds: float = field(init=False, repr=True)
-    total_wall_clock_seconds: float = field(init=False, repr=True)
-    max_chunks: int = field(init=False, repr=True)
-    chunk_max_segments: int = field(init=False, repr=True)
-    chunk_overlap_segments: int = field(init=False, repr=True)
-    max_candidates_per_chunk: int = field(init=False, repr=True)
-    max_candidates_per_transcript: int = field(init=False, repr=True)
-    continue_on_failure: bool = field(init=False, repr=True)
-    assess_deterministic: bool = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.corrections_llm import (
-            CorrectionsLlmSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, CorrectionsLlmSettingsModel())
-
-
-@dataclass
-class CorrectionsConfig:
-    """Configuration for transcript corrections. Defaults owned by CorrectionsSettingsModel."""
-
-    enabled: bool = field(init=False, repr=True)
-    interactive_review: bool = field(init=False, repr=True)
-    consistency_similarity_threshold: float = field(init=False, repr=True)
-    fuzzy_similarity_threshold: float = field(init=False, repr=True)
-    known_acronyms: list[str] = field(init=False, repr=True)
-    known_org_phrases: dict[str, list[str]] = field(init=False, repr=True)
-    write_csv_summary: bool = field(init=False, repr=True)
-    store_corrected_transcript: bool = field(init=False, repr=True)
-    default_rule_scope: str = field(init=False, repr=True)
-    enable_fuzzy: bool = field(init=False, repr=True)
-    update_original_file: bool = field(init=False, repr=True)
-    create_backup: bool = field(init=False, repr=True)
-    llm: CorrectionsLlmConfig = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.corrections import CorrectionsSettingsModel
-
-        _hydrate_dataclass_from_pydantic(self, CorrectionsSettingsModel())
-
-
-@dataclass
-class SpeakerExemplarsConfig:
-    """Configuration for speaker exemplars. Defaults owned by SpeakerExemplarsSettingsModel."""
-
-    enabled: bool = field(init=False, repr=True)
-    count: int = field(init=False, repr=True)
-    min_words: int = field(init=False, repr=True)
-    max_words: int = field(init=False, repr=True)
-    max_segments_considered: int = field(init=False, repr=True)
-    merge_adjacent: bool = field(init=False, repr=True)
-    dedupe: bool = field(init=False, repr=True)
-    near_dedupe: bool = field(init=False, repr=True)
-    near_dedupe_threshold: float = field(init=False, repr=True)
-    near_dedupe_max_checks: int = field(init=False, repr=True)
-    methods_enabled: dict[str, bool] = field(init=False, repr=True)
-    weights: dict[str, float] = field(init=False, repr=True)
-    distinctive_scope: str = field(init=False, repr=True)
-    distinctive_min_other_segments: int = field(init=False, repr=True)
-    distinctive_max_other_speakers: int = field(init=False, repr=True)
-    distinctive_max_other_segments_total: int = field(init=False, repr=True)
-    distinctive_max_other_segments_per_speaker: int = field(init=False, repr=True)
-    tfidf_max_features: int = field(init=False, repr=True)
-    tfidf_ngram_range: tuple[int, int] = field(init=False, repr=True)
-    length_prior_enabled: bool = field(init=False, repr=True)
-    length_prior_center: float = field(init=False, repr=True)
-    length_prior_sigma: float = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.speaker_exemplars import (
-            SpeakerExemplarsSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, SpeakerExemplarsSettingsModel())
-
-
-@dataclass
-class HighlightsCounts:
-    cold_open_quotes: int = field(init=False, repr=True)
-    total_highlights: int = field(init=False, repr=True)
-    conflict_windows: int = field(init=False, repr=True)
-    emblematic_phrases: int = field(init=False, repr=True)
-
-
-@dataclass
-class HighlightsThresholds:
-    conflict_spike_percentile: float = field(init=False, repr=True)
-    min_gap_seconds: float = field(init=False, repr=True)
-    min_quote_words: int = field(init=False, repr=True)
-    min_quote_chars: int = field(init=False, repr=True)
-    max_quote_words: int = field(init=False, repr=True)
-    max_consecutive_per_speaker: int = field(init=False, repr=True)
-    min_phrase_len: int = field(init=False, repr=True)
-    max_phrase_len: int = field(init=False, repr=True)
-    min_phrase_frequency: int = field(init=False, repr=True)
-
-
-@dataclass
-class HighlightsWeights:
-    intensity: float = field(init=False, repr=True)
-    conflict: float = field(init=False, repr=True)
-    uniqueness: float = field(init=False, repr=True)
-    keyword_richness: float = field(init=False, repr=True)
-    content_density: float = field(init=False, repr=True)
-
-
-@dataclass
-class HighlightsSections:
-    cold_open_enabled: bool = field(init=False, repr=True)
-    conflict_points_enabled: bool = field(init=False, repr=True)
-    emblematic_phrases_enabled: bool = field(init=False, repr=True)
-
-
-@dataclass
-class HighlightsOutput:
-    write_conflict_csv: bool = field(init=False, repr=True)
-
-
-@dataclass
-class HighlightsMergeAdjacent:
-    enabled: bool = field(init=False, repr=True)
-    max_gap_seconds: float = field(init=False, repr=True)
-    max_segments: int = field(init=False, repr=True)
-
-
-@dataclass
-class HighlightsConflict:
-    window_seconds: float = field(init=False, repr=True)
-    step_seconds: float = field(init=False, repr=True)
-    merge_gap_seconds: float = field(init=False, repr=True)
-
-
-@dataclass
-class HighlightsColdOpen:
-    window_seconds: float = field(init=False, repr=True)
-    window_policy: str = field(init=False, repr=True)
-
-
-@dataclass
-class HighlightsConfig:
-    """Configuration for highlights. Defaults owned by HighlightsSettingsModel."""
-
-    enabled: bool = field(init=False, repr=True)
-    counts: HighlightsCounts = field(init=False, repr=True)
-    thresholds: HighlightsThresholds = field(init=False, repr=True)
-    weights: HighlightsWeights = field(init=False, repr=True)
-    sections: HighlightsSections = field(init=False, repr=True)
-    output: HighlightsOutput = field(init=False, repr=True)
-    merge_adjacent: HighlightsMergeAdjacent = field(init=False, repr=True)
-    conflict: HighlightsConflict = field(init=False, repr=True)
-    cold_open: HighlightsColdOpen = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.highlights import HighlightsSettingsModel
-
-        _hydrate_dataclass_from_pydantic(self, HighlightsSettingsModel())
-
-
-@dataclass
-class SummaryCounts:
-    theme_bullets: int = field(init=False, repr=True)
-    tension_bullets: int = field(init=False, repr=True)
-    commitments: int = field(init=False, repr=True)
-
-
-@dataclass
-class SummarySections:
-    overview_enabled: bool = field(init=False, repr=True)
-    key_themes_enabled: bool = field(init=False, repr=True)
-    tension_points_enabled: bool = field(init=False, repr=True)
-    commitments_enabled: bool = field(init=False, repr=True)
-
-
-@dataclass
-class SummaryCommitments:
-    rules: list[str] = field(init=False, repr=True)
-    max_per_owner: int = field(init=False, repr=True)
-
-
-@dataclass
-class SummaryConfig:
-    """Configuration for summary. Defaults owned by SummarySettingsModel."""
-
-    enabled: bool = field(init=False, repr=True)
-    require_highlights: bool = field(init=False, repr=True)
-    compute_highlights_if_missing: bool = field(init=False, repr=True)
-    allow_degraded: bool = field(init=False, repr=True)
-    counts: SummaryCounts = field(init=False, repr=True)
-    sections: SummarySections = field(init=False, repr=True)
-    commitments: SummaryCommitments = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.summary import SummarySettingsModel
-
-        _hydrate_dataclass_from_pydantic(self, SummarySettingsModel())
-
-
-@dataclass
-class BERTopicConfig:
-    """Configuration for BERTopic. Defaults owned by BERTopicSettingsModel."""
-
-    embedding_model: str = field(init=False, repr=True)
-    min_topic_size: int = field(init=False, repr=True)
-    nr_topics: str = field(init=False, repr=True)
-    top_n_words: int = field(init=False, repr=True)
-    label_words: int = field(init=False, repr=True)
-    calculate_probabilities: bool = field(init=False, repr=True)
-    timeout_seconds: float = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.bertopic import (
-            BERTopicSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, BERTopicSettingsModel())
-
-
-@dataclass
-class SemanticSimilarityConfig:
-    """Tunable settings for semantic_similarity. Defaults owned by SemanticSimilaritySettingsModel."""
-
-    enabled: bool = field(init=False, repr=True)
-    mode: str = field(init=False, repr=True)
-    model_name: str = field(init=False, repr=True)
-    batch_size: int = field(init=False, repr=True)
-    min_text_length_words: int = field(init=False, repr=True)
-    self_similarity_threshold: float = field(init=False, repr=True)
-    cross_speaker_similarity_threshold: float = field(init=False, repr=True)
-    self_time_window_seconds: float = field(init=False, repr=True)
-    cross_speaker_time_window_seconds: float = field(init=False, repr=True)
-    max_candidate_pairs: int = field(init=False, repr=True)
-    top_k_per_segment: int = field(init=False, repr=True)
-    timeout_seconds: float = field(init=False, repr=True)
-    persist_embeddings: bool = field(init=False, repr=True)
-    lru_size: int = field(init=False, repr=True)
-    use_lexical_prefilter: bool = field(init=False, repr=True)
-    lexical_prefilter_min_jaccard: float = field(init=False, repr=True)
-    strict_advanced_inputs: bool = field(init=False, repr=True)
-    motif_min_cluster_size: int = field(init=False, repr=True)
-    cross_session_match_threshold: float = field(init=False, repr=True)
-    min_sessions_for_recurring: int = field(init=False, repr=True)
-    max_motifs_per_session: int = field(init=False, repr=True)
-    max_motifs_per_group: int = field(init=False, repr=True)
-    max_centroid_bytes: int = field(init=False, repr=True)
-    cluster_eps: float = field(init=False, repr=True)
-    cluster_min_samples: int = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.semantic_similarity import (
-            SemanticSimilaritySettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, SemanticSimilaritySettingsModel())
+from .analysis_hydrate import (
+    _dataclass_from_nested_dump,
+    _hydrate_analysis_slice,
+    _hydrate_dataclass_from_pydantic,
+    _hydrate_mapping_store,
+)
+from .analysis_acts import ActsConfig
+from .analysis_affect_tension import AffectTensionConfig
+from .analysis_bertopic import BERTopicConfig
+from .analysis_chart_descriptions import ChartDescriptionsConfig
+from .analysis_corrections import CorrectionsConfig
+from .analysis_corrections_llm import CorrectionsLlmConfig
+from .analysis_echoes import EchoesConfig
+from .analysis_emotion_family import (
+    ContextualEmotionConfig,
+    EmotionLexicalConfig,
+    FineGrainedEmotionConfig,
+)
+from .analysis_epistemic_markers import EpistemicMarkersConfig
+from .analysis_group_llm_synthesis import GroupLLMSynthesisConfig
+from .analysis_highlights import (
+    HighlightsColdOpen,
+    HighlightsConfig,
+    HighlightsConflict,
+    HighlightsCounts,
+    HighlightsMergeAdjacent,
+    HighlightsOutput,
+    HighlightsSections,
+    HighlightsThresholds,
+    HighlightsWeights,
+)
+from .analysis_insight_eligibility import InsightEligibilityConfig
+from .analysis_insights import InsightsConfig, InsightsCounts
+from .analysis_keyphrases import KeyphrasesConfig
+from .analysis_llm_action_items import LLMActionItemsConfig
+from .analysis_llm_custom_qa import LLMCustomQAConfig
+from .analysis_llm_speaker_summary import LLMSpeakerSummaryConfig
+from .analysis_llm_summary import LLMSummaryConfig
+from .analysis_moments import MomentsConfig
+from .analysis_momentum import MomentumConfig
+from .analysis_names import NamesConfig
+from .analysis_pauses import PausesConfig
+from .analysis_politeness import PolitenessConfig
+from .analysis_qa_analysis import QAAnalysisConfig
+from .analysis_semantic_similarity import SemanticSimilarityConfig
+from .analysis_speaker_exemplars import SpeakerExemplarsConfig
+from .analysis_summary import (
+    SummaryCommitments,
+    SummaryConfig,
+    SummaryCounts,
+    SummarySections,
+)
+from .analysis_tag_extraction import TagExtractionConfig
+from .analysis_temporal_dynamics import TemporalDynamicsConfig
+from .analysis_topic_modeling import TopicModelingConfig
+from .analysis_topic_shift import TopicShiftConfig
+from .analysis_transcript_quality import TranscriptQualityConfig
+from .analysis_ui_presets import (
+    AnalysisUiPresetsConfig,
+    PresetPolicyConfig,
+    default_ui_presets_dict,
+    validate_ui_presets_dict,
+)
+from .analysis_vectorization import VectorizationConfig
+from .analysis_voice import VoiceConfig
+
+__all__ = [
+    "ActsConfig",
+    "AffectTensionConfig",
+    "AnalysisConfig",
+    "AnalysisUiPresetsConfig",
+    "BERTopicConfig",
+    "ChartDescriptionsConfig",
+    "ContextualEmotionConfig",
+    "CorrectionsConfig",
+    "CorrectionsLlmConfig",
+    "EchoesConfig",
+    "EmotionLexicalConfig",
+    "EpistemicMarkersConfig",
+    "FineGrainedEmotionConfig",
+    "GroupLLMSynthesisConfig",
+    "HighlightsColdOpen",
+    "HighlightsConfig",
+    "HighlightsConflict",
+    "HighlightsCounts",
+    "HighlightsMergeAdjacent",
+    "HighlightsOutput",
+    "HighlightsSections",
+    "HighlightsThresholds",
+    "HighlightsWeights",
+    "InsightEligibilityConfig",
+    "InsightsConfig",
+    "InsightsCounts",
+    "KeyphrasesConfig",
+    "LLMActionItemsConfig",
+    "LLMCustomQAConfig",
+    "LLMSpeakerSummaryConfig",
+    "LLMSummaryConfig",
+    "MomentsConfig",
+    "MomentumConfig",
+    "NamesConfig",
+    "PausesConfig",
+    "PolitenessConfig",
+    "PresetPolicyConfig",
+    "QAAnalysisConfig",
+    "SemanticSimilarityConfig",
+    "SpeakerExemplarsConfig",
+    "SummaryCommitments",
+    "SummaryConfig",
+    "SummaryCounts",
+    "SummarySections",
+    "TagExtractionConfig",
+    "TemporalDynamicsConfig",
+    "TopicModelingConfig",
+    "TopicShiftConfig",
+    "TranscriptQualityConfig",
+    "VectorizationConfig",
+    "VoiceConfig",
+    "_dataclass_from_nested_dump",
+    "_hydrate_analysis_slice",
+    "_hydrate_dataclass_from_pydantic",
+    "_hydrate_mapping_store",
+    "default_ui_presets_dict",
+    "validate_ui_presets_dict",
+]
 
 
 @dataclass
@@ -623,641 +417,3 @@ class AnalysisConfig:
         _hydrate_mapping_store(
             self, "full_analysis_settings", FullAnalysisSettingsModel()
         )
-
-
-@dataclass
-class TopicModelingConfig:
-    """Configuration for topic modeling. Defaults owned by TopicModelingSettingsModel."""
-
-    max_features: int = field(init=False, repr=True)
-    min_df: int = field(init=False, repr=True)
-    max_df: float = field(init=False, repr=True)
-    ngram_range: tuple[int, int] = field(init=False, repr=True)
-    random_state: int = field(init=False, repr=True)
-    max_iter_lda: int = field(init=False, repr=True)
-    max_iter_nmf: int = field(init=False, repr=True)
-    alpha_H: float = field(init=False, repr=True)
-    tol: float = field(init=False, repr=True)
-    learning_method: str = field(init=False, repr=True)
-    k_range: tuple[int, int] = field(init=False, repr=True)
-    test_size: float = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.topic_modeling import (
-            TopicModelingSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, TopicModelingSettingsModel())
-
-
-@dataclass
-class ActsConfig:
-    """Configuration for dialogue acts. Defaults owned by ActsSettingsModel."""
-
-    method: str = field(init=False, repr=True)
-    use_context: bool = field(init=False, repr=True)
-    context_window_size: int = field(init=False, repr=True)
-    context_window_type: str = field(init=False, repr=True)
-    include_speaker_info: bool = field(init=False, repr=True)
-    include_timing_info: bool = field(init=False, repr=True)
-    min_confidence: float = field(init=False, repr=True)
-    high_confidence_threshold: float = field(init=False, repr=True)
-    ensemble_weight_transformer: float = field(init=False, repr=True)
-    ensemble_weight_ml: float = field(init=False, repr=True)
-    ensemble_weight_rules: float = field(init=False, repr=True)
-    ml_model_name: str = field(init=False, repr=True)
-    ml_use_gpu: bool = field(init=False, repr=True)
-    ml_batch_size: int = field(init=False, repr=True)
-    ml_max_length: int = field(init=False, repr=True)
-    rules_use_enhanced_patterns: bool = field(init=False, repr=True)
-    rules_use_fallback_logic: bool = field(init=False, repr=True)
-    rules_confidence_boost_exact_match: float = field(init=False, repr=True)
-    rules_context_boost_factor: float = field(init=False, repr=True)
-    enable_caching: bool = field(init=False, repr=True)
-    cache_size: int = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.acts import (
-            ActsSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, ActsSettingsModel())
-
-
-@dataclass
-class TagExtractionConfig:
-    """Configuration for tag extraction. Defaults owned by TagExtractionSettingsModel."""
-
-    early_window_seconds: int = field(init=False, repr=True)
-    early_segments: int = field(init=False, repr=True)
-    min_confidence: float = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.tag_extraction import (
-            TagExtractionSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, TagExtractionSettingsModel())
-
-
-@dataclass
-class LLMSummaryConfig:
-    """Configuration for llm_summary. Defaults owned by LLMSummarySettingsModel."""
-
-    effort: str = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.llm_summary import LLMSummarySettingsModel
-
-        _hydrate_dataclass_from_pydantic(self, LLMSummarySettingsModel())
-
-
-@dataclass
-class LLMSpeakerSummaryConfig:
-    """Defaults owned by LLMSpeakerSummarySettingsModel."""
-
-    effort: str = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.llm_speaker_summary import (
-            LLMSpeakerSummarySettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, LLMSpeakerSummarySettingsModel())
-
-
-@dataclass
-class LLMActionItemsConfig:
-    """Defaults owned by LLMActionItemsSettingsModel."""
-
-    effort: str = field(init=False, repr=True)
-    coerce_v1_artifacts: bool = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.llm_action_items import (
-            LLMActionItemsSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, LLMActionItemsSettingsModel())
-
-
-@dataclass
-class LLMCustomQAConfig:
-    """Defaults owned by LLMCustomQASettingsModel."""
-
-    effort: str = field(init=False, repr=True)
-    saved_questions: list = field(init=False, repr=True)
-    evidence_pack_ids: object = field(init=False, repr=True)
-    include_transcript: bool = field(init=False, repr=True)
-    routing_enabled: bool = field(init=False, repr=True)
-    max_packs_per_question: int = field(init=False, repr=True)
-    max_reasoning_chars: int = field(init=False, repr=True)
-    max_eligible_speakers: int = field(init=False, repr=True)
-    max_speaker_question_cells: int = field(init=False, repr=True)
-    max_llm_calls_per_run: int = field(init=False, repr=True)
-    max_library_questions: int = field(init=False, repr=True)
-    max_library_total_question_chars: int = field(init=False, repr=True)
-    max_questions_per_run: int = field(init=False, repr=True)
-    max_question_chars: int = field(init=False, repr=True)
-    max_run_total_question_chars: int = field(init=False, repr=True)
-    max_answer_chars: int = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.llm_custom_qa import (
-            LLMCustomQASettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, LLMCustomQASettingsModel())
-
-
-@dataclass
-class PresetPolicyConfig:
-    """One UI analysis preset policy. Defaults owned by PresetPolicyModel."""
-
-    allow_llm: bool = field(init=False, repr=True)
-    llm_module_ids: list = field(init=False, repr=True)
-    allow_heavy: bool = field(init=False, repr=True)
-    heavy_module_ids: list = field(init=False, repr=True)
-    include_excluded_from_default: bool = field(init=False, repr=True)
-    module_ids: object = field(init=False, repr=True)
-
-
-@dataclass
-class AnalysisUiPresetsConfig:
-    """Defaults owned by AnalysisUiPresetsModel."""
-
-    quick: PresetPolicyConfig = field(init=False, repr=True)
-    balanced: PresetPolicyConfig = field(init=False, repr=True)
-    thorough: PresetPolicyConfig = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.ui_presets import AnalysisUiPresetsModel
-
-        _hydrate_dataclass_from_pydantic(self, AnalysisUiPresetsModel())
-
-
-def default_ui_presets_dict() -> dict[str, Any]:
-    """Builtin Quick/Balanced/Thorough policies as a plain nested dict."""
-    from dataclasses import asdict
-
-    return asdict(AnalysisUiPresetsConfig())
-
-
-def validate_ui_presets_dict(payload: dict[str, Any]) -> dict[str, Any]:
-    """Validate and normalize a ui_presets payload; return model_dump()."""
-    from transcriptx.core.config.models.ui_presets import AnalysisUiPresetsModel
-
-    return AnalysisUiPresetsModel.model_validate(payload).model_dump()
-
-
-@dataclass
-class GroupLLMSynthesisConfig:
-    """Defaults owned by GroupLLMSynthesisSettingsModel."""
-
-    enabled: bool = field(init=False, repr=True)
-    effort: str = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.group_llm_synthesis import (
-            GroupLLMSynthesisSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, GroupLLMSynthesisSettingsModel())
-
-
-@dataclass
-class ChartDescriptionsConfig:
-    """Defaults owned by ChartDescriptionsSettingsModel."""
-
-    enabled: bool = field(init=False, repr=True)
-    chart_set: str = field(init=False, repr=True)
-    max_description_chars: int = field(init=False, repr=True)
-    request_timeout: float = field(init=False, repr=True)
-    max_retries: int = field(init=False, repr=True)
-    circuit_breaker_failures: int = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.chart_descriptions import (
-            ChartDescriptionsSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, ChartDescriptionsSettingsModel())
-
-
-@dataclass
-class QAAnalysisConfig:
-    """Configuration for Q&A analysis. Defaults owned by QAAnalysisSettingsModel."""
-
-    response_time_threshold: float = field(init=False, repr=True)
-    weight_directness: float = field(init=False, repr=True)
-    weight_completeness: float = field(init=False, repr=True)
-    weight_relevance: float = field(init=False, repr=True)
-    weight_length: float = field(init=False, repr=True)
-    min_match_threshold: float = field(init=False, repr=True)
-    good_match_threshold: float = field(init=False, repr=True)
-    high_match_threshold: float = field(init=False, repr=True)
-    min_answer_length: int = field(init=False, repr=True)
-    optimal_answer_length: int = field(init=False, repr=True)
-    max_answer_length: int = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.qa_analysis import (
-            QAAnalysisSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, QAAnalysisSettingsModel())
-
-
-@dataclass
-class TemporalDynamicsConfig:
-    """Configuration for temporal dynamics. Defaults owned by TemporalDynamicsSettingsModel."""
-
-    window_size: float = field(init=False, repr=True)
-    weight_segment_factor: float = field(init=False, repr=True)
-    weight_length_factor: float = field(init=False, repr=True)
-    weight_question_factor: float = field(init=False, repr=True)
-    max_segments_normalization: float = field(init=False, repr=True)
-    max_questions_normalization: float = field(init=False, repr=True)
-    opening_phase_percentage: float = field(init=False, repr=True)
-    opening_phase_max_seconds: float = field(init=False, repr=True)
-    closing_phase_percentage: float = field(init=False, repr=True)
-    closing_phase_max_seconds: float = field(init=False, repr=True)
-    sentiment_change_threshold: float = field(init=False, repr=True)
-    engagement_change_threshold: float = field(init=False, repr=True)
-    speaking_rate_change_threshold: float = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.temporal_dynamics import (
-            TemporalDynamicsSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, TemporalDynamicsSettingsModel())
-
-
-@dataclass
-class AffectTensionConfig:
-    """Configuration for affect_tension. Defaults owned by AffectTensionSettingsModel."""
-
-    mismatch_compound_threshold: float = field(init=False, repr=True)
-    trust_like_threshold: float = field(init=False, repr=True)
-    pos_emotion_threshold: float = field(init=False, repr=True)
-    weight_posneg_mismatch: float = field(init=False, repr=True)
-    weight_trust_neutral: float = field(init=False, repr=True)
-    weight_entropy: float = field(init=False, repr=True)
-    weight_volatility: float = field(init=False, repr=True)
-    window_segments: int = field(init=False, repr=True)
-    window_seconds: float | None = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.affect_tension import (
-            AffectTensionSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, AffectTensionSettingsModel())
-
-
-@dataclass
-class EmotionLexicalConfig:
-    """analysis.emotion.* lexical settings."""
-
-    low_coverage_threshold: float = field(init=False, repr=True)
-    no_hit_rate_warn: float = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.analysis_emotion_family import (
-            EmotionLexicalSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, EmotionLexicalSettingsModel())
-
-
-@dataclass
-class ContextualEmotionConfig:
-    """analysis.contextual_emotion.* experimental classifier settings."""
-
-    profile_id: str = field(init=False, repr=True)
-    confidence_threshold: float = field(init=False, repr=True)
-    batch_size: int = field(init=False, repr=True)
-    release_channel: str = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.analysis_emotion_family import (
-            ContextualEmotionSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, ContextualEmotionSettingsModel())
-
-
-@dataclass
-class FineGrainedEmotionConfig:
-    """analysis.fine_grained_emotion.* experimental multilabel settings."""
-
-    profile_id: str = field(init=False, repr=True)
-    label_threshold: float = field(init=False, repr=True)
-    max_labels_per_segment: int = field(init=False, repr=True)
-    batch_size: int = field(init=False, repr=True)
-    release_channel: str = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.analysis_emotion_family import (
-            FineGrainedEmotionSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, FineGrainedEmotionSettingsModel())
-
-
-@dataclass
-class PausesConfig:
-    """Configuration for pauses analysis. Defaults owned by PausesSettingsModel."""
-
-    min_long_pause_seconds: float = field(init=False, repr=True)
-    post_question_multiplier: float = field(init=False, repr=True)
-    percentile_long_pause: float = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.pauses import PausesSettingsModel
-
-        _hydrate_dataclass_from_pydantic(self, PausesSettingsModel())
-
-
-@dataclass
-class TranscriptQualityConfig:
-    """ASR confidence settings. Defaults owned by TranscriptQualitySettingsModel."""
-
-    low_score_threshold: float = field(init=False, repr=True)
-    max_gap_seconds: float = field(init=False, repr=True)
-    cluster_merge_seconds: float = field(init=False, repr=True)
-    max_spans: int = field(init=False, repr=True)
-    max_clusters: int = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.transcript_quality import (
-            TranscriptQualitySettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, TranscriptQualitySettingsModel())
-
-
-@dataclass
-class EpistemicMarkersConfig:
-    """Epistemic marker settings. Defaults owned by EpistemicMarkersSettingsModel."""
-
-    min_tokens_for_rates: int = field(init=False, repr=True)
-    enabled_categories: list = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.epistemic_markers import (
-            EpistemicMarkersSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, EpistemicMarkersSettingsModel())
-
-
-@dataclass
-class NamesConfig:
-    """Names module settings. Defaults owned by AnalysisNamesSettingsModel."""
-
-    min_mentions: int = field(init=False, repr=True)
-    exclude_known_speakers: bool = field(init=False, repr=True)
-    max_mentions_per_person: int = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.analysis_names import (
-            AnalysisNamesSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, AnalysisNamesSettingsModel())
-
-
-@dataclass
-class InsightsCounts:
-    top_themes: int = field(init=False, repr=True)
-    top_recurring_ideas: int = field(init=False, repr=True)
-    top_notable_moments: int = field(init=False, repr=True)
-    overview_theme_cap: int = field(init=False, repr=True)
-
-
-@dataclass
-class InsightsConfig:
-    """Insights composer settings. Defaults owned by InsightsSettingsModel."""
-
-    enabled: bool = field(init=False, repr=True)
-    counts: InsightsCounts = field(init=False, repr=True)
-    min_theme_score: float = field(init=False, repr=True)
-    min_themes_for_signal: int = field(init=False, repr=True)
-    topic_boost: float = field(init=False, repr=True)
-    narrative_enabled: bool = field(init=False, repr=True)
-    narrative_min_evidence_quotes: int = field(init=False, repr=True)
-    narrative_max_chars: int = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.insights import InsightsSettingsModel
-
-        _hydrate_dataclass_from_pydantic(self, InsightsSettingsModel())
-
-
-@dataclass
-class InsightEligibilityConfig:
-    """Insight eligibility thresholds. Defaults owned by InsightEligibilitySettingsModel."""
-
-    min_score: float = field(init=False, repr=True)
-    min_frequency: int = field(init=False, repr=True)
-    require_spread_or_recurrence_for_singletons: bool = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.insight_eligibility import (
-            InsightEligibilitySettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, InsightEligibilitySettingsModel())
-
-
-@dataclass
-class KeyphrasesConfig:
-    """Keyphrases settings. Defaults owned by KeyphrasesSettingsModel."""
-
-    enabled_methods: list = field(init=False, repr=True)
-    max_phrases: int = field(init=False, repr=True)
-    min_phrase_tokens: int = field(init=False, repr=True)
-    max_phrase_tokens: int = field(init=False, repr=True)
-    min_occurrences_global: int = field(init=False, repr=True)
-    min_occurrences_speaker: int = field(init=False, repr=True)
-    diversity_jaccard_threshold: float = field(init=False, repr=True)
-    evidence_max_per_phrase: int = field(init=False, repr=True)
-    evidence_snippet_max_chars: int = field(init=False, repr=True)
-    keybert_model_id: str = field(init=False, repr=True)
-    yake_lan: str = field(init=False, repr=True)
-    yake_n: int = field(init=False, repr=True)
-    yake_top: int = field(init=False, repr=True)
-    yake_window_size: int = field(init=False, repr=True)
-    min_member_sessions: int = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.keyphrases import KeyphrasesSettingsModel
-
-        _hydrate_dataclass_from_pydantic(self, KeyphrasesSettingsModel())
-
-
-@dataclass
-class PolitenessConfig:
-    """Politeness marker settings. Defaults owned by PolitenessSettingsModel."""
-
-    min_tokens_for_rates: int = field(init=False, repr=True)
-    enabled_categories: list = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.politeness import PolitenessSettingsModel
-
-        _hydrate_dataclass_from_pydantic(self, PolitenessSettingsModel())
-
-
-@dataclass
-class TopicShiftConfig:
-    """Topic-shift settings. Defaults owned by TopicShiftSettingsModel."""
-
-    window_size: int = field(init=False, repr=True)
-    stride: int = field(init=False, repr=True)
-    smooth_width: int = field(init=False, repr=True)
-    edge_exclude: int = field(init=False, repr=True)
-    min_windows_for_detection: int = field(init=False, repr=True)
-    min_gap_windows: int = field(init=False, repr=True)
-    min_gap_seconds: float = field(init=False, repr=True)
-    max_shifts: int = field(init=False, repr=True)
-    centroid_radius: int = field(init=False, repr=True)
-    centroid_threshold: float = field(init=False, repr=True)
-    min_text_chars: int = field(init=False, repr=True)
-    max_windows_per_chunk: int = field(init=False, repr=True)
-    chunk_overlap_windows: int = field(init=False, repr=True)
-    min_duration_for_rate_seconds: float = field(init=False, repr=True)
-    en_model: str = field(init=False, repr=True)
-    multi_model: str = field(init=False, repr=True)
-    batch_size: int = field(init=False, repr=True)
-    lru_size: int = field(init=False, repr=True)
-    timeout_seconds: float = field(init=False, repr=True)
-    k_mad: float = field(init=False, repr=True)
-    absolute_floor: float = field(init=False, repr=True)
-    min_prominence: float = field(init=False, repr=True)
-    llm_effort: str = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.topic_shift import TopicShiftSettingsModel
-
-        _hydrate_dataclass_from_pydantic(self, TopicShiftSettingsModel())
-
-
-@dataclass
-class EchoesConfig:
-    """Configuration for echoes. Defaults owned by EchoesSettingsModel."""
-
-    lookback_seconds: float = field(init=False, repr=True)
-    max_candidates: int = field(init=False, repr=True)
-    explicit_quote_weight: float = field(init=False, repr=True)
-    lexical_echo_threshold: float = field(init=False, repr=True)
-    paraphrase_threshold: float = field(init=False, repr=True)
-    min_tokens: int = field(init=False, repr=True)
-    exclude_phrases: list[str] = field(init=False, repr=True)
-    enable_semantic_paraphrase: bool = field(init=False, repr=True)
-    semantic_model_name: str | None = field(init=False, repr=True)
-    echo_burst_window_seconds: float = field(init=False, repr=True)
-    echo_burst_min_events: int = field(init=False, repr=True)
-    echo_burst_percentile_threshold: float = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.echoes import (
-            EchoesSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, EchoesSettingsModel())
-
-
-@dataclass
-class MomentumConfig:
-    """Configuration for momentum. Defaults owned by MomentumSettingsModel."""
-
-    window_length_seconds: float = field(init=False, repr=True)
-    window_step_seconds: float = field(init=False, repr=True)
-    stall_threshold_percentile: float = field(init=False, repr=True)
-    min_stall_duration_seconds: float = field(init=False, repr=True)
-    momentum_cliff_threshold: float = field(init=False, repr=True)
-    novelty_lookback_windows: int = field(init=False, repr=True)
-    weights: dict[str, float] = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.momentum import (
-            MomentumSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, MomentumSettingsModel())
-
-
-@dataclass
-class MomentsConfig:
-    """Configuration for moments. Defaults owned by MomentsSettingsModel."""
-
-    top_n: int = field(init=False, repr=True)
-    merge_seconds: float = field(init=False, repr=True)
-    weight_map: dict[str, float] = field(init=False, repr=True)
-    diversity_bonus: float = field(init=False, repr=True)
-    multi_speaker_bonus: float = field(init=False, repr=True)
-    write_markdown: bool = field(init=False, repr=True)
-    excerpt_max_chars: int = field(init=False, repr=True)
-    excerpt_max_segments: int = field(init=False, repr=True)
-    max_span_seconds: float = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.moments import (
-            MomentsSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, MomentsSettingsModel())
-
-
-@dataclass
-class VectorizationConfig:
-    """Shared vectorization config. Defaults owned by VectorizationSettingsModel."""
-
-    max_features: int = field(init=False, repr=True)
-    min_df: int = field(init=False, repr=True)
-    max_df: float = field(init=False, repr=True)
-    ngram_range: tuple[int, int] = field(init=False, repr=True)
-    wordcloud_max_features: int = field(init=False, repr=True)
-    wordcloud_ngram_range: tuple[int, int] = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.vectorization import (
-            VectorizationSettingsModel,
-        )
-
-        _hydrate_dataclass_from_pydantic(self, VectorizationSettingsModel())
-
-
-@dataclass
-class VoiceConfig:
-    """Configuration for voice modality analysis (CPU-first).
-
-    Defaults owned by VoiceSettingsModel.
-    """
-
-    enabled: bool = field(init=False, repr=True)
-    sample_rate: int = field(init=False, repr=True)
-    vad_mode: int = field(init=False, repr=True)
-    pad_s: float = field(init=False, repr=True)
-    max_seconds_for_pitch: float = field(init=False, repr=True)
-    max_segments_considered: int | None = field(init=False, repr=True)
-    egemaps_enabled: bool = field(init=False, repr=True)
-    deep_mode: bool = field(init=False, repr=True)
-    deep_model_name: str = field(init=False, repr=True)
-    deep_max_seconds: float = field(init=False, repr=True)
-    store_parquet: str = field(init=False, repr=True)
-    strict_audio_hash: bool = field(init=False, repr=True)
-    mismatch_threshold: float = field(init=False, repr=True)
-    top_k_moments: int = field(init=False, repr=True)
-    drift_threshold: float = field(init=False, repr=True)
-    bin_seconds: float = field(init=False, repr=True)
-    smoothing_alpha: float = field(init=False, repr=True)
-    include_unnamed_in_global_curves: bool = field(init=False, repr=True)
-
-    def __post_init__(self) -> None:
-        from transcriptx.core.config.models.voice import VoiceSettingsModel
-
-        _hydrate_dataclass_from_pydantic(self, VoiceSettingsModel())

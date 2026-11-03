@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from transcriptx.core.analysis.aggregation import aggregators
 from transcriptx.core.analysis.aggregation.registry import build_registry
 from transcriptx.core.pipeline.group_analysis_runner import _topo_sort_entries
 
@@ -39,3 +40,17 @@ def test_build_registry_agg_ids_unique_and_output_types_valid() -> None:
         assert entry.output_type in {"rows", "blob"}
         assert callable(entry.selector)
         assert callable(entry.aggregate_fn)
+
+
+@pytest.mark.unit
+def test_registry_catalog_uses_aggregator_implementations() -> None:
+    """build_registry wires the extracted aggregators module, not copies."""
+    import transcriptx.core.analysis.aggregation.registry as registry
+
+    assert registry._aggregate_tics is aggregators._aggregate_tics
+    assert registry._aggregate_highlights is aggregators._aggregate_highlights
+    assert registry._aggregate_wordclouds is aggregators._aggregate_wordclouds
+    by_id = {entry.agg_id: entry.aggregate_fn for entry in build_registry()}
+    assert by_id["tics"] is aggregators._aggregate_tics
+    assert by_id["highlights"] is aggregators._aggregate_highlights
+    assert by_id["wordclouds"] is aggregators._aggregate_wordclouds

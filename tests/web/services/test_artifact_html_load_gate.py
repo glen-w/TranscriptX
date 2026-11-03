@@ -67,3 +67,7 @@ def test_charts_fullscreen_uses_max_read_bytes_gate() -> None:
     )
     assert "max_read_bytes=MAX_FULLSCREEN_HTML_BYTES" in source
     assert 'html_payload.get("truncated")' in source
+    iframe_at = source.index("st.iframe(html_payload")
+    preceding = source[max(0, iframe_at - 280) : iframe_at]
+    assert "st.caption(" in preceding
+    assert "selected.module" in preceding

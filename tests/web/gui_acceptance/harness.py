@@ -119,6 +119,11 @@ def isolate_workspace(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> GuiWor
         built,
         raising=False,
     )
+    monkeypatch.setattr(
+        "transcriptx.web.ui.speakers.forms.PATHS",
+        built,
+        raising=False,
+    )
     for name, value in (
         ("PROJECT_ROOT", built.project_root),
         ("DATA_DIR", built.data_dir),

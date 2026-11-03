@@ -10,6 +10,7 @@ import pytest
 
 from transcriptx.core.speaker_profiles.aggregates import ProfileListItem
 from transcriptx.core.speaker_profiles.models import SpeakerProfileV1
+from tests.web.speakers_page_patches import patch_speakers_attr
 from tests.web.streamlit_doubles import DummyColumn, DummyHomeStreamlit
 
 
@@ -103,19 +104,19 @@ def test_speakers_empty_listing_renders_empty_state(monkeypatch, tmp_path) -> No
     empty_calls: list = []
     frag_calls: list = []
 
-    monkeypatch.setattr(mod, "st", _SpeakersStreamlit)
-    monkeypatch.setattr(mod, "render_page_shell", lambda *_a, **_k: None)
-    monkeypatch.setattr(mod, "speaker_profiles_dir", lambda: tmp_path / "spk")
-    monkeypatch.setattr(mod, "ensure_layout", lambda *_a, **_k: None)
-    monkeypatch.setattr(mod, "build_aggregation_snapshot", lambda **_k: _snap())
-    monkeypatch.setattr(mod, "_render_recovery_banners", lambda *_a, **_k: None)
-    monkeypatch.setattr(
-        mod,
+    patch_speakers_attr(monkeypatch, "st", _SpeakersStreamlit)
+    patch_speakers_attr(monkeypatch, "render_page_shell", lambda *_a, **_k: None)
+    patch_speakers_attr(monkeypatch, "speaker_profiles_dir", lambda: tmp_path / "spk")
+    patch_speakers_attr(monkeypatch, "ensure_layout", lambda *_a, **_k: None)
+    patch_speakers_attr(monkeypatch, "build_aggregation_snapshot", lambda **_k: _snap())
+    patch_speakers_attr(monkeypatch, "_render_recovery_banners", lambda *_a, **_k: None)
+    patch_speakers_attr(
+        monkeypatch,
         "render_empty_state",
         lambda *args, **kwargs: empty_calls.append((args, kwargs)),
     )
-    monkeypatch.setattr(
-        mod,
+    patch_speakers_attr(
+        monkeypatch,
         "_speakers_browser_fragment",
         lambda **kwargs: frag_calls.append(kwargs),
     )
@@ -136,18 +137,18 @@ def test_speakers_incomplete_snapshot_warns_then_lists(monkeypatch, tmp_path) ->
     item = _list_item()
     frag_calls: list = []
 
-    monkeypatch.setattr(mod, "st", _SpeakersStreamlit)
-    monkeypatch.setattr(mod, "render_page_shell", lambda *_a, **_k: None)
-    monkeypatch.setattr(mod, "speaker_profiles_dir", lambda: tmp_path / "spk")
-    monkeypatch.setattr(mod, "ensure_layout", lambda *_a, **_k: None)
-    monkeypatch.setattr(
-        mod,
+    patch_speakers_attr(monkeypatch, "st", _SpeakersStreamlit)
+    patch_speakers_attr(monkeypatch, "render_page_shell", lambda *_a, **_k: None)
+    patch_speakers_attr(monkeypatch, "speaker_profiles_dir", lambda: tmp_path / "spk")
+    patch_speakers_attr(monkeypatch, "ensure_layout", lambda *_a, **_k: None)
+    patch_speakers_attr(
+        monkeypatch,
         "build_aggregation_snapshot",
         lambda **_k: _snap(listing=(item,), incomplete=True, integrity_ok=False),
     )
-    monkeypatch.setattr(mod, "_render_recovery_banners", lambda *_a, **_k: None)
-    monkeypatch.setattr(
-        mod,
+    patch_speakers_attr(monkeypatch, "_render_recovery_banners", lambda *_a, **_k: None)
+    patch_speakers_attr(
+        monkeypatch,
         "_speakers_browser_fragment",
         lambda **kwargs: frag_calls.append(kwargs),
     )
@@ -182,18 +183,18 @@ def test_speakers_filter_hides_all_when_only_archived(monkeypatch, tmp_path) -> 
     _SpeakersStreamlit.session_state = {"speakers_selected_profile": "archived-1"}
     archived = _list_item(profile_id="archived-1", name="Old Name", status="archived")
 
-    monkeypatch.setattr(mod, "st", _SpeakersStreamlit)
-    monkeypatch.setattr(mod, "render_page_shell", lambda *_a, **_k: None)
-    monkeypatch.setattr(mod, "speaker_profiles_dir", lambda: tmp_path / "spk")
-    monkeypatch.setattr(mod, "ensure_layout", lambda *_a, **_k: None)
-    monkeypatch.setattr(
-        mod,
+    patch_speakers_attr(monkeypatch, "st", _SpeakersStreamlit)
+    patch_speakers_attr(monkeypatch, "render_page_shell", lambda *_a, **_k: None)
+    patch_speakers_attr(monkeypatch, "speaker_profiles_dir", lambda: tmp_path / "spk")
+    patch_speakers_attr(monkeypatch, "ensure_layout", lambda *_a, **_k: None)
+    patch_speakers_attr(
+        monkeypatch,
         "build_aggregation_snapshot",
         lambda **_k: _snap(listing=(archived,)),
     )
-    monkeypatch.setattr(mod, "_render_recovery_banners", lambda *_a, **_k: None)
-    monkeypatch.setattr(
-        mod,
+    patch_speakers_attr(monkeypatch, "_render_recovery_banners", lambda *_a, **_k: None)
+    patch_speakers_attr(
+        monkeypatch,
         "_speakers_browser_fragment",
         lambda **_k: (_ for _ in ()).throw(AssertionError("fragment")),
     )
@@ -237,14 +238,14 @@ def test_speakers_browser_opens_detail_for_selected_profile(monkeypatch) -> None
     overview_calls: list = []
     detail_calls: list = []
 
-    monkeypatch.setattr(mod, "st", _SpeakersStreamlit)
-    monkeypatch.setattr(
-        mod,
+    patch_speakers_attr(monkeypatch, "st", _SpeakersStreamlit)
+    patch_speakers_attr(
+        monkeypatch,
         "_render_directory_overview",
         lambda *args, **kwargs: overview_calls.append((args, kwargs)),
     )
-    monkeypatch.setattr(
-        mod,
+    patch_speakers_attr(
+        monkeypatch,
         "_render_profile_detail",
         lambda *args, **kwargs: detail_calls.append((args, kwargs)),
     )
@@ -275,11 +276,13 @@ def test_speakers_browser_missing_profile_errors(monkeypatch) -> None:
     item = _list_item()
     snap = _snap(listing=(item,), profiles=())
 
-    monkeypatch.setattr(mod, "st", _SpeakersStreamlit)
-    monkeypatch.setattr(mod, "_render_directory_overview", lambda *_a, **_k: None)
+    patch_speakers_attr(monkeypatch, "st", _SpeakersStreamlit)
+    patch_speakers_attr(
+        monkeypatch, "_render_directory_overview", lambda *_a, **_k: None
+    )
     detail_calls: list = []
-    monkeypatch.setattr(
-        mod, "_render_profile_detail", lambda *a, **k: detail_calls.append(True)
+    patch_speakers_attr(
+        monkeypatch, "_render_profile_detail", lambda *a, **k: detail_calls.append(True)
     )
 
     mod._speakers_browser_fragment.__wrapped__(
@@ -314,10 +317,10 @@ def test_speakers_aggregation_snapshot_reused_within_session(
         builds.append(1)
         return snap
 
-    monkeypatch.setattr(mod, "st", _SpeakersStreamlit)
-    monkeypatch.setattr(mod, "build_aggregation_snapshot", _build)
-    monkeypatch.setattr(mod, "profiles_dir", lambda r: Path(r) / "profiles")
-    monkeypatch.setattr(mod, "links_dir", lambda r: Path(r) / "links")
+    patch_speakers_attr(monkeypatch, "st", _SpeakersStreamlit)
+    patch_speakers_attr(monkeypatch, "build_aggregation_snapshot", _build)
+    patch_speakers_attr(monkeypatch, "profiles_dir", lambda r: Path(r) / "profiles")
+    patch_speakers_attr(monkeypatch, "links_dir", lambda r: Path(r) / "links")
 
     a = mod._get_speakers_aggregation_snapshot(root=root, include_ignored=False)
     b = mod._get_speakers_aggregation_snapshot(root=root, include_ignored=False)
@@ -377,8 +380,8 @@ def test_speakers_link_another_omits_archived_transcripts(monkeypatch) -> None:
         def list_admitted(self):
             return [live, archived]
 
-    monkeypatch.setattr(mod, "st", _SpeakersStreamlit)
-    monkeypatch.setattr(mod, "ManagedTranscriptResolver", _Resolver)
+    patch_speakers_attr(monkeypatch, "st", _SpeakersStreamlit)
+    patch_speakers_attr(monkeypatch, "ManagedTranscriptResolver", _Resolver)
     monkeypatch.setattr(
         "transcriptx.io.import_metadata.persist.is_library_archived",
         lambda path: Path(path).name == "old.json",

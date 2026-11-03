@@ -13,8 +13,18 @@ from typing import Any, Dict, List, Optional, Tuple
 
 # Semantic tags produced by tag_extraction (also valid manual tags).
 KNOWN_SEMANTIC_TAGS = frozenset(
-    {"idea", "reflection", "meeting", "todo", "question"}
+    {
+        "idea",
+        "reflection",
+        "meeting",
+        "todo",
+        "question",
+        "voice note",
+        "lone speaker",
+    }
 )
+
+LIBRARY_KIND_VALUES = frozenset({"meeting", "voice note", "lone speaker"})
 
 MAX_TAG_LENGTH = 64
 _TAG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9 _-]*[a-z0-9]$|^[a-z0-9]$")

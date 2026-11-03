@@ -10,7 +10,7 @@ Living assessment of the pytest / Vitest / Playwright testing system.
 
 ## 1. Executive verdict
 
-The suite is **large, well-laned, and CI-gated for the fast path**, with strong offline contracts and an explicit GUI AppTest policy. The main risks are not “too few tests,” but **env brittleness and lane gaps**:
+The suite is **large and well-laned**, with strong offline contracts and an explicit GUI AppTest policy. PR CI is **smoke + contracts** (3.10); fast/coverage run on Nightly. The main risks are not “too few tests,” but **env brittleness and lane gaps**:
 
 1. **NLP half-install kills green lanes** when `spacy` is importable but `en_core_web_md` is missing — smoke, contracts, and many fast-lane analysis tests fail instead of skipping.
 2. **`integration_core` nightly** — covered by `.github/workflows/nightly.yml` (`make test-integration-core`); still excluded from PR CI by design.
@@ -18,7 +18,7 @@ The suite is **large, well-laned, and CI-gated for the fast path**, with strong 
 4. **Soft-skips** in integration-extended DAG tests can hide real pipeline finalization failures.
 5. Marker/docs drift is real but mostly P2 (`optional` unused, `browser` not in `pytest.ini`, stale `conftest` comment about `integration_core` in the default suite).
 
-**Strengths:** clear smoke → contracts → fast PR order; Makefile as single command surface; path auto-markers + capability skips; quarantine empty and enforced; Theme C Vitest + Playwright on PR; overall non-web coverage ~83% (above `fail_under=70`).
+**Strengths:** Makefile as single command surface; path auto-markers + capability skips; quarantine empty and enforced; Theme C Vitest + Playwright on PR (advisory); Nightly Gate B + integration_core; overall non-web coverage ~83% (above `fail_under=70`).
 
 ---
 
@@ -100,28 +100,39 @@ From [`artifacts/deep_test_gui_heavy.txt`](../../artifacts/deep_test_gui_heavy.t
 
 ## 3. What PR CI protects (and what it does not)
 
-Source: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
+Source: [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) and [`.github/workflows/nightly.yml`](../../.github/workflows/nightly.yml). **Updated 2026-11-02** (1.1 W0). The tree below this heading was the 2026-08-12 snapshot and is **wrong** as current truth.
 
 ```text
-PR CI
+PR required (workflow red only if these fail)
 ├── compose-config
-├── tests (py 3.10/3.11/3.12): smoke → contracts → fast
-├── tests-nlp (py 3.11 + [nlp] + en_core_web_md): smoke-nlp → contracts
-├── docs (Sphinx)
-├── release-checks (needs above): hygiene, wheel, Docker smoke, …
-└── workspaces-theme-c: Vitest + selected pytest + Playwright browser
+├── lint (thin ruff on src/transcriptx)
+├── smoke (py 3.10, make test-smoke)
+└── contracts (py 3.10, make test-contracts)
+
+PR advisory (continue-on-error)
+├── tests-nlp (py 3.11 + [nlp,web] + en_core_web_md)
+├── tests-rag
+├── docs (Sphinx + docs-gen drift)
+├── workspaces-theme-c (Vitest + Playwright + Streamlit matrix)
+└── release-checks (hygiene, wheel, Docker smoke, pip-audit)
+
+Nightly
+├── gate-b: make test-coverage (fast + contracts; .coveragerc fail_under=70)
+├── integration-core then integration-extended
+└── gui-acceptance (advisory continue-on-error)
 ```
 
-**Protected on every PR:** smoke, contracts, fast, NLP smoke/contracts, Theme C frontend/browser, docs build, release packaging/Docker smoke (after tests).
+**Protected on every PR:** smoke + contracts (3.10). Fast, coverage, NLP, Theme C, docs, and Docker/release packaging are advisory or nightly.
 
-**Not protected on PR (Makefile-only today; no `schedule:` / cron in workflows):**
+**Not protected on PR:**
 
-- `make test-integration` / `test-integration-core` (58 `integration_core` tests)
-- `make test-gui-acceptance` / `test-heavy`
+- `make test-fast` / coverage (Nightly `gate-b`)
+- `make test-integration` / `test-integration-core` (Nightly)
+- `make test-gui-acceptance` (Nightly advisory) / `test-heavy`
 - `make test-optional` (models/docker/ffmpeg/slow)
 - Performance envelopes (`make perf-envelopes` is a recipe printer, not a gate)
 
-Docs still describe nightly `integration_core` (≤15–25 min). **No workflow implements that nightly.** That is a process gap, not just a docs nit.
+Nightly `integration_core` **exists** (`.github/workflows/nightly.yml`). Fast is excluded from PR because of golden drift and race flakes — that is intentional, not a missing workflow.
 
 ---
 
@@ -279,7 +290,7 @@ Not all are bugs (fixtures often use `/tmp`). Prefer `tmp_path` / `pytest.approx
 ## 8. Recommended follow-ups (out of scope here)
 
 - Remediation PR for P0 items 1–3.
-- Nightly workflow PR for `integration_core` (+ optional GUI acceptance on a schedule). → **Nightly `integration_core` shipped** (`.github/workflows/nightly.yml`); GUI acceptance schedule still optional.
+- Nightly workflow PR for `integration_core` (+ optional GUI acceptance on a schedule). → **Nightly `integration_core` shipped** (`.github/workflows/nightly.yml`); GUI acceptance scheduled as advisory Nightly (2026-11-02).
 - Optional: refresh deep_test artifact pack after NLP-gate and cleanup-portability fixes for a clean baseline.
 
 ---

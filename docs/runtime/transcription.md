@@ -2,7 +2,7 @@
 
 TranscriptX **analyses** transcripts after they are in the library.
 
-**Import Transcript** admits JSON, SRT, VTT, and other supported files in the web UI. **Transcribe Audio** can **run a host-orchestrated provider** (whispermlx on macOS, WhisperX Docker when the daemon is reachable) or **generate a copyable command** for host-side tools. Engines stay **out of the analysis image**. Running Compose analysis, host whispermlx, and optional WhisperX/WebUI **together**: [STT stacks](../recipes/stt-stacks/README.md).
+**Import Transcript** admits JSON, SRT, VTT, and other supported files in the web UI. **Transcribe Audio** can **run a host-orchestrated provider** (whispermlx or Granite Speech on macOS, WhisperX Docker when the daemon is reachable) or **generate a copyable command** for host-side tools. Engines stay **out of the analysis image**. Running Compose analysis, host whispermlx, and optional WhisperX/WebUI **together**: [STT stacks](../recipes/stt-stacks/README.md).
 
 This page is the mainstream path: you already have a transcript, or you have audio and will transcribe it here or on the host. Host watchers, bulk scripts, merge profiles, and the Python import API are under [Host STT automation](host-stt.md) and [Audio prep](audio-prep.md).
 
@@ -118,5 +118,5 @@ The recommended install runs analysis in a **Linux** container. **whispermlx** m
 
 - [STT stacks](../recipes/stt-stacks/README.md) — Compose + host whispermlx + optional WhisperX / WebUI
 - [Host STT automation](host-stt.md) — whispermlx-missing, inbox-watch `--transcribe`, config, Python import API
-- [Audio prep](audio-prep.md) — Tools → Preprocessing / Auto-merge before you transcribe
+- [Audio prep](audio-prep.md) — Audio Preprocessing → Preprocessing / Auto-merge before you transcribe
 - [Directory watcher](directory_watcher.md) — in-app inbox; audio `auto_transcribe` when an STT provider is available

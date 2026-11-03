@@ -16,6 +16,10 @@ from typing import TYPE_CHECKING
 import streamlit as st
 
 from transcriptx.web.perf import mark_cache_miss
+from transcriptx.web.transcript_path_cache import (
+    _cached_resolve_transcript_path,
+    cached_resolve_transcript_path as cached_resolve_transcript_path,
+)
 
 if TYPE_CHECKING:
     from transcriptx.core.utils.analysis_picker_status import AnalysisPickerStatusIndex
@@ -153,20 +157,75 @@ def _cached_corpus_inventory_rows(digest: tuple) -> list:
     return _corpus_inventory_singleton().list_rows()
 
 
-def get_cached_corpus_inventory() -> list:
-    """Home/Library corpus rows. Invalidates when any contributor fingerprint changes."""
+# Digest memo: discovery + per-row stat walk cost ~8 s on a 345-transcript
+# library and ran on *every* Home/Library rerun before the cache lookup.
+# Cheap scandir mtimes skip discover when the library dir has not changed.
+# A few seconds of staleness still skips even the scandir. Explicit writers
+# call clear_corpus_inventory_cache().
+CORPUS_DIGEST_MEMO_SECONDS = 5.0
+# (monotonic, scandir_stamp, digest)
+_CORPUS_DIGEST_MEMO: tuple[float, tuple, tuple] | None = None
+
+
+def _transcripts_dir_scandir_stamp() -> tuple:
+    """Count + max mtime of ``*.json`` in the managed transcripts dir (no parse)."""
+    import os
+    from pathlib import Path
+
+    from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
+
+    root = Path(DIARISED_TRANSCRIPTS_DIR)
+    count = 0
+    max_mtime = 0
+    try:
+        with os.scandir(root) as it:
+            for entry in it:
+                name = entry.name
+                if not name.endswith(".json") or name.startswith("."):
+                    continue
+                try:
+                    stat = entry.stat()
+                except OSError:
+                    continue
+                count += 1
+                mtime_ns = getattr(stat, "st_mtime_ns", int(stat.st_mtime * 1e9))
+                if mtime_ns > max_mtime:
+                    max_mtime = mtime_ns
+    except OSError:
+        return (str(root), -1, 0)
+    return (str(root), count, max_mtime)
+
+
+def _corpus_digest(now: float | None = None) -> tuple:
+    import time as _time
+
+    global _CORPUS_DIGEST_MEMO
+    now = _time.monotonic() if now is None else now
+    memo = _CORPUS_DIGEST_MEMO
+    if memo is not None and now - memo[0] < CORPUS_DIGEST_MEMO_SECONDS:
+        return memo[2]
+    stamp = _transcripts_dir_scandir_stamp()
+    if memo is not None and memo[1] == stamp:
+        return memo[2]
     from transcriptx.app.corpus_inventory.service import (
         corpus_fingerprint_digest,
         discover_transcript_refs,
     )
 
-    refs = discover_transcript_refs()
-    digest = corpus_fingerprint_digest(refs)
-    return _cached_corpus_inventory_rows(digest)
+    digest = corpus_fingerprint_digest(discover_transcript_refs())
+    _CORPUS_DIGEST_MEMO = (now, stamp, digest)
+    return digest
+
+
+def get_cached_corpus_inventory() -> list:
+    """Home/Library corpus rows. Invalidates when any contributor fingerprint changes."""
+    return _cached_corpus_inventory_rows(_corpus_digest())
 
 
 def clear_corpus_inventory_cache() -> None:
     """Clear the Streamlit inventory wrapper (per-row cache stays fingerprint-keyed)."""
+    global _CORPUS_DIGEST_MEMO
+    _CORPUS_DIGEST_MEMO = None
     _cached_corpus_inventory_rows.clear()  # type: ignore[attr-defined]
 
 
@@ -609,31 +668,6 @@ def clear_run_listing_caches() -> None:
         clear_transcript_dropdown_caches()
     except Exception:
         pass
-
-
-@st.cache_data(ttl=60, show_spinner=False)
-def _cached_resolve_transcript_path(
-    session_name: str, outputs_dir: str, transcripts_dir: str
-) -> str | None:
-    """Cached session -> transcript path resolution (manifest reads + path probes)."""
-    mark_cache_miss("cached_resolve_transcript_path")
-    from transcriptx.web.services.file_service import FileService
-
-    path = FileService.resolve_transcript_path(session_name)
-    return str(path) if path is not None else None
-
-
-def cached_resolve_transcript_path(session_name: str) -> str | None:
-    """Resolve a session name to its transcript path via a short-lived cache.
-
-    Callers must verify the returned path still exists (renames can leave the
-    cache stale within the TTL) and fall back to a direct resolve when it doesn't.
-    """
-    from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR, OUTPUTS_DIR
-
-    return _cached_resolve_transcript_path(
-        session_name, str(OUTPUTS_DIR), str(DIARISED_TRANSCRIPTS_DIR)
-    )
 
 
 # Non-transcript JSON names under run dirs (skip when scanning outputs).

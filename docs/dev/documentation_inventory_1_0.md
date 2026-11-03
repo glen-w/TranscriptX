@@ -15,7 +15,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | archive | 29 |
 | delete | 2 |
 | move | 0 |
-| retain | 110 |
+| retain | 111 |
 | rewrite | 1 |
 
 ## High-priority authority conflicts
@@ -33,7 +33,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | CHANGELOG.md | Changelog | live | entry | current | — | retain | — | README | CHANGELOG.md | no |
 | CONTRIBUTING.md | Contributing to TranscriptX | live | developer | current | — | retain | — | README | CONTRIBUTING.md | no |
 | SECURITY.md | Security Policy | live | entry | current | — | retain | — | README | SECURITY.md | no |
-| docs/dev/pre_release_roadmap_1_0.md | 0.9.x → 1.0 programme plan | live | developer | current | vs docs/ROADMAP.md (outcomes) | retain | moved from root `pre-release_roadmap.md` | README, ROADMAP, DEV_INDEX | self | no |
+| docs/dev/pre_release_roadmap_1_0.md | 0.9.x → 1.0 programme plan | historical | developer | retired 2026-11-02 (1.0 shipped) | vs docs/ROADMAP.md (outcomes) | retain with banner | moved from root `pre-release_roadmap.md` | README, ROADMAP, DEV_INDEX | self | no |
 | archive/README.md | Archive | live | developer | current | canonical script archive policy | retain | — | script inventory | self | no |
 | assets/README.md | TranscriptX Assets | live | developer | current | — | retain | — | — | self | no |
 | scripts/README_test_analysis_assess.md | Test Analysis Assessment Script | stale | disposable | superseded | See inventory destination | delete | — | Update inbound links | docs/dev/run_performance.md | no |
@@ -56,6 +56,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/contracts/speaker_profiles_v1.md | Speaker profiles v1 (Phase 1) | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/contracts/speaker_profiles_v1.md | yes |
 | docs/contracts/speaker_profiles_voice_v1.md | Speaker profiles — voice phase v1 (R2) | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/contracts/speaker_profiles_voice_v1.md | yes |
 | docs/dev/COMPLEXITY_GATES.md | Complexity and performance gates (pipeline / reporting) | live | developer | current | — | retain | — | DEV_INDEX | self | no |
+| docs/dev/maintainability_layout.md | Maintainability layout (2026-11-02 file splits) | live | developer | current | — | retain | — | DEV_INDEX | docs/dev/COMPLEXITY_GATES.md | no |
 | docs/dev/config_architecture.md | Config / settings dual-stack architecture | live | developer | current | Settings/knobs clarity programme | retain | — | DEV_INDEX | docs/runtime/STORAGE.md | no |
 | docs/dev/settings_knobs_assessment.md | Settings/knobs assessment and hardening backlog | live | developer | current | Settings/knobs clarity programme | retain | — | DEV_INDEX | docs/dev/config_architecture.md | no |
 | docs/dev/CONTRIBUTING.md | Contributing to TranscriptX | live | developer | current | — | retain | — | DEV_INDEX | ARCHITECTURE.md | no |
@@ -171,7 +172,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/dev/analysis_quality_audit_judgements.md | Provisional Recommendation / Severity overlay (**0.9.7**) | live | developer | current | Owner sign-off open | retain | — | analysis_quality_audit.md, release_severity | analysis_quality_audit.md | no |
 | docs/dev/rtd_go_live_checklist.md | RTD go-live flip steps | live | developer | current | Hostname denylist until slug | retain | — | docs_architecture | docs_architecture_1_0.md | no |
 | docs/runtime/export.md | Overview ZIP / HTML / EPUB export | live | user | current | Guide; selection-scoped indexes | retain | — | USER_INDEX, known_limitations | docs/contracts/output-contract-v1.md | yes |
-| docs/workflows/index.md | Ten workflow walkthroughs landing | live | user | current | Screenshot guides (**2026-08**); expanded to ten | retain | — | USER_INDEX, index.md | docs/PRODUCT.md | yes |
+| docs/workflows/index.md | Twelve workflow walkthroughs landing | live | user | current | Screenshot guides (**2026-08**); expanded to twelve | retain | — | USER_INDEX, index.md | docs/PRODUCT.md | yes |
 | docs/workflows/first-analysis.md | Workflow 1 — first analysis | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
 | docs/workflows/speaker-identification.md | Workflow 2 — identify and name speakers | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
 | docs/workflows/investigate-evidence.md | Workflow 3 — investigate with evidence | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
@@ -183,6 +184,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/workflows/rename-transcript.md | Workflow 9 — rename a transcript | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
 | docs/workflows/speakers.md | Workflow 10 — browse speaker profiles | live | user | current | — | retain | — | workflows/index | docs/PRODUCT.md | yes |
 | docs/workflows/speaker-voice-matching.md | Workflow 11 — enrol-all / pre-load assisted naming | live | user | current | Confirm-to-apply | retain | — | workflows/index | docs/contracts/speaker_profiles_voice_v1.md | yes |
+| docs/workflows/archive-transcript.md | Workflow 12 — archive a transcript | live | user | current | Hide from pickers; find again on Library / Search | retain | — | workflows/index | docs/PRODUCT.md | yes |
 | docs/backup_and_restore.md | Workspace backup / restore operator guide | live | user | current | — | retain | — | USER_INDEX, index.md | docs/contracts/workspace-backup.md | yes |
 | docs/contracts/workspace-backup.md | Workspace backup contract | live | contract | current | — | retain | — | CONTRACT_INDEX | docs/contracts/workspace-backup.md | yes |
 | docs/runtime/karaoke-playback.md | Theme D karaoke / CCv2 reader | live | user | current | Full-file reader + clip rollback | retain | — | USER_INDEX, index.md | docs/ROADMAP.md | yes |
@@ -193,7 +195,7 @@ Planning matrix for repository documentation classification. Created under Phase
 | docs/dev/demo_project.md | Demo project (0.9.6 trial) | — | — | — | **removed** — trialled and decided against | deleted | — | pre_release_roadmap §16 | PRODUCT.md | no |
 | docs/dev/manual_acceptance_1_0.md | Human acceptance checklist skeleton | live | product | current | Human-testing wave | retain | — | pre_release_roadmap | release_severity_triage_1_0.md | no |
 | docs/dev/overview_presentation_0_9_9.md | 0.9.9 Overview/results presentation polish backlog | live | product | current | After maintainer; before unfamiliar-user | retain | — | pre_release_roadmap, ROADMAP | manual_acceptance_1_0.md | no |
-| website/ | Modest public landing + Pages | live | entry | current | Marketing; Ko-fi live; series **0.9.9.5** | retain | — | README, ROADMAP | PRODUCT.md | no |
+| website/ | Modest public landing + Pages | live | entry | current | Marketing; Ko-fi live; series **1.2.1** | retain | — | README, ROADMAP | PRODUCT.md | no |
 | NOTICE | Third-party model/dataset notice | live | entry | current | Hub-card residual dropped 2026-08-07 | retain | — | trust_privacy, README | trust_privacy_model_governance_1_0.md | no |
 | docs/requirements.txt | Sphinx/RTD install pins | live | developer | current | Mirrors `[docs]` extras | retain | — | .readthedocs.yml | docs_architecture_1_0.md | no |
 | .readthedocs.yml | RTD build scaffold | live | developer | current | Hostname denylist until go-live | retain | — | docs_architecture | docs_architecture_1_0.md | no |

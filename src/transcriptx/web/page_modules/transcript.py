@@ -860,7 +860,7 @@ def render_transcript_viewer() -> None:
         # segments are successfully resolved and render path can continue.
         nav_state = consume_nav_request(st.session_state)
         if nav_state.clear_nav_request:
-            st.session_state[NAV_REQUEST_KEY] = None
+            st.session_state.pop(NAV_REQUEST_KEY, None)
         if nav_state.jump_index is not None:
             from transcriptx.web.transcript_viewer.chapters import (
                 TRANSCRIPT_SCROLL_TO_JUMP_KEY,

@@ -23,7 +23,11 @@ def bootstrap(env_path: Path | None = None) -> None:
             # Repo root: src/transcriptx/_bootstrap.py -> 3 parents up
             env_path = Path(__file__).resolve().parent.parent.parent / ".env"
         if env_path.exists():
-            load_dotenv(dotenv_path=env_path, override=True)
+            # Shell / parent-process env wins over the repo .env (documented in
+            # .env.example). override=True let a developer .env redirect CI,
+            # AppTest and Playwright children at the owner's real library
+            # even when they had set isolated TRANSCRIPTX_*_DIR values.
+            load_dotenv(dotenv_path=env_path, override=False)
     except ImportError:
         pass
     # Pin BLAS/OpenMP/Numba before analysis extras import natives (pool size is sticky).

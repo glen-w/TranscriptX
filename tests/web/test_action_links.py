@@ -51,7 +51,7 @@ def test_render_action_link_forwards_to_streamlit_button(monkeypatch):
 
 def test_action_link_chrome_icon_text_both():
     icon = ":material/bar_chart:"
-    assert action_links.action_link_chrome("Open", icon, "icon") == ("\u00a0", icon)
+    assert action_links.action_link_chrome("Open", icon, "icon") == ("Open", icon)
     assert action_links.action_link_chrome("Open", icon, "text") == ("Open", None)
     assert action_links.action_link_chrome("Open", icon, "both") == ("Open", icon)
 
@@ -74,7 +74,8 @@ def test_render_action_link_icon_only_uses_unguarded_name_help(monkeypatch):
         display="icon",
         help="Instructional tip",
     )
-    assert captured["label"] == "\u00a0"
+    assert captured["label"] == "Open Charts"
+    assert captured["key"] == "tx_al_i_home_icon"
     assert captured["icon"] == ":material/bar_chart:"
     assert captured["help"] == "Open Charts"
 

@@ -37,6 +37,15 @@ def build_core_module_definitions(
             "enhancements": [Enhancement.WORD_CONFIDENCE],
             "min_named_speakers": 0,
         },
+        "speaker_map_diagnostics": {
+            "description": "Speaker-map consistency",
+            "dependencies": [],
+            "category": "light",
+            "determinism_tier": "T0",
+            "requirements": [Requirement.SEGMENTS],
+            "enhancements": [],
+            "min_named_speakers": 0,
+        },
         "insight_eligibility": {
             "description": "Shared content-vs-style insight eligibility pipeline",
             "dependencies": ["tics"],

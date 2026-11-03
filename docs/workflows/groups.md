@@ -10,6 +10,8 @@ You will have created a group that includes the planning-review sample (and opti
 
 At least one managed transcript is in the library (see [First analysis](first-analysis.md)). Local AI is not required.
 
+The figures show a group named `BBNJ webinar cohort` being created around the BBNJ webinar transcript; the steps are identical with the planning-review sample.
+
 ## What you’ll do
 
 1. Open **Groups**.
@@ -26,7 +28,13 @@ At least one managed transcript is in the library (see [First analysis](first-an
 
 3. In **Transcripts**, select the planning-review entry (and any other members you want). Choose **Create group**.
 
+![Create new group expander with a name entered and one transcript selected as a member](../_static/workflows/groups-create-form.png)
+
 4. Confirm a success message (`Group created`) or that the group already existed with that membership. The Groups table / **Select group** picker should list the new group.
+
+![Groups page after creation: success banner, the groups table with member count, and the Select group picker](../_static/workflows/groups-created.png)
+
+![Filling the Create new group form, choosing a member, and confirming the new group](../_static/workflows/groups-create.gif)
 
 5. Select the group to review **Group details** (name, member count, membership editor). Membership is file-backed and can be edited later without re-importing transcripts.
 

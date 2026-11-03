@@ -47,6 +47,12 @@
       "title": "Active Model Profile",
       "type": "string"
     },
+    "allow_remote_host": {
+      "default": false,
+      "description": "Allow LLM base_url hosts other than loopback / host.docker.internal. Remote endpoints receive transcript content; opt-in only.",
+      "title": "Allow Remote Host",
+      "type": "boolean"
+    },
     "availability_timeout": {
       "default": 7.5,
       "description": "Timeout in seconds when probing provider availability.",

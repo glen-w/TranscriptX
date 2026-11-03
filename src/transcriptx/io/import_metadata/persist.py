@@ -112,6 +112,37 @@ def is_library_archived(transcript_path: str | Path) -> bool:
     return data.get("library_archived") is True
 
 
+def get_library_kind(transcript_path: str | Path) -> str | None:
+    """Optional Theme F kind label, or None when unset / unreadable."""
+    sidecar = find_existing_import_sidecar(transcript_path)
+    if sidecar is None:
+        return None
+    try:
+        data = load_sidecar(sidecar)
+    except Exception:
+        return None
+    kind = data.get("library_kind")
+    return kind if isinstance(kind, str) and kind else None
+
+
+def set_library_kind(transcript_path: str | Path, kind: str | None) -> Path:
+    """Persist ``library_kind`` (None clears). Schema version stays 1."""
+    from transcriptx.io.tag_validation import LIBRARY_KIND_VALUES
+
+    if kind is not None and kind not in LIBRARY_KIND_VALUES:
+        raise ValueError("library_kind must be meeting, voice note, lone speaker, or None")
+    sidecar = find_existing_import_sidecar(transcript_path)
+    if sidecar is None:
+        raise FileNotFoundError(f"No import sidecar for transcript: {transcript_path}")
+    payload = dict(load_sidecar(sidecar))
+    if kind is None:
+        payload.pop("library_kind", None)
+    else:
+        payload["library_kind"] = kind
+    write_json_atomic(sidecar, payload)
+    return sidecar
+
+
 def set_library_archived(transcript_path: str | Path, archived: bool) -> Path:
     """Persist ``library_archived`` on the existing import sidecar."""
     if not isinstance(archived, bool):

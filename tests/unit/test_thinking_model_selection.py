@@ -56,6 +56,11 @@ def test_filter_models_for_json_consumers() -> None:
     )
 
 
+def _thinking_needs_secondary(*, preferred_model, fallback_model=None, base_url=None):
+    """Offline stand-in: thinking tags cannot disable without a secondary."""
+    return is_thinking_model(preferred_model) and not (fallback_model or "").strip()
+
+
 @pytest.mark.unit
 def test_options_hide_thinking_for_shared_when_json_selected() -> None:
     installed = ["gemma3:12b", "qwen3.6:27b", "llama3.2:3b"]
@@ -63,11 +68,15 @@ def test_options_hide_thinking_for_shared_when_json_selected() -> None:
         "transcriptx.web.components.llm_model_selector._json_fallback_configured",
         return_value=False,
     ):
-        shared = _options_for_consumer(
-            installed,
-            consumer_id=None,
-            json_consumers_selected=["chart_descriptions"],
-        )
+        with patch(
+            "transcriptx.web.components.llm_model_selector.json_thinking_needs_secondary",
+            side_effect=_thinking_needs_secondary,
+        ):
+            shared = _options_for_consumer(
+                installed,
+                consumer_id=None,
+                json_consumers_selected=["chart_descriptions"],
+            )
     assert "qwen3.6:27b" not in shared
     assert "gemma3:12b" in shared
 
@@ -102,11 +111,15 @@ def test_hidden_thinking_caption_names_qwen38() -> None:
         "transcriptx.web.components.llm_model_selector._json_fallback_configured",
         return_value=False,
     ):
-        json_safe = _options_for_consumer(
-            installed,
-            consumer_id=None,
-            json_consumers_selected=["narrative_summary"],
-        )
+        with patch(
+            "transcriptx.web.components.llm_model_selector.json_thinking_needs_secondary",
+            side_effect=_thinking_needs_secondary,
+        ):
+            json_safe = _options_for_consumer(
+                installed,
+                consumer_id=None,
+                json_consumers_selected=["narrative_summary"],
+            )
     assert "qwen3.8:latest" not in json_safe
     assert _hidden_thinking_models(installed, json_safe) == ("qwen3.8:latest",)
     note = _hidden_thinking_caption_text(installed, json_safe)
@@ -121,11 +134,15 @@ def test_options_hide_thinking_on_json_module_rows() -> None:
         "transcriptx.web.components.llm_model_selector._json_fallback_configured",
         return_value=False,
     ):
-        json_row = _options_for_consumer(
-            installed,
-            consumer_id="llm_action_items",
-            json_consumers_selected=[],
-        )
+        with patch(
+            "transcriptx.web.components.llm_model_selector.json_thinking_needs_secondary",
+            side_effect=_thinking_needs_secondary,
+        ):
+            json_row = _options_for_consumer(
+                installed,
+                consumer_id="llm_action_items",
+                json_consumers_selected=[],
+            )
     plain_row = _options_for_consumer(
         installed,
         consumer_id="llm_summary",
@@ -142,18 +159,24 @@ def test_launch_gate_blocks_thinking_shared_for_json_modules() -> None:
         return_value=False,
     ):
         with patch(
-            "transcriptx.core.pipeline.module_registry.get_module_info",
-            return_value=SimpleNamespace(requires_llm=True),
+            "transcriptx.web.components.llm_model_selector.json_thinking_needs_secondary",
+            side_effect=_thinking_needs_secondary,
         ):
-            reasons = launch_gate_reasons(
-                selection=LlmModelSelection(mode="shared", shared_model="qwen3.6:27b"),
-                selected_modules=["chart_descriptions", "llm_summary"],
-                installed=("qwen3.6:27b", "gemma3:12b"),
-                list_error=None,
-                include_group=False,
-                llm_enabled=True,
-                provider="ollama",
-            )
+            with patch(
+                "transcriptx.core.pipeline.module_registry.get_module_info",
+                return_value=SimpleNamespace(requires_llm=True),
+            ):
+                reasons = launch_gate_reasons(
+                    selection=LlmModelSelection(
+                        mode="shared", shared_model="qwen3.6:27b"
+                    ),
+                    selected_modules=["chart_descriptions", "llm_summary"],
+                    installed=("qwen3.6:27b", "gemma3:12b"),
+                    list_error=None,
+                    include_group=False,
+                    llm_enabled=True,
+                    provider="ollama",
+                )
     assert any("Thinking-family" in r for r in reasons)
     assert any("chart_descriptions" in r for r in reasons)
 
@@ -205,6 +228,7 @@ def test_selected_json_consumers_and_selection_helper() -> None:
     assert "rename_suggestions" in LLM_JSON_FORMAT_CONSUMER_IDS
     assert "corrections_studio" in LLM_JSON_FORMAT_CONSUMER_IDS
     assert "topic_shift" in LLM_JSON_FORMAT_CONSUMER_IDS
+    assert "insights_narrative" in LLM_JSON_FORMAT_CONSUMER_IDS
     assert "rag" not in LLM_JSON_FORMAT_CONSUMER_IDS
     consumers = _selected_json_consumers(
         ["llm_summary", "chart_descriptions"], include_group=False
@@ -220,3 +244,51 @@ def test_selected_json_consumers_and_selection_helper() -> None:
         json_consumer_ids=consumers,
     )
     assert flagged == ["chart_descriptions"]
+
+
+@pytest.mark.unit
+def test_options_include_thinking_when_think_off_advertised() -> None:
+    installed = ["gemma3:12b", "qwen3.8:latest"]
+    with patch(
+        "transcriptx.web.components.llm_model_selector._json_fallback_configured",
+        return_value=False,
+    ):
+        with patch(
+            "transcriptx.web.components.llm_model_selector.json_thinking_needs_secondary",
+            return_value=False,
+        ):
+            shared = _options_for_consumer(
+                installed,
+                consumer_id=None,
+                json_consumers_selected=["chart_descriptions"],
+            )
+    assert "qwen3.8:latest" in shared
+    assert "gemma3:12b" in shared
+
+
+@pytest.mark.unit
+def test_launch_gate_allows_thinking_when_think_off_advertised() -> None:
+    with patch(
+        "transcriptx.web.components.llm_model_selector._json_fallback_configured",
+        return_value=False,
+    ):
+        with patch(
+            "transcriptx.web.components.llm_model_selector.json_thinking_needs_secondary",
+            return_value=False,
+        ):
+            with patch(
+                "transcriptx.core.pipeline.module_registry.get_module_info",
+                return_value=SimpleNamespace(requires_llm=True),
+            ):
+                reasons = launch_gate_reasons(
+                    selection=LlmModelSelection(
+                        mode="shared", shared_model="qwen3.8:latest"
+                    ),
+                    selected_modules=["chart_descriptions"],
+                    installed=("qwen3.8:latest", "gemma3:12b"),
+                    list_error=None,
+                    include_group=False,
+                    llm_enabled=True,
+                    provider="ollama",
+                )
+    assert not any("Thinking-family" in r for r in reasons)

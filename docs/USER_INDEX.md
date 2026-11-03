@@ -42,7 +42,7 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 | [Installation](runtime/installation.md) | Docker and `./transcriptx.sh` |
 | [Installation details](runtime/installation-advanced.md) | Extras, profiles, env, gates |
 | [Docker](runtime/docker.md) | Compose-based runtime |
-| [Settings](runtime/settings.md) | GUI scopes, presets, knobs |
+| [Settings](runtime/settings.md) | GUI scopes, presets, knobs; Diagnostics never-finished runs; shell keyboard |
 | [LLM (Ollama)](runtime/llm.md) | Optional local AI |
 | [Models](runtime/models.md) | Analysis model defaults |
 | [Hardware & run-time](runtime/hardware.md) | Estimates, RAM bands, STT/LLM hints |
@@ -56,7 +56,7 @@ First visit: [docs home](index.md) or [First analysis](workflows/first-analysis.
 | [STT stacks](recipes/stt-stacks/README.md) | Compose + host whispermlx + optional WhisperX / WebUI |
 | [Host STT automation](runtime/host-stt.md) | whispermlx-missing, inbox-watch (`--transcribe`), voice-note-watch, Python import |
 | [Auto-identify speakers](runtime/auto-identify.md) | Auto-name / auto-link after ingest (Settings, inbox-watch, CLI) |
-| [Audio prep](runtime/audio-prep.md) | Tools → Preprocessing / Auto-merge |
+| [Audio prep](runtime/audio-prep.md) | Sidebar **Tools** (page heading Audio Preprocessing) → Preprocessing / Auto-merge |
 | [Directory watcher](runtime/directory_watcher.md) | In-app inbox → import |
 | [WhisperX recipe](recipes/whisperx/README.md) | Optional WhisperX Docker |
 | [Whisper-WebUI recipe](recipes/whisper-webui/README.md) | Optional Gradio recipe |

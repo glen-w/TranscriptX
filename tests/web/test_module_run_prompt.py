@@ -12,6 +12,7 @@ from transcriptx.web.action_menus.services import PAGE_RUN_ANALYSIS
 from transcriptx.web.blocks.context import build_block_context
 from transcriptx.web.components.action_links import ACTION_LINK_KEY_PREFIX
 from transcriptx.web.state import PAGE_KEY
+from tests.web.insights_block_patches import patch_insights_attr
 from tests.web.streamlit_doubles import DummyHomeStreamlit
 
 
@@ -171,10 +172,10 @@ def test_insights_empty_uses_module_required_hint(
     # Loader present but no insights payload.
     loader = MagicMock()
     loader.load_json.return_value = None
-    monkeypatch.setattr(mod, "_loader", lambda _ctx: loader)
-    monkeypatch.setattr(mod, "st", DummyHomeStreamlit)
-    monkeypatch.setattr(
-        mod,
+    patch_insights_attr(monkeypatch, "_loader", lambda _ctx: loader)
+    patch_insights_attr(monkeypatch, "st", DummyHomeStreamlit)
+    patch_insights_attr(
+        monkeypatch,
         "render_module_required_hint",
         lambda msg, *, key, ctx=None: hint_calls.append((msg, key, ctx)),
     )

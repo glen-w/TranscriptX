@@ -24,13 +24,19 @@ The planning-review transcript is [imported](../runtime/transcription.md) and a 
 
 2. Enable **Correct mode**. The viewer shows propose affordances on segments; low ASR-confidence chips (when present) are assists only — you still enter the replacement.
 
+![Transcript viewer with the Correct mode checkbox enabled above the Turns / Segments / Chapters controls](../_static/workflows/corrections-correct-mode.png)
+
 3. Expand **Propose correction** on a segment that contains a clear unique phrase (for this fixture, something like `Northwind Notes` works).
 
 4. When a segment has aligned `words[]`, click-drag across words to select the span. This sample has no word-timing array, so use **Find exact text in segment** with a unique substring, then enter a **Replacement** (for example `Northwind Notes App`). Choose **Propose**.
 
+![Propose correction panel on a BBNJ webinar turn: low-ASR-confidence hint, click-drag word span, Replacement field, and the Propose / Accept & apply this / Open Studio buttons](../_static/workflows/corrections-propose-panel.png)
+
 5. Confirm the pending-manual strip updates (pending count / viewer proposals). The managed original transcript is not overwritten by Propose alone.
 
 6. Use **Accept & apply this** only when you want a scoped corrected sidecar for that candidate. For batch detector/LLM review, open **Corrections Studio** (or **Open Studio** from the propose panel).
+
+![Corrections Studio: transcript picker, Start / Resume Session, Generate Candidates, and the candidate filter strip while candidates are generated](../_static/workflows/corrections-studio.png)
 
 Details: [Corrections in the Transcript viewer](../runtime/corrections-viewer.md).
 

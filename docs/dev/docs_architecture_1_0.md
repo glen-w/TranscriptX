@@ -26,7 +26,7 @@
 
 - User sitemap: [USER_INDEX.md](../USER_INDEX.md) (exhaustive list, not a start page)
 - Developer: [DEV_INDEX.md](../DEV_INDEX.md)
-- Archive: [ARCHIVE_INDEX.md](../ARCHIVE_INDEX.md)
+- Archive: [ARCHIVE_INDEX.md](../archive/ARCHIVE_INDEX.md)
 
 ## Voices
 

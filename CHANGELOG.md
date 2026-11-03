@@ -7,10 +7,114 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-03
+
+Patch release consolidating **1.0.3**–**1.2.0** onto `main` and tightening public-entry parity.
+
+### Fixed
+
+- Landing page “run Whisper from the app” links to `./guide/runtime/transcription.html` instead of the comparison page.
+
+### Added
+
+- Release tests guard README ↔ website outcome bullets, Docker install markers, footer version ↔ `pyproject.toml`, workflow screenshot hashes, and Sphinx workflow toctree coverage.
+
+### Changed
+
+- Documentation inventory lists twelve workflow guides (including archive) and the **1.2.1** website series marker.
+
+## [1.2.0] - 2026-11-03
+
+GUI hardening W1.3–W4 ([plan](.cursor/plans/2026-11-02-gui-hardening-wave.md)), LLM think-off/fallback honesty, and a speaker-map diagnostics crash fix.
+
+### Fixed
+
+- Sidebar brand is a single wordmark; light/dark variants swap via ``src`` instead of stacking two ``<img>`` tags when hide-CSS missed.
+- Rename Transcript preview autoplays only after an explicit ▶ click, so clip-warm fragment reruns no longer steal sidebar navigation.
+- Pytest isolates ``TRANSCRIPTX_DATA_DIR`` (``.test_data/``) when unset, matching ``TRANSCRIPTX_OUTPUT_DIR``. GUI tests fail if those paths resolve inside the repo ``data/`` library.
+- ``speaker_map_diagnostics`` calls ``SpeakerMapResolver().load_mapping`` (instance method); the 1.1.0 class-method call crashed the smoke module.
+
+### Changed
+
+- Speakers paints a status skeleton before building the aggregation snapshot and caches it on the library fingerprint.
+- Corpus inventory skips ``discover_transcript_refs()`` when a cheap transcripts-dir scandir stamp is unchanged.
+- Diagnostics paginates never-finished runs (50/page) and offers **Clean never-finished runs…**, which opens Settings → Storage (run cleanup).
+- Workflow nav label is **Tools** (page heading remains Audio Preprocessing). Settings/Tools/sidebar Type segmented controls expose visible labels.
+- Icon-only action links use the action name as the accessible label (visually clipped).
+- Cross-module session keys (``run_analysis_target``, Speakers profile, Settings hub tab) live in ``web/state.py``.
+- Charts full-screen HTML is preceded by a ``module · title`` caption.
+- Speaker ID mapping/CCv2 command callbacks live in ``web/workspaces/speaker_id_actions.py``; the page remains the CCv2 host.
+- JSON LLM picker/launch allows thinking tags when Ollama advertises ``think: false``, not only when ``llm.fallback_model`` is set. ``topic_shift`` enrichment and ``insights_narrative`` use the same JSON think-off / fallback path; provenance records the producing model and ``model_selection_source=fallback`` when the secondary ran.
+
+### Added
+
+- Shell keyboard: ``/`` opens Search; ``g`` then a letter jumps Home/Library/Search/Speakers/Run Analysis/Overview/Transcript/Insights/Charts/Settings when no input is focused.
+- Streamlit sidebar theme colours; Library filter/sort wrap under 1024 px.
+- Playwright lost-click loop (`tests/e2e_gui/test_rename_lost_click.py`): 50 sidebar clicks from Rename Transcript each change the page (`make test-gui-e2e`).
+- Accessibility baseline note: [a11y_baseline_2026-11-03.md](docs/dev/a11y_baseline_2026-11-03.md).
+
+## [1.1.1] - 2026-11-02
+
+GUI hardening wave W0–W1 ([plan](.cursor/plans/2026-11-02-gui-hardening-wave.md)).
+
+### Fixed
+
+- **Sidebar truncated / stale layout after every nav click (1.1.0 regression).** `perf.section()` used `return` inside `finally`, which swallowed Streamlit's `RerunException`/`StopException` and any page exception whenever telemetry was off — the 1.1.0 default. Instrumentation is now exception-transparent; nav buttons switch pages via `on_click` instead of `st.rerun()` inside the sidebar.
+- **App unstyled from the second rerun (1.0.3/1.1.0 regression).** Global CSS was emitted once per session; Streamlit drops elements the latest run did not re-emit (double logo, red default buttons, plain-text page titles). CSS is emitted on every run again.
+- Repo `.env` no longer overrides an explicitly set process environment (`load_dotenv(override=False)`), so CI, AppTest and Playwright children honour isolated `TRANSCRIPTX_*_DIR` values instead of writing fixtures into the owner library.
+- Settings → Configuration readout renders one table per category instead of ~2,200 widgets (31k DOM nodes → ~3k); category titles are humanised (`LLM`, `Audio preprocessing`).
+
+### Added
+
+- **URL state:** `page`, `subject_type`, `subject_id`, `run_id` are mirrored into the URL and restored on a fresh session — refresh and bookmarks keep the view.
+- **Shell smoke lane** (`make test-gui-shell-smoke`, PR CI job `gui-shell-smoke`): every sidebar page paints styled with a complete sidebar, no console errors, DOM budgets, deep-link + reload.
+- `python -m transcriptx.web` disables Streamlit's source watcher by default (`TRANSCRIPTX_DEV=1` keeps hot-reload; `TRANSCRIPTX_FILE_WATCHER` overrides), removing hundreds of `Examining the path …` tracebacks per launch.
+
+### Documentation
+
+- Workflow walkthroughs for **Groups**, **Rename**, **Speakers**, **Correct while reading**, and **Archive** now carry screenshots and GIFs (`docs/_static/workflows/`), captured on the BBNJ webinar corpus; capture notes updated ([workflow_media_capture.md](docs/dev/workflow_media_capture.md)).
+- Sidebar labels aligned with the app (**Workflow → Audio Preprocessing**, **System → Dashboard Builder**); transcript stitch described as shipped; `library_kind` added to [STORAGE.md](docs/runtime/STORAGE.md) and [TERMS.md](docs/TERMS.md); CLI allowlist table lists `analyze-backlog` / `analyze-modules` / `cleanup-runs` / `library-paths`.
+- Sphinx build is warning-free: ```` ```mermaid ```` fences map to the mermaid directive, recipes and runtime notes join the toctrees, and contract / dev pages hang off their index pages. Broken relative links across `docs/dev`, `docs/groups`, and the host-OS review fixed.
+
+## [1.1.0] - 2026-11-02
+
+Workbench depth after 1.0.3: merge-signal truth, security residuals, provenance, speaker-map diagnostics, library kind tags, transcript stitch, derived Speakers SQLite, and NER language skip.
+
+### Added
+
+- **PR contracts job** and Nightly coverage floor (`.coveragerc` `fail_under=70`). Advisory Nightly GUI AppTest.
+- **SR-06 LLM host allowlist:** loopback / `host.docker.internal` by default; `llm.allow_remote_host` / `TRANSCRIPTX_LLM_ALLOW_REMOTE_HOST` opt-in.
+- **P2 evidence/provenance envelope** on Insights themes, Highlights themes, and `llm_action_items` records ([evidence_provenance_v1.md](docs/contracts/evidence_provenance_v1.md)).
+- **B19 `speaker_map_diagnostics`:** T0–T3 honesty, map↔segment mismatches, duplicate names ([speaker_map_diagnostics.md](docs/runtime/speaker_map_diagnostics.md)).
+- **Theme F kind tags:** `meeting` / `voice note` / `lone speaker` on the import sidecar; Library filter + inspector. Does not create Groups.
+- **G1 transcript stitch:** Tools → Merge concatenates already-transcribed parts into a **new** JSON; aborts on duration mismatch; never overwrites managed originals.
+- **Theme J Narrow:** rebuildable SQLite derived store for speaker-profile gallery keyed by `profile_id`.
+- **P1 NER language skip:** non-English `metadata.language` → `skip_reason: unsupported_language` (no silent English spaCy).
+
+### Changed
+
+- Required PR CI is compose + lint + smoke + **contracts** (Python 3.10). Fast stays on Nightly.
+- Streamlit perf telemetry (`TRANSCRIPTX_STREAMLIT_PERF`) defaults **off**; recorded paths are basenames (SR-10).
+- HTML export helpers and wordcloud explorer escape untrusted strings (SR-05).
+- Python classifiers drop 3.12 (no cp3.12 wordcloud wheel; not a CI cell).
+- Living docs: ROADMAP is 1.1.0 / 1.x; pre-release programme file is historical.
+
+### Security
+
+- Image freeze can be pip-audited via `scripts/release/image_pip_audit.sh` (SR-08). Dockerfile bases use `python:3.10-slim-bookworm` (SR-09). nltk CVE-2026-81726 waiver re-audited 2026-11-02.
+
+## [1.0.3] - 2026-11-02
+
+Maintainability file splits plus STT converters that landed after 1.0.2 (git tag `v1.0.3`).
+
 ### Added
 
 - **Nemotron 3.5 Transcribe** (`nemotron_vllm`): Theme K Copy command + `nemotron_json_to_whisperx` converter + optional Run-in-app client against a **local** vLLM/NIM (`127.0.0.1`). OpenMDW-1.1. Stub: `TRANSCRIPTX_NEMOTRON_STUB=1`. Not in the analysis image; not a Mac Run-in-app engine. Recipe: [nemotron-transcribe](docs/recipes/nemotron-transcribe/README.md).
 - **Granite Speech 5.0 TurboCTC** (`ibm-granite/granite-speech-5.0-470m-turboctc`) on the existing `granite_mlx` path: fast undiarized multilingual CTC. Apache-2.0. The CC-BY-NC-SA `-nc` checkpoint is not shipped. Mistral Voxtral 3 is not integrated (no open weights).
+
+### Changed
+
+- **Maintainability waves:** group aggregators live in `aggregation/aggregators.py`; Insights, Speakers directory, Speaker ID, and analysis-config dataclasses are facade + slice modules. Session→transcript path caching moved to `web/transcript_path_cache.py` so FileService does not import `cache_helpers`. Granite/Nemotron `SPEAKER_XX` mapping shares `services/transcription/speaker_label.py` (1-based vs 0-based offset preserved). `EmotionAnalysis.analyze` is the preflight envelope; scoring is `_analyze_lexical`. Layout: [maintainability_layout.md](docs/dev/maintainability_layout.md).
 
 ## [1.0.2] - 2026-10-24
 

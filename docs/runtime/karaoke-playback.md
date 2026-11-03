@@ -30,6 +30,10 @@ previous clip-scoped player:
 
 ## Honesty / limits
 
+- When no recording is resolved, Transcript shows the existing unavailable
+  **caption only** — it does not mount an idle audio player.
+- Rename Transcript clip preview autoplays only after an explicit **▶** (not
+  on every clip-warm fragment rerun).
 - Playhead stays **browser-local**; it is not streamed into Streamlit session
   state.
 - Full-file audio is served from a **loopback-only** HTTP route

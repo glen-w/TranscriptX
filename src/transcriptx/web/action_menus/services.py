@@ -19,6 +19,7 @@ from transcriptx.web.services.file_service import FileService
 from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.web.state import (
     PAGE_KEY,
+    RUN_ANALYSIS_TARGET_KEY,
     SUBJECT_ID_KEY,
     WORKFLOW_NAV_TRANSCRIPT_PATH,
     apply_subject_context,
@@ -69,10 +70,10 @@ def _sync_destination_pickers(
     for key in PAGE_TRANSCRIPT_PICKER_KEYS:
         session_state.pop(key, None)
     if identity.subject_type == "group":
-        session_state["run_analysis_target"] = "Group"
+        session_state[RUN_ANALYSIS_TARGET_KEY] = "Group"
         session_state["run_analysis_group"] = identity.subject_id
     else:
-        session_state["run_analysis_target"] = "Transcript"
+        session_state[RUN_ANALYSIS_TARGET_KEY] = "Transcript"
         session_state.pop("run_analysis_group", None)
 
 

@@ -330,4 +330,14 @@ def assign_themes(highlights: Dict[str, Any]) -> List[ThemeGroup]:
 
 def attach_themes_to_highlights(results: Dict[str, Any]) -> None:
     """Mutate highlights dict with top-level ``themes`` key (list of dicts)."""
-    results["themes"] = [asdict(tg) for tg in assign_themes(results)]
+    from transcriptx.core.analysis.provenance import evidence_provenance
+
+    themes = []
+    for tg in assign_themes(results):
+        row = asdict(tg)
+        row["provenance"] = evidence_provenance(
+            source_module="highlights",
+            quote_ids=tg.quote_ids,
+        )
+        themes.append(row)
+    results["themes"] = themes

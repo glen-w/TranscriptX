@@ -32,6 +32,8 @@ Concept → Authority:
 - **Politeness (B7)** → `docs/runtime/politeness.md`
 - **Topic shift (B9)** → `docs/runtime/topic_shift.md`
 - **Transcript quality / ASR confidence (B3)** → `docs/runtime/transcript_quality.md`
+- **Evidence / provenance (P2)** → `docs/contracts/evidence_provenance_v1.md`
+- **Speaker-map diagnostics (B19)** → `docs/runtime/speaker_map_diagnostics.md`
 
 All other docs (README, guides, architecture, runtime docs) may only summarize these contracts briefly and must link back here for rules.
 
@@ -40,3 +42,15 @@ All other docs (README, guides, architecture, runtime docs) may only summarize t
 ## Truth hierarchy (summary)
 
 When interpreting a run, precedence is defined in **`docs/run_outcome_contract.md`** (execution truth in `run_results.json` over `manifest.json` and raw file presence). This index does not restate those rules — see that contract for allowed statuses, projection rules, and invalid combinations.
+
+```{toctree}
+:hidden:
+:maxdepth: 1
+:glob:
+
+run_outcome_contract
+v0.1-canonical-contract
+ADR-IMPORT-ORCHESTRATION
+contracts/*
+groups/*
+```

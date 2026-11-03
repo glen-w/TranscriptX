@@ -21,11 +21,21 @@ The sample is [imported](../runtime/transcription.md) (see [First analysis](firs
 
 1. Open **Library**. Leave **Include archived transcripts** unchecked. Select the planning-review row.
 
+![Library with a row selected: the inspector below the table shows the transcript title, status lines, Tags, Kind, and the Archive transcript button](../_static/workflows/archive-library-inspector.png)
+
 2. In the inspector, choose **Archive transcript**. The table caption reports archived items as hidden. The inspector caption reads **Archived — hidden from dropdowns and default lists.**
+
+![After archiving: the caption reads 1 of 1 transcripts (1 archived hidden) and the inspector says Archived — hidden from dropdowns and default lists](../_static/workflows/archive-archived.png)
 
 3. Open **Run Analysis** (or the sidebar transcript dropdown). The archived item is omitted. Home **Continue** / **Needs attention** also omit it. This is not a Settings toggle.
 
 4. Return to **Library** and tick **Include archived transcripts**. The row reappears with an `(archived)` title suffix. Select it and choose **Unarchive transcript**. Search has the same checkbox (default off) so archived sessions stay findable without cluttering pickers.
+
+![Include archived transcripts ticked: both rows are listed again (2 of 2 transcripts)](../_static/workflows/archive-include-archived.png)
+
+![Archive, hide, include-archived, and unarchive in sequence on the Library page](../_static/workflows/archive-toggle.gif)
+
+The figures archive the BBNJ webinar transcript while the planning-review sample stays active; the steps are the same whichever row you pick.
 
 Storage rules (sidecar field, what pickers omit, not a delete): [STORAGE.md](../runtime/STORAGE.md#library-archive). Distinct from Speakers profile archive (Settings → Speakers **show archived**) and from `originals/` source-file archive.
 
@@ -35,6 +45,7 @@ Storage rules (sidecar field, what pickers omit, not a delete): [STORAGE.md](../
 - Files, sidecars, originals, and analysis runs stay on disk.
 - If the sidebar already has an archived transcript selected, that current selection can remain so the session does not blank.
 - There is no bulk-archive action.
+- If you archive the **only** transcript in the library, Library shows its empty state (`No transcripts found`) and the **Include archived transcripts** checkbox is not rendered. Use **Search** (same checkbox) to find and reopen it, or import another transcript first.
 
 ## You should now have…
 

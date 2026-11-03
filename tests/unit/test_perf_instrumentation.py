@@ -24,6 +24,8 @@ def perf_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 @pytest.mark.unit
 def test_enabled_respects_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("TRANSCRIPTX_STREAMLIT_PERF", raising=False)
+    assert perf._enabled() is False
     monkeypatch.setenv("TRANSCRIPTX_STREAMLIT_PERF", "0")
     assert perf._enabled() is False
     monkeypatch.setenv("TRANSCRIPTX_STREAMLIT_PERF", "1")
@@ -113,6 +115,49 @@ def test_warning_handler_increments_warning_count(perf_env: Path) -> None:
     summary = perf.finish_run()
     assert summary is not None
     assert summary["warnings_emitted"] >= 1
+
+
+class _ControlFlow(BaseException):
+    """Stand-in for Streamlit RerunException/StopException (BaseException)."""
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("perf_flag", ["0", "1"])
+@pytest.mark.parametrize("exc_type", [_ControlFlow, ValueError])
+def test_section_is_exception_transparent(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    perf_flag: str,
+    exc_type: type[BaseException],
+) -> None:
+    """Regression: a ``return`` in ``finally`` swallowed st.rerun() when perf was off."""
+    monkeypatch.setenv("TRANSCRIPTX_STREAMLIT_PERF", perf_flag)
+    monkeypatch.setenv("TRANSCRIPTX_STREAMLIT_PERF_PATH", str(tmp_path / "p.jsonl"))
+    if hasattr(perf._RUN_LOCAL, "metrics"):
+        delattr(perf._RUN_LOCAL, "metrics")
+    for with_run in (False, True):
+        if with_run:
+            perf.start_run(page="home")
+        with pytest.raises(exc_type):
+            with perf.section("probe", bucket="b"):
+                raise exc_type("boom")
+        if with_run:
+            perf.finish_run()
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("perf_flag", ["0", "1"])
+def test_instrument_cached_call_propagates_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, perf_flag: str
+) -> None:
+    monkeypatch.setenv("TRANSCRIPTX_STREAMLIT_PERF", perf_flag)
+    monkeypatch.setenv("TRANSCRIPTX_STREAMLIT_PERF_PATH", str(tmp_path / "p.jsonl"))
+
+    def _boom() -> None:
+        raise _ControlFlow("rerun")
+
+    with pytest.raises(_ControlFlow):
+        perf.instrument_cached_call("x", _boom, bucket="b")
 
 
 @pytest.mark.unit

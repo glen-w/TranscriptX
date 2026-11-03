@@ -83,6 +83,16 @@ python -m transcriptx.analyze_modules --modules transcript_output,llm_summary
 
 Default modules are human-readable transcripts (`transcript_output`) and `llm_summary`. Speakers need not be identified. Skips a transcript when the newest committed run already lists every requested module in `modules_run`. See [overnight-host.md](../runtime/overnight-host.md).
 
+## Library paths (scripting helper)
+
+```bash
+transcriptx library-paths
+transcriptx library-paths --recent 3 --missing-modules transcript_output,llm_summary
+python -m transcriptx.library_paths --recent 10
+```
+
+Prints managed transcript paths, newest first, one per line — handy for piping into `analyze` or shell loops. `--missing-modules` keeps only transcripts whose newest committed run lacks at least one of the listed module ids (same rule as `analyze-modules`).
+
 ## Cleanup analysis runs
 
 ```bash

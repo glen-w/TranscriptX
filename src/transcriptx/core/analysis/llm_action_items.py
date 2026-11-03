@@ -225,6 +225,7 @@ class LLMActionItemsAnalysis(AnalysisModule):
                 truncation=trunc_meta,
                 generation_options=generation_options,
                 model_selection_source=effort_runtime.model_source,
+                apply_json_outcome=True,
             )
             provenance.update(
                 {

@@ -43,6 +43,7 @@ MODULE_REGISTRY_ORDER: tuple[str, ...] = (
     "wordclouds",
     "tics",
     "transcript_quality",
+    "speaker_map_diagnostics",
     "insight_eligibility",
     "temporal_dynamics",
     "qa_analysis",

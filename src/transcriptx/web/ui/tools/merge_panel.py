@@ -264,6 +264,68 @@ def render_merge_panel(*, deps_ready: bool = True) -> None:
     """Render auto- and manual-merge panels together (legacy entry point)."""
     render_auto_merge_panel(deps_ready=deps_ready)
     render_manual_merge_panel(deps_ready=deps_ready)
+    render_transcript_stitch_panel()
+
+
+def render_transcript_stitch_panel() -> None:
+    """G1: stitch already-transcribed parts into a new canonical JSON."""
+    import json
+
+    from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
+    from transcriptx.core.utils.transcript_picker import list_transcript_picker_options
+    from transcriptx.io.transcript_stitch import (
+        TranscriptStitchError,
+        stitch_transcript_documents,
+        write_stitched_transcript,
+    )
+    from transcriptx.web.components.info_tooltip import widget_help
+
+    st.subheader("Stitch transcripts")
+    st.caption(
+        "Concatenate already-transcribed parts into a **new** canonical JSON. "
+        "Does not overwrite managed originals. SPEAKER_* labels stay until you "
+        "re-run Speaker Identification. If duration vs timestamps cannot be "
+        "reconciled, the stitch is refused."
+    )
+    options = list_transcript_picker_options()
+    labels = [opt.label for opt in options]
+    selected = st.multiselect(
+        "Parts in order",
+        options=labels,
+        key="transcript_stitch_parts",
+        help=widget_help("Select two or more transcripts in the order they should play."),
+    )
+    dest_name = st.text_input(
+        "New filename",
+        value="stitched.json",
+        key="transcript_stitch_dest",
+        help=widget_help("Written under the transcripts library. Must not already exist."),
+    )
+    if st.button(
+        "Stitch transcripts",
+        key="transcript_stitch_run",
+        icon=ic.MERGE,
+        disabled=len(selected) < 2,
+    ):
+        by_label = {opt.label: opt.path for opt in options}
+        paths = [Path(by_label[label]) for label in selected if label in by_label]
+        docs = []
+        for path in paths:
+            try:
+                docs.append(json.loads(path.read_text(encoding="utf-8")))
+            except (OSError, json.JSONDecodeError) as exc:
+                st.error(f"Could not read {path.name}: {exc}")
+                return
+        try:
+            dest = Path(DIARISED_TRANSCRIPTS_DIR) / Path(dest_name).name
+            document = stitch_transcript_documents(
+                docs, source_stems=[p.stem for p in paths]
+            )
+            written = write_stitched_transcript(dest, document)
+        except TranscriptStitchError as exc:
+            st.error(str(exc))
+            return
+        st.success(f"Wrote {written}. Admit or refresh Library to see it.")
 
 
 def _render_shared_merge_options(*, key_prefix: str) -> dict[str, bool]:

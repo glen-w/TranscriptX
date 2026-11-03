@@ -61,9 +61,17 @@ myst_enable_extensions = [
     "tasklist",
 ]
 myst_heading_anchors = 3
+# GitHub renders ```mermaid fences natively; map them to the sphinxcontrib.mermaid
+# directive so the same Markdown works in both places.
+myst_fence_as_directive = ["mermaid"]
 # Many Markdown files use GitHub-style relative links; do not fail the build on
-# every unresolved cross-page edge during the first revive.
-suppress_warnings = ["myst.xref_missing", "misc.highlighting_failure"]
+# every unresolved cross-page edge during the first revive. Strikethrough is
+# HTML-only by design (we do not build other formats).
+suppress_warnings = [
+    "myst.xref_missing",
+    "myst.strikethrough",
+    "misc.highlighting_failure",
+]
 
 html_theme = "furo"
 html_title = "TranscriptX"

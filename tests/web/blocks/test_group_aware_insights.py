@@ -7,6 +7,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+from tests.web.insights_block_patches import patch_insights_object
+
 from transcriptx.web.blocks.availability import check_block_availability
 from transcriptx.web.blocks.builtin import register_builtin_blocks
 from transcriptx.web.blocks.context import build_block_context
@@ -99,8 +101,8 @@ def test_render_highlights_group_uses_rollup(tmp_path: Path) -> None:
 
     st = MagicMock()
     with (
-        patch.object(insights_blocks, "st", st),
-        patch.object(insights_blocks, "_highlights_browser_fragment", MagicMock()),
+        patch_insights_object("st", st),
+        patch_insights_object("_highlights_browser_fragment", MagicMock()),
     ):
         insights_blocks.render_highlights(_ctx(run), _placement())
 
@@ -134,7 +136,7 @@ def test_render_insights_contract_group_rollup(tmp_path: Path) -> None:
     _write_group_meta(run)
 
     st = MagicMock()
-    with patch.object(insights_blocks, "st", st):
+    with patch_insights_object("st", st):
         insights_blocks.render_insights_contract(_ctx(run), _placement())
 
     writes = [c.args[0] for c in st.write.call_args_list if c.args]
@@ -267,7 +269,7 @@ def test_action_items_group_rollup(tmp_path: Path) -> None:
     )
     _write_group_meta(run)
     st = MagicMock()
-    with patch.object(insights_blocks, "st", st):
+    with patch_insights_object("st", st):
         insights_blocks.render_llm_action_items_block(
             _ctx(run), _placement("llm_action_items_block")
         )

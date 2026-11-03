@@ -55,6 +55,9 @@ INFRA_ENV_ALLOWLIST = frozenset(
         "TRANSCRIPTX_TORCH_VARIANT",
         "TRANSCRIPTX_STREAMLIT_PERF",
         "TRANSCRIPTX_STREAMLIT_PERF_PATH",
+        # Launcher-only (python -m transcriptx.web): hot-reload / source watcher.
+        "TRANSCRIPTX_DEV",
+        "TRANSCRIPTX_FILE_WATCHER",
         "TRANSCRIPTX_RUN_PERF_EXPORT_PATH",
         "TRANSCRIPTX_RUN_PERF_EXPORT_MAX_RUNS",
         "TRANSCRIPTX_FOLDER_IMPORT_MAX_FILE_BYTES",
@@ -442,6 +445,11 @@ ENV_KEY_REGISTRY: tuple[EnvKey, ...] = (
         coerce_int,
     ),
     _env_key("TRANSCRIPTX_LLM_BASE_URL", ("llm", "base_url"), coerce_str),
+    _env_key(
+        "TRANSCRIPTX_LLM_ALLOW_REMOTE_HOST",
+        ("llm", "allow_remote_host"),
+        coerce_bool_on_off,
+    ),
     _env_key("TRANSCRIPTX_LLM_SEED", ("llm", "seed"), coerce_int),
     _env_key(
         "TRANSCRIPTX_LLM_REQUEST_TIMEOUT",

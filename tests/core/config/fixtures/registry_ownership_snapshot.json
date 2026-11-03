@@ -1,13 +1,13 @@
 {
-  "total_registry_keys": 754,
-  "pydantic_owned_keys": 738,
+  "total_registry_keys": 755,
+  "pydantic_owned_keys": 739,
   "non_pydantic_baseline_keys": 16,
   "pilot_count": 55,
   "per_pilot_key_counts": {
     "semantic_similarity": 25,
     "metadata": 4,
     "dashboard_display": 3,
-    "llm": 17,
+    "llm": 18,
     "acts": 21,
     "dashboard_overview": 5,
     "output": 9,

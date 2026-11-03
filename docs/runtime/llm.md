@@ -33,7 +33,7 @@ Or in `config.json`:
 
 Configure timeout via `llm.request_timeout` / `TRANSCRIPTX_LLM_REQUEST_TIMEOUT` (default **1350** seconds / 22.5 minutes).
 
-**Remote endpoints:** the default `base_url` is local. A non-local URL sends transcript content to that endpoint. TranscriptX does not block remote URLs but you are responsible for where your data is sent.
+**Remote endpoints:** the default `base_url` is loopback (`localhost` / `127.0.0.1`) or `host.docker.internal`. Other hosts are **rejected** unless you set `llm.allow_remote_host=true` or `TRANSCRIPTX_LLM_ALLOW_REMOTE_HOST=1`. A non-local URL sends transcript content to that endpoint.
 
 ## Run Analysis model selection
 
@@ -71,7 +71,7 @@ If LLM is disabled or the provider is not Ollama while selected modules (or enab
 3. Optionally retries once with `llm.fallback_model` when the preferred model’s JSON is unusable; after `llm.preferred_failure_threshold` preferred failures in one warm/analysis run (default **2**), remaining JSON calls use only the secondary. Env: `TRANSCRIPTX_LLM_FALLBACK_MODEL`, `TRANSCRIPTX_LLM_PREFERRED_FAILURE_THRESHOLD`.
 4. Caches assistive results under the **producing** model tag; cues-only failures do not count as a warm cache hit.
 
-Settings → Models exposes the secondary model picker. The compact Run Analysis selector still **hides** thinking tags for JSON modules unless a secondary is configured; launch stays gated for thinking-only JSON picks without a secondary. Prefer non-thinking mid/large tags (`gemma3:*`, `qwen2.5:*`, `mistral:*`) as secondary or shared default. Plain-text `llm_summary` / `llm_speaker_summary` may still use thinking models without JSON format.
+Settings → Models exposes the secondary model picker. The compact Run Analysis selector **hides** thinking tags for JSON modules only when `/api/show` does not advertise `think: false` **and** no secondary is configured. Launch stays gated in that same case. Prefer non-thinking mid/large tags (`gemma3:*`, `qwen2.5:*`, `mistral:*`) as secondary or shared default. Plain-text `llm_summary` / `llm_speaker_summary` may still use thinking models without JSON format. Residual risk remains when show metadata is missing or a model ignores `think: false`.
 
 ### Complementary Ollama picks for transcript analysis
 
@@ -126,7 +126,7 @@ All LLM modules except finalize-phase `chart_descriptions` and `insights_narrati
 - Resolvers require ACTIVE.attempt_epoch to match LATEST_ATTEMPT (suppresses stale text after crash).
 - Ordering: chart-description publish → group LLM synthesis → single manifest write under one run-finalization lock.
 
-**Privacy:** transcript text for LLM modules (`llm_summary`, `llm_speaker_summary`, `llm_action_items`, and structured input to `narrative_summary`) is sent only through the configured Ollama path (`llm.provider=ollama`). TranscriptX does not block non-local `base_url` values, but you are responsible for where your data is sent; the default is loopback (`http://localhost:11434`). Group LLM synthesis sends **member summary texts only** (not raw transcripts) over the same Ollama path.
+**Privacy:** transcript text for LLM modules (`llm_summary`, `llm_speaker_summary`, `llm_action_items`, and structured input to `narrative_summary`) is sent only through the configured Ollama path (`llm.provider=ollama`). Non-loopback `base_url` hosts require `llm.allow_remote_host` (or `TRANSCRIPTX_LLM_ALLOW_REMOTE_HOST`). The default is loopback (`http://localhost:11434`). Group LLM synthesis sends **member summary texts only** (not raw transcripts) over the same Ollama path.
 
 `llm_speaker_summary` is skipped when the transcript has no eligible named speakers (for example, before Speaker ID mapping). Ignored speakers are excluded.
 

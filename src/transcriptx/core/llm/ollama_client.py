@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import socket
 import urllib.error
@@ -39,6 +40,9 @@ _DEFAULT_MAX_ATTEMPTS = 3
 _DEFAULT_BACKOFF_MAX = 2
 _MODEL_NOT_FOUND_RE = re.compile(r"model\b.*\bnot found", re.IGNORECASE)
 DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
+DEFAULT_ALLOWED_LLM_HOSTS = frozenset(
+    {"localhost", "127.0.0.1", "::1", "host.docker.internal"}
+)
 
 
 def normalize_base_url(base_url: str) -> str:
@@ -293,6 +297,30 @@ def build_ollama_client(
     )
 
 
+def llm_host_is_allowed(hostname: str | None, *, allow_remote: bool = False) -> bool:
+    """True when hostname is loopback / Docker Desktop bridge, or remote is opted in."""
+    if allow_remote:
+        return True
+    host = (hostname or "").strip().lower()
+    if host.startswith("[") and host.endswith("]"):
+        host = host[1:-1]
+    return host in DEFAULT_ALLOWED_LLM_HOSTS
+
+
+def _allow_remote_llm_host() -> bool:
+    env = os.environ.get("TRANSCRIPTX_LLM_ALLOW_REMOTE_HOST", "").strip().lower()
+    if env in {"1", "true", "yes", "on"}:
+        return True
+    if env in {"0", "false", "no", "off"}:
+        return False
+    try:
+        from transcriptx.core.utils.config import get_config
+
+        return bool(getattr(get_config().llm, "allow_remote_host", False))
+    except Exception:
+        return False
+
+
 def _validate_client_config(
     *,
     base_url: str,
@@ -308,6 +336,14 @@ def _validate_client_config(
     parsed = urlparse(base_url)
     if parsed.scheme not in {"http", "https"}:
         raise LLMConfigurationError("LLM base_url must use http or https")
+    if not llm_host_is_allowed(
+        parsed.hostname, allow_remote=_allow_remote_llm_host()
+    ):
+        raise LLMConfigurationError(
+            "LLM base_url host must be loopback or host.docker.internal. "
+            "Set llm.allow_remote_host=true or TRANSCRIPTX_LLM_ALLOW_REMOTE_HOST=1 "
+            "to send transcript content to another HTTP(S) host."
+        )
     if request_timeout <= 0:
         raise LLMConfigurationError("LLM request_timeout must be positive")
     if availability_timeout <= 0:
