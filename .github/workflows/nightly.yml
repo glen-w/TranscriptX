@@ -1,8 +1,8 @@
 name: Nightly
 
 # Broader lanes that used to block every PR (fast / coverage) plus
-# integration_core and advisory GUI AppTest. Contracts also run on PR.
-# Docker image smokes stay on PR release-checks / make test-optional — nightly
+# integration_core and advisory GUI AppTest. PR CI is smoke-only; contracts
+# run here (Gate B) and via `make test-contracts` locally.
 # does not pre-build transcriptx-web, so requires_docker is excluded.
 # Manual: Actions → Nightly → Run workflow.
 
@@ -27,7 +27,7 @@ env:
 
 jobs:
   # Former PR Gate B: fast + contracts with coverage (fail_under from .coveragerc).
-  # Standalone make test-contracts is a required PR job; do not rerun it here.
+  # PR CI is smoke-only; contracts run here and via `make test-contracts` locally.
   gate-b:
     runs-on: ubuntu-latest
     timeout-minutes: 60

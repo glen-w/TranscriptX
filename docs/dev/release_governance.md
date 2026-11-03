@@ -13,7 +13,7 @@ Release hygiene **A1–A10**, Config **1.7** atomic apply, Config **1.8** curate
 ## Checklist
 
 1. All Wave 0 acceptance criteria green (release hygiene A1–A10 + Config 1.7 atomic apply + docs/inventory parity).
-2. **Green CI on the exact intended release commit** — PR workflow only **requires** `compose-config`, `lint`, `smoke` (`make test-smoke` on **Python 3.10**), and `contracts` (`make test-contracts` on **Python 3.10**). Fast/coverage stay on Nightly. Before tagging, also confirm advisory jobs were green on that SHA (especially `release-checks`, and `docs` / `pages.yml` if the release touches documentation). Failed or cancelled required jobs block.
+2. **Green CI on the exact intended release commit** — PR workflow only **requires** `smoke` (`make test-smoke` on **Python 3.10**). Contracts, lint, Playwright shell smoke, and release-checks run locally and on Nightly (see [ROADMAP.md](../ROADMAP.md) § CI expansion (deferred)). Before tagging, confirm those lanes were green on that SHA when the release touches their surface (especially `release-checks`, and `docs` / `pages.yml` if the release touches documentation). Failed or cancelled **required** jobs block.
 3. `pyproject.toml` version matches the intended tag (`v` prefix aside).
 4. Dated Keep-a-Changelog section for that version in `CHANGELOG.md`.
 5. Clean worktree (`git status --porcelain=v1 --untracked-files=all` empty of unexpected paths).
@@ -101,7 +101,7 @@ Execute the cells claimed in `docs/runtime/install_verification_matrix.md` (core
 
 ### F. CI on exact commit
 
-Confirm GitHub Actions on the intended SHA: required jobs `compose-config`, `lint`, `smoke`, and `contracts` are green, plus advisory `release-checks`. Failed or cancelled required jobs block tagging.
+Confirm GitHub Actions on the intended SHA: required job `smoke` is green. Before tagging, also run locally (or check Nightly) for contracts, lint, Playwright shell smoke, and advisory `release-checks` when the release touches those surfaces. Failed or cancelled **required** jobs block tagging.
 
 ### Bundle contents checklist
 

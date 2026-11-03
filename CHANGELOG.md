@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- PR CI merge gate is **`make test-smoke` only** (Python 3.10); lint, contracts, Playwright shell, Docker release-checks, and docs drift lanes deferred to local / Nightly (see [ROADMAP.md](docs/ROADMAP.md) § CI expansion (deferred)).
+
 ## [1.2.1] - 2026-11-03
 
 Patch release consolidating **1.0.3**–**1.2.0** onto `main` and tightening public-entry parity.

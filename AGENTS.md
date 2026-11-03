@@ -47,14 +47,11 @@ managed-import workflow. There is no long-running backend beyond the Streamlit p
 
 - Standard commands live in the `Makefile` and CI (`.github/workflows/ci.yml`). Common ones:
   `make test-smoke` (**PR merge gate**, ~1.5 min on Python 3.10), `make test-fast` / `make test-contracts`
-  (Nightly Gate B, not PR-blocking), `make docs` (needs `.[docs]`). Run from repo root with the venv active.
-- Lint: `flake8`, `black`, and `mypy` come from `.[dev]`. Note there is no `.flake8`/`setup.cfg`, so
-  bare `flake8` uses its 79-char default while the code targets black's 88. The **authoritative lint
-  gate is pre-commit**, whose config is at the non-default path `config/.pre-commit-config.yaml`
-  (pinned `black 23.12.1`, `ruff 0.1.6`, `mypy 1.8.0`); run it with
-  `pre-commit run -a -c config/.pre-commit-config.yaml`. `ruff` is only provided via pre-commit, not `.[dev]`.
-  PR CI also runs a thin ruff select (`E9,F63,F7,F82,F401,F841`) on `src/transcriptx`.
-- **Nightly `make test-fast` watchlist** (does not turn PR CI red): config/registry changes should still
+  (Nightly Gate B and local — not required on PR). Lint (ruff) and Playwright shell smoke are local /
+  pre-release; see `docs/ROADMAP.md` § CI expansion (deferred).
+- Lint: `flake8`, `black`, and `mypy` come from `.[dev]`. The **authoritative lint gate is pre-commit**
+  (`config/.pre-commit-config.yaml`); run `pre-commit run -a -c config/.pre-commit-config.yaml`.
+- **Nightly `make test-fast` watchlist**: config/registry changes should still
   update ownership snapshot + pilot goldens + `delegation_test_utils` counts when adding Pydantic
   fields; path defaults in goldens must use portable `<REPO>/data/...` forms (see
   `docs/dev/config_architecture.md`, `tests/README.md` § CI watchlist). Streamlit pages: literal
