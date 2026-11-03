@@ -28,7 +28,7 @@ _PLANNING = fixture_planning_review()
 def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line(
         "markers",
-        "gui_e2e: Playwright E2E against live Streamlit GUI (tests/e2e_gui; included in default pytest)",
+        "gui_e2e: Playwright E2E against live Streamlit GUI (tests/e2e_gui; opt-in via make test-gui-e2e)",
     )
 
 
@@ -38,8 +38,8 @@ def pytest_report_header(config: pytest.Config) -> list[str]:
         "Playwright GUI E2E (gui_e2e): tests/e2e_gui — 10 key flows "
         "(first-analysis, speaker-identification, investigate-evidence, "
         "local-ai-synthesis, export-results, charts-view, groups, "
-        "corrections, rename-transcript, speakers); "
-        "run via make test-gui-e2e (skips without Chromium)",
+        "corrections, rename-transcript, speakers) plus rename lost-click; "
+        "run via make test-gui-e2e (skips without Chromium; not in default pytest)",
     ]
 
 

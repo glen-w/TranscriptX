@@ -227,6 +227,9 @@ def set_active_clip(play_key: str, idx: int) -> None:
     st.session_state[play_key] = idx
     # One-shot follow-along scroll for Theme D reading UX.
     st.session_state[f"{play_key}_scroll_playing"] = True
+    # Autoplay only on the paint that follows an explicit ▶ — later fragment
+    # reruns (clip warm, sidebar clicks) must not remount <audio autoplay>.
+    st.session_state[f"{play_key}_autoplay_once"] = True
 
 
 def consume_scroll_playing(play_key: str, session_state: Any | None = None) -> bool:
@@ -273,6 +276,7 @@ def clear_playback_session_keys(play_key: str) -> None:
     st.session_state[f"{play_key}_warm_sig"] = None
     st.session_state.pop(f"{play_key}_scroll_playing", None)
     st.session_state.pop(f"{play_key}_warm_pending", None)
+    st.session_state.pop(f"{play_key}_autoplay_once", None)
 
 
 def resolve_playback_availability(
@@ -584,8 +588,9 @@ def render_exact_segment_preview(
     """Render an exact preselected segment sequence (no max_lines reselect/slice).
 
     Pass ``autoplay=True`` when ▶ should start the loaded clip (Rename Transcript,
-    same contract as Speaker ID). One clip extraction failure must not prevent
-    remaining rows from rendering.
+    same contract as Speaker ID). Autoplay is consumed once per click so clip-ready
+    fragment reruns do not steal sidebar navigation. One clip extraction failure
+    must not prevent remaining rows from rendering.
     """
     all_segs = list(segments)
     ctx = playback_context
@@ -638,12 +643,16 @@ def render_exact_segment_preview(
 
     # Active player — failures stay local to this block.
     seg_to_play = all_segs[play_seg_idx] if play_seg_idx is not None else None
+    autoplay_once_key = f"{play_key}_autoplay_once"
+    should_autoplay = bool(autoplay) and bool(
+        st.session_state.pop(autoplay_once_key, False)
+    )
     try:
         render_active_clip(
             controller,
             transcript_path,
             seg_to_play,
-            autoplay=autoplay,
+            autoplay=should_autoplay,
             playback_context=ctx,
         )
     except Exception:

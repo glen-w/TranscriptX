@@ -607,6 +607,10 @@ def pytest_configure(config):
         test_outputs_dir = _REPO_ROOT / ".test_outputs"
         test_outputs_dir.mkdir(parents=True, exist_ok=True)
         os.environ["TRANSCRIPTX_OUTPUT_DIR"] = str(test_outputs_dir)
+    if not os.getenv("TRANSCRIPTX_DATA_DIR"):
+        test_data_dir = _REPO_ROOT / ".test_data"
+        test_data_dir.mkdir(parents=True, exist_ok=True)
+        os.environ["TRANSCRIPTX_DATA_DIR"] = str(test_data_dir)
 
     config.addinivalue_line(
         "markers",

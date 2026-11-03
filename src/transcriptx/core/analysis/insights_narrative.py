@@ -142,6 +142,7 @@ class InsightsNarrativeAnalysis(AnalysisModule):
                 source_result_sha256=source_result_sha256,
                 generation_options={"temperature": 0.0, "format": "json"},
                 model_selection_source=resolved_model.source,
+                apply_json_outcome=True,
             )
 
             payload: Dict[str, Any] = {

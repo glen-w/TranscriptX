@@ -25,7 +25,7 @@ class SpeakerMapDiagnosticsAnalysis(AnalysisModule):
         db_ids: dict[str, Any] = {}
         has_sidecar = False
         if self._transcript_path:
-            state = SpeakerMapResolver.load_mapping(self._transcript_path)
+            state = SpeakerMapResolver().load_mapping(self._transcript_path)
             mapping = dict(state.speaker_map)
             ignored = list(state.ignored_speakers)
             db_ids = dict(getattr(state, "speaker_id_to_db_id", {}) or {})

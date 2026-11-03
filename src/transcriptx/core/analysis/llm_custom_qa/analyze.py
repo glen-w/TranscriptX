@@ -60,6 +60,9 @@ from transcriptx.core.analysis.llm_support.hashing import (
     sha256_llm_request,
     sha256_text,
 )
+from transcriptx.core.analysis.llm_support.provenance import (
+    json_generate_provenance_fields,
+)
 from transcriptx.core.analysis.llm_support.runtime import (
     build_ollama_analysis_client,
     require_ollama_analysis,
@@ -559,6 +562,13 @@ class LLMCustomQAAnalysis(AnalysisModule):
                 "model_digest": None,
                 "model_selection_source": effort_runtime.model_source,
             }
+            producing, qa_source = json_generate_provenance_fields(
+                model=str(provenance["model"] or ""),
+                model_selection_source=effort_runtime.model_source,
+            )
+            provenance["model"] = producing
+            if qa_source:
+                provenance["model_selection_source"] = qa_source
             payload = {
                 "schema_id": SCHEMA_ID,
                 "module": MODULE_NAME,

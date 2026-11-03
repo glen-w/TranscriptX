@@ -287,31 +287,32 @@ def _library_browser_fragment(rows: list[InventoryRow]) -> None:
             tolerant_resolve(current_path)
         )
 
-    query_col, preset_col, sort_col = st.columns([2, 2, 1.4])
-    with query_col:
-        st.text_input(
-            "Search transcripts",
-            key=LIBRARY_FILTER_QUERY_KEY,
-            placeholder="Title or filename",
-            help=widget_help(
-                "Filters the library by title or filename, not transcript text."
-            ),
-        )
-    with preset_col:
-        st.pills(
-            "Workflow",
-            options=[preset.value for preset in LibraryWorkflowPreset],
-            format_func=lambda value: _PRESET_LABELS[LibraryWorkflowPreset(value)],
-            key=LIBRARY_FILTER_PRESET_KEY,
-            help=widget_help("Slice the corpus by workflow state."),
-        )
-    with sort_col:
-        st.selectbox(
-            "Sort",
-            options=[item.value for item in LibrarySort],
-            format_func=lambda value: _SORT_LABELS[LibrarySort(value)],
-            key=LIBRARY_FILTER_SORT_KEY,
-        )
+    with st.container(key="tx_library_filters"):
+        query_col, preset_col, sort_col = st.columns([2, 2, 1.4])
+        with query_col:
+            st.text_input(
+                "Search transcripts",
+                key=LIBRARY_FILTER_QUERY_KEY,
+                placeholder="Title or filename",
+                help=widget_help(
+                    "Filters the library by title or filename, not transcript text."
+                ),
+            )
+        with preset_col:
+            st.pills(
+                "Workflow",
+                options=[preset.value for preset in LibraryWorkflowPreset],
+                format_func=lambda value: _PRESET_LABELS[LibraryWorkflowPreset(value)],
+                key=LIBRARY_FILTER_PRESET_KEY,
+                help=widget_help("Slice the corpus by workflow state."),
+            )
+        with sort_col:
+            st.selectbox(
+                "Sort",
+                options=[item.value for item in LibrarySort],
+                format_func=lambda value: _SORT_LABELS[LibrarySort(value)],
+                key=LIBRARY_FILTER_SORT_KEY,
+            )
 
     sources = sorted({row.source_id for row in rows if row.source_id})
     tag_options = _corpus_tag_options(rows)

@@ -47,7 +47,6 @@ def render_tools_page() -> None:
         "Tool",
         options=tab_labels,
         key=TOOLS_HUB_TAB_KEY,
-        label_visibility="collapsed",
     )
     if label not in tab_labels:
         label = tab_labels[0]

@@ -1,6 +1,6 @@
 # TranscriptX Roadmap
 
-**Current version:** **1.1.1** (see [pyproject.toml](../pyproject.toml)). Public **1.0.0** shipped 2026-10-19; **1.1.0** is the Trustworthy Depth workbench increment; **1.1.1** restores the GUI shell.
+**Current version:** **1.2.0** (see [pyproject.toml](../pyproject.toml)). Public **1.0.0** shipped 2026-10-19; **1.1.0** is the Trustworthy Depth workbench increment; **1.1.1** restores the GUI shell; **1.2.0** finishes GUI hardening W1.3–W4.
 
 **Product definition:** [PRODUCT.md](PRODUCT.md)  
 **Historical 0.9.x → 1.0 programme:** [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) (retired; not the living plan)  
@@ -87,7 +87,7 @@ Cross-links: Theme **H** (in-app providers), Theme **K** (command generation), [
 - Streamlit GUI + typed Python API; managed import; file-backed storage/sidecars
 - Broad analysis module set (language, speakers, interactions, emotion, voice, groups, optional Ollama)
 - Contracts for storage, run outcomes, outputs, and public surfaces
-- Public **1.0.x / 1.1.x** workbench (1.0.0 2026-10-19; **1.1.1** current). Living work is 1.x themes below, not a 0.9.x track.
+- Public **1.0.x / 1.1.x / 1.2.x** workbench (1.0.0 2026-10-19; **1.2.0** current). Living work is 1.x themes below, not a 0.9.x track.
 
 Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription is BYO plus in-app **command-generation** (0.9.4) and optional **host-orchestrated STT** (theme **H**: whispermlx / WhisperX Docker, durable jobs). Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Post-0.9.9 wave cut as interim **`0.9.9.5`**: early 1.x Themes **A–D**, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, backup/restore — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md). Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **done for 1.0** (Speaker ID Phase 9, Studio review, viewer click-drag); Theme **D** CCv2 full-file reader **done for 1.0** (clip karaoke remains Correct-mode / `TX_READER_WORKSPACE_COMPONENT=0` rollback). Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
 
@@ -155,7 +155,7 @@ After **1.0**, plan by **theme**, not by patch ID. Cut releases around coherent 
 | I. Installable / native-feeling shell | Honest local-install (PWA or wrapper); optional loopback API; custom SPA only after C evidence | Deferred except H1 job channel |
 | J. Local analytics layer (SQLite) | Derived query store for Speakers/Groups views | **[~] Narrow Speakers/`profile_id` gallery shipped**; Groups expansion later |
 | K. External STT command generation | Broader copyable host CLIs until / beside theme H; Parakeet/Canary + Nemotron converters | **[~] PowerShell builder + Parakeet/Nemotron Copy commands shipped** |
-| L. Polish & onboarding extras | Coach-marks, bundled demos, aesthetics — only if capacity | Anytime light |
+| L. Polish & onboarding extras | Coach-marks, bundled demos, aesthetics — only if capacity. **GUI hardening W0–W4 shipped** (shell trust, budgets, theme, a11y baseline) | Anytime light; W0–W4 done |
 | M. Research / citeable methods | Optional B4-style methods; multilingual beyond small subset | Later 1.x+ |
 | N. Multi-provider LLM (opt-in) | OpenAI-compatible / LiteLLM gateway beyond Ollama; never silent cloud default | Mid–late 1.x |
 | → 2.0 | Personal audio intelligence companion | Vision |
@@ -409,6 +409,8 @@ Until/beside theme **H**, keep improving **copyable host commands** on Transcrib
 ---
 
 ### L. Polish & onboarding extras
+
+**GUI hardening W0–W4** ([plan](../.cursor/plans/2026-11-02-gui-hardening-wave.md)): Streamlit stays the shell. **W0–W1.2** shipped in **1.1.1**. **W1.3–W4** shipped in **1.2.0**: Rename preview autoplay only after ▶; session keys in `web/state.py`; Speakers skeleton + corpus scandir stamp; Diagnostics pagination + Clean → Settings → Storage; theme / Tools label / Library wrap; action-link names; shell `/` and `g`+letter; [a11y baseline](dev/a11y_baseline_2026-11-03.md). Remainder (advisory): axe-core on shell smoke, `!important` cut, collapsed-label count.
 
 Only if capacity remains after core themes:
 

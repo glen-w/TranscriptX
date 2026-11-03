@@ -54,36 +54,33 @@ def _logo_data_uri(path_str: str) -> str:
 def render_brand_logo(*, width: int = 200) -> None:
     """Sidebar brand mark without Streamlit's st.image fullscreen toolbar.
 
-    Emits both light-chrome and dark-chrome wordmarks; CSS picks the readable
-    variant from Streamlit's active ``color-scheme`` (see inject_global_styles).
+    One ``<img>`` only. Light/dark wordmark URIs live on data attributes;
+    chrome-sync JS swaps ``src``. Emitting both ``<img>`` tags stacked two
+    logos whenever the hide-CSS missed (Streamlit markdown/CSS isolation).
     """
     light_chrome = brand_logo_path(for_dark_chrome=False)
     dark_chrome = brand_logo_path(for_dark_chrome=True)
-    if light_chrome is None and dark_chrome is None:
+    chosen = light_chrome or dark_chrome
+    if chosen is None:
         return
 
-    parts = ['<div class="tx-sidebar-brand">']
-    if light_chrome is not None:
-        parts.append(
-            f'<img class="tx-logo-light-chrome" '
-            f'src="{_logo_data_uri(str(light_chrome))}" width="{width}" '
-            f'alt="TranscriptX" />'
-        )
-    if dark_chrome is not None and dark_chrome != light_chrome:
-        parts.append(
-            f'<img class="tx-logo-dark-chrome" '
-            f'src="{_logo_data_uri(str(dark_chrome))}" width="{width}" '
-            f'alt="" aria-hidden="true" />'
-        )
-    elif dark_chrome is not None:
-        # Only one asset available — single img, no theme swap needed.
-        parts = [
-            '<div class="tx-sidebar-brand">',
-            f'<img src="{_logo_data_uri(str(dark_chrome))}" width="{width}" '
-            f'alt="TranscriptX" />',
-        ]
-    parts.append("</div>")
-    st.markdown("".join(parts), unsafe_allow_html=True)
+    light_uri = _logo_data_uri(str(light_chrome)) if light_chrome else ""
+    dark_uri = _logo_data_uri(str(dark_chrome)) if dark_chrome else ""
+    initial_uri = light_uri or dark_uri
+    attrs = [
+        'class="tx-logo"',
+        f'src="{initial_uri}"',
+        f'width="{width}"',
+        'alt="TranscriptX"',
+    ]
+    if light_uri:
+        attrs.append(f'data-tx-src-light="{light_uri}"')
+    if dark_uri:
+        attrs.append(f'data-tx-src-dark="{dark_uri}"')
+    st.markdown(
+        f'<div class="tx-sidebar-brand"><img {" ".join(attrs)} /></div>',
+        unsafe_allow_html=True,
+    )
 
 
 def configure_streamlit_page() -> None:
@@ -162,6 +159,16 @@ _SHELL_RUNTIME_JS = """
                 if (node.getAttribute('data-tx-chrome') !== chrome) {
                     node.setAttribute('data-tx-chrome', chrome);
                 }
+                const img = node.querySelector('img');
+                if (!img) return;
+                const next = chrome === 'dark'
+                    ? (img.getAttribute('data-tx-src-dark')
+                       || img.getAttribute('data-tx-src-light'))
+                    : (img.getAttribute('data-tx-src-light')
+                       || img.getAttribute('data-tx-src-dark'));
+                if (next && img.getAttribute('src') !== next) {
+                    img.setAttribute('src', next);
+                }
             });
         };
         apply();
@@ -200,6 +207,56 @@ _SHELL_RUNTIME_JS = """
         } else {
             ensureBtn();
         }
+    })();
+
+    (function() {
+        if (window.__txShellKeys) return;
+        window.__txShellKeys = true;
+        const inputFocused = function() {
+            const el = document.activeElement;
+            if (!el) return false;
+            const tag = (el.tagName || '').toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+            return Boolean(el.isContentEditable);
+        };
+        const clickNav = function(name) {
+            const buttons = document.querySelectorAll('[data-testid="stSidebar"] button');
+            for (const btn of buttons) {
+                const text = (btn.innerText || '').trim();
+                if (text === name) {
+                    btn.click();
+                    return true;
+                }
+            }
+            return false;
+        };
+        let awaitingG = false;
+        document.addEventListener('keydown', function(e) {
+            if (e.metaKey || e.ctrlKey || e.altKey) return;
+            if (inputFocused()) return;
+            if (e.key === '/' && !awaitingG) {
+                e.preventDefault();
+                clickNav('Search');
+                return;
+            }
+            if (e.key === 'g' || e.key === 'G') {
+                awaitingG = true;
+                window.setTimeout(function() { awaitingG = false; }, 800);
+                return;
+            }
+            if (!awaitingG) return;
+            awaitingG = false;
+            const map = {
+                h: 'Home', l: 'Library', s: 'Search', p: 'Speakers',
+                r: 'Run Analysis', o: 'Overview', t: 'Transcript',
+                i: 'Insights', c: 'Charts', g: 'Settings'
+            };
+            const target = map[e.key.toLowerCase()];
+            if (target) {
+                e.preventDefault();
+                clickNav(target);
+            }
+        });
     })();
 
     (function() {
@@ -289,13 +346,14 @@ _GLOBAL_STYLES_CSS = """
         max-width: 100%;
         height: auto;
     }
-    /* Default: dark wordmark (readable on light chrome). Do not key off
-       prefers-color-scheme — Streamlit Light + OS dark would show the white
-       wordmark. JS sets data-tx-chrome from Streamlit's used color-scheme. */
-    .tx-sidebar-brand .tx-logo-dark-chrome { display: none !important; }
-    .tx-sidebar-brand .tx-logo-light-chrome { display: block !important; }
-    .tx-sidebar-brand[data-tx-chrome="dark"] .tx-logo-light-chrome { display: none !important; }
-    .tx-sidebar-brand[data-tx-chrome="dark"] .tx-logo-dark-chrome { display: block !important; }
+    /* Hard stop: a second wordmark must never take layout, even if a stale
+       two-img markup or a CSS-isolation miss would otherwise stack them. */
+    .tx-sidebar-brand img:nth-of-type(n+2) {
+        display: none !important;
+        height: 0 !important;
+        width: 0 !important;
+        overflow: hidden !important;
+    }
     /* Chrome-sync helper is st.html; collapse it so it does not consume layout. */
     div[data-testid="stElementContainer"]:has([data-tx-chrome-sync]),
     [data-testid="stHtml"]:has([data-tx-chrome-sync]),
@@ -1244,6 +1302,30 @@ _GLOBAL_STYLES_CSS = """
     /* Avoid browser scroll-anchoring jumps when the player updates in-place. */
     [data-testid="stMain"] {
         overflow-anchor: none;
+    }
+    /* Library filter/sort wrap on narrow viewports (W3.8). */
+    @media (max-width: 1024px) {
+        [class*="st-key-tx_library_filters"] [data-testid="stHorizontalBlock"] {
+            flex-wrap: wrap !important;
+            gap: 0.5rem;
+        }
+        [class*="st-key-tx_library_filters"] [data-testid="stColumn"] {
+            min-width: min(100%, 16rem) !important;
+            flex: 1 1 16rem !important;
+        }
+    }
+    /* Icon-only action links keep the visible label for the accessible name. */
+    [class*="st-key-tx_al_i_"] button p,
+    [class*="st-key-tx_al_i_"] button span:not([data-testid="stIconMaterial"]) {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
     }
 </style>
 """

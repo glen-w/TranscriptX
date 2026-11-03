@@ -14,7 +14,8 @@ The sample is [imported](../runtime/transcription.md) (see [First analysis](firs
 
 1. Open **Rename Transcript**.
 2. Select the planning-review transcript.
-3. Review the preview clips / current stem when shown.
+3. Review the preview clips / current stem when shown. Clips play only after
+   you press **▶** (autoplay is not used on fragment reruns).
 4. Enter a new file name and submit **Rename**.
 5. Confirm Library shows the new name.
 

@@ -71,7 +71,7 @@ If LLM is disabled or the provider is not Ollama while selected modules (or enab
 3. Optionally retries once with `llm.fallback_model` when the preferred model’s JSON is unusable; after `llm.preferred_failure_threshold` preferred failures in one warm/analysis run (default **2**), remaining JSON calls use only the secondary. Env: `TRANSCRIPTX_LLM_FALLBACK_MODEL`, `TRANSCRIPTX_LLM_PREFERRED_FAILURE_THRESHOLD`.
 4. Caches assistive results under the **producing** model tag; cues-only failures do not count as a warm cache hit.
 
-Settings → Models exposes the secondary model picker. The compact Run Analysis selector still **hides** thinking tags for JSON modules unless a secondary is configured; launch stays gated for thinking-only JSON picks without a secondary. Prefer non-thinking mid/large tags (`gemma3:*`, `qwen2.5:*`, `mistral:*`) as secondary or shared default. Plain-text `llm_summary` / `llm_speaker_summary` may still use thinking models without JSON format.
+Settings → Models exposes the secondary model picker. The compact Run Analysis selector **hides** thinking tags for JSON modules only when `/api/show` does not advertise `think: false` **and** no secondary is configured. Launch stays gated in that same case. Prefer non-thinking mid/large tags (`gemma3:*`, `qwen2.5:*`, `mistral:*`) as secondary or shared default. Plain-text `llm_summary` / `llm_speaker_summary` may still use thinking models without JSON format. Residual risk remains when show metadata is missing or a model ignores `think: false`.
 
 ### Complementary Ollama picks for transcript analysis
 

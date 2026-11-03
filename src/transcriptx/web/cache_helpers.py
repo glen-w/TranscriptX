@@ -159,10 +159,41 @@ def _cached_corpus_inventory_rows(digest: tuple) -> list:
 
 # Digest memo: discovery + per-row stat walk cost ~8 s on a 345-transcript
 # library and ran on *every* Home/Library rerun before the cache lookup.
-# A few seconds of staleness is fine for a listing; explicit writers call
-# clear_corpus_inventory_cache().
+# Cheap scandir mtimes skip discover when the library dir has not changed.
+# A few seconds of staleness still skips even the scandir. Explicit writers
+# call clear_corpus_inventory_cache().
 CORPUS_DIGEST_MEMO_SECONDS = 5.0
-_CORPUS_DIGEST_MEMO: tuple[float, tuple] | None = None
+# (monotonic, scandir_stamp, digest)
+_CORPUS_DIGEST_MEMO: tuple[float, tuple, tuple] | None = None
+
+
+def _transcripts_dir_scandir_stamp() -> tuple:
+    """Count + max mtime of ``*.json`` in the managed transcripts dir (no parse)."""
+    import os
+    from pathlib import Path
+
+    from transcriptx.core.utils.paths import DIARISED_TRANSCRIPTS_DIR
+
+    root = Path(DIARISED_TRANSCRIPTS_DIR)
+    count = 0
+    max_mtime = 0
+    try:
+        with os.scandir(root) as it:
+            for entry in it:
+                name = entry.name
+                if not name.endswith(".json") or name.startswith("."):
+                    continue
+                try:
+                    stat = entry.stat()
+                except OSError:
+                    continue
+                count += 1
+                mtime_ns = getattr(stat, "st_mtime_ns", int(stat.st_mtime * 1e9))
+                if mtime_ns > max_mtime:
+                    max_mtime = mtime_ns
+    except OSError:
+        return (str(root), -1, 0)
+    return (str(root), count, max_mtime)
 
 
 def _corpus_digest(now: float | None = None) -> tuple:
@@ -172,14 +203,17 @@ def _corpus_digest(now: float | None = None) -> tuple:
     now = _time.monotonic() if now is None else now
     memo = _CORPUS_DIGEST_MEMO
     if memo is not None and now - memo[0] < CORPUS_DIGEST_MEMO_SECONDS:
-        return memo[1]
+        return memo[2]
+    stamp = _transcripts_dir_scandir_stamp()
+    if memo is not None and memo[1] == stamp:
+        return memo[2]
     from transcriptx.app.corpus_inventory.service import (
         corpus_fingerprint_digest,
         discover_transcript_refs,
     )
 
     digest = corpus_fingerprint_digest(discover_transcript_refs())
-    _CORPUS_DIGEST_MEMO = (now, digest)
+    _CORPUS_DIGEST_MEMO = (now, stamp, digest)
     return digest
 
 

@@ -107,6 +107,7 @@ def _try_generate_titles(
     Soft-fails to skipped/partial without raising into the deterministic path.
     """
     try:
+        from transcriptx.core.llm.json_with_fallback import wrap_client_with_json_fallback
         from transcriptx.core.llm.ollama_client import (
             OllamaClient,
             resolve_ollama_base_url,
@@ -130,14 +131,23 @@ def _try_generate_titles(
             str(getattr(llm_cfg, "base_url", None) or "http://localhost:11434")
         )
         timeout = float(getattr(llm_cfg, "request_timeout", 120.0) or 120.0)
-        client = OllamaClient(
+        availability_timeout = float(
+            getattr(llm_cfg, "availability_timeout", 7.5) or 7.5
+        )
+        request_timeout = min(timeout, 180.0)
+        primary = OllamaClient(
             base_url=base,
             model=model,
             seed=int(getattr(llm_cfg, "seed", 42) or 42),
-            request_timeout=min(timeout, 180.0),
-            availability_timeout=float(
-                getattr(llm_cfg, "availability_timeout", 7.5) or 7.5
-            ),
+            request_timeout=request_timeout,
+            availability_timeout=availability_timeout,
+            max_output_tokens=1024,
+        )
+        client = wrap_client_with_json_fallback(
+            primary,
+            llm_cfg=llm_cfg,
+            request_timeout=request_timeout,
+            availability_timeout=availability_timeout,
             max_output_tokens=1024,
         )
         raw = client.generate(

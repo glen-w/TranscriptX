@@ -28,7 +28,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [analysis_quality_audit.md](dev/analysis_quality_audit.md) | Analysis quality audit template |
 | [analysis_quality_audit_scaffold.md](dev/analysis_quality_audit_scaffold.md) | Generated registry rows (`make docs-gen`) |
 | [analysis_quality_audit_judgements.md](dev/analysis_quality_audit_judgements.md) | Provisional Recommendation / Severity overlay |
-| [performance_envelopes_1_0.md](dev/performance_envelopes_1_0.md) | Performance envelope planning |
+| [performance_envelopes_1_0.md](dev/performance_envelopes_1_0.md) | Performance envelopes; GUI cold-path budgets (W2, advisory) |
 | [trust_privacy_model_governance_1_0.md](dev/trust_privacy_model_governance_1_0.md) | Trust / privacy / model gate |
 | [release_ops_support_1_0.md](dev/release_ops_support_1_0.md) | Release ops / support policy |
 | [rtd_go_live_checklist.md](dev/rtd_go_live_checklist.md) | Read the Docs go-live flip steps |
@@ -88,6 +88,7 @@ Active developer and maintainer docs. Historical material is listed only via [AR
 | [wave_b13_interaction_graphs_2026-07-23.md](dev/wave_b13_interaction_graphs_2026-07-23.md) | Wave B13 interaction graphs |
 | [wave_b16_keyphrases_2026-07-24.md](dev/wave_b16_keyphrases_2026-07-24.md) | Wave B16 keyphrases |
 | [gui_acceptance_residual_checklist.md](dev/gui_acceptance_residual_checklist.md) | GUI acceptance residual checklist |
+| [a11y_baseline_2026-11-03.md](dev/a11y_baseline_2026-11-03.md) | GUI hardening W4 accessibility baseline (advisory; not a PR gate) |
 | [install_verification_matrix.md](runtime/install_verification_matrix.md) | Install verification matrix |
 | [docker-efficiency-baseline.md](runtime/docker-efficiency-baseline.md) | Docker efficiency baseline |
 

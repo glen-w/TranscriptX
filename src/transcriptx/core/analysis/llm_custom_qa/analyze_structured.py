@@ -76,6 +76,9 @@ from transcriptx.core.analysis.llm_custom_qa.versioning import (
     MODULE_VERSION,
     SCHEMA_ID,
 )
+from transcriptx.core.analysis.llm_support.provenance import (
+    json_generate_provenance_fields,
+)
 from transcriptx.core.analysis.llm_support.runtime import (
     build_ollama_analysis_client,
     require_ollama_analysis,
@@ -1049,6 +1052,13 @@ def run_structured_from_context(module: Any, context: Any) -> Dict[str, Any]:
             "logical_llm_calls": accounting.logical_calls,
             "http_attempts": accounting.http_attempts,
         }
+        producing, qa_source = json_generate_provenance_fields(
+            model=str(answer_model or ""),
+            model_selection_source=effort_runtime.model_source,
+        )
+        provenance["answer_model"] = producing
+        if qa_source:
+            provenance["model_selection_source"] = qa_source
         payload = {
             "schema_id": SCHEMA_ID,
             "module": MODULE_NAME,

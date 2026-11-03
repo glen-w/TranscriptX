@@ -16,7 +16,7 @@ from transcriptx.web.navigation import (
     evaluate_page_access,
     migrate_legacy_page_key,
 )
-from transcriptx.web.state import ARTIFACTS_KEY_SECTION, PAGE_KEY
+from transcriptx.web.state import ARTIFACTS_KEY_SECTION, PAGE_KEY, RUN_ANALYSIS_TARGET_KEY
 
 PAGE_PREREQUISITES: dict[str, PagePrerequisite] = build_prerequisites()
 
@@ -69,7 +69,7 @@ def _redirect_legacy_batch_ops() -> None:
     or migration would rewrite the page before the Batch preset is applied.
     """
     st.session_state[PAGE_KEY] = "Run Analysis"
-    st.session_state["run_analysis_target"] = "Batch"
+    st.session_state[RUN_ANALYSIS_TARGET_KEY] = "Batch"
     from transcriptx.web.page_modules.run_analysis import render_run_analysis_page
 
     render_run_analysis_page()

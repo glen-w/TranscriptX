@@ -1,5 +1,7 @@
 # GUI upgrade / hardening wave (2026-11-02)
 
+**Status (2026-11-03):** implemented. **W0–W1.2** shipped in **1.1.1**. **W1.3–W4** shipped in **1.2.0**. Remainder (advisory): axe-core on shell smoke, `!important` ≥50% cut, collapsed-label count ≤ 5. Living notes: [ROADMAP Theme L](../../docs/ROADMAP.md), [a11y baseline](../../docs/dev/a11y_baseline_2026-11-03.md), [CHANGELOG 1.2.0](../../CHANGELOG.md).
+
 Evidence: [assessments/gui-ux-assessment-2026-11-02.md](../../assessments/gui-ux-assessment-2026-11-02.md) (finding ids F1–F19 below refer to §5 there). Successor to [gui-fluidity 2026-10-20](2026-10-20-gui-fluidity.md): two of its Wave A "shell tax" cuts regressed the shell; this wave repairs them, adds the test lane that would have caught them, then upgrades what users hit most.
 
 **Stance (unchanged from ROADMAP Themes C / I):** Streamlit stays the shell; no SPA, no Gradio/NiceGUI, no new CCv2 unless remount/bytes/focus evidence. Everything here is classic Streamlit + tests + one theme file.

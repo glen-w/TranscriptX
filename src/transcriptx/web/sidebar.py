@@ -107,7 +107,6 @@ def _render_workspace_pickers(session_state: dict) -> None:
         "Type",
         options=list(_SUBJECT_TYPE_OPTIONS),
         key=_SUBJECT_TYPE_SELECTOR_KEY,
-        label_visibility="collapsed",
     )
     if subject_type_label not in _SUBJECT_TYPE_OPTIONS:
         subject_type_label = _normalise_subject_type_selector(session_state)

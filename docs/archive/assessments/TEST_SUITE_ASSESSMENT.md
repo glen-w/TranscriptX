@@ -2609,3 +2609,50 @@ None.
 | FileService ↔ cache_helpers cycle | Path cache lived in `cache_helpers` | `test_transcript_path_cache_cycle.py` |
 | Granite vs Nemotron speaker ids | Duplicated mappers, different offsets | `test_speaker_label.py` |
 | Emotion analyze envelope | Preflight mixed with lexical scoring | `test_emotion_analyze_peel.py` |
+
+## 88. Expansion (2026-11-03) – suite review, drift fixes, provenance + diagnostics
+
+### Trigger
+`/tests` (full suite review + targeted expansion)
+
+### Backup
+- `/Users/89298/Documents/transcriptx backup/261103.zip` (17M); `custom-commands/` mirrored.
+
+### Review
+- **Collection (default filter):** `8511/9481` selected (`970` deselected); no collection/import errors.
+- **Full collection (`-m ""`):** `9481` tests (historical assessment once expected ~1558).
+- **Baseline before fixes:** `8487 passed`, `20 skipped`, `970 deselected`, **4 failed** (classified as tests-only drift/race, not production regressions).
+- **Cleanup:** disabled (per command).
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0). Not re-enabled.
+- **Markers / addopts:** unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow/gui_acceptance/gui_e2e/browser/requires_nlp/contract).
+- **Structure:** `tests/{analysis,app,browser,contracts,core,e2e_gui,export,fixtures,integration,io,optional,packaging,pipeline,presentation,quarantine,regression,release,scripts,services,smoke,unit,utils,web}` (+ transcript_viewer).
+
+### Baseline failure classification (fixed, tests-only)
+| Failure | Class | Fix |
+|---------|-------|-----|
+| `test_includes_extraction_tags` | Golden drift (`voice note` / `lone speaker`) | Update expected frozenset; assert `LIBRARY_KIND_VALUES ⊆ KNOWN_SEMANTIC_TAGS` |
+| `test_flattened_spec_matches_pinned_order` | UI order drift (`speaker_map_diagnostics`) | Pin new module after `transcript_quality` |
+| `test_build_ollama_client_defaults_and_normalizes_base_url` | SR-06 remote-host guard | Normalize on loopback; assert remote raises without allow |
+| `test_drain_queued_watcher_jobs_submits` | Race: submit thread → IMPORTED | Mock `submit` (no wraps); assert TRANSCRIBING + `watcher_job_id` |
+
+### Coverage gaps targeted
+| Area | Gap | Action |
+|------|-----|--------|
+| Evidence provenance | `attach_provenance` + quote/span filtering only in excluded `contract` lane | New unit file in default lane |
+| Speaker map diagnostics | Contract covered T0/T3/absent only | Unit tests for T1/T2, missing map, duplicate display, voice-link conflicts |
+
+### Tests added / extended
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/io/test_tag_validation.py` | **fixed +1** | kind tags; library_kind ⊆ semantic |
+| `tests/web/test_module_ui_groups.py` | **fixed** | pinned order includes diagnostics |
+| `tests/core/llm/test_ollama_client.py` | **fixed** | slash normalize + remote reject |
+| `tests/services/transcription/test_runner.py` | **fixed** | drain marks TRANSCRIBING without race |
+| `tests/unit/test_evidence_provenance.py` | **new (+2)** | filter blanks; attach shallow copy |
+| `tests/unit/test_speaker_map_diagnostics_tiers.py` | **new (+5)** | T1/T2/partial edges |
+
+### Validation
+- Focused slice: **12 passed**.
+- Default suite after expansion: **8499 passed**, `20 skipped`, `970 deselected` (green).
+- **Production code:** none (tests-only).
+- **Quarantined tests:** not re-enabled.

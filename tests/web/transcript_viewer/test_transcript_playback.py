@@ -84,6 +84,29 @@ def test_availability_controller_error(tmp_path: Path) -> None:
     assert result.reason == PlaybackUnavailableReason.controller_error
 
 
+def test_playback_unavailable_is_caption_only(monkeypatch) -> None:
+    """W3.5: no audio player when media is missing — caption only."""
+    from transcriptx.web.components import playback_panel as panel
+
+    captions: list[str] = []
+    audio_calls: list = []
+
+    class _St:
+        @staticmethod
+        def caption(text, **_k):
+            captions.append(str(text))
+
+        @staticmethod
+        def audio(*_a, **_k):
+            audio_calls.append(True)
+
+    monkeypatch.setattr(panel, "st", _St)
+    for reason in PlaybackUnavailableReason:
+        captions.clear()
+        panel.render_playback_unavailable(reason)
+        assert captions and not audio_calls
+
+
 def test_reset_clears_on_owner_and_view_change() -> None:
     state: dict[str, Any] = {
         transcript_mod._PLAY_KEY: 2,
@@ -437,7 +460,7 @@ def test_render_exact_segment_preview_autoplays_cached_active_clip(
 
     audio = tmp_path / "a.wav"
     audio.write_bytes(b"wav")
-    session: dict[str, Any] = {"play_key": 0}
+    session: dict[str, Any] = {"play_key": 0, "play_key_autoplay_once": True}
     audio_calls: list[Any] = []
 
     class _Col:
@@ -448,9 +471,7 @@ def test_render_exact_segment_preview_autoplays_cached_active_clip(
             return False
 
     monkeypatch.setattr(panel.st, "session_state", session)
-    monkeypatch.setattr(
-        panel.st, "audio", lambda *a, **k: audio_calls.append((a, k))
-    )
+    monkeypatch.setattr(panel.st, "audio", lambda *a, **k: audio_calls.append((a, k)))
     monkeypatch.setattr(panel.st, "caption", lambda *a, **k: None)
     monkeypatch.setattr(panel.st, "write", lambda *a, **k: None)
     monkeypatch.setattr(panel.st, "button", lambda *a, **k: None)
@@ -478,6 +499,56 @@ def test_render_exact_segment_preview_autoplays_cached_active_clip(
     assert audio_calls
     assert audio_calls[0][0][0] == b"mp3"
     assert audio_calls[0][1]["autoplay"] is True
+    assert "play_key_autoplay_once" not in session
+
+
+def test_render_exact_segment_preview_skips_autoplay_without_once_flag(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Clip-warm reruns pass autoplay=True but must not steal nav clicks."""
+    from transcriptx.web.components import playback_panel as panel
+    from transcriptx.web.components.playback_panel import PlaybackContext
+
+    audio = tmp_path / "a.wav"
+    audio.write_bytes(b"wav")
+    session: dict[str, Any] = {"play_key": 0}
+    audio_calls: list[Any] = []
+
+    class _Col:
+        def __enter__(self) -> "_Col":
+            return self
+
+        def __exit__(self, *args: object) -> bool:
+            return False
+
+    monkeypatch.setattr(panel.st, "session_state", session)
+    monkeypatch.setattr(panel.st, "audio", lambda *a, **k: audio_calls.append((a, k)))
+    monkeypatch.setattr(panel.st, "caption", lambda *a, **k: None)
+    monkeypatch.setattr(panel.st, "write", lambda *a, **k: None)
+    monkeypatch.setattr(panel.st, "button", lambda *a, **k: None)
+    monkeypatch.setattr(panel.st, "columns", lambda spec: [_Col(), _Col(), _Col()])
+    monkeypatch.setattr(panel, "trigger_clip_warm", lambda *a, **k: None)
+
+    controller = MagicMock()
+    controller.get_cached_clip_bytes.return_value = b"mp3"
+    segs = [
+        SegmentInfo(index=0, start=0.0, end=1.0, text="hello", speaker="A"),
+    ]
+    ctx = PlaybackContext(
+        audio_path=audio,
+        audio_fingerprint=(str(audio.resolve()), 3, 1),
+        ffmpeg_available=True,
+    )
+    panel.render_exact_segment_preview(
+        controller,
+        "/t.json",
+        segs,
+        play_key="play_key",
+        autoplay=True,
+        playback_context=ctx,
+    )
+    assert audio_calls
+    assert audio_calls[0][1]["autoplay"] is False
 
 
 def test_render_active_clip_mounts_idle_player_when_none(

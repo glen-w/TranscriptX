@@ -52,7 +52,7 @@ from transcriptx.web.shell import configure_streamlit_page, inject_global_styles
 from transcriptx.web.sidebar import render_sidebar
 from transcriptx.web.url_state import hydrate_session_from_url, sync_url_from_session
 from transcriptx.web.cache_helpers import cached_list_viewable_session_names
-from transcriptx.web.state import PAGE_KEY
+from transcriptx.web.state import PAGE_KEY, SPEAKERS_SELECTED_PROFILE_KEY
 
 logger = get_logger()
 
@@ -116,7 +116,7 @@ def _consume_speaker_profile_deep_link() -> None:
     if not pid:
         return
     st.session_state[PAGE_KEY] = "Speakers"
-    st.session_state["speakers_selected_profile"] = pid
+    st.session_state[SPEAKERS_SELECTED_PROFILE_KEY] = pid
     st.rerun()
 
 

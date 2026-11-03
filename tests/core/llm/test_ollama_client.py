@@ -443,9 +443,18 @@ def test_build_ollama_client_defaults_and_normalizes_base_url() -> None:
         seed=7,
         request_timeout=30.0,
         availability_timeout=5.0,
-        base_url="http://remote:11434/",
+        base_url="http://127.0.0.1:11434/",
     )
-    assert with_slash.base_url == "http://remote:11434"
+    assert with_slash.base_url == "http://127.0.0.1:11434"
+
+    with pytest.raises(LLMConfigurationError, match="loopback"):
+        build_ollama_client(
+            model="qwen3:8b",
+            seed=7,
+            request_timeout=30.0,
+            availability_timeout=5.0,
+            base_url="http://remote:11434/",
+        )
 
 
 @pytest.mark.unit

@@ -67,6 +67,19 @@ class DummyExpander:
         return False
 
 
+class DummyStatus:
+    """st.status stand-in (context manager with ``update``)."""
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def update(self, *args, **kwargs):
+        return None
+
+
 class DummyEmpty:
     """st.empty() stand-in; supports ``with slot.container():`` live panel refresh."""
 
@@ -245,6 +258,10 @@ class DummyStreamlitWithDataframe:
         return DummyForm()
 
     @staticmethod
+    def container(*_args, **_kwargs):
+        return DummyForm()
+
+    @staticmethod
     def fragment(fn=None, **_kwargs):
         if fn is None:
 
@@ -351,8 +368,16 @@ class DummyHomeStreamlit:
         return None
 
     @staticmethod
+    def status(*_args, **_kwargs):
+        return DummyStatus()
+
+    @staticmethod
     def button(*_args, **_kwargs):
         return False
+
+    @staticmethod
+    def number_input(*_args, **_kwargs):
+        return 1
 
     @staticmethod
     def download_button(*_args, **_kwargs):

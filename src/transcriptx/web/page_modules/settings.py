@@ -10,6 +10,7 @@ from __future__ import annotations
 import streamlit as st
 
 from transcriptx.web.components.page_shell import render_page_shell
+from transcriptx.web.state import SETTINGS_HUB_TAB_KEY
 
 from transcriptx.web.services import RunIndex, SubjectService
 from transcriptx.web.ui.settings import (
@@ -25,7 +26,7 @@ from transcriptx.web.ui.settings import (
     render_watcher_panel,
 )
 
-_SETTINGS_TAB_KEY = "settings_hub_selected_tab"
+_SETTINGS_TAB_KEY = SETTINGS_HUB_TAB_KEY
 
 _SETTINGS_TABS: tuple[str, ...] = (
     "Configuration",
@@ -69,7 +70,6 @@ def render_settings_page() -> None:
         "Settings section",
         options=tab_labels,
         key=_SETTINGS_TAB_KEY,
-        label_visibility="collapsed",
     )
     if label not in tab_labels:
         label = tab_labels[0]

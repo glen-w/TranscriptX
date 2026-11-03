@@ -15,8 +15,11 @@ How to change TranscriptX behaviour from the GUI, env, and config files — with
 | Paths, watcher, speakers, LLM models, questions, STT keyword lists | Other **Settings** tabs (Storage, Watcher, Speakers, Interface, Models, Questions, Keywords, Corrections) |
 | Auto-name / auto-link after ingest | **Settings → Speakers** — [auto-identify.md](auto-identify.md) (`config_dir/identify.json`) |
 | Duplicate recordings / transcripts | **Settings → Storage** → Duplicate library files (preview, then typed `DELETE DUPLICATES`) |
+| Never-finished analysis runs | **Diagnostics** lists them 50/page; **Clean never-finished runs…** opens **Settings → Storage** (analysis-run cleanup). Transcripts are never deleted. |
 | Show/hide instructional ⓘ tips (widget help + Speakers methodology notes) | **Settings → Interface** → Help / info tips (`show_info_tooltips` in `interface_menus.json`; run-id ⓘ stays on) |
 | Action-menu icon vs text | **Settings → Interface** → Action appearance (`action_display`: `icon` / `text` / `both`; per-section may `inherit`) |
+| Keyboard (shell) | ``/`` focuses Search; ``g`` then ``h``/``l``/``s``/``p``/``r``/``o``/``t``/``i``/``c``/``g`` jumps Home, Library, Search, Speakers, Run Analysis, Overview, Transcript, Insights, Charts, Settings. Ignored while typing in an input. CCv2 maps unchanged. Accessibility baseline: [a11y_baseline_2026-11-03.md](../dev/a11y_baseline_2026-11-03.md). |
+| Workflow page **Tools** | Sidebar label is **Tools**; the page heading remains **Audio Preprocessing**. |
 | Install capability (`core` vs `full`) | Env / install marker — see [installation details](installation-advanced.md); **not** the Profiles page |
 
 Speaker identity/voice stores are a separate subsystem (**Settings → Speakers**), including ingest **auto-name / auto-link** defaults (`config_dir/identify.json`, all off until you enable them), name-token policy, and optional Twenty CRM people lookup (env `TWENTY_API_KEY` / `TWENTY_BASE_URL`, read-only). Operator guide: [auto-identify.md](auto-identify.md). Contracts: [speaker_profiles_v1](../contracts/speaker_profiles_v1.md), [speaker_profiles_voice_v1](../contracts/speaker_profiles_voice_v1.md), [STORAGE.md](STORAGE.md).

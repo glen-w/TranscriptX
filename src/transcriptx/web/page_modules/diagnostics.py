@@ -7,12 +7,16 @@ from __future__ import annotations
 import streamlit as st
 
 from transcriptx.web.components.page_shell import render_page_shell
+from transcriptx.web.state import PAGE_KEY, SETTINGS_HUB_TAB_KEY, set_page_flash
 
 from transcriptx.web import icons as ic
 from transcriptx.web.cache_helpers import (
     cached_doctor_report,
     cached_group_manifest_warnings,
 )
+
+_INCOMPLETE_PAGE_SIZE = 50
+_INCOMPLETE_PAGE_KEY = "diagnostics_incomplete_page"
 
 
 def _render_speaker_profile_ops() -> None:
@@ -190,14 +194,29 @@ def _render_incomplete_runs_section() -> None:
                 st.caption(str(row.run_dir))
 
     if broken:
+        total = len(broken)
         st.warning(
-            f"Found {len(broken)} run director"
-            f"{'y' if len(broken) == 1 else 'ies'} that never finished "
+            f"Found {total} run director"
+            f"{'y' if total == 1 else 'ies'} that never finished "
             "(`run_results.json` missing or left `running` after the process "
-            "exited). These are left in place — TranscriptX does not delete "
-            "them. Re-run analysis to produce a complete run, or inspect the "
-            "folder manually."
+            "exited). Re-run analysis to produce a complete run, or clean them "
+            "via Settings → Storage (outputs only; transcripts are never touched)."
         )
+        pages = max(1, (total + _INCOMPLETE_PAGE_SIZE - 1) // _INCOMPLETE_PAGE_SIZE)
+        page = int(st.session_state.get(_INCOMPLETE_PAGE_KEY, 1) or 1)
+        page = min(max(page, 1), pages)
+        if pages > 1:
+            page = int(
+                st.number_input(
+                    "Never-finished runs page",
+                    min_value=1,
+                    max_value=pages,
+                    key=_INCOMPLETE_PAGE_KEY,
+                )
+                or 1
+            )
+        start = (page - 1) * _INCOMPLETE_PAGE_SIZE
+        chunk = broken[start : start + _INCOMPLETE_PAGE_SIZE]
         # One table, not one bordered container per run (184 rows painted
         # ~9.7k DOM nodes / 450 buttons on the owner library).
         st.dataframe(
@@ -211,12 +230,28 @@ def _render_incomplete_runs_section() -> None:
                     ),
                     "Folder": str(row.run_dir),
                 }
-                for row in broken
+                for row in chunk
             ],
             hide_index=True,
             width="stretch",
-            height=min(420, 38 + 35 * len(broken)),
+            height=min(420, 38 + 35 * len(chunk)),
         )
+        st.caption(
+            f"Showing {start + 1}–{start + len(chunk)} of {total} never-finished runs."
+        )
+        if st.button(
+            "Clean never-finished runs…",
+            icon=ic.CLEANUP,
+            key="diag_clean_incomplete",
+        ):
+            st.session_state[SETTINGS_HUB_TAB_KEY] = "Storage"
+            st.session_state[PAGE_KEY] = "Settings"
+            set_page_flash(
+                "info",
+                "Use Analysis run cleanup to remove never-finished run directories. "
+                "Transcripts, recordings, and speaker maps are never touched.",
+            )
+            st.rerun()
 
 
 def render_diagnostics_page() -> None:

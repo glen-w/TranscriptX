@@ -152,23 +152,13 @@ def test_drain_queued_watcher_jobs_submits(tmp_path: Path, monkeypatch) -> None:
             import_into_library=True,
         ),
     )
-    with patch.object(runner, "submit", wraps=runner.submit) as submit:
-        with patch(
-            "transcriptx.services.transcription.runner.TranscriptionController"
-        ) as ctrl_cls:
-            ctrl_cls.return_value.run_transcription.return_value = (
-                TranscriptionBatchResult(
-                    job_id="x",
-                    success=True,
-                    file_results=[],
-                    succeeded_count=1,
-                    failed_count=0,
-                    output_dir=tmp_path,
-                )
-            )
-            n = drain_queued_watcher_jobs(limit=5)
+    # Mock submit so the drain path's TRANSCRIBING write is not raced by a
+    # background thread that can finish and sync the watcher to IMPORTED.
+    with patch.object(runner, "submit") as submit:
+        n = drain_queued_watcher_jobs(limit=5)
     assert n == 1
     assert submit.called
+    assert submit.call_args.kwargs.get("watcher_job_id") == wjob.job_id
     refreshed = wstore.get(wjob.job_id)
     assert refreshed is not None
     assert refreshed.state is JobState.TRANSCRIBING

@@ -41,6 +41,7 @@ data/speaker_profiles/
 
 # Local test / tooling artifacts (large; do not commit)
 .test_outputs/
+.test_data/
 .release-test-env/
 .release-audit-env/
 .docs-verify-venv/

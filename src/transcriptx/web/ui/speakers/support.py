@@ -40,6 +40,7 @@ from transcriptx.io.speaker_map_resolver import (
 from transcriptx.web.speaker_profile_signals import (
     consume_cache_invalidation_signal,
 )
+from transcriptx.web.state import SPEAKERS_SELECTED_PROFILE_KEY
 
 _METHODOLOGY_CAPTIONS: dict[str, str] = {
     "share.duration_only": "Speaking share uses duration only (never turn share).",
@@ -131,7 +132,7 @@ _SPEAKERS_DESCRIPTION = (
     "then Pre-load voice suggestions — confirm in Speaker Identification."
 )
 
-_SELECTED_KEY = "speakers_selected_profile"
+_SELECTED_KEY = SPEAKERS_SELECTED_PROFILE_KEY
 _SEARCH_KEY = "speakers_directory_search"
 
 
@@ -337,10 +338,24 @@ def _profiles_store_fingerprint(root: Path) -> tuple[int, int, int, int]:
     return (p_count, p_mtime, l_count, l_mtime)
 
 
+@st.cache_data(show_spinner=False)
+def _cached_speakers_aggregation_snapshot(
+    root_str: str, include_ignored: bool, fingerprint: tuple
+) -> AggregationSnapshot:
+    """Process cache keyed on library fingerprint + inclusion toggle."""
+    del fingerprint  # key only
+    from transcriptx.web.perf import mark_cache_miss
+
+    mark_cache_miss("cached_speakers_aggregation_snapshot")
+    return build_aggregation_snapshot(
+        root=Path(root_str), include_ignored=include_ignored
+    )
+
+
 def _get_speakers_aggregation_snapshot(
     *, root: Path, include_ignored: bool
 ) -> AggregationSnapshot:
-    """Reuse snapshot within a session until profile/link store fingerprint changes."""
+    """Reuse snapshot until profile/link store fingerprint changes."""
     fp = (
         str(root),
         bool(include_ignored),
@@ -354,6 +369,9 @@ def _get_speakers_aggregation_snapshot(
         and cached[1] is not None
     ):
         return cached[1]
-    snap = build_aggregation_snapshot(root=root, include_ignored=include_ignored)
+    try:
+        snap = _cached_speakers_aggregation_snapshot(str(root), include_ignored, fp)
+    except Exception:
+        snap = build_aggregation_snapshot(root=root, include_ignored=include_ignored)
     st.session_state[_SPEAKERS_SNAP_CACHE_KEY] = (fp, snap)
     return snap

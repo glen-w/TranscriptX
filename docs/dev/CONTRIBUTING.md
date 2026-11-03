@@ -122,7 +122,7 @@ When adding/changing transcript import adapters:
 
 ## Development and testing
 
-See [developer_quickstart.md](../developer_quickstart.md) for pipeline structure, adding analysis modules, and testing. Run tests from the repo root (e.g. `pytest`); see `tests/README.md` and the Makefile for CI and smoke tests.
+See [developer_quickstart.md](../developer_quickstart.md) for pipeline structure, adding analysis modules, and testing. Run tests from the repo root (e.g. `pytest`); see `tests/README.md` and the Makefile for CI and smoke tests. Unset `TRANSCRIPTX_DATA_DIR` uses repo-root `.test_data/` (not `data/`); GUI tests fail if data/output dirs resolve inside the owner library.
 
 **Before opening a PR**, skim [tests/README.md](../../tests/README.md) § *CI watchlist* and, when touching settings or registry code, [config_architecture.md](config_architecture.md) (ownership snapshot + config golden fixtures). Typical misses:
 

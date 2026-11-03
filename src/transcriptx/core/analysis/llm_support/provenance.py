@@ -6,7 +6,28 @@ from typing import Any, Dict, Optional
 
 __all__ = [
     "build_llm_provenance",
+    "json_generate_provenance_fields",
 ]
+
+
+def json_generate_provenance_fields(
+    *,
+    model: str,
+    model_selection_source: Optional[str] = None,
+) -> tuple[str, Optional[str]]:
+    """Prefer the producing JSON model; stamp ``fallback`` when secondary was used."""
+    try:
+        from transcriptx.core.llm.json_with_fallback import (
+            get_last_json_generate_outcome,
+        )
+    except Exception:
+        return model, model_selection_source
+    outcome = get_last_json_generate_outcome()
+    if outcome is None:
+        return model, model_selection_source
+    producing = (outcome.model or "").strip() or model
+    source = "fallback" if outcome.used_fallback else model_selection_source
+    return producing, source
 
 
 def build_llm_provenance(
@@ -25,11 +46,18 @@ def build_llm_provenance(
     truncation: Optional[Dict[str, Any]] = None,
     model_digest: Optional[str] = None,
     model_selection_source: Optional[str] = None,
+    apply_json_outcome: bool = False,
 ) -> Dict[str, Any]:
     try:
         from transcriptx import __version__ as transcriptx_version
     except Exception:
         transcriptx_version = None
+
+    if apply_json_outcome:
+        model, model_selection_source = json_generate_provenance_fields(
+            model=model,
+            model_selection_source=model_selection_source,
+        )
 
     prov: Dict[str, Any] = {
         "module": module_name,

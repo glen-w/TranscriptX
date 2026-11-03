@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-03
+
+GUI hardening W1.3–W4 ([plan](.cursor/plans/2026-11-02-gui-hardening-wave.md)), LLM think-off/fallback honesty, and a speaker-map diagnostics crash fix.
+
+### Fixed
+
+- Sidebar brand is a single wordmark; light/dark variants swap via ``src`` instead of stacking two ``<img>`` tags when hide-CSS missed.
+- Rename Transcript preview autoplays only after an explicit ▶ click, so clip-warm fragment reruns no longer steal sidebar navigation.
+- Pytest isolates ``TRANSCRIPTX_DATA_DIR`` (``.test_data/``) when unset, matching ``TRANSCRIPTX_OUTPUT_DIR``. GUI tests fail if those paths resolve inside the repo ``data/`` library.
+- ``speaker_map_diagnostics`` calls ``SpeakerMapResolver().load_mapping`` (instance method); the 1.1.0 class-method call crashed the smoke module.
+
+### Changed
+
+- Speakers paints a status skeleton before building the aggregation snapshot and caches it on the library fingerprint.
+- Corpus inventory skips ``discover_transcript_refs()`` when a cheap transcripts-dir scandir stamp is unchanged.
+- Diagnostics paginates never-finished runs (50/page) and offers **Clean never-finished runs…**, which opens Settings → Storage (run cleanup).
+- Workflow nav label is **Tools** (page heading remains Audio Preprocessing). Settings/Tools/sidebar Type segmented controls expose visible labels.
+- Icon-only action links use the action name as the accessible label (visually clipped).
+- Cross-module session keys (``run_analysis_target``, Speakers profile, Settings hub tab) live in ``web/state.py``.
+- Charts full-screen HTML is preceded by a ``module · title`` caption.
+- Speaker ID mapping/CCv2 command callbacks live in ``web/workspaces/speaker_id_actions.py``; the page remains the CCv2 host.
+- JSON LLM picker/launch allows thinking tags when Ollama advertises ``think: false``, not only when ``llm.fallback_model`` is set. ``topic_shift`` enrichment and ``insights_narrative`` use the same JSON think-off / fallback path; provenance records the producing model and ``model_selection_source=fallback`` when the secondary ran.
+
+### Added
+
+- Shell keyboard: ``/`` opens Search; ``g`` then a letter jumps Home/Library/Search/Speakers/Run Analysis/Overview/Transcript/Insights/Charts/Settings when no input is focused.
+- Streamlit sidebar theme colours; Library filter/sort wrap under 1024 px.
+- Playwright lost-click loop (`tests/e2e_gui/test_rename_lost_click.py`): 50 sidebar clicks from Rename Transcript each change the page (`make test-gui-e2e`).
+- Accessibility baseline note: [a11y_baseline_2026-11-03.md](docs/dev/a11y_baseline_2026-11-03.md).
+
 ## [1.1.1] - 2026-11-02
 
 GUI hardening wave W0–W1 ([plan](.cursor/plans/2026-11-02-gui-hardening-wave.md)).

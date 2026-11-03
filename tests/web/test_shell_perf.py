@@ -40,6 +40,29 @@ def test_inject_global_styles_emits_every_run(monkeypatch) -> None:
 
 
 @pytest.mark.unit
+def test_render_brand_logo_emits_exactly_one_img(monkeypatch) -> None:
+    import transcriptx.web.shell as shell
+
+    bodies: list[str] = []
+
+    class _St(DummyHomeStreamlit):
+        @staticmethod
+        def markdown(body, *_a, **_k):
+            bodies.append(body)
+
+    monkeypatch.setattr(shell, "st", _St)
+    shell.render_brand_logo()
+    assert len(bodies) == 1
+    html = bodies[0]
+    assert html.count("<img") == 1
+    assert 'class="tx-logo"' in html
+    assert "data-tx-src-light=" in html
+    assert "data-tx-src-dark=" in html
+    assert "tx-logo-light-chrome" not in html
+    assert "tx-logo-dark-chrome" not in html
+
+
+@pytest.mark.unit
 def test_logo_data_uri_is_cached(tmp_path) -> None:
     import transcriptx.web.shell as shell
 

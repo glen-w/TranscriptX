@@ -7,6 +7,13 @@
 # shell's chrome-sync JS swaps the wordmark accordingly.
 [theme]
 primaryColor = "#1f77b4"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+
+[theme.sidebar]
+backgroundColor = "#f0f2f6"
+secondaryBackgroundColor = "#ffffff"
 
 [browser]
 gatherUsageStats = false

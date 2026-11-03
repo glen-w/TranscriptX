@@ -17,7 +17,7 @@ from transcriptx.io.speaker_map_resolver import sidecar_path_for
 
 
 def _speaker_id_sources() -> str:
-    """Page + extracted session-key/voice helpers (source-contract scans)."""
+    """Page + extracted session-key/voice/action helpers (source-contract scans)."""
     root = Path("src/transcriptx/web")
     return "\n".join(
         (root / rel).read_text(encoding="utf-8")
@@ -25,6 +25,7 @@ def _speaker_id_sources() -> str:
             "page_modules/speaker_id.py",
             "workspaces/speaker_id_session_keys.py",
             "workspaces/speaker_id_voice.py",
+            "workspaces/speaker_id_actions.py",
         )
     )
 
@@ -355,9 +356,7 @@ def test_profile_save_mutation_order_commits_before_advance() -> None:
     assert "get_mapping_status" in save_block
     assert "_ack_after_mutation" in save_block
     # Page adapter must still route Save through the action service.
-    import transcriptx.web.page_modules.speaker_id as mod
-
-    page = Path(mod.__file__).read_text(encoding="utf-8")
+    page = _speaker_id_sources()
     page_save = page.split("def _cb_save_name", 1)[1].split("def _cb_ignore_toggle", 1)[
         0
     ]
@@ -374,9 +373,9 @@ def test_speaker_id_exposes_link_target_panel_not_checkbox() -> None:
     assert "Also link to longitudinal speaker profile" not in page
     assert "_render_link_target_panel" in page
     assert "link_mode" in page
-    page_save = page.split("def _cb_save_name", 1)[1].split("def _cb_ignore_toggle", 1)[
-        0
-    ]
+    page_save = _speaker_id_sources().split("def _cb_save_name", 1)[1].split(
+        "def _cb_ignore_toggle", 1
+    )[0]
     assert '"link_mode"' in page_save
     assert '"profile_id"' in page_save
 

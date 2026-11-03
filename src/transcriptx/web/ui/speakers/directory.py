@@ -59,10 +59,12 @@ def render_speakers_page() -> None:
 
     include_ignored = bool(st.session_state.get(INCLUDE_IGNORED_SESSION_KEY, False))
 
-    snap = _get_speakers_aggregation_snapshot(
-        root=root,
-        include_ignored=include_ignored,
-    )
+    with st.status("Building speaker index…", expanded=False) as status:
+        snap = _get_speakers_aggregation_snapshot(
+            root=root,
+            include_ignored=include_ignored,
+        )
+        status.update(label="Speaker index ready", state="complete")
 
     if snap.incomplete or not snap.integrity_ok:
         st.warning(

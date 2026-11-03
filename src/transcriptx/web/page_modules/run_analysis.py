@@ -66,6 +66,7 @@ from transcriptx.web.services.subject_service import SubjectService
 from transcriptx.web.services.transcript_context_resolver import paths_match
 from transcriptx.web.state import (
     IMPORT_LAST_TRANSCRIPT_PATH,
+    RUN_ANALYSIS_TARGET_KEY as _RUN_ANALYSIS_TARGET_KEY,
     SELECTBOX_PLACEHOLDER_GROUP,
     SELECTBOX_PLACEHOLDER_TRANSCRIPT,
     WORKFLOW_NAV_TRANSCRIPT_PATH,
@@ -80,7 +81,6 @@ _RUN_ANALYSIS_DESCRIPTION = (
     "optional custom questions, and model setup — then run."
 )
 _KEY_LAST_SUCCESS = "run_analysis_last_success"
-_RUN_ANALYSIS_TARGET_KEY = "run_analysis_target"
 _PENDING_LAUNCH_KEY = "run_analysis_pending_launch"
 _RUN_CONTROL_KEY = "run_analysis_run_control"
 _WORKER_HOLDER_KEY = "run_analysis_worker_holder"
@@ -417,7 +417,10 @@ def _transcript_picker_with_preferred(
     if any(paths_match(opt, preferred_path) for opt in options):
         return options, labels
     merged = sorted(
-        [*zip(options, labels, strict=True), (str(preferred_path), _label_for_picker_path(preferred_path))],
+        [
+            *zip(options, labels, strict=True),
+            (str(preferred_path), _label_for_picker_path(preferred_path)),
+        ],
         key=lambda row: str(Path(row[0]).resolve()),
     )
     return tuple(row[0] for row in merged), tuple(row[1] for row in merged)
@@ -429,7 +432,9 @@ def _bind_transcript_picker_index(*, option_count: int, default_idx: int) -> Non
     if key in st.session_state:
         current = st.session_state.get(key)
         if not isinstance(current, int) or current < 0 or current > option_count:
-            st.session_state[key] = default_idx if 0 <= default_idx <= option_count else 0
+            st.session_state[key] = (
+                default_idx if 0 <= default_idx <= option_count else 0
+            )
             return
         if current == 0 and default_idx > 0:
             st.session_state[key] = default_idx
@@ -681,17 +686,19 @@ def _run_analysis_config_and_launch_fragment(
             f'<div class="tx-run-analysis-footer-summary">{summary_html}</div>',
             unsafe_allow_html=True,
         )
-        from transcriptx.web.components.run_time_guidance import render_run_time_guidance
+        from transcriptx.web.components.run_time_guidance import (
+            render_run_time_guidance,
+        )
 
-        group_member_count = max(1, len(transcript_targets)) if transcript_targets else 1
+        group_member_count = (
+            max(1, len(transcript_targets)) if transcript_targets else 1
+        )
         first_target = Path(transcript_targets[0]) if transcript_targets else None
         render_run_time_guidance(
             preset=resolved.preset,
             module_ids=selected_modules,
             transcript_path=(
-                transcript_path
-                if target_type == "Transcript"
-                else first_target
+                transcript_path if target_type == "Transcript" else first_target
             ),
             target_type="group" if target_type == "Group" else "transcript",
             member_count=group_member_count,

@@ -71,7 +71,7 @@ PAGE_SPECS: tuple[PageSpec, ...] = (
     _spec("Search", "Search", "primary"),
     _spec("Speakers", "Speakers", "primary", may_mutate_context=True),
     _spec("Groups", "Groups", "primary", may_mutate_context=True),
-    _spec("Tools", "Audio Preprocessing", "workflow"),
+    _spec("Tools", "Tools", "workflow"),
     _spec("Transcribe Audio", "Transcribe Audio", "workflow", may_mutate_context=True),
     _spec(
         "Import Transcript", "Import Transcript", "workflow", may_mutate_context=True
@@ -544,13 +544,13 @@ def navigate_to_speaker_profile(profile_id: str) -> None:
     """Open Speakers with a specific longitudinal profile preselected."""
     import streamlit as st
 
-    from transcriptx.web.state import PAGE_KEY
+    from transcriptx.web.state import PAGE_KEY, SPEAKERS_SELECTED_PROFILE_KEY
 
     pid = str(profile_id or "").strip()
     if not pid:
         return
     st.session_state[PAGE_KEY] = "Speakers"
-    st.session_state["speakers_selected_profile"] = pid
+    st.session_state[SPEAKERS_SELECTED_PROFILE_KEY] = pid
     st.rerun()
 
 

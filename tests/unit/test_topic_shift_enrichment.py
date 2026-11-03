@@ -340,3 +340,66 @@ def test_malformed_enrichment_does_not_break_commit(
     assert payload["outcome"] == "skipped"
     assert payload["skip_reason"] == "malformed_enrichment"
     assert spans["coverage_spans"] is det_before
+
+
+def test_try_generate_titles_wraps_json_fallback(monkeypatch) -> None:
+    from transcriptx.core.analysis.topic_shift import enrichment as enrich_mod
+
+    wraps: list[dict] = []
+
+    class _Primary:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+        def generate(self, **kwargs):
+            raise AssertionError("primary must not be called before wrap")
+
+    class _Wrapped:
+        def generate(self, **kwargs):
+            return json.dumps(
+                {
+                    "entries": [
+                        {
+                            "span_id": "s1",
+                            "title": "Hiring plan",
+                            "summary": "Discussed hiring.",
+                            "key_points": ["engineers"],
+                        }
+                    ]
+                }
+            )
+
+    def _wrap(primary, **kwargs):
+        wraps.append({"primary": primary, **kwargs})
+        return _Wrapped()
+
+    import transcriptx.core.llm.json_with_fallback as jwf
+    import transcriptx.core.llm.ollama_client as oc
+
+    monkeypatch.setattr(oc, "OllamaClient", _Primary)
+    monkeypatch.setattr(oc, "resolve_ollama_base_url", lambda x: x)
+    monkeypatch.setattr(jwf, "wrap_client_with_json_fallback", _wrap)
+
+    outcome, entries, _ = enrich_mod._try_generate_titles(
+        model="m:1",
+        spans=[
+            {
+                "span_id": "s1",
+                "label": "Opening",
+                "keyword_hints": ["hiring"],
+                "text_excerpt": "We need to hire two engineers.",
+            }
+        ],
+        llm_cfg=SimpleNamespace(
+            base_url="http://localhost:11434",
+            request_timeout=30,
+            seed=1,
+            availability_timeout=1,
+            fallback_model="gemma3:12b",
+        ),
+    )
+
+    assert wraps, "topic_shift enrichment must wrap OllamaClient for JSON fallback"
+    assert outcome == "success"
+    assert entries[0]["title"] == "Hiring plan"
+    assert wraps[0]["llm_cfg"].fallback_model == "gemma3:12b"

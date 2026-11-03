@@ -8,7 +8,8 @@
 - `make test-smoke` — CI gate (smoke tests only)
 - `make test-fast` — same as default `pytest` (fast core; contracts and Playwright GUI E2E run in their own targets)
 - `make test-gui-acceptance` — Streamlit AppTest GUI acceptance journeys (seven primary flows; heavy)
-- `make test-gui-e2e` — Playwright live Streamlit GUI E2E only (`tests/e2e_gui`; ten key flows; requires Chromium: `playwright install chromium`)
+- `make test-gui-e2e` — Playwright live Streamlit GUI E2E (`tests/e2e_gui`; ten key flows plus the Rename lost-click loop; requires Chromium: `playwright install chromium`)
+- `make test-gui-shell-smoke` — Playwright shell smoke (`gui_shell_smoke`): every sidebar page styled, sidebar complete, DOM budgets (PR gate)
 - `make test-heavy` — heavy profile, excludes quarantined by default
 - `make test-heavy-all` — heavy profile including quarantined
 - `make test-contracts` — offline contract tests (`contract` marker; output shape only). Not part of fast.
@@ -20,7 +21,7 @@
 
 ## CI lane order and time budgets
 
-**PR required gate** (workflow fails only if these fail): `compose-config`, `lint`, `smoke` (`make test-smoke` on Python 3.10), `contracts` (`make test-contracts` on Python 3.10).
+**PR required gate** (workflow fails only if these fail): `compose-config`, `lint`, `smoke` (`make test-smoke` on Python 3.10), `contracts` (`make test-contracts` on Python 3.10), `gui-shell-smoke` (`make test-gui-shell-smoke`).
 
 **PR advisory lanes** (`continue-on-error` in `.github/workflows/ci.yml`; still run and report failures): `tests-nlp`, `tests-rag`, `docs` (Sphinx + `docs-gen` drift), `workspaces-theme-c`, `release-checks`. Hosted docs deploy is `pages.yml` on `main`, not the PR gate.
 
@@ -57,6 +58,7 @@ Default `pytest` behavior remains the source of truth for the fast local profile
 - `heavy` — excluded from fast local profile due to runtime cost, setup burden, or dependency surface
 - `gui_acceptance` — Streamlit AppTest acceptance journeys; excluded from fast; run via `make test-gui-acceptance` (also selected by `make test-heavy` when marked `heavy`)
 - `gui_e2e` — Playwright live-Streamlit GUI E2E under `tests/e2e_gui/`; **excluded from default pytest**; dedicated runner `make test-gui-e2e`
+- `gui_shell_smoke` — subset of `gui_e2e` for the PR shell-smoke job (`make test-gui-shell-smoke`)
 - `integration` — workflow/pipeline integration tests
 - `integration_core` — stable integration subset for nightly
 - `integration_extended` — extended integration suite (nightly/manual)
@@ -84,7 +86,8 @@ Default `pytest` behavior remains the source of truth for the fast local profile
 
 - **Fast default (`pytest` / `make test-fast`)**: excludes `quarantined`, `smoke`, `release_only`, `integration`, `integration_core`, `integration_extended`, `requires_ffmpeg`, `requires_docker`, `requires_models`, `requires_api`, `requires_nlp`, `slow`, `gui_acceptance`, `gui_e2e`, `browser`, `contract`. The expression lives once in the Makefile (`FAST_MARKERS`) and must match `pytest.ini` `addopts` (`tests/utils/test_marker_expression_parity.py`).
 - **GUI acceptance (`make test-gui-acceptance`)**: `gui_acceptance` marker; residual manual items in [`docs/dev/gui_acceptance_residual_checklist.md`](../docs/dev/gui_acceptance_residual_checklist.md).
-- **GUI E2E (`make test-gui-e2e`)**: `gui_e2e` marker; live Streamlit + Playwright Chromium for the ten documented key flows under `tests/e2e_gui/` (see [docs/workflows/](../docs/workflows/index.md)). Requires `playwright` + `playwright install chromium` (Playwright ships with `[maps]` / `[full]` extras); tests skip when Chromium is unavailable.
+- **GUI E2E (`make test-gui-e2e`)**: `gui_e2e` marker; live Streamlit + Playwright Chromium for the ten documented key flows under `tests/e2e_gui/` (see [docs/workflows/](../docs/workflows/index.md)) plus `test_rename_lost_click.py` (50 nav clicks from Rename Transcript). Requires `playwright` + `playwright install chromium` (Playwright ships with `[maps]` / `[full]` extras); tests skip when Chromium is unavailable.
+- **GUI shell smoke (`make test-gui-shell-smoke`)**: `gui_shell_smoke`; PR CI job `gui-shell-smoke`. Does not inject axe-core (advisory baseline: [a11y_baseline_2026-11-03.md](../docs/dev/a11y_baseline_2026-11-03.md)).
 - **Smoke lane (`make test-smoke`)**: `tests/smoke` only, requires `smoke` marker, excludes `release_only` and external-capability markers.
 - **Integration lane (`make test-integration`)**: `tests/integration` only, includes `integration` or `integration_core` or `integration_extended`, excludes `release_only` and external-capability markers.
 - **Release-only lane (`make test-release-only`)**: `tests/release` only, includes `release_only`.
@@ -103,6 +106,8 @@ Default `pytest` behavior remains the source of truth for the fast local profile
 - `TRANSCRIPTX_TEST_MODELS=1` — opt-in to model-heavy tests
 - `TRANSCRIPTX_DISABLE_DOWNLOADS=1` — disable downloads (default behavior)
 - `TRANSCRIPTX_DISABLE_DOWNLOADS=0` — opt in to downloads
+
+If `TRANSCRIPTX_DATA_DIR` is unset, `tests/conftest.py` points it at repo-root `.test_data/` (gitignored). GUI / AppTest / E2E tests fail if `TRANSCRIPTX_DATA_DIR` or `TRANSCRIPTX_OUTPUT_DIR` resolve inside the repo `data/` library.
 
 ## Contract test checklist (use for every module)
 

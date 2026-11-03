@@ -413,6 +413,7 @@ def test_speaker_id_page_wires_voice_match_knobs() -> None:
             "src/transcriptx/web/page_modules/speaker_id.py",
             "src/transcriptx/web/workspaces/speaker_id_session_keys.py",
             "src/transcriptx/web/workspaces/speaker_id_voice.py",
+            "src/transcriptx/web/workspaces/speaker_id_actions.py",
         )
     )
     for needle in (

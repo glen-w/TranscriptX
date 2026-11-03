@@ -134,4 +134,11 @@ class TestKnownSemanticTags:
             "meeting",
             "todo",
             "question",
+            "voice note",
+            "lone speaker",
         }
+
+    def test_library_kind_values_are_known_semantic_tags(self) -> None:
+        from transcriptx.io.tag_validation import LIBRARY_KIND_VALUES
+
+        assert LIBRARY_KIND_VALUES <= KNOWN_SEMANTIC_TAGS
