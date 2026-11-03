@@ -88,6 +88,22 @@ Cross-links: Theme **H** (in-app providers), Theme **K** (command generation), [
 - Broad analysis module set (language, speakers, interactions, emotion, voice, groups, optional Ollama)
 - Contracts for storage, run outcomes, outputs, and public surfaces
 - Public **1.0.x / 1.1.x / 1.2.x** workbench (1.0.0 2026-10-19; **1.2.1** current). Living work is 1.x themes below, not a 0.9.x track.
+- **PR CI (2026-11):** merge gate is **`make test-smoke` only** on Python 3.10 (`.github/workflows/ci.yml`). Broader lanes still run locally and on [Nightly](../.github/workflows/nightly.yml); re-promote to required PR jobs when install flakes are gone.
+
+### CI expansion (deferred, post-1.2.1)
+
+Re-add as **required** PR jobs once each lane is stable on `ubuntu-latest` (no missing Playwright pin, no ruff noise on unrelated drift):
+
+| Lane | Target | Today |
+|------|--------|--------|
+| Compose bind assert | `scripts/release/assert_compose_bind.sh` | Local + release checklist |
+| Ruff critical/unused | `src/transcriptx` select E9,F63,F7,F82,F401,F841 | pre-commit / local |
+| Offline contracts | `make test-contracts` (`.[dev,web]`) | Nightly Gate B + local |
+| Playwright shell smoke | `make test-gui-shell-smoke` (install `playwright` explicitly) | Local / manual before GUI releases |
+| NLP / RAG advisory matrix | `make test-smoke-nlp`, `tests/core/rag` | Nightly + local |
+| Docs drift + Sphinx | `make docs-gen` + `make docs` | `pages.yml` on `main`; Nightly optional |
+| Release-checks bundle | Docker build, wheel smoke, hygiene scripts | Manual per [release_governance.md](dev/release_governance.md) |
+| Theme C Streamlit matrix | workspaces build + browser harness | Local |
 
 Install honesty: runtime markers are **`core` | `full`** only; Streamlit is the separate **`[web]`** extra. Transcription is BYO plus in-app **command-generation** (0.9.4) and optional **host-orchestrated STT** (theme **H**: whispermlx / WhisperX Docker, durable jobs). Sphinx hosted-docs revive + harden scaffolds shipped in **0.9.5**. Guided/Full + demo + onboarding checklist were trialled in **0.9.6** and later **removed** (prefer docs + clear GUI). Automatable harden + public surfaces (website, trust drafts, audit judgements, release-ops) shipped in **0.9.7**. Hygiene/honesty kits **0.9.8**; Overview presentation cut **0.9.9**. Post-0.9.9 wave cut as interim **`0.9.9.5`**: early 1.x Themes **A–D**, Tools/Merge/watcher, rename, Builder/Edit, GUI perf, backup/restore — [post_0_9_9_shipped_overview.md](dev/post_0_9_9_shipped_overview.md). Theme **B** viewer corrections **done**; Theme **C** CCv2 workspaces **done for 1.0** (Speaker ID Phase 9, Studio review, viewer click-drag); Theme **D** CCv2 full-file reader **done for 1.0** (clip karaoke remains Correct-mode / `TX_READER_WORKSPACE_COMPONENT=0` rollback). Screenshot workflow walkthroughs live under [workflows/](workflows/index.md).
 

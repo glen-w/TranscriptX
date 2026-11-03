@@ -37,7 +37,7 @@ help:
 	@echo "  test-release-only  Run release-only packaging/install smoke"
 	@echo "  test-gui-acceptance  Streamlit AppTest GUI acceptance journeys (heavy)"
 	@echo "  test-gui-e2e     Playwright live-Streamlit GUI E2E (10 key flows; not in default pytest)"
-	@echo "  test-gui-shell-smoke  Playwright shell smoke: every page styled, sidebar complete, DOM budgets (PR gate)"
+  @echo "  test-gui-shell-smoke  Playwright shell smoke: every page styled, sidebar complete, DOM budgets (local / pre-release)"
 	@echo "  docker-smoke     Run Docker web launcher smoke test (build + --help)"
 	@echo ""
 	@echo "Maintenance:"
