@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - PR CI merge gate is **`make test-smoke` only** (Python 3.10); lint, contracts, Playwright shell, Docker release-checks, and docs drift lanes deferred to local / Nightly (see [ROADMAP.md](docs/ROADMAP.md) § CI expansion (deferred)).
+- **`whispermlx-missing`** converts the same non-MP3 inbox audio as `inbox-watch` (`.m4a`, `.flac`, `.ogg`, `.opus`, `.aac`, `.wma`, plus `.wav`) in `--source` before batch STT; `inbox-watch` behaviour unchanged.
 
 ## [1.2.1] - 2026-11-03
 

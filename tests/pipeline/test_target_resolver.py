@@ -94,3 +94,23 @@ def test_resolve_group_with_no_members_raises(
 def test_transcript_path_must_exist(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         resolve_analysis_target(TranscriptRef(path=str(tmp_path / "missing.json")))
+
+
+@pytest.mark.unit
+def test_transcript_ref_empty_path_raises() -> None:
+    with pytest.raises(ValueError, match="TranscriptRef must set path"):
+        TranscriptRef(path="")
+
+
+@pytest.mark.unit
+def test_group_ref_empty_path_raises() -> None:
+    with pytest.raises(ValueError, match="GroupRef must set path"):
+        GroupRef(path="")
+
+
+@pytest.mark.unit
+def test_transcript_target_rejects_non_json(tmp_path: Path) -> None:
+    path = tmp_path / "note.txt"
+    path.write_text("{}", encoding="utf-8")
+    with pytest.raises(ValueError, match="transcript JSON"):
+        resolve_analysis_target(TranscriptRef(path=str(path)))

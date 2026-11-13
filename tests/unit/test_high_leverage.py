@@ -155,6 +155,15 @@ class TestValidationHighLeverage:
         with pytest.raises(ValueError, match="Error validating transcript file"):
             validate_transcript_file(str(path))
 
+    @pytest.mark.unit
+    def test_validate_segment_start_not_less_than_end_raises(self):
+        """start >= end is rejected with an explicit ordering error."""
+        with pytest.raises(ValueError, match="start.*less than.*end"):
+            validate_segment(
+                {"speaker": "A", "text": "x", "start": 2.0, "end": 1.0},
+                0,
+            )
+
 
 class TestModuleRegistryHighLeverage:
     """Module registry: availability, info, and callable entrypoints."""
@@ -184,6 +193,14 @@ class TestModuleRegistryHighLeverage:
         """get_dependencies returns a list for any module id."""
         deps = get_dependencies("stats")
         assert isinstance(deps, list)
+
+    @pytest.mark.unit
+    def test_momentum_depends_on_pauses(self):
+        """Pinned DAG edge: momentum requires pauses when registered."""
+        modules = get_available_modules()
+        if "momentum" not in modules:
+            pytest.skip("momentum module not registered")
+        assert "pauses" in get_dependencies("momentum")
 
 
 class TestTranscriptLoaderHighLeverage:
@@ -216,4 +233,24 @@ class TestTranscriptLoaderHighLeverage:
         ]
         path.write_text(json.dumps(segments))
         with pytest.raises(ValueError, match="JSON object|schema v1.0"):
+            load_segments(str(path))
+
+    @pytest.mark.unit
+    def test_load_segments_rejects_non_json_extension(self, tmp_path):
+        """Non-.json paths are rejected before parse even with valid JSON bytes."""
+        path = tmp_path / "note.txt"
+        path.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "source": {
+                        "type": "manual",
+                        "original_path": "note.txt",
+                        "imported_at": "2026-01-01T00:00:00Z",
+                    },
+                    "segments": [],
+                }
+            )
+        )
+        with pytest.raises(ValueError, match=r"\.json"):
             load_segments(str(path))

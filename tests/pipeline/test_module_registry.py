@@ -8,9 +8,12 @@ for all analysis modules, their metadata, and lazy loading.
 from unittest.mock import patch
 
 
+import pytest
+
 from transcriptx.core.pipeline.module_registry import (
     ModuleRegistry,
     ModuleInfo,
+    canonical_module_id,
     get_module_registry,
     get_available_modules,
     get_module_info,
@@ -18,6 +21,7 @@ from transcriptx.core.pipeline.module_registry import (
     get_dependencies,
     get_category,
     get_description,
+    list_finalize_phase_modules,
 )
 from transcriptx.core.pipeline import module_registry as core_module_registry
 from transcriptx.web import module_registry as web_module_registry
@@ -177,3 +181,33 @@ class TestModuleRegistry:
             # Should call the actual function
             # (mocked in this test)
             assert result is not None
+
+
+class TestFinalizePhaseAndCanonicalIds:
+    """Finalize-phase selection and outcome-boundary id normalization."""
+
+    @pytest.mark.unit
+    def test_list_finalize_phase_modules_preserves_order_and_dedupes(self):
+        selected = [
+            "stats",
+            "chart_descriptions",
+            "nope",
+            "chart_descriptions",
+            "insights_narrative",
+            "",
+        ]
+        assert list_finalize_phase_modules(selected) == [
+            "chart_descriptions",
+            "insights_narrative",
+        ]
+
+    @pytest.mark.unit
+    def test_list_finalize_phase_modules_empty_or_unknown(self):
+        assert list_finalize_phase_modules([]) == []
+        assert list_finalize_phase_modules(["missing_module", "stats"]) == []
+
+    @pytest.mark.unit
+    def test_canonical_module_id_normalizes_case_and_unknown(self):
+        assert canonical_module_id("Stats") == "stats"
+        assert canonical_module_id("") == ""
+        assert canonical_module_id("Foo-Bar") == "foo-bar"

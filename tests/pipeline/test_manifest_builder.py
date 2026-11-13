@@ -8,12 +8,60 @@ from pathlib import Path
 import pytest
 
 from transcriptx.core.pipeline.manifest_builder import (
+    ManifestArtifact,
     _infer_kind,
     build_output_manifest,
     build_run_results_summary,
     record_analysis_preset,
     write_run_results_summary,
 )
+
+
+@pytest.mark.unit
+def test_manifest_artifact_to_dict_omits_none_optionals() -> None:
+    artifact = ManifestArtifact(
+        id="art-1",
+        kind="json",
+        module="stats",
+        scope="global",
+        speaker=None,
+        subview=None,
+        slice_id=None,
+        rel_path="stats/data/summary.json",
+        bytes=12,
+        mtime="2026-01-01T00:00:00Z",
+        mime="application/json",
+        tags=["summary"],
+        title=None,
+    )
+    payload = artifact.to_dict()
+    assert payload["id"] == "art-1"
+    assert payload["module"] == "stats"
+    assert payload["rel_path"] == "stats/data/summary.json"
+    assert payload["tags"] == ["summary"]
+    assert "speaker" not in payload
+    assert "title" not in payload
+    assert "subview" not in payload
+    assert "slice_id" not in payload
+
+
+@pytest.mark.unit
+def test_manifest_artifact_to_dict_includes_optional_speaker() -> None:
+    artifact = ManifestArtifact(
+        id="art-2",
+        kind="json",
+        module="stats",
+        scope="speaker",
+        speaker="S1",
+        subview=None,
+        slice_id=None,
+        rel_path="stats/data/S1.json",
+        bytes=3,
+        mtime="2026-01-01T00:00:00Z",
+        mime="application/json",
+        tags=[],
+    )
+    assert artifact.to_dict()["speaker"] == "S1"
 
 
 def test_build_output_manifest_basic(tmp_path: Path, monkeypatch) -> None:
