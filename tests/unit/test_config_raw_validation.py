@@ -82,6 +82,20 @@ def test_validate_rejects_legacy_audio_bool_key() -> None:
 
 
 @pytest.mark.unit
+def test_validate_rejects_bool_on_audio_mode_field() -> None:
+    with pytest.raises(ConfigLoadError, match="normalize_mode") as exc:
+        validate_raw_config_dict({"audio_preprocessing": {"normalize_mode": True}})
+    assert exc.value.code == "unsupported_legacy_shape"
+
+
+@pytest.mark.unit
+def test_unwrap_non_object_config_does_not_unwrap() -> None:
+    """Wrapped project files only unwrap when config is an object."""
+    raw = {"schema_version": 1, "config": []}
+    assert unwrap_config_payload(raw) is raw
+
+
+@pytest.mark.unit
 def test_validate_accepts_minimal_known_sections() -> None:
     validate_raw_config_dict(
         {

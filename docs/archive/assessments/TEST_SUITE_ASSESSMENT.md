@@ -2656,3 +2656,56 @@ None.
 - Default suite after expansion: **8499 passed**, `20 skipped`, `970 deselected` (green).
 - **Production code:** none (tests-only).
 - **Quarantined tests:** not re-enabled.
+
+---
+
+## 89. Expansion (2026-11-11) – finalize selection, canonical ids, artifact/to_dict edges
+
+### Trigger
+`/tests` (full suite review + targeted expansion)
+
+### Backup
+- `/Users/89298/Documents/transcriptx backup/261111.zip` (17M); `custom-commands/` mirrored.
+
+### Review
+- **Collection (default filter):** `8542/9516` selected (`974` deselected); no collection/import errors.
+- **Full collection:** historical assessment once expected ~1558; live default lane is ~9.5k.
+- **Baseline before expansion:** `8523 passed`, `19 skipped`, `974 deselected` (green).
+- **Cleanup:** disabled (per command).
+- **Quarantined:** `0` active (`tests/quarantine/COUNT` = 0; no `@pytest.mark.quarantined` in tree). Not re-enabled.
+- **Markers / addopts:** unchanged (excludes quarantined/smoke/release_only/integration*/requires_*/slow/legacy/semantic_v2_slow/gui_acceptance/gui_e2e/browser/requires_nlp/contract).
+- **Structure:** `tests/{analysis,app,browser,contracts,core,e2e_gui,export,fixtures,integration,io,optional,packaging,pipeline,presentation,quarantine,regression,release,scripts,services,smoke,unit,utils,web}` (+ transcript_viewer).
+- **Skipped (runtime):** optional extras (nrclex/ebooklib/umap/plotly/visualization) + one regression needing full pipeline setup.
+
+### Coverage gaps reduced
+| Area | Gap | Action |
+|------|-----|--------|
+| Finalize-phase selection | `list_finalize_phase_modules` untested | Unit: order/dedupe + empty/unknown |
+| Canonical module ids | `canonical_module_id` untested at reporting boundary | Unit: case + unknown strip |
+| Validation / loader | start≥end + non-`.json` load path | Extend high-leverage unit tests |
+| Config raw validation | bool on `*_mode` fields; non-object wrapped `config` | Extend raw validation unit tests |
+| Manifest artifact | `ManifestArtifact.to_dict` null-omission | Unit omit/include speaker |
+| Target resolver | empty refs + non-JSON transcript | Fail-fast edges |
+
+### High-leverage tests added
+| File | Change | Focus |
+|------|--------|-------|
+| `tests/pipeline/test_module_registry.py` | **+3** | finalize selection; canonical ids |
+| `tests/unit/test_high_leverage.py` | **+3** | segment timestamps; momentum→pauses; non-json loader |
+| `tests/unit/test_config_raw_validation.py` | **+2** | bool mode reject; wrapped non-object config |
+| `tests/pipeline/test_manifest_builder.py` | **+2** | artifact `to_dict` null omit / speaker |
+| `tests/pipeline/test_target_resolver.py` | **+3** | empty TranscriptRef/GroupRef; non-json target |
+
+### Recommendations
+- Keep quarantined count at 0; do not re-enable historical quarantine tree.
+- Prefer extending registry/loader/manifest unit edges over broad e2e when expanding further.
+
+### Quarantine notes
+- Active `@pytest.mark.quarantined` tests: **0**. Enforcement remains in `tests/utils/test_quarantine_*.py`.
+
+### Validation
+- Focused slice: **13 passed**.
+- Default suite after expansion: **8536 passed**, `19 skipped`, `974 deselected` (green).
+- Optional `integration_core`: **60 passed**, `9469 deselected`.
+- **Production code:** none (tests-only).
+- **Quarantined tests:** not re-enabled.

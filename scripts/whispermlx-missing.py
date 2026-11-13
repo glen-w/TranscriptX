@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Batch transcription orchestrator for whispermlx — convert WAVs in source, then process
+Batch transcription orchestrator for whispermlx — convert non-MP3 audio in source,
+then process
 MP3s missing JSON transcripts.
 
 Install:
@@ -40,9 +41,10 @@ Dry run:
 Dry-run uses lightweight validation (source/transcripts paths and source folder only).
 It does not require env file, HF_TOKEN, or a working whispermlx binary.
 
-WAV conversion (default on when ``convert_wavs`` is true):
-    Before transcription, convert ``.wav`` files in --source to 16 kHz mono 64k MP3 in the
-    same folder (same ffmpeg settings as inbox-watch), then move the WAV into
+Audio conversion (default on when ``convert_wavs`` is true):
+    Before transcription, convert inbox-style audio in --source (``.wav``, ``.m4a``,
+    ``.flac``, ``.ogg``, ``.opus``, ``.aac``, ``.wma``) to 16 kHz mono 64k MP3 in the
+    same folder (same ffmpeg settings as inbox-watch), then move each original into
     ``--wav-backup`` (default: TRANSCRIPTX_WAV_BACKUP_DIR / data/backups/wav).
     Skips when an MP3 with the same stem already exists (use ``--force`` to replace).
     Disable with ``--no-convert-wavs`` or JSON ``"convert_wavs": false``.
@@ -140,8 +142,12 @@ KNOWN_CONFIG_KEYS = frozenset(
     }
 )
 
-WAV_EXTENSIONS = frozenset({".wav"})
 MP3_EXTENSIONS = frozenset({".mp3"})
+# Same non-MP3 set as scripts/inbox-watch.py AUDIO_EXTENSIONS minus .mp3
+CONVERTIBLE_EXTENSIONS = frozenset(
+    {".wav", ".m4a", ".flac", ".ogg", ".opus", ".aac", ".wma"}
+)
+WAV_EXTENSIONS = frozenset({".wav"})
 
 FFMPEG_CHANNELS = "1"
 FFMPEG_SAMPLE_RATE = "16000"
@@ -221,7 +227,8 @@ class EffectiveConfig:
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Convert WAVs in source to MP3 (optional), then transcribe MP3s missing "
+            "Convert non-MP3 audio in source to MP3 (optional), then transcribe MP3s "
+            "missing "
             "JSON transcripts (whispermlx batch)."
         ),
     )
@@ -257,13 +264,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         dest="convert_wavs",
         action="store_true",
         default=None,
-        help="Convert .wav in --source to MP3, then move WAV to --wav-backup (default).",
+        help=(
+            "Convert inbox audio (.wav, .m4a, …) in --source to MP3, then archive "
+            "originals under --wav-backup (default)."
+        ),
     )
     convert_group.add_argument(
         "--no-convert-wavs",
         dest="convert_wavs",
         action="store_false",
-        help="Do not convert or move WAV files in --source.",
+        help="Do not convert or archive non-MP3 audio in --source.",
     )
     parser.add_argument("--model", default=None)
     parser.add_argument("--language", default=None)
@@ -808,15 +818,19 @@ def discover_mp3s(source_dir: Path) -> list[Path]:
     return sorted(mp3s, key=lambda p: p.name.lower())
 
 
-def discover_wavs(source_dir: Path) -> list[Path]:
+def discover_convertible_audio(source_dir: Path) -> list[Path]:
     if not source_dir.is_dir():
         return []
-    wavs = [
+    files = [
         p
         for p in source_dir.iterdir()
-        if p.is_file() and p.suffix.lower() in WAV_EXTENSIONS
+        if p.is_file() and p.suffix.lower() in CONVERTIBLE_EXTENSIONS
     ]
-    return sorted(wavs, key=lambda p: p.name.lower())
+    return sorted(files, key=lambda p: p.name.lower())
+
+
+def discover_wavs(source_dir: Path) -> list[Path]:
+    return [p for p in discover_convertible_audio(source_dir) if p.suffix.lower() in WAV_EXTENSIONS]
 
 
 def is_same_or_under(path: Path, root: Path) -> bool:
@@ -916,11 +930,11 @@ def validate_wav_conversion_paths(cfg: EffectiveConfig) -> None:
         raise SystemExit("ERROR: wav_backup must not be under source.")
 
 
-def move_wav_to_backup(src: Path, wav_backup: Path) -> Path:
+def move_original_to_backup(src: Path, wav_backup: Path) -> Path:
     wav_backup.mkdir(parents=True, exist_ok=True)
     dest = unique_backup_path(wav_backup, src)
     shutil.move(str(src), dest)
-    print(f"  Moved WAV: {src.name} -> {dest}")
+    print(f"  Moved original: {src.name} -> {dest}")
     return dest
 
 
@@ -932,7 +946,7 @@ def convert_wavs_in_source(
     dry_run: bool,
     stats: RunStats,
 ) -> set[str]:
-    """Convert WAVs in source to MP3 and move originals to wav_backup.
+    """Convert non-MP3 audio in source to MP3 and move originals to wav_backup.
 
     Returns stems converted (or that would be converted on dry-run).
     """
@@ -940,24 +954,26 @@ def convert_wavs_in_source(
     assert cfg.wav_backup is not None
     source = cfg.source
     converted_stems: set[str] = set()
-    wavs = discover_wavs(source)
-    if not wavs:
+    sources = discover_convertible_audio(source)
+    if not sources:
         return converted_stems
 
-    for wav_path in wavs:
-        stem = wav_path.stem
+    for audio_path in sources:
+        stem = audio_path.stem
         dest = source / f"{stem}.mp3"
         existing_mp3 = find_stem_match(source, stem, MP3_EXTENSIONS)
         if existing_mp3 is not None and not force:
-            print(f"Skipping WAV (MP3 exists): {wav_path.name} -> {existing_mp3.name}")
+            print(
+                f"Skipping audio (MP3 exists): {audio_path.name} -> {existing_mp3.name}"
+            )
             stats.wav_skipped += 1
             continue
 
         if dry_run:
-            cmd = build_ffmpeg_cmd(ffmpeg, wav_path, dest)
-            backup_dest = unique_backup_path(cfg.wav_backup, wav_path)
+            cmd = build_ffmpeg_cmd(ffmpeg, audio_path, dest)
+            backup_dest = unique_backup_path(cfg.wav_backup, audio_path)
             print(f"Would convert: {' '.join(cmd)}")
-            print(f"Would move WAV: {wav_path} -> {backup_dest}")
+            print(f"Would move original: {audio_path} -> {backup_dest}")
             stats.would_convert_wavs += 1
             converted_stems.add(stem)
             continue
@@ -965,19 +981,19 @@ def convert_wavs_in_source(
         source.mkdir(parents=True, exist_ok=True)
         partial = source / f".whispermlx-missing.{stem}.mp3.partial"
         try:
-            size = f" ({_human_bytes(wav_path.stat().st_size)})"
+            size = f" ({_human_bytes(audio_path.stat().st_size)})"
         except OSError:
             size = ""
-        print(f"Converting WAV: {wav_path.name} -> {dest.name}{size}")
+        print(f"Converting audio: {audio_path.name} -> {dest.name}{size}")
         print("  ffmpeg progress on stderr (time=/speed=)…")
         started = time.perf_counter()
-        result = run_ffmpeg(build_ffmpeg_cmd(ffmpeg, wav_path, partial))
+        result = run_ffmpeg(build_ffmpeg_cmd(ffmpeg, audio_path, partial))
         elapsed = time.perf_counter() - started
         if result.returncode != 0:
             if partial.exists():
                 partial.unlink(missing_ok=True)
             print(
-                f"ERROR: ffmpeg failed for {wav_path.name} "
+                f"ERROR: ffmpeg failed for {audio_path.name} "
                 f"(exit {result.returncode}, {elapsed:.1f}s)",
                 file=sys.stderr,
             )
@@ -990,7 +1006,7 @@ def convert_wavs_in_source(
             if partial.exists():
                 partial.unlink(missing_ok=True)
             print(
-                f"ERROR: could not finalize MP3 for {wav_path.name}: {exc}",
+                f"ERROR: could not finalize MP3 for {audio_path.name}: {exc}",
                 file=sys.stderr,
             )
             stats.wav_failed += 1
@@ -1001,15 +1017,15 @@ def convert_wavs_in_source(
         except OSError:
             out_size = ""
         print(
-            f"  Converted WAV: {wav_path.name} -> {dest.name}{out_size} "
+            f"  Converted audio: {audio_path.name} -> {dest.name}{out_size} "
             f"in {elapsed:.1f}s"
         )
 
         try:
-            move_wav_to_backup(wav_path, cfg.wav_backup)
+            move_original_to_backup(audio_path, cfg.wav_backup)
         except OSError as exc:
             print(
-                f"ERROR: could not move WAV {wav_path.name} to backup: {exc}",
+                f"ERROR: could not move {audio_path.name} to backup: {exc}",
                 file=sys.stderr,
             )
             stats.wav_failed += 1
@@ -1810,12 +1826,12 @@ def validate_for_processing(cfg: EffectiveConfig) -> tuple[dict[str, str], str |
     if cfg.diarize and not token:
         raise SystemExit("ERROR: HF_TOKEN required for diarization (set in env file)")
 
-    if cfg.convert_wavs and discover_wavs(cfg.source):
+    if cfg.convert_wavs and discover_convertible_audio(cfg.source):
         ffmpeg = find_ffmpeg(cfg.ffmpeg)
         if ffmpeg is None:
             raise SystemExit(
                 "ERROR: ffmpeg not found (set --ffmpeg or PATH) "
-                "for WAV conversion in source."
+                "for audio conversion in source."
             )
     elif shutil.which("ffmpeg") is None:
         print("WARNING: ffmpeg not found on PATH; whispermlx may fail", file=sys.stderr)
@@ -1975,18 +1991,18 @@ def print_summary(
     if dry_run:
         print(f"  would process: {stats.would_process}")
         _print_limited_items("would process", stats.would_process_names)
-        print(f"  would convert WAV: {stats.would_convert_wavs}")
+        print(f"  would convert audio: {stats.would_convert_wavs}")
         print(f"  skipped:   {stats.skipped}")
         if stats.skipped_serial:
             print(f"  skipped likely serial: {stats.skipped_serial}")
             _print_limited_items("skipped likely serial", stats.skipped_serial_names)
     else:
         print(f"  processed: {stats.processed}")
-        print(f"  converted WAV: {stats.wav_converted}")
+        print(f"  converted audio: {stats.wav_converted}")
         if stats.wav_skipped:
-            print(f"  skipped WAV: {stats.wav_skipped}")
+            print(f"  skipped audio: {stats.wav_skipped}")
         if stats.wav_failed:
-            print(f"  failed WAV: {stats.wav_failed}")
+            print(f"  failed audio: {stats.wav_failed}")
         print(f"  skipped:   {stats.skipped}")
         if stats.skipped_serial:
             print(f"  skipped likely serial: {stats.skipped_serial}")
@@ -2070,10 +2086,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         converted_stems: set[str] = set()
         if cfg.convert_wavs:
             ffmpeg: Path | None = find_ffmpeg(cfg.ffmpeg)
-            if not args.dry_run and ffmpeg is None and discover_wavs(cfg.source):
+            if not args.dry_run and ffmpeg is None and discover_convertible_audio(
+                cfg.source
+            ):
                 print(
                     "ERROR: ffmpeg not found (set --ffmpeg or PATH) "
-                    "for WAV conversion in source.",
+                    "for audio conversion in source.",
                     file=sys.stderr,
                 )
                 return 2
@@ -2102,9 +2120,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             mp3s = sorted(mp3s, key=lambda p: p.name.lower())
 
         if not mp3s:
-            if discover_wavs(cfg.source) and not cfg.convert_wavs:
+            if discover_convertible_audio(cfg.source) and not cfg.convert_wavs:
                 print(
-                    f"WAV files found in {cfg.source} but convert_wavs is off; "
+                    f"Convertible audio found in {cfg.source} but convert_wavs is off; "
                     "no MP3 files to transcribe.",
                     file=sys.stderr,
                 )

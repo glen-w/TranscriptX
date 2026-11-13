@@ -143,6 +143,31 @@ class TestDiscoverWavs:
 
 
 @pytest.mark.unit
+class TestDiscoverConvertibleAudio:
+    def test_finds_inbox_formats(self, wm, tmp_path: Path):
+        (tmp_path / "a.m4a").write_bytes(b"x")
+        (tmp_path / "b.flac").write_bytes(b"x")
+        (tmp_path / "clip.mp3").write_bytes(b"x")
+        (tmp_path / "notes.txt").write_text("nope", encoding="utf-8")
+
+        found = wm.discover_convertible_audio(tmp_path)
+        names = {p.name for p in found}
+        assert names == {"a.m4a", "b.flac"}
+
+
+@pytest.mark.unit
+class TestAudioExtensionParity:
+    def test_convertible_plus_mp3_matches_inbox_watch(self, wm):
+        inbox_path = _SCRIPT_PATH.parent / "inbox-watch.py"
+        spec = importlib.util.spec_from_file_location("inbox_watch_parity", inbox_path)
+        assert spec and spec.loader
+        iw = importlib.util.module_from_spec(spec)
+        sys.modules["inbox_watch_parity"] = iw
+        spec.loader.exec_module(iw)
+        assert wm.CONVERTIBLE_EXTENSIONS | wm.MP3_EXTENSIONS == iw.AUDIO_EXTENSIONS
+
+
+@pytest.mark.unit
 class TestConvertWavs:
     def _cfg(self, wm, tmp_path: Path, source: Path, wav_backup: Path):
         return wm.EffectiveConfig(
@@ -227,8 +252,34 @@ class TestConvertWavs:
         assert stats.would_convert_wavs == 1
         out = capsys.readouterr().out
         assert "Would convert:" in out
-        assert "Would move WAV:" in out
+        assert "Would move original:" in out
         assert (source / "clip.wav").exists()
+
+    def test_convert_and_move_m4a(self, wm, tmp_path: Path, monkeypatch):
+        source = tmp_path / "recordings"
+        wav_backup = tmp_path / "wav"
+        source.mkdir()
+        m4a = source / "clip.m4a"
+        m4a.write_bytes(b"m4a-bytes")
+
+        def ok_ffmpeg(cmd, **kwargs):
+            dest = Path(cmd[-1])
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(b"mp3")
+            return subprocess.CompletedProcess(cmd, 0)
+
+        monkeypatch.setattr(wm, "run_ffmpeg", ok_ffmpeg)
+        cfg = self._cfg(wm, tmp_path, source, wav_backup)
+        stats = wm.RunStats()
+        stems = wm.convert_wavs_in_source(
+            cfg, ffmpeg=Path("ffmpeg"), force=False, dry_run=False, stats=stats
+        )
+
+        assert stems == {"clip"}
+        assert stats.wav_converted == 1
+        assert (source / "clip.mp3").read_bytes() == b"mp3"
+        assert (wav_backup / "clip.m4a").read_bytes() == b"m4a-bytes"
+        assert not m4a.exists()
 
     def test_main_converts_wav_then_transcribes(
         self, wm, tmp_path: Path, monkeypatch
@@ -289,6 +340,47 @@ class TestConvertWavs:
         assert (source / "clip.mp3").is_file()
         assert (wav_backup / "clip.wav").read_bytes() == b"wav"
         assert (transcripts / "clip.json").is_file()
+
+    def test_main_convert_off_warns_on_m4a_only(
+        self, wm, tmp_path: Path, monkeypatch, capsys
+    ):
+        source = tmp_path / "recordings"
+        transcripts = tmp_path / "transcripts" / "originals"
+        source.mkdir(parents=True)
+        transcripts.mkdir(parents=True)
+        (source / "clip.m4a").write_bytes(b"m4a")
+
+        env_file = tmp_path / "whisperx.env"
+        env_file.write_text("HF_TOKEN=hf_test_token\n", encoding="utf-8")
+        fake_bin = tmp_path / "whispermlx"
+        fake_bin.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        fake_bin.chmod(0o755)
+        monkeypatch.setattr(wm, "CONFIG_PATH", tmp_path / "noconfig.json")
+
+        with (
+            patch.object(wm, "probe_output_format_support", return_value=True),
+            patch.object(wm.subprocess, "run") as mock_run,
+        ):
+            rc = wm.main(
+                [
+                    "--source",
+                    str(source),
+                    "--transcripts",
+                    str(transcripts),
+                    "--env-file",
+                    str(env_file),
+                    "--whispermlx",
+                    str(fake_bin),
+                    "--no-diarize",
+                    "--no-convert-wavs",
+                ]
+            )
+
+        mock_run.assert_not_called()
+        assert rc == 0
+        err = capsys.readouterr().err
+        assert "convert_wavs is off" in err
+        assert "clip.m4a" not in err
 
 
 @pytest.mark.unit

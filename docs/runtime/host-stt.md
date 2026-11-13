@@ -47,13 +47,15 @@ python3 scripts/whispermlx-missing.py --dry-run …
 ```
 
 It processes MP3s in a source folder that lack matching JSON in a transcripts output folder.
-When ``convert_wavs`` is on (default), it first converts ``.wav`` files in the source folder to
-16 kHz mono 64k MP3 (same settings as inbox-watch), then moves the WAV into the WAV backup folder.
+When ``convert_wavs`` is on (default), it first converts inbox-style audio in the source folder
+(``.wav``, ``.m4a``, ``.flac``, ``.ogg``, ``.opus``, ``.aac``, ``.wma``) to 16 kHz mono 64k MP3
+(same settings as [inbox-watch](#host-inbox-watcher-inbox-watch)), then moves each original into
+the WAV backup folder. Existing ``.mp3`` files in ``--source`` are not re-encoded.
 
-**WAV → MP3 + archive:** On by default. Converts ``.wav`` in ``--source`` to MP3 in the same folder,
-then **moves** the WAV to ``--wav-backup`` (``TRANSCRIPTX_WAV_BACKUP_DIR`` / portable default).
-Skips when an MP3 with the same stem already exists. Disable with ``--no-convert-wavs`` or
-``"convert_wavs": false`` in JSON.
+**Non-MP3 → MP3 + archive:** On by default. Converts the extensions above in ``--source`` to MP3
+in the same folder, then **moves** each original to ``--wav-backup`` (``TRANSCRIPTX_WAV_BACKUP_DIR``
+/ portable default). Skips when an MP3 with the same stem already exists. Disable with
+``--no-convert-wavs`` or ``"convert_wavs": false`` in JSON.
 
 **Resume / duplicates:** stems with matching JSON are skipped by default — in `--transcripts` (typically `…/originals`), in the parent library root when that folder is named `originals` (already-imported canonical JSON), as `foo (N).json` import-archive names, or as a sidecar next to the MP3. Use `--force` / `--rerun` to replace after a valid new JSON is produced. `--fuzzy-json-match` also treats `foo-….json` / `foo_….json` / `foo.….json` as already done. Writes still go only to `originals/` (see [STORAGE.md](STORAGE.md)).
 
@@ -88,8 +90,8 @@ Skips when an MP3 with the same stem already exists. Disable with ``--no-convert
 | `transcripts` in JSON or `--transcripts` CLI | Exact **output** directory — must be `…/transcripts/originals` (scripts refuse the library root that contains `metadata/` / `imports/`) |
 | `TRANSCRIPTX_RECORDINGS_DIR` env | Maps directly to `source` (recordings folder) |
 | WAV archive | `wav_backup` | `TRANSCRIPTX_WAV_BACKUP_DIR` |
-| Convert WAV in source | `convert_wavs` (default **on**) | `WHISPERMLX_CONVERT_WAVS` |
-| ffmpeg for WAV convert | `ffmpeg` | `WHISPERMLX_FFMPEG` |
+| Convert non-MP3 audio in source | `convert_wavs` (default **on**) | `WHISPERMLX_CONVERT_WAVS` |
+| ffmpeg for audio convert | `ffmpeg` | `WHISPERMLX_FFMPEG` |
 
 Host helpers write raw engine JSON under `originals/` only. Library admission requires **Import Transcript**, Settings → Watcher, or optional `inbox-watch --admit` (`admit_and_register`), which writes canonical `schema_version` / `source` markers plus an import sidecar.
 
