@@ -212,12 +212,41 @@ _SHELL_RUNTIME_JS = """
     (function() {
         if (window.__txShellKeys) return;
         window.__txShellKeys = true;
-        const inputFocused = function() {
-            const el = document.activeElement;
+        // Keep in sync with transcriptx_workspaces/frontend/src/dom.ts
+        const resolveActiveElement = function() {
+            let el = document.activeElement;
+            while (el) {
+                if (el.shadowRoot && el.shadowRoot.activeElement) {
+                    el = el.shadowRoot.activeElement;
+                    continue;
+                }
+                const tag = (el.tagName || '').toUpperCase();
+                if (tag === 'IFRAME') {
+                    try {
+                        const doc = el.contentDocument;
+                        const inner = doc && doc.activeElement;
+                        if (inner && inner !== el) {
+                            el = inner;
+                            continue;
+                        }
+                    } catch (_err) {
+                        /* cross-origin iframe */
+                    }
+                }
+                break;
+            }
+            return el;
+        };
+        const isTextEntry = function(el) {
             if (!el) return false;
             const tag = (el.tagName || '').toLowerCase();
-            if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+            if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+                return true;
+            }
             return Boolean(el.isContentEditable);
+        };
+        const inputFocused = function() {
+            return isTextEntry(resolveActiveElement());
         };
         const clickNav = function(name) {
             const buttons = document.querySelectorAll('[data-testid="stSidebar"] button');
