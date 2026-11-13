@@ -15,6 +15,7 @@ import type {
 } from "@streamlit/component-v2-lib";
 
 import { FRONTEND_BUILD_ID, PROTOCOL_VERSION } from "./constants";
+import { elementHasFocus, isTypingTarget } from "./dom";
 
 export type WorkspaceState = {
   ack_seq: number;
@@ -780,7 +781,7 @@ function applyData(root: Element, data: WorkspaceData, state: InstanceState): vo
   }
 
   const nameInput = qs<HTMLInputElement>(root, ".tx-sid-name-input");
-  if (document.activeElement !== nameInput) {
+  if (!elementHasFocus(nameInput)) {
     nameInput.value = data.draft_name || "";
   }
   renderLinkTargets(root, data);
@@ -867,13 +868,7 @@ function wireOnce(
       fireCommand(state, data, "navigate_next");
     };
     state.handlers.onKey = (ev: KeyboardEvent) => {
-      const target = ev.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
-      ) {
+      if (isTypingTarget(ev.target)) {
         return;
       }
       if (!root.contains(document.activeElement) && document.activeElement !== root) {

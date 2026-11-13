@@ -6,6 +6,7 @@
 import type { FrontendRenderer } from "@streamlit/component-v2-lib";
 
 import { FRONTEND_BUILD_ID, PROTOCOL_VERSION } from "./constants";
+import { isTypingTarget } from "./dom";
 
 export type ReaderWord = {
   t: string;
@@ -278,8 +279,7 @@ function handleJump(state: InstanceState, data: ReaderData, root: Element): void
 function wireKeyboard(state: InstanceState, root: Element): void {
   root.addEventListener("keydown", (ev) => {
     const kev = ev as KeyboardEvent;
-    const t = kev.target as HTMLElement;
-    if (t.tagName === "INPUT" || t.tagName === "TEXTAREA") return;
+    if (isTypingTarget(kev.target)) return;
     const data = (root as HTMLElement & { __txReaderData?: ReaderData }).__txReaderData;
     if (!data) return;
     if (kev.code === "Space") {

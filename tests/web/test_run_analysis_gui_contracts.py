@@ -230,6 +230,15 @@ def test_shell_defines_keyed_run_analysis_footer_css() -> None:
 
 
 @pytest.mark.unit
+def test_shell_keyboard_ignores_focus_inside_shadow_dom() -> None:
+    import transcriptx.web.shell as mod
+
+    source = Path(mod.__file__).read_text(encoding="utf-8")
+    assert "resolveActiveElement" in source
+    assert "shadowRoot.activeElement" in source
+
+
+@pytest.mark.unit
 def test_shell_defines_review_module_remove_hover_css() -> None:
     import transcriptx.web.shell as mod
 

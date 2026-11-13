@@ -11,6 +11,7 @@ import type {
 } from "@streamlit/component-v2-lib";
 
 import { FRONTEND_BUILD_ID, PROTOCOL_VERSION } from "./constants";
+import { elementHasFocus, isTypingTarget } from "./dom";
 
 export type CorrectionsState = {
   ack_seq: number;
@@ -100,15 +101,6 @@ function qs<T extends Element>(root: ParentNode, sel: string): T {
   return el as T;
 }
 
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return (
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    Boolean(target.isContentEditable)
-  );
-}
-
 function fireCommand(
   state: InstanceState,
   data: CorrectionsData,
@@ -190,11 +182,11 @@ function applyData(
   if (!active) {
     wrong.textContent = "Select a candidate.";
     kind.textContent = "";
-    if (document.activeElement !== draft) draft.value = "";
+    if (!elementHasFocus(draft)) draft.value = "";
   } else {
     kind.textContent = `${active.kind} · ${active.status}`;
     wrong.textContent = `${active.wrong_text} → ${active.right_text}`;
-    if (document.activeElement !== draft) {
+    if (!elementHasFocus(draft)) {
       draft.value = active.right_text;
     }
   }
