@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - PR CI merge gate is **`make test-smoke` only** (Python 3.10); lint, contracts, Playwright shell, Docker release-checks, and docs drift lanes deferred to local / Nightly (see [ROADMAP.md](docs/ROADMAP.md) § CI expansion (deferred)).
 - **`whispermlx-missing`** converts the same non-MP3 inbox audio as `inbox-watch` (`.m4a`, `.flac`, `.ogg`, `.opus`, `.aac`, `.wma`, plus `.wav`) in `--source` before batch STT; `inbox-watch` behaviour unchanged.
+- **Language resolution** for `topic_shift` and the lexicon-marker modules now comes from one policy (`core/analysis/language_routing.resolve_transcript_language`). Visible changes to `language_resolution` in new run artifacts: `topic_shift` writes `assumed_en_missing_metadata` (was `assumed_english`); lexicon-marker modules write `transcript_metadata` (was `metadata_language`). A language of `auto` or `unknown` is now treated as missing instead of as a non-English language.
+
+### Fixed
+
+- `transcriptx --help` lists `library-paths`; the command list is generated from the dispatch table.
 
 ## [1.2.1] - 2026-11-03
 
@@ -1309,4 +1314,3 @@ First supported public contract (v0.1). Artifact schema numbers are unchanged: t
 ### Documentation
 
 - `docs/transcription.md`: golden path emphasizes import + v1.0 runtime contract (no compatibility register link).
-

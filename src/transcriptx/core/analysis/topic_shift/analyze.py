@@ -19,6 +19,7 @@ from transcriptx.core.analysis.topic_shift.keywords import (
     keyword_hints_for_segments,
     text_excerpt_for_segments,
 )
+from transcriptx.core.analysis.language_routing import TAG_ASSUMED_EN
 from transcriptx.core.analysis.topic_shift.language import (
     resolve_transcript_language,
     select_backend,
@@ -384,7 +385,7 @@ def run_topic_shift_analysis(
         "language_code": lang_code,
         "limited_language_support": limited
         or backend in ("tfidf", "tfidf_char")
-        and not (lang_code in ("en", None) and lang_tag == "assumed_english"),
+        and not (lang_code in ("en", None) and lang_tag == TAG_ASSUMED_EN),
         "windowing": {
             "window_size": window_size,
             "stride": stride,

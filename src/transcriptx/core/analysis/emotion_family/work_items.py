@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from typing import Any, MutableMapping, Sequence
 
 from transcriptx.core.analysis.emotion_family.fingerprints import segment_text_hash
+from transcriptx.core.analysis.language_routing import TAG_ASSUMED_EN
 from transcriptx.core.analysis.emotion_family.language import (
     extract_transcript_metadata,
     resolve_segment_language,
@@ -77,7 +78,7 @@ def build_segment_work_items(
             )
 
         lang, lang_res = resolve_segment_language(seg, meta)
-        if lang_res == "assumed_en_missing_metadata":
+        if lang_res == TAG_ASSUMED_EN:
             assumed_en += 1
 
         text = (seg.get("text") or "").strip()

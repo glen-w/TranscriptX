@@ -79,7 +79,9 @@ def test_cli_dispatches_allowlisted_commands(
 
 
 @pytest.mark.unit
-def test_cli_help_lists_host_commands_and_does_not_launch_web(capsys, monkeypatch) -> None:
+def test_cli_help_lists_host_commands_and_does_not_launch_web(
+    capsys, monkeypatch
+) -> None:
     import sys
 
     from transcriptx.cli import main
@@ -89,19 +91,11 @@ def test_cli_help_lists_host_commands_and_does_not_launch_web(capsys, monkeypatc
         main()
     assert exc.value.code == 0
     out = capsys.readouterr().out
-    for name in (
-        "import",
-        "admit-originals",
-        "analyze",
-        "analyze-backlog",
-        "analyze-modules",
-        "cleanup-runs",
-        "rename",
-        "backup",
-        "warm-suggestions",
-        "identify-speakers",
-    ):
-        assert name in out
+    from transcriptx.cli import _CLI_COMMANDS
+
+    assert "library-paths" in _CLI_COMMANDS
+    for name in _CLI_COMMANDS:
+        assert f"\n  {name} " in out
     assert "Corrections" in out or "GUI" in out
 
 
@@ -225,15 +219,19 @@ def test_analyze_cli_calls_run_analysis(monkeypatch, tmp_path: Path) -> None:
     path.write_text("{}", encoding="utf-8")
     captured: list = []
 
-    monkeypatch.setattr(mod, "parse_args", lambda argv=None: SimpleNamespace(
-        path=path,
-        mode="quick",
-        analysis_preset="balanced",
-        modules="stats",
-        allow_unnamed_speakers=True,
-        treat_as_single_speaker=False,
-        include_unidentified_speakers=False,
-    ))
+    monkeypatch.setattr(
+        mod,
+        "parse_args",
+        lambda argv=None: SimpleNamespace(
+            path=path,
+            mode="quick",
+            analysis_preset="balanced",
+            modules="stats",
+            allow_unnamed_speakers=True,
+            treat_as_single_speaker=False,
+            include_unidentified_speakers=False,
+        ),
+    )
     monkeypatch.setattr("transcriptx._bootstrap.bootstrap", lambda: None)
 
     def fake_run(request):
@@ -266,9 +264,11 @@ def test_rename_managed_cli_calls_pipeline(monkeypatch, tmp_path: Path) -> None:
     path.write_text("{}", encoding="utf-8")
     called: list[tuple] = []
 
-    monkeypatch.setattr(mod, "parse_args", lambda argv=None: SimpleNamespace(
-        path=path, stem="new_name", dry_run=True
-    ))
+    monkeypatch.setattr(
+        mod,
+        "parse_args",
+        lambda argv=None: SimpleNamespace(path=path, stem="new_name", dry_run=True),
+    )
     monkeypatch.setattr("transcriptx._bootstrap.bootstrap", lambda: None)
 
     def fake_rename(transcript_path, stem, *, dry_run=False):
@@ -298,7 +298,9 @@ def test_backup_cli_create_parses(monkeypatch, tmp_path: Path) -> None:
         def create_backup(self, paths, dest, options, *, force=False):
             return SimpleNamespace(
                 archive_path=dest,
-                manifest={"counts": {"transcripts": 1, "files": 2, "uncompressed_bytes": 3}},
+                manifest={
+                    "counts": {"transcripts": 1, "files": 2, "uncompressed_bytes": 3}
+                },
             )
 
     monkeypatch.setattr(mod, "get_default_paths", lambda: object())

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Final, Literal
 
+from transcriptx.core.analysis.language_routing import ENGLISH_CODES as ENGLISH_CODES
+
 SCHEMA_VERSION: Final = "transcriptx.topic_shift_result.v1"
 PREPROCESSING_VERSION: Final = "topic_shift_preprocess_v1"
 
@@ -75,5 +77,3 @@ DEFAULT_EN_MODEL: Final = "sentence-transformers/all-MiniLM-L6-v2"
 DEFAULT_MULTI_MODEL: Final = (
     "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 )
-
-ENGLISH_CODES: Final = frozenset({"en", "eng", "en-us", "en-gb", "en_us", "en_gb"})
