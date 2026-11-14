@@ -10,9 +10,14 @@ from importlib import resources
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
+from transcriptx.core.analysis.language_routing import (
+    ENGLISH_CODES,
+    primary_language_subtag as normalize_language_code,
+    resolve_transcript_language as resolve_transcript_language,
+)
+
 ALGORITHM_VERSION = "lexicon_markers_v1"
 TOKENIZER_VERSION = "unicode_word_v1"
-ENGLISH_CODES = frozenset({"en", "eng", "en-us", "en-gb", "en_us", "en_gb"})
 
 _TOKEN_RE = re.compile(r"[^\W\d_]+(?:['\u2019-][^\W\d_]+)*", re.UNICODE)
 _PACKAGE_LEXICONS = "transcriptx.preprocessing.lexicons"
@@ -45,44 +50,6 @@ class MarkerHit:
             "category": self.category,
             "module": self.module,
         }
-
-
-def normalize_language_code(raw: str | None) -> str | None:
-    if raw is None:
-        return None
-    text = str(raw).strip().lower().replace("_", "-")
-    if not text:
-        return None
-    primary = text.split("-", 1)[0]
-    return primary or None
-
-
-def resolve_transcript_language(
-    segments: Sequence[Mapping[str, Any]],
-    metadata: Mapping[str, Any] | None = None,
-) -> tuple[str | None, str]:
-    """Return (normalized_code_or_None, resolution_tag)."""
-    meta = metadata or {}
-    meta_lang = normalize_language_code(
-        meta.get("language") if isinstance(meta, Mapping) else None
-    )
-    seg_langs: list[str] = []
-    for seg in segments:
-        if not isinstance(seg, Mapping):
-            continue
-        code = normalize_language_code(seg.get("language"))
-        if code:
-            seg_langs.append(code)
-    unique = sorted(set(seg_langs))
-    if len(unique) > 1:
-        if all(u in {"en", "eng"} or u.startswith("en") for u in unique):
-            return "en", "mixed_english_variants"
-        return unique[0], "mixed_segment_languages"
-    if len(unique) == 1:
-        return unique[0], "segment_language"
-    if meta_lang:
-        return meta_lang, "metadata_language"
-    return "en", "assumed_en_missing_metadata"
 
 
 def is_english_supported(code: str | None) -> bool:

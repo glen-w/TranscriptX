@@ -4,24 +4,22 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
+from transcriptx.core.analysis.language_routing import (
+    TAG_ASSUMED_EN,
+    TAG_TRANSCRIPT_METADATA,
+    is_english,
+    normalize_language_code,
+)
+
+__all__ = [
+    "LANGUAGE_POLICY_V1",
+    "extract_transcript_metadata",
+    "is_english",
+    "normalize_language_code",
+    "resolve_segment_language",
+]
+
 LANGUAGE_POLICY_V1 = "language_policy_v1"
-
-_EN_ALIASES = frozenset({"en", "eng", "english", "en-us", "en-gb"})
-
-
-def normalize_language_code(raw: str | None) -> str | None:
-    if raw is None:
-        return None
-    code = str(raw).strip().casefold()
-    if not code or code in {"auto", "unknown"}:
-        return None
-    return code
-
-
-def is_english(code: str | None) -> bool:
-    if code is None:
-        return False
-    return code in _EN_ALIASES or code.startswith("en-")
 
 
 def extract_transcript_metadata(
@@ -59,6 +57,6 @@ def resolve_segment_language(
     meta = transcript_metadata or {}
     meta_lang = normalize_language_code(meta.get("language"))
     if meta_lang is not None:
-        return meta_lang, "transcript_metadata"
+        return meta_lang, TAG_TRANSCRIPT_METADATA
 
-    return "en", "assumed_en_missing_metadata"
+    return "en", TAG_ASSUMED_EN

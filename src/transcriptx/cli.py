@@ -5,36 +5,72 @@ from __future__ import annotations
 import sys
 from typing import Sequence
 
+# Single source for dispatch and ``--help``: (command, module, summary).
+_CLI_COMMAND_TABLE: tuple[tuple[str, str, str], ...] = (
+    (
+        "import",
+        "transcriptx.import_transcript",
+        "Managed-import transcript file(s) into the library",
+    ),
+    (
+        "admit-originals",
+        "transcriptx.admit_originals",
+        "Admit files already under originals/",
+    ),
+    ("analyze", "transcriptx.analyze", "Run analysis on one managed transcript"),
+    (
+        "analyze-backlog",
+        "transcriptx.analyze_backlog",
+        "Analyze ready transcripts with no analysis yet",
+    ),
+    (
+        "analyze-modules",
+        "transcriptx.analyze_modules",
+        "Catch up selected modules across the library",
+    ),
+    (
+        "cleanup-runs",
+        "transcriptx.cleanup_runs",
+        "Bulk-delete old (or all) analysis run directories",
+    ),
+    (
+        "library-paths",
+        "transcriptx.library_paths",
+        "Print managed transcript paths (newest first)",
+    ),
+    (
+        "rename",
+        "transcriptx.rename_managed",
+        "Rename a managed transcript (+ linked audio)",
+    ),
+    ("backup", "transcriptx.backup", "Workspace ZIP create / verify / restore"),
+    (
+        "warm-suggestions",
+        "transcriptx.warm_suggestions",
+        "Warm assistive LLM rename / speaker-name caches",
+    ),
+    (
+        "identify-speakers",
+        "transcriptx.identify_speakers",
+        "Auto-identify speakers (voice + text fusion)",
+    ),
+)
+
 _CLI_COMMANDS: dict[str, str] = {
-    "import": "transcriptx.import_transcript",
-    "admit-originals": "transcriptx.admit_originals",
-    "analyze": "transcriptx.analyze",
-    "analyze-backlog": "transcriptx.analyze_backlog",
-    "analyze-modules": "transcriptx.analyze_modules",
-    "cleanup-runs": "transcriptx.cleanup_runs",
-    "rename": "transcriptx.rename_managed",
-    "backup": "transcriptx.backup",
-    "warm-suggestions": "transcriptx.warm_suggestions",
-    "identify-speakers": "transcriptx.identify_speakers",
-    "library-paths": "transcriptx.library_paths",
+    command: module for command, module, _summary in _CLI_COMMAND_TABLE
 }
 
 
 def _print_cli_help() -> None:
+    commands = "".join(
+        f"  {command:<18} {summary}\n"
+        for command, _module, summary in _CLI_COMMAND_TABLE
+    )
     print(
         "Usage: transcriptx [COMMAND] [ARGS...]\n"
         "\n"
         "Commands (host automation; no Streamlit):\n"
-        "  import             Managed-import transcript file(s) into the library\n"
-        "  admit-originals    Admit files already under originals/\n"
-        "  analyze            Run analysis on one managed transcript\n"
-        "  analyze-backlog    Analyze ready transcripts with no analysis yet\n"
-        "  analyze-modules    Catch up selected modules across the library\n"
-        "  cleanup-runs       Bulk-delete old (or all) analysis run directories\n"
-        "  rename             Rename a managed transcript (+ linked audio)\n"
-        "  backup             Workspace ZIP create / verify / restore\n"
-        "  warm-suggestions   Warm assistive LLM rename / speaker-name caches\n"
-        "  identify-speakers  Auto-identify speakers (voice + text fusion)\n"
+        f"{commands}"
         "\n"
         "Interactive workspaces (Corrections, Speaker ID review, Charts/Ask)\n"
         "stay in the GUI. With no command, launches the Streamlit web UI.\n"
