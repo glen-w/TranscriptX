@@ -35,8 +35,9 @@ def _goto(page, base_url: str) -> None:
 
 
 def _url_page(url: str) -> str:
+    # Home is the default page: url_state omits ``page`` for it.
     values = parse_qs(urlparse(url).query).get("page") or []
-    return values[0] if values else ""
+    return values[0] if values else "Home"
 
 
 def test_fifty_nav_clicks_from_rename_each_change_page(seeded_app, page) -> None:

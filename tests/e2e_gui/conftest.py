@@ -596,18 +596,33 @@ def _playwright_browser():
     pw = sync_playwright().start()
     browser = None
     last_exc: Exception | None = None
-    # Bundled Playwright Chromium can *launch* then die on newer macOS
-    # (TargetClosedError). Prefer a system Chrome/Edge channel first.
+    # Prefer bundled Playwright Chromium: it matches the host architecture. A
+    # universal system Chrome launched from an x86_64 (Rosetta) interpreter runs
+    # translated and takes ~50s to hydrate the shell instead of ~1s, which
+    # outlasts every fixed settle wait in helpers.py.
+    # Bundled Chromium can also *launch* then die on newer macOS
+    # (TargetClosedError), so each candidate must open a page before it is
+    # accepted; system Chrome/Edge channels remain the fallback.
     for kwargs in (
+        {"headless": True},
         {"headless": True, "channel": "chrome"},
         {"headless": True, "channel": "msedge"},
-        {"headless": True},
     ):
+        candidate = None
         try:
-            browser = pw.chromium.launch(**kwargs)
+            candidate = pw.chromium.launch(**kwargs)
+            probe = candidate.new_context()
+            probe.new_page().goto("about:blank")
+            probe.close()
+            browser = candidate
             break
         except Exception as exc:  # noqa: BLE001 — environment capability gate
             last_exc = exc
+            if candidate is not None:
+                try:
+                    candidate.close()
+                except Exception:  # noqa: BLE001 — already dead
+                    pass
     if browser is None:
         pw.stop()
         pytest.skip(f"Playwright Chromium unavailable: {last_exc}")

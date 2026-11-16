@@ -1,6 +1,6 @@
 # TranscriptX Roadmap
 
-**Current version:** **1.2.1** (see [pyproject.toml](../pyproject.toml)). Public **1.0.0** shipped 2026-10-19; **1.1.0** is the Trustworthy Depth workbench increment; **1.1.1** restores the GUI shell; **1.2.0** finishes GUI hardening W1.3–W4; **1.2.1** aligns public surfaces with README and the Sphinx guide.
+**Current version:** **1.2.2** (see [pyproject.toml](../pyproject.toml)). Public **1.0.0** shipped 2026-10-19; **1.1.0** is the Trustworthy Depth workbench increment; **1.1.1** restores the GUI shell; **1.2.0** finishes GUI hardening W1.3–W4; **1.2.1** aligns public surfaces with README and the Sphinx guide; **1.2.2** unifies transcript language resolution and repairs the GUI E2E lane.
 
 **Product definition:** [PRODUCT.md](PRODUCT.md)  
 **Historical 0.9.x → 1.0 programme:** [pre_release_roadmap_1_0.md](dev/pre_release_roadmap_1_0.md) (retired; not the living plan)  
@@ -87,7 +87,7 @@ Cross-links: Theme **H** (in-app providers), Theme **K** (command generation), [
 - Streamlit GUI + typed Python API; managed import; file-backed storage/sidecars
 - Broad analysis module set (language, speakers, interactions, emotion, voice, groups, optional Ollama)
 - Contracts for storage, run outcomes, outputs, and public surfaces
-- Public **1.0.x / 1.1.x / 1.2.x** workbench (1.0.0 2026-10-19; **1.2.1** current). Living work is 1.x themes below, not a 0.9.x track.
+- Public **1.0.x / 1.1.x / 1.2.x** workbench (1.0.0 2026-10-19; **1.2.2** current). Living work is 1.x themes below, not a 0.9.x track.
 - **PR CI (2026-11):** merge gate is **`make test-smoke` only** on Python 3.10 (`.github/workflows/ci.yml`). Broader lanes still run locally and on [Nightly](../.github/workflows/nightly.yml); re-promote to required PR jobs when install flakes are gone.
 
 ### CI expansion (deferred, post-1.2.1)
