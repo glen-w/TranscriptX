@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-11-16
+
+Patch release: unified language resolution, `whispermlx-missing` inbox conversion, CLI help from the dispatch table, and a working GUI E2E lane.
+
 ### Changed
 
 - PR CI merge gate is **`make test-smoke` only** (Python 3.10); lint, contracts, Playwright shell, Docker release-checks, and docs drift lanes deferred to local / Nightly (see [ROADMAP.md](docs/ROADMAP.md) § CI expansion (deferred)).
@@ -16,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `transcriptx --help` lists `library-paths`; the command list is generated from the dispatch table.
+- `make help` prints the full target list again (a space-indented line made `make` treat the `test-gui-shell-smoke` help text as a rule and warn on every invocation).
+- GUI E2E (`make test-gui-e2e`) prefers bundled Playwright Chromium over system Chrome. From an x86_64 interpreter on Apple Silicon, system Chrome took ~50s to hydrate the shell (bundled: ~1s), failing nine tests on fixed settle waits.
+- `test_fifty_nav_clicks_from_rename_each_change_page` treats a URL without `page` as Home, matching `url_state`.
 
 ## [1.2.1] - 2026-11-03
 
